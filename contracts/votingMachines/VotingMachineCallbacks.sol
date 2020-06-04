@@ -1,8 +1,19 @@
 pragma solidity 0.5.17;
 
-import "../universalSchemes/UniversalScheme.sol";
-import "@daostack/infra/contracts/votingMachines/GenesisProtocol.sol";
+import "../dxdao/DxController.sol";
 
+interface VotingMachineCallbacksInterface {
+    function mintReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId) external returns(bool);
+    function burnReputation(uint256 _amount, address _owner, bytes32 _proposalId) external returns(bool);
+
+    function stakingTokenTransfer(IERC20 _stakingToken, address _beneficiary, uint256 _amount, bytes32 _proposalId)
+    external
+    returns(bool);
+
+    function getTotalReputationSupply(bytes32 _proposalId) external view returns(uint256);
+    function reputationOf(address _owner, bytes32 _proposalId) external view returns(uint256);
+    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns(uint256);
+}
 
 contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
 
@@ -28,7 +39,7 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         if (avatar == Avatar(0)) {
             return false;
         }
-        return Controller(avatar.owner()).mintReputation(_amount, _beneficiary, address(avatar));
+        return DxController(avatar.owner()).mintReputation(_amount, _beneficiary, address(avatar));
     }
 
     function burnReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId)
@@ -40,7 +51,7 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         if (avatar == Avatar(0)) {
             return false;
         }
-        return Controller(avatar.owner()).burnReputation(_amount, _beneficiary, address(avatar));
+        return DxController(avatar.owner()).burnReputation(_amount, _beneficiary, address(avatar));
     }
 
     function stakingTokenTransfer(
@@ -56,7 +67,7 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         if (avatar == Avatar(0)) {
             return false;
         }
-        return Controller(avatar.owner()).externalTokenTransfer(_stakingToken, _beneficiary, _amount, avatar);
+        return DxController(avatar.owner()).externalTokenTransfer(_stakingToken, _beneficiary, _amount, avatar);
     }
 
     function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns(uint256) {

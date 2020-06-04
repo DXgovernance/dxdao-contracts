@@ -1,7 +1,7 @@
 {
-  "name": "@daostack/arc",
-  "version": "0.0.1-rc.41",
-  "description": "A platform for building DAOs",
+  "name": "dxdao-contracts",
+  "version": "0.0.1",
+  "description": "DXdao smart contracts",
   "files": [
     "contracts/",
     "docs/",
@@ -55,26 +55,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/daostack/arc.git"
+    "url": "https://github.com/augustol/arc.git"
   },
-  "keywords": [
-    "solidity",
-    "ethereum",
-    "smart",
-    "contracts",
-    "security",
-    "daostack",
-    "arc"
-  ],
   "engines": {
     "node": ">=10.16.3"
   },
-  "author": "DAOstack (https://www.daostack.io)",
-  "license": "GPL-3.0",
-  "bugs": {
-    "url": "https://github.com/daostack/arc/issues"
-  },
-  "homepage": "https://daostack.io",
+  "license": "AGPL-3.0",
   "dependencies": {
     "@daostack/infra": "0.0.1-rc.15",
     "math": "0.0.3",

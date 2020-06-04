@@ -2,7 +2,7 @@ pragma solidity 0.5.17;
 pragma experimental ABIEncoderV2;
 
 import "@daostack/infra/contracts/votingMachines/IntVoteInterface.sol";
-import "@daostack/infra/contracts/votingMachines/VotingMachineCallbacksInterface.sol";
+import "@daostack/infra/contracts/votingMachines/ProposalExecuteInterface.sol";
 import "../votingMachines/VotingMachineCallbacks.sol";
 
 
@@ -142,12 +142,12 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     returns(bytes32)
     {
         for(uint i = 0; i < _to.length; i ++) {
-          require(_to[i] != controller && _to[i] != address(this), 'invalid proposal caller');
+          require(_to[i] != address(this), 'invalid proposal caller');
         }
         require(_to.length == _callData.length, 'invalid callData length');
         require(_to.length == _value.length, 'invalid _value length');
         
-        bytes32 proposalId = votingMachine.propose(2, voteParams, msg.sender, _to[0]);
+        bytes32 proposalId = votingMachine.propose(2, voteParams, msg.sender, address(avatar));
 
         organizationProposals[proposalId] = CallProposal({
             to: _to,
@@ -164,6 +164,10 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         return proposalId;
     }
     
+    /**
+    * @dev Get the information of a proposal by id
+    * @param proposalId the ID of the proposal
+    */
     function getOrganizationProposal(bytes32 proposalId) public view 
       returns (address[] memory to, bytes[] memory callData, uint256[] memory value, bool exist, bool passed)
     {
@@ -175,5 +179,21 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         organizationProposals[proposalId].passed
       );
     }
+    
+    /**
+    * @dev Override mintReputation function from VotingMachineCallbacks
+    */
+    function mintReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId)
+    external
+    onlyVotingMachine(_proposalId)
+    returns(bool) { return false; }
+    
+    /**
+    * @dev Override burnReputation function from VotingMachineCallbacks
+    */
+    function burnReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId)
+    external
+    onlyVotingMachine(_proposalId)
+    returns(bool) { return false; }
 
 }

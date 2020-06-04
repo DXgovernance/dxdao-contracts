@@ -1,10 +1,6 @@
 pragma solidity 0.5.17;
 
-import "@daostack/infra/contracts/Reputation.sol";
-import "../controller/DAOToken.sol";
-import "../controller/Avatar.sol";
-import "../controller/Controller.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../dxdao/DxController.sol";
 
 /**
  * @title An on-chain "source of truth" for what DAOs
@@ -58,14 +54,14 @@ contract DAOTracker is Ownable {
     * @param _avatar the organization avatar
     * @param _controller the organization controller
     */
-    function track(Avatar _avatar, Controller _controller, string memory _arcVersion)
+    function track(Avatar _avatar, DxController _controller, string memory _arcVersion)
     public
     onlyAvatarOwner(_avatar)
     notBlacklisted(_avatar) {
         // Only allow the information to be set once. In the case of a controller upgrades,
         // the subgraph will be updated via the UpgradeController event.
         require(_avatar != Avatar(0));
-        require(_controller != Controller(0));
+        require(_controller != DxController(0));
 
         emit TrackDAO(
             address(_avatar),

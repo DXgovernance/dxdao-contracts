@@ -3,6 +3,7 @@
 */
 
 const Avatar = artifacts.require("./Avatar.sol");
+const Controller = artifacts.require("./Controller.sol");
 const DAOToken = artifacts.require("./DAOToken.sol");
 const Reputation = artifacts.require("./Reputation.sol");
 const AbsoluteVote = artifacts.require("./AbsoluteVote.sol");
@@ -31,11 +32,11 @@ export class Organization {
 }
 
 export function getProposalAddress(tx) {
-    // helper function that returns a proposal object from the ProposalCreated event
-    // in the logs of tx
-    assert.equal(tx.logs[0].event, 'ProposalCreated');
-    const proposalAddress = tx.logs[0].args.proposaladdress;
-    return proposalAddress;
+  // helper function that returns a proposal object from the ProposalCreated event
+  // in the logs of tx
+  assert.equal(tx.logs[0].event, 'ProposalCreated');
+  const proposalAddress = tx.logs[0].args.proposaladdress;
+  return proposalAddress;
 }
 
 export function getValueFromLogs(tx, arg, eventName, index=0) {
@@ -82,38 +83,38 @@ export function getValueFromLogs(tx, arg, eventName, index=0) {
 }
 
 export async function getProposal(tx) {
-    return await Proposal.at(getProposalAddress(tx));
+  return await Proposal.at(getProposalAddress(tx));
 }
 
 export async function etherForEveryone(accounts) {
-    // give all web3.eth.accounts some ether
-    for (let i=0; i < 10; i++) {
-        await web3.eth.sendTransaction({to: accounts[i], from: accounts[0], value: web3.utils.toWei("0.1", "ether")});
-    }
+  // give all web3.eth.accounts some ether
+  for (let i=0; i < 10; i++) {
+    await web3.eth.sendTransaction({to: accounts[i], from: accounts[0], value: web3.utils.toWei("0.1", "ether")});
+  }
 }
 
 export const outOfGasMessage = 'VM Exception while processing transaction: out of gas';
 
 export function assertJumpOrOutOfGas(error) {
-    let condition = (
-        error.message === outOfGasMessage ||
+  let condition = (
+    error.message === outOfGasMessage ||
         error.message.search('invalid JUMP') > -1
-    );
-    assert.isTrue(condition, 'Expected an out-of-gas error or an invalid JUMP error, got this instead: ' + error.message);
+  );
+  assert.isTrue(condition, 'Expected an out-of-gas error or an invalid JUMP error, got this instead: ' + error.message);
 }
 
 export function assertVMException(error) {
-    let condition = (
-        error.message.search('VM Exception') > -1
-    );
-    assert.isTrue(condition, 'Expected a VM Exception, got this instead:' + error.message);
+  let condition = (
+    error.message.search('VM Exception') > -1
+  );
+  assert.isTrue(condition, 'Expected a VM Exception, got this instead:' + error.message);
 }
 
 export function assertInternalFunctionException(error) {
-    let condition = (
-        error.message.search('is not a function') > -1
-    );
-    assert.isTrue(condition, 'Expected a function not found Exception, got this instead:' + error.message);
+  let condition = (
+    error.message.search('is not a function') > -1
+  );
+  assert.isTrue(condition, 'Expected a function not found Exception, got this instead:' + error.message);
 }
 
 export function assertJump(error) {
@@ -130,58 +131,69 @@ export const setupAbsoluteVote = async function (voteOnBehalf=NULL_ADDRESS, prec
 };
 
 export const setupGenesisProtocol = async function (
-   accounts,
-   token,
-   avatar,
-   voteOnBehalf = NULL_ADDRESS,
-   _queuedVoteRequiredPercentage=50,
-   _queuedVotePeriodLimit=60,
-   _boostedVotePeriodLimit=60,
-   _preBoostedVotePeriodLimit =0,
-   _thresholdConst=2000,
-   _quietEndingPeriod=0,
-   _proposingRepReward=60,
-   _votersReputationLossRatio=10,
-   _minimumDaoBounty=15,
-   _daoBountyConst=10,
-   _activationTime=0
-  ) {
+  accounts,
+  token,
+  avatar,
+  voteOnBehalf = NULL_ADDRESS,
+  _queuedVoteRequiredPercentage=50,
+  _queuedVotePeriodLimit=60,
+  _boostedVotePeriodLimit=60,
+  _preBoostedVotePeriodLimit =0,
+  _thresholdConst=2000,
+  _quietEndingPeriod=0,
+  _proposingRepReward=60,
+  _votersReputationLossRatio=10,
+  _minimumDaoBounty=15,
+  _daoBountyConst=10,
+  _activationTime=0
+) {
   var votingMachine = new VotingMachine();
 
-  votingMachine.genesisProtocol = await GenesisProtocol.new(token,{gas: constants.ARC_GAS_LIMIT});
+  votingMachine.genesisProtocol = await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
 
   // set up a reputation system
-  votingMachine.reputationArray = [20, 10 ,70];
+  votingMachine.reputationArray = [20, 10, 70];
   // register some parameters
   await votingMachine.genesisProtocol.setParameters([_queuedVoteRequiredPercentage,
-                                                     _queuedVotePeriodLimit,
-                                                     _boostedVotePeriodLimit,
-                                                     _preBoostedVotePeriodLimit,
-                                                     _thresholdConst,
-                                                     _quietEndingPeriod,
-                                                     _proposingRepReward,
-                                                     _votersReputationLossRatio,
-                                                     _minimumDaoBounty,
-                                                     _daoBountyConst,
-                                                     _activationTime],voteOnBehalf);
+    _queuedVotePeriodLimit,
+    _boostedVotePeriodLimit,
+    _preBoostedVotePeriodLimit,
+    _thresholdConst,
+    _quietEndingPeriod,
+    _proposingRepReward,
+    _votersReputationLossRatio,
+    _minimumDaoBounty,
+    _daoBountyConst,
+    _activationTime], voteOnBehalf);
   votingMachine.params = await votingMachine.genesisProtocol.getParametersHash([_queuedVoteRequiredPercentage,
-                                                     _queuedVotePeriodLimit,
-                                                     _boostedVotePeriodLimit,
-                                                     _preBoostedVotePeriodLimit,
-                                                     _thresholdConst,
-                                                     _quietEndingPeriod,
-                                                     _proposingRepReward,
-                                                     _votersReputationLossRatio,
-                                                     _minimumDaoBounty,
-                                                     _daoBountyConst,
-                                                     _activationTime],voteOnBehalf);
+    _queuedVotePeriodLimit,
+    _boostedVotePeriodLimit,
+    _preBoostedVotePeriodLimit,
+    _thresholdConst,
+    _quietEndingPeriod,
+    _proposingRepReward,
+    _votersReputationLossRatio,
+    _minimumDaoBounty,
+    _daoBountyConst,
+    _activationTime], voteOnBehalf);
 
   return votingMachine;
 };
 
-export const setupOrganizationWithArrays = async function (daoCreator,daoCreatorOwner,founderToken,founderReputation,cap=0) {
+export const setupOrganizationWithArrays = async function (
+  daoCreator, daoCreatorOwner, founderToken, founderReputation, cap=0
+) {
   var org = new Organization();
-  var tx = await daoCreator.forgeOrg("testOrg","TEST","TST",daoCreatorOwner,founderToken,founderReputation,cap,{gas: constants.ARC_GAS_LIMIT});
+  var tx = await daoCreator.forgeOrg(
+    "testOrg",
+    "TEST",
+    "TST",
+    daoCreatorOwner,
+    founderToken,
+    founderReputation,
+    cap,
+    {gas: constants.ARC_GAS_LIMIT}
+  );
   assert.equal(tx.logs.length, 1);
   assert.equal(tx.logs[0].event, "NewOrg");
   var avatarAddress = tx.logs[0].args._avatar;
@@ -190,12 +202,25 @@ export const setupOrganizationWithArrays = async function (daoCreator,daoCreator
   org.token = await DAOToken.at(tokenAddress);
   var reputationAddress = await org.avatar.nativeReputation();
   org.reputation = await Reputation.at(reputationAddress);
+  var controllerAddress = await org.avatar.owner();
+  org.controller = await Controller.at(controllerAddress);
   return org;
 };
 
-export const setupOrganization = async function (daoCreator,daoCreatorOwner,founderToken,founderReputation,cap=0) {
+export const setupOrganization = async function (
+  daoCreator, daoCreatorOwner, founderToken, founderReputation, cap=0
+) {
   var org = new Organization();
-  var tx = await daoCreator.forgeOrg("testOrg","TEST","TST",[daoCreatorOwner],[founderToken],[founderReputation],cap,{gas: constants.ARC_GAS_LIMIT});
+  var tx = await daoCreator.forgeOrg(
+    "testOrg",
+    "TEST",
+    "TST",
+    [daoCreatorOwner],
+    [founderToken],
+    [founderReputation],
+    cap,
+    {gas: constants.ARC_GAS_LIMIT}
+  );
   assert.equal(tx.logs.length, 1);
   assert.equal(tx.logs[0].event, "NewOrg");
   var avatarAddress = tx.logs[0].args._avatar;
@@ -204,11 +229,13 @@ export const setupOrganization = async function (daoCreator,daoCreatorOwner,foun
   org.token = await DAOToken.at(tokenAddress);
   var reputationAddress = await org.avatar.nativeReputation();
   org.reputation = await Reputation.at(reputationAddress);
+  var controllerAddress = await org.avatar.owner();
+  org.controller = await Controller.at(controllerAddress);
   return org;
 };
 
 
-export const checkVoteInfo = async function(absoluteVote,proposalId, voterAddress, _voteInfo) {
+export const checkVoteInfo = async function(absoluteVote, proposalId, voterAddress, _voteInfo) {
   let voteInfo;
   voteInfo = await absoluteVote.voteInfo(proposalId, voterAddress);
   // voteInfo has the following structure
@@ -219,24 +246,24 @@ export const checkVoteInfo = async function(absoluteVote,proposalId, voterAddres
 };
 
 
-export const checkVotesStatus = async function(proposalId, _votesStatus,votingMachine){
+export const checkVotesStatus = async function(proposalId, _votesStatus, votingMachine){
 
   let voteStatus;
   for (var i = 0; i < _votesStatus.length; i++) {
-      voteStatus = await votingMachine.voteStatus(proposalId,i);
-      assert.equal(voteStatus, _votesStatus[i]);
+    voteStatus = await votingMachine.voteStatus(proposalId, i);
+    assert.equal(voteStatus, _votesStatus[i]);
   }
 };
 
-export async function getProposalId(tx,contract,eventName) {
+export async function getProposalId(tx, contract, eventName) {
   var proposalId;
   await contract.getPastEvents(eventName, {
-            fromBlock: tx.blockNumber,
-            toBlock: 'latest'
-      })
-        .then(function(events){
-            proposalId = events[0].args._proposalId;
-        });
+    fromBlock: tx.blockNumber,
+    toBlock: 'latest'
+  })
+    .then(function(events){
+      proposalId = events[0].args._proposalId;
+    });
   return proposalId;
 }
 
@@ -261,7 +288,7 @@ export async function getProposalId(tx,contract,eventName) {
 export const increaseTime = async function(duration) {
   const id = await Date.now();
 
-   web3.providers.HttpProvider.prototype.sendAsync = web3.providers.HttpProvider.prototype.send;
+  web3.providers.HttpProvider.prototype.sendAsync = web3.providers.HttpProvider.prototype.send;
 
   return new Promise((resolve, reject) => {
     web3.currentProvider.sendAsync({

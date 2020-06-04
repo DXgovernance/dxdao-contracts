@@ -1,8 +1,5 @@
 pragma solidity 0.5.17;
 
-import "../controller/Avatar.sol";
-
-
 contract ActionMock {
 
     event WithoutReturnValue(address _addr);

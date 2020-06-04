@@ -12,6 +12,13 @@
         "semi": 2,
         "no-undef": "off",
         "eol-last": 2,
-        "eqeqeq": "error"
+        "eqeqeq": "error",
+        "indent": ["error", 2],
+        "block-spacing": ["error", "always"],
+        "comma-spacing": "error",
+        "brace-style": "error",
+        "function-paren-newline": ["error", "consistent"],
+        "max-len": ["error", 120],
+        "key-spacing": "error"
     }
 }

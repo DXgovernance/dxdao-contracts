@@ -1,17 +1,16 @@
 pragma solidity 0.5.17;
 
-import "./UniversalScheme.sol";
-import "../controller/Controller.sol";
+import "../dxdao/DxController.sol";
 import "../utils/DAOTracker.sol";
 
 
 /**
- * @title ControllerCreator for creating a single controller.
+ * @title DxControllerCreator for creating a single controller.
  */
-contract ControllerCreator {
+contract DxControllerCreator {
 
     function create(Avatar _avatar) public returns(address) {
-        Controller controller = new Controller(_avatar);
+        DxController controller = new DxController(_avatar);
         controller.registerScheme(msg.sender, bytes32(0), bytes4(0x0000001f), address(_avatar));
         controller.unregisterScheme(address(this), address(_avatar));
         return address(controller);
@@ -28,11 +27,11 @@ contract DaoCreator {
     event NewOrg (address _avatar);
     event InitialSchemesSet (address _avatar);
 
-    ControllerCreator private controllerCreator;
+    DxControllerCreator private controllerCreator;
     DAOTracker private daoTracker;
 
-    constructor(ControllerCreator _controllerCreator, DAOTracker _daoTracker) public {
-        require(_controllerCreator != ControllerCreator(0));
+    constructor(DxControllerCreator _controllerCreator, DAOTracker _daoTracker) public {
+        require(_controllerCreator != DxControllerCreator(0));
         require(_daoTracker != DAOTracker(0));
         controllerCreator = _controllerCreator;
         daoTracker = _daoTracker;
@@ -66,11 +65,11 @@ contract DaoCreator {
         for (uint256 i = 0; i < _founders.length; i++) {
             require(_founders[i] != address(0));
             if (_foundersTokenAmount[i] > 0) {
-                Controller(
+                DxController(
                 _avatar.owner()).mintTokens(_foundersTokenAmount[i], _founders[i], address(_avatar));
             }
             if (_foundersReputationAmount[i] > 0) {
-                Controller(
+                DxController(
                 _avatar.owner()).mintReputation(_foundersReputationAmount[i], _founders[i], address(_avatar));
             }
         }
@@ -134,7 +133,7 @@ contract DaoCreator {
         // for this controller
         require(locks[address(_avatar)] == msg.sender);
         // register initial schemes:
-        Controller controller = Controller(_avatar.owner());
+        DxController controller = DxController(_avatar.owner());
         for (uint256 i = 0; i < _schemes.length; i++) {
             controller.registerScheme(_schemes[i], _params[i], _permissions[i], address(_avatar));
         }
@@ -189,7 +188,7 @@ contract DaoCreator {
             }
         }
 
-        Controller controller = Controller(controllerCreator.create(avatar));
+        DxController controller = DxController(controllerCreator.create(avatar));
 
         // Add the DAO to the tracking registry
         daoTracker.track(avatar, controller, "");
