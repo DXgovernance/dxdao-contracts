@@ -1,7 +1,7 @@
 require("babel-polyfill");
 require("babel-register")({
-  "presets": ["es2015"],
-  "plugins": ["syntax-async-functions", "transform-regenerator"]
+  "presets": [ "es2015" ],
+  "plugins": [ "syntax-async-functions", "transform-regenerator" ]
 });
 
 module.exports = {
@@ -37,8 +37,8 @@ module.exports = {
       gas: 4543760
     },
     soliditycoverage: {
-      host: 'localhost',
-      network_id: '*', // eslint-disable-line camelcase
+      host: "localhost",
+      network_id: "*", // eslint-disable-line camelcase
       port: 8555,
       gas: 0xfffffffffff,
       gasPrice: 0x01,
@@ -63,5 +63,5 @@ module.exports = {
       }
     }
   },
-  plugins: ["solidity-coverage"]
+  plugins: [ "solidity-coverage" ]
 };
