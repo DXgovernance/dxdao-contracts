@@ -18,7 +18,12 @@
         "comma-spacing": "error",
         "brace-style": "error",
         "function-paren-newline": ["error", "consistent"],
+        "space-before-function-paren": ["error", "never"],
+        "array-bracket-spacing": ["error", "always"],
+        "computed-property-spacing": ["error", "always"],
         "max-len": ["error", 120],
-        "key-spacing": "error"
+        "key-spacing": "error",
+        "quotes": "error",
+        "space-infix-ops": "error"
     }
 }
