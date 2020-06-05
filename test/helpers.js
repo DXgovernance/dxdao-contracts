@@ -7,14 +7,14 @@ const Controller = artifacts.require("./Controller.sol");
 const DAOToken = artifacts.require("./DAOToken.sol");
 const Reputation = artifacts.require("./Reputation.sol");
 const AbsoluteVote = artifacts.require("./AbsoluteVote.sol");
-const constants = require('./constants');
+const constants = require("./constants");
 const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
 
-export const MAX_UINT_256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
-export const NULL_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
-export const SOME_HASH = '0x1000000000000000000000000000000000000000000000000000000000000000';
-export const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
-export const SOME_ADDRESS = '0x1000000000000000000000000000000000000000';
+export const MAX_UINT_256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+export const NULL_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
+export const SOME_HASH = "0x1000000000000000000000000000000000000000000000000000000000000000";
+export const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
+export const SOME_ADDRESS = "0x1000000000000000000000000000000000000000";
 
 export class TestSetup {
   constructor() {
@@ -34,12 +34,12 @@ export class Organization {
 export function getProposalAddress(tx) {
   // helper function that returns a proposal object from the ProposalCreated event
   // in the logs of tx
-  assert.equal(tx.logs[0].event, 'ProposalCreated');
-  const proposalAddress = tx.logs[0].args.proposaladdress;
+  assert.equal(tx.logs[ 0 ].event, "ProposalCreated");
+  const proposalAddress = tx.logs[ 0 ].args.proposaladdress;
   return proposalAddress;
 }
 
-export function getValueFromLogs(tx, arg, eventName, index=0) {
+export function getValueFromLogs(tx, arg, eventName, index = 0) {
   /**
    *
    * tx.logs look like this:
@@ -55,12 +55,12 @@ export function getValueFromLogs(tx, arg, eventName, index=0) {
    *     args: { _avatar: '0xcc05f0cde8c3e4b6c41c9b963031829496107bbb' } } ]
    */
   if (!tx.logs || !tx.logs.length) {
-    throw new Error('getValueFromLogs: Transaction has no logs');
+    throw new Error("getValueFromLogs: Transaction has no logs");
   }
 
   if (eventName !== undefined) {
-    for (let i=0; i < tx.logs.length; i++) {
-      if (tx.logs[i].event  === eventName) {
+    for (let i = 0; i < tx.logs.length; i++) {
+      if (tx.logs[ i ].event  === eventName) {
         index = i;
         break;
       }
@@ -74,9 +74,9 @@ export function getValueFromLogs(tx, arg, eventName, index=0) {
       index = tx.logs.length - 1;
     }
   }
-  let result = tx.logs[index].args[arg];
+  let result = tx.logs[ index ].args[ arg ];
   if (!result) {
-    let msg = `getValueFromLogs: This log does not seem to have a field "${arg}": ${tx.logs[index].args}`;
+    let msg = `getValueFromLogs: This log does not seem to have a field "${arg}": ${tx.logs[ index ].args}`;
     throw new Error(msg);
   }
   return result;
@@ -88,40 +88,40 @@ export async function getProposal(tx) {
 
 export async function etherForEveryone(accounts) {
   // give all web3.eth.accounts some ether
-  for (let i=0; i < 10; i++) {
-    await web3.eth.sendTransaction({to: accounts[i], from: accounts[0], value: web3.utils.toWei("0.1", "ether")});
+  for (let i = 0; i < 10; i++) {
+    await web3.eth.sendTransaction({to: accounts[ i ], from: accounts[ 0 ], value: web3.utils.toWei("0.1", "ether")});
   }
 }
 
-export const outOfGasMessage = 'VM Exception while processing transaction: out of gas';
+export const outOfGasMessage = "VM Exception while processing transaction: out of gas";
 
 export function assertJumpOrOutOfGas(error) {
   let condition = (
     error.message === outOfGasMessage ||
-        error.message.search('invalid JUMP') > -1
+        error.message.search("invalid JUMP") > -1
   );
-  assert.isTrue(condition, 'Expected an out-of-gas error or an invalid JUMP error, got this instead: ' + error.message);
+  assert.isTrue(condition, "Expected an out-of-gas error or an invalid JUMP error, got this instead: " + error.message);
 }
 
 export function assertVMException(error) {
   let condition = (
-    error.message.search('VM Exception') > -1
+    error.message.search("VM Exception") > -1
   );
-  assert.isTrue(condition, 'Expected a VM Exception, got this instead:' + error.message);
+  assert.isTrue(condition, "Expected a VM Exception, got this instead:" + error.message);
 }
 
 export function assertInternalFunctionException(error) {
   let condition = (
-    error.message.search('is not a function') > -1
+    error.message.search("is not a function") > -1
   );
-  assert.isTrue(condition, 'Expected a function not found Exception, got this instead:' + error.message);
+  assert.isTrue(condition, "Expected a function not found Exception, got this instead:" + error.message);
 }
 
 export function assertJump(error) {
-  assert.isAbove(error.message.search('invalid JUMP'), -1, 'Invalid JUMP error must be returned' + error.message);
+  assert.isAbove(error.message.search("invalid JUMP"), -1, "Invalid JUMP error must be returned" + error.message);
 }
 
-export const setupAbsoluteVote = async function (voteOnBehalf=NULL_ADDRESS, precReq=50 ) {
+export const setupAbsoluteVote = async function(voteOnBehalf = NULL_ADDRESS, precReq = 50 ) {
   var votingMachine = new VotingMachine();
   votingMachine.absoluteVote = await AbsoluteVote.new();
   // register some parameters
@@ -130,31 +130,31 @@ export const setupAbsoluteVote = async function (voteOnBehalf=NULL_ADDRESS, prec
   return votingMachine;
 };
 
-export const setupGenesisProtocol = async function (
+export const setupGenesisProtocol = async function(
   accounts,
   token,
   avatar,
   voteOnBehalf = NULL_ADDRESS,
-  _queuedVoteRequiredPercentage=50,
-  _queuedVotePeriodLimit=60,
-  _boostedVotePeriodLimit=60,
-  _preBoostedVotePeriodLimit =0,
-  _thresholdConst=2000,
-  _quietEndingPeriod=0,
-  _proposingRepReward=60,
-  _votersReputationLossRatio=10,
-  _minimumDaoBounty=15,
-  _daoBountyConst=10,
-  _activationTime=0
+  _queuedVoteRequiredPercentage = 50,
+  _queuedVotePeriodLimit = 60,
+  _boostedVotePeriodLimit = 60,
+  _preBoostedVotePeriodLimit = 0,
+  _thresholdConst = 2000,
+  _quietEndingPeriod = 0,
+  _proposingRepReward = 60,
+  _votersReputationLossRatio = 10,
+  _minimumDaoBounty = 15,
+  _daoBountyConst = 10,
+  _activationTime = 0
 ) {
   var votingMachine = new VotingMachine();
 
   votingMachine.genesisProtocol = await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
 
   // set up a reputation system
-  votingMachine.reputationArray = [20, 10, 70];
+  votingMachine.reputationArray = [ 20, 10, 70 ];
   // register some parameters
-  await votingMachine.genesisProtocol.setParameters([_queuedVoteRequiredPercentage,
+  await votingMachine.genesisProtocol.setParameters([ _queuedVoteRequiredPercentage,
     _queuedVotePeriodLimit,
     _boostedVotePeriodLimit,
     _preBoostedVotePeriodLimit,
@@ -164,8 +164,8 @@ export const setupGenesisProtocol = async function (
     _votersReputationLossRatio,
     _minimumDaoBounty,
     _daoBountyConst,
-    _activationTime], voteOnBehalf);
-  votingMachine.params = await votingMachine.genesisProtocol.getParametersHash([_queuedVoteRequiredPercentage,
+    _activationTime ], voteOnBehalf);
+  votingMachine.params = await votingMachine.genesisProtocol.getParametersHash([ _queuedVoteRequiredPercentage,
     _queuedVotePeriodLimit,
     _boostedVotePeriodLimit,
     _preBoostedVotePeriodLimit,
@@ -175,13 +175,13 @@ export const setupGenesisProtocol = async function (
     _votersReputationLossRatio,
     _minimumDaoBounty,
     _daoBountyConst,
-    _activationTime], voteOnBehalf);
+    _activationTime ], voteOnBehalf);
 
   return votingMachine;
 };
 
-export const setupOrganizationWithArrays = async function (
-  daoCreator, daoCreatorOwner, founderToken, founderReputation, cap=0
+export const setupOrganizationWithArrays = async function(
+  daoCreator, daoCreatorOwner, founderToken, founderReputation, cap = 0
 ) {
   var org = new Organization();
   var tx = await daoCreator.forgeOrg(
@@ -195,8 +195,8 @@ export const setupOrganizationWithArrays = async function (
     {gas: constants.ARC_GAS_LIMIT}
   );
   assert.equal(tx.logs.length, 1);
-  assert.equal(tx.logs[0].event, "NewOrg");
-  var avatarAddress = tx.logs[0].args._avatar;
+  assert.equal(tx.logs[ 0 ].event, "NewOrg");
+  var avatarAddress = tx.logs[ 0 ].args._avatar;
   org.avatar = await Avatar.at(avatarAddress);
   var tokenAddress = await org.avatar.nativeToken();
   org.token = await DAOToken.at(tokenAddress);
@@ -207,23 +207,23 @@ export const setupOrganizationWithArrays = async function (
   return org;
 };
 
-export const setupOrganization = async function (
-  daoCreator, daoCreatorOwner, founderToken, founderReputation, cap=0
+export const setupOrganization = async function(
+  daoCreator, daoCreatorOwner, founderToken, founderReputation, cap = 0
 ) {
   var org = new Organization();
   var tx = await daoCreator.forgeOrg(
     "testOrg",
     "TEST",
     "TST",
-    [daoCreatorOwner],
-    [founderToken],
-    [founderReputation],
+    [ daoCreatorOwner ],
+    [ founderToken ],
+    [ founderReputation ],
     cap,
     {gas: constants.ARC_GAS_LIMIT}
   );
   assert.equal(tx.logs.length, 1);
-  assert.equal(tx.logs[0].event, "NewOrg");
-  var avatarAddress = tx.logs[0].args._avatar;
+  assert.equal(tx.logs[ 0 ].event, "NewOrg");
+  var avatarAddress = tx.logs[ 0 ].args._avatar;
   org.avatar = await Avatar.at(avatarAddress);
   var tokenAddress = await org.avatar.nativeToken();
   org.token = await DAOToken.at(tokenAddress);
@@ -240,9 +240,9 @@ export const checkVoteInfo = async function(absoluteVote, proposalId, voterAddre
   voteInfo = await absoluteVote.voteInfo(proposalId, voterAddress);
   // voteInfo has the following structure
   // int256 vote;
-  assert.equal(voteInfo[0].toNumber(), _voteInfo[0]);
+  assert.equal(voteInfo[ 0 ].toNumber(), _voteInfo[ 0 ]);
   // uint256 reputation;
-  assert.equal(voteInfo[1].toNumber(), _voteInfo[1]);
+  assert.equal(voteInfo[ 1 ].toNumber(), _voteInfo[ 1 ]);
 };
 
 
@@ -251,7 +251,7 @@ export const checkVotesStatus = async function(proposalId, _votesStatus, votingM
   let voteStatus;
   for (var i = 0; i < _votesStatus.length; i++) {
     voteStatus = await votingMachine.voteStatus(proposalId, i);
-    assert.equal(voteStatus, _votesStatus[i]);
+    assert.equal(voteStatus, _votesStatus[ i ]);
   }
 };
 
@@ -259,10 +259,10 @@ export async function getProposalId(tx, contract, eventName) {
   var proposalId;
   await contract.getPastEvents(eventName, {
     fromBlock: tx.blockNumber,
-    toBlock: 'latest'
+    toBlock: "latest"
   })
     .then(function(events){
-      proposalId = events[0].args._proposalId;
+      proposalId = events[ 0 ].args._proposalId;
     });
   return proposalId;
 }
@@ -292,16 +292,16 @@ export const increaseTime = async function(duration) {
 
   return new Promise((resolve, reject) => {
     web3.currentProvider.sendAsync({
-      jsonrpc: '2.0',
-      method: 'evm_increaseTime',
-      params: [duration],
+      jsonrpc: "2.0",
+      method: "evm_increaseTime",
+      params: [ duration ],
       id: id,
     }, err1 => {
       if (err1) return reject(err1);
 
       web3.currentProvider.sendAsync({
-        jsonrpc: '2.0',
-        method: 'evm_mine',
+        jsonrpc: "2.0",
+        method: "evm_mine",
         id: id + 1,
       }, (err2, res) => {
         return err2 ? reject(err2) : resolve(res);
@@ -309,3 +309,95 @@ export const increaseTime = async function(duration) {
     });
   });
 };
+
+export const binaryToHex = function(binaryString) {
+  const lookup = {
+    '0000': '0',
+    '0001': '1',
+    '0010': '2',
+    '0011': '3',
+    '0100': '4',
+    '0101': '5',
+    '0110': '6',
+    '0111': '7',
+    '1000': '8',
+    '1001': '9',
+    '1010': 'a',
+    '1011': 'b',
+    '1100': 'c',
+    '1101': 'd',
+    '1110': 'e',
+    '1111': 'f',
+    '1010': 'A',
+    '1011': 'B',
+    '1100': 'C',
+    '1101': 'D',
+    '1110': 'E',
+    '1111': 'F'
+  };
+  var ret = '';
+  binaryString = binaryString.split(' ');
+  for (var i = 0; i < binaryString.length; i++) {
+    ret += lookup[binaryString[i]];
+  }
+  return ret;
+}
+
+export const hexToBinary = function(hexString) {
+  hexString = hexString.replace(/^0x+/, '');
+  const lookup = {
+    '0': '0000',
+    '1': '0001',
+    '2': '0010',
+    '3': '0011',
+    '4': '0100',
+    '5': '0101',
+    '6': '0110',
+    '7': '0111',
+    '8': '1000',
+    '9': '1001',
+    'a': '1010',
+    'b': '1011',
+    'c': '1100',
+    'd': '1101',
+    'e': '1110',
+    'f': '1111',
+    'A': '1010',
+    'B': '1011',
+    'C': '1100',
+    'D': '1101',
+    'E': '1110',
+    'F': '1111'
+  };
+
+  var ret = '';
+  for (var i = 0, len = hexString.length; i < len; i++) {
+    if (hexString[i] != '0')
+      ret += lookup[hexString[i]];
+  }
+  return ret;
+}
+
+// All 0: Not registered,
+// 1st bit: Flag if the scheme is registered,
+// 2nd bit: Scheme can register other schemes
+// 3rd bit: Scheme can add/remove global constraints
+// 4th bit: Scheme can upgrade the controller
+// 5th bit: Scheme can call genericCall on behalf of the organization avatar
+export const encodePermission = function(permissions) {
+  const canGenericCall = permissions.canGenericCall || false;
+  const canUpgrade = permissions.canUpgrade || false;
+  const canChangeConstraints = permissions.canChangeConstraints || false;
+  const canRegisterSchemes = permissions.canRegisterSchemes || false;
+  const permissionBytes = `000${canGenericCall ? 1 : 0} ${canUpgrade ? 1 : 0}${canChangeConstraints ? 1 : 0}${canRegisterSchemes ? 1 : 0}1`;
+  return "0x000000" + binaryToHex(permissionBytes);
+}
+export const decodePermission = function(permission) {
+  permission = hexToBinary(permission);
+  return {
+    canGenericCall: permission[3] == '1',
+    canUpgrade: permission[4] == '1',
+    canChangeConstraints: permission[5] == '1',
+    canRegisterSchemes: permission[6] == '1'
+  };
+}
