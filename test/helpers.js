@@ -16,20 +16,6 @@ export const SOME_HASH = "0x1000000000000000000000000000000000000000000000000000
 export const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 export const SOME_ADDRESS = "0x1000000000000000000000000000000000000000";
 
-export class TestSetup {
-  constructor() {
-  }
-}
-
-export class VotingMachine {
-  constructor() {
-  }
-}
-
-export class Organization {
-  constructor() {
-  }
-}
 
 export function getProposalAddress(tx) {
   // helper function that returns a proposal object from the ProposalCreated event
@@ -122,12 +108,11 @@ export function assertJump(error) {
 }
 
 export const setupAbsoluteVote = async function(voteOnBehalf = NULL_ADDRESS, precReq = 50 ) {
-  var votingMachine = new VotingMachine();
-  votingMachine.absoluteVote = await AbsoluteVote.new();
+  const absoluteVote = await AbsoluteVote.new();
   // register some parameters
-  await votingMachine.absoluteVote.setParameters( precReq, voteOnBehalf);
-  votingMachine.params = await votingMachine.absoluteVote.getParametersHash( precReq, voteOnBehalf);
-  return votingMachine;
+  absoluteVote.setParameters( precReq, voteOnBehalf);
+  const params = await absoluteVote.getParametersHash( precReq, voteOnBehalf);
+  return {absoluteVote, params};
 };
 
 export const setupGenesisProtocol = async function(
@@ -147,14 +132,12 @@ export const setupGenesisProtocol = async function(
   _daoBountyConst = 10,
   _activationTime = 0
 ) {
-  var votingMachine = new VotingMachine();
-
-  votingMachine.genesisProtocol = await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
+  const genesisProtocol = await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
 
   // set up a reputation system
-  votingMachine.reputationArray = [ 20, 10, 70 ];
+  const reputationArray = [ 20, 10, 70 ];
   // register some parameters
-  await votingMachine.genesisProtocol.setParameters([ _queuedVoteRequiredPercentage,
+  genesisProtocol.setParameters([ _queuedVoteRequiredPercentage,
     _queuedVotePeriodLimit,
     _boostedVotePeriodLimit,
     _preBoostedVotePeriodLimit,
@@ -165,7 +148,7 @@ export const setupGenesisProtocol = async function(
     _minimumDaoBounty,
     _daoBountyConst,
     _activationTime ], voteOnBehalf);
-  votingMachine.params = await votingMachine.genesisProtocol.getParametersHash([ _queuedVoteRequiredPercentage,
+  const params = await genesisProtocol.getParametersHash([ _queuedVoteRequiredPercentage,
     _queuedVotePeriodLimit,
     _boostedVotePeriodLimit,
     _preBoostedVotePeriodLimit,
@@ -177,13 +160,12 @@ export const setupGenesisProtocol = async function(
     _daoBountyConst,
     _activationTime ], voteOnBehalf);
 
-  return votingMachine;
+  return {genesisProtocol, reputationArray, params};
 };
 
 export const setupOrganizationWithArrays = async function(
   daoCreator, daoCreatorOwner, founderToken, founderReputation, cap = 0
 ) {
-  var org = new Organization();
   var tx = await daoCreator.forgeOrg(
     "testOrg",
     "TEST",
@@ -196,21 +178,16 @@ export const setupOrganizationWithArrays = async function(
   );
   assert.equal(tx.logs.length, 1);
   assert.equal(tx.logs[ 0 ].event, "NewOrg");
-  var avatarAddress = tx.logs[ 0 ].args._avatar;
-  org.avatar = await Avatar.at(avatarAddress);
-  var tokenAddress = await org.avatar.nativeToken();
-  org.token = await DAOToken.at(tokenAddress);
-  var reputationAddress = await org.avatar.nativeReputation();
-  org.reputation = await Reputation.at(reputationAddress);
-  var controllerAddress = await org.avatar.owner();
-  org.controller = await Controller.at(controllerAddress);
-  return org;
+  const avatar = await Avatar.at(tx.logs[ 0 ].args._avatar);
+  const token = await DAOToken.at(await avatar.nativeToken());
+  const reputation = await Reputation.at(await avatar.nativeReputation());
+  const controller = await Controller.at(await avatar.owner());
+  return {avatar, token, reputation, controller};
 };
 
 export const setupOrganization = async function(
   daoCreator, daoCreatorOwner, founderToken, founderReputation, cap = 0
 ) {
-  var org = new Organization();
   var tx = await daoCreator.forgeOrg(
     "testOrg",
     "TEST",
@@ -223,15 +200,11 @@ export const setupOrganization = async function(
   );
   assert.equal(tx.logs.length, 1);
   assert.equal(tx.logs[ 0 ].event, "NewOrg");
-  var avatarAddress = tx.logs[ 0 ].args._avatar;
-  org.avatar = await Avatar.at(avatarAddress);
-  var tokenAddress = await org.avatar.nativeToken();
-  org.token = await DAOToken.at(tokenAddress);
-  var reputationAddress = await org.avatar.nativeReputation();
-  org.reputation = await Reputation.at(reputationAddress);
-  var controllerAddress = await org.avatar.owner();
-  org.controller = await Controller.at(controllerAddress);
-  return org;
+  const avatar = await Avatar.at(tx.logs[ 0 ].args._avatar);
+  const token = await DAOToken.at(await avatar.nativeToken());
+  const reputation = await Reputation.at(await avatar.nativeReputation());
+  const controller = await Controller.at(await avatar.owner());
+  return { avatar, token, reputation, controller};
 };
 
 
@@ -244,7 +217,6 @@ export const checkVoteInfo = async function(absoluteVote, proposalId, voterAddre
   // uint256 reputation;
   assert.equal(voteInfo[ 1 ].toNumber(), _voteInfo[ 1 ]);
 };
-
 
 export const checkVotesStatus = async function(proposalId, _votesStatus, votingMachine){
 
@@ -267,23 +239,6 @@ export async function getProposalId(tx, contract, eventName) {
   return proposalId;
 }
 
-// export const increaseTime  = async function (addSeconds) {
-//     web3.currentProvider.sendAsync({
-//       jsonrpc: '2.0',
-//       method: 'evm_increaseTime',
-//       params: [addSeconds],
-//       id: new Date().getSeconds()
-//     }, (err) => {
-//       if (!err) {
-//         web3.currentProvider.send({
-//           jsonrpc: '2.0',
-//           method: 'evm_mine',
-//           params: [],
-//           id: new Date().getSeconds()
-//         });
-//       }
-//     });
-//   }
 // Increases testrpc time by the passed duration in seconds
 export const increaseTime = async function(duration) {
   const id = await Date.now();

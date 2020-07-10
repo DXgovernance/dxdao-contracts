@@ -44,44 +44,43 @@ const setupWalletSchemeParams = async function(
 const setup = async function(
   accounts, reputationAccount = 0, genesisProtocol = false, tokenAddress = 0
 ) {
-  var testSetup = new helpers.TestSetup();
-  testSetup.standardTokenMock = await ERC20Mock.new(accounts[ 1 ], 100);
-  testSetup.walletScheme = await WalletScheme.new();
+  const standardTokenMock = await ERC20Mock.new(accounts[ 1 ], 100);
+  const walletScheme = await WalletScheme.new();
   var controllerCreator = await DxControllerCreator.new({gas: constants.ARC_GAS_LIMIT});
   var daoTracker = await DAOTracker.new({gas: constants.ARC_GAS_LIMIT});
-  testSetup.daoCreator = await DaoCreator.new(
+  const daoCreator = await DaoCreator.new(
     controllerCreator.address, daoTracker.address, {gas: constants.ARC_GAS_LIMIT}
   );
-  testSetup.reputationArray = [ 20, 10, 70 ];
-
+  const reputationArray = [ 20, 10, 70 ];
+  let org;
   if (reputationAccount === 0) {
-    testSetup.org = await helpers.setupOrganizationWithArrays(
-      testSetup.daoCreator,
+    org = await helpers.setupOrganizationWithArrays(
+      daoCreator,
       [ accounts[ 0 ], accounts[ 1 ], accounts[ 2 ] ],
       [ 1000, 1000, 1000 ],
-      testSetup.reputationArray
+      reputationArray
     );
   } else {
-    testSetup.org = await helpers.setupOrganizationWithArrays(
-      testSetup.daoCreator,
+    org = await helpers.setupOrganizationWithArrays(
+      daoCreator,
       [ accounts[ 0 ],
         accounts[ 1 ],
         reputationAccount ],
       [ 1000, 1000, 1000 ],
-      testSetup.reputationArray
+      reputationArray
     );
   }
-  testSetup.walletSchemeParams = await setupWalletSchemeParams(
-    testSetup.walletScheme,
+  const walletSchemeParams = await setupWalletSchemeParams(
+    walletScheme,
     accounts,
     genesisProtocol,
     tokenAddress,
-    testSetup.org.avatar.address,
-    testSetup.org.controller.address
+    org.avatar.address,
+    org.controller.address
   );
-  await testSetup.daoCreator.setSchemes(
-    testSetup.org.avatar.address,
-    [ testSetup.walletScheme.address ],
+  await daoCreator.setSchemes(
+    org.avatar.address,
+    [ walletScheme.address ],
     [ helpers.NULL_HASH ],
     [ helpers.encodePermission({
       canGenericCall: true,
@@ -92,7 +91,7 @@ const setup = async function(
     "metaData"
   );
 
-  return testSetup;
+  return {standardTokenMock, walletScheme, daoCreator, reputationArray, org, walletSchemeParams};
 };
 
 const createCallToActionMock = async function(_sender, _actionMock) {
