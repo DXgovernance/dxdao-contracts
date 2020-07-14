@@ -1,5 +1,5 @@
 import * as helpers from "./helpers";
-const constants = require("./constants");
+const constants = require("./helpers/constants");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");

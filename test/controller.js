@@ -6,7 +6,7 @@ const DxToken   = artifacts.require("./DxToken.sol");
 const GlobalConstraintMock = artifacts.require("./test/GlobalConstraintMock.sol");
 const ActionMock = artifacts.require("./test/ActionMock.sol");
 const ERC20Mock = artifacts.require("./test/ERC20Mock.sol");
-var constants = require("../test/constants");
+var constants = require("./helpers/constants");
 
 var uint32 = require("uint32");
 let reputation, avatar, token, controller;
