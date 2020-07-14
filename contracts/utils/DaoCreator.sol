@@ -1,8 +1,6 @@
 pragma solidity 0.5.17;
 
 import "../dxdao/DxController.sol";
-import "../utils/DAOTracker.sol";
-
 
 /**
  * @title DxControllerCreator for creating a single controller.
@@ -28,13 +26,10 @@ contract DaoCreator {
     event InitialSchemesSet (address _avatar);
 
     DxControllerCreator private controllerCreator;
-    DAOTracker private daoTracker;
 
-    constructor(DxControllerCreator _controllerCreator, DAOTracker _daoTracker) public {
+    constructor(DxControllerCreator _controllerCreator) public {
         require(_controllerCreator != DxControllerCreator(0));
-        require(_daoTracker != DAOTracker(0));
         controllerCreator = _controllerCreator;
-        daoTracker = _daoTracker;
     }
 
     /**
@@ -189,9 +184,6 @@ contract DaoCreator {
         }
 
         DxController controller = DxController(controllerCreator.create(avatar));
-
-        // Add the DAO to the tracking registry
-        daoTracker.track(avatar, controller, "");
 
         // Transfer ownership:
         avatar.transferOwnership(address(controller));

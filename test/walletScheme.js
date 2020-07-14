@@ -47,9 +47,8 @@ const setup = async function(
   const standardTokenMock = await ERC20Mock.new(accounts[ 1 ], 100);
   const walletScheme = await WalletScheme.new();
   var controllerCreator = await DxControllerCreator.new({gas: constants.ARC_GAS_LIMIT});
-  var daoTracker = await DAOTracker.new({gas: constants.ARC_GAS_LIMIT});
   const daoCreator = await DaoCreator.new(
-    controllerCreator.address, daoTracker.address, {gas: constants.ARC_GAS_LIMIT}
+    controllerCreator.address, {gas: constants.ARC_GAS_LIMIT}
   );
   const reputationArray = [ 20, 10, 70 ];
   let org;

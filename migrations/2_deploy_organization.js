@@ -7,7 +7,6 @@ var ContributionReward = artifacts.require("ContributionReward.sol");
 var SchemeRegistrar = artifacts.require("SchemeRegistrar.sol");
 var GenesisProtocol = artifacts.require("GenesisProtocol.sol");
 var DxControllerCreator = artifacts.require("DxControllerCreator.sol");
-var DAOTracker = artifacts.require("DAOTracker.sol");
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 const DXD_TOKEN = "0xdd25bae0659fc06a8d00cd06c7f5a98d71bfb715";
 var moment = require("moment");
@@ -36,10 +35,8 @@ var accounts;
 // ContributionReward scheme that can only execute generic calls
 module.exports = async function(deployer) {
   deployer.deploy(DxControllerCreator, {gas: constants.ARC_GAS_LIMIT}).then(async function(){
-    await deployer.deploy(DAOTracker, {gas: constants.ARC_GAS_LIMIT});
-    var daoTracker = await DAOTracker.deployed();
     var controllerCreator = await DxControllerCreator.deployed();
-    await deployer.deploy(DaoCreator, controllerCreator.address, daoTracker.address, {gas: constants.ARC_GAS_LIMIT});
+    await deployer.deploy(DaoCreator, controllerCreator.address, {gas: constants.ARC_GAS_LIMIT});
     var daoCreatorInst = await DaoCreator.deployed(controllerCreator.address, {gas: constants.ARC_GAS_LIMIT});
       
     accounts = await web3.eth.getAccounts();

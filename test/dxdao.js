@@ -26,10 +26,8 @@ contract("DXdao", function(accounts) {
     const votingMachineToken = await ERC20Mock.new(accounts[ 0 ], 1000);
     const masterWalletScheme = await WalletScheme.new();
     const controllerCreator = await DxControllerCreator.new({gas: constants.ARC_GAS_LIMIT});
-    const daoTracker = await DAOTracker.new({gas: constants.ARC_GAS_LIMIT});
-
     const daoCreator = await DaoCreator.new(
-      controllerCreator.address, daoTracker.address, {gas: constants.ARC_GAS_LIMIT}
+      controllerCreator.address, {gas: constants.ARC_GAS_LIMIT}
     );
     const users = [ accounts[ 0 ], accounts[ 1 ], accounts[ 2 ] ];
     const usersTokens = [ 1000, 1000, 1000 ]
