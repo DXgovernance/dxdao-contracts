@@ -1,36 +1,49 @@
+const HDWalletProvider = require('truffle-hdwallet-provider')	
 require("babel-polyfill");
 require("babel-register")({
   "presets": [ "es2015" ],
   "plugins": [ "syntax-async-functions", "transform-regenerator" ]
 });
+require('dotenv').config();
+
+mnemonic = process.env.KEY_MNEMONIC;
+infuraApiKey = process.env.KEY_INFURA_API_KEY;
 
 module.exports = {
   networks: {
-    live: {
-      network_id: 1,
-      host: "localhost",
-      port: 8546,
-      gas: 4543760
+    mainnet: {	
+      provider: function () {	
+        return new HDWalletProvider(mnemonic, `https://mainnet.infura.io/v3/${infuraApiKey}`)	
+      },	
+      network_id: '1',	
+      gas: 9000000,	
+      gasPrice: 10000000000 //10 Gwei	
+    },	
+    rinkeby: {	
+      provider: function () {	
+        return new HDWalletProvider(mnemonic, `https://rinkeby.infura.io/v3/${infuraApiKey}`)	
+      },	
+      network_id: '4',	
+      gas: 9000000,	
+      gasPrice: 10000000000 //10 Gwei	
+    },	
+    ropsten: {	
+      provider: function () {	
+        return new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/${infuraApiKey}`)	
+      },	
+      network_id: '3',	
+      gas: 8000000,	
+      gasPrice: 10000000000 //10 Gwei	
+    },	
+    kovan: {	
+      provider: function () {	
+        return new HDWalletProvider(mnemonic, `https://kovan.infura.io/v3/${infuraApiKey}`)	
+      },	
+      network_id: '42',	
+      gas: 9000000,	
+      gasPrice: 10000000000 //10 Gwei	
     },
-    ropsten: {
-      network_id: 3,
-      host: "localhost",
-      port: 8545,
-      gas: 4543760
-    },
-    rinkeby: {
-      network_id: 4,
-      host: "localhost",
-      port: 8545,
-      gas: 4543760
-    },
-    kovan: {
-      network_id: 42,
-      host: "localhost",
-      port: 8545,
-      gas: 4543760
-    },
-    development: {
+    develop: {
       network_id: "*",
       host: "localhost",
       port: 8545,
