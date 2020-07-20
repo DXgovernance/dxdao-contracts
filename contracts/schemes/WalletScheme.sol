@@ -8,20 +8,20 @@ import "../votingMachines/VotingMachineCallbacks.sol";
 
 /**
  * @title WalletScheme.
- * @dev  A scheme for proposing and executing calls to any contract except itself and controller
+ * @dev  A scheme for proposing and executing calls to any contract except itself
  */
 contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     event NewCallProposal(
         address[] _to,
         bytes32 indexed _proposalId,
-        bytes[]   _callData,
+        bytes[] _callData,
         uint256[] _value,
-        string  _descriptionHash
+        string _descriptionHash
     );
 
     event ProposalExecuted(
         bytes32 indexed _proposalId,
-        bytes[] _genericCallReturnValue
+        bytes[] _genericCallReturnValues
     );
 
     event ProposalExecutedByVotingMachine(
@@ -29,15 +29,16 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         int256 _param
     );
 
-    event ProposalDeleted(bytes32 indexed _proposalId);
+    event ProposalFailed(bytes32 indexed _proposalId);
+
+    enum ProposalState { Submitted, Passed, Failed, Executed }
 
     // Details of a voting proposal:
     struct CallProposal {
         address[] to;
         bytes[] callData;
         uint256[] value;
-        bool exist;
-        bool passed;
+        ProposalState state;
     }
 
     mapping(bytes32=>CallProposal) public organizationProposals;
@@ -45,30 +46,30 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     IntVoteInterface public votingMachine;
     bytes32 public voteParams;
     Avatar public avatar;
-    address public controller;
+    address public toAddress;
 
     /**
      * @dev initialize
      * @param _avatar the avatar address
-     * @param _controller the controller address
      * @param _votingMachine the voting machines address to
      * @param _voteParams voting machine parameters.
+     * @param _toAddress The address to receive the calls,
+     *  if address 0x0 is used it means any address.
      */
     function initialize(
         Avatar _avatar,
-        address _controller,
         IntVoteInterface _votingMachine,
-        bytes32 _voteParams
+        bytes32 _voteParams,
+        address _toAddress
     )
     external
     {
         require(avatar == Avatar(0), "can be called only one time");
         require(_avatar != Avatar(0), "avatar cannot be zero");
-        require(_controller != address(0), "controller cannot be zero");
         avatar = _avatar;
-        controller = _controller;
         votingMachine = _votingMachine;
         voteParams = _voteParams;
+        toAddress = _toAddress;
     }
     
     /**
@@ -87,15 +88,14 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     onlyVotingMachine(_proposalId)
     returns(bool) {
         CallProposal storage proposal = organizationProposals[_proposalId];
-        require(proposal.exist, "must be a live proposal");
-        require(proposal.passed == false, "cannot execute twice");
+        require(proposal.state == ProposalState.Submitted, "must be a submitted proposal");
 
         if (_decision == 1) {
-            proposal.passed = true;
+            proposal.state = ProposalState.Passed;
             execute(_proposalId);
         } else {
-            delete organizationProposals[_proposalId];
-            emit ProposalDeleted(_proposalId);
+            proposal.state = ProposalState.Failed;
+            emit ProposalFailed(_proposalId);
         }
 
         emit ProposalExecutedByVotingMachine(_proposalId, _decision);
@@ -108,24 +108,27 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     */
     function execute(bytes32 _proposalId) public {
         CallProposal storage proposal = organizationProposals[_proposalId];
-        require(proposal.exist, "must be a live proposal");
-        require(proposal.passed, "proposal must passed by voting machine");
-        proposal.exist = false;
+        require(proposal.state == ProposalState.Passed, "proposal must passed by voting machine");
         bytes[] memory genericCallReturnValues = new bytes[](proposal.to.length);
         bytes memory genericCallReturnValue;
-        bool success;
+        bool callSuccess;
         for(uint i = 0; i < proposal.to.length; i ++) {
-          (success, genericCallReturnValue) =
-          address(proposal.to[i]).call.value(proposal.value[i])(proposal.callData[i]);
-          genericCallReturnValues[i] = genericCallReturnValue;
+            (callSuccess, genericCallReturnValue) = address(proposal.to[i])
+                .call.value(proposal.value[i])(proposal.callData[i]);
+            genericCallReturnValues[i] = genericCallReturnValue;
+            
+            // Check that first 4 bytes of call return dont equal default Error(string) signature
+            bytes4 genericCallReturnValueFirstBytes = bytes4(0);
+            if (genericCallReturnValue.length >= 4) {
+                assembly {
+                  genericCallReturnValueFirstBytes := mload(add(genericCallReturnValue, 4))
+                }
+            }
+            if (!callSuccess || genericCallReturnValueFirstBytes == 0x08c379a0)
+                break;
         }
-        if (success) {
-            delete organizationProposals[_proposalId];
-            emit ProposalDeleted(_proposalId);
-            emit ProposalExecuted(_proposalId, genericCallReturnValues);
-        } else {
-            proposal.exist = true;
-        }
+        emit ProposalExecuted(_proposalId, genericCallReturnValues);
+        organizationProposals[_proposalId].state = ProposalState.Executed;
     }
 
     /**
@@ -143,6 +146,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     {
         for(uint i = 0; i < _to.length; i ++) {
           require(_to[i] != address(this), 'invalid proposal caller');
+          if (toAddress != address(0))
+            require(_to[i] == toAddress, 'invalid proposal caller');
         }
         require(_to.length == _callData.length, 'invalid callData length');
         require(_to.length == _value.length, 'invalid _value length');
@@ -153,8 +158,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             to: _to,
             callData: _callData,
             value: _value,
-            exist: true,
-            passed: false
+            state: ProposalState.Submitted
         });
         proposalsInfo[address(votingMachine)][proposalId] = ProposalInfo({
             blockNumber: block.number,
@@ -169,14 +173,13 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     * @param proposalId the ID of the proposal
     */
     function getOrganizationProposal(bytes32 proposalId) public view 
-      returns (address[] memory to, bytes[] memory callData, uint256[] memory value, bool exist, bool passed)
+      returns (address[] memory to, bytes[] memory callData, uint256[] memory value, ProposalState state)
     {
       return (
         organizationProposals[proposalId].to,
         organizationProposals[proposalId].callData,
         organizationProposals[proposalId].value,
-        organizationProposals[proposalId].exist,
-        organizationProposals[proposalId].passed
+        organizationProposals[proposalId].state
       );
     }
     
