@@ -171,7 +171,6 @@ contract DaoCreator {
         Reputation nativeReputation = new Reputation();
         Avatar avatar = new Avatar(_orgName, nativeToken, nativeReputation);
 
-
         // Mint token and reputation for founders:
         for (uint256 i = 0; i < _founders.length; i++) {
             require(_founders[i] != address(0));
