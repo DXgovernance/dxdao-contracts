@@ -8,7 +8,7 @@ var SchemeRegistrar = artifacts.require("SchemeRegistrar.sol");
 var GenesisProtocol = artifacts.require("GenesisProtocol.sol");
 var DxControllerCreator = artifacts.require("DxControllerCreator.sol");
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-const DXD_TOKEN = "0xdd25bae0659fc06a8d00cd06c7f5a98d71bfb715";
+const GEN_TOKEN = "0x543Ff227F64Aa17eA132Bf9886cAb5DB55DCAddf";
 var moment = require("moment");
 const constants = require("../test/helpers/constants");
 const { encodePermission } = require("../test/helpers/permissions");
@@ -41,7 +41,7 @@ module.exports = async function(deployer) {
       initTokenInWei, initRepInWei, cap, {gas: constants.ARC_GAS_LIMIT});
     var DxAvatarInst = await DxAvatar.at(returnedParams.logs[ 0 ].args._avatar);
     var ContollerInst = await DxController.at(await DxAvatarInst.owner());
-    await deployer.deploy(GenesisProtocol, DXD_TOKEN, {gas: constants.ARC_GAS_LIMIT});
+    await deployer.deploy(GenesisProtocol, GEN_TOKEN, {gas: constants.ARC_GAS_LIMIT});
     // Deploy GenesisProtocol:
     var genesisProtocol = await GenesisProtocol.deployed();
     
@@ -75,13 +75,13 @@ module.exports = async function(deployer) {
       quietEndingPeriod: moment.duration(1, 'days').asSeconds(), 
       proposingRepReward: 0, 
       votersReputationLossRatio: 0, 
-      minimumDaoBounty: web3.utils.toWei("0.002"),
+      minimumDaoBounty: web3.utils.toWei("200"),
       daoBountyConst: 2, 
       activationTime: moment().add(10, 'min').unix(),
       voteOnBehalf: NULL_ADDRESS
     });
     await masterWalletScheme.initialize(
-      DxAvatarInst.address, ContollerInst.address, genesisProtocol.address, masterWalletSchemeParamsHash
+      DxAvatarInst.address, genesisProtocol.address, masterWalletSchemeParamsHash, ContollerInst.address
     );
     
     // Deploy QuickWalletScheme:
@@ -96,13 +96,13 @@ module.exports = async function(deployer) {
       quietEndingPeriod: moment.duration(0.5, 'days').asSeconds(), 
       proposingRepReward: 0, 
       votersReputationLossRatio: 0, 
-      minimumDaoBounty: web3.utils.toWei("0.001"),
+      minimumDaoBounty: web3.utils.toWei("100"),
       daoBountyConst: 2, 
       activationTime: moment().add(10, 'min').unix(),
       voteOnBehalf: NULL_ADDRESS
     });
     await quickWalletScheme.initialize(
-      DxAvatarInst.address, ContollerInst.address, genesisProtocol.address, quickWalletSchemeParamsHash
+      DxAvatarInst.address, genesisProtocol.address, quickWalletSchemeParamsHash, NULL_ADDRESS
     );
     
     // Deploy ContributionReward:
@@ -117,7 +117,7 @@ module.exports = async function(deployer) {
       quietEndingPeriod: moment.duration(2, 'days').asSeconds(), 
       proposingRepReward: 0, 
       votersReputationLossRatio: 0, 
-      minimumDaoBounty: web3.utils.toWei("0.001"),
+      minimumDaoBounty: web3.utils.toWei("100"),
       daoBountyConst: 2, 
       activationTime: moment().add(10, 'min').unix(),
       voteOnBehalf: NULL_ADDRESS
@@ -135,7 +135,7 @@ module.exports = async function(deployer) {
       quietEndingPeriod: moment.duration(1, 'days').asSeconds(),
       proposingRepReward: 0,
       votersReputationLossRatio: 0,
-      minimumDaoBounty: web3.utils.toWei("0.002"),
+      minimumDaoBounty: web3.utils.toWei("100"),
       daoBountyConst: 2,
       activationTime: moment().add(10, 'min').unix(),
       voteOnBehalf: NULL_ADDRESS
