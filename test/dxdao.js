@@ -8,7 +8,6 @@ const DxToken = artifacts.require("./DxToken.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
-const DAOTracker = artifacts.require("./DAOTracker.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
@@ -101,9 +100,9 @@ contract("DXdao", function(accounts) {
     
     await masterWalletScheme.initialize(
       avatar.address,
-      controller.address,
-      votingMachine.genesisProtocol.address,
+      votingMachine.address,
       votingMachine.params,
+      controller.address
     );
     
     await daoCreator.setSchemes(

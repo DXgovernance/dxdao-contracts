@@ -41,5 +41,4 @@ else
 fi
 
 npx truffle version
-npx truffle compile
-npx truffle test
+npx truffle test $1

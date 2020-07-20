@@ -8,8 +8,35 @@ const DAOToken = artifacts.require("./DAOToken.sol");
 const Reputation = artifacts.require("./Reputation.sol");
 const AbsoluteVote = artifacts.require("./AbsoluteVote.sol");
 const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
+const WalletScheme = artifacts.require("./WalletScheme.sol");
 const constants = require("./constants");
 const { encodePermission, decodePermission } = require("./permissions");
+const { encodeGenericCallData } = require("./walletScheme");
+const EthDecoder = require("@maticnetwork/eth-decoder")
+
+export const logDecoder = new EthDecoder.default.LogDecoder(
+  [
+    Avatar.abi,
+    Controller.abi,
+    DAOToken.abi,
+    Reputation.abi,
+    AbsoluteVote.abi,
+    GenesisProtocol.abi,
+    WalletScheme.abi
+  ]
+);
+
+export const txDecoder = new EthDecoder.default.TxDecoder(
+  [
+    Avatar.abi,
+    Controller.abi,
+    DAOToken.abi,
+    Reputation.abi,
+    AbsoluteVote.abi,
+    GenesisProtocol.abi,
+    WalletScheme.abi
+  ]
+);
 
 export const MAX_UINT_256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 export const NULL_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -113,7 +140,7 @@ export const setupAbsoluteVote = async function(voteOnBehalf = NULL_ADDRESS, pre
   // register some parameters
   absoluteVote.setParameters( precReq, voteOnBehalf);
   const params = await absoluteVote.getParametersHash( precReq, voteOnBehalf);
-  return {absoluteVote, params};
+  return { address: absoluteVote.address, contract: absoluteVote, params };
 };
 
 export const setupGenesisProtocol = async function(
@@ -161,7 +188,7 @@ export const setupGenesisProtocol = async function(
     _daoBountyConst,
     _activationTime ], voteOnBehalf);
 
-  return {genesisProtocol, reputationArray, params};
+  return {address: genesisProtocol.address, contract: genesisProtocol, reputationArray, params};
 };
 
 export const setupOrganizationWithArrays = async function(
@@ -266,4 +293,4 @@ export const increaseTime = async function(duration) {
   });
 };
 
-export { encodePermission, decodePermission };
+export { encodePermission, decodePermission, encodeGenericCallData };
