@@ -21,7 +21,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
 
     event ProposalExecuted(
         bytes32 indexed _proposalId,
-        bytes[] _genericCallReturnValues
+        bool[] _callsSucessResult,
+        bytes[] _callsDataResult
     );
 
     event ProposalExecutedByVotingMachine(
@@ -92,7 +93,6 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
 
         if (_decision == 1) {
             proposal.state = ProposalState.Passed;
-            execute(_proposalId);
         } else {
             proposal.state = ProposalState.Failed;
             emit ProposalFailed(_proposalId);
@@ -109,25 +109,26 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     function execute(bytes32 _proposalId) public {
         CallProposal storage proposal = organizationProposals[_proposalId];
         require(proposal.state == ProposalState.Passed, "proposal must passed by voting machine");
-        bytes[] memory genericCallReturnValues = new bytes[](proposal.to.length);
-        bytes memory genericCallReturnValue;
+        bytes[] memory callsDataResult = new bytes[](proposal.to.length);
+        bool[] memory callsSucessResult = new bool[](proposal.to.length);
+        bytes memory callDataResult;
         bool callSuccess;
         for(uint i = 0; i < proposal.to.length; i ++) {
-            (callSuccess, genericCallReturnValue) = address(proposal.to[i])
+            (callSuccess, callDataResult) = address(proposal.to[i])
                 .call.value(proposal.value[i])(proposal.callData[i]);
-            genericCallReturnValues[i] = genericCallReturnValue;
-            
+            callsDataResult[i] = callDataResult;
+            callsSucessResult[i] = callSuccess;
             // Check that first 4 bytes of call return dont equal default Error(string) signature
-            bytes4 genericCallReturnValueFirstBytes = bytes4(0);
-            if (genericCallReturnValue.length >= 4) {
+            bytes4 callDataResultSignature = bytes4(0);
+            if (callDataResult.length >= 4) {
                 assembly {
-                  genericCallReturnValueFirstBytes := mload(add(genericCallReturnValue, 4))
+                  callDataResultSignature := mload(add(callDataResult, 4))
                 }
             }
-            if (!callSuccess || genericCallReturnValueFirstBytes == 0x08c379a0)
+            if (!callSuccess || callDataResultSignature == 0x08c379a0)
                 break;
         }
-        emit ProposalExecuted(_proposalId, genericCallReturnValues);
+        emit ProposalExecuted(_proposalId, callsSucessResult, callsDataResult);
         organizationProposals[_proposalId].state = ProposalState.Executed;
     }
 

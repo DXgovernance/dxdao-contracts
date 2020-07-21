@@ -107,6 +107,13 @@ contract("WalletScheme", function(accounts) {
           proposalId, 2, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
         
+        try {
+          await quickWalletScheme.execute(proposalId);
+          assert(false, "cannot execute if failed");
+        } catch(error) {
+          helpers.assertVMException(error);
+        }
+        
         const organizationProposal = await walletScheme.getOrganizationProposal(proposalId);
         assert.equal(organizationProposal.state, ProposalState.failed);
         assert.equal(organizationProposal.callData[0], genericCallData);
@@ -127,6 +134,7 @@ contract("WalletScheme", function(accounts) {
         await votingMachine.contract.vote(
           proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
+        await walletScheme.execute(proposalId);
         
         const organizationProposal = await walletScheme.getOrganizationProposal(proposalId);
         assert.equal(organizationProposal.state, ProposalState.executed);
@@ -163,6 +171,7 @@ contract("WalletScheme", function(accounts) {
         await votingMachine.contract.vote(
           proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
+        await walletScheme.execute(proposalId);
         assert.equal(await web3.eth.getBalance(org.avatar.address), 0);
         assert.equal(await web3.eth.getBalance(wallet.address), 0);
         assert.equal(await web3.eth.getBalance(accounts[1]), Number(balanceBeforePay) + TEST_VALUE);
@@ -187,12 +196,12 @@ contract("WalletScheme", function(accounts) {
           [org.controller.address], [genericCallData], [0], TEST_HASH
         );
         const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-        tx = await votingMachine.contract.vote(
+        await votingMachine.contract.vote(
           proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
-
+        tx = await walletScheme.execute(proposalId);
         const returnValue = web3.eth.abi.decodeParameters(['bool', 'bytes'], 
-          helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[4].values._genericCallReturnValues[0]
+          helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[1].values._callsDataResult[0]
         );
         assert.equal(decodeGenericCallError(returnValue['1']), "the caller must be equal to _addr");
         
@@ -213,12 +222,13 @@ contract("WalletScheme", function(accounts) {
           [org.controller.address], [genericCallData], [0], TEST_HASH
         );
         const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-        tx = await votingMachine.contract.vote(
+        await votingMachine.contract.vote(
           proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
+        tx = await walletScheme.execute(proposalId);
         
         const returnValue = web3.eth.abi.decodeParameters(['bool', 'bytes'], 
-          helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[4].values._genericCallReturnValues[0]
+          helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[1].values._callsDataResult[0]
         );
         assert.equal(returnValue['0'], true);
         assert.equal(returnValue['1'], null);
@@ -247,26 +257,24 @@ contract("WalletScheme", function(accounts) {
         var tx = await walletScheme.proposeCalls(
           [org.controller.address], [callDataMintRep], [0], helpers.NULL_HASH
         );
-        const proposalIdAddScheme = await helpers.getValueFromLogs(tx, "_proposalId");
+        const proposalIdMintRep = await helpers.getValueFromLogs(tx, "_proposalId");
         tx = await walletScheme.proposeCalls(
           [org.controller.address], [callDataBurnRep], [0], helpers.NULL_HASH
         );
-        const proposalIdRemoveScheme = await helpers.getValueFromLogs(tx, "_proposalId");
+        const proposalIdBurnRep = await helpers.getValueFromLogs(tx, "_proposalId");
 
         // Mint Rep
         tx = await votingMachine.contract.vote(
-          proposalIdAddScheme, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
+          proposalIdMintRep, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
-        assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[6].event, "ProposalExecutedByVotingMachine");
-        assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[6].args._param, 1);
+        await walletScheme.execute(proposalIdMintRep);
         assert.equal(await org.reputation.balanceOf(accounts[4]), TEST_VALUE);
 
         // Burn Rep
         tx = await votingMachine.contract.vote(
-          proposalIdRemoveScheme, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
+          proposalIdBurnRep, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
-        assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[6].event, "ProposalExecutedByVotingMachine");
-        assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[6].args._param, 1);
+        await walletScheme.execute(proposalIdBurnRep);
         assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
 
       });
@@ -294,22 +302,20 @@ contract("WalletScheme", function(accounts) {
         const proposalIdRemoveScheme = await helpers.getValueFromLogs(tx, "_proposalId");
 
         // Add Scheme
-        tx = await votingMachine.contract.vote(
+        await votingMachine.contract.vote(
           proposalIdAddScheme, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
-        assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[5].event, "ProposalExecutedByVotingMachine");
-        assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[5].args._param, 1);
+        await walletScheme.execute(proposalIdAddScheme);
         
         const addedScheme = await org.controller.schemes(helpers.SOME_ADDRESS);
         assert.equal(addedScheme.paramsHash, TEST_HASH);
         assert.equal(addedScheme.permissions, "0x0000000f");
         
         // Remove Scheme
-        tx = await votingMachine.contract.vote(
+        await votingMachine.contract.vote(
           proposalIdRemoveScheme, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
-        assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[5].event, "ProposalExecutedByVotingMachine");
-        assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[5].args._param, 1);
+        await walletScheme.execute(proposalIdRemoveScheme);
         
         const removedScheme = await org.controller.schemes(helpers.SOME_ADDRESS);
         assert.equal(removedScheme.paramsHash, helpers.NULL_HASH);
@@ -371,6 +377,7 @@ contract("WalletScheme", function(accounts) {
       await votingMachine.contract.vote(
         proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
       );
+      await walletScheme.execute(proposalId);
       assert.equal(await web3.eth.getBalance(org.avatar.address), 0);
       assert.equal(await web3.eth.getBalance(wallet.address), 0);
       assert.equal(await web3.eth.getBalance(accounts[1]), Number(balanceBeforePay) + TEST_VALUE);
@@ -419,6 +426,12 @@ contract("WalletScheme", function(accounts) {
         await votingMachine.contract.vote(
           proposalId, 2, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
+        try {
+          await quickWalletScheme.execute(proposalId);
+          assert(false, "cannot execute if failed");
+        } catch(error) {
+          helpers.assertVMException(error);
+        }
         
         const organizationProposal = await quickWalletScheme.getOrganizationProposal(proposalId);
         assert.equal(organizationProposal.state, ProposalState.failed);
@@ -437,6 +450,7 @@ contract("WalletScheme", function(accounts) {
         await votingMachine.contract.vote(
           proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
+        await quickWalletScheme.execute(proposalId);
         
         const organizationProposal = await quickWalletScheme.getOrganizationProposal(proposalId);
         assert.equal(organizationProposal.state, ProposalState.executed);
@@ -467,6 +481,7 @@ contract("WalletScheme", function(accounts) {
         await votingMachine.contract.vote(
           proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
+        await quickWalletScheme.execute(proposalId);
         assert.equal(await web3.eth.getBalance(quickWalletScheme.address), 0);
         assert.equal(await web3.eth.getBalance(wallet.address), 0);
         assert.equal(await web3.eth.getBalance(accounts[1]), Number(balanceBeforePay) + TEST_VALUE);
@@ -488,11 +503,12 @@ contract("WalletScheme", function(accounts) {
           [actionMock.address], [callData], [0], TEST_HASH
         );
         const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-        tx = await votingMachine.contract.vote(
+        await votingMachine.contract.vote(
           proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2], gas: 600000}
         );
+        tx = await quickWalletScheme.execute(proposalId);
 
-        const returnValue = helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[3].values._genericCallReturnValues[0];
+        const returnValue = helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[0].values._callsDataResult[0];
         assert.equal(decodeGenericCallError(returnValue), "the caller must be equal to _addr");
         
         const organizationProposal = await quickWalletScheme.getOrganizationProposal(proposalId);
@@ -509,11 +525,12 @@ contract("WalletScheme", function(accounts) {
           [actionMock.address], [callData], [0], TEST_HASH
         );
         const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-        tx = await votingMachine.contract.vote(
+        await votingMachine.contract.vote(
           proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
+        tx = await quickWalletScheme.execute(proposalId);
         
-        const returnValues = helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[3].values._genericCallReturnValues[0];
+        const returnValues = helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[0].values._callsDataResult[0];
         assert.equal(returnValues, '0x');
         
         const organizationProposal = await quickWalletScheme.getOrganizationProposal(proposalId);
@@ -540,26 +557,24 @@ contract("WalletScheme", function(accounts) {
         var tx = await quickWalletScheme.proposeCalls(
           [org.controller.address], [callDataMintRep], [0], helpers.NULL_HASH
         );
-        const proposalIdAddScheme = await helpers.getValueFromLogs(tx, "_proposalId");
+        const proposalIdMintRep = await helpers.getValueFromLogs(tx, "_proposalId");
         tx = await quickWalletScheme.proposeCalls(
           [org.controller.address], [callDataBurnRep], [0], helpers.NULL_HASH
         );
-        const proposalIdRemoveScheme = await helpers.getValueFromLogs(tx, "_proposalId");
+        const proposalIdBurnRep = await helpers.getValueFromLogs(tx, "_proposalId");
 
         // Mint Rep
-        tx = await votingMachine.contract.vote(
-          proposalIdAddScheme, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
+        await votingMachine.contract.vote(
+          proposalIdMintRep, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
-        assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[6].event, "ProposalExecutedByVotingMachine");
-        assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[6].args._param, 1);
+        await quickWalletScheme.execute(proposalIdMintRep);
         assert.equal(await org.reputation.balanceOf(accounts[4]), TEST_VALUE);
 
         // Burn Rep
-        tx = await votingMachine.contract.vote(
-          proposalIdRemoveScheme, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
+        await votingMachine.contract.vote(
+          proposalIdBurnRep, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
-        assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[6].event, "ProposalExecutedByVotingMachine");
-        assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[6].args._param, 1);
+        await quickWalletScheme.execute(proposalIdBurnRep);
         assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
 
       });
@@ -590,7 +605,8 @@ contract("WalletScheme", function(accounts) {
         tx = await votingMachine.contract.vote(
           proposalIdAddScheme, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
-        let returnValue = helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[3].values._genericCallReturnValues[0];
+        tx = await quickWalletScheme.execute(proposalIdAddScheme);
+        let returnValue = helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[0].values._callsDataResult[0];
         assert.equal(returnValue, '0x');
         
         const addedScheme = await org.controller.schemes(helpers.SOME_ADDRESS);
@@ -598,10 +614,11 @@ contract("WalletScheme", function(accounts) {
         assert.equal(addedScheme.permissions, "0x00000000");
         
         // Remove Scheme
-        tx = await votingMachine.contract.vote(
+        await votingMachine.contract.vote(
           proposalIdRemoveScheme, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
         );
-        returnValue = helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[3].values._genericCallReturnValues[0];
+        tx = await quickWalletScheme.execute(proposalIdRemoveScheme);
+        returnValue = helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[0].values._callsDataResult[0];
         assert.equal(returnValue, '0x');
         
         const removedScheme = await org.controller.schemes(walletScheme.address);
@@ -628,7 +645,7 @@ contract("WalletScheme", function(accounts) {
     it("positive decision - proposal executed with transfer, pay and mint rep", async function() {
       var wallet = await Wallet.new();
       await web3.eth.sendTransaction({
-        from: accounts[0], to: quickWalletScheme.address, value: TEST_VALUE
+        from: accounts[0], to: quickWalletScheme.address, value: 100000000
       });
       await wallet.transferOwnership(quickWalletScheme.address);
       
@@ -639,15 +656,15 @@ contract("WalletScheme", function(accounts) {
         org.avatar.address
       ).encodeABI();
       
-      const tx = await quickWalletScheme.proposeCalls(
-        [actionMock.address, actionMock.address, org.controller.address],
+      let tx = await quickWalletScheme.proposeCalls(
+        [wallet.address, wallet.address, org.controller.address],
         ["0x0", payCallData, callDataMintRep],
         [TEST_VALUE, 0, 0],
         TEST_HASH
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
       assert.equal(await helpers.getValueFromLogs(tx, "_descriptionHash"), TEST_HASH);
-      assert.equal(await web3.eth.getBalance(quickWalletScheme.address), TEST_VALUE);
+      assert.equal(await web3.eth.getBalance(quickWalletScheme.address), 100000000);
       assert.equal(await web3.eth.getBalance(wallet.address), 0);
       assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
 
@@ -655,18 +672,30 @@ contract("WalletScheme", function(accounts) {
       await votingMachine.contract.vote(
         proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
       );
+      tx = await quickWalletScheme.execute(proposalId);
+
+      assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[3].values._callsSucessResult[0], true);
+      assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[3].values._callsSucessResult[1], true);
+      assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[3].values._callsSucessResult[2], true);
+      assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[3].values._callsDataResult[0], '0x');
+      assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[3].values._callsDataResult[1], '0x');
+      assert.equal(
+        helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[3].values._callsDataResult[2], 
+        '0x0000000000000000000000000000000000000000000000000000000000000001'
+      );
+      
       assert.equal(await web3.eth.getBalance(org.avatar.address), 0);
       assert.equal(await web3.eth.getBalance(wallet.address), 0);
       assert.equal(await web3.eth.getBalance(accounts[1]), Number(balanceBeforePay) + TEST_VALUE);
-      // assert.equal(await org.reputation.balanceOf(accounts[4]), TEST_VALUE);
+      assert.equal(await org.reputation.balanceOf(accounts[4]), TEST_VALUE);
       
       const organizationProposal = await quickWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(organizationProposal.state, ProposalState.executed);
       assert.equal(organizationProposal.callData[0], "0x00");
-      assert.equal(organizationProposal.to[0], actionMock.address);
+      assert.equal(organizationProposal.to[0], wallet.address);
       assert.equal(organizationProposal.value[0], TEST_VALUE);
       assert.equal(organizationProposal.callData[1], payCallData);
-      assert.equal(organizationProposal.to[1], actionMock.address);
+      assert.equal(organizationProposal.to[1], wallet.address);
       assert.equal(organizationProposal.value[1], 0);
       assert.equal(organizationProposal.callData[2], callDataMintRep);
       assert.equal(organizationProposal.to[2], org.controller.address);
