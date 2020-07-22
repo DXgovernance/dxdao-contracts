@@ -13,7 +13,7 @@ const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
 
 const setup = async function( accounts ) {
-  };
+};
 
 const createCallToActionMock = async function(_sender, _actionMock) {
   return await new web3.eth.Contract(_actionMock.abi).methods.test2(_sender).encodeABI();
@@ -29,7 +29,7 @@ contract("DXdao", function(accounts) {
       controllerCreator.address, {gas: constants.ARC_GAS_LIMIT}
     );
     const users = [ accounts[ 0 ], accounts[ 1 ], accounts[ 2 ] ];
-    const usersTokens = [ 1000, 1000, 1000 ]
+    const usersTokens = [ 1000, 1000, 1000 ];
     const usersRep = [ 20, 10, 70 ];
     
     var tx = await daoCreator.forgeOrg(
@@ -81,8 +81,7 @@ contract("DXdao", function(accounts) {
       _minimumDaoBounty,
       _daoBountyConst,
       _activationTime 
-    ], voteOnBehalf
-    );
+    ], voteOnBehalf);
     const params = await genesisProtocol.getParametersHash([
       _queuedVoteRequiredPercentage,
       _queuedVotePeriodLimit,
@@ -95,8 +94,7 @@ contract("DXdao", function(accounts) {
       _minimumDaoBounty,
       _daoBountyConst,
       _activationTime
-    ], voteOnBehalf
-    );
+    ], voteOnBehalf);
     
     await masterWalletScheme.initialize(
       avatar.address,

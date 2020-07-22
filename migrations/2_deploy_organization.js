@@ -68,16 +68,16 @@ module.exports = async function(deployer) {
     var masterWalletScheme = await WalletScheme.deployed();
     var masterWalletSchemeParamsHash = await encodeParameters({
       queuedVoteRequiredPercentage: 50, 
-      queuedVotePeriodLimit: moment.duration(2, 'days').asSeconds(), 
-      boostedVotePeriodLimit: moment.duration(0.5, 'days').asSeconds(), 
-      preBoostedVotePeriodLimit: moment.duration(0.5, 'days').asSeconds(), 
+      queuedVotePeriodLimit: moment.duration(2, "days").asSeconds(), 
+      boostedVotePeriodLimit: moment.duration(0.5, "days").asSeconds(), 
+      preBoostedVotePeriodLimit: moment.duration(0.5, "days").asSeconds(), 
       thresholdConst: 2, 
-      quietEndingPeriod: moment.duration(1, 'days').asSeconds(), 
+      quietEndingPeriod: moment.duration(1, "days").asSeconds(), 
       proposingRepReward: 0, 
       votersReputationLossRatio: 0, 
       minimumDaoBounty: web3.utils.toWei("200"),
       daoBountyConst: 2, 
-      activationTime: moment().add(10, 'min').unix(),
+      activationTime: moment().add(10, "min").unix(),
       voteOnBehalf: NULL_ADDRESS
     });
     await masterWalletScheme.initialize(
@@ -89,16 +89,16 @@ module.exports = async function(deployer) {
     var quickWalletScheme = await WalletScheme.deployed();
     var quickWalletSchemeParamsHash = await encodeParameters({
       queuedVoteRequiredPercentage: 40, 
-      queuedVotePeriodLimit: moment.duration(1, 'days').asSeconds(), 
-      boostedVotePeriodLimit: moment.duration(0.25, 'days').asSeconds(), 
-      preBoostedVotePeriodLimit: moment.duration(0.25, 'days').asSeconds(), 
+      queuedVotePeriodLimit: moment.duration(1, "days").asSeconds(), 
+      boostedVotePeriodLimit: moment.duration(0.25, "days").asSeconds(), 
+      preBoostedVotePeriodLimit: moment.duration(0.25, "days").asSeconds(), 
       thresholdConst: 2, 
-      quietEndingPeriod: moment.duration(0.5, 'days').asSeconds(), 
+      quietEndingPeriod: moment.duration(0.5, "days").asSeconds(), 
       proposingRepReward: 0, 
       votersReputationLossRatio: 0, 
       minimumDaoBounty: web3.utils.toWei("100"),
       daoBountyConst: 2, 
-      activationTime: moment().add(10, 'min').unix(),
+      activationTime: moment().add(10, "min").unix(),
       voteOnBehalf: NULL_ADDRESS
     });
     await quickWalletScheme.initialize(
@@ -110,16 +110,16 @@ module.exports = async function(deployer) {
     var contributionsReward = await ContributionReward.deployed();
     var contributionsRewardParamsHash = await encodeParameters({
       queuedVoteRequiredPercentage: 50, 
-      queuedVotePeriodLimit: moment.duration(1, 'days').asSeconds(), 
-      boostedVotePeriodLimit: moment.duration(0.25, 'days').asSeconds(), 
-      preBoostedVotePeriodLimit: moment.duration(0.25, 'days').asSeconds(), 
+      queuedVotePeriodLimit: moment.duration(1, "days").asSeconds(), 
+      boostedVotePeriodLimit: moment.duration(0.25, "days").asSeconds(), 
+      preBoostedVotePeriodLimit: moment.duration(0.25, "days").asSeconds(), 
       thresholdConst: 2, 
-      quietEndingPeriod: moment.duration(2, 'days').asSeconds(), 
+      quietEndingPeriod: moment.duration(2, "days").asSeconds(), 
       proposingRepReward: 0, 
       votersReputationLossRatio: 0, 
       minimumDaoBounty: web3.utils.toWei("100"),
       daoBountyConst: 2, 
-      activationTime: moment().add(10, 'min').unix(),
+      activationTime: moment().add(10, "min").unix(),
       voteOnBehalf: NULL_ADDRESS
     });
     
@@ -128,16 +128,16 @@ module.exports = async function(deployer) {
     var schemeRegistrar = await SchemeRegistrar.deployed();
     var schemeRegistrarParamsHash = await encodeParameters({
       queuedVoteRequiredPercentage: 50,
-      queuedVotePeriodLimit: moment.duration(2, 'days').asSeconds(),
-      boostedVotePeriodLimit: moment.duration(0.5, 'days').asSeconds(),
-      preBoostedVotePeriodLimit: moment.duration(0.5, 'days').asSeconds(),
+      queuedVotePeriodLimit: moment.duration(2, "days").asSeconds(),
+      boostedVotePeriodLimit: moment.duration(0.5, "days").asSeconds(),
+      preBoostedVotePeriodLimit: moment.duration(0.5, "days").asSeconds(),
       thresholdConst: 2,
-      quietEndingPeriod: moment.duration(1, 'days').asSeconds(),
+      quietEndingPeriod: moment.duration(1, "days").asSeconds(),
       proposingRepReward: 0,
       votersReputationLossRatio: 0,
       minimumDaoBounty: web3.utils.toWei("100"),
       daoBountyConst: 2,
-      activationTime: moment().add(10, 'min').unix(),
+      activationTime: moment().add(10, "min").unix(),
       voteOnBehalf: NULL_ADDRESS
     });
 

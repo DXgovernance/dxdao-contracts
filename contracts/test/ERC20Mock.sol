@@ -9,4 +9,9 @@ contract ERC20Mock is ERC20 {
     constructor(address initialAccount, uint256 initialBalance) public {
         _mint(initialAccount, initialBalance);
     }
+
+    function mint(address to, uint256 value) public{
+        _mint(to, value);
+    }
+
 }

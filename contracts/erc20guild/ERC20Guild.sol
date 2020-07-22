@@ -93,7 +93,7 @@ contract ERC20Guild {
     /// @param _description A short description of the proposal
     /// @param _contentHash The content hash of the content reference of the proposal
     /// @param _extraTime The extra time to be added to the minimumProposalTime
-    /// for teh proposal to be executed
+    /// for the proposal to be executed
     function createProposal(
         address[] memory _to,
         bytes[] memory _data,
@@ -144,6 +144,7 @@ contract ERC20Guild {
             require(success, "ERC20Guild: Proposal call failed");
         }
         
+        proposals[proposalId].executed = true;
         emit ProposalExecuted(proposalId);
     }
     
@@ -153,16 +154,16 @@ contract ERC20Guild {
     function setVote(bytes32 proposalId, uint256 tokens) public isInitialized {
         require(!proposals[proposalId].executed, "ERC20Guild: Proposal already executed");
         require(votesOf(msg.sender) >=  tokens, "ERC20Guild: Invalid tokens amount");
-        
+
         if (tokens > proposals[proposalId].tokens[msg.sender]) {
-            proposals[proposalId].totalTokens.add(
+            proposals[proposalId].totalTokens = proposals[proposalId].totalTokens.add(
                 tokens.sub(proposals[proposalId].tokens[msg.sender])
             );
             emit VoteAdded(
                 proposalId, msg.sender, tokens.sub(proposals[proposalId].tokens[msg.sender])
             );
         } else {
-            proposals[proposalId].totalTokens.sub(
+            proposals[proposalId].totalTokens = proposals[proposalId].totalTokens.sub(
                 proposals[proposalId].tokens[msg.sender].sub(tokens)
             );
             emit VoteRemoved(
