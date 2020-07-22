@@ -21,13 +21,6 @@ contract("WalletScheme", function(accounts) {
   const TEST_VALUE = 123;
   const TEST_HASH = helpers.SOME_HASH;
   
-  function testCallFrom(address) {
-    return new web3.eth.Contract(ActionMock.abi).methods.test(address).encodeABI();
-  }
-  function testCallWithoutReturnValueFrom(address) {
-    return new web3.eth.Contract(ActionMock.abi).methods.testWithoutReturnValue(address).encodeABI();
-  }
-
   function decodeGenericCallError(genericCallDataReturn) {
     assert.equal(genericCallDataReturn.substring(0,10), web3.eth.abi.encodeFunctionSignature('Error(string)'));
     const errorMsgBytesLength = web3.utils.hexToNumber('0x'+genericCallDataReturn.substring(74, 138))*2;
@@ -94,7 +87,7 @@ contract("WalletScheme", function(accounts) {
     describe("proposal with data", function() {
       
       it("negative decision - proposal failed", async function() {
-        const callData = testCallFrom(org.avatar.address);
+        const callData = helpers.testCallFrom(org.avatar.address);
         const genericCallData = helpers.encodeGenericCallData(
           org.avatar.address, actionMock.address, callData, 0
         );
@@ -122,7 +115,7 @@ contract("WalletScheme", function(accounts) {
       });
 
       it("positive decision - proposal executed", async function() {
-        const callData = testCallFrom(org.avatar.address);
+        const callData = helpers.testCallFrom(org.avatar.address);
         const genericCallData = helpers.encodeGenericCallData(
           org.avatar.address, actionMock.address, callData, 0
         );
@@ -187,7 +180,7 @@ contract("WalletScheme", function(accounts) {
       });
 
       it("positive decision - proposal execute and show revert in return", async function() {
-        const callData = testCallFrom(helpers.NULL_ADDRESS);
+        const callData = helpers.testCallFrom(helpers.NULL_ADDRESS);
         const genericCallData = helpers.encodeGenericCallData(
           org.avatar.address, actionMock.address, callData, 0
         );
@@ -213,7 +206,7 @@ contract("WalletScheme", function(accounts) {
       });
 
       it("positive decision - proposal executed without return value", async function() {
-        const callData = testCallWithoutReturnValueFrom(org.avatar.address);
+        const callData = helpers.testCallWithoutReturnValueFrom(org.avatar.address);
         const genericCallData = helpers.encodeGenericCallData(
           org.avatar.address, actionMock.address, callData, 0
         );
@@ -324,7 +317,7 @@ contract("WalletScheme", function(accounts) {
     })
 
     it("execute should fail if not passed/executed from votingMachine", async function() {
-      const callData = testCallFrom(org.avatar.address);
+      const callData = helpers.testCallFrom(org.avatar.address);
       const genericCallData = helpers.encodeGenericCallData(
         org.avatar.address, actionMock.address, callData, 0
       );
@@ -417,7 +410,7 @@ contract("WalletScheme", function(accounts) {
     describe("proposal with data", function() {
 
       it("negative decision - proposal failed", async function() {
-        const callData = testCallFrom(quickWalletScheme.address);
+        const callData = helpers.testCallFrom(quickWalletScheme.address);
         
         const tx = await quickWalletScheme.proposeCalls(
           [actionMock.address], [callData], [0], TEST_HASH
@@ -441,7 +434,7 @@ contract("WalletScheme", function(accounts) {
       });
 
       it("positive decision - proposal executed", async function() {
-        const callData = testCallFrom(quickWalletScheme.address);
+        const callData = helpers.testCallFrom(quickWalletScheme.address);
         
         const tx = await quickWalletScheme.proposeCalls(
           [actionMock.address], [callData], [0], TEST_HASH
@@ -497,7 +490,7 @@ contract("WalletScheme", function(accounts) {
       });
 
       it("positive decision - proposal execute and show revert in return", async function() {
-        const callData = testCallFrom(helpers.NULL_ADDRESS);
+        const callData = helpers.testCallFrom(helpers.NULL_ADDRESS);
         
         let tx = await quickWalletScheme.proposeCalls(
           [actionMock.address], [callData], [0], TEST_HASH
@@ -519,7 +512,7 @@ contract("WalletScheme", function(accounts) {
       });
 
       it("positive decision - proposal executed without return value", async function() {
-        const callData = testCallWithoutReturnValueFrom(quickWalletScheme.address);
+        const callData = helpers.testCallWithoutReturnValueFrom(quickWalletScheme.address);
         
         let tx = await quickWalletScheme.proposeCalls(
           [actionMock.address], [callData], [0], TEST_HASH
@@ -628,7 +621,7 @@ contract("WalletScheme", function(accounts) {
     })
 
     it("execute should fail if not passed/executed from votingMachine", async function() {
-      const callData = testCallFrom(quickWalletScheme.address);
+      const callData = helpers.testCallFrom(quickWalletScheme.address);
       var tx = await quickWalletScheme.proposeCalls(
         [actionMock.address], [callData], [0], helpers.NULL_HASH
       );
