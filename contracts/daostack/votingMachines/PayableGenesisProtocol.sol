@@ -2,10 +2,6 @@ pragma solidity ^0.5.11;
 
 import "./GenesisProtocol.sol";
 
-interface AvatarInterface {
-    function nativeReputation() external view returns(address);
-}
-
 /**
  * @title GenesisProtocol implementation -an organization's voting machine scheme taht can pay for its vote gas costs.
  *
@@ -17,13 +13,20 @@ contract PayableGenesisProtocol is GenesisProtocol {
 
     struct OrganizationRefunds {
       uint256 balance;
-      uint256 baseRefund; // In base 100, 10 == 10%
-      uint256 premiumRefund; // In base 100, 10 == 10%
-      uint256 repToPremiumRefund; // Rep amount of msg.sender to recieve premiumRefund.
+      uint256 voteGas;
+      uint256 maxGasPrice;
     }
     
-    mapping(address => OrganizationRefunds) organizationRefunds;
-    mapping(bytes32 => address) organizationByOrganizationIds;
+    mapping(address => OrganizationRefunds) public organizationRefunds;
+        
+    /**
+     * @dev Constructor
+     */
+    constructor(IERC20 _stakingToken)
+    public
+    // solhint-disable-next-line no-empty-blocks
+    GenesisProtocol(_stakingToken) {
+    }
     
     /**
     * @dev enables an voting machine to receive ether
@@ -33,12 +36,11 @@ contract PayableGenesisProtocol is GenesisProtocol {
     }
     
     /**
-    * @dev Config the refund for each daostack dao form 
+    * @dev Config the refund for each daostack dao
     */
-    function setOrganizationRefund(uint256 _baseRefund, uint256 _premiumRefund, uint256 _repToPremiumRefund) public {
-      organizationRefunds[msg.sender].baseRefund = _baseRefund;
-      organizationRefunds[msg.sender].premiumRefund = _premiumRefund;
-      organizationRefunds[msg.sender].repToPremiumRefund = _repToPremiumRefund;
+    function setOrganizationRefund(uint256 _voteGas, uint256 _maxGasPrice) public {
+      organizationRefunds[msg.sender].voteGas = _voteGas;
+      organizationRefunds[msg.sender].maxGasPrice = _maxGasPrice;
     }
     
     /**
@@ -67,9 +69,6 @@ contract PayableGenesisProtocol is GenesisProtocol {
         proposal.callbacks = msg.sender;
         proposal.organizationId = keccak256(abi.encodePacked(msg.sender, _organization));
         
-        // Added line by PayableGenesisProtocol implementation
-        organizationByOrganizationIds[proposal.organizationId] = _organization;
-
         proposal.state = ProposalState.Queued;
         // solhint-disable-next-line not-rely-on-time
         proposal.times[0] = now;//submitted time
@@ -111,9 +110,6 @@ contract PayableGenesisProtocol is GenesisProtocol {
     external
     votable(_proposalId)
     returns(bool) {
-        // Added line by PayableGenesisProtocol to keep track of gast spent
-        uint256 gasSent = gasleft();
-        
         Proposal storage proposal = proposals[_proposalId];
         Parameters memory params = parameters[proposal.paramsHash];
         address voter;
@@ -126,19 +122,16 @@ contract PayableGenesisProtocol is GenesisProtocol {
         bool voteResult = internalVote(_proposalId, voter, _vote, _amount);
         
         // Added section by PayableGenesisProtocol to pay for gas spent
-        if (voteResult) {
-            address organizationAddress = organizationByOrganizationIds[_proposalId];
-            uint256 senderReputation = IERC20(
-                AvatarInterface(organizationAddress).nativeReputation()
-            ).balanceOf(msg.sender);
-            uint256 gasSpent = gasSent.sub(gasleft());
-            uint256 toSend = gasSpent.mul(100).div(organizationRefunds[organizationAddress].premiumRefund);
-            if (senderReputation < organizationRefunds[organizationAddress].repToPremiumRefund) {
-                toSend = gasSpent.mul(100).div(organizationRefunds[organizationAddress].baseRefund);
-            }
-            if (address(this).balance > toSend)
-                msg.sender.transfer(toSend);
-          }
+        address orgAddress = organizations[proposal.organizationId];
+        if (voteResult && (organizationRefunds[orgAddress].voteGas > 0)) {
+            uint256 gasRefund = organizationRefunds[orgAddress].voteGas
+                .mul(organizationRefunds[orgAddress].maxGasPrice);
+            if (tx.gasprice < organizationRefunds[orgAddress].maxGasPrice)
+                gasRefund = organizationRefunds[orgAddress].voteGas.mul(tx.gasprice);
+            msg.sender.transfer(gasRefund);
+            organizationRefunds[orgAddress].balance = organizationRefunds[orgAddress].balance.sub(gasRefund);
+        }
+        return voteResult;
     }
 
 }
