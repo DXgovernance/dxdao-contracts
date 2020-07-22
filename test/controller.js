@@ -174,6 +174,7 @@ contract("Controller", accounts =>  {
     assert.equal(tx.logs.length, 1);
     assert.equal(tx.logs[ 0 ].event, "UnregisterScheme");
   });
+  
   it("unregister none registered scheme", async() => {
     controller = await setup(accounts);
     let tx =  await controller.unregisterScheme(accounts[ 1 ], avatar.address);
@@ -274,6 +275,7 @@ contract("Controller", accounts =>  {
     assert.equal(count[ 0 ], 1); //pre
     assert.equal(count[ 1 ], 1); //post
   });
+  
   it("removeGlobalConstraint ", async() => {
     const zeroBytes32 = "0x0000000000000000000000000000000000000000";
     controller = await setup(accounts);
@@ -342,10 +344,7 @@ contract("Controller", accounts =>  {
     controller = await setup(accounts, "0x00000010");
     await avatar.transferOwnership(controller.address);
     let actionMock =  await ActionMock.new();
-    let a = 7;
-    let b = actionMock.address;
-    let c = "0x1234";
-    const encodeABI = await new web3.eth.Contract(actionMock.abi).methods.test(a, b, c).encodeABI();
+    const encodeABI = helpers.testCallFrom(avatar.address);
     var tx = await controller.genericCall(actionMock.address, encodeABI, avatar.address, 0);
     await avatar.getPastEvents("GenericCall", {
       fromBlock: tx.blockNumber,
@@ -362,12 +361,9 @@ contract("Controller", accounts =>  {
     controller = await setup(accounts, "0x00000010");
     await avatar.transferOwnership(controller.address);
     let actionMock =  await ActionMock.new();
-    let a = 7;
-    let b = actionMock.address;
-    let c = "0x1234";
-    const encodeABI = await new web3.eth.Contract(actionMock.abi).methods.test(a, b, c).encodeABI();
+    const encodeABI = helpers.testCallFrom(avatar.address);
     var result = await controller.genericCall.call(actionMock.address, encodeABI, avatar.address, 0);
-    assert.equal(result[ 1 ], 14);
+    assert.equal(result[1], '0x0000000000000000000000000000000000000000000000000000000000000001');
   });
 
   it("generic call withoutReturnValue", async() => {
@@ -376,17 +372,11 @@ contract("Controller", accounts =>  {
     let actionMock =  await ActionMock.new();
 
     const actionMockContract = await new web3.eth.Contract(actionMock.abi);
-    const encodeABI = actionMockContract.methods.withoutReturnValue(avatar.address).encodeABI();
+    const encodeABI = helpers.testCallWithoutReturnValueFrom(avatar.address);
     var tx = await controller.genericCall(actionMock.address, encodeABI, avatar.address, 0);
-    await actionMock.getPastEvents("WithoutReturnValue", {
-      filter: {_addr: avatar.address}, // Using an array means OR: e.g. 20 or 23
-      fromBlock: tx.blockNumber,
-      toBlock: "latest"
-    })
-      .then(function(events){
-        assert.equal(events[ 0 ].event, "WithoutReturnValue");
-      });
+    assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[0].values._success, true);
   });
+  
   it("sendEther", async() => {
     controller = await setup(accounts);
     let otherAvatar = await DxAvatar.new("otheravatar", helpers.NULL_ADDRESS, avatar.address);
@@ -483,6 +473,7 @@ contract("Controller", accounts =>  {
     let rep = await reputation.balanceOf(accounts[ 0 ]);
     assert.equal(rep, amountToMint);
   });
+  
   it("globalConstraints register schemes add & remove", async() => {
     controller = await setup(accounts);
     var globalConstraints = await constraint("registerScheme");
@@ -526,7 +517,7 @@ contract("Controller", accounts =>  {
     let a = 7;
     let b = actionMock.address;
     let c = "0x1234";
-    const encodeABI = await new web3.eth.Contract(actionMock.abi).methods.test(a, b, c).encodeABI();
+    const encodeABI = helpers.testCallFrom(avatar.address);
     try {
       await controller.genericCall.call(actionMock.address, encodeABI, avatar.address, 0);
       assert(false, "genericCall should fail due to the global constraint ");

@@ -9,6 +9,7 @@ const Reputation = artifacts.require("./Reputation.sol");
 const AbsoluteVote = artifacts.require("./AbsoluteVote.sol");
 const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
+const ActionMock = artifacts.require("./ActionMock.sol");
 const constants = require("./constants");
 const { encodePermission, decodePermission } = require("./permissions");
 const { encodeGenericCallData } = require("./walletScheme");
@@ -292,5 +293,12 @@ export const increaseTime = async function(duration) {
     });
   });
 };
+
+export function testCallFrom(address) {
+  return new web3.eth.Contract(ActionMock.abi).methods.test(address).encodeABI();
+}
+export function testCallWithoutReturnValueFrom(address) {
+  return new web3.eth.Contract(ActionMock.abi).methods.testWithoutReturnValue(address).encodeABI();
+}
 
 export { encodePermission, decodePermission, encodeGenericCallData };
