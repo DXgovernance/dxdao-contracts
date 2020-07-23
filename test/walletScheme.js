@@ -109,6 +109,7 @@ contract("WalletScheme", function(accounts) {
         
         const organizationProposal = await walletScheme.getOrganizationProposal(proposalId);
         assert.equal(organizationProposal.state, ProposalState.failed);
+        assert.equal(organizationProposal.descriptionHash, TEST_HASH);
         assert.equal(organizationProposal.callData[0], genericCallData);
         assert.equal(organizationProposal.to[0], org.controller.address);
         assert.equal(organizationProposal.value[0], 0);
@@ -361,7 +362,6 @@ contract("WalletScheme", function(accounts) {
         TEST_HASH
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-      assert.equal(await helpers.getValueFromLogs(tx, "_descriptionHash"), TEST_HASH);
       assert.equal(await web3.eth.getBalance(org.avatar.address), TEST_VALUE);
       assert.equal(await web3.eth.getBalance(wallet.address), 0);
       assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
@@ -378,6 +378,7 @@ contract("WalletScheme", function(accounts) {
       
       const organizationProposal = await walletScheme.getOrganizationProposal(proposalId);
       assert.equal(organizationProposal.state, ProposalState.executed);
+      assert.equal(organizationProposal.descriptionHash, TEST_HASH);
       assert.equal(organizationProposal.callData[0], genericCallDataTransfer);
       assert.equal(organizationProposal.to[0], org.controller.address);
       assert.equal(organizationProposal.value[0], 0);
@@ -656,7 +657,6 @@ contract("WalletScheme", function(accounts) {
         TEST_HASH
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-      assert.equal(await helpers.getValueFromLogs(tx, "_descriptionHash"), TEST_HASH);
       assert.equal(await web3.eth.getBalance(quickWalletScheme.address), 100000000);
       assert.equal(await web3.eth.getBalance(wallet.address), 0);
       assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
