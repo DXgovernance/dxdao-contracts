@@ -6,6 +6,7 @@ const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ERC20Guild = artifacts.require("./ERC20Guild.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
+const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
 const Wallet = artifacts.require("./Wallet.sol");
 const { BN, expectEvent, expectRevert, time } = require("@openzeppelin/test-helpers");
 
@@ -45,7 +46,7 @@ contract("ERC20Guild", function(accounts) {
       daoCreator,
       [ accounts[ 0 ], accounts[ 1 ], accounts[ 2 ], erc20Guild.address ],
       [ 1000, 1000, 1000, 1000 ],
-      [ 20, 20, 20, 40 ]
+      [ 20, 20, 45, 15 ]
     );
     
     walletScheme = await WalletScheme.new();
@@ -91,6 +92,7 @@ contract("ERC20Guild", function(accounts) {
     tokenMock.mint(accounts[ 2 ], 100);
     tokenMock.mint(accounts[ 3 ], 150);
     tokenMock.mint(accounts[ 4 ], 200);
+    tokenMock.mint(accounts[ 5 ], 250);
     
   });
 
@@ -426,23 +428,14 @@ contract("ERC20Guild", function(accounts) {
       expectEvent(txVote, "VoteAdded", { proposalId: proposalId2});
     });
 
-    it("executes proposal through walletScheme", async function() {
+    it("executes proposal vote on DXdao proposal", async function() {
         const callDataMint = await new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[ 3 ], 100).encodeABI();
-        const callDataERC20Proposal = await new web3.eth.Contract(erc20Guild.abi).methods.createProposal(
-          [tokenMock.address],
-          [callDataMint],
-          [0],
-          "Testing Proposal",
-          helpers.NULL_ADDRESS, 
-          0
-        ).encodeABI();
-
         const genericCallData = helpers.encodeGenericCallData(
-          org.avatar.address, actionMock.address, callDataERC20Proposal, 0
+          org.avatar.address, tokenMock.address, callDataMint, 0
         );
         
         const tx = await quickWalletScheme.proposeCalls(
-          [ erc20Guild.address ], [ genericCallData ], [ 0 ], TEST_HASH
+          [ org.controller.address ], [ genericCallData ], [ 0 ], TEST_HASH
         );
         const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
         await votingMachine.contract.vote(
@@ -454,12 +447,36 @@ contract("ERC20Guild", function(accounts) {
         await votingMachine.contract.vote(
           proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[ 2 ]}
         );
-        const txExecute = await quickWalletScheme.execute(proposalId);
+
+        const callDataVote = await new web3.eth.Contract(GenesisProtocol.abi).methods.vote(
+          proposalId, 1, 0, helpers.NULL_ADDRESS
+        ).encodeABI();
         
+        const txGuild = await erc20Guild.createProposal(
+          [ votingMachine.address ],
+          [ callDataVote ],
+          [ 0 ],
+          "Voting Proposal",
+          helpers.NULL_ADDRESS,
+          0
+        );
+
+        const proposalIdGuild = await helpers.getValueFromLogs(txGuild, "proposalId");
+        await erc20Guild.setVote(proposalIdGuild, 210, {from: accounts[ 5 ]});
+        const txVote = await erc20Guild.setVote(proposalIdGuild, 200, {from: accounts[ 4 ]});
+        expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild});
+        
+        await time.increase(time.duration.hours(1));
+        const receipt = await erc20Guild.executeProposal(proposalIdGuild);
+        /*
+        expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
+        */
+
+        const txExecute = await quickWalletScheme.execute(proposalId);
         const organizationProposal = await quickWalletScheme.getOrganizationProposal(proposalId);
         assert.equal(organizationProposal.state, ProposalState.executed);
         assert.equal(organizationProposal.callData[ 0 ], genericCallData);
-        assert.equal(organizationProposal.to[ 0 ], erc20Guild.address);
+        assert.equal(organizationProposal.to[ 0 ], org.controller.address);
         assert.equal(organizationProposal.value[ 0 ], 0);
 
     });
