@@ -28,20 +28,11 @@ contract("PayableGenesisProtocol", function(accounts) {
   const TEST_HASH = helpers.SOME_HASH;
   const GAS_PRICE = 10000000000;
   const VOTE_GAS = 360000;
+  const TOTAL_GAS_REFUND = VOTE_GAS * GAS_PRICE;
   
   function testCallFrom(address) {
     return new web3.eth.Contract(ActionMock.abi).methods.test(address).encodeABI();
   }
-  function testCallWithoutReturnValueFrom(address) {
-    return new web3.eth.Contract(ActionMock.abi).methods.testWithoutReturnValue(address).encodeABI();
-  }
-
-  function decodeGenericCallError(genericCallDataReturn) {
-    assert.equal(genericCallDataReturn.substring(0,10), web3.eth.abi.encodeFunctionSignature('Error(string)'));
-    const errorMsgBytesLength = web3.utils.hexToNumber('0x'+genericCallDataReturn.substring(74, 138))*2;
-    return web3.utils.hexToUtf8('0x' + genericCallDataReturn.substring(138, 138 + errorMsgBytesLength));
-  }
-
   
   beforeEach( async function(){
     actionMock = await ActionMock.new();
@@ -99,12 +90,49 @@ contract("PayableGenesisProtocol", function(accounts) {
      ],
       "metaData"
     );
-  })
+    
+    // Configure refund
+    await web3.eth.sendTransaction({
+      from: accounts[0], to: org.avatar.address, value: web3.utils.toWei('1')
+    });
+    const setRefundConfData = new web3.eth.Contract(PayableGenesisProtocol.abi).methods.setOrganizationRefund(
+      VOTE_GAS, GAS_PRICE
+    ).encodeABI();
+    const setRefundConfTx = await cheapVoteWalletScheme.proposeCalls(
+      [org.controller.address], 
+      [helpers.encodeGenericCallData(
+        org.avatar.address, payableVotingMachine.address, setRefundConfData, 0
+      )],
+      [0],
+      TEST_HASH
+    );
+    const setRefundConfProposalId = await helpers.getValueFromLogs(setRefundConfTx, "_proposalId");
+    const organizationId = (await payableVotingMachine.contract.proposals(setRefundConfProposalId)).organizationId
+    assert.equal(await payableVotingMachine.contract.organizations(organizationId), org.avatar.address);
+    await payableVotingMachine.contract.vote(setRefundConfProposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]});
+    await cheapVoteWalletScheme.execute(setRefundConfProposalId);
+    const organizationRefundConf = await payableVotingMachine.contract.organizationRefunds(org.avatar.address);
+    assert.equal(0, organizationRefundConf.balance);
+    assert.equal(VOTE_GAS, organizationRefundConf.voteGas);
+    assert.equal(GAS_PRICE, organizationRefundConf.maxGasPrice);
+  });
 
-  it("gas spent in PayableGenesisProtocol vote is less than GenesisProtocol vote", async function() {
-    const callData = testCallFrom(org.avatar.address);
-    let genericCallData = helpers.encodeGenericCallData(
-      org.avatar.address, actionMock.address, callData, 0
+  it("gas spent in PayableGenesisProtocol vote is less than GenesisProtocol vote", async function() {  
+    await web3.eth.sendTransaction({from: accounts[0], to: org.avatar.address, value: web3.utils.toWei('1')});
+    const fundVotingMachineTx = await cheapVoteWalletScheme.proposeCalls(
+      [org.controller.address], 
+      [helpers.encodeGenericCallData( org.avatar.address, payableVotingMachine.address, '0x0', web3.utils.toWei('1') )],
+      [0],
+      TEST_HASH
+    );
+    const fundVotingMachineProposalId = await helpers.getValueFromLogs(fundVotingMachineTx, "_proposalId");
+    await payableVotingMachine.contract.vote(
+      fundVotingMachineProposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
+    );
+    await cheapVoteWalletScheme.execute(fundVotingMachineProposalId);
+    
+    const genericCallData = helpers.encodeGenericCallData(
+      org.avatar.address, actionMock.address, testCallFrom(org.avatar.address), 0
     );
     
     let tx = await expensiveVoteWalletScheme.proposeCalls(
@@ -117,45 +145,14 @@ contract("PayableGenesisProtocol", function(accounts) {
     );
     let balanceAfterVote = await web3.eth.getBalance(accounts[2]);
     const gastVoteWithoutRefund = parseInt((balanceBeforeVote - balanceAfterVote) / GAS_PRICE)
-    assert.equal(tx.receipt.gasUsed, gastVoteWithoutRefund);
-  
+    expect(tx.receipt.gasUsed).to.be.closeTo(gastVoteWithoutRefund, 1);
+
     await expensiveVoteWalletScheme.execute(proposalId);  
     let organizationProposal = await expensiveVoteWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(organizationProposal.state, ProposalState.executed);
     assert.equal(organizationProposal.callData[0], genericCallData);
     assert.equal(organizationProposal.to[0], org.controller.address);
     assert.equal(organizationProposal.value[0], 0);
-    
-    // Configure refund
-    await web3.eth.sendTransaction({
-      from: accounts[0], to: org.avatar.address, value: web3.utils.toWei('1')
-    });
-    const totalGasRefund = VOTE_GAS * GAS_PRICE;
-    const setRefundConfData = new web3.eth.Contract(PayableGenesisProtocol.abi).methods.setOrganizationRefund(
-      VOTE_GAS, GAS_PRICE
-    ).encodeABI();
-    tx = await cheapVoteWalletScheme.proposeCalls(
-      [org.controller.address, org.controller.address], 
-      [helpers.encodeGenericCallData(
-        org.avatar.address, payableVotingMachine.address, setRefundConfData, 0
-      ),
-      helpers.encodeGenericCallData(
-        org.avatar.address, payableVotingMachine.address, '0x0', web3.utils.toWei('1')
-      )],
-      [0, 0],
-      TEST_HASH
-    );
-    proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    const organizationId = (await payableVotingMachine.contract.proposals(proposalId)).organizationId
-    assert.equal(await payableVotingMachine.contract.organizations(organizationId), org.avatar.address);
-    await payableVotingMachine.contract.vote(
-      proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2]}
-    );
-    tx = await cheapVoteWalletScheme.execute(proposalId);
-    const organizationRefundConf = await payableVotingMachine.contract.organizationRefunds(org.avatar.address);
-    assert.equal(web3.utils.toWei('1'), organizationRefundConf.balance);
-    assert.equal(VOTE_GAS, organizationRefundConf.voteGas);
-    assert.equal(GAS_PRICE, organizationRefundConf.maxGasPrice);
     
     // Vote with refund configured
     tx = await cheapVoteWalletScheme.proposeCalls(
@@ -170,13 +167,77 @@ contract("PayableGenesisProtocol", function(accounts) {
     const gasVoteWithRefund = parseInt((balanceBeforeVote - balanceAfterVote) / GAS_PRICE);
     
     // Gas was taken from the organization refund balance and used to pay most of vote gas cost
-    assert.equal(web3.utils.toWei('1') - totalGasRefund,
+    assert.equal(web3.utils.toWei('1') - TOTAL_GAS_REFUND,
       (await payableVotingMachine.contract.organizationRefunds(org.avatar.address)).balance
     )
-    assert.equal(tx.receipt.gasUsed - VOTE_GAS, gasVoteWithRefund);
-    
+    expect(tx.receipt.gasUsed - VOTE_GAS).to.be.closeTo(gasVoteWithRefund, 1);
+
     await cheapVoteWalletScheme.execute(proposalId);
     organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
+    assert.equal(organizationProposal.state, ProposalState.executed);
+    assert.equal(organizationProposal.callData[0], genericCallData);
+    assert.equal(organizationProposal.to[0], org.controller.address);
+    assert.equal(organizationProposal.value[0], 0);
+  });
+  
+  
+  it("pay for gasRefund from voting machine only when gasRefund balance is enough", async function() {
+    
+    // Send enough eth just for two votes
+    const votesRefund = TOTAL_GAS_REFUND * 2;
+    await web3.eth.sendTransaction({from: accounts[0], to: org.avatar.address, value: votesRefund.toString()});
+    const fundVotingMachineTx = await cheapVoteWalletScheme.proposeCalls(
+      [org.controller.address], 
+      [helpers.encodeGenericCallData(
+        org.avatar.address, payableVotingMachine.address, '0x0', votesRefund.toString()
+      )],
+      [0],
+      TEST_HASH
+    );
+    const fundVotingMachineProposalId = await helpers.getValueFromLogs(fundVotingMachineTx, "_proposalId");
+    await payableVotingMachine.contract.vote(
+      fundVotingMachineProposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2], gasPrice: GAS_PRICE}
+    );
+    await cheapVoteWalletScheme.execute(fundVotingMachineProposalId);
+    
+    // Vote three times and pay only the first two
+    const genericCallData = helpers.encodeGenericCallData(
+      org.avatar.address, actionMock.address, testCallFrom(org.avatar.address), 0
+    );
+    let tx = await cheapVoteWalletScheme.proposeCalls(
+      [org.controller.address], [genericCallData], [0], TEST_HASH
+    );
+    let proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    assert.equal(TOTAL_GAS_REFUND * 2,
+      Number((await payableVotingMachine.contract.organizationRefunds(org.avatar.address)).balance)
+    )
+    // Vote with higher gas than maxGasPrice and dont spend more than one vote refund
+    await payableVotingMachine.contract.vote(
+      proposalId, 2, 0, helpers.NULL_ADDRESS, {from: accounts[0], gasPrice: GAS_PRICE*2}
+    );
+    
+    assert.equal(TOTAL_GAS_REFUND,
+      Number((await payableVotingMachine.contract.organizationRefunds(org.avatar.address)).balance)
+    )
+    await payableVotingMachine.contract.vote(
+      proposalId, 2, 0, helpers.NULL_ADDRESS, {from: accounts[1], gasPrice: GAS_PRICE}
+    );
+    
+    assert.equal(0,
+      Number((await payableVotingMachine.contract.organizationRefunds(org.avatar.address)).balance)
+    )
+    const balanceBeforeVote = await web3.eth.getBalance(accounts[2]);
+    tx = await payableVotingMachine.contract.vote(
+      proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[2], gasPrice: GAS_PRICE}
+    );
+    const balanceAfterVote = await web3.eth.getBalance(accounts[2]);
+  
+    // There wasnt enough gas balance in the voting machine to pay the gas refund of the last vote
+    const gastVoteWithoutRefund = parseInt((balanceBeforeVote - balanceAfterVote) / GAS_PRICE);
+    expect(tx.receipt.gasUsed).to.be.closeTo(gastVoteWithoutRefund, 1);
+    
+    await cheapVoteWalletScheme.execute(proposalId);
+    const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(organizationProposal.state, ProposalState.executed);
     assert.equal(organizationProposal.callData[0], genericCallData);
     assert.equal(organizationProposal.to[0], org.controller.address);
