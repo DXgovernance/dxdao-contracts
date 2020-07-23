@@ -1,23 +1,97 @@
 import * as helpers from "./helpers";
 const constants = require("./helpers/constants");
+const WalletScheme = artifacts.require("./WalletScheme.sol");
+const DaoCreator = artifacts.require("./DaoCreator.sol");
+const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ERC20Guild = artifacts.require("./ERC20Guild.sol");
+const ActionMock = artifacts.require("./ActionMock.sol");
+const Wallet = artifacts.require("./Wallet.sol");
 const { BN, expectEvent, expectRevert, time } = require("@openzeppelin/test-helpers");
+
+const ProposalState = {
+  submitted: 0,
+  passed: 1,
+  failed: 2,
+  executed: 3
+};
 
 contract("ERC20Guild", function(accounts) {
   
-  let tokenMock, i, erc20Guild, standardGuild;
+  let standardTokenMock, walletScheme, quickWalletScheme, daoCreator, org, actionMock, votingMachine, tokenMock, i, erc20Guild, standardGuild;
+
+  const TEST_VALUE = 123;
+  const TEST_HASH = helpers.SOME_HASH;
+  
+  function decodeGenericCallError(genericCallDataReturn) {
+    assert.equal(genericCallDataReturn.substring(0, 10), web3.eth.abi.encodeFunctionSignature("Error(string)"));
+    const errorMsgBytesLength = web3.utils.hexToNumber("0x" + genericCallDataReturn.substring(74, 138)) * 2;
+    return web3.utils.hexToUtf8("0x" + genericCallDataReturn.substring(138, 138 + errorMsgBytesLength));
+  }
   
   beforeEach( async function(){
 
     tokenMock = await ERC20Mock.new(accounts[ 0 ], 200);
+    erc20Guild = await ERC20Guild.new();
+    await erc20Guild.initilize(tokenMock.address, 0, 200, 100);
+
+    actionMock = await ActionMock.new();
+    const standardTokenMock = await ERC20Mock.new(accounts[ 1 ], 1000);
+    const controllerCreator = await DxControllerCreator.new({gas: constants.ARC_GAS_LIMIT});
+    daoCreator = await DaoCreator.new(
+      controllerCreator.address, {gas: constants.ARC_GAS_LIMIT}
+    );
+    org = await helpers.setupOrganizationWithArrays(
+      daoCreator,
+      [ accounts[ 0 ], accounts[ 1 ], accounts[ 2 ], erc20Guild.address ],
+      [ 1000, 1000, 1000, 1000 ],
+      [ 20, 20, 20, 40 ]
+    );
+    
+    walletScheme = await WalletScheme.new();
+    votingMachine = await helpers.setupGenesisProtocol(
+      accounts, standardTokenMock.address, 0, helpers.NULL_ADDRESS
+    );
+    await walletScheme.initialize(
+      org.avatar.address,
+      votingMachine.address,
+      votingMachine.params,
+      org.controller.address
+    );
+    
+    quickWalletScheme = await WalletScheme.new();
+    await quickWalletScheme.initialize(
+      org.avatar.address,
+      votingMachine.address,
+      votingMachine.params,
+      helpers.NULL_ADDRESS
+    );
+    
+    await daoCreator.setSchemes(
+      org.avatar.address,
+      [ walletScheme.address, quickWalletScheme.address ],
+      [ votingMachine.params, votingMachine.params ],
+      [ helpers.encodePermission({
+        canGenericCall: true,
+        canUpgrade: true,
+        canChangeConstraints: true,
+        canRegisterSchemes: true
+      }),
+      helpers.encodePermission({
+        canGenericCall: false,
+        canUpgrade: false,
+        canChangeConstraints: false,
+        canRegisterSchemes: false
+      })
+      ],
+      "metaData"
+    );
+
     tokenMock.mint(accounts[ 1 ], 50);
     tokenMock.mint(accounts[ 2 ], 100);
     tokenMock.mint(accounts[ 3 ], 150);
     tokenMock.mint(accounts[ 4 ], 200);
-
-    erc20Guild = await ERC20Guild.new();
-    await erc20Guild.initilize(tokenMock.address, 0, 200, 100);
+    
   });
 
   describe("Creating guilds", function() {
@@ -350,6 +424,44 @@ contract("ERC20Guild", function(accounts) {
       const txVote = await erc20Guild.setVotes([ proposalId1, proposalId2 ], [ 50, 50 ], {from: accounts[ 3 ]});
       expectEvent(txVote, "VoteAdded", { proposalId: proposalId1});
       expectEvent(txVote, "VoteAdded", { proposalId: proposalId2});
+    });
+
+    it("executes proposal through walletScheme", async function() {
+        const callDataMint = await new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[ 3 ], 100).encodeABI();
+        const callDataERC20Proposal = await new web3.eth.Contract(erc20Guild.abi).methods.createProposal(
+          [tokenMock.address],
+          [callDataMint],
+          [0],
+          "Testing Proposal",
+          helpers.NULL_ADDRESS, 
+          0
+        ).encodeABI();
+
+        const genericCallData = helpers.encodeGenericCallData(
+          org.avatar.address, actionMock.address, callDataERC20Proposal, 0
+        );
+        
+        const tx = await quickWalletScheme.proposeCalls(
+          [ erc20Guild.address ], [ genericCallData ], [ 0 ], TEST_HASH
+        );
+        const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+        await votingMachine.contract.vote(
+          proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[ 0 ]}
+        );
+        await votingMachine.contract.vote(
+          proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[ 1 ]}
+        );
+        await votingMachine.contract.vote(
+          proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[ 2 ]}
+        );
+        const txExecute = await quickWalletScheme.execute(proposalId);
+        
+        const organizationProposal = await quickWalletScheme.getOrganizationProposal(proposalId);
+        assert.equal(organizationProposal.state, ProposalState.executed);
+        assert.equal(organizationProposal.callData[ 0 ], genericCallData);
+        assert.equal(organizationProposal.to[ 0 ], erc20Guild.address);
+        assert.equal(organizationProposal.value[ 0 ], 0);
+
     });
 
   });
