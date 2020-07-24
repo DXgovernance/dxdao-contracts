@@ -5,8 +5,8 @@ import "./GenesisProtocol.sol";
 /**
  * @title GenesisProtocol implementation -an organization's voting machine scheme that allow batch votes with sigantures
  *
- * Allows all organizations using the voting machine to specify an identifier for votes to be signed off chain and 
- * sent on chain in batches.
+ * Allows all organizations using the voting machine to share vote signatures and use that signature to execute votes
+ * from other account.
  */
 contract SignedGenesisProtocol is GenesisProtocol {
   
