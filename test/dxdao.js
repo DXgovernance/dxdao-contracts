@@ -50,7 +50,7 @@ contract("DXdao", function(accounts) {
     const controller = await DxController.at(await avatar.owner());
     
     const votingMachine = await helpers.setupGenesisProtocol(
-      accounts, votingMachineToken.address, 0, helpers.NULL_ADDRESS
+      accounts, votingMachineToken.address, 0, false, helpers.NULL_ADDRESS
     );
     
     const genesisProtocol = await GenesisProtocol.new(token.address, {gas: constants.ARC_GAS_LIMIT});

@@ -8,6 +8,7 @@ const DAOToken = artifacts.require("./DAOToken.sol");
 const Reputation = artifacts.require("./Reputation.sol");
 const AbsoluteVote = artifacts.require("./AbsoluteVote.sol");
 const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
+const PayableGenesisProtocol = artifacts.require("./PayableGenesisProtocol.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const constants = require("./constants");
@@ -148,6 +149,7 @@ export const setupGenesisProtocol = async function(
   accounts,
   token,
   avatar,
+  payable,
   voteOnBehalf = NULL_ADDRESS,
   _queuedVoteRequiredPercentage = 50,
   _queuedVotePeriodLimit = 60,
@@ -161,7 +163,8 @@ export const setupGenesisProtocol = async function(
   _daoBountyConst = 10,
   _activationTime = 0
 ) {
-  const genesisProtocol = await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
+  const genesisProtocol = (!payable) ? await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT})
+    : await PayableGenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
 
   // set up a reputation system
   const reputationArray = [ 20, 10, 70 ];
