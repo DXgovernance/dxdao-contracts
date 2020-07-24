@@ -164,7 +164,7 @@ export const setupGenesisProtocol = async function(
   const genesisProtocol = await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
 
   // set up a reputation system
-  const reputationArray = [ 20, 10, 70 ];
+  const reputationArray = [ 60, 10, 20, 10 ];
   // register some parameters
   genesisProtocol.setParameters([ _queuedVoteRequiredPercentage,
     _queuedVotePeriodLimit,
