@@ -7,7 +7,7 @@ const DxReputation = artifacts.require("./DxReputation.sol");
 const DxToken = artifacts.require("./DxToken.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
-const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
+const GenesisProtocol = artifacts.require("./SignedGenesisProtocol.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
@@ -50,7 +50,7 @@ contract("DXdao", function(accounts) {
     const controller = await DxController.at(await avatar.owner());
     
     const votingMachine = await helpers.setupGenesisProtocol(
-      accounts, votingMachineToken.address, 0, false, helpers.NULL_ADDRESS
+      accounts, votingMachineToken.address, 'signed', helpers.NULL_ADDRESS
     );
     
     const genesisProtocol = await GenesisProtocol.new(token.address, {gas: constants.ARC_GAS_LIMIT});

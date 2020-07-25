@@ -8,6 +8,7 @@ const DAOToken = artifacts.require("./DAOToken.sol");
 const Reputation = artifacts.require("./Reputation.sol");
 const AbsoluteVote = artifacts.require("./AbsoluteVote.sol");
 const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
+const SignedGenesisProtocol = artifacts.require("./SignedGenesisProtocol.sol");
 const PayableGenesisProtocol = artifacts.require("./PayableGenesisProtocol.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
@@ -148,8 +149,7 @@ export const setupAbsoluteVote = async function(voteOnBehalf = NULL_ADDRESS, pre
 export const setupGenesisProtocol = async function(
   accounts,
   token,
-  avatar,
-  payable,
+  votingMachineType,
   voteOnBehalf = NULL_ADDRESS,
   _queuedVoteRequiredPercentage = 50,
   _queuedVotePeriodLimit = 60,
@@ -163,11 +163,11 @@ export const setupGenesisProtocol = async function(
   _daoBountyConst = 10,
   _activationTime = 0
 ) {
-  const genesisProtocol = (!payable) ? await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT})
-    : await PayableGenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
+  const genesisProtocol = 
+    (votingMachineType == 'signed') ? await SignedGenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT})
+    : (votingMachineType == 'payable') ? await PayableGenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT})
+    : await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
 
-  // set up a reputation system
-  const reputationArray = [ 20, 10, 70 ];
   // register some parameters
   genesisProtocol.setParameters([ _queuedVoteRequiredPercentage,
     _queuedVotePeriodLimit,
@@ -192,7 +192,7 @@ export const setupGenesisProtocol = async function(
     _daoBountyConst,
     _activationTime ], voteOnBehalf);
 
-  return {address: genesisProtocol.address, contract: genesisProtocol, reputationArray, params};
+  return {address: genesisProtocol.address, contract: genesisProtocol, params};
 };
 
 export const setupOrganizationWithArrays = async function(

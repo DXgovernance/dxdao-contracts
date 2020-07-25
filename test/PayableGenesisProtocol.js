@@ -49,10 +49,10 @@ contract("PayableGenesisProtocol", function(accounts) {
     );
     
     votingMachine = await helpers.setupGenesisProtocol(
-      accounts, standardTokenMock.address, 0, false, helpers.NULL_ADDRESS
+      accounts, standardTokenMock.address, 'normal', helpers.NULL_ADDRESS
     );
     payableVotingMachine = await helpers.setupGenesisProtocol(
-      accounts, standardTokenMock.address, 0, true, helpers.NULL_ADDRESS
+      accounts, standardTokenMock.address, 'payable', helpers.NULL_ADDRESS
     );
     
     expensiveVoteWalletScheme = await WalletScheme.new();

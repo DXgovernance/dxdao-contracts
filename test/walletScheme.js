@@ -44,7 +44,7 @@ contract("WalletScheme", function(accounts) {
     
     walletScheme = await WalletScheme.new();
     votingMachine = await helpers.setupGenesisProtocol(
-      accounts, standardTokenMock.address, 0, helpers.NULL_ADDRESS
+      accounts, standardTokenMock.address, 'normal'
     );;
     await walletScheme.initialize(
       org.avatar.address,
