@@ -9,6 +9,7 @@ const Reputation = artifacts.require("./Reputation.sol");
 const AbsoluteVote = artifacts.require("./AbsoluteVote.sol");
 const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
 const SignedGenesisProtocol = artifacts.require("./SignedGenesisProtocol.sol");
+const PayableGenesisProtocol = artifacts.require("./PayableGenesisProtocol.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const constants = require("./constants");
@@ -162,8 +163,9 @@ export const setupGenesisProtocol = async function(
   _daoBountyConst = 10,
   _activationTime = 0
 ) {
-  const genesisProtocol = (votingMachineType == 'signed') ? 
-    await SignedGenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT})
+  const genesisProtocol = 
+    (votingMachineType == 'signed') ? await SignedGenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT})
+    : (votingMachineType == 'payable') ? await PayableGenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT})
     : await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
 
   // register some parameters
