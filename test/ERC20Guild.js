@@ -5,6 +5,7 @@ const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ERC20Guild = artifacts.require("./ERC20Guild.sol");
+const ERC20GuildPermissioned = artifacts.require("./ERC20GuildPermissioned.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
 const Wallet = artifacts.require("./Wallet.sol");
@@ -33,7 +34,7 @@ contract("ERC20Guild", function(accounts) {
   beforeEach( async function(){
     tokenMock = await ERC20Mock.new(accounts[ 0 ], 200);
     erc20Guild = await ERC20Guild.new();
-    await erc20Guild.initilize(tokenMock.address, 0, 200, 100);
+    await erc20Guild.initialize(tokenMock.address, 0, 200, 100);
 
     actionMock = await ActionMock.new();
     const standardTokenMock = await ERC20Mock.new(accounts[ 1 ], 1000);
@@ -45,7 +46,7 @@ contract("ERC20Guild", function(accounts) {
       daoCreator,
       [ accounts[ 0 ], accounts[ 1 ], accounts[ 2 ], erc20Guild.address ],
       [ 1000, 1000, 1000, 1000 ],
-      [ 60, 10, 20, 10 ]
+      [ 20, 10, 20, 40 ]
     );
     
     walletScheme = await WalletScheme.new();
@@ -100,7 +101,7 @@ contract("ERC20Guild", function(accounts) {
     it("cannot initialize with zero address", async function() {
       try {
         const guild = await ERC20Guild.new(tokenMock.address, 10, 10, 10);
-        await guild.initilize(helpers.NULL_ADDRESS, 10, 10, 10);
+        await guild.initialize(helpers.NULL_ADDRESS, 10, 10, 10);
         assert(false, "ERC20Guild: token is the zero address");
       } catch(error) {
         helpers.assertVMException(error);
@@ -109,7 +110,7 @@ contract("ERC20Guild", function(accounts) {
 
     it("cannot initialize twice", async function() {
       try {
-        await erc20Guild.initilize(tokenMock.address, 10, 10, 10);
+        await erc20Guild.initialize(tokenMock.address, 10, 10, 10);
         assert(false, "ERC20Guild: Only callable by ERC20guild itself when initialized");
       } catch(error) {
         helpers.assertVMException(error);
@@ -123,7 +124,7 @@ contract("ERC20Guild", function(accounts) {
       const _tokensForCreation = 12;
       assert.equal(await guild.initialized(), false);
 
-      await guild.initilize(tokenMock.address, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
+      await guild.initialize(tokenMock.address, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
 
       assert.equal(await guild.minimumProposalTime(), _minimumProposalTime);
       assert.equal(await guild.tokensForExecution(), _tokensForExecution);
@@ -279,7 +280,7 @@ contract("ERC20Guild", function(accounts) {
 
     it("cannot execute proposal with endTime in the future", async function() {
       const guild = await ERC20Guild.new();
-      await guild.initilize(tokenMock.address, 60, 100, 100);
+      await guild.initialize(tokenMock.address, 60, 100, 100);
       const tx = await guild.createProposal(
         [ guild.address ],
         [ helpers.NULL_ADDRESS ],
@@ -427,38 +428,22 @@ contract("ERC20Guild", function(accounts) {
       expectEvent(txVote, "VoteAdded", { proposalId: proposalId2});
     });
 
-    it.skip("executes proposal vote on DXdao proposal", async function() {
-      const callDataMint = await new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[ 7 ], 100).encodeABI();
+    it("executes proposal vote on DXdao proposal", async function() {
+      const callDataMint = await new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[ 7 ], 107).encodeABI();
       const genericCallData = helpers.encodeGenericCallData(
         org.avatar.address, tokenMock.address, callDataMint, 0
       );
       
-      console.log("TokenMock addr: "+ tokenMock.address)
       const tx = await quickWalletScheme.proposeCalls(
         [ tokenMock.address ], [ genericCallData ], [ 0 ], TEST_HASH
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
       const organizationProposal1 = await quickWalletScheme.getOrganizationProposal(proposalId);
-      console.log("Before To:"+ organizationProposal1.to)
-      console.log("Before Status:"+ organizationProposal1.state)
-
-      /*
-      await votingMachine.contract.vote(
-        proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[ 0 ]}
-      );
-      
-      await votingMachine.contract.vote(
-        proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[ 1 ]}
-      );
-
-      */
      
       const callDataVote = await new web3.eth.Contract(votingMachine.contract.abi).methods.vote(
         proposalId, 1, 0, helpers.NULL_ADDRESS
       ).encodeABI();
-
-      console.log("callDataVote " + callDataVote)
 
       const txGuild = await erc20Guild.createProposal(
         [ votingMachine.address ],
@@ -474,39 +459,272 @@ contract("ERC20Guild", function(accounts) {
       const txVote = await erc20Guild.setVote(proposalIdGuild, 200, {from: accounts[ 4 ]});
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild});
       
-      await time.increase(time.duration.hours(1));
+      await time.increase(time.duration.seconds(10));
       const receipt = await erc20Guild.executeProposal(proposalIdGuild);
       expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
-
-      const organizationProposal2 = await quickWalletScheme.getOrganizationProposal(proposalId);
-      console.log("After Votes To:"+ organizationProposal2.to)
-      console.log("After Votes Status:"+ organizationProposal2.state)
-
-      await votingMachine.contract.vote(
-        proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[ 1 ]}
-      );
-
-      /*
-      const propStatus = await new web3.eth.Contract(votingMachine.contract.abi).methods.proposalStatus(proposalId).Call()
-      console.log(propStatus);
-        */
       
-      
-      // assert.equal(tokenMock.balanceOf(accounts[ 7 ]), 0);
-      // await quickWalletScheme.execute(proposalId);
+      assert.equal(await tokenMock.balanceOf(accounts[ 7 ]), 0);
 
-      /*
-      const organizationProposal3 = await quickWalletScheme.getOrganizationProposal(proposalId);
-      console.log("After Execution To:"+ organizationProposal3.to)
-      console.log("After Execution Status:"+ organizationProposal3.state)
+      await quickWalletScheme.execute(proposalId);
 
       const organizationProposal = await quickWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(organizationProposal.state, ProposalState.executed);
       assert.equal(organizationProposal.callData[ 0 ], genericCallData);
-      assert.equal(organizationProposal.to[ 0 ], org.controller.address);
+      assert.equal(organizationProposal.to[ 0 ], tokenMock.address);
       assert.equal(organizationProposal.value[ 0 ], 0);
-      // assert.equal(tokenMock.balanceOf(accounts[ 7 ]), 100);
+            //assert.equal(await tokenMock.balanceOf(accounts[ 7 ]), (107).toString());
 
+    });
+
+  });
+
+});
+
+contract("ERC20GuildPermissioned", function(accounts) {
+
+  let standardTokenMock, walletScheme, quickWalletScheme, daoCreator, org, actionMock, votingMachine, tokenMock, i, erc20Guild, standardGuild;
+
+  const TEST_VALUE = 123;
+  const TEST_HASH = helpers.SOME_HASH;
+  
+  function decodeGenericCallError(genericCallDataReturn) {
+    assert.equal(genericCallDataReturn.substring(0, 10), web3.eth.abi.encodeFunctionSignature("Error(string)"));
+    const errorMsgBytesLength = web3.utils.hexToNumber("0x" + genericCallDataReturn.substring(74, 138)) * 2;
+    return web3.utils.hexToUtf8("0x" + genericCallDataReturn.substring(138, 138 + errorMsgBytesLength));
+  }
+  
+  beforeEach( async function(){
+    tokenMock = await ERC20Mock.new(accounts[ 0 ], 200);
+    erc20Guild = await ERC20Guild.new();
+    await erc20Guild.initialize(tokenMock.address, 0, 200, 100);
+
+    actionMock = await ActionMock.new();
+    const standardTokenMock = await ERC20Mock.new(accounts[ 1 ], 1000);
+    const controllerCreator = await DxControllerCreator.new({gas: constants.ARC_GAS_LIMIT});
+    daoCreator = await DaoCreator.new(
+      controllerCreator.address, {gas: constants.ARC_GAS_LIMIT}
+    );
+    org = await helpers.setupOrganizationWithArrays(
+      daoCreator,
+      [ accounts[ 0 ], accounts[ 1 ], accounts[ 2 ], erc20Guild.address ],
+      [ 1000, 1000, 1000, 1000 ],
+      [ 20, 10, 20, 40 ]
+    );
+    
+    walletScheme = await WalletScheme.new();
+    votingMachine = await helpers.setupGenesisProtocol(
+      accounts, standardTokenMock.address, 0, helpers.NULL_ADDRESS
+    );
+    await walletScheme.initialize(
+      org.avatar.address,
+      votingMachine.address,
+      votingMachine.params,
+      org.controller.address
+    );
+    
+    quickWalletScheme = await WalletScheme.new();
+    await quickWalletScheme.initialize(
+      org.avatar.address,
+      votingMachine.address,
+      votingMachine.params,
+      helpers.NULL_ADDRESS
+    );
+    
+    await daoCreator.setSchemes(
+      org.avatar.address,
+      [ walletScheme.address, quickWalletScheme.address ],
+      [ votingMachine.params, votingMachine.params ],
+      [ helpers.encodePermission({
+        canGenericCall: true,
+        canUpgrade: true,
+        canChangeConstraints: true,
+        canRegisterSchemes: true
+      }),
+      helpers.encodePermission({
+        canGenericCall: false,
+        canUpgrade: false,
+        canChangeConstraints: false,
+        canRegisterSchemes: false
+      })
+      ],
+      "metaData"
+    );
+
+    tokenMock.mint(accounts[ 1 ], 50);
+    tokenMock.mint(accounts[ 2 ], 100);
+    tokenMock.mint(accounts[ 3 ], 150);
+    tokenMock.mint(accounts[ 4 ], 200);
+    tokenMock.mint(accounts[ 5 ], 250);
+
+    });
+
+    describe("Permissioned Guilds", function() {
+
+    it("initiliazes permissioned guild", async function() {
+
+      const permissionedGuild = await ERC20GuildPermissioned.new();
+      const _minimumProposalTime = 10;
+      const _tokensForExecution = 11;
+      const _tokensForCreation = 12;
+      assert.equal(await permissionedGuild.initialized(), false);
+
+      await permissionedGuild.initialize(tokenMock.address, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
+
+      assert.equal(await permissionedGuild.minimumProposalTime(), _minimumProposalTime);
+      assert.equal(await permissionedGuild.tokensForExecution(), _tokensForExecution);
+      assert.equal(await permissionedGuild.tokensForExecution(), _tokensForExecution);
+      assert.equal(await permissionedGuild.initialized(), true);
+    
+    });
+
+    it("cannot execute setAllowance with invalid input length", async function() {
+      const permissionedGuild = await ERC20GuildPermissioned.new();
+      const _minimumProposalTime = 10;
+      const _tokensForExecution = 11;
+      const _tokensForCreation = 12;
+      assert.equal(await permissionedGuild.initialized(), false);
+
+      await permissionedGuild.initialize(tokenMock.address, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
+      const functionSignature = await web3.eth.abi.encodeFunctionSignature('mint(address, uint256)');
+      const callDataAllowance = await new web3.eth.Contract(permissionedGuild.abi).methods.setAllowance([tokenMock.address,tokenMock.address], [functionSignature], [true]).encodeABI();
+      const tx = await permissionedGuild.createProposal(
+        [ permissionedGuild.address ],
+        [ callDataAllowance ],
+        [ 0 ],
+        "Testing Proposal",
+        helpers.NULL_ADDRESS,
+        0,
+        {from: accounts[ 3 ]}
+      );
+
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      await permissionedGuild.setVote(proposalId, 50, {from: accounts[ 1 ]});
+      await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 2 ]});
+      await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 3 ]});
+      await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 4 ]});
+      await time.increase(time.duration.seconds(20));
+      try {
+        await permissionedGuild.executeProposal(proposalId);
+        assert(false, "ERC20Guild: Wrong length of to, functionSignature or allowance arrays");
+      } catch(error) {
+        helpers.assertVMException(error);
+      }
+    
+    });
+
+    it("cannot execute setAllowance from outside", async function() {
+      const permissionedGuild = await ERC20GuildPermissioned.new();
+      await permissionedGuild.initialize(tokenMock.address, 10, 11, 12);
+      const functionSignature = await web3.eth.abi.encodeFunctionSignature('mint(address, uint256)');
+      try {
+        await permissionedGuild.setAllowance([tokenMock.address,tokenMock.address], [functionSignature], [true]);
+        assert(false, "ERC20Guild: Only callable by ERC20guild itself");
+      } catch(error) {
+        helpers.assertVMException(error);
+      }
+    
+    });
+
+    it("cannot execute proposals without allowance", async function() {
+      const permissionedGuild = await ERC20GuildPermissioned.new();
+      await permissionedGuild.initialize(tokenMock.address, 10, 11, 12);
+   
+      const callData = await new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[5], 100).encodeABI();
+      const tx = await permissionedGuild.createProposal(
+        [ tokenMock.address ],
+        [ callData ],
+        [ 0 ],
+        "Testing Proposal",
+        helpers.NULL_ADDRESS,
+        0,
+        {from: accounts[ 3 ]}
+      );
+
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      await permissionedGuild.setVote(proposalId, 50, {from: accounts[ 1 ]});
+      await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 2 ]});
+      await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 3 ]});
+      await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 4 ]});
+      await time.increase(time.duration.seconds(20));
+      try {
+        await permissionedGuild.executeProposal(proposalId);
+        assert(false, "ERC20GuildPermissioned: Not allowed call");
+      } catch(error) {
+        helpers.assertVMException(error);
+      }
+    
+    });
+
+    it.only("allows to whitelist function calls & execute whitelisted functions", async function() {
+      const permissionedGuild = await ERC20GuildPermissioned.new();
+      const _minimumProposalTime = 10;
+      const _tokensForExecution = 11;
+      const _tokensForCreation = 12;
+      assert.equal(await permissionedGuild.initialized(), false);
+
+      await permissionedGuild.initialize(tokenMock.address, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
+      assert.equal(await permissionedGuild.minimumProposalTime(), _minimumProposalTime);
+      assert.equal(await permissionedGuild.tokensForExecution(), _tokensForExecution);
+      assert.equal(await permissionedGuild.tokensForCreation(), _tokensForCreation);
+      assert.equal(await permissionedGuild.initialized(), true);
+
+      const functionSignature = await web3.eth.abi.encodeFunctionSignature('mint(address, uint256)');
+      const callDataAllowance = await new web3.eth.Contract(permissionedGuild.abi).methods.setAllowance([tokenMock.address], [functionSignature], [true]).encodeABI();
+      const tx = await permissionedGuild.createProposal(
+        [ permissionedGuild.address ],
+        [ callDataAllowance ],
+        [ 0 ],
+        "Testing Proposal",
+        helpers.NULL_ADDRESS,
+        0,
+        {from: accounts[ 3 ]}
+      );
+
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      await permissionedGuild.setVote(proposalId, 50, {from: accounts[ 1 ]});
+      await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 2 ]});
+      await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 3 ]});
+      await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 4 ]});
+      await time.increase(time.duration.seconds(20));
+      const receipt = await permissionedGuild.executeProposal(proposalId);
+      expectEvent(receipt, "ProposalExecuted", { proposalId: proposalId });
+      expectEvent(receipt, "SetAllowance", { to: tokenMock.address });
+
+      const callData = await new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[8], 60).encodeABI();
+      const tx2 = await permissionedGuild.createProposal(
+        [ tokenMock.address ],
+        [ callData ],
+        [ 0 ],
+        "Testing Proposal",
+        helpers.NULL_ADDRESS,
+        0,
+        {from: accounts[ 3 ]}
+      );
+
+      const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
+      await permissionedGuild.setVote(proposalId2, 50, {from: accounts[ 1 ]});
+      await permissionedGuild.setVote(proposalId2, 100, {from: accounts[ 2 ]});
+      await permissionedGuild.setVote(proposalId2, 100, {from: accounts[ 3 ]});
+      await permissionedGuild.setVote(proposalId2, 100, {from: accounts[ 4 ]});
+      await time.increase(time.duration.seconds(20));
+
+      console.log("JS: "+ functionSignature)
+      let agreem = new web3.eth.Contract(permissionedGuild.abi, permissionedGuild.address);
+      console.log("Allowed: " +await agreem.methods.allowTest(tokenMock.address, functionSignature).call({from:accounts[0]}))
+      console.log("Is Allowed?: " +await agreem.methods.callPermissions(tokenMock.address, functionSignature).call({from:accounts[0]}))
+
+
+
+ /*
+      console.log("Allowed2: " +await agreem.methods.allowTest2(tokenMock.address, callData).call({from:accounts[0]}))
+      console.log("Is Allowed2?: " +await agreem.methods.callPermissions(tokenMock.address, callData).call({from:accounts[0]}))
+      
+     
+      const receipt2 = await permissionedGuild.executeProposal(proposalId2);
+      expectEvent(receipt2, "ProposalExecuted", { proposalId: proposalId2 });
+
+      let agreem = new web3.eth.Contract(tokenMock.abi, tokenMock.address);
+      console.log("BalanceOF: " +await agreem.methods.balanceOf(accounts[8]).call({from:accounts[0]}))
       */
 
     });

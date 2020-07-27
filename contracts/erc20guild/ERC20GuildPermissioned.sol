@@ -13,14 +13,16 @@ import "./ERC20Guild.sol";
 contract ERC20GuildPermissioned is ERC20Guild {
     using SafeMath for uint256;
     
-    mapping(address => mapping(bytes4 => bool)) callPermissions;
+    mapping(address => mapping(bytes4 => bool)) public callPermissions;
+
+    event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance); 
     
     modifier isAllowed(address[] memory to, bytes[] memory data) {
       for (uint i = 0; i < to.length; i ++) {
         bytes memory _data = data[i];
         bytes4 functionSignature;
         assembly {
-          functionSignature := mload(add(_data, 4))
+          functionSignature := mload(add(_data, 32))
         }
         require(callPermissions[to[i]][functionSignature], 'ERC20GuildPermissioned: Not allowed call');
       }
@@ -38,9 +40,9 @@ contract ERC20GuildPermissioned is ERC20Guild {
       uint256 _tokensForExecution,
       uint256 _tokensForCreation
     ) public {
-      super.initilize(_token, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
-      callPermissions[address(this)][bytes4(keccak256(bytes('setConfig(uint256,uint256,uint256)')))] = true;
-      callPermissions[address(this)][bytes4(keccak256(bytes('setAllowance(address,bytes4,bool)')))] = true;
+      super.initialize(_token, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
+      callPermissions[address(this)][bytes4(keccak256("setConfig(uint256,uint256,uint256)"))] = true;
+      callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = true;
     }
     
     /// @dev Set the allowance of a call to be executed by the ERC20Guild
@@ -48,15 +50,22 @@ contract ERC20GuildPermissioned is ERC20Guild {
     /// @param functionSignature The signature of the function
     /// @param allowance If the function is allowed to be called or not
     function setAllowance(
-        address to,
-        bytes4 functionSignature,
-        bool allowance
+        address[] memory to,
+        bytes4[] memory functionSignature,
+        bool[] memory allowance
     ) public isInitialized {
         require(
             msg.sender == address(this), 
             "ERC20Guild: Only callable by ERC20guild itself"
         );
-        callPermissions[to][functionSignature] = allowance;
+        require(
+            (to.length == functionSignature.length) && (to.length == allowance.length),
+            "ERC20Guild: Wrong length of to, functionSignature or allowance arrays"
+        );
+        for (uint i = 0; i < to.length; i ++) {
+          callPermissions[to[i]][functionSignature[i]] = allowance[i];
+          emit SetAllowance(to[i], functionSignature[i], allowance[i]);
+        }
     }
     
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
@@ -66,5 +75,25 @@ contract ERC20GuildPermissioned is ERC20Guild {
     {
         super.executeProposal(proposalId);
     }
+
+
+    function allowTest(address to, bytes memory data) public returns(bytes4) {
+      bytes memory _data = data;
+      bytes4 functionSignature;
+      assembly {
+        functionSignature := mload(add(_data, 32))
+      }
+      return functionSignature;
+    }
+
+    function allowTest2(address to, bytes memory data) public returns(bytes4) {
+      bytes memory _data = data;
+      bytes4 functionSignature;
+      assembly {
+        functionSignature := mload(add(_data, 4))
+      }
+      return functionSignature;
+    }
+
 
 }

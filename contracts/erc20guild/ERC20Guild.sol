@@ -53,7 +53,7 @@ contract ERC20Guild {
     /// @param _minimumProposalTime The minimun time for a proposal to be under votation
     /// @param _tokensForExecution The token votes needed for a proposal to be executed
     /// @param _tokensForCreation The minimum balance of tokens needed to create a proposal
-    function initilize(
+    function initialize(
         address _token,
         uint256 _minimumProposalTime,
         uint256 _tokensForExecution,
