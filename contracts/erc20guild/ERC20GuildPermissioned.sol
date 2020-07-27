@@ -14,6 +14,8 @@ contract ERC20GuildPermissioned is ERC20Guild {
     using SafeMath for uint256;
     
     mapping(address => mapping(bytes4 => bool)) callPermissions;
+
+    event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
     
     modifier isAllowed(address[] memory to, bytes[] memory data) {
       for (uint i = 0; i < to.length; i ++) {
@@ -40,7 +42,7 @@ contract ERC20GuildPermissioned is ERC20Guild {
     ) public {
       super.initilize(_token, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
       callPermissions[address(this)][bytes4(keccak256(bytes('setConfig(uint256,uint256,uint256)')))] = true;
-      callPermissions[address(this)][bytes4(keccak256(bytes('setAllowance(address,bytes4,bool)')))] = true;
+      callPermissions[address(this)][bytes4(keccak256(bytes('setAllowance(address[],bytes4[],bool[])')))] = true;
     }
     
     /// @dev Set the allowance of a call to be executed by the ERC20Guild
@@ -48,15 +50,22 @@ contract ERC20GuildPermissioned is ERC20Guild {
     /// @param functionSignature The signature of the function
     /// @param allowance If the function is allowed to be called or not
     function setAllowance(
-        address to,
-        bytes4 functionSignature,
-        bool allowance
+        address[] memory to,
+        bytes4[] memory functionSignature,
+        bool[] memory allowance
     ) public isInitialized {
         require(
             msg.sender == address(this), 
             "ERC20Guild: Only callable by ERC20guild itself"
         );
-        callPermissions[to][functionSignature] = allowance;
+        require(
+            to.length == functionSignature.length && to.length == allowance.length,
+            "ERC20Guild: Wrong length of functionSignature or allowance"
+        );
+        for (uint i = 0; i < to.length; i ++) {
+          callPermissions[to[i]][functionSignature[i]] = allowance[i];
+          emit SetAllowance(to[i], functionSignature[i], allowance[i]);
+        }
     }
     
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
