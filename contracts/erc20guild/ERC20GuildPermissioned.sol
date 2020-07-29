@@ -13,9 +13,9 @@ import "./ERC20Guild.sol";
 contract ERC20GuildPermissioned is ERC20Guild {
     using SafeMath for uint256;
     
-    mapping(address => mapping(bytes4 => bool)) callPermissions;
+    mapping(address => mapping(bytes4 => bool)) public callPermissions;
 
-    event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
+    event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance); 
     
     modifier isAllowed(address[] memory to, bytes[] memory data) {
       for (uint i = 0; i < to.length; i ++) {
@@ -40,9 +40,9 @@ contract ERC20GuildPermissioned is ERC20Guild {
       uint256 _tokensForExecution,
       uint256 _tokensForCreation
     ) public {
-      super.initilize(_token, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
-      callPermissions[address(this)][bytes4(keccak256(bytes('setConfig(uint256,uint256,uint256)')))] = true;
-      callPermissions[address(this)][bytes4(keccak256(bytes('setAllowance(address[],bytes4[],bool[])')))] = true;
+      super.initialize(_token, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
+      callPermissions[address(this)][bytes4(keccak256("setConfig(uint256,uint256,uint256)"))] = true;
+      callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = true;
     }
     
     /// @dev Set the allowance of a call to be executed by the ERC20Guild
@@ -59,8 +59,8 @@ contract ERC20GuildPermissioned is ERC20Guild {
             "ERC20Guild: Only callable by ERC20guild itself"
         );
         require(
-            to.length == functionSignature.length && to.length == allowance.length,
-            "ERC20Guild: Wrong length of functionSignature or allowance"
+            (to.length == functionSignature.length) && (to.length == allowance.length),
+            "ERC20Guild: Wrong length of to, functionSignature or allowance arrays"
         );
         for (uint i = 0; i < to.length; i ++) {
           callPermissions[to[i]][functionSignature[i]] = allowance[i];
@@ -76,4 +76,12 @@ contract ERC20GuildPermissioned is ERC20Guild {
         super.executeProposal(proposalId);
     }
 
+    /* Testing function */ 
+    function allowTestReturn(bytes memory data) public view returns (bytes4) {
+      bytes4 functionSignature = bytes4(0);
+      assembly {
+        functionSignature := mload(add(data, 4))
+      }
+      return functionSignature;
+    }
 }
