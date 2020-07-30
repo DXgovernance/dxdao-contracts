@@ -662,43 +662,59 @@ contract("ERC20GuildPermissioned", function(accounts) {
       const _minimumProposalTime = 10;
       const _tokensForExecution = 11;
       const _tokensForCreation = 12;
+      const setAllowanceFuncSignature = web3.eth.abi.encodeFunctionSignature('setAllowance(address[],bytes4[],bool[])');
       assert.equal(await permissionedGuild.initialized(), false);
+      assert.equal(await permissionedGuild.getCallPermission(permissionedGuild.address, setAllowanceFuncSignature), false);
 
-      await permissionedGuild.initialize(tokenMock.address, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
+      await permissionedGuild.initialize(
+        tokenMock.address, _minimumProposalTime, _tokensForExecution, _tokensForCreation
+      );
       assert.equal(await permissionedGuild.minimumProposalTime(), _minimumProposalTime);
       assert.equal(await permissionedGuild.tokensForExecution(), _tokensForExecution);
       assert.equal(await permissionedGuild.tokensForCreation(), _tokensForCreation);
       assert.equal(await permissionedGuild.initialized(), true);
 
-     
-      const functionSignature = await web3.eth.abi.encodeFunctionSignature('mint(address, uint256)');
-      const callData = await new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[8], 60).encodeABI();
+      const mintData = new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[8], 60).encodeABI();
+      const testWithNoargsData = new web3.eth.Contract(actionMock.abi).methods.testWithNoargs().encodeABI();
+      const testWithNoargsFuncSignature = await permissionedGuild.getFuncSignature(testWithNoargsData);
+      const mintFunctionSignature = await permissionedGuild.getFuncSignature(mintData);
+      
+      let callDataSetAllowances = new web3.eth.Contract(permissionedGuild.abi).methods.setAllowance(
+        [tokenMock.address, actionMock.address],
+        [mintFunctionSignature, testWithNoargsFuncSignature],
+        [true, true]
+      ).encodeABI();
 
+      // Frts allow mint ans test function to be executed
       const tx = await permissionedGuild.createProposal(
         [ permissionedGuild.address ],
-        [ callDataAllowance ],
+        [ callDataSetAllowances ],
         [ 0 ],
-        "Testing Proposal",
+        "Allowing Mint",
         helpers.NULL_ADDRESS,
         0,
         {from: accounts[ 3 ]}
       );
-
       const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
       await permissionedGuild.setVote(proposalId, 50, {from: accounts[ 1 ]});
       await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 2 ]});
       await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 3 ]});
       await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 4 ]});
       await time.increase(time.duration.seconds(20));
+
       const receipt = await permissionedGuild.executeProposal(proposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: proposalId });
       expectEvent(receipt, "SetAllowance", { to: tokenMock.address });
-
-      const callData = await new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[8], 60).encodeABI();
+      expectEvent(receipt, "SetAllowance", { to: actionMock.address });
+      
+      assert.equal(await permissionedGuild.getCallPermission(tokenMock.address, mintFunctionSignature), true);
+      assert.equal(await permissionedGuild.getCallPermission(actionMock.address, testWithNoargsFuncSignature), true);
+      
+      // Execute mint and test functions
       const tx2 = await permissionedGuild.createProposal(
-        [ tokenMock.address ],
-        [ callData ],
-        [ 0 ],
+        [ tokenMock.address, actionMock.address ],
+        [ mintData, testWithNoargsData ],
+        [ 0, 0 ],
         "Testing Proposal",
         helpers.NULL_ADDRESS,
         0,
@@ -711,8 +727,8 @@ contract("ERC20GuildPermissioned", function(accounts) {
       await permissionedGuild.setVote(proposalId2, 100, {from: accounts[ 3 ]});
       await permissionedGuild.setVote(proposalId2, 100, {from: accounts[ 4 ]});
       await time.increase(time.duration.seconds(20));
-
-      receipt2 = await permissionedGuild.executeProposal(proposalId2);
+      
+      const receipt2 = await permissionedGuild.executeProposal(proposalId2);
       expectEvent(receipt2, "ProposalExecuted", { proposalId: proposalId2 });
 
     });

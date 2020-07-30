@@ -17,18 +17,6 @@ contract ERC20GuildPermissioned is ERC20Guild {
 
     event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance); 
     
-    modifier isAllowed(address[] memory to, bytes[] memory data) {
-      for (uint i = 0; i < to.length; i ++) {
-        bytes memory _data = data[i];
-        bytes4 functionSignature;
-        assembly {
-          functionSignature := mload(add(_data, 4))
-        }
-        require(callPermissions[to[i]][functionSignature], 'ERC20GuildPermissioned: Not allowed call');
-      }
-      _;
-    }
-    
     /// @dev Initilizer
     /// @param _token The address of the token to be used, it is immutable and ca
     /// @param _minimumProposalTime The minimun time for a proposal to be under votation
@@ -70,18 +58,27 @@ contract ERC20GuildPermissioned is ERC20Guild {
     
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
     /// @param proposalId The id of the proposal to be executed
-    function executeProposal(bytes32 proposalId) public isInitialized 
-      isAllowed(proposals[proposalId].to, proposals[proposalId].data)
-    {
+    function executeProposal(bytes32 proposalId) public isInitialized {
+        for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
+          bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
+          require(
+            callPermissions[proposals[proposalId].to[i]][proposalSignature] == true
+            , 'ERC20GuildPermissioned: Not allowed call');
+        }
         super.executeProposal(proposalId);
     }
 
-    /* Testing function */ 
-    function allowTestReturn(bytes memory data) public view returns (bytes4) {
-      bytes4 functionSignature = bytes4(0);
+    /// @dev Get call data signature
+    function getFuncSignature(bytes memory data) public view returns (bytes4) {
+      bytes32 functionSignature = bytes32(0);
       assembly {
-        functionSignature := mload(add(data, 4))
+        functionSignature := mload(add(data, 32))
       }
-      return functionSignature;
+      return bytes4(functionSignature);
+    }
+    
+    /// @dev Get call signature permission
+    function getCallPermission(address to, bytes4 functionSignature) public view returns (bool) {
+      return callPermissions[to][functionSignature];
     }
 }
