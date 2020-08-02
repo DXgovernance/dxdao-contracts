@@ -1,9 +1,7 @@
 pragma solidity 0.5.17;
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
-
 contract Wallet is Ownable {
-
     event ReceiveEther(address indexed _sender, uint256 _value);
     event Pay(address indexed _sender, uint256 _value);
 
@@ -16,5 +14,4 @@ contract Wallet is Ownable {
         _beneficiary.transfer(amount);
         emit Pay(_beneficiary, amount);
     }
-
 }

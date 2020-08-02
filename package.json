@@ -23,7 +23,8 @@
     "lint --fix": "eslint --fix .",
     "solhint": "solhint contracts/**/*.sol",
     "truffle": "truffle",
-    "build": "rimraf build && truffle compile"
+    "build": "rimraf build && truffle compile",
+    "prettier": "prettier --write contracts/**/*.sol"
   },
   "devDependencies": {
     "@babel/cli": "^7.10.1",
@@ -50,7 +51,7 @@
     "pug": "^2.0.0-rc.4",
     "rimraf": "^2.6.2",
     "run-with-ganache": "^0.1.1",
-    "solhint": "^2.3.1",
+    "solhint": "^3.1.0",
     "solidity-coverage": "^0.7.5",
     "truffle": "^5.1.28",
     "truffle-hdwallet-provider": "^1.0.17",
@@ -71,6 +72,8 @@
     "math": "0.0.3",
     "moment": "^2.27.0",
     "openzeppelin-solidity": "2.4.0",
+    "prettier": "^2.0.5",
+    "prettier-plugin-solidity": "^1.0.0-alpha.55",
     "truffle-flattener": "^1.4.4"
   },
   "peerDependencies": {

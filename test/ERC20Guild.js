@@ -89,10 +89,17 @@ contract("ERC20Guild", function(accounts) {
     );
 
     tokenMock.mint(accounts[ 1 ], 50);
-    tokenMock.mint(accounts[ 2 ], 100);
-    tokenMock.mint(accounts[ 3 ], 150);
-    tokenMock.mint(accounts[ 4 ], 200);
-    tokenMock.mint(accounts[ 5 ], 250);
+    tokenMock.mint(accounts[ 2 ], 500);
+    tokenMock.mint(accounts[ 3 ], 500);
+    tokenMock.mint(accounts[ 4 ], 500);
+    tokenMock.mint(accounts[ 5 ], 500);
+
+    tokenMock.approve(erc20Guild.address, 50, {from: accounts[ 0 ]})
+    tokenMock.approve(erc20Guild.address, 500, {from: accounts[ 1 ]})
+    tokenMock.approve(erc20Guild.address, 500, {from: accounts[ 2 ]})
+    tokenMock.approve(erc20Guild.address, 500, {from: accounts[ 3 ]})
+    tokenMock.approve(erc20Guild.address, 500, {from: accounts[ 4 ]})
+    tokenMock.approve(erc20Guild.address, 500, {from: accounts[ 5 ]})
     
   });
 
@@ -171,8 +178,10 @@ contract("ERC20Guild", function(accounts) {
     });
 
     it("cannot create proposals before guild is initlialized", async function() {
+      const _tokensForCreation = 10;
+      const guild = await ERC20Guild.new(tokenMock.address, 10, 10, _tokensForCreation);
+      await tokenMock.approve(guild.address, _tokensForCreation, {from: accounts[ 3 ]})
       try {
-        const guild = await ERC20Guild.new(tokenMock.address, 10, 10, 10);
         await guild.createProposal(
           [ guild.address ],
           [ helpers.NULL_ADDRESS ],
@@ -215,10 +224,10 @@ contract("ERC20Guild", function(accounts) {
         0,
         {from: accounts[ 3 ]}
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
       try {
         await erc20Guild.setVote(proposalId, 100, {from: accounts[ 1 ]});
-        assert(false, "ERC20Guild: Invalid tokens amount");
+        assert(false, "ERC20Guild: Insufficent token balance");
       } catch(error) {
         helpers.assertVMException(error);
       }
@@ -235,7 +244,7 @@ contract("ERC20Guild", function(accounts) {
         0, 
         {from: accounts[ 3 ]}
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
       const receipt = await erc20Guild.setVote(proposalId, 50, {from: accounts[ 3 ]});
       expectEvent(receipt, "VoteAdded", { proposalId: proposalId});
       const receipt2 = await erc20Guild.setVote(proposalId, 20, {from: accounts[ 3 ]});
@@ -252,7 +261,7 @@ contract("ERC20Guild", function(accounts) {
         0, 
         {from: accounts[ 3 ]}
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
       const receipt = await erc20Guild.setVote(proposalId, 20, {from: accounts[ 1 ]});
       expectEvent(receipt, "VoteAdded", {});
     });
@@ -267,7 +276,7 @@ contract("ERC20Guild", function(accounts) {
         0,
         {from: accounts[ 3 ]}
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
       await erc20Guild.setVote(proposalId, 50, {from: accounts[ 1 ]});
       await erc20Guild.setVote(proposalId, 100, {from: accounts[ 2 ]});
       try {
@@ -280,6 +289,9 @@ contract("ERC20Guild", function(accounts) {
 
     it("cannot execute proposal with endTime in the future", async function() {
       const guild = await ERC20Guild.new();
+      await tokenMock.approve(guild.address, 200, {from: accounts[ 1 ]});
+      await tokenMock.approve(guild.address, 200, {from: accounts[ 2 ]});
+      await tokenMock.approve(guild.address, 200, {from: accounts[ 3 ]});
       await guild.initialize(tokenMock.address, 60, 100, 100);
       const tx = await guild.createProposal(
         [ guild.address ],
@@ -290,7 +302,7 @@ contract("ERC20Guild", function(accounts) {
         0,
         {from: accounts[ 3 ]}
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
       await guild.setVote(proposalId, 50, {from: accounts[ 1 ]});
       await guild.setVote(proposalId, 100, {from: accounts[ 2 ]});
       try {
@@ -311,7 +323,7 @@ contract("ERC20Guild", function(accounts) {
         0,
         {from: accounts[ 3 ]}
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
       await erc20Guild.setVote(proposalId, 50, {from: accounts[ 1 ]});
       await erc20Guild.setVote(proposalId, 100, {from: accounts[ 2 ]});
       await erc20Guild.setVote(proposalId, 150, {from: accounts[ 3 ]});
@@ -335,7 +347,7 @@ contract("ERC20Guild", function(accounts) {
         0,
         {from: accounts[ 3 ]}
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
       await erc20Guild.setVote(proposalId, 50, {from: accounts[ 1 ]});
       await erc20Guild.setVote(proposalId, 100, {from: accounts[ 2 ]});
       await erc20Guild.setVote(proposalId, 100, {from: accounts[ 3 ]});
@@ -361,7 +373,7 @@ contract("ERC20Guild", function(accounts) {
         helpers.NULL_ADDRESS, 0,
         {from: accounts[ 3 ]}
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
       await erc20Guild.setVote(proposalId, 50, {from: accounts[ 1 ]});
       await erc20Guild.setVote(proposalId, 100, {from: accounts[ 2 ]});
       await erc20Guild.setVote(proposalId, 100, {from: accounts[ 3 ]});
@@ -391,8 +403,8 @@ contract("ERC20Guild", function(accounts) {
         0, 
         {from: accounts[ 3 ]}
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
-      const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
+      const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId", "ProposalCreated");
       try {
         await erc20Guild.setVotes([ proposalId, proposalId2 ], [ 50, 50, 60 ], {from: accounts[ 3 ]});
         assert(false, "ERC20Guild: Wrong length of proposalIds or tokens");s;
@@ -421,8 +433,8 @@ contract("ERC20Guild", function(accounts) {
         0, 
         {from: accounts[ 3 ]}
       );
-      const proposalId1 = await helpers.getValueFromLogs(tx, "proposalId");
-      const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
+      const proposalId1 = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
+      const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId", "ProposalCreated");
       const txVote = await erc20Guild.setVotes([ proposalId1, proposalId2 ], [ 50, 50 ], {from: accounts[ 3 ]});
       expectEvent(txVote, "VoteAdded", { proposalId: proposalId1});
       expectEvent(txVote, "VoteAdded", { proposalId: proposalId2});
@@ -452,10 +464,11 @@ contract("ERC20Guild", function(accounts) {
         [ 0 ],
         "Voting Proposal",
         helpers.NULL_ADDRESS,
-        0
+        0,
+        {from: accounts[ 3 ]}
       );
       
-      const proposalIdGuild = await helpers.getValueFromLogs(txGuild, "proposalId");
+      const proposalIdGuild = await helpers.getValueFromLogs(txGuild, "proposalId", "ProposalCreated");
       await erc20Guild.setVote(proposalIdGuild, 210, {from: accounts[ 5 ]});
       const txVote = await erc20Guild.setVote(proposalIdGuild, 200, {from: accounts[ 4 ]});
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild});
@@ -474,8 +487,69 @@ contract("ERC20Guild", function(accounts) {
       assert.equal(organizationProposal.callData[ 0 ], genericCallData);
       assert.equal(organizationProposal.to[ 0 ], tokenMock.address);
       assert.equal(organizationProposal.value[ 0 ], 0);
-            //assert.equal(await tokenMock.balanceOf(accounts[ 7 ]), (107).toString());
+      //assert.equal(await tokenMock.balanceOf(accounts[ 7 ]), (107).toString());
 
+    });
+
+  });
+
+  describe("Release tokens", function() {
+    
+    it("cannot release tokens for proposal that is not executed", async function() {
+      const callDataMint = await new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[ 3 ], 100).encodeABI();
+      const tx = await erc20Guild.createProposal(
+        [ tokenMock.address ],
+        [ callDataMint ],
+        [ 0 ],
+        "Testing Proposal",
+        helpers.NULL_ADDRESS,
+        0,
+        {from: accounts[ 3 ]}
+      );
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
+      try {
+        await erc20Guild.releaseAllTokens(proposalId);
+        assert(false, "ERC20Guild: Proposal not executed or not timed out");
+      } catch(error) {
+        helpers.assertVMException(error);
+      }
+    });
+
+    it.only("Releases tokens for executed proposal", async function() {
+      const callDataMint = await new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[ 7 ], 100).encodeABI();
+      assert.equal(await tokenMock.balanceOf(accounts[ 1 ]), 50);
+      assert.equal(await tokenMock.balanceOf(accounts[ 2 ]), 500);
+      assert.equal(await tokenMock.balanceOf(accounts[ 3 ]), 500);
+      assert.equal(await tokenMock.balanceOf(accounts[ 4 ]), 500);
+      const tx = await erc20Guild.createProposal(
+        [ tokenMock.address ],
+        [ callDataMint ],
+        [ 0 ],
+        "Testing Proposal",
+        helpers.NULL_ADDRESS,
+        0,
+        {from: accounts[ 3 ]}
+      );
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
+      await erc20Guild.setVote(proposalId, 50, {from: accounts[ 1 ]});
+      await erc20Guild.setVote(proposalId, 100, {from: accounts[ 2 ]});
+      await erc20Guild.setVote(proposalId, 100, {from: accounts[ 4 ]});
+      
+      assert.equal(await tokenMock.balanceOf(accounts[ 1 ]), 0);
+      assert.equal(await tokenMock.balanceOf(accounts[ 2 ]), 400);
+      assert.equal(await tokenMock.balanceOf(accounts[ 3 ]), 400);
+      assert.equal(await tokenMock.balanceOf(accounts[ 4 ]), 400);
+      
+      await time.increase(time.duration.seconds(30));
+      const receipt = await erc20Guild.executeProposal(proposalId);
+      expectEvent(receipt, "ProposalExecuted", { proposalId: proposalId });
+
+      await erc20Guild.releaseAllTokens(proposalId);
+      assert.equal(await tokenMock.balanceOf(accounts[ 1 ]), 50);
+      assert.equal(await tokenMock.balanceOf(accounts[ 2 ]), 500);
+      assert.equal(await tokenMock.balanceOf(accounts[ 3 ]), 500);
+      assert.equal(await tokenMock.balanceOf(accounts[ 4 ]), 500);
+      assert.equal(await tokenMock.balanceOf(accounts[ 5 ]), 500);
     });
 
   });
@@ -558,9 +632,9 @@ contract("ERC20GuildPermissioned", function(accounts) {
     tokenMock.mint(accounts[ 4 ], 200);
     tokenMock.mint(accounts[ 5 ], 250);
 
-    });
+  });
 
-    describe("Permissioned Guilds", function() {
+  describe("Permissioned Guilds", function() {
 
     it("initiliazes permissioned guild", async function() {
 
@@ -587,8 +661,13 @@ contract("ERC20GuildPermissioned", function(accounts) {
       assert.equal(await permissionedGuild.initialized(), false);
 
       await permissionedGuild.initialize(tokenMock.address, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
-      const functionSignature = await web3.eth.abi.encodeFunctionSignature('mint(address, uint256)');
-      const callDataAllowance = await new web3.eth.Contract(permissionedGuild.abi).methods.setAllowance([tokenMock.address,tokenMock.address], [functionSignature], [true]).encodeABI();
+      await tokenMock.approve(permissionedGuild.address, 50, {from: accounts[ 1 ]});
+      await tokenMock.approve(permissionedGuild.address, 100, {from: accounts[ 2 ]});
+      await tokenMock.approve(permissionedGuild.address, 112, {from: accounts[ 3 ]});
+      await tokenMock.approve(permissionedGuild.address, 100, {from: accounts[ 4 ]});
+
+      const functionSignature = await web3.eth.abi.encodeFunctionSignature("mint(address, uint256)");
+      const callDataAllowance = await new web3.eth.Contract(permissionedGuild.abi).methods.setAllowance([ tokenMock.address, tokenMock.address ], [ functionSignature ], [ true ]).encodeABI();
       const tx = await permissionedGuild.createProposal(
         [ permissionedGuild.address ],
         [ callDataAllowance ],
@@ -599,7 +678,7 @@ contract("ERC20GuildPermissioned", function(accounts) {
         {from: accounts[ 3 ]}
       );
 
-      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
       await permissionedGuild.setVote(proposalId, 50, {from: accounts[ 1 ]});
       await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 2 ]});
       await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 3 ]});
@@ -617,9 +696,9 @@ contract("ERC20GuildPermissioned", function(accounts) {
     it("cannot execute setAllowance from outside", async function() {
       const permissionedGuild = await ERC20GuildPermissioned.new();
       await permissionedGuild.initialize(tokenMock.address, 10, 11, 12);
-      const functionSignature = await web3.eth.abi.encodeFunctionSignature('mint(address, uint256)');
+      const functionSignature = await web3.eth.abi.encodeFunctionSignature("mint(address, uint256)");
       try {
-        await permissionedGuild.setAllowance([tokenMock.address,tokenMock.address], [functionSignature], [true]);
+        await permissionedGuild.setAllowance([ tokenMock.address, tokenMock.address ], [ functionSignature ], [ true ]);
         assert(false, "ERC20Guild: Only callable by ERC20guild itself");
       } catch(error) {
         helpers.assertVMException(error);
@@ -630,8 +709,12 @@ contract("ERC20GuildPermissioned", function(accounts) {
     it("cannot execute proposals without allowance", async function() {
       const permissionedGuild = await ERC20GuildPermissioned.new();
       await permissionedGuild.initialize(tokenMock.address, 10, 11, 12);
-   
-      const callData = await new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[5], 100).encodeABI();
+      await tokenMock.approve(permissionedGuild.address, 50, {from: accounts[ 1 ]});
+      await tokenMock.approve(permissionedGuild.address, 100, {from: accounts[ 2 ]});
+      await tokenMock.approve(permissionedGuild.address, 112, {from: accounts[ 3 ]});
+      await tokenMock.approve(permissionedGuild.address, 100, {from: accounts[ 4 ]});
+
+      const callData = await new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[ 5 ], 100).encodeABI();
       const tx = await permissionedGuild.createProposal(
         [ tokenMock.address ],
         [ callData ],
@@ -642,7 +725,7 @@ contract("ERC20GuildPermissioned", function(accounts) {
         {from: accounts[ 3 ]}
       );
 
-      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
       await permissionedGuild.setVote(proposalId, 50, {from: accounts[ 1 ]});
       await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 2 ]});
       await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 3 ]});
@@ -657,12 +740,17 @@ contract("ERC20GuildPermissioned", function(accounts) {
     
     });
 
-    it.only("allows to whitelist function calls & execute whitelisted functions", async function() {
+    it("allows to whitelist function calls & execute whitelisted functions", async function() {
+      tokenMock.mint(accounts[ 1 ], 200);
+      tokenMock.mint(accounts[ 2 ], 200);
+      tokenMock.mint(accounts[ 3 ], 200);
+      tokenMock.mint(accounts[ 4 ], 200);
+
       const permissionedGuild = await ERC20GuildPermissioned.new();
       const _minimumProposalTime = 10;
       const _tokensForExecution = 11;
       const _tokensForCreation = 12;
-      const setAllowanceFuncSignature = web3.eth.abi.encodeFunctionSignature('setAllowance(address[],bytes4[],bool[])');
+      const setAllowanceFuncSignature = web3.eth.abi.encodeFunctionSignature("setAllowance(address[],bytes4[],bool[])");
       assert.equal(await permissionedGuild.initialized(), false);
       assert.equal(await permissionedGuild.getCallPermission(permissionedGuild.address, setAllowanceFuncSignature), false);
 
@@ -674,18 +762,23 @@ contract("ERC20GuildPermissioned", function(accounts) {
       assert.equal(await permissionedGuild.tokensForCreation(), _tokensForCreation);
       assert.equal(await permissionedGuild.initialized(), true);
 
-      const mintData = new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[8], 60).encodeABI();
+      const mintData = new web3.eth.Contract(tokenMock.abi).methods.mint(accounts[ 8 ], 60).encodeABI();
       const testWithNoargsData = new web3.eth.Contract(actionMock.abi).methods.testWithNoargs().encodeABI();
       const testWithNoargsFuncSignature = await permissionedGuild.getFuncSignature(testWithNoargsData);
       const mintFunctionSignature = await permissionedGuild.getFuncSignature(mintData);
       
       let callDataSetAllowances = new web3.eth.Contract(permissionedGuild.abi).methods.setAllowance(
-        [tokenMock.address, actionMock.address],
-        [mintFunctionSignature, testWithNoargsFuncSignature],
-        [true, true]
+        [ tokenMock.address, actionMock.address ],
+        [ mintFunctionSignature, testWithNoargsFuncSignature ],
+        [ true, true ]
       ).encodeABI();
 
-      // Frts allow mint ans test function to be executed
+      await tokenMock.approve(permissionedGuild.address, 250, {from: accounts[ 1 ]});
+      await tokenMock.approve(permissionedGuild.address, 250, {from: accounts[ 2 ]});
+      await tokenMock.approve(permissionedGuild.address, 250, {from: accounts[ 3 ]});
+      await tokenMock.approve(permissionedGuild.address, 250, {from: accounts[ 4 ]});
+
+      // First allow mint and test function to be executed
       const tx = await permissionedGuild.createProposal(
         [ permissionedGuild.address ],
         [ callDataSetAllowances ],
@@ -695,7 +788,8 @@ contract("ERC20GuildPermissioned", function(accounts) {
         0,
         {from: accounts[ 3 ]}
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
+
       await permissionedGuild.setVote(proposalId, 50, {from: accounts[ 1 ]});
       await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 2 ]});
       await permissionedGuild.setVote(proposalId, 100, {from: accounts[ 3 ]});
@@ -721,7 +815,7 @@ contract("ERC20GuildPermissioned", function(accounts) {
         {from: accounts[ 3 ]}
       );
       
-      const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
+      const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId", "ProposalCreated");
       await permissionedGuild.setVote(proposalId2, 50, {from: accounts[ 1 ]});
       await permissionedGuild.setVote(proposalId2, 100, {from: accounts[ 2 ]});
       await permissionedGuild.setVote(proposalId2, 100, {from: accounts[ 3 ]});

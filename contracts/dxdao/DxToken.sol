@@ -1,6 +1,6 @@
 /**
  *Submitted for verification at Etherscan.io on 2019-04-02
-*/
+ */
 
 // File: openzeppelin-solidity/contracts/token/ERC20/IERC20.sol
 
@@ -15,7 +15,11 @@ interface IERC20 {
 
     function approve(address spender, uint256 value) external returns (bool);
 
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
 
     function totalSupply() external view returns (uint256);
 
@@ -38,8 +42,8 @@ pragma solidity ^0.5.0;
  */
 library SafeMath {
     /**
-    * @dev Multiplies two unsigned integers, reverts on overflow.
-    */
+     * @dev Multiplies two unsigned integers, reverts on overflow.
+     */
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
         // benefit is lost if 'b' is also tested.
@@ -55,8 +59,8 @@ library SafeMath {
     }
 
     /**
-    * @dev Integer division of two unsigned integers truncating the quotient, reverts on division by zero.
-    */
+     * @dev Integer division of two unsigned integers truncating the quotient, reverts on division by zero.
+     */
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
         // Solidity only automatically asserts when dividing by 0
         require(b > 0);
@@ -67,8 +71,8 @@ library SafeMath {
     }
 
     /**
-    * @dev Subtracts two unsigned integers, reverts on overflow (i.e. if subtrahend is greater than minuend).
-    */
+     * @dev Subtracts two unsigned integers, reverts on overflow (i.e. if subtrahend is greater than minuend).
+     */
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b <= a);
         uint256 c = a - b;
@@ -77,8 +81,8 @@ library SafeMath {
     }
 
     /**
-    * @dev Adds two unsigned integers, reverts on overflow.
-    */
+     * @dev Adds two unsigned integers, reverts on overflow.
+     */
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
         require(c >= a);
@@ -87,9 +91,9 @@ library SafeMath {
     }
 
     /**
-    * @dev Divides two unsigned integers and returns the remainder (unsigned integer modulo),
-    * reverts when dividing by zero.
-    */
+     * @dev Divides two unsigned integers and returns the remainder (unsigned integer modulo),
+     * reverts when dividing by zero.
+     */
     function mod(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b != 0);
         return a % b;
@@ -99,8 +103,6 @@ library SafeMath {
 // File: openzeppelin-solidity/contracts/token/ERC20/ERC20.sol
 
 pragma solidity ^0.5.0;
-
-
 
 /**
  * @title Standard ERC20 token
@@ -117,24 +119,24 @@ pragma solidity ^0.5.0;
 contract ERC20 is IERC20 {
     using SafeMath for uint256;
 
-    mapping (address => uint256) private _balances;
+    mapping(address => uint256) private _balances;
 
-    mapping (address => mapping (address => uint256)) private _allowed;
+    mapping(address => mapping(address => uint256)) private _allowed;
 
     uint256 private _totalSupply;
 
     /**
-    * @dev Total number of tokens in existence
-    */
+     * @dev Total number of tokens in existence
+     */
     function totalSupply() public view returns (uint256) {
         return _totalSupply;
     }
 
     /**
-    * @dev Gets the balance of the specified address.
-    * @param owner The address to query the balance of.
-    * @return An uint256 representing the amount owned by the passed address.
-    */
+     * @dev Gets the balance of the specified address.
+     * @param owner The address to query the balance of.
+     * @return An uint256 representing the amount owned by the passed address.
+     */
     function balanceOf(address owner) public view returns (uint256) {
         return _balances[owner];
     }
@@ -150,10 +152,10 @@ contract ERC20 is IERC20 {
     }
 
     /**
-    * @dev Transfer token for a specified address
-    * @param to The address to transfer to.
-    * @param value The amount to be transferred.
-    */
+     * @dev Transfer token for a specified address
+     * @param to The address to transfer to.
+     * @param value The amount to be transferred.
+     */
     function transfer(address to, uint256 value) public returns (bool) {
         _transfer(msg.sender, to, value);
         return true;
@@ -184,7 +186,11 @@ contract ERC20 is IERC20 {
      * @param to address The address which you want to transfer to
      * @param value uint256 the amount of tokens to be transferred
      */
-    function transferFrom(address from, address to, uint256 value) public returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) public returns (bool) {
         _allowed[from][msg.sender] = _allowed[from][msg.sender].sub(value);
         _transfer(from, to, value);
         emit Approval(from, msg.sender, _allowed[from][msg.sender]);
@@ -228,12 +234,16 @@ contract ERC20 is IERC20 {
     }
 
     /**
-    * @dev Transfer token for a specified addresses
-    * @param from The address to transfer from.
-    * @param to The address to transfer to.
-    * @param value The amount to be transferred.
-    */
-    function _transfer(address from, address to, uint256 value) internal {
+     * @dev Transfer token for a specified addresses
+     * @param from The address to transfer from.
+     * @param to The address to transfer to.
+     * @param value The amount to be transferred.
+     */
+    function _transfer(
+        address from,
+        address to,
+        uint256 value
+    ) internal {
         require(to != address(0));
 
         _balances[from] = _balances[from].sub(value);
@@ -289,7 +299,6 @@ contract ERC20 is IERC20 {
 
 pragma solidity ^0.5.0;
 
-
 /**
  * @title Burnable Token
  * @dev Token that can be irreversibly burned (destroyed).
@@ -331,7 +340,7 @@ contract Ownable {
      * @dev The Ownable constructor sets the original `owner` of the contract to the sender
      * account.
      */
-    constructor () internal {
+    constructor() internal {
         _owner = msg.sender;
         emit OwnershipTransferred(address(0), _owner);
     }
@@ -392,17 +401,12 @@ contract Ownable {
 
 pragma solidity ^0.5.4;
 
-
-
-
-
 /**
  * @title DAOToken, base on zeppelin contract.
  * @dev ERC20 compatible token. It is a mintable, burnable token.
  */
 
 contract DAOToken is ERC20, ERC20Burnable, Ownable {
-
     string public name;
     string public symbol;
     // solhint-disable-next-line const-name-snakecase
@@ -410,13 +414,16 @@ contract DAOToken is ERC20, ERC20Burnable, Ownable {
     uint256 public cap;
 
     /**
-    * @dev Constructor
-    * @param _name - token name
-    * @param _symbol - token symbol
-    * @param _cap - token cap - 0 value means no cap
-    */
-    constructor(string memory _name, string memory _symbol, uint256 _cap)
-    public {
+     * @dev Constructor
+     * @param _name - token name
+     * @param _symbol - token symbol
+     * @param _cap - token cap - 0 value means no cap
+     */
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint256 _cap
+    ) public {
         name = _name;
         symbol = _symbol;
         cap = _cap;
@@ -428,8 +435,7 @@ contract DAOToken is ERC20, ERC20Burnable, Ownable {
      * @param _amount The amount of tokens to mint.
      */
     function mint(address _to, uint256 _amount) public onlyOwner returns (bool) {
-        if (cap > 0)
-            require(totalSupply().add(_amount) <= cap);
+        if (cap > 0) require(totalSupply().add(_amount) <= cap);
         _mint(_to, _amount);
         return true;
     }
@@ -439,9 +445,11 @@ contract DAOToken is ERC20, ERC20Burnable, Ownable {
 
 pragma solidity ^0.5.4;
 
-
-
 // is DAOToken
 contract DxToken is DAOToken {
-    constructor(string memory _name, string memory _symbol, uint _cap) public DAOToken(_name, _symbol, _cap) {}
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint256 _cap
+    ) public DAOToken(_name, _symbol, _cap) {}
 }
