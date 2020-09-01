@@ -6,9 +6,11 @@ var WalletScheme = artifacts.require("WalletScheme.sol");
 var ContributionReward = artifacts.require("ContributionReward.sol");
 var SchemeRegistrar = artifacts.require("SchemeRegistrar.sol");
 var GenesisProtocol = artifacts.require("GenesisProtocol.sol");
+var DXDVotingMachine = artifacts.require("DXDVotingMachine.sol");
 var DxControllerCreator = artifacts.require("DxControllerCreator.sol");
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 const GEN_TOKEN = "0x543Ff227F64Aa17eA132Bf9886cAb5DB55DCAddf";
+const DXD_TOKEN = "0xDd25BaE0659fC06a8d00CD06C7f5A98D71bfB715";
 var moment = require("moment");
 const constants = require("../test/helpers/constants");
 const { encodePermission } = require("../test/helpers/permissions");
@@ -41,10 +43,12 @@ module.exports = async function(deployer) {
       initTokenInWei, initRepInWei, cap, {gas: constants.ARC_GAS_LIMIT});
     var DxAvatarInst = await DxAvatar.at(returnedParams.logs[ 0 ].args._avatar);
     var ContollerInst = await DxController.at(await DxAvatarInst.owner());
+    // Deploy DXDVotingMachine:
     await deployer.deploy(GenesisProtocol, GEN_TOKEN, {gas: constants.ARC_GAS_LIMIT});
-    // Deploy GenesisProtocol:
     var genesisProtocol = await GenesisProtocol.deployed();
-    
+    await deployer.deploy(DXDVotingMachine, DXD_TOKEN, {gas: constants.ARC_GAS_LIMIT});
+    var dxdVotingMachine = await DXDVotingMachine.deployed();
+
     async function encodeParameters(parameters) {
       return await genesisProtocol.getParametersHash(
         [
@@ -75,13 +79,13 @@ module.exports = async function(deployer) {
       quietEndingPeriod: moment.duration(1, 'days').asSeconds(), 
       proposingRepReward: 0, 
       votersReputationLossRatio: 0, 
-      minimumDaoBounty: web3.utils.toWei("200"),
+      minimumDaoBounty: web3.utils.toWei("0.02"),
       daoBountyConst: 2, 
       activationTime: moment().add(10, 'min').unix(),
       voteOnBehalf: NULL_ADDRESS
     });
     await masterWalletScheme.initialize(
-      DxAvatarInst.address, genesisProtocol.address, masterWalletSchemeParamsHash, ContollerInst.address
+      DxAvatarInst.address, dxdVotingMachine.address, masterWalletSchemeParamsHash, ContollerInst.address
     );
     
     // Deploy QuickWalletScheme:
@@ -96,13 +100,13 @@ module.exports = async function(deployer) {
       quietEndingPeriod: moment.duration(0.5, 'days').asSeconds(), 
       proposingRepReward: 0, 
       votersReputationLossRatio: 0, 
-      minimumDaoBounty: web3.utils.toWei("100"),
+      minimumDaoBounty: web3.utils.toWei("0.01"),
       daoBountyConst: 2, 
       activationTime: moment().add(10, 'min').unix(),
       voteOnBehalf: NULL_ADDRESS
     });
     await quickWalletScheme.initialize(
-      DxAvatarInst.address, genesisProtocol.address, quickWalletSchemeParamsHash, NULL_ADDRESS
+      DxAvatarInst.address, dxdVotingMachine.address, quickWalletSchemeParamsHash, NULL_ADDRESS
     );
     
     // Deploy ContributionReward:
@@ -115,10 +119,10 @@ module.exports = async function(deployer) {
       preBoostedVotePeriodLimit: moment.duration(0.25, 'days').asSeconds(), 
       thresholdConst: 2, 
       quietEndingPeriod: moment.duration(2, 'days').asSeconds(), 
-      proposingRepReward: 0, 
-      votersReputationLossRatio: 0, 
-      minimumDaoBounty: web3.utils.toWei("100"),
-      daoBountyConst: 2, 
+      proposingRepReward: web3.utils.toWei("500"), 
+      votersReputationLossRatio: 4, 
+      minimumDaoBounty: web3.utils.toWei("200"),
+      daoBountyConst: 10, 
       activationTime: moment().add(10, 'min').unix(),
       voteOnBehalf: NULL_ADDRESS
     });
@@ -133,9 +137,9 @@ module.exports = async function(deployer) {
       preBoostedVotePeriodLimit: moment.duration(0.5, 'days').asSeconds(),
       thresholdConst: 2,
       quietEndingPeriod: moment.duration(1, 'days').asSeconds(),
-      proposingRepReward: 0,
-      votersReputationLossRatio: 0,
-      minimumDaoBounty: web3.utils.toWei("100"),
+      proposingRepReward: web3.utils.toWei("2000"),
+      votersReputationLossRatio: 4,
+      minimumDaoBounty: web3.utils.toWei("1000"),
       daoBountyConst: 2,
       activationTime: moment().add(10, 'min').unix(),
       voteOnBehalf: NULL_ADDRESS

@@ -32,7 +32,7 @@ module.exports = {
         return new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/${infuraApiKey}`)	
       },	
       network_id: '3',	
-      gas: 8000000,	
+      gas: 9000000,	
       gasPrice: 10000000000 //10 Gwei	
     },	
     kovan: {	
@@ -43,11 +43,11 @@ module.exports = {
       gas: 9000000,	
       gasPrice: 10000000000 //10 Gwei	
     },
-    develop: {
+    test: {
       network_id: "*",
       host: "localhost",
       port: 8545,
-      gas: 4543760,
+      gas: 9000000,
       gasPrice: 10000000000 //10 Gwei	
     },
     soliditycoverage: {

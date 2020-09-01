@@ -7,7 +7,7 @@ const DxReputation = artifacts.require("./DxReputation.sol");
 const DxToken = artifacts.require("./DxToken.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
-const GenesisProtocol = artifacts.require("./SignedGenesisProtocol.sol");
+const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
@@ -21,7 +21,7 @@ const createCallToActionMock = async function(_sender, _actionMock) {
 
 contract("DXdao", function(accounts) {
 
-  it("Wallet - execute proposeVote -positive decision - check action - with GenesisProtocol", async function() {  
+  it("Wallet - execute proposeVote -positive decision - check action - with DXDVotingMachine", async function() {  
     const votingMachineToken = await ERC20Mock.new(accounts[ 0 ], 1000);
     const masterWalletScheme = await WalletScheme.new();
     const controllerCreator = await DxControllerCreator.new({gas: constants.ARC_GAS_LIMIT});
@@ -33,14 +33,7 @@ contract("DXdao", function(accounts) {
     const usersRep = [ 20, 10, 70 ];
     
     var tx = await daoCreator.forgeOrg(
-      "testOrg",
-      "TEST",
-      "TST",
-      users,
-      usersTokens,
-      usersRep,
-      0,
-      {gas: constants.ARC_GAS_LIMIT}
+      "testOrg", "TEST", "TST", users, usersTokens, usersRep, 0, {gas: constants.ARC_GAS_LIMIT}
     );
     assert.equal(tx.logs.length, 1);
     assert.equal(tx.logs[ 0 ].event, "NewOrg");
@@ -50,10 +43,10 @@ contract("DXdao", function(accounts) {
     const controller = await DxController.at(await avatar.owner());
     
     const votingMachine = await helpers.setupGenesisProtocol(
-      accounts, votingMachineToken.address, 'signed', helpers.NULL_ADDRESS
+      accounts, votingMachineToken.address, 'dxd', helpers.NULL_ADDRESS
     );
     
-    const genesisProtocol = await GenesisProtocol.new(token.address, {gas: constants.ARC_GAS_LIMIT});
+    const genesisProtocol = await DXDVotingMachine.new(token.address, {gas: constants.ARC_GAS_LIMIT});
     
     // Parameters
     const voteOnBehalf = helpers.NULL_ADDRESS;
