@@ -151,7 +151,7 @@ export const setupAbsoluteVote = async function(voteOnBehalf = NULL_ADDRESS, pre
 export const setupGenesisProtocol = async function(
   accounts,
   token,
-  votingMachineType,
+  votingMachineType = 'gen',
   voteOnBehalf = NULL_ADDRESS,
   _queuedVoteRequiredPercentage = 50,
   _queuedVotePeriodLimit = 60,
