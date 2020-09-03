@@ -173,10 +173,6 @@ contract DaoCreator {
 
         // Mint token and reputation for founders:
         for (uint256 i = 0; i < _founders.length; i++) {
-            require(_founders[i] != address(0));
-            if (_foundersTokenAmount[i] > 0) {
-                nativeToken.mint(_founders[i], _foundersTokenAmount[i]);
-            }
             if (_foundersReputationAmount[i] > 0) {
                 nativeReputation.mint(_founders[i], _foundersReputationAmount[i]);
             }
@@ -194,4 +190,5 @@ contract DaoCreator {
         emit NewOrg (address(avatar));
         return (address(avatar));
     }
+    
 }
