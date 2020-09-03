@@ -170,7 +170,7 @@ export const setupGenesisProtocol = async function(
     : await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
 
   // register some parameters
-  votingMachine.setParameters(
+  await votingMachine.setParameters(
     [ _queuedVoteRequiredPercentage,
       _queuedVotePeriodLimit,
       _boostedVotePeriodLimit,

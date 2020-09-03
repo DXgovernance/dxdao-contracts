@@ -1,3 +1,7 @@
+// 
+// Copied from https://github.com/daostack/arc/blob/master/test/contributionsreward.js
+//
+
 import * as helpers from './helpers';
 const constants = require('./helpers/constants');
 const ContributionReward = artifacts.require("./ContributionReward.sol");
