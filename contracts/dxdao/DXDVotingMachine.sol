@@ -3,7 +3,14 @@ pragma solidity ^0.5.11;
 import "../daostack/votingMachines/GenesisProtocol.sol";
 
 /**
- * @title GenesisProtocol implementation for DXD payable and signed votes
+ * @title GenesisProtocol implementation designed for DXdao
+ *
+ * New Features:
+ *  - Payable Votes: Any organization can send funds and configure the gas and maxGasPrice to be refunded per vote.
+ *  - Signed Votes: Votes can be signed for this or any voting machine, they can shared on this voting machine and
+ *    execute votes signed for this voting machine.
+ *  - Signal Votes: Voters can signal their decisions with near 50k gas, the signaled votes can be executed on
+ *    chain by anyone.
  */
 contract DXDVotingMachine is GenesisProtocol {
 
@@ -30,10 +37,10 @@ contract DXDVotingMachine is GenesisProtocol {
       uint256 amount;
     }
     
-    mapping(bytes32 => mapping(address => VoteDecision)) public votesShared;
+    mapping(bytes32 => mapping(address => VoteDecision)) public votesSignaled;
     
-    // Event used to share votes to be executed on chain
-    event VoteShared(
+    // Event used to signal votes to be executed on chain
+    event VoteSignaled(
       bytes32 proposalId,
       address voter,
       uint256 voteDecision,
@@ -49,7 +56,7 @@ contract DXDVotingMachine is GenesisProtocol {
     }
     
     /**
-    * @dev Allows the voting machine to receive ether to be spent by an organization to refund voting costs
+    * @dev Allows the voting machine to receive ether to be used to refund voting costs
     */
     function() external payable {
       if (organizationRefunds[msg.sender].voteGas > 0)
@@ -76,8 +83,9 @@ contract DXDVotingMachine is GenesisProtocol {
      * @param _voter voter address
      * @return bool if the proposal has been executed or not
      */
-    function vote(bytes32 _proposalId, uint256 _vote, uint256 _amount, address _voter)
-    external votable(_proposalId) returns(bool) {
+    function vote(
+      bytes32 _proposalId, uint256 _vote, uint256 _amount, address _voter
+    ) external votable(_proposalId) returns(bool) {
         Proposal storage proposal = proposals[_proposalId];
         Parameters memory params = parameters[proposal.paramsHash];
         address voter;
@@ -93,7 +101,7 @@ contract DXDVotingMachine is GenesisProtocol {
     }
     
     /**
-     * @dev Share the vote of a proposal on a voting machine on a event log
+     * @dev Share the vote of a proposal for a voting machine on a event log
      *
      * @param votingMachine the voting machine address
      * @param proposalId id of the proposal
@@ -115,21 +123,21 @@ contract DXDVotingMachine is GenesisProtocol {
     }
     
     /**
-     * @dev Share the vote of a proposal in this voting machine to be executed later
+     * @dev Signal the vote of a proposal in this voting machine to be executed later
      *
      * @param proposalId id of the proposal to vote
      * @param voteDecision the vote decisions, NO(2) or YES(1).
      * @param amount the reputation amount to vote with, 0 will use all available REP
      */
-    function shareVote(
+    function signalVote(
       bytes32 proposalId, uint256 voteDecision, uint256 amount
     ) external {
       require(_isVotable(proposalId), "not votable proposal");
       require(voteDecision > 0, "invalid voteDecision");
-      require(votesShared[proposalId][msg.sender].voteDecision == 0, 'already voted');
-      votesShared[proposalId][msg.sender].voteDecision = voteDecision;
-      votesShared[proposalId][msg.sender].amount = amount;
-      emit VoteShared(proposalId, msg.sender, voteDecision, amount);
+      require(votesSignaled[proposalId][msg.sender].voteDecision == 0, 'already voted');
+      votesSignaled[proposalId][msg.sender].voteDecision = voteDecision;
+      votesSignaled[proposalId][msg.sender].amount = amount;
+      emit VoteSignaled(proposalId, msg.sender, voteDecision, amount);
     }
 
     /**
@@ -171,7 +179,7 @@ contract DXDVotingMachine is GenesisProtocol {
      * @param voteDecision the vote decisions, NO(2) or YES(1).
      * @param amount the reputation amount to vote with, 0 will use all available REP
      */
-    function executeSharedVote(
+    function executeSignaledVote(
       bytes32 proposalId,
       address voter,
       uint256 voteDecision,
@@ -179,9 +187,9 @@ contract DXDVotingMachine is GenesisProtocol {
     ) external {
       require(_isVotable(proposalId), "not votable proposal");
       require(voteDecision > 0, "wrong voteDecision");
-      require(votesShared[proposalId][voter].voteDecision > 0, "wrong vote shared");
+      require(votesSignaled[proposalId][voter].voteDecision > 0, "wrong vote shared");
       internalVote(proposalId, voter, voteDecision, amount);
-      delete votesShared[proposalId][voter];
+      delete votesSignaled[proposalId][voter];
       _refundVote(proposals[proposalId].organizationId, msg.sender);
     }
     
