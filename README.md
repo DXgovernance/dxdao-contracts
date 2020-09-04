@@ -40,4 +40,4 @@ The parameters used in the schemes are the sames that are used on mainnet but wi
 
 The migration can be executed with:
 
-`npm run deploy --network kovan`
+`npm run deploy -- --network kovan`
