@@ -61,7 +61,7 @@ async function main() {
     totalRep: totalRep.toString()
   }
   console.log('REP Holders:', repHolders)
-  fs.writeFileSync('migrations/repHolders.json', JSON.stringify(repHolders));
+  fs.writeFileSync('.repHolders.json', JSON.stringify(repHolders));
 } 
 
 Promise.all([main()]).then(process.exit);

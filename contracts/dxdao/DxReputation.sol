@@ -184,6 +184,23 @@ contract Reputation is Ownable {
         emit Mint(_user, _amount);
         return true;
     }
+    
+    /// @notice Generates `_amount` reputation that are assigned to `_owner`
+    /// @param _user The address that will be assigned the new reputation
+    /// @param _amount The quantity of reputation generated
+    /// @return True if the reputation are generated correctly
+  function mintMultiple(address[] memory _user, uint256[] memory _amount) public onlyOwner returns (bool) {
+      for (uint256 i = 0;i < _user.length; i ++){
+        uint256 curTotalSupply = totalSupply();
+        require(curTotalSupply + _amount[i] >= curTotalSupply); // Check for overflow
+        uint256 previousBalanceTo = balanceOf(_user[i]);
+        require(previousBalanceTo + _amount[i] >= previousBalanceTo); // Check for overflow
+        updateValueAtNow(totalSupplyHistory, curTotalSupply + _amount[i]);
+        updateValueAtNow(balances[_user[i]], previousBalanceTo + _amount[i]);
+        emit Mint(_user[i], _amount[i]);
+      }
+      return true;
+  }
 
       /// @notice Burns `_amount` reputation from `_owner`
       /// @param _user The address that will lose the reputation

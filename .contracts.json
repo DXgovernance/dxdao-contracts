@@ -1,0 +1,16 @@
+{
+  "network": "kovan",
+  "deployerAccount": "0xC4B60a931929d3ed0AC423F9Ea80e5962726dA73",
+  "addresses": {
+    "dxReputation": "0xD41Fb360596B51Bb1d003B3208AF134fad77B708",
+    "dxController": "0x44AE453fF12a07694d145Df8d2021F2403F60abc",
+    "dxToken": "0x51cc463F193a78E65A73c141005343a774c5fb8E",
+    "dxAvatar": "0x7B3e549732bBd291478838fF9D9a07DCEabf5107",
+    "dxdVotingMachine": "0x97cD9912B540c6500c6a4EAE4870c4C077840d80",
+    "genesisProtocol": "0xeAA53E8b50D4Cc3bCb2aE05fdf1F6DeB3Bcdb3c1",
+    "contributionReward": "0x3739c7E9B591C96240caBc5A693A6249f78Bf9a4",
+    "schemeRegistrar": "0x8E61984E22448F7f46bBB956a25052D29b13895c",
+    "masterWalletScheme": "0x61564E31159f079cBf344D40FCc8f7b97fFf49a3",
+    "quickWalletScheme": "0x4dF20a391Ee8AC9655E169989A5918001379dded"
+  }
+}
