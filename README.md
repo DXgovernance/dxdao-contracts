@@ -23,6 +23,21 @@ All the contracts are organized in different folders:
 
 ## Migrate
 
-The migrate script will deploy the same DXdao contracts that are deployed on mainnet with a main WalletScheme that will have all permissions, a quick WalletScheme to execute quick decisions with no permissions, an SchemeRegitrar that can manage schemes, constraints and upgrade the controller and a common ContributionReward scheme that can only execute generic calls.
+### Get Reputation 
 
-`npm run migrate`
+Get the initial reputation you want to use for migration with `getReputation` script.
+```
+node scripts/getReputation.js --network mainnet --repToken 0x7a927a93f221976aae26d5d077477307170f0b7c --fromBlock 7850172 --toBlock 10782410
+```
+
+### Deployment
+
+The migrate script will deploy the same DXdao contracts that are deployed on mainnet with a main WalletScheme that will have all permissions, a quick WalletScheme to execute quick decisions with no controller permissions, an SchemeRegitrar that can manage schemes, constraints and upgrade the controller and a common ContributionReward scheme that can only execute generic calls.
+
+Regarding VotingMachines the WalletScheme and QuickWalletScheme will use a DXDVotingMachine and SchemeRegistrar and ContributionReward scheme will use GenesisProtocol.
+
+The parameters used in the schemes are the sames that are used on mainnet but with a quicker configuration to get boosted proposals passed in 1-3 days depending the scheme.
+
+The migration can be executed with:
+
+`npm run deploy -- --network kovan`

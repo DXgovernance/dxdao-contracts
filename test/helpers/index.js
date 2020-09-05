@@ -8,8 +8,7 @@ const DAOToken = artifacts.require("./DAOToken.sol");
 const Reputation = artifacts.require("./Reputation.sol");
 const AbsoluteVote = artifacts.require("./AbsoluteVote.sol");
 const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
-const SignedGenesisProtocol = artifacts.require("./SignedGenesisProtocol.sol");
-const PayableGenesisProtocol = artifacts.require("./PayableGenesisProtocol.sol");
+const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const constants = require("./constants");
@@ -25,6 +24,7 @@ export const logDecoder = new EthDecoder.default.LogDecoder(
     Reputation.abi,
     AbsoluteVote.abi,
     GenesisProtocol.abi,
+    DXDVotingMachine.abi,
     WalletScheme.abi
   ]
 );
@@ -37,6 +37,7 @@ export const txDecoder = new EthDecoder.default.TxDecoder(
     Reputation.abi,
     AbsoluteVote.abi,
     GenesisProtocol.abi,
+    DXDVotingMachine.abi,
     WalletScheme.abi
   ]
 );
@@ -46,7 +47,6 @@ export const NULL_HASH = "0x0000000000000000000000000000000000000000000000000000
 export const SOME_HASH = "0x1000000000000000000000000000000000000000000000000000000000000000";
 export const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 export const SOME_ADDRESS = "0x1000000000000000000000000000000000000000";
-
 
 export function getProposalAddress(tx) {
   // helper function that returns a proposal object from the ProposalCreated event
@@ -149,7 +149,7 @@ export const setupAbsoluteVote = async function(voteOnBehalf = NULL_ADDRESS, pre
 export const setupGenesisProtocol = async function(
   accounts,
   token,
-  votingMachineType,
+  votingMachineType = 'gen',
   voteOnBehalf = NULL_ADDRESS,
   _queuedVoteRequiredPercentage = 50,
   _queuedVotePeriodLimit = 60,
@@ -163,36 +163,41 @@ export const setupGenesisProtocol = async function(
   _daoBountyConst = 10,
   _activationTime = 0
 ) {
-  const genesisProtocol = 
-    (votingMachineType == 'signed') ? await SignedGenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT})
-    : (votingMachineType == 'payable') ? await PayableGenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT})
+  const votingMachine = 
+    (votingMachineType == 'dxd') ? await DXDVotingMachine.new(token, {gas: constants.ARC_GAS_LIMIT})
     : await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
 
   // register some parameters
-  genesisProtocol.setParameters([ _queuedVoteRequiredPercentage,
-    _queuedVotePeriodLimit,
-    _boostedVotePeriodLimit,
-    _preBoostedVotePeriodLimit,
-    _thresholdConst,
-    _quietEndingPeriod,
-    _proposingRepReward,
-    _votersReputationLossRatio,
-    _minimumDaoBounty,
-    _daoBountyConst,
-    _activationTime ], voteOnBehalf);
-  const params = await genesisProtocol.getParametersHash([ _queuedVoteRequiredPercentage,
-    _queuedVotePeriodLimit,
-    _boostedVotePeriodLimit,
-    _preBoostedVotePeriodLimit,
-    _thresholdConst,
-    _quietEndingPeriod,
-    _proposingRepReward,
-    _votersReputationLossRatio,
-    _minimumDaoBounty,
-    _daoBountyConst,
-    _activationTime ], voteOnBehalf);
+  await votingMachine.setParameters(
+    [ _queuedVoteRequiredPercentage,
+      _queuedVotePeriodLimit,
+      _boostedVotePeriodLimit,
+      _preBoostedVotePeriodLimit,
+      _thresholdConst,
+      _quietEndingPeriod,
+      _proposingRepReward,
+      _votersReputationLossRatio,
+      _minimumDaoBounty,
+      _daoBountyConst,
+      _activationTime
+    ], voteOnBehalf
+  );
+  const params = await votingMachine.getParametersHash(
+    [ _queuedVoteRequiredPercentage,
+      _queuedVotePeriodLimit,
+      _boostedVotePeriodLimit,
+      _preBoostedVotePeriodLimit,
+      _thresholdConst,
+      _quietEndingPeriod,
+      _proposingRepReward,
+      _votersReputationLossRatio,
+      _minimumDaoBounty,
+      _daoBountyConst,
+      _activationTime
+    ], voteOnBehalf
+  );
 
-  return {address: genesisProtocol.address, contract: genesisProtocol, params};
+  return {address: votingMachine.address, contract: votingMachine, params};
 };
 
 export const setupOrganizationWithArrays = async function(

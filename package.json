@@ -16,8 +16,9 @@
   },
   "scripts": {
     "test": "./scripts/test.sh",
-    "migrate": "./scripts/migrate.sh",
+    "testnet": "./scripts/testnet.sh",
     "coverage": "./scripts/coverage.sh",
+    "deploy": "node scripts/deploy.js",
     "start": "pm2 start truffle -- serve",
     "lint": "eslint .",
     "lint --fix": "eslint --fix .",
@@ -27,6 +28,8 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.10.1",
+    "@openzeppelin/contract-loader": "^0.6.1",
+    "@truffle/contract": "^4.2.21",
     "babel-eslint": "^10.1.0",
     "babel-plugin-syntax-async-functions": "^6.13.0",
     "babel-polyfill": "^6.26.0",
