@@ -193,6 +193,15 @@ contract ERC20Guild {
         require(success, 'ERC20Guild: votesOf failded');
         return abi.decode(data, (uint256));
     }
+    
+    /// @dev Get the ERC20 token balance of multiple addresses
+    /// @param holders The addressede of the token holders
+    function votesOf(address[] holders) internal view returns(uint256) {
+        uint256[] votes;
+        for(uint i = 0; i < holders.length; i ++)
+            votes[i] = votesOf(holders[i])
+        return votes;
+    }
 
 
 }
