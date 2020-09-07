@@ -5,22 +5,20 @@ import "@daostack/infra/contracts/votingMachines/IntVoteInterface.sol";
 import "@daostack/infra/contracts/votingMachines/ProposalExecuteInterface.sol";
 import "../votingMachines/VotingMachineCallbacks.sol";
 
-
 /**
  * @title WalletScheme.
  * @dev  A scheme for proposing and executing calls to any contract except itself
  */
 contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
-    
     event NewCallProposal(bytes32 indexed _proposalId);
 
     event ProposalExecuted(bytes32 indexed _proposalId, bool[] _callsSucessResult, bytes[] _callsDataResult);
 
-    event ProposalExecutedByVotingMachine(bytes32 indexed _proposalId, int256 _decision);
+    event ProposalExecutedByVotingMachine(bytes32 indexed _proposalId, int256 _param);
 
     event ProposalFailed(bytes32 indexed _proposalId);
 
-    enum ProposalState { Submitted, Passed, Failed, Executed }
+    enum ProposalState {Submitted, Passed, Failed, Executed}
 
     struct Proposal {
         address[] to;
@@ -55,18 +53,18 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         voteParams = _voteParams;
         toAddress = _toAddress;
     }
-    
+
     /**
-    * @dev Fallback function that allows the wallet to receive ETH
-    */
+     * @dev Fallback function that allows the wallet to receive ETH
+     */
     function() external payable {}
 
     /**
-    * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
-    * @param _proposalId the ID of the voting in the voting machine
-    * @param _decision a parameter of the voting result, 1 yes and 2 is no.
-    * @return bool success
-    */
+     * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
+     * @param _proposalId the ID of the voting in the voting machine
+     * @param _decision a parameter of the voting result, 1 yes and 2 is no.
+     * @return bool success
+     */
     function executeProposal(bytes32 _proposalId, int256 _decision)
       external onlyVotingMachine(_proposalId) returns(bool)
     {
@@ -85,9 +83,9 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     }
 
     /**
-    * @dev execution of proposals after it has been decided by the voting machine
-    * @param _proposalId the ID of the voting in the voting machine
-    */
+     * @dev execution of proposals after it has been decided by the voting machine
+     * @param _proposalId the ID of the voting in the voting machine
+     */
     function execute(bytes32 _proposalId) public {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.state == ProposalState.Passed, "proposal must passed by voting machine");
@@ -95,20 +93,18 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         bool[] memory callsSucessResult = new bool[](proposal.to.length);
         bytes memory callDataResult;
         bool callSuccess;
-        for(uint i = 0; i < proposal.to.length; i ++) {
-            (callSuccess, callDataResult) = address(proposal.to[i])
-                .call.value(proposal.value[i])(proposal.callData[i]);
+        for (uint256 i = 0; i < proposal.to.length; i++) {
+            (callSuccess, callDataResult) = address(proposal.to[i]).call.value(proposal.value[i])(proposal.callData[i]);
             callsDataResult[i] = callDataResult;
             callsSucessResult[i] = callSuccess;
             // Check that first 4 bytes of call return dont equal default Error(string) signature
             bytes4 callDataResultSignature = bytes4(0);
             if (callDataResult.length >= 4) {
                 assembly {
-                  callDataResultSignature := mload(add(callDataResult, 4))
+                    callDataResultSignature := mload(add(callDataResult, 4))
                 }
             }
-            if (!callSuccess || callDataResultSignature == 0x08c379a0)
-                break;
+            if (!callSuccess || callDataResultSignature == 0x08c379a0) break;
         }
         emit ProposalExecuted(_proposalId, callsSucessResult, callsDataResult);
         proposals[_proposalId].state = ProposalState.Executed;
@@ -131,9 +127,9 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
           if (toAddress != address(0))
             require(_to[i] == toAddress, 'invalid proposal caller');
         }
-        require(_to.length == _callData.length, 'invalid callData length');
-        require(_to.length == _value.length, 'invalid _value length');
-        
+        require(_to.length == _callData.length, "invalid callData length");
+        require(_to.length == _value.length, "invalid _value length");
+
         bytes32 proposalId = votingMachine.propose(2, voteParams, msg.sender, address(avatar));
         proposals[proposalId] = Proposal({
             to: _to,
@@ -142,14 +138,11 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             state: ProposalState.Submitted,
             descriptionHash: _descriptionHash
         });
-        proposalsInfo[address(votingMachine)][proposalId] = ProposalInfo({
-            blockNumber: block.number,
-            avatar: avatar
-        });
+        proposalsInfo[address(votingMachine)][proposalId] = ProposalInfo({blockNumber: block.number, avatar: avatar});
         emit NewCallProposal(proposalId);
         return proposalId;
     }
-    
+
     /**
     * @dev Get the information of a proposal by id
     * @param proposalId the ID of the proposal
@@ -188,5 +181,4 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     {
       return false;
     }
-
 }

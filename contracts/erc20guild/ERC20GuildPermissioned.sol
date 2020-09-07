@@ -12,59 +12,71 @@ import "./ERC20Guild.sol";
 /// and vote on the token balance as voting power.
 contract ERC20GuildPermissioned is ERC20Guild {
     using SafeMath for uint256;
-    
-    mapping(address => mapping(bytes4 => bool)) callPermissions;
-    
-    modifier isAllowed(address[] memory to, bytes[] memory data) {
-      for (uint i = 0; i < to.length; i ++) {
-        bytes memory _data = data[i];
-        bytes4 functionSignature;
-        assembly {
-          functionSignature := mload(add(_data, 4))
-        }
-        require(callPermissions[to[i]][functionSignature], 'ERC20GuildPermissioned: Not allowed call');
-      }
-      _;
-    }
-    
+
+    mapping(address => mapping(bytes4 => bool)) public callPermissions;
+
+    event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
+
     /// @dev Initilizer
     /// @param _token The address of the token to be used, it is immutable and ca
     /// @param _minimumProposalTime The minimun time for a proposal to be under votation
     /// @param _tokensForExecution The token votes needed for a proposal to be executed
     /// @param _tokensForCreation The minimum balance of tokens needed to create a proposal
     function initialize(
-      address _token,
-      uint256 _minimumProposalTime,
-      uint256 _tokensForExecution,
-      uint256 _tokensForCreation
+        address _token,
+        uint256 _minimumProposalTime,
+        uint256 _tokensForExecution,
+        uint256 _tokensForCreation
     ) public {
-      super.initilize(_token, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
-      callPermissions[address(this)][bytes4(keccak256(bytes('setConfig(uint256,uint256,uint256)')))] = true;
-      callPermissions[address(this)][bytes4(keccak256(bytes('setAllowance(address,bytes4,bool)')))] = true;
+        super.initialize(_token, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
+        callPermissions[address(this)][bytes4(keccak256("setConfig(uint256,uint256,uint256)"))] = true;
+        callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = true;
     }
-    
+
     /// @dev Set the allowance of a call to be executed by the ERC20Guild
     /// @param to The address to be called
     /// @param functionSignature The signature of the function
     /// @param allowance If the function is allowed to be called or not
     function setAllowance(
-        address to,
-        bytes4 functionSignature,
-        bool allowance
+        address[] memory to,
+        bytes4[] memory functionSignature,
+        bool[] memory allowance
     ) public isInitialized {
+        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
         require(
-            msg.sender == address(this), 
-            "ERC20Guild: Only callable by ERC20guild itself"
+            (to.length == functionSignature.length) && (to.length == allowance.length),
+            "ERC20Guild: Wrong length of to, functionSignature or allowance arrays"
         );
-        callPermissions[to][functionSignature] = allowance;
+        for (uint256 i = 0; i < to.length; i++) {
+            callPermissions[to[i]][functionSignature[i]] = allowance[i];
+            emit SetAllowance(to[i], functionSignature[i], allowance[i]);
+        }
     }
-    
+
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
     /// @param proposalId The id of the proposal to be executed
-    function executeProposal(bytes32 proposalId) public isInitialized 
-      isAllowed(proposals[proposalId].to, proposals[proposalId].data)
-    {
+    function executeProposal(bytes32 proposalId) public isInitialized {
+        for (uint256 i = 0; i < proposals[proposalId].to.length; i++) {
+            bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
+            require(
+                callPermissions[proposals[proposalId].to[i]][proposalSignature] == true,
+                "ERC20GuildPermissioned: Not allowed call"
+            );
+        }
         super.executeProposal(proposalId);
     }
 
+    /// @dev Get call data signature
+    function getFuncSignature(bytes memory data) public view returns (bytes4) {
+        bytes32 functionSignature = bytes32(0);
+        assembly {
+            functionSignature := mload(add(data, 32))
+        }
+        return bytes4(functionSignature);
+    }
+
+    /// @dev Get call signature permission
+    function getCallPermission(address to, bytes4 functionSignature) public view returns (bool) {
+        return callPermissions[to][functionSignature];
+    }
 }
