@@ -4,12 +4,10 @@ pragma experimental ABIEncoderV2;
 
 import "./ERC20Guild.sol";
 
-/// @title ERC20Guild
+/// @title ERC20GuildPermissioned 
 /// @author github:AugustoL
 /// @notice This smart contract has not be audited.
-/// @dev Extends an ERC20 funcionality into a Guild.
-/// An ERC20Guild can make decisions by creating proposals
-/// and vote on the token balance as voting power.
+/// @dev ERC20Guild implementation that can execute calls to allowed functions and contracts
 contract ERC20GuildPermissioned is ERC20Guild {
     using SafeMath for uint256;
 

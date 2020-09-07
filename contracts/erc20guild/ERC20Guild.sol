@@ -3,6 +3,7 @@ pragma solidity ^0.5.17;
 pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 /// @title ERC20Guild
 /// @author github:AugustoL
@@ -13,13 +14,12 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 contract ERC20Guild {
     using SafeMath for uint256;
 
-    address public token;
+    IERC20 public token;
     bool public initialized = false;
     uint256 public nonce = 0;
     uint256 public minimumProposalTime;
     uint256 public tokensForExecution;
     uint256 public tokensForCreation;
-    bytes4 constant votesOfFuncSignature = bytes4(keccak256(bytes('balanceOf(address)')));
     
     struct Proposal {
         address creator;
@@ -61,7 +61,7 @@ contract ERC20Guild {
     ) public {
         require(address(_token) != address(0), "ERC20Guild: token is the zero address");
         
-        token = _token;
+        token = IERC20(_token);
         setConfig(_minimumProposalTime, _tokensForExecution, _tokensForCreation);
     }
     
@@ -155,14 +155,14 @@ contract ERC20Guild {
         require(votesOf(msg.sender) >=  tokens, "ERC20Guild: Invalid tokens amount");
         
         if (tokens > proposals[proposalId].tokens[msg.sender]) {
-            proposals[proposalId].totalTokens.add(
+            proposals[proposalId].totalTokens = proposals[proposalId].totalTokens.add(
                 tokens.sub(proposals[proposalId].tokens[msg.sender])
             );
             emit VoteAdded(
                 proposalId, msg.sender, tokens.sub(proposals[proposalId].tokens[msg.sender])
             );
         } else {
-            proposals[proposalId].totalTokens.sub(
+            proposals[proposalId].totalTokens = proposals[proposalId].totalTokens.sub(
                 proposals[proposalId].tokens[msg.sender].sub(tokens)
             );
             emit VoteRemoved(
@@ -187,11 +187,7 @@ contract ERC20Guild {
     /// @dev Get the ERC20 token balance of an address
     /// @param holder The address of the token holder
     function votesOf(address holder) internal view returns(uint256) {
-        (bool success, bytes memory data) = token.staticcall(
-            abi.encodeWithSelector(votesOfFuncSignature, holder)
-        );
-        require(success, 'ERC20Guild: votesOf failded');
-        return abi.decode(data, (uint256));
+        return token.balanceOf(holder);
     }
     
     /// @dev Get the ERC20 token balance of multiple addresses
@@ -202,6 +198,5 @@ contract ERC20Guild {
             votes[i] = votesOf(holders[i]);
         return votes;
     }
-
 
 }
