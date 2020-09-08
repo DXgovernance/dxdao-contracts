@@ -18,8 +18,8 @@ contract ERC20Guild {
     bool public initialized = false;
     uint256 public nonce = 0;
     uint256 public minimumProposalTime;
-    uint256 public tokensForExecution;
-    uint256 public tokensForCreation;
+    uint256 public votesForExecution;
+    uint256 public votesForCreation;
     
     struct Proposal {
         address creator;
@@ -32,7 +32,7 @@ contract ERC20Guild {
         bytes contentHash;
         uint256 totalTokens;
         bool executed;
-        mapping(address => uint256) tokens;
+        mapping(address => uint256) votes;
     }
 
     mapping(bytes32 => Proposal) public proposals;
@@ -49,31 +49,31 @@ contract ERC20Guild {
     }
 
     /// @dev Initilizer
-    /// @param _token The address of the token to be used, it is immutable and ca
+    /// @param _token The address of the token to be used
     /// @param _minimumProposalTime The minimun time for a proposal to be under votation
-    /// @param _tokensForExecution The token votes needed for a proposal to be executed
-    /// @param _tokensForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _votesForExecution The token votes needed for a proposal to be executed
+    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     function initialize(
         address _token,
         uint256 _minimumProposalTime,
-        uint256 _tokensForExecution,
-        uint256 _tokensForCreation
+        uint256 _votesForExecution,
+        uint256 _votesForCreation
     ) public {
         require(address(_token) != address(0), "ERC20Guild: token is the zero address");
         
         token = IERC20(_token);
-        setConfig(_minimumProposalTime, _tokensForExecution, _tokensForCreation);
+        setConfig(_minimumProposalTime, _votesForExecution, _votesForCreation);
     }
     
-    /// @dev Set the ERC20Guild configuration, can be callable only executing a proposal 
+    /// @dev Set the ERC20Guild configuration, can be called only executing a proposal 
     /// or when it is initilized
     /// @param _minimumProposalTime The minimun time for a proposal to be under votation
-    /// @param _tokensForExecution The token votes needed for a proposal to be executed
-    /// @param _tokensForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _votesForExecution The token votes needed for a proposal to be executed
+    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     function setConfig(
         uint256 _minimumProposalTime,
-        uint256 _tokensForExecution,
-        uint256 _tokensForCreation
+        uint256 _votesForExecution,
+        uint256 _votesForCreation
     ) public {
         require(
             !initialized || (msg.sender == address(this)), 
@@ -82,8 +82,8 @@ contract ERC20Guild {
         
         initialized = true;
         minimumProposalTime = _minimumProposalTime;
-        tokensForExecution = _tokensForExecution;
-        tokensForCreation = _tokensForCreation;
+        votesForExecution = _votesForExecution;
+        votesForCreation = _votesForCreation;
     }
 
     /// @dev Create a proposal with an static call data and extra information
@@ -103,7 +103,7 @@ contract ERC20Guild {
         uint256 _extraTime
     ) public isInitialized {
         require(
-            votesOf(msg.sender) > tokensForCreation,
+            votesOf(msg.sender) >= votesForCreation,
             "ERC20Guild: Not enough tokens to create proposal"
         );
         require(
@@ -134,7 +134,7 @@ contract ERC20Guild {
         require(!proposals[proposalId].executed, "ERC20Guild: Proposal already executed");
         require(proposals[proposalId].endTime < now, "ERC20Guild: Proposal hasnt ended yet");
         require(
-            proposals[proposalId].totalTokens >= tokensForExecution,
+            proposals[proposalId].totalTokens >= votesForExecution,
             "ERC20Guild: Not enough tokens to execute proposal"
         );
      
@@ -149,53 +149,53 @@ contract ERC20Guild {
     
     /// @dev Set the amount of tokens to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote
-    /// @param tokens The amount of tokens to use as voting for the proposal
-    function setVote(bytes32 proposalId, uint256 tokens) public isInitialized {
+    /// @param amount The amount of tokens to use as voting for the proposal
+    function setVote(bytes32 proposalId, uint256 amount) public isInitialized {
         require(!proposals[proposalId].executed, "ERC20Guild: Proposal already executed");
-        require(votesOf(msg.sender) >=  tokens, "ERC20Guild: Invalid tokens amount");
+        require(votesOf(msg.sender) >=  amount, "ERC20Guild: Invalid amount");
         
-        if (tokens > proposals[proposalId].tokens[msg.sender]) {
+        if (amount > proposals[proposalId].votes[msg.sender]) {
             proposals[proposalId].totalTokens = proposals[proposalId].totalTokens.add(
-                tokens.sub(proposals[proposalId].tokens[msg.sender])
+                amount.sub(proposals[proposalId].votes[msg.sender])
             );
             emit VoteAdded(
-                proposalId, msg.sender, tokens.sub(proposals[proposalId].tokens[msg.sender])
+                proposalId, msg.sender, amount.sub(proposals[proposalId].votes[msg.sender])
             );
         } else {
             proposals[proposalId].totalTokens = proposals[proposalId].totalTokens.sub(
-                proposals[proposalId].tokens[msg.sender].sub(tokens)
+                proposals[proposalId].votes[msg.sender].sub(amount)
             );
             emit VoteRemoved(
-                proposalId, msg.sender, proposals[proposalId].tokens[msg.sender].sub(tokens)
+                proposalId, msg.sender, proposals[proposalId].votes[msg.sender].sub(amount)
             );
         }
-        proposals[proposalId].tokens[msg.sender] = tokens;
+        proposals[proposalId].votes[msg.sender] = amount;
     }
     
     /// @dev Set the amount of tokens to vote in multiple proposals
-    /// @param proposalIds The ids of the proposals to set the vote
-    /// @param tokens The amounts of tokens to use as voting for each proposals
-    function setVotes(bytes32[] memory proposalIds, uint256[] memory tokens) public {
+    /// @param proposalIds The ids of the proposals to set the votes
+    /// @param amounts The amounts of tokens to use as voting for each proposals
+    function setVotes(bytes32[] memory proposalIds, uint256[] memory amounts) public {
         require(
-            proposalIds.length == tokens.length,
-            "ERC20Guild: Wrong length of proposalIds or tokens"
+            proposalIds.length == amounts.length,
+            "ERC20Guild: Wrong length of proposalIds or amounts"
         );
         for(uint i = 0; i < proposalIds.length; i ++)
-            setVote(proposalIds[i], tokens[i]);
+            setVote(proposalIds[i], amounts[i]);
     }
     
-    /// @dev Get the ERC20 token balance of an address
-    /// @param holder The address of the token holder
-    function votesOf(address holder) internal view returns(uint256) {
-        return token.balanceOf(holder);
+    /// @dev Get the voting power of an address
+    /// @param account The address of the token account
+    function votesOf(address account) internal view returns(uint256) {
+        return token.balanceOf(account);
     }
     
-    /// @dev Get the ERC20 token balance of multiple addresses
-    /// @param holders The addressede of the token holders
-    function votesOf(address[] memory holders) internal view returns(uint256[] memory) {
+    /// @dev Get the voting power of multiple addresses
+    /// @param accounts The addresses of the token accounts
+    function votesOf(address[] memory accounts) internal view returns(uint256[] memory) {
         uint256[] memory votes;
-        for(uint i = 0; i < holders.length; i ++)
-            votes[i] = votesOf(holders[i]);
+        for(uint i = 0; i < accounts.length; i ++)
+            votes[i] = votesOf(accounts[i]);
         return votes;
     }
 

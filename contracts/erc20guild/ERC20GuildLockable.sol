@@ -21,70 +21,70 @@ contract ERC20GuildLockable is ERC20Guild {
     
     uint256 public lockTime;
 
-    event TokensLocked(address voter, uint256 tokens);
-    event TokensReleased(address voter, uint256 tokens);
+    event TokensLocked(address voter, uint256 value);
+    event TokensReleased(address voter, uint256 value);
 
     /// @dev Initilizer
-    /// @param _token The address of the token to be used, it is immutable and ca
+    /// @param _token The address of the token to be used
     /// @param _minimumProposalTime The minimun time for a proposal to be under votation
-    /// @param _tokensForExecution The token votes needed for a proposal to be executed
-    /// @param _tokensForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _votesForExecution The token votes needed for a proposal to be executed
+    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function initialize(
         address _token,
         uint256 _minimumProposalTime,
-        uint256 _tokensForExecution,
-        uint256 _tokensForCreation,
+        uint256 _votesForExecution,
+        uint256 _votesForCreation,
         uint256 _lockTime
     ) public {
         require(_lockTime > 0, "ERC20Guild: lockTime should be higher than zero");
         
-        super.initialize(_token, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
+        super.initialize(_token, _minimumProposalTime, _votesForExecution, _votesForCreation);
         lockTime = _lockTime;
     }
 
-    /// @dev Set the ERC20Guild configuration, can be callable only executing a proposal
+    /// @dev Set the ERC20Guild configuration, can be called only executing a proposal 
     /// or when it is initilized
     /// @param _minimumProposalTime The minimun time for a proposal to be under votation
-    /// @param _tokensForExecution The token votes needed for a proposal to be executed
-    /// @param _tokensForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _votesForExecution The token votes needed for a proposal to be executed
+    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function setConfig(
         uint256 _minimumProposalTime,
-        uint256 _tokensForExecution,
-        uint256 _tokensForCreation,
+        uint256 _votesForExecution,
+        uint256 _votesForCreation,
         uint256 _lockTime
     ) public {
         require(_lockTime > 0, "ERC20Guild: lockTime should be higher than zero");
-        super.setConfig(_minimumProposalTime, _tokensForExecution, _tokensForCreation);
+        super.setConfig(_minimumProposalTime, _votesForExecution, _votesForCreation);
         lockTime = _lockTime;
     }
     
-    /// @dev Returns the staked tokens for the address that calls the function
-    /// @param tokens The amount of tokens to be locked
-    function lockTokens(uint256 tokens) public {
-        token.transferFrom(msg.sender, address(this), tokens);
-        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(tokens);
+    /// @dev Lock tokens in the guild to be used as voting power
+    /// @param amount The amount of tokens to be locked
+    function lockTokens(uint256 amount) public {
+        token.transferFrom(msg.sender, address(this), amount);
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(amount);
         tokensLocked[msg.sender].timestamp = block.timestamp.add(lockTime);
-        totalLocked = totalLocked.add(tokens);
-        emit TokensLocked(msg.sender, tokens);
+        totalLocked = totalLocked.add(amount);
+        emit TokensLocked(msg.sender, amount);
     }
 
-    /// @dev Returns the staked tokens for the address that calls the function
-    /// @param tokens The amount of tokens to be released
-    function releaseTokens(uint256 tokens) public {
-        require(votesOf(msg.sender) >= tokens);
+    /// @dev Release tokens locked in the guild, this will decrease the voting power
+    /// @param amount The amount of tokens to be released
+    function releaseTokens(uint256 amount) public {
+        require(votesOf(msg.sender) >= amount);
         require(tokensLocked[msg.sender].timestamp > block.timestamp);
-        token.transfer(msg.sender, tokens);
-        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(tokens);
-        totalLocked = totalLocked.sub(tokens);
-        emit TokensReleased(msg.sender, tokens);
+        token.transfer(msg.sender, amount);
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(amount);
+        totalLocked = totalLocked.sub(amount);
+        emit TokensReleased(msg.sender, amount);
     }
     
-    /// @dev Get the ERC20 token balance of an address
-    /// @param holder The address of the token holder
-    function votesOf(address holder) internal view returns(uint256) {
-        return tokensLocked[msg.sender].amount;
+    /// @dev Get the ERC20 voting power of an address
+    /// @param account The address of the token account
+    function votesOf(address account) internal view returns(uint256) {
+        return tokensLocked[account].amount;
     }
 
 }

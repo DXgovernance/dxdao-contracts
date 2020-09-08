@@ -16,22 +16,22 @@ contract ERC20GuildPermissioned is ERC20Guild {
     event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
 
     /// @dev Initilizer
-    /// @param _token The address of the token to be used, it is immutable and ca
+    /// @param _token The address of the token to be used
     /// @param _minimumProposalTime The minimun time for a proposal to be under votation
-    /// @param _tokensForExecution The token votes needed for a proposal to be executed
-    /// @param _tokensForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _votesForExecution The token votes needed for a proposal to be executed
+    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     function initialize(
         address _token,
         uint256 _minimumProposalTime,
-        uint256 _tokensForExecution,
-        uint256 _tokensForCreation
+        uint256 _votesForExecution,
+        uint256 _votesForCreation
     ) public {
-        super.initialize(_token, _minimumProposalTime, _tokensForExecution, _tokensForCreation);
+        super.initialize(_token, _minimumProposalTime, _votesForExecution, _votesForCreation);
         callPermissions[address(this)][bytes4(keccak256("setConfig(uint256,uint256,uint256)"))] = true;
         callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = true;
     }
 
-    /// @dev Set the allowance of a call to be executed by the ERC20Guild
+    /// @dev Set the allowance of a call to be executed by the guild
     /// @param to The address to be called
     /// @param functionSignature The signature of the function
     /// @param allowance If the function is allowed to be called or not

@@ -31,9 +31,9 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
     // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
     uint256 private _currentSnapshotId;
 
-    /**
-     * @dev Retrieves the balance of `account` at the time `snapshotId` was created.
-     */
+    /// @dev Get the voting power of an address at a certain snapshotId
+    /// @param account The address of the token account
+    /// @param snapshotId The snapshotId to be used
     function votesOfAt(address account, uint256 snapshotId) public view returns (uint256) {
         (bool snapshotted, uint256 value) = _valueAt(snapshotId, _votesSnapshots[account]);
         if (snapshotted)
@@ -41,10 +41,18 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
         else 
             return votesOf(account);
     }
+    
+    /// @dev Get the voting power of multiple addressese at a certain snapshotId
+    /// @param accounts The addresses of the token accounts
+    /// @param snapshotIds The snapshotIds to be used
+    function votesOfAt(address[] memory accounts, uint256[] memory snapshotIds) internal view returns(uint256[] memory) {
+        uint256[] memory votes;
+        for(uint i = 0; i < accounts.length; i ++)
+            votes[i] = votesOfAt(accounts[i], snapshotIds[i]);
+        return votes;
+    }
 
-    /**
-     * @dev Retrieves the total supply at the time `snapshotId` was created.
-     */
+    /// @dev Get the total amount of tokes locked at a certain snapshotId
     function totalLockedAt(uint256 snapshotId) public view returns(uint256) {
         (bool snapshotted, uint256 value) = _valueAt(snapshotId, _totalLockedSnapshots);
 
@@ -54,12 +62,18 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
             return totalLocked;
     }
 
+    /// @dev Lock tokens in the guild to be used as voting power
+    /// It saves a snapshot of the sender balance and total supply
+    /// @param amount The amount of tokens to be locked
     function lockTokens(uint256 amount) public {
       _updateAccountSnapshot(msg.sender);
       _updateTotalSupplySnapshot();
       super.lockTokens(amount);
     }
     
+    /// @dev Release tokens locked in the guild, this will decrease the voting power
+    /// It saves a snapshot of the sender balance and total supply
+    /// @param amount The amount of tokens to be released
     function releaseTokens(uint256 amount) public {
       _updateAccountSnapshot(msg.sender);
       _updateTotalSupplySnapshot();
@@ -68,13 +82,17 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
     
     /// @dev Set the amount of tokens to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote
-    /// @param tokens The amount of tokens to use as voting for the proposal
-    function setVote(bytes32 proposalId, uint256 tokens) public isInitialized {
-        require(votesOfAt(msg.sender, proposalSnapshots[proposalId]) >=  tokens, "ERC20Guild: Invalid tokens amount");
-        super.setVote(proposalId, tokens);
+    /// @param amount The amount of tokens to use as voting for the proposal
+    function setVote(bytes32 proposalId, uint256 amount) public isInitialized {
+        require(
+            votesOfAt(msg.sender, proposalSnapshots[proposalId]) >=  amount,
+            "ERC20Guild: Invalid amount"
+        );
+        super.setVote(proposalId, amount);
     }
     
     /// @dev Create a proposal with an static call data and extra information
+    /// Saves the snapshot id at the time of the proposal creation
     /// @param _to The receiver addresses of each call to be executed
     /// @param _data The data to be executed on each call to be executed
     /// @param _value The ETH value to be sent on each call to be executed
@@ -95,9 +113,9 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
         super.createProposal(_to, _data, _value, _description, _contentHash, _extraTime);
     }
 
-    function _valueAt(uint256 snapshotId, Snapshots storage snapshots)
-        private view returns (bool, uint256)
-    {
+    function _valueAt(
+      uint256 snapshotId, Snapshots storage snapshots
+    ) private view returns (bool, uint256) {
         require(snapshotId > 0, "ERC20Snapshot: id is 0");
         // solhint-disable-next-line max-line-length
         require(snapshotId <= _currentSnapshotId, "ERC20Snapshot: nonexistent id");
