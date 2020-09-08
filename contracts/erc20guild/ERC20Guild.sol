@@ -5,9 +5,9 @@ pragma experimental ABIEncoderV2;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
-/// @title ERC20Guild
+/// @title ERC20Guild - DRAFT
 /// @author github:AugustoL
-/// @notice This smart contract has not be audited.
+/// @notice This smart contract has not be audited
 /// @dev Extends an ERC20 funcionality into a Guild.
 /// An ERC20Guild can make decisions by creating proposals
 /// and vote on the token balance as voting power.
@@ -153,23 +153,7 @@ contract ERC20Guild {
     function setVote(bytes32 proposalId, uint256 amount) public isInitialized {
         require(!proposals[proposalId].executed, "ERC20Guild: Proposal already executed");
         require(votesOf(msg.sender) >=  amount, "ERC20Guild: Invalid amount");
-        
-        if (amount > proposals[proposalId].votes[msg.sender]) {
-            proposals[proposalId].totalTokens = proposals[proposalId].totalTokens.add(
-                amount.sub(proposals[proposalId].votes[msg.sender])
-            );
-            emit VoteAdded(
-                proposalId, msg.sender, amount.sub(proposals[proposalId].votes[msg.sender])
-            );
-        } else {
-            proposals[proposalId].totalTokens = proposals[proposalId].totalTokens.sub(
-                proposals[proposalId].votes[msg.sender].sub(amount)
-            );
-            emit VoteRemoved(
-                proposalId, msg.sender, proposals[proposalId].votes[msg.sender].sub(amount)
-            );
-        }
-        proposals[proposalId].votes[msg.sender] = amount;
+        _setVote(msg.sender, proposalId, amount);
     }
     
     /// @dev Set the amount of tokens to vote in multiple proposals
@@ -197,6 +181,29 @@ contract ERC20Guild {
         for(uint i = 0; i < accounts.length; i ++)
             votes[i] = votesOf(accounts[i]);
         return votes;
+    }
+    
+    /// @dev Internal function to set the amount of tokens to vote in a proposal
+    /// @param voter The address of the voter
+    /// @param proposalId The id of the proposal to set the vote
+    /// @param amount The amount of tokens to use as voting for the proposal
+    function _setVote(address voter, bytes32 proposalId, uint256 amount) internal {
+        if (amount > proposals[proposalId].votes[voter]) {
+            proposals[proposalId].totalTokens = proposals[proposalId].totalTokens.add(
+                amount.sub(proposals[proposalId].votes[voter])
+            );
+            emit VoteAdded(
+                proposalId, voter, amount.sub(proposals[proposalId].votes[voter])
+            );
+        } else {
+            proposals[proposalId].totalTokens = proposals[proposalId].totalTokens.sub(
+                proposals[proposalId].votes[voter].sub(amount)
+            );
+            emit VoteRemoved(
+                proposalId, voter, proposals[proposalId].votes[voter].sub(amount)
+            );
+        }
+        proposals[proposalId].votes[voter] = amount;
     }
 
 }

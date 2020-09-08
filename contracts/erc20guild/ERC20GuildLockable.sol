@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "./ERC20Guild.sol";
 
-/// @title ERC20GuildLockable
+/// @title ERC20GuildLockable -DRAFT
 /// @author github:AugustoL
 /// @notice This smart contract has not be audited.
 /// @dev Extends an ERC20Guild to vote only with locked tokens

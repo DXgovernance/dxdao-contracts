@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "./ERC20Guild.sol";
 
-/// @title ERC20GuildPermissioned 
+/// @title ERC20GuildPermissioned - DRAFT
 /// @author github:AugustoL
 /// @notice This smart contract has not be audited.
 /// @dev ERC20Guild implementation that can execute calls to allowed functions and contracts

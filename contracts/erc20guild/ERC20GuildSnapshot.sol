@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./ERC20GuildLockable.sol";
 import "../utils/Arrays.sol";
 
-/// @title ERC20GuildSnapshot
+/// @title ERC20GuildSnapshot - DRAFT
 /// @author github:AugustoL
 /// @notice This smart contract has not be audited.
 /// @dev Extends the ERC20GuildLockable to save snapshots of the lockable votes per proposal.
