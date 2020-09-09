@@ -4,6 +4,7 @@ const WalletScheme = artifacts.require("./WalletScheme.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
+const IERC20Guild = artifacts.require("./IERC20Guild.sol");
 const ERC20Guild = artifacts.require("./ERC20Guild.sol");
 const ERC20GuildLockable = artifacts.require("./ERC20GuildLockable.sol");
 const ERC20GuildPermissioned = artifacts.require("./ERC20GuildPermissioned.sol");
@@ -108,6 +109,7 @@ contract("ERC20Guild", function(accounts) {
     });
     
     it("execute a positive vote on the voting machine from the guild", async function() {
+      const ierc20Guild = await IERC20Guild.at(erc20Guild.address);
       const callData = helpers.testCallFrom(org.avatar.address);
       const genericCallData = helpers.encodeGenericCallData(
         org.avatar.address, actionMock.address, callData, 0
@@ -121,7 +123,7 @@ contract("ERC20Guild", function(accounts) {
         proposalId, 1, 0, helpers.NULL_ADDRESS
       ).encodeABI();
 
-      const txGuild = await erc20Guild.createProposal(
+      const txGuild = await ierc20Guild.createProposal(
         [ votingMachine.address ],
         [ callDataVote ],
         [ 0 ],
@@ -132,11 +134,13 @@ contract("ERC20Guild", function(accounts) {
       );
 
       const proposalIdGuild = await helpers.getValueFromLogs(txGuild, "proposalId", "ProposalCreated");
-      const txVote = await erc20Guild.setVote(proposalIdGuild, 200, {from: accounts[ 5 ]});
+      const txVote = await ierc20Guild.setVote(proposalIdGuild, 200, {from: accounts[ 5 ]});
+      expect(txVote.receipt.gasUsed).to.be.below(80000);
+
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild});
 
       await time.increase(time.duration.seconds(1));
-      const receipt = await erc20Guild.executeProposal(proposalIdGuild);
+      const receipt = await ierc20Guild.executeProposal(proposalIdGuild);
       expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
 
       await walletScheme.execute(proposalId);
