@@ -83,7 +83,7 @@ contract ERC20GuildLockable is ERC20Guild {
     
     /// @dev Get the ERC20 voting power of an address
     /// @param account The address of the token account
-    function votesOf(address account) internal view returns(uint256) {
+    function votesOf(address account) public view returns(uint256) {
         return tokensLocked[account].amount;
     }
 

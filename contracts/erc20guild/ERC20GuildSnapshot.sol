@@ -45,7 +45,7 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
     /// @dev Get the voting power of multiple addressese at a certain snapshotId
     /// @param accounts The addresses of the token accounts
     /// @param snapshotIds The snapshotIds to be used
-    function votesOfAt(address[] memory accounts, uint256[] memory snapshotIds) internal view returns(uint256[] memory) {
+    function votesOfAt(address[] memory accounts, uint256[] memory snapshotIds) public view returns(uint256[] memory) {
         uint256[] memory votes;
         for(uint i = 0; i < accounts.length; i ++)
             votes[i] = votesOfAt(accounts[i], snapshotIds[i]);
