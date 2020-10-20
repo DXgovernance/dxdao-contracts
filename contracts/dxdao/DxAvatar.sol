@@ -1,6 +1,6 @@
 /**
  *Submitted for verification at Etherscan.io on 2019-04-02
-*/
+ */
 
 // File: openzeppelin-solidity/contracts/ownership/Ownable.sol
 
@@ -20,7 +20,7 @@ contract Ownable {
      * @dev The Ownable constructor sets the original `owner` of the contract to the sender
      * account.
      */
-    constructor () internal {
+    constructor() internal {
         _owner = msg.sender;
         emit OwnershipTransferred(address(0), _owner);
     }
@@ -81,8 +81,6 @@ contract Ownable {
 
 pragma solidity ^0.5.4;
 
-
-
 /**
  * @title Reputation system
  * @dev A DAO has Reputation System which allows peers to rate other peers in order to build trust .
@@ -93,38 +91,32 @@ pragma solidity ^0.5.4;
  */
 
 contract Reputation is Ownable {
-
-    uint8 public decimals = 18;             //Number of decimals of the smallest unit
+    uint8 public decimals = 18; //Number of decimals of the smallest unit
     // Event indicating minting of reputation to an address.
     event Mint(address indexed _to, uint256 _amount);
     // Event indicating burning of reputation for an address.
     event Burn(address indexed _from, uint256 _amount);
 
-      /// @dev `Checkpoint` is the structure that attaches a block number to a
-      ///  given value, the block number attached is the one that last changed the
-      ///  value
+    /// @dev `Checkpoint` is the structure that attaches a block number to a
+    ///  given value, the block number attached is the one that last changed the
+    ///  value
     struct Checkpoint {
-
-    // `fromBlock` is the block number that the value was generated from
+        // `fromBlock` is the block number that the value was generated from
         uint128 fromBlock;
-
-          // `value` is the amount of reputation at a specific block number
+        // `value` is the amount of reputation at a specific block number
         uint128 value;
     }
 
-      // `balances` is the map that tracks the balance of each address, in this
-      //  contract when the balance changes the block number that the change
-      //  occurred is also included in the map
-    mapping (address => Checkpoint[]) balances;
+    // `balances` is the map that tracks the balance of each address, in this
+    //  contract when the balance changes the block number that the change
+    //  occurred is also included in the map
+    mapping(address => Checkpoint[]) balances;
 
-      // Tracks the history of the `totalSupply` of the reputation
+    // Tracks the history of the `totalSupply` of the reputation
     Checkpoint[] totalSupplyHistory;
 
     /// @notice Constructor to create a Reputation
-    constructor(
-    ) public
-    {
-    }
+    constructor() public {}
 
     /// @dev This function makes it easy to get the total number of reputation
     /// @return The total number of reputation
@@ -132,48 +124,46 @@ contract Reputation is Ownable {
         return totalSupplyAt(block.number);
     }
 
-  ////////////////
-  // Query balance and totalSupply in History
-  ////////////////
+    ////////////////
+    // Query balance and totalSupply in History
+    ////////////////
     /**
-    * @dev return the reputation amount of a given owner
-    * @param _owner an address of the owner which we want to get his reputation
-    */
+     * @dev return the reputation amount of a given owner
+     * @param _owner an address of the owner which we want to get his reputation
+     */
     function balanceOf(address _owner) public view returns (uint256 balance) {
         return balanceOfAt(_owner, block.number);
     }
 
-      /// @dev Queries the balance of `_owner` at a specific `_blockNumber`
-      /// @param _owner The address from which the balance will be retrieved
-      /// @param _blockNumber The block number when the balance is queried
-      /// @return The balance at `_blockNumber`
-    function balanceOfAt(address _owner, uint256 _blockNumber)
-    public view returns (uint256)
-    {
+    /// @dev Queries the balance of `_owner` at a specific `_blockNumber`
+    /// @param _owner The address from which the balance will be retrieved
+    /// @param _blockNumber The block number when the balance is queried
+    /// @return The balance at `_blockNumber`
+    function balanceOfAt(address _owner, uint256 _blockNumber) public view returns (uint256) {
         if ((balances[_owner].length == 0) || (balances[_owner][0].fromBlock > _blockNumber)) {
             return 0;
-          // This will return the expected balance during normal situations
+            // This will return the expected balance during normal situations
         } else {
             return getValueAt(balances[_owner], _blockNumber);
         }
     }
 
-      /// @notice Total amount of reputation at a specific `_blockNumber`.
-      /// @param _blockNumber The block number when the totalSupply is queried
-      /// @return The total amount of reputation at `_blockNumber`
-    function totalSupplyAt(uint256 _blockNumber) public view returns(uint256) {
+    /// @notice Total amount of reputation at a specific `_blockNumber`.
+    /// @param _blockNumber The block number when the totalSupply is queried
+    /// @return The total amount of reputation at `_blockNumber`
+    function totalSupplyAt(uint256 _blockNumber) public view returns (uint256) {
         if ((totalSupplyHistory.length == 0) || (totalSupplyHistory[0].fromBlock > _blockNumber)) {
             return 0;
-          // This will return the expected totalSupply during normal situations
+            // This will return the expected totalSupply during normal situations
         } else {
             return getValueAt(totalSupplyHistory, _blockNumber);
         }
     }
 
-      /// @notice Generates `_amount` reputation that are assigned to `_owner`
-      /// @param _user The address that will be assigned the new reputation
-      /// @param _amount The quantity of reputation generated
-      /// @return True if the reputation are generated correctly
+    /// @notice Generates `_amount` reputation that are assigned to `_owner`
+    /// @param _user The address that will be assigned the new reputation
+    /// @param _amount The quantity of reputation generated
+    /// @return True if the reputation are generated correctly
     function mint(address _user, uint256 _amount) public onlyOwner returns (bool) {
         uint256 curTotalSupply = totalSupply();
         require(curTotalSupply + _amount >= curTotalSupply); // Check for overflow
@@ -185,10 +175,10 @@ contract Reputation is Ownable {
         return true;
     }
 
-      /// @notice Burns `_amount` reputation from `_owner`
-      /// @param _user The address that will lose the reputation
-      /// @param _amount The quantity of reputation to burn
-      /// @return True if the reputation are burned correctly
+    /// @notice Burns `_amount` reputation from `_owner`
+    /// @param _user The address that will lose the reputation
+    /// @param _amount The quantity of reputation to burn
+    /// @return True if the reputation are burned correctly
     function burn(address _user, uint256 _amount) public onlyOwner returns (bool) {
         uint256 curTotalSupply = totalSupply();
         uint256 amountBurned = _amount;
@@ -202,45 +192,45 @@ contract Reputation is Ownable {
         return true;
     }
 
-  ////////////////
-  // Internal helper functions to query and set a value in a snapshot array
-  ////////////////
+    ////////////////
+    // Internal helper functions to query and set a value in a snapshot array
+    ////////////////
 
-      /// @dev `getValueAt` retrieves the number of reputation at a given block number
-      /// @param checkpoints The history of values being queried
-      /// @param _block The block number to retrieve the value at
-      /// @return The number of reputation being queried
+    /// @dev `getValueAt` retrieves the number of reputation at a given block number
+    /// @param checkpoints The history of values being queried
+    /// @param _block The block number to retrieve the value at
+    /// @return The number of reputation being queried
     function getValueAt(Checkpoint[] storage checkpoints, uint256 _block) internal view returns (uint256) {
         if (checkpoints.length == 0) {
             return 0;
         }
 
-          // Shortcut for the actual value
-        if (_block >= checkpoints[checkpoints.length-1].fromBlock) {
-            return checkpoints[checkpoints.length-1].value;
+        // Shortcut for the actual value
+        if (_block >= checkpoints[checkpoints.length - 1].fromBlock) {
+            return checkpoints[checkpoints.length - 1].value;
         }
         if (_block < checkpoints[0].fromBlock) {
             return 0;
         }
 
-          // Binary search of the value in the array
+        // Binary search of the value in the array
         uint256 min = 0;
-        uint256 max = checkpoints.length-1;
+        uint256 max = checkpoints.length - 1;
         while (max > min) {
             uint256 mid = (max + min + 1) / 2;
-            if (checkpoints[mid].fromBlock<=_block) {
+            if (checkpoints[mid].fromBlock <= _block) {
                 min = mid;
             } else {
-                max = mid-1;
+                max = mid - 1;
             }
         }
         return checkpoints[min].value;
     }
 
-      /// @dev `updateValueAtNow` used to update the `balances` map and the
-      ///  `totalSupplyHistory`
-      /// @param checkpoints The history of data being updated
-      /// @param _value The new number of reputation
+    /// @dev `updateValueAtNow` used to update the `balances` map and the
+    ///  `totalSupplyHistory`
+    /// @param checkpoints The history of data being updated
+    /// @param _value The new number of reputation
     function updateValueAtNow(Checkpoint[] storage checkpoints, uint256 _value) internal {
         require(uint128(_value) == _value); //check value is in the 128 bits bounderies
         if ((checkpoints.length == 0) || (checkpoints[checkpoints.length - 1].fromBlock < block.number)) {
@@ -248,7 +238,7 @@ contract Reputation is Ownable {
             newCheckPoint.fromBlock = uint128(block.number);
             newCheckPoint.value = uint128(_value);
         } else {
-            Checkpoint storage oldCheckPoint = checkpoints[checkpoints.length-1];
+            Checkpoint storage oldCheckPoint = checkpoints[checkpoints.length - 1];
             oldCheckPoint.value = uint128(_value);
         }
     }
@@ -267,7 +257,11 @@ interface IERC20 {
 
     function approve(address spender, uint256 value) external returns (bool);
 
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
 
     function totalSupply() external view returns (uint256);
 
@@ -290,8 +284,8 @@ pragma solidity ^0.5.0;
  */
 library SafeMath {
     /**
-    * @dev Multiplies two unsigned integers, reverts on overflow.
-    */
+     * @dev Multiplies two unsigned integers, reverts on overflow.
+     */
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
         // benefit is lost if 'b' is also tested.
@@ -307,8 +301,8 @@ library SafeMath {
     }
 
     /**
-    * @dev Integer division of two unsigned integers truncating the quotient, reverts on division by zero.
-    */
+     * @dev Integer division of two unsigned integers truncating the quotient, reverts on division by zero.
+     */
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
         // Solidity only automatically asserts when dividing by 0
         require(b > 0);
@@ -319,8 +313,8 @@ library SafeMath {
     }
 
     /**
-    * @dev Subtracts two unsigned integers, reverts on overflow (i.e. if subtrahend is greater than minuend).
-    */
+     * @dev Subtracts two unsigned integers, reverts on overflow (i.e. if subtrahend is greater than minuend).
+     */
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b <= a);
         uint256 c = a - b;
@@ -329,8 +323,8 @@ library SafeMath {
     }
 
     /**
-    * @dev Adds two unsigned integers, reverts on overflow.
-    */
+     * @dev Adds two unsigned integers, reverts on overflow.
+     */
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
         require(c >= a);
@@ -339,9 +333,9 @@ library SafeMath {
     }
 
     /**
-    * @dev Divides two unsigned integers and returns the remainder (unsigned integer modulo),
-    * reverts when dividing by zero.
-    */
+     * @dev Divides two unsigned integers and returns the remainder (unsigned integer modulo),
+     * reverts when dividing by zero.
+     */
     function mod(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b != 0);
         return a % b;
@@ -351,8 +345,6 @@ library SafeMath {
 // File: openzeppelin-solidity/contracts/token/ERC20/ERC20.sol
 
 pragma solidity ^0.5.0;
-
-
 
 /**
  * @title Standard ERC20 token
@@ -369,24 +361,24 @@ pragma solidity ^0.5.0;
 contract ERC20 is IERC20 {
     using SafeMath for uint256;
 
-    mapping (address => uint256) private _balances;
+    mapping(address => uint256) private _balances;
 
-    mapping (address => mapping (address => uint256)) private _allowed;
+    mapping(address => mapping(address => uint256)) private _allowed;
 
     uint256 private _totalSupply;
 
     /**
-    * @dev Total number of tokens in existence
-    */
+     * @dev Total number of tokens in existence
+     */
     function totalSupply() public view returns (uint256) {
         return _totalSupply;
     }
 
     /**
-    * @dev Gets the balance of the specified address.
-    * @param owner The address to query the balance of.
-    * @return An uint256 representing the amount owned by the passed address.
-    */
+     * @dev Gets the balance of the specified address.
+     * @param owner The address to query the balance of.
+     * @return An uint256 representing the amount owned by the passed address.
+     */
     function balanceOf(address owner) public view returns (uint256) {
         return _balances[owner];
     }
@@ -402,10 +394,10 @@ contract ERC20 is IERC20 {
     }
 
     /**
-    * @dev Transfer token for a specified address
-    * @param to The address to transfer to.
-    * @param value The amount to be transferred.
-    */
+     * @dev Transfer token for a specified address
+     * @param to The address to transfer to.
+     * @param value The amount to be transferred.
+     */
     function transfer(address to, uint256 value) public returns (bool) {
         _transfer(msg.sender, to, value);
         return true;
@@ -436,7 +428,11 @@ contract ERC20 is IERC20 {
      * @param to address The address which you want to transfer to
      * @param value uint256 the amount of tokens to be transferred
      */
-    function transferFrom(address from, address to, uint256 value) public returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) public returns (bool) {
         _allowed[from][msg.sender] = _allowed[from][msg.sender].sub(value);
         _transfer(from, to, value);
         emit Approval(from, msg.sender, _allowed[from][msg.sender]);
@@ -480,12 +476,16 @@ contract ERC20 is IERC20 {
     }
 
     /**
-    * @dev Transfer token for a specified addresses
-    * @param from The address to transfer from.
-    * @param to The address to transfer to.
-    * @param value The amount to be transferred.
-    */
-    function _transfer(address from, address to, uint256 value) internal {
+     * @dev Transfer token for a specified addresses
+     * @param from The address to transfer from.
+     * @param to The address to transfer to.
+     * @param value The amount to be transferred.
+     */
+    function _transfer(
+        address from,
+        address to,
+        uint256 value
+    ) internal {
         require(to != address(0));
 
         _balances[from] = _balances[from].sub(value);
@@ -541,7 +541,6 @@ contract ERC20 is IERC20 {
 
 pragma solidity ^0.5.0;
 
-
 /**
  * @title Burnable Token
  * @dev Token that can be irreversibly burned (destroyed).
@@ -569,17 +568,12 @@ contract ERC20Burnable is ERC20 {
 
 pragma solidity ^0.5.4;
 
-
-
-
-
 /**
  * @title DAOToken, base on zeppelin contract.
  * @dev ERC20 compatible token. It is a mintable, burnable token.
  */
 
 contract DAOToken is ERC20, ERC20Burnable, Ownable {
-
     string public name;
     string public symbol;
     // solhint-disable-next-line const-name-snakecase
@@ -587,13 +581,16 @@ contract DAOToken is ERC20, ERC20Burnable, Ownable {
     uint256 public cap;
 
     /**
-    * @dev Constructor
-    * @param _name - token name
-    * @param _symbol - token symbol
-    * @param _cap - token cap - 0 value means no cap
-    */
-    constructor(string memory _name, string memory _symbol, uint256 _cap)
-    public {
+     * @dev Constructor
+     * @param _name - token name
+     * @param _symbol - token symbol
+     * @param _cap - token cap - 0 value means no cap
+     */
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint256 _cap
+    ) public {
         name = _name;
         symbol = _symbol;
         cap = _cap;
@@ -605,8 +602,7 @@ contract DAOToken is ERC20, ERC20Burnable, Ownable {
      * @param _amount The amount of tokens to mint.
      */
     function mint(address _to, uint256 _amount) public onlyOwner returns (bool) {
-        if (cap > 0)
-            require(totalSupply().add(_amount) <= cap);
+        if (cap > 0) require(totalSupply().add(_amount) <= cap);
         _mint(_to, _amount);
         return true;
     }
@@ -636,7 +632,9 @@ library Address {
         // TODO Check this again before the Serenity release, because all addresses will be
         // contracts then.
         // solhint-disable-next-line no-inline-assembly
-        assembly { size := extcodesize(account) }
+        assembly {
+            size := extcodesize(account)
+        }
         return size > 0;
     }
 }
@@ -659,45 +657,55 @@ REFERENCE & RELATED READING
 */
 pragma solidity ^0.5.4;
 
-
-
 library SafeERC20 {
     using Address for address;
 
-    bytes4 constant private TRANSFER_SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
-    bytes4 constant private TRANSFERFROM_SELECTOR = bytes4(keccak256(bytes("transferFrom(address,address,uint256)")));
-    bytes4 constant private APPROVE_SELECTOR = bytes4(keccak256(bytes("approve(address,uint256)")));
+    bytes4 private constant TRANSFER_SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
+    bytes4 private constant TRANSFERFROM_SELECTOR = bytes4(keccak256(bytes("transferFrom(address,address,uint256)")));
+    bytes4 private constant APPROVE_SELECTOR = bytes4(keccak256(bytes("approve(address,uint256)")));
 
-    function safeTransfer(address _erc20Addr, address _to, uint256 _value) internal {
-
+    function safeTransfer(
+        address _erc20Addr,
+        address _to,
+        uint256 _value
+    ) internal {
         // Must be a contract addr first!
         require(_erc20Addr.isContract());
 
-        (bool success, bytes memory returnValue) =
-        // solhint-disable-next-line avoid-low-level-calls
-        _erc20Addr.call(abi.encodeWithSelector(TRANSFER_SELECTOR, _to, _value));
+        (
+            bool success,
+            bytes memory returnValue // solhint-disable-next-line avoid-low-level-calls
+        ) = _erc20Addr.call(abi.encodeWithSelector(TRANSFER_SELECTOR, _to, _value));
         // call return false when something wrong
         require(success);
         //check return value
         require(returnValue.length == 0 || (returnValue.length == 32 && (returnValue[31] != 0)));
     }
 
-    function safeTransferFrom(address _erc20Addr, address _from, address _to, uint256 _value) internal {
-
+    function safeTransferFrom(
+        address _erc20Addr,
+        address _from,
+        address _to,
+        uint256 _value
+    ) internal {
         // Must be a contract addr first!
         require(_erc20Addr.isContract());
 
-        (bool success, bytes memory returnValue) =
-        // solhint-disable-next-line avoid-low-level-calls
-        _erc20Addr.call(abi.encodeWithSelector(TRANSFERFROM_SELECTOR, _from, _to, _value));
+        (
+            bool success,
+            bytes memory returnValue // solhint-disable-next-line avoid-low-level-calls
+        ) = _erc20Addr.call(abi.encodeWithSelector(TRANSFERFROM_SELECTOR, _from, _to, _value));
         // call return false when something wrong
         require(success);
         //check return value
         require(returnValue.length == 0 || (returnValue.length == 32 && (returnValue[31] != 0)));
     }
 
-    function safeApprove(address _erc20Addr, address _spender, uint256 _value) internal {
-
+    function safeApprove(
+        address _erc20Addr,
+        address _spender,
+        uint256 _value
+    ) internal {
         // Must be a contract addr first!
         require(_erc20Addr.isContract());
 
@@ -705,9 +713,10 @@ library SafeERC20 {
         // or when resetting it to zero.
         require((_value == 0) || (IERC20(_erc20Addr).allowance(address(this), _spender) == 0));
 
-        (bool success, bytes memory returnValue) =
-        // solhint-disable-next-line avoid-low-level-calls
-        _erc20Addr.call(abi.encodeWithSelector(APPROVE_SELECTOR, _spender, _value));
+        (
+            bool success,
+            bytes memory returnValue // solhint-disable-next-line avoid-low-level-calls
+        ) = _erc20Addr.call(abi.encodeWithSelector(APPROVE_SELECTOR, _spender, _value));
         // call return false when something wrong
         require(success);
         //check return value
@@ -719,12 +728,6 @@ library SafeERC20 {
 
 pragma solidity ^0.5.4;
 
-
-
-
-
-
-
 /**
  * @title An Avatar holds tokens, reputation and ether for a controller
  */
@@ -735,7 +738,7 @@ contract Avatar is Ownable {
     DAOToken public nativeToken;
     Reputation public nativeReputation;
 
-    event GenericCall(address indexed _contract, bytes _data, uint _value, bool _success);
+    event GenericCall(address indexed _contract, bytes _data, uint256 _value, bool _success);
     event SendEther(uint256 _amountInWei, address indexed _to);
     event ExternalTokenTransfer(address indexed _externalToken, address indexed _to, uint256 _value);
     event ExternalTokenTransferFrom(address indexed _externalToken, address _from, address _to, uint256 _value);
@@ -747,122 +750,126 @@ contract Avatar is Ownable {
     * @dev the constructor takes organization name, native token and reputation system
     and creates an avatar for a controller
     */
-    constructor(string memory _orgName, DAOToken _nativeToken, Reputation _nativeReputation) public {
+    constructor(
+        string memory _orgName,
+        DAOToken _nativeToken,
+        Reputation _nativeReputation
+    ) public {
         orgName = _orgName;
         nativeToken = _nativeToken;
         nativeReputation = _nativeReputation;
     }
 
     /**
-    * @dev enables an avatar to receive ethers
-    */
+     * @dev enables an avatar to receive ethers
+     */
     function() external payable {
         emit ReceiveEther(msg.sender, msg.value);
     }
 
     /**
-    * @dev perform a generic call to an arbitrary contract
-    * @param _contract  the contract's address to call
-    * @param _data ABI-encoded contract call to call `_contract` address.
-    * @param _value value (ETH) to transfer with the transaction
-    * @return bool    success or fail
-    *         bytes - the return bytes of the called contract's function.
-    */
-    function genericCall(address _contract, bytes memory _data, uint256 _value)
-    public
-    onlyOwner
-    returns(bool success, bytes memory returnValue) {
-      // solhint-disable-next-line avoid-call-value
+     * @dev perform a generic call to an arbitrary contract
+     * @param _contract  the contract's address to call
+     * @param _data ABI-encoded contract call to call `_contract` address.
+     * @param _value value (ETH) to transfer with the transaction
+     * @return bool    success or fail
+     *         bytes - the return bytes of the called contract's function.
+     */
+    function genericCall(
+        address _contract,
+        bytes memory _data,
+        uint256 _value
+    ) public onlyOwner returns (bool success, bytes memory returnValue) {
+        // solhint-disable-next-line avoid-call-value
         (success, returnValue) = _contract.call.value(_value)(_data);
         emit GenericCall(_contract, _data, _value, success);
     }
 
     /**
-    * @dev send ethers from the avatar's wallet
-    * @param _amountInWei amount to send in Wei units
-    * @param _to send the ethers to this address
-    * @return bool which represents success
-    */
-    function sendEther(uint256 _amountInWei, address payable _to) public onlyOwner returns(bool) {
+     * @dev send ethers from the avatar's wallet
+     * @param _amountInWei amount to send in Wei units
+     * @param _to send the ethers to this address
+     * @return bool which represents success
+     */
+    function sendEther(uint256 _amountInWei, address payable _to) public onlyOwner returns (bool) {
         _to.transfer(_amountInWei);
         emit SendEther(_amountInWei, _to);
         return true;
     }
 
     /**
-    * @dev external token transfer
-    * @param _externalToken the token contract
-    * @param _to the destination address
-    * @param _value the amount of tokens to transfer
-    * @return bool which represents success
-    */
-    function externalTokenTransfer(IERC20 _externalToken, address _to, uint256 _value)
-    public onlyOwner returns(bool)
-    {
+     * @dev external token transfer
+     * @param _externalToken the token contract
+     * @param _to the destination address
+     * @param _value the amount of tokens to transfer
+     * @return bool which represents success
+     */
+    function externalTokenTransfer(
+        IERC20 _externalToken,
+        address _to,
+        uint256 _value
+    ) public onlyOwner returns (bool) {
         address(_externalToken).safeTransfer(_to, _value);
         emit ExternalTokenTransfer(address(_externalToken), _to, _value);
         return true;
     }
 
     /**
-    * @dev external token transfer from a specific account
-    * @param _externalToken the token contract
-    * @param _from the account to spend token from
-    * @param _to the destination address
-    * @param _value the amount of tokens to transfer
-    * @return bool which represents success
-    */
+     * @dev external token transfer from a specific account
+     * @param _externalToken the token contract
+     * @param _from the account to spend token from
+     * @param _to the destination address
+     * @param _value the amount of tokens to transfer
+     * @return bool which represents success
+     */
     function externalTokenTransferFrom(
         IERC20 _externalToken,
         address _from,
         address _to,
         uint256 _value
-    )
-    public onlyOwner returns(bool)
-    {
+    ) public onlyOwner returns (bool) {
         address(_externalToken).safeTransferFrom(_from, _to, _value);
         emit ExternalTokenTransferFrom(address(_externalToken), _from, _to, _value);
         return true;
     }
 
     /**
-    * @dev externalTokenApproval approve the spender address to spend a specified amount of tokens
-    *      on behalf of msg.sender.
-    * @param _externalToken the address of the Token Contract
-    * @param _spender address
-    * @param _value the amount of ether (in Wei) which the approval is referring to.
-    * @return bool which represents a success
-    */
-    function externalTokenApproval(IERC20 _externalToken, address _spender, uint256 _value)
-    public onlyOwner returns(bool)
-    {
+     * @dev externalTokenApproval approve the spender address to spend a specified amount of tokens
+     *      on behalf of msg.sender.
+     * @param _externalToken the address of the Token Contract
+     * @param _spender address
+     * @param _value the amount of ether (in Wei) which the approval is referring to.
+     * @return bool which represents a success
+     */
+    function externalTokenApproval(
+        IERC20 _externalToken,
+        address _spender,
+        uint256 _value
+    ) public onlyOwner returns (bool) {
         address(_externalToken).safeApprove(_spender, _value);
         emit ExternalTokenApproval(address(_externalToken), _spender, _value);
         return true;
     }
 
     /**
-    * @dev metaData emits an event with a string, should contain the hash of some meta data.
-    * @param _metaData a string representing a hash of the meta data
-    * @return bool which represents a success
-    */
-    function metaData(string memory _metaData) public onlyOwner returns(bool) {
+     * @dev metaData emits an event with a string, should contain the hash of some meta data.
+     * @param _metaData a string representing a hash of the meta data
+     * @return bool which represents a success
+     */
+    function metaData(string memory _metaData) public onlyOwner returns (bool) {
         emit MetaData(_metaData);
         return true;
     }
-
-
 }
 
 // File: contracts/DxAvatar.sol
 
 pragma solidity ^0.5.4;
 
-
-
 contract DxAvatar is Avatar {
-    constructor(string memory _orgName, DAOToken _nativeToken, Reputation _nativeReputation)
-        public
-        Avatar(_orgName, _nativeToken, _nativeReputation)
-    {}
+    constructor(
+        string memory _orgName,
+        DAOToken _nativeToken,
+        Reputation _nativeReputation
+    ) public Avatar(_orgName, _nativeToken, _nativeReputation) {}
 }

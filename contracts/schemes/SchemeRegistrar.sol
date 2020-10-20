@@ -1,6 +1,6 @@
 /**
  *Submitted for verification at Etherscan.io on 2019-05-27
-*/
+ */
 
 // File: @daostack/infra/contracts/votingMachines/IntVoteInterface.sol
 
@@ -9,8 +9,14 @@ pragma solidity ^0.5.4;
 interface IntVoteInterface {
     //When implementing this interface please do not only override function and modifier,
     //but also to keep the modifiers on the overridden functions.
-    modifier onlyProposalOwner(bytes32 _proposalId) {revert(); _;}
-    modifier votable(bytes32 _proposalId) {revert(); _;}
+    modifier onlyProposalOwner(bytes32 _proposalId) {
+        revert();
+        _;
+    }
+    modifier votable(bytes32 _proposalId) {
+        revert();
+        _;
+    }
 
     event NewProposal(
         bytes32 indexed _proposalId,
@@ -20,7 +26,8 @@ interface IntVoteInterface {
         bytes32 _paramsHash
     );
 
-    event ExecuteProposal(bytes32 indexed _proposalId,
+    event ExecuteProposal(
+        bytes32 indexed _proposalId,
         address indexed _organization,
         uint256 _decision,
         uint256 _totalReputation
@@ -34,7 +41,7 @@ interface IntVoteInterface {
         uint256 _reputation
     );
 
-    event CancelProposal(bytes32 indexed _proposalId, address indexed _organization );
+    event CancelProposal(bytes32 indexed _proposalId, address indexed _organization);
     event CancelVoting(bytes32 indexed _proposalId, address indexed _organization, address indexed _voter);
 
     /**
@@ -51,22 +58,20 @@ interface IntVoteInterface {
         bytes32 _proposalParameters,
         address _proposer,
         address _organization
-        ) external returns(bytes32);
+    ) external returns (bytes32);
 
     function vote(
         bytes32 _proposalId,
         uint256 _vote,
         uint256 _rep,
         address _voter
-    )
-    external
-    returns(bool);
+    ) external returns (bool);
 
     function cancelVote(bytes32 _proposalId) external;
 
-    function getNumberOfChoices(bytes32 _proposalId) external view returns(uint256);
+    function getNumberOfChoices(bytes32 _proposalId) external view returns (uint256);
 
-    function isVotable(bytes32 _proposalId) external view returns(bool);
+    function isVotable(bytes32 _proposalId) external view returns (bool);
 
     /**
      * @dev voteStatus returns the reputation voted for a proposal for a specific voting choice.
@@ -74,20 +79,20 @@ interface IntVoteInterface {
      * @param _choice the index in the
      * @return voted reputation for the given choice
      */
-    function voteStatus(bytes32 _proposalId, uint256 _choice) external view returns(uint256);
+    function voteStatus(bytes32 _proposalId, uint256 _choice) external view returns (uint256);
 
     /**
      * @dev isAbstainAllow returns if the voting machine allow abstain (0)
      * @return bool true or false
      */
-    function isAbstainAllow() external pure returns(bool);
+    function isAbstainAllow() external pure returns (bool);
 
     /**
      * @dev getAllowedRangeOfChoices returns the allowed range of choices for a voting machine.
      * @return min - minimum number of choices
                max - maximum number of choices
      */
-    function getAllowedRangeOfChoices() external pure returns(uint256 min, uint256 max);
+    function getAllowedRangeOfChoices() external pure returns (uint256 min, uint256 max);
 }
 
 // File: openzeppelin-solidity/contracts/token/ERC20/IERC20.sol
@@ -103,7 +108,11 @@ interface IERC20 {
 
     function approve(address spender, uint256 value) external returns (bool);
 
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
 
     function totalSupply() external view returns (uint256);
 
@@ -120,18 +129,31 @@ interface IERC20 {
 
 pragma solidity ^0.5.4;
 
-
 interface VotingMachineCallbacksInterface {
-    function mintReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId) external returns(bool);
-    function burnReputation(uint256 _amount, address _owner, bytes32 _proposalId) external returns(bool);
+    function mintReputation(
+        uint256 _amount,
+        address _beneficiary,
+        bytes32 _proposalId
+    ) external returns (bool);
 
-    function stakingTokenTransfer(IERC20 _stakingToken, address _beneficiary, uint256 _amount, bytes32 _proposalId)
-    external
-    returns(bool);
+    function burnReputation(
+        uint256 _amount,
+        address _owner,
+        bytes32 _proposalId
+    ) external returns (bool);
 
-    function getTotalReputationSupply(bytes32 _proposalId) external view returns(uint256);
-    function reputationOf(address _owner, bytes32 _proposalId) external view returns(uint256);
-    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns(uint256);
+    function stakingTokenTransfer(
+        IERC20 _stakingToken,
+        address _beneficiary,
+        uint256 _amount,
+        bytes32 _proposalId
+    ) external returns (bool);
+
+    function getTotalReputationSupply(bytes32 _proposalId) external view returns (uint256);
+
+    function reputationOf(address _owner, bytes32 _proposalId) external view returns (uint256);
+
+    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns (uint256);
 }
 
 // File: openzeppelin-solidity/contracts/ownership/Ownable.sol
@@ -152,7 +174,7 @@ contract Ownable {
      * @dev The Ownable constructor sets the original `owner` of the contract to the sender
      * account.
      */
-    constructor () internal {
+    constructor() internal {
         _owner = msg.sender;
         emit OwnershipTransferred(address(0), _owner);
     }
@@ -213,8 +235,6 @@ contract Ownable {
 
 pragma solidity ^0.5.4;
 
-
-
 /**
  * @title Reputation system
  * @dev A DAO has Reputation System which allows peers to rate other peers in order to build trust .
@@ -225,38 +245,32 @@ pragma solidity ^0.5.4;
  */
 
 contract Reputation is Ownable {
-
-    uint8 public decimals = 18;             //Number of decimals of the smallest unit
+    uint8 public decimals = 18; //Number of decimals of the smallest unit
     // Event indicating minting of reputation to an address.
     event Mint(address indexed _to, uint256 _amount);
     // Event indicating burning of reputation for an address.
     event Burn(address indexed _from, uint256 _amount);
 
-      /// @dev `Checkpoint` is the structure that attaches a block number to a
-      ///  given value, the block number attached is the one that last changed the
-      ///  value
+    /// @dev `Checkpoint` is the structure that attaches a block number to a
+    ///  given value, the block number attached is the one that last changed the
+    ///  value
     struct Checkpoint {
-
-    // `fromBlock` is the block number that the value was generated from
+        // `fromBlock` is the block number that the value was generated from
         uint128 fromBlock;
-
-          // `value` is the amount of reputation at a specific block number
+        // `value` is the amount of reputation at a specific block number
         uint128 value;
     }
 
-      // `balances` is the map that tracks the balance of each address, in this
-      //  contract when the balance changes the block number that the change
-      //  occurred is also included in the map
-    mapping (address => Checkpoint[]) balances;
+    // `balances` is the map that tracks the balance of each address, in this
+    //  contract when the balance changes the block number that the change
+    //  occurred is also included in the map
+    mapping(address => Checkpoint[]) balances;
 
-      // Tracks the history of the `totalSupply` of the reputation
+    // Tracks the history of the `totalSupply` of the reputation
     Checkpoint[] totalSupplyHistory;
 
     /// @notice Constructor to create a Reputation
-    constructor(
-    ) public
-    {
-    }
+    constructor() public {}
 
     /// @dev This function makes it easy to get the total number of reputation
     /// @return The total number of reputation
@@ -264,48 +278,46 @@ contract Reputation is Ownable {
         return totalSupplyAt(block.number);
     }
 
-  ////////////////
-  // Query balance and totalSupply in History
-  ////////////////
+    ////////////////
+    // Query balance and totalSupply in History
+    ////////////////
     /**
-    * @dev return the reputation amount of a given owner
-    * @param _owner an address of the owner which we want to get his reputation
-    */
+     * @dev return the reputation amount of a given owner
+     * @param _owner an address of the owner which we want to get his reputation
+     */
     function balanceOf(address _owner) public view returns (uint256 balance) {
         return balanceOfAt(_owner, block.number);
     }
 
-      /// @dev Queries the balance of `_owner` at a specific `_blockNumber`
-      /// @param _owner The address from which the balance will be retrieved
-      /// @param _blockNumber The block number when the balance is queried
-      /// @return The balance at `_blockNumber`
-    function balanceOfAt(address _owner, uint256 _blockNumber)
-    public view returns (uint256)
-    {
+    /// @dev Queries the balance of `_owner` at a specific `_blockNumber`
+    /// @param _owner The address from which the balance will be retrieved
+    /// @param _blockNumber The block number when the balance is queried
+    /// @return The balance at `_blockNumber`
+    function balanceOfAt(address _owner, uint256 _blockNumber) public view returns (uint256) {
         if ((balances[_owner].length == 0) || (balances[_owner][0].fromBlock > _blockNumber)) {
             return 0;
-          // This will return the expected balance during normal situations
+            // This will return the expected balance during normal situations
         } else {
             return getValueAt(balances[_owner], _blockNumber);
         }
     }
 
-      /// @notice Total amount of reputation at a specific `_blockNumber`.
-      /// @param _blockNumber The block number when the totalSupply is queried
-      /// @return The total amount of reputation at `_blockNumber`
-    function totalSupplyAt(uint256 _blockNumber) public view returns(uint256) {
+    /// @notice Total amount of reputation at a specific `_blockNumber`.
+    /// @param _blockNumber The block number when the totalSupply is queried
+    /// @return The total amount of reputation at `_blockNumber`
+    function totalSupplyAt(uint256 _blockNumber) public view returns (uint256) {
         if ((totalSupplyHistory.length == 0) || (totalSupplyHistory[0].fromBlock > _blockNumber)) {
             return 0;
-          // This will return the expected totalSupply during normal situations
+            // This will return the expected totalSupply during normal situations
         } else {
             return getValueAt(totalSupplyHistory, _blockNumber);
         }
     }
 
-      /// @notice Generates `_amount` reputation that are assigned to `_owner`
-      /// @param _user The address that will be assigned the new reputation
-      /// @param _amount The quantity of reputation generated
-      /// @return True if the reputation are generated correctly
+    /// @notice Generates `_amount` reputation that are assigned to `_owner`
+    /// @param _user The address that will be assigned the new reputation
+    /// @param _amount The quantity of reputation generated
+    /// @return True if the reputation are generated correctly
     function mint(address _user, uint256 _amount) public onlyOwner returns (bool) {
         uint256 curTotalSupply = totalSupply();
         require(curTotalSupply + _amount >= curTotalSupply); // Check for overflow
@@ -317,10 +329,10 @@ contract Reputation is Ownable {
         return true;
     }
 
-      /// @notice Burns `_amount` reputation from `_owner`
-      /// @param _user The address that will lose the reputation
-      /// @param _amount The quantity of reputation to burn
-      /// @return True if the reputation are burned correctly
+    /// @notice Burns `_amount` reputation from `_owner`
+    /// @param _user The address that will lose the reputation
+    /// @param _amount The quantity of reputation to burn
+    /// @return True if the reputation are burned correctly
     function burn(address _user, uint256 _amount) public onlyOwner returns (bool) {
         uint256 curTotalSupply = totalSupply();
         uint256 amountBurned = _amount;
@@ -334,45 +346,45 @@ contract Reputation is Ownable {
         return true;
     }
 
-  ////////////////
-  // Internal helper functions to query and set a value in a snapshot array
-  ////////////////
+    ////////////////
+    // Internal helper functions to query and set a value in a snapshot array
+    ////////////////
 
-      /// @dev `getValueAt` retrieves the number of reputation at a given block number
-      /// @param checkpoints The history of values being queried
-      /// @param _block The block number to retrieve the value at
-      /// @return The number of reputation being queried
+    /// @dev `getValueAt` retrieves the number of reputation at a given block number
+    /// @param checkpoints The history of values being queried
+    /// @param _block The block number to retrieve the value at
+    /// @return The number of reputation being queried
     function getValueAt(Checkpoint[] storage checkpoints, uint256 _block) internal view returns (uint256) {
         if (checkpoints.length == 0) {
             return 0;
         }
 
-          // Shortcut for the actual value
-        if (_block >= checkpoints[checkpoints.length-1].fromBlock) {
-            return checkpoints[checkpoints.length-1].value;
+        // Shortcut for the actual value
+        if (_block >= checkpoints[checkpoints.length - 1].fromBlock) {
+            return checkpoints[checkpoints.length - 1].value;
         }
         if (_block < checkpoints[0].fromBlock) {
             return 0;
         }
 
-          // Binary search of the value in the array
+        // Binary search of the value in the array
         uint256 min = 0;
-        uint256 max = checkpoints.length-1;
+        uint256 max = checkpoints.length - 1;
         while (max > min) {
             uint256 mid = (max + min + 1) / 2;
-            if (checkpoints[mid].fromBlock<=_block) {
+            if (checkpoints[mid].fromBlock <= _block) {
                 min = mid;
             } else {
-                max = mid-1;
+                max = mid - 1;
             }
         }
         return checkpoints[min].value;
     }
 
-      /// @dev `updateValueAtNow` used to update the `balances` map and the
-      ///  `totalSupplyHistory`
-      /// @param checkpoints The history of data being updated
-      /// @param _value The new number of reputation
+    /// @dev `updateValueAtNow` used to update the `balances` map and the
+    ///  `totalSupplyHistory`
+    /// @param checkpoints The history of data being updated
+    /// @param _value The new number of reputation
     function updateValueAtNow(Checkpoint[] storage checkpoints, uint256 _value) internal {
         require(uint128(_value) == _value); //check value is in the 128 bits bounderies
         if ((checkpoints.length == 0) || (checkpoints[checkpoints.length - 1].fromBlock < block.number)) {
@@ -380,7 +392,7 @@ contract Reputation is Ownable {
             newCheckPoint.fromBlock = uint128(block.number);
             newCheckPoint.value = uint128(_value);
         } else {
-            Checkpoint storage oldCheckPoint = checkpoints[checkpoints.length-1];
+            Checkpoint storage oldCheckPoint = checkpoints[checkpoints.length - 1];
             oldCheckPoint.value = uint128(_value);
         }
     }
@@ -396,8 +408,8 @@ pragma solidity ^0.5.0;
  */
 library SafeMath {
     /**
-    * @dev Multiplies two unsigned integers, reverts on overflow.
-    */
+     * @dev Multiplies two unsigned integers, reverts on overflow.
+     */
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
         // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
         // benefit is lost if 'b' is also tested.
@@ -413,8 +425,8 @@ library SafeMath {
     }
 
     /**
-    * @dev Integer division of two unsigned integers truncating the quotient, reverts on division by zero.
-    */
+     * @dev Integer division of two unsigned integers truncating the quotient, reverts on division by zero.
+     */
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
         // Solidity only automatically asserts when dividing by 0
         require(b > 0);
@@ -425,8 +437,8 @@ library SafeMath {
     }
 
     /**
-    * @dev Subtracts two unsigned integers, reverts on overflow (i.e. if subtrahend is greater than minuend).
-    */
+     * @dev Subtracts two unsigned integers, reverts on overflow (i.e. if subtrahend is greater than minuend).
+     */
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b <= a);
         uint256 c = a - b;
@@ -435,8 +447,8 @@ library SafeMath {
     }
 
     /**
-    * @dev Adds two unsigned integers, reverts on overflow.
-    */
+     * @dev Adds two unsigned integers, reverts on overflow.
+     */
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
         require(c >= a);
@@ -445,9 +457,9 @@ library SafeMath {
     }
 
     /**
-    * @dev Divides two unsigned integers and returns the remainder (unsigned integer modulo),
-    * reverts when dividing by zero.
-    */
+     * @dev Divides two unsigned integers and returns the remainder (unsigned integer modulo),
+     * reverts when dividing by zero.
+     */
     function mod(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b != 0);
         return a % b;
@@ -457,8 +469,6 @@ library SafeMath {
 // File: openzeppelin-solidity/contracts/token/ERC20/ERC20.sol
 
 pragma solidity ^0.5.0;
-
-
 
 /**
  * @title Standard ERC20 token
@@ -475,24 +485,24 @@ pragma solidity ^0.5.0;
 contract ERC20 is IERC20 {
     using SafeMath for uint256;
 
-    mapping (address => uint256) private _balances;
+    mapping(address => uint256) private _balances;
 
-    mapping (address => mapping (address => uint256)) private _allowed;
+    mapping(address => mapping(address => uint256)) private _allowed;
 
     uint256 private _totalSupply;
 
     /**
-    * @dev Total number of tokens in existence
-    */
+     * @dev Total number of tokens in existence
+     */
     function totalSupply() public view returns (uint256) {
         return _totalSupply;
     }
 
     /**
-    * @dev Gets the balance of the specified address.
-    * @param owner The address to query the balance of.
-    * @return An uint256 representing the amount owned by the passed address.
-    */
+     * @dev Gets the balance of the specified address.
+     * @param owner The address to query the balance of.
+     * @return An uint256 representing the amount owned by the passed address.
+     */
     function balanceOf(address owner) public view returns (uint256) {
         return _balances[owner];
     }
@@ -508,10 +518,10 @@ contract ERC20 is IERC20 {
     }
 
     /**
-    * @dev Transfer token for a specified address
-    * @param to The address to transfer to.
-    * @param value The amount to be transferred.
-    */
+     * @dev Transfer token for a specified address
+     * @param to The address to transfer to.
+     * @param value The amount to be transferred.
+     */
     function transfer(address to, uint256 value) public returns (bool) {
         _transfer(msg.sender, to, value);
         return true;
@@ -542,7 +552,11 @@ contract ERC20 is IERC20 {
      * @param to address The address which you want to transfer to
      * @param value uint256 the amount of tokens to be transferred
      */
-    function transferFrom(address from, address to, uint256 value) public returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) public returns (bool) {
         _allowed[from][msg.sender] = _allowed[from][msg.sender].sub(value);
         _transfer(from, to, value);
         emit Approval(from, msg.sender, _allowed[from][msg.sender]);
@@ -586,12 +600,16 @@ contract ERC20 is IERC20 {
     }
 
     /**
-    * @dev Transfer token for a specified addresses
-    * @param from The address to transfer from.
-    * @param to The address to transfer to.
-    * @param value The amount to be transferred.
-    */
-    function _transfer(address from, address to, uint256 value) internal {
+     * @dev Transfer token for a specified addresses
+     * @param from The address to transfer from.
+     * @param to The address to transfer to.
+     * @param value The amount to be transferred.
+     */
+    function _transfer(
+        address from,
+        address to,
+        uint256 value
+    ) internal {
         require(to != address(0));
 
         _balances[from] = _balances[from].sub(value);
@@ -647,7 +665,6 @@ contract ERC20 is IERC20 {
 
 pragma solidity ^0.5.0;
 
-
 /**
  * @title Burnable Token
  * @dev Token that can be irreversibly burned (destroyed).
@@ -675,17 +692,12 @@ contract ERC20Burnable is ERC20 {
 
 pragma solidity ^0.5.4;
 
-
-
-
-
 /**
  * @title DAOToken, base on zeppelin contract.
  * @dev ERC20 compatible token. It is a mintable, burnable token.
  */
 
 contract DAOToken is ERC20, ERC20Burnable, Ownable {
-
     string public name;
     string public symbol;
     // solhint-disable-next-line const-name-snakecase
@@ -693,13 +705,16 @@ contract DAOToken is ERC20, ERC20Burnable, Ownable {
     uint256 public cap;
 
     /**
-    * @dev Constructor
-    * @param _name - token name
-    * @param _symbol - token symbol
-    * @param _cap - token cap - 0 value means no cap
-    */
-    constructor(string memory _name, string memory _symbol, uint256 _cap)
-    public {
+     * @dev Constructor
+     * @param _name - token name
+     * @param _symbol - token symbol
+     * @param _cap - token cap - 0 value means no cap
+     */
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint256 _cap
+    ) public {
         name = _name;
         symbol = _symbol;
         cap = _cap;
@@ -711,8 +726,7 @@ contract DAOToken is ERC20, ERC20Burnable, Ownable {
      * @param _amount The amount of tokens to mint.
      */
     function mint(address _to, uint256 _amount) public onlyOwner returns (bool) {
-        if (cap > 0)
-            require(totalSupply().add(_amount) <= cap);
+        if (cap > 0) require(totalSupply().add(_amount) <= cap);
         _mint(_to, _amount);
         return true;
     }
@@ -742,7 +756,9 @@ library Address {
         // TODO Check this again before the Serenity release, because all addresses will be
         // contracts then.
         // solhint-disable-next-line no-inline-assembly
-        assembly { size := extcodesize(account) }
+        assembly {
+            size := extcodesize(account)
+        }
         return size > 0;
     }
 }
@@ -765,45 +781,55 @@ REFERENCE & RELATED READING
 */
 pragma solidity ^0.5.4;
 
-
-
 library SafeERC20 {
     using Address for address;
 
-    bytes4 constant private TRANSFER_SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
-    bytes4 constant private TRANSFERFROM_SELECTOR = bytes4(keccak256(bytes("transferFrom(address,address,uint256)")));
-    bytes4 constant private APPROVE_SELECTOR = bytes4(keccak256(bytes("approve(address,uint256)")));
+    bytes4 private constant TRANSFER_SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
+    bytes4 private constant TRANSFERFROM_SELECTOR = bytes4(keccak256(bytes("transferFrom(address,address,uint256)")));
+    bytes4 private constant APPROVE_SELECTOR = bytes4(keccak256(bytes("approve(address,uint256)")));
 
-    function safeTransfer(address _erc20Addr, address _to, uint256 _value) internal {
-
+    function safeTransfer(
+        address _erc20Addr,
+        address _to,
+        uint256 _value
+    ) internal {
         // Must be a contract addr first!
         require(_erc20Addr.isContract());
 
-        (bool success, bytes memory returnValue) =
-        // solhint-disable-next-line avoid-low-level-calls
-        _erc20Addr.call(abi.encodeWithSelector(TRANSFER_SELECTOR, _to, _value));
+        (
+            bool success,
+            bytes memory returnValue // solhint-disable-next-line avoid-low-level-calls
+        ) = _erc20Addr.call(abi.encodeWithSelector(TRANSFER_SELECTOR, _to, _value));
         // call return false when something wrong
         require(success);
         //check return value
         require(returnValue.length == 0 || (returnValue.length == 32 && (returnValue[31] != 0)));
     }
 
-    function safeTransferFrom(address _erc20Addr, address _from, address _to, uint256 _value) internal {
-
+    function safeTransferFrom(
+        address _erc20Addr,
+        address _from,
+        address _to,
+        uint256 _value
+    ) internal {
         // Must be a contract addr first!
         require(_erc20Addr.isContract());
 
-        (bool success, bytes memory returnValue) =
-        // solhint-disable-next-line avoid-low-level-calls
-        _erc20Addr.call(abi.encodeWithSelector(TRANSFERFROM_SELECTOR, _from, _to, _value));
+        (
+            bool success,
+            bytes memory returnValue // solhint-disable-next-line avoid-low-level-calls
+        ) = _erc20Addr.call(abi.encodeWithSelector(TRANSFERFROM_SELECTOR, _from, _to, _value));
         // call return false when something wrong
         require(success);
         //check return value
         require(returnValue.length == 0 || (returnValue.length == 32 && (returnValue[31] != 0)));
     }
 
-    function safeApprove(address _erc20Addr, address _spender, uint256 _value) internal {
-
+    function safeApprove(
+        address _erc20Addr,
+        address _spender,
+        uint256 _value
+    ) internal {
         // Must be a contract addr first!
         require(_erc20Addr.isContract());
 
@@ -811,9 +837,10 @@ library SafeERC20 {
         // or when resetting it to zero.
         require((_value == 0) || (IERC20(_erc20Addr).allowance(address(this), _spender) == 0));
 
-        (bool success, bytes memory returnValue) =
-        // solhint-disable-next-line avoid-low-level-calls
-        _erc20Addr.call(abi.encodeWithSelector(APPROVE_SELECTOR, _spender, _value));
+        (
+            bool success,
+            bytes memory returnValue // solhint-disable-next-line avoid-low-level-calls
+        ) = _erc20Addr.call(abi.encodeWithSelector(APPROVE_SELECTOR, _spender, _value));
         // call return false when something wrong
         require(success);
         //check return value
@@ -825,12 +852,6 @@ library SafeERC20 {
 
 pragma solidity ^0.5.4;
 
-
-
-
-
-
-
 /**
  * @title An Avatar holds tokens, reputation and ether for a controller
  */
@@ -841,7 +862,7 @@ contract Avatar is Ownable {
     DAOToken public nativeToken;
     Reputation public nativeReputation;
 
-    event GenericCall(address indexed _contract, bytes _data, uint _value, bool _success);
+    event GenericCall(address indexed _contract, bytes _data, uint256 _value, bool _success);
     event SendEther(uint256 _amountInWei, address indexed _to);
     event ExternalTokenTransfer(address indexed _externalToken, address indexed _to, uint256 _value);
     event ExternalTokenTransferFrom(address indexed _externalToken, address _from, address _to, uint256 _value);
@@ -853,147 +874,155 @@ contract Avatar is Ownable {
     * @dev the constructor takes organization name, native token and reputation system
     and creates an avatar for a controller
     */
-    constructor(string memory _orgName, DAOToken _nativeToken, Reputation _nativeReputation) public {
+    constructor(
+        string memory _orgName,
+        DAOToken _nativeToken,
+        Reputation _nativeReputation
+    ) public {
         orgName = _orgName;
         nativeToken = _nativeToken;
         nativeReputation = _nativeReputation;
     }
 
     /**
-    * @dev enables an avatar to receive ethers
-    */
+     * @dev enables an avatar to receive ethers
+     */
     function() external payable {
         emit ReceiveEther(msg.sender, msg.value);
     }
 
     /**
-    * @dev perform a generic call to an arbitrary contract
-    * @param _contract  the contract's address to call
-    * @param _data ABI-encoded contract call to call `_contract` address.
-    * @param _value value (ETH) to transfer with the transaction
-    * @return bool    success or fail
-    *         bytes - the return bytes of the called contract's function.
-    */
-    function genericCall(address _contract, bytes memory _data, uint256 _value)
-    public
-    onlyOwner
-    returns(bool success, bytes memory returnValue) {
-      // solhint-disable-next-line avoid-call-value
+     * @dev perform a generic call to an arbitrary contract
+     * @param _contract  the contract's address to call
+     * @param _data ABI-encoded contract call to call `_contract` address.
+     * @param _value value (ETH) to transfer with the transaction
+     * @return bool    success or fail
+     *         bytes - the return bytes of the called contract's function.
+     */
+    function genericCall(
+        address _contract,
+        bytes memory _data,
+        uint256 _value
+    ) public onlyOwner returns (bool success, bytes memory returnValue) {
+        // solhint-disable-next-line avoid-call-value
         (success, returnValue) = _contract.call.value(_value)(_data);
         emit GenericCall(_contract, _data, _value, success);
     }
 
     /**
-    * @dev send ethers from the avatar's wallet
-    * @param _amountInWei amount to send in Wei units
-    * @param _to send the ethers to this address
-    * @return bool which represents success
-    */
-    function sendEther(uint256 _amountInWei, address payable _to) public onlyOwner returns(bool) {
+     * @dev send ethers from the avatar's wallet
+     * @param _amountInWei amount to send in Wei units
+     * @param _to send the ethers to this address
+     * @return bool which represents success
+     */
+    function sendEther(uint256 _amountInWei, address payable _to) public onlyOwner returns (bool) {
         _to.transfer(_amountInWei);
         emit SendEther(_amountInWei, _to);
         return true;
     }
 
     /**
-    * @dev external token transfer
-    * @param _externalToken the token contract
-    * @param _to the destination address
-    * @param _value the amount of tokens to transfer
-    * @return bool which represents success
-    */
-    function externalTokenTransfer(IERC20 _externalToken, address _to, uint256 _value)
-    public onlyOwner returns(bool)
-    {
+     * @dev external token transfer
+     * @param _externalToken the token contract
+     * @param _to the destination address
+     * @param _value the amount of tokens to transfer
+     * @return bool which represents success
+     */
+    function externalTokenTransfer(
+        IERC20 _externalToken,
+        address _to,
+        uint256 _value
+    ) public onlyOwner returns (bool) {
         address(_externalToken).safeTransfer(_to, _value);
         emit ExternalTokenTransfer(address(_externalToken), _to, _value);
         return true;
     }
 
     /**
-    * @dev external token transfer from a specific account
-    * @param _externalToken the token contract
-    * @param _from the account to spend token from
-    * @param _to the destination address
-    * @param _value the amount of tokens to transfer
-    * @return bool which represents success
-    */
+     * @dev external token transfer from a specific account
+     * @param _externalToken the token contract
+     * @param _from the account to spend token from
+     * @param _to the destination address
+     * @param _value the amount of tokens to transfer
+     * @return bool which represents success
+     */
     function externalTokenTransferFrom(
         IERC20 _externalToken,
         address _from,
         address _to,
         uint256 _value
-    )
-    public onlyOwner returns(bool)
-    {
+    ) public onlyOwner returns (bool) {
         address(_externalToken).safeTransferFrom(_from, _to, _value);
         emit ExternalTokenTransferFrom(address(_externalToken), _from, _to, _value);
         return true;
     }
 
     /**
-    * @dev externalTokenApproval approve the spender address to spend a specified amount of tokens
-    *      on behalf of msg.sender.
-    * @param _externalToken the address of the Token Contract
-    * @param _spender address
-    * @param _value the amount of ether (in Wei) which the approval is referring to.
-    * @return bool which represents a success
-    */
-    function externalTokenApproval(IERC20 _externalToken, address _spender, uint256 _value)
-    public onlyOwner returns(bool)
-    {
+     * @dev externalTokenApproval approve the spender address to spend a specified amount of tokens
+     *      on behalf of msg.sender.
+     * @param _externalToken the address of the Token Contract
+     * @param _spender address
+     * @param _value the amount of ether (in Wei) which the approval is referring to.
+     * @return bool which represents a success
+     */
+    function externalTokenApproval(
+        IERC20 _externalToken,
+        address _spender,
+        uint256 _value
+    ) public onlyOwner returns (bool) {
         address(_externalToken).safeApprove(_spender, _value);
         emit ExternalTokenApproval(address(_externalToken), _spender, _value);
         return true;
     }
 
     /**
-    * @dev metaData emits an event with a string, should contain the hash of some meta data.
-    * @param _metaData a string representing a hash of the meta data
-    * @return bool which represents a success
-    */
-    function metaData(string memory _metaData) public onlyOwner returns(bool) {
+     * @dev metaData emits an event with a string, should contain the hash of some meta data.
+     * @param _metaData a string representing a hash of the meta data
+     * @return bool which represents a success
+     */
+    function metaData(string memory _metaData) public onlyOwner returns (bool) {
         emit MetaData(_metaData);
         return true;
     }
-
-
 }
 
 // File: contracts/universalSchemes/UniversalSchemeInterface.sol
 
 pragma solidity ^0.5.4;
 
-
 contract UniversalSchemeInterface {
-
-    function getParametersFromController(Avatar _avatar) internal view returns(bytes32);
-    
+    function getParametersFromController(Avatar _avatar) internal view returns (bytes32);
 }
 
 // File: contracts/globalConstraints/GlobalConstraintInterface.sol
 
 pragma solidity ^0.5.4;
 
-
 contract GlobalConstraintInterface {
+    enum CallPhase {Pre, Post, PreAndPost}
 
-    enum CallPhase { Pre, Post, PreAndPost }
+    function pre(
+        address _scheme,
+        bytes32 _params,
+        bytes32 _method
+    ) public returns (bool);
 
-    function pre( address _scheme, bytes32 _params, bytes32 _method ) public returns(bool);
-    function post( address _scheme, bytes32 _params, bytes32 _method ) public returns(bool);
+    function post(
+        address _scheme,
+        bytes32 _params,
+        bytes32 _method
+    ) public returns (bool);
+
     /**
      * @dev when return if this globalConstraints is pre, post or both.
      * @return CallPhase enum indication  Pre, Post or PreAndPost.
      */
-    function when() public returns(CallPhase);
+    function when() public returns (CallPhase);
 }
 
 // File: contracts/controller/ControllerInterface.sol
 
 pragma solidity ^0.5.4;
-
-
 
 /**
  * @title Controller contract
@@ -1002,16 +1031,17 @@ pragma solidity ^0.5.4;
  * Each scheme has it own parameters and operation permissions.
  */
 interface ControllerInterface {
-
     /**
      * @dev Mint `_amount` of reputation that are assigned to `_to` .
      * @param  _amount amount of reputation to mint
      * @param _to beneficiary address
      * @return bool which represents a success
-    */
-    function mintReputation(uint256 _amount, address _to, address _avatar)
-    external
-    returns(bool);
+     */
+    function mintReputation(
+        uint256 _amount,
+        address _to,
+        address _avatar
+    ) external returns (bool);
 
     /**
      * @dev Burns `_amount` of reputation from `_from`
@@ -1019,9 +1049,11 @@ interface ControllerInterface {
      * @param _from The address that will lose the reputation
      * @return bool which represents a success
      */
-    function burnReputation(uint256 _amount, address _from, address _avatar)
-    external
-    returns(bool);
+    function burnReputation(
+        uint256 _amount,
+        address _from,
+        address _avatar
+    ) external returns (bool);
 
     /**
      * @dev mint tokens .
@@ -1030,21 +1062,26 @@ interface ControllerInterface {
      * @param _avatar address
      * @return bool which represents a success
      */
-    function mintTokens(uint256 _amount, address _beneficiary, address _avatar)
-    external
-    returns(bool);
+    function mintTokens(
+        uint256 _amount,
+        address _beneficiary,
+        address _avatar
+    ) external returns (bool);
 
-  /**
-   * @dev register or update a scheme
-   * @param _scheme the address of the scheme
-   * @param _paramsHash a hashed configuration of the usage of the scheme
-   * @param _permissions the permissions the new scheme will have
-   * @param _avatar address
-   * @return bool which represents a success
-   */
-    function registerScheme(address _scheme, bytes32 _paramsHash, bytes4 _permissions, address _avatar)
-    external
-    returns(bool);
+    /**
+     * @dev register or update a scheme
+     * @param _scheme the address of the scheme
+     * @param _paramsHash a hashed configuration of the usage of the scheme
+     * @param _permissions the permissions the new scheme will have
+     * @param _avatar address
+     * @return bool which represents a success
+     */
+    function registerScheme(
+        address _scheme,
+        bytes32 _paramsHash,
+        bytes4 _permissions,
+        address _avatar
+    ) external returns (bool);
 
     /**
      * @dev unregister a scheme
@@ -1052,16 +1089,14 @@ interface ControllerInterface {
      * @param _scheme the address of the scheme
      * @return bool which represents a success
      */
-    function unregisterScheme(address _scheme, address _avatar)
-    external
-    returns(bool);
+    function unregisterScheme(address _scheme, address _avatar) external returns (bool);
 
     /**
      * @dev unregister the caller's scheme
      * @param _avatar address
      * @return bool which represents a success
      */
-    function unregisterSelf(address _avatar) external returns(bool);
+    function unregisterSelf(address _avatar) external returns (bool);
 
     /**
      * @dev add or update Global Constraint
@@ -1070,8 +1105,11 @@ interface ControllerInterface {
      * @param _avatar the avatar of the organization
      * @return bool which represents a success
      */
-    function addGlobalConstraint(address _globalConstraint, bytes32 _params, address _avatar)
-    external returns(bool);
+    function addGlobalConstraint(
+        address _globalConstraint,
+        bytes32 _params,
+        address _avatar
+    ) external returns (bool);
 
     /**
      * @dev remove Global Constraint
@@ -1079,137 +1117,141 @@ interface ControllerInterface {
      * @param _avatar the organization avatar.
      * @return bool which represents a success
      */
-    function removeGlobalConstraint (address _globalConstraint, address _avatar)
-    external  returns(bool);
-
-  /**
-    * @dev upgrade the Controller
-    *      The function will trigger an event 'UpgradeController'.
-    * @param  _newController the address of the new controller.
-    * @param _avatar address
-    * @return bool which represents a success
-    */
-    function upgradeController(address _newController, Avatar _avatar)
-    external returns(bool);
+    function removeGlobalConstraint(address _globalConstraint, address _avatar) external returns (bool);
 
     /**
-    * @dev perform a generic call to an arbitrary contract
-    * @param _contract  the contract's address to call
-    * @param _data ABI-encoded contract call to call `_contract` address.
-    * @param _avatar the controller's avatar address
-    * @param _value value (ETH) to transfer with the transaction
-    * @return bool -success
-    *         bytes  - the return value of the called _contract's function.
-    */
-    function genericCall(address _contract, bytes calldata _data, Avatar _avatar, uint256 _value)
-    external
-    returns(bool, bytes memory);
-
-  /**
-   * @dev send some ether
-   * @param _amountInWei the amount of ether (in Wei) to send
-   * @param _to address of the beneficiary
-   * @param _avatar address
-   * @return bool which represents a success
-   */
-    function sendEther(uint256 _amountInWei, address payable _to, Avatar _avatar)
-    external returns(bool);
+     * @dev upgrade the Controller
+     *      The function will trigger an event 'UpgradeController'.
+     * @param  _newController the address of the new controller.
+     * @param _avatar address
+     * @return bool which represents a success
+     */
+    function upgradeController(address _newController, Avatar _avatar) external returns (bool);
 
     /**
-    * @dev send some amount of arbitrary ERC20 Tokens
-    * @param _externalToken the address of the Token Contract
-    * @param _to address of the beneficiary
-    * @param _value the amount of ether (in Wei) to send
-    * @param _avatar address
-    * @return bool which represents a success
-    */
-    function externalTokenTransfer(IERC20 _externalToken, address _to, uint256 _value, Avatar _avatar)
-    external
-    returns(bool);
+     * @dev perform a generic call to an arbitrary contract
+     * @param _contract  the contract's address to call
+     * @param _data ABI-encoded contract call to call `_contract` address.
+     * @param _avatar the controller's avatar address
+     * @param _value value (ETH) to transfer with the transaction
+     * @return bool -success
+     *         bytes  - the return value of the called _contract's function.
+     */
+    function genericCall(
+        address _contract,
+        bytes calldata _data,
+        Avatar _avatar,
+        uint256 _value
+    ) external returns (bool, bytes memory);
 
     /**
-    * @dev transfer token "from" address "to" address
-    *      One must to approve the amount of tokens which can be spend from the
-    *      "from" account.This can be done using externalTokenApprove.
-    * @param _externalToken the address of the Token Contract
-    * @param _from address of the account to send from
-    * @param _to address of the beneficiary
-    * @param _value the amount of ether (in Wei) to send
-    * @param _avatar address
-    * @return bool which represents a success
-    */
+     * @dev send some ether
+     * @param _amountInWei the amount of ether (in Wei) to send
+     * @param _to address of the beneficiary
+     * @param _avatar address
+     * @return bool which represents a success
+     */
+    function sendEther(
+        uint256 _amountInWei,
+        address payable _to,
+        Avatar _avatar
+    ) external returns (bool);
+
+    /**
+     * @dev send some amount of arbitrary ERC20 Tokens
+     * @param _externalToken the address of the Token Contract
+     * @param _to address of the beneficiary
+     * @param _value the amount of ether (in Wei) to send
+     * @param _avatar address
+     * @return bool which represents a success
+     */
+    function externalTokenTransfer(
+        IERC20 _externalToken,
+        address _to,
+        uint256 _value,
+        Avatar _avatar
+    ) external returns (bool);
+
+    /**
+     * @dev transfer token "from" address "to" address
+     *      One must to approve the amount of tokens which can be spend from the
+     *      "from" account.This can be done using externalTokenApprove.
+     * @param _externalToken the address of the Token Contract
+     * @param _from address of the account to send from
+     * @param _to address of the beneficiary
+     * @param _value the amount of ether (in Wei) to send
+     * @param _avatar address
+     * @return bool which represents a success
+     */
     function externalTokenTransferFrom(
-    IERC20 _externalToken,
-    address _from,
-    address _to,
-    uint256 _value,
-    Avatar _avatar)
-    external
-    returns(bool);
+        IERC20 _externalToken,
+        address _from,
+        address _to,
+        uint256 _value,
+        Avatar _avatar
+    ) external returns (bool);
 
     /**
-    * @dev externalTokenApproval approve the spender address to spend a specified amount of tokens
-    *      on behalf of msg.sender.
-    * @param _externalToken the address of the Token Contract
-    * @param _spender address
-    * @param _value the amount of ether (in Wei) which the approval is referring to.
-    * @return bool which represents a success
-    */
-    function externalTokenApproval(IERC20 _externalToken, address _spender, uint256 _value, Avatar _avatar)
-    external
-    returns(bool);
+     * @dev externalTokenApproval approve the spender address to spend a specified amount of tokens
+     *      on behalf of msg.sender.
+     * @param _externalToken the address of the Token Contract
+     * @param _spender address
+     * @param _value the amount of ether (in Wei) which the approval is referring to.
+     * @return bool which represents a success
+     */
+    function externalTokenApproval(
+        IERC20 _externalToken,
+        address _spender,
+        uint256 _value,
+        Avatar _avatar
+    ) external returns (bool);
 
     /**
-    * @dev metaData emits an event with a string, should contain the hash of some meta data.
-    * @param _metaData a string representing a hash of the meta data
-    * @param _avatar Avatar
-    * @return bool which represents a success
-    */
-    function metaData(string calldata _metaData, Avatar _avatar) external returns(bool);
+     * @dev metaData emits an event with a string, should contain the hash of some meta data.
+     * @param _metaData a string representing a hash of the meta data
+     * @param _avatar Avatar
+     * @return bool which represents a success
+     */
+    function metaData(string calldata _metaData, Avatar _avatar) external returns (bool);
 
     /**
      * @dev getNativeReputation
      * @param _avatar the organization avatar.
      * @return organization native reputation
      */
-    function getNativeReputation(address _avatar)
-    external
-    view
-    returns(address);
+    function getNativeReputation(address _avatar) external view returns (address);
 
-    function isSchemeRegistered( address _scheme, address _avatar) external view returns(bool);
+    function isSchemeRegistered(address _scheme, address _avatar) external view returns (bool);
 
-    function getSchemeParameters(address _scheme, address _avatar) external view returns(bytes32);
+    function getSchemeParameters(address _scheme, address _avatar) external view returns (bytes32);
 
-    function getGlobalConstraintParameters(address _globalConstraint, address _avatar) external view returns(bytes32);
+    function getGlobalConstraintParameters(address _globalConstraint, address _avatar) external view returns (bytes32);
 
-    function getSchemePermissions(address _scheme, address _avatar) external view returns(bytes4);
+    function getSchemePermissions(address _scheme, address _avatar) external view returns (bytes4);
 
     /**
      * @dev globalConstraintsCount return the global constraint pre and post count
      * @return uint256 globalConstraintsPre count.
      * @return uint256 globalConstraintsPost count.
      */
-    function globalConstraintsCount(address _avatar) external view returns(uint, uint);
+    function globalConstraintsCount(address _avatar) external view returns (uint256, uint256);
 
-    function isGlobalConstraintRegistered(address _globalConstraint, address _avatar) external view returns(bool);
+    function isGlobalConstraintRegistered(address _globalConstraint, address _avatar) external view returns (bool);
 }
 
 // File: contracts/universalSchemes/UniversalScheme.sol
 
 pragma solidity ^0.5.4;
 
-
-
-
-
 contract UniversalScheme is UniversalSchemeInterface {
     /**
-    *  @dev get the parameters for the current scheme from the controller
-    */
-    function getParametersFromController(Avatar _avatar) internal view returns(bytes32) {
-        require(ControllerInterface(_avatar.owner()).isSchemeRegistered(address(this), address(_avatar)),
-        "scheme is not registered");
+     *  @dev get the parameters for the current scheme from the controller
+     */
+    function getParametersFromController(Avatar _avatar) internal view returns (bytes32) {
+        require(
+            ControllerInterface(_avatar.owner()).isSchemeRegistered(address(this), address(_avatar)),
+            "scheme is not registered"
+        );
         return ControllerInterface(_avatar.owner()).getSchemeParameters(address(this), address(_avatar));
     }
 }
@@ -1290,29 +1332,26 @@ pragma solidity ^0.5.4;
  *
  */
 
-
 library RealMath {
-
     /**
      * How many total bits are there?
      */
-    uint256 constant private REAL_BITS = 256;
+    uint256 private constant REAL_BITS = 256;
 
     /**
      * How many fractional bits are there?
      */
-    uint256 constant private REAL_FBITS = 40;
+    uint256 private constant REAL_FBITS = 40;
 
     /**
      * What's the first non-fractional bit
      */
-    uint256 constant private REAL_ONE = uint256(1) << REAL_FBITS;
+    uint256 private constant REAL_ONE = uint256(1) << REAL_FBITS;
 
     /**
      * Raise a real number to any positive integer power
      */
     function pow(uint256 realBase, uint256 exponent) internal pure returns (uint256) {
-
         uint256 tempRealBase = realBase;
         uint256 tempExponent = exponent;
 
@@ -1324,7 +1363,7 @@ library RealMath {
                 // If the low bit is set, multiply in the (many-times-squared) base
                 realResult = mul(realResult, tempRealBase);
             }
-                // Shift off the low bit
+            // Shift off the low bit
             tempExponent = tempExponent >> 1;
             if (tempExponent != 0) {
                 // Do the squaring
@@ -1350,7 +1389,7 @@ library RealMath {
         // When multiplying fixed point in x.y and z.w formats we get (x+z).(y+w) format.
         // So we just have to clip off the extra REAL_FBITS fractional bits.
         uint256 res = realA * realB;
-        require(res/realA == realB, "RealMath mul overflow");
+        require(res / realA == realB, "RealMath mul overflow");
         return (res >> REAL_FBITS);
     }
 
@@ -1362,7 +1401,6 @@ library RealMath {
         // x.y to (x+z).(y+w) fixed point, then divide by denom in z.w fixed point.
         return uint256((uint256(realNumerator) * REAL_ONE) / uint256(realDenominator));
     }
-
 }
 
 // File: @daostack/infra/contracts/votingMachines/ProposalExecuteInterface.sol
@@ -1370,7 +1408,7 @@ library RealMath {
 pragma solidity ^0.5.4;
 
 interface ProposalExecuteInterface {
-    function executeProposal(bytes32 _proposalId, int _decision) external returns(bool);
+    function executeProposal(bytes32 _proposalId, int256 _decision) external returns (bool);
 }
 
 // File: openzeppelin-solidity/contracts/math/Math.sol
@@ -1383,43 +1421,33 @@ pragma solidity ^0.5.0;
  */
 library Math {
     /**
-    * @dev Returns the largest of two numbers.
-    */
+     * @dev Returns the largest of two numbers.
+     */
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a >= b ? a : b;
     }
 
     /**
-    * @dev Returns the smallest of two numbers.
-    */
+     * @dev Returns the smallest of two numbers.
+     */
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
     }
 
     /**
-    * @dev Calculates the average of two numbers. Since these are integers,
-    * averages of an even and odd number cannot be represented, and will be
-    * rounded down.
-    */
+     * @dev Calculates the average of two numbers. Since these are integers,
+     * averages of an even and odd number cannot be represented, and will be
+     * rounded down.
+     */
     function average(uint256 a, uint256 b) internal pure returns (uint256) {
         // (a + b) / 2 can overflow, so we distribute
-        return (a / 2) + (b / 2) + ((a % 2 + b % 2) / 2);
+        return (a / 2) + (b / 2) + (((a % 2) + (b % 2)) / 2);
     }
 }
 
 // File: @daostack/infra/contracts/votingMachines/GenesisProtocolLogic.sol
 
 pragma solidity ^0.5.4;
-
-
-
-
-
-
-
-
-
-
 
 /**
  * @title GenesisProtocol implementation -an organization's voting machine scheme.
@@ -1431,8 +1459,8 @@ contract GenesisProtocolLogic is IntVoteInterface {
     using RealMath for uint256;
     using Address for address;
 
-    enum ProposalState { None, ExpiredInQueue, Executed, Queued, PreBoosted, Boosted, QuietEndingPeriod}
-    enum ExecutionState { None, QueueBarCrossed, QueueTimeOut, PreBoostedBarCrossed, BoostedTimeOut, BoostedBarCrossed}
+    enum ProposalState {None, ExpiredInQueue, Executed, Queued, PreBoosted, Boosted, QuietEndingPeriod}
+    enum ExecutionState {None, QueueBarCrossed, QueueTimeOut, PreBoostedBarCrossed, BoostedTimeOut, BoostedBarCrossed}
 
     //Organization's parameters
     struct Parameters {
@@ -1440,19 +1468,19 @@ contract GenesisProtocolLogic is IntVoteInterface {
         uint256 queuedVotePeriodLimit; //the time limit for a proposal to be in an absolute voting mode.
         uint256 boostedVotePeriodLimit; //the time limit for a proposal to be in boost mode.
         uint256 preBoostedVotePeriodLimit; //the time limit for a proposal
-                                          //to be in an preparation state (stable) before boosted.
+        //to be in an preparation state (stable) before boosted.
         uint256 thresholdConst; //constant  for threshold calculation .
-                                //threshold =thresholdConst ** (numberOfBoostedProposals)
-        uint256 limitExponentValue;// an upper limit for numberOfBoostedProposals
-                                   //in the threshold calculation to prevent overflow
+        //threshold =thresholdConst ** (numberOfBoostedProposals)
+        uint256 limitExponentValue; // an upper limit for numberOfBoostedProposals
+        //in the threshold calculation to prevent overflow
         uint256 quietEndingPeriod; //quite ending period
-        uint256 proposingRepReward;//proposer reputation reward.
-        uint256 votersReputationLossRatio;//Unsuccessful pre booster
-                                          //voters lose votersReputationLossRatio% of their reputation.
+        uint256 proposingRepReward; //proposer reputation reward.
+        uint256 votersReputationLossRatio; //Unsuccessful pre booster
+        //voters lose votersReputationLossRatio% of their reputation.
         uint256 minimumDaoBounty;
-        uint256 daoBountyConst;//The DAO downstake for each proposal is calculate according to the formula
-                               //(daoBountyConst * averageBoostDownstakes)/100 .
-        uint256 activationTime;//the point in time after which proposals can be created.
+        uint256 daoBountyConst; //The DAO downstake for each proposal is calculate according to the formula
+        //(daoBountyConst * averageBoostDownstakes)/100 .
+        uint256 activationTime; //the point in time after which proposals can be created.
         //if this address is set so only this address is allowed to vote of behalf of someone else.
         address voteOnBehalf;
     }
@@ -1466,12 +1494,12 @@ contract GenesisProtocolLogic is IntVoteInterface {
     struct Staker {
         uint256 vote; // YES(1) ,NO(2)
         uint256 amount; // amount of staker's stake
-        uint256 amount4Bounty;// amount of staker's stake used for bounty reward calculation.
+        uint256 amount4Bounty; // amount of staker's stake used for bounty reward calculation.
     }
 
     struct Proposal {
         bytes32 organizationId; // the organization unique identifier the proposal is target to.
-        address callbacks;    // should fulfill voting callbacks interface.
+        address callbacks; // should fulfill voting callbacks interface.
         ProposalState state;
         uint256 winningVote; //the winning vote.
         address proposer;
@@ -1480,45 +1508,49 @@ contract GenesisProtocolLogic is IntVoteInterface {
         bytes32 paramsHash;
         uint256 daoBountyRemain; //use for checking sum zero bounty claims.it is set at the proposing time.
         uint256 daoBounty;
-        uint256 totalStakes;// Total number of tokens staked which can be redeemable by stakers.
+        uint256 totalStakes; // Total number of tokens staked which can be redeemable by stakers.
         uint256 confidenceThreshold;
         uint256 secondsFromTimeOutTillExecuteBoosted;
-        uint[3] times; //times[0] - submittedTime
-                       //times[1] - boostedPhaseTime
-                       //times[2] -preBoostedPhaseTime;
+        uint256[3] times; //times[0] - submittedTime
+        //times[1] - boostedPhaseTime
+        //times[2] -preBoostedPhaseTime;
         bool daoRedeemItsWinnings;
         //      vote      reputation
-        mapping(uint256   =>  uint256    ) votes;
+        mapping(uint256 => uint256) votes;
         //      vote      reputation
-        mapping(uint256   =>  uint256    ) preBoostedVotes;
+        mapping(uint256 => uint256) preBoostedVotes;
         //      address     voter
-        mapping(address =>  Voter    ) voters;
+        mapping(address => Voter) voters;
         //      vote        stakes
-        mapping(uint256   =>  uint256    ) stakes;
+        mapping(uint256 => uint256) stakes;
         //      address  staker
-        mapping(address  => Staker   ) stakers;
+        mapping(address => Staker) stakers;
     }
 
-    event Stake(bytes32 indexed _proposalId,
+    event Stake(
+        bytes32 indexed _proposalId,
         address indexed _organization,
         address indexed _staker,
         uint256 _vote,
         uint256 _amount
     );
 
-    event Redeem(bytes32 indexed _proposalId,
+    event Redeem(
+        bytes32 indexed _proposalId,
         address indexed _organization,
         address indexed _beneficiary,
         uint256 _amount
     );
 
-    event RedeemDaoBounty(bytes32 indexed _proposalId,
+    event RedeemDaoBounty(
+        bytes32 indexed _proposalId,
         address indexed _organization,
         address indexed _beneficiary,
         uint256 _amount
     );
 
-    event RedeemReputation(bytes32 indexed _proposalId,
+    event RedeemReputation(
+        bytes32 indexed _proposalId,
         address indexed _organization,
         address indexed _beneficiary,
         uint256 _amount
@@ -1529,30 +1561,30 @@ contract GenesisProtocolLogic is IntVoteInterface {
     event ExpirationCallBounty(bytes32 indexed _proposalId, address indexed _beneficiary, uint256 _amount);
     event ConfidenceLevelChange(bytes32 indexed _proposalId, uint256 _confidenceThreshold);
 
-    mapping(bytes32=>Parameters) public parameters;  // A mapping from hashes to parameters
-    mapping(bytes32=>Proposal) public proposals; // Mapping from the ID of the proposal to the proposal itself.
-    mapping(bytes32=>uint) public orgBoostedProposalsCnt;
-           //organizationId => organization
-    mapping(bytes32        => address     ) public organizations;
-          //organizationId => averageBoostDownstakes
-    mapping(bytes32           => uint256              ) public averagesDownstakesOfBoosted;
-    uint256 constant public NUM_OF_CHOICES = 2;
-    uint256 constant public NO = 2;
-    uint256 constant public YES = 1;
+    mapping(bytes32 => Parameters) public parameters; // A mapping from hashes to parameters
+    mapping(bytes32 => Proposal) public proposals; // Mapping from the ID of the proposal to the proposal itself.
+    mapping(bytes32 => uint256) public orgBoostedProposalsCnt;
+    //organizationId => organization
+    mapping(bytes32 => address) public organizations;
+    //organizationId => averageBoostDownstakes
+    mapping(bytes32 => uint256) public averagesDownstakesOfBoosted;
+    uint256 public constant NUM_OF_CHOICES = 2;
+    uint256 public constant NO = 2;
+    uint256 public constant YES = 1;
     uint256 public proposalsCnt; // Total number of proposals
     IERC20 public stakingToken;
-    address constant private GEN_TOKEN_ADDRESS = 0x543Ff227F64Aa17eA132Bf9886cAb5DB55DCAddf;
-    uint256 constant private MAX_BOOSTED_PROPOSALS = 4096;
+    address private constant GEN_TOKEN_ADDRESS = 0x543Ff227F64Aa17eA132Bf9886cAb5DB55DCAddf;
+    uint256 private constant MAX_BOOSTED_PROPOSALS = 4096;
 
     /**
      * @dev Constructor
      */
     constructor(IERC20 _stakingToken) public {
-      //The GEN token (staking token) address is hard coded in the contract by GEN_TOKEN_ADDRESS .
-      //This will work for a network which already hosted the GEN token on this address (e.g mainnet).
-      //If such contract address does not exist in the network (e.g ganache)
-      //the contract will use the _stakingToken param as the
-      //staking token address.
+        //The GEN token (staking token) address is hard coded in the contract by GEN_TOKEN_ADDRESS .
+        //This will work for a network which already hosted the GEN token on this address (e.g mainnet).
+        //If such contract address does not exist in the network (e.g ganache)
+        //the contract will use the _stakingToken param as the
+        //staking token address.
         if (address(GEN_TOKEN_ADDRESS).isContract()) {
             stakingToken = IERC20(GEN_TOKEN_ADDRESS);
         } else {
@@ -1560,11 +1592,11 @@ contract GenesisProtocolLogic is IntVoteInterface {
         }
     }
 
-  /**
-   * @dev Check that the proposal is votable
-   * a proposal is votable if it is in one of the following states:
-   *  PreBoosted,Boosted,QuietEndingPeriod or Queued
-   */
+    /**
+     * @dev Check that the proposal is votable
+     * a proposal is votable if it is in one of the following states:
+     *  PreBoosted,Boosted,QuietEndingPeriod or Queued
+     */
     modifier votable(bytes32 _proposalId) {
         require(_isVotable(_proposalId));
         _;
@@ -1577,25 +1609,27 @@ contract GenesisProtocolLogic is IntVoteInterface {
      * @param _proposer address
      * @param _organization address
      */
-    function propose(uint256, bytes32 _paramsHash, address _proposer, address _organization)
-        external
-        returns(bytes32)
-    {
-      // solhint-disable-next-line not-rely-on-time
+    function propose(
+        uint256,
+        bytes32 _paramsHash,
+        address _proposer,
+        address _organization
+    ) external returns (bytes32) {
+        // solhint-disable-next-line not-rely-on-time
         require(now > parameters[_paramsHash].activationTime, "not active yet");
         //Check parameters existence.
         require(parameters[_paramsHash].queuedVoteRequiredPercentage >= 50);
         // Generate a unique ID:
         bytes32 proposalId = keccak256(abi.encodePacked(this, proposalsCnt));
         proposalsCnt = proposalsCnt.add(1);
-         // Open proposal:
+        // Open proposal:
         Proposal memory proposal;
         proposal.callbacks = msg.sender;
         proposal.organizationId = keccak256(abi.encodePacked(msg.sender, _organization));
 
         proposal.state = ProposalState.Queued;
         // solhint-disable-next-line not-rely-on-time
-        proposal.times[0] = now;//submitted time
+        proposal.times[0] = now; //submitted time
         proposal.currentBoostedVotePeriodLimit = parameters[_paramsHash].boostedVotePeriodLimit;
         proposal.proposer = _proposer;
         proposal.winningVote = NO;
@@ -1608,33 +1642,37 @@ contract GenesisProtocolLogic is IntVoteInterface {
             }
         }
         //calc dao bounty
-        uint256 daoBounty =
-        parameters[_paramsHash].daoBountyConst.mul(averagesDownstakesOfBoosted[proposal.organizationId]).div(100);
+        uint256 daoBounty = parameters[_paramsHash]
+            .daoBountyConst
+            .mul(averagesDownstakesOfBoosted[proposal.organizationId])
+            .div(100);
         proposal.daoBountyRemain = daoBounty.max(parameters[_paramsHash].minimumDaoBounty);
         proposals[proposalId] = proposal;
-        proposals[proposalId].stakes[NO] = proposal.daoBountyRemain;//dao downstake on the proposal
+        proposals[proposalId].stakes[NO] = proposal.daoBountyRemain; //dao downstake on the proposal
 
         emit NewProposal(proposalId, organizations[proposal.organizationId], NUM_OF_CHOICES, _proposer, _paramsHash);
         return proposalId;
     }
 
     /**
-      * @dev executeBoosted try to execute a boosted or QuietEndingPeriod proposal if it is expired
-      * it rewards the msg.sender with P % of the proposal's upstakes upon a successful call to this function.
-      * P = t/150, where t is the number of seconds passed since the the proposal's timeout.
-      * P is capped by 10%.
-      * @param _proposalId the id of the proposal
-      * @return uint256 expirationCallBounty the bounty amount for the expiration call
+     * @dev executeBoosted try to execute a boosted or QuietEndingPeriod proposal if it is expired
+     * it rewards the msg.sender with P % of the proposal's upstakes upon a successful call to this function.
+     * P = t/150, where t is the number of seconds passed since the the proposal's timeout.
+     * P is capped by 10%.
+     * @param _proposalId the id of the proposal
+     * @return uint256 expirationCallBounty the bounty amount for the expiration call
      */
-    function executeBoosted(bytes32 _proposalId) external returns(uint256 expirationCallBounty) {
+    function executeBoosted(bytes32 _proposalId) external returns (uint256 expirationCallBounty) {
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.state == ProposalState.Boosted || proposal.state == ProposalState.QuietEndingPeriod,
-        "proposal state in not Boosted nor QuietEndingPeriod");
+        require(
+            proposal.state == ProposalState.Boosted || proposal.state == ProposalState.QuietEndingPeriod,
+            "proposal state in not Boosted nor QuietEndingPeriod"
+        );
         require(_execute(_proposalId), "proposal need to expire");
 
-        proposal.secondsFromTimeOutTillExecuteBoosted =
-        // solhint-disable-next-line not-rely-on-time
-        now.sub(proposal.currentBoostedVotePeriodLimit.add(proposal.times[1]));
+        proposal.secondsFromTimeOutTillExecuteBoosted = now.sub( // solhint-disable-next-line not-rely-on-time
+            proposal.currentBoostedVotePeriodLimit.add(proposal.times[1])
+        );
 
         expirationCallBounty = calcExecuteCallBounty(_proposalId);
         proposal.totalStakes = proposal.totalStakes.sub(expirationCallBounty);
@@ -1658,14 +1696,11 @@ contract GenesisProtocolLogic is IntVoteInterface {
      *    _params[9] -_daoBountyConst
      *    _params[10] -_activationTime
      * @param _voteOnBehalf - authorized to vote on behalf of others.
-    */
+     */
     function setParameters(
-        uint[11] calldata _params, //use array here due to stack too deep issue.
+        uint256[11] calldata _params, //use array here due to stack too deep issue.
         address _voteOnBehalf
-    )
-    external
-    returns(bytes32)
-    {
+    ) external returns (bytes32) {
         require(_params[0] <= 100 && _params[0] >= 50, "50 <= queuedVoteRequiredPercentage <= 100");
         require(_params[4] <= 16000 && _params[4] > 1000, "1000 < thresholdConst <= 16000");
         require(_params[7] <= 100, "votersReputationLossRatio <= 100");
@@ -1675,11 +1710,11 @@ contract GenesisProtocolLogic is IntVoteInterface {
 
         bytes32 paramsHash = getParametersHash(_params, _voteOnBehalf);
         //set a limit for power for a given alpha to prevent overflow
-        uint256 limitExponent = 172;//for alpha less or equal 2
+        uint256 limitExponent = 172; //for alpha less or equal 2
         uint256 j = 2;
-        for (uint256 i = 2000; i < 16000; i = i*2) {
-            if ((_params[4] > i) && (_params[4] <= i*2)) {
-                limitExponent = limitExponent/j;
+        for (uint256 i = 2000; i < 16000; i = i * 2) {
+            if ((_params[4] > i) && (_params[4] <= i * 2)) {
+                limitExponent = limitExponent / j;
                 break;
             }
             j++;
@@ -1690,15 +1725,15 @@ contract GenesisProtocolLogic is IntVoteInterface {
             queuedVotePeriodLimit: _params[1],
             boostedVotePeriodLimit: _params[2],
             preBoostedVotePeriodLimit: _params[3],
-            thresholdConst:uint216(_params[4]).fraction(uint216(1000)),
-            limitExponentValue:limitExponent,
+            thresholdConst: uint216(_params[4]).fraction(uint216(1000)),
+            limitExponentValue: limitExponent,
             quietEndingPeriod: _params[5],
             proposingRepReward: _params[6],
-            votersReputationLossRatio:_params[7],
-            minimumDaoBounty:_params[8],
-            daoBountyConst:_params[9],
-            activationTime:_params[10],
-            voteOnBehalf:_voteOnBehalf
+            votersReputationLossRatio: _params[7],
+            minimumDaoBounty: _params[8],
+            daoBountyConst: _params[9],
+            activationTime: _params[10],
+            voteOnBehalf: _voteOnBehalf
         });
         return paramsHash;
     }
@@ -1714,19 +1749,21 @@ contract GenesisProtocolLogic is IntVoteInterface {
      *           [1] voterReputationReward
      *           [2] proposerReputationReward
      */
-     // solhint-disable-next-line function-max-lines,code-complexity
-    function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint[3] memory rewards) {
+    // solhint-disable-next-line function-max-lines,code-complexity
+    function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint256[3] memory rewards) {
         Proposal storage proposal = proposals[_proposalId];
-        require((proposal.state == ProposalState.Executed)||(proposal.state == ProposalState.ExpiredInQueue),
-        "Proposal should be Executed or ExpiredInQueue");
+        require(
+            (proposal.state == ProposalState.Executed) || (proposal.state == ProposalState.ExpiredInQueue),
+            "Proposal should be Executed or ExpiredInQueue"
+        );
         Parameters memory params = parameters[proposal.paramsHash];
         //as staker
         Staker storage staker = proposal.stakers[_beneficiary];
         uint256 totalWinningStakes = proposal.stakes[proposal.winningVote];
-        uint256 totalStakesLeftAfterCallBounty =
-        proposal.stakes[NO].add(proposal.stakes[YES]).sub(calcExecuteCallBounty(_proposalId));
+        uint256 totalStakesLeftAfterCallBounty = proposal.stakes[NO].add(proposal.stakes[YES]).sub(
+            calcExecuteCallBounty(_proposalId)
+        );
         if (staker.amount > 0) {
-
             if (proposal.state == ProposalState.ExpiredInQueue) {
                 //Stakes of a proposal that expires in Queue are sent back to stakers
                 rewards[0] = staker.amount;
@@ -1734,23 +1771,24 @@ contract GenesisProtocolLogic is IntVoteInterface {
                 if (staker.vote == YES) {
                     if (proposal.daoBounty < totalStakesLeftAfterCallBounty) {
                         uint256 _totalStakes = totalStakesLeftAfterCallBounty.sub(proposal.daoBounty);
-                        rewards[0] = (staker.amount.mul(_totalStakes))/totalWinningStakes;
+                        rewards[0] = (staker.amount.mul(_totalStakes)) / totalWinningStakes;
                     }
                 } else {
-                    rewards[0] = (staker.amount.mul(totalStakesLeftAfterCallBounty))/totalWinningStakes;
+                    rewards[0] = (staker.amount.mul(totalStakesLeftAfterCallBounty)) / totalWinningStakes;
                 }
             }
             staker.amount = 0;
         }
-            //dao redeem its winnings
-        if (proposal.daoRedeemItsWinnings == false &&
+        //dao redeem its winnings
+        if (
+            proposal.daoRedeemItsWinnings == false &&
             _beneficiary == organizations[proposal.organizationId] &&
             proposal.state != ProposalState.ExpiredInQueue &&
-            proposal.winningVote == NO) {
-            rewards[0] =
-            rewards[0]
-            .add((proposal.daoBounty.mul(totalStakesLeftAfterCallBounty))/totalWinningStakes)
-            .sub(proposal.daoBounty);
+            proposal.winningVote == NO
+        ) {
+            rewards[0] = rewards[0]
+                .add((proposal.daoBounty.mul(totalStakesLeftAfterCallBounty)) / totalWinningStakes)
+                .sub(proposal.daoBounty);
             proposal.daoRedeemItsWinnings = true;
         }
 
@@ -1758,8 +1796,8 @@ contract GenesisProtocolLogic is IntVoteInterface {
         Voter storage voter = proposal.voters[_beneficiary];
         if ((voter.reputation != 0) && (voter.preBoosted)) {
             if (proposal.state == ProposalState.ExpiredInQueue) {
-              //give back reputation for the voter
-                rewards[1] = ((voter.reputation.mul(params.votersReputationLossRatio))/100);
+                //give back reputation for the voter
+                rewards[1] = ((voter.reputation.mul(params.votersReputationLossRatio)) / 100);
             } else if (proposal.winningVote == voter.vote) {
                 uint256 lostReputation;
                 if (proposal.winningVote == YES) {
@@ -1767,14 +1805,15 @@ contract GenesisProtocolLogic is IntVoteInterface {
                 } else {
                     lostReputation = proposal.preBoostedVotes[YES];
                 }
-                lostReputation = (lostReputation.mul(params.votersReputationLossRatio))/100;
-                rewards[1] = ((voter.reputation.mul(params.votersReputationLossRatio))/100)
-                .add((voter.reputation.mul(lostReputation))/proposal.preBoostedVotes[proposal.winningVote]);
+                lostReputation = (lostReputation.mul(params.votersReputationLossRatio)) / 100;
+                rewards[1] = ((voter.reputation.mul(params.votersReputationLossRatio)) / 100).add(
+                    (voter.reputation.mul(lostReputation)) / proposal.preBoostedVotes[proposal.winningVote]
+                );
             }
             voter.reputation = 0;
         }
         //as proposer
-        if ((proposal.proposer == _beneficiary)&&(proposal.winningVote == YES)&&(proposal.proposer != address(0))) {
+        if ((proposal.proposer == _beneficiary) && (proposal.winningVote == YES) && (proposal.proposer != address(0))) {
             rewards[2] = params.proposingRepReward;
             proposal.proposer = address(0);
         }
@@ -1784,13 +1823,16 @@ contract GenesisProtocolLogic is IntVoteInterface {
             emit Redeem(_proposalId, organizations[proposal.organizationId], _beneficiary, rewards[0]);
         }
         if (rewards[1].add(rewards[2]) != 0) {
-            VotingMachineCallbacksInterface(proposal.callbacks)
-            .mintReputation(rewards[1].add(rewards[2]), _beneficiary, _proposalId);
+            VotingMachineCallbacksInterface(proposal.callbacks).mintReputation(
+                rewards[1].add(rewards[2]),
+                _beneficiary,
+                _proposalId
+            );
             emit RedeemReputation(
-            _proposalId,
-            organizations[proposal.organizationId],
-            _beneficiary,
-            rewards[1].add(rewards[2])
+                _proposalId,
+                organizations[proposal.organizationId],
+                _beneficiary,
+                rewards[1].add(rewards[2])
             );
         }
     }
@@ -1805,43 +1847,53 @@ contract GenesisProtocolLogic is IntVoteInterface {
      * @return potentialAmount - potential redeem token amount(if there is enough tokens bounty at the organization )
      */
     function redeemDaoBounty(bytes32 _proposalId, address _beneficiary)
-    public
-    returns(uint256 redeemedAmount, uint256 potentialAmount) {
+        public
+        returns (uint256 redeemedAmount, uint256 potentialAmount)
+    {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.state == ProposalState.Executed);
         uint256 totalWinningStakes = proposal.stakes[proposal.winningVote];
         Staker storage staker = proposal.stakers[_beneficiary];
         if (
-            (staker.amount4Bounty > 0)&&
-            (staker.vote == proposal.winningVote)&&
-            (proposal.winningVote == YES)&&
-            (totalWinningStakes != 0)) {
+            (staker.amount4Bounty > 0) &&
+            (staker.vote == proposal.winningVote) &&
+            (proposal.winningVote == YES) &&
+            (totalWinningStakes != 0)
+        ) {
             //as staker
-                potentialAmount = (staker.amount4Bounty * proposal.daoBounty)/totalWinningStakes;
-            }
-        if ((potentialAmount != 0)&&
-            (VotingMachineCallbacksInterface(proposal.callbacks)
-            .balanceOfStakingToken(stakingToken, _proposalId) >= potentialAmount)) {
+            potentialAmount = (staker.amount4Bounty * proposal.daoBounty) / totalWinningStakes;
+        }
+        if (
+            (potentialAmount != 0) &&
+            (VotingMachineCallbacksInterface(proposal.callbacks).balanceOfStakingToken(stakingToken, _proposalId) >=
+                potentialAmount)
+        ) {
             staker.amount4Bounty = 0;
             proposal.daoBountyRemain = proposal.daoBountyRemain.sub(potentialAmount);
             require(
-            VotingMachineCallbacksInterface(proposal.callbacks)
-            .stakingTokenTransfer(stakingToken, _beneficiary, potentialAmount, _proposalId));
+                VotingMachineCallbacksInterface(proposal.callbacks).stakingTokenTransfer(
+                    stakingToken,
+                    _beneficiary,
+                    potentialAmount,
+                    _proposalId
+                )
+            );
             redeemedAmount = potentialAmount;
             emit RedeemDaoBounty(_proposalId, organizations[proposal.organizationId], _beneficiary, redeemedAmount);
         }
     }
 
     /**
-      * @dev calcExecuteCallBounty calculate the execute boosted call bounty
-      * @param _proposalId the ID of the proposal
-      * @return uint256 executeCallBounty
-    */
-    function calcExecuteCallBounty(bytes32 _proposalId) public view returns(uint256) {
-        uint maxRewardSeconds = 1500;
-        uint rewardSeconds =
-        uint256(maxRewardSeconds).min(proposals[_proposalId].secondsFromTimeOutTillExecuteBoosted);
-        return rewardSeconds.mul(proposals[_proposalId].stakes[YES]).div(maxRewardSeconds*10);
+     * @dev calcExecuteCallBounty calculate the execute boosted call bounty
+     * @param _proposalId the ID of the proposal
+     * @return uint256 executeCallBounty
+     */
+    function calcExecuteCallBounty(bytes32 _proposalId) public view returns (uint256) {
+        uint256 maxRewardSeconds = 1500;
+        uint256 rewardSeconds = uint256(maxRewardSeconds).min(
+            proposals[_proposalId].secondsFromTimeOutTillExecuteBoosted
+        );
+        return rewardSeconds.mul(proposals[_proposalId].stakes[YES]).div(maxRewardSeconds * 10);
     }
 
     /**
@@ -1849,7 +1901,7 @@ contract GenesisProtocolLogic is IntVoteInterface {
      * @param _proposalId the ID of the proposal
      * @return bool true or false.
      */
-    function shouldBoost(bytes32 _proposalId) public view returns(bool) {
+    function shouldBoost(bytes32 _proposalId) public view returns (bool) {
         Proposal memory proposal = proposals[_proposalId];
         return (_score(_proposalId) > threshold(proposal.paramsHash, proposal.organizationId));
     }
@@ -1862,7 +1914,7 @@ contract GenesisProtocolLogic is IntVoteInterface {
      * @param _paramsHash the organization parameters hash
      * @return uint256 organization's score threshold as real number.
      */
-    function threshold(bytes32 _paramsHash, bytes32 _organizationId) public view returns(uint256) {
+    function threshold(bytes32 _paramsHash, bytes32 _organizationId) public view returns (uint256) {
         uint256 power = orgBoostedProposalsCnt[_organizationId];
         Parameters storage params = parameters[_paramsHash];
 
@@ -1873,59 +1925,59 @@ contract GenesisProtocolLogic is IntVoteInterface {
         return params.thresholdConst.pow(power);
     }
 
-  /**
-   * @dev hashParameters returns a hash of the given parameters
-   */
+    /**
+     * @dev hashParameters returns a hash of the given parameters
+     */
     function getParametersHash(
-        uint[11] memory _params,//use array here due to stack too deep issue.
+        uint256[11] memory _params, //use array here due to stack too deep issue.
         address _voteOnBehalf
-    )
-        public
-        pure
-        returns(bytes32)
-        {
+    ) public pure returns (bytes32) {
         //double call to keccak256 to avoid deep stack issue when call with too many params.
-        return keccak256(
-            abi.encodePacked(
+        return
             keccak256(
-            abi.encodePacked(
-                _params[0],
-                _params[1],
-                _params[2],
-                _params[3],
-                _params[4],
-                _params[5],
-                _params[6],
-                _params[7],
-                _params[8],
-                _params[9],
-                _params[10])
-            ),
-            _voteOnBehalf
-        ));
+                abi.encodePacked(
+                    keccak256(
+                        abi.encodePacked(
+                            _params[0],
+                            _params[1],
+                            _params[2],
+                            _params[3],
+                            _params[4],
+                            _params[5],
+                            _params[6],
+                            _params[7],
+                            _params[8],
+                            _params[9],
+                            _params[10]
+                        )
+                    ),
+                    _voteOnBehalf
+                )
+            );
     }
 
     /**
-      * @dev execute check if the proposal has been decided, and if so, execute the proposal
-      * @param _proposalId the id of the proposal
-      * @return bool true - the proposal has been executed
-      *              false - otherwise.
+     * @dev execute check if the proposal has been decided, and if so, execute the proposal
+     * @param _proposalId the id of the proposal
+     * @return bool true - the proposal has been executed
+     *              false - otherwise.
      */
-     // solhint-disable-next-line function-max-lines,code-complexity
-    function _execute(bytes32 _proposalId) internal votable(_proposalId) returns(bool) {
+    // solhint-disable-next-line function-max-lines,code-complexity
+    function _execute(bytes32 _proposalId) internal votable(_proposalId) returns (bool) {
         Proposal storage proposal = proposals[_proposalId];
         Parameters memory params = parameters[proposal.paramsHash];
         Proposal memory tmpProposal = proposal;
-        uint256 totalReputation =
-        VotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(_proposalId);
+        uint256 totalReputation = VotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(
+            _proposalId
+        );
         //first divide by 100 to prevent overflow
-        uint256 executionBar = (totalReputation/100) * params.queuedVoteRequiredPercentage;
+        uint256 executionBar = (totalReputation / 100) * params.queuedVoteRequiredPercentage;
         ExecutionState executionState = ExecutionState.None;
         uint256 averageDownstakesOfBoosted;
         uint256 confidenceThreshold;
 
         if (proposal.votes[proposal.winningVote] > executionBar) {
-         // someone crossed the absolute vote execution bar.
+            // someone crossed the absolute vote execution bar.
             if (proposal.state == ProposalState.Queued) {
                 executionState = ExecutionState.QueueBarCrossed;
             } else if (proposal.state == ProposalState.PreBoosted) {
@@ -1955,27 +2007,29 @@ contract GenesisProtocolLogic is IntVoteInterface {
 
             if (proposal.state == ProposalState.PreBoosted) {
                 confidenceThreshold = threshold(proposal.paramsHash, proposal.organizationId);
-              // solhint-disable-next-line not-rely-on-time
+                // solhint-disable-next-line not-rely-on-time
                 if ((now - proposal.times[2]) >= params.preBoostedVotePeriodLimit) {
                     if (_score(_proposalId) > confidenceThreshold) {
                         if (orgBoostedProposalsCnt[proposal.organizationId] < MAX_BOOSTED_PROPOSALS) {
-                         //change proposal mode to Boosted mode.
+                            //change proposal mode to Boosted mode.
                             proposal.state = ProposalState.Boosted;
-                         // solhint-disable-next-line not-rely-on-time
+                            // solhint-disable-next-line not-rely-on-time
                             proposal.times[1] = now;
                             orgBoostedProposalsCnt[proposal.organizationId]++;
-                         //add a value to average -> average = average + ((value - average) / nbValues)
+                            //add a value to average -> average = average + ((value - average) / nbValues)
                             averageDownstakesOfBoosted = averagesDownstakesOfBoosted[proposal.organizationId];
-                          // solium-disable-next-line indentation
-                            averagesDownstakesOfBoosted[proposal.organizationId] =
-                                uint256(int256(averageDownstakesOfBoosted) +
-                                ((int256(proposal.stakes[NO])-int256(averageDownstakesOfBoosted))/
-                                int256(orgBoostedProposalsCnt[proposal.organizationId])));
+                            // solium-disable-next-line indentation
+                            averagesDownstakesOfBoosted[proposal.organizationId] = uint256(
+                                int256(averageDownstakesOfBoosted) +
+                                    ((int256(proposal.stakes[NO]) - int256(averageDownstakesOfBoosted)) /
+                                        int256(orgBoostedProposalsCnt[proposal.organizationId]))
+                            );
                         }
                     } else {
                         proposal.state = ProposalState.Queued;
                     }
-                } else { //check the Confidence level is stable
+                } else {
+                    //check the Confidence level is stable
                     uint256 proposalScore = _score(_proposalId);
                     if (proposalScore <= proposal.confidenceThreshold.min(confidenceThreshold)) {
                         proposal.state = ProposalState.Queued;
@@ -1987,8 +2041,7 @@ contract GenesisProtocolLogic is IntVoteInterface {
             }
         }
 
-        if ((proposal.state == ProposalState.Boosted) ||
-            (proposal.state == ProposalState.QuietEndingPeriod)) {
+        if ((proposal.state == ProposalState.Boosted) || (proposal.state == ProposalState.QuietEndingPeriod)) {
             // solhint-disable-next-line not-rely-on-time
             if ((now - proposal.times[1]) >= proposal.currentBoostedVotePeriodLimit) {
                 proposal.state = ProposalState.Executed;
@@ -1997,10 +2050,12 @@ contract GenesisProtocolLogic is IntVoteInterface {
         }
 
         if (executionState != ExecutionState.None) {
-            if ((executionState == ExecutionState.BoostedTimeOut) ||
-                (executionState == ExecutionState.BoostedBarCrossed)) {
-                orgBoostedProposalsCnt[tmpProposal.organizationId] =
-                orgBoostedProposalsCnt[tmpProposal.organizationId].sub(1);
+            if (
+                (executionState == ExecutionState.BoostedTimeOut) ||
+                (executionState == ExecutionState.BoostedBarCrossed)
+            ) {
+                orgBoostedProposalsCnt[tmpProposal.organizationId] = orgBoostedProposalsCnt[tmpProposal.organizationId]
+                    .sub(1);
                 //remove a value from average = ((average * nbValues) - value) / (nbValues - 1);
                 uint256 boostedProposals = orgBoostedProposalsCnt[tmpProposal.organizationId];
                 if (boostedProposals == 0) {
@@ -2008,17 +2063,18 @@ contract GenesisProtocolLogic is IntVoteInterface {
                 } else {
                     averageDownstakesOfBoosted = averagesDownstakesOfBoosted[proposal.organizationId];
                     averagesDownstakesOfBoosted[proposal.organizationId] =
-                    (averageDownstakesOfBoosted.mul(boostedProposals+1).sub(proposal.stakes[NO]))/boostedProposals;
+                        (averageDownstakesOfBoosted.mul(boostedProposals + 1).sub(proposal.stakes[NO])) /
+                        boostedProposals;
                 }
             }
             emit ExecuteProposal(
-            _proposalId,
-            organizations[proposal.organizationId],
-            proposal.winningVote,
-            totalReputation
+                _proposalId,
+                organizations[proposal.organizationId],
+                proposal.winningVote,
+                totalReputation
             );
             emit GPExecuteProposal(_proposalId, executionState);
-            ProposalExecuteInterface(proposal.callbacks).executeProposal(_proposalId, int(proposal.winningVote));
+            ProposalExecuteInterface(proposal.callbacks).executeProposal(_proposalId, int256(proposal.winningVote));
             proposal.daoBounty = proposal.daoBountyRemain;
         }
         if (tmpProposal.state != proposal.state) {
@@ -2035,7 +2091,12 @@ contract GenesisProtocolLogic is IntVoteInterface {
      * @return bool true - the proposal has been executed
      *              false - otherwise.
      */
-    function _stake(bytes32 _proposalId, uint256 _vote, uint256 _amount, address _staker) internal returns(bool) {
+    function _stake(
+        bytes32 _proposalId,
+        uint256 _vote,
+        uint256 _amount,
+        address _staker
+    ) internal returns (bool) {
         // 0 is not a valid vote.
         require(_vote <= NUM_OF_CHOICES && _vote > 0, "wrong vote value");
         require(_amount > 0, "staking amount should be >0");
@@ -2045,8 +2106,7 @@ contract GenesisProtocolLogic is IntVoteInterface {
         }
         Proposal storage proposal = proposals[_proposalId];
 
-        if ((proposal.state != ProposalState.PreBoosted) &&
-            (proposal.state != ProposalState.Queued)) {
+        if ((proposal.state != ProposalState.PreBoosted) && (proposal.state != ProposalState.Queued)) {
             return false;
         }
 
@@ -2063,8 +2123,10 @@ contract GenesisProtocolLogic is IntVoteInterface {
         //This is to prevent average downstakes calculation overflow
         //Note that any how GEN cap is 100000000 ether.
         require(staker.amount <= 0x100000000000000000000000000000000, "staking amount is too high");
-        require(proposal.totalStakes <= uint256(0x100000000000000000000000000000000).sub(proposal.daoBountyRemain),
-                "total stakes is too high");
+        require(
+            proposal.totalStakes <= uint256(0x100000000000000000000000000000000).sub(proposal.daoBountyRemain),
+            "total stakes is too high"
+        );
 
         if (_vote == YES) {
             staker.amount4Bounty = staker.amount4Bounty.add(amount);
@@ -2087,8 +2149,13 @@ contract GenesisProtocolLogic is IntVoteInterface {
      * throws if proposal is not open or if it has been executed
      * NB: executes the proposal if a decision has been reached
      */
-     // solhint-disable-next-line function-max-lines,code-complexity
-    function internalVote(bytes32 _proposalId, address _voter, uint256 _vote, uint256 _rep) internal returns(bool) {
+    // solhint-disable-next-line function-max-lines,code-complexity
+    function internalVote(
+        bytes32 _proposalId,
+        address _voter,
+        uint256 _vote,
+        uint256 _rep
+    ) internal returns (bool) {
         require(_vote <= NUM_OF_CHOICES && _vote > 0, "0 < _vote <= 2");
         if (_execute(_proposalId)) {
             return true;
@@ -2113,13 +2180,16 @@ contract GenesisProtocolLogic is IntVoteInterface {
         proposal.votes[_vote] = rep.add(proposal.votes[_vote]);
         //check if the current winningVote changed or there is a tie.
         //for the case there is a tie the current winningVote set to NO.
-        if ((proposal.votes[_vote] > proposal.votes[proposal.winningVote]) ||
-            ((proposal.votes[NO] == proposal.votes[proposal.winningVote]) &&
-            proposal.winningVote == YES)) {
-            if (proposal.state == ProposalState.Boosted &&
-            // solhint-disable-next-line not-rely-on-time
-                ((now - proposal.times[1]) >= (params.boostedVotePeriodLimit - params.quietEndingPeriod))||
-                proposal.state == ProposalState.QuietEndingPeriod) {
+        if (
+            (proposal.votes[_vote] > proposal.votes[proposal.winningVote]) ||
+            ((proposal.votes[NO] == proposal.votes[proposal.winningVote]) && proposal.winningVote == YES)
+        ) {
+            if (
+                (proposal.state == ProposalState.Boosted &&
+                    ((now - proposal.times[1]) >= (params.boostedVotePeriodLimit - params.quietEndingPeriod))) ||
+                // solhint-disable-next-line not-rely-on-time
+                proposal.state == ProposalState.QuietEndingPeriod
+            ) {
                 //quietEndingPeriod
                 if (proposal.state != ProposalState.QuietEndingPeriod) {
                     proposal.currentBoostedVotePeriodLimit = params.quietEndingPeriod;
@@ -2134,11 +2204,11 @@ contract GenesisProtocolLogic is IntVoteInterface {
         proposal.voters[_voter] = Voter({
             reputation: rep,
             vote: _vote,
-            preBoosted:((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued))
+            preBoosted: ((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued))
         });
         if ((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued)) {
             proposal.preBoostedVotes[_vote] = rep.add(proposal.preBoostedVotes[_vote]);
-            uint256 reputationDeposit = (params.votersReputationLossRatio.mul(rep))/100;
+            uint256 reputationDeposit = (params.votersReputationLossRatio.mul(rep)) / 100;
             VotingMachineCallbacksInterface(proposal.callbacks).burnReputation(reputationDeposit, _voter, _proposalId);
         }
         emit VoteProposal(_proposalId, organizations[proposal.organizationId], _voter, _vote, rep);
@@ -2151,33 +2221,29 @@ contract GenesisProtocolLogic is IntVoteInterface {
      * @param _proposalId the ID of the proposal
      * @return uint256 proposal score as real number.
      */
-    function _score(bytes32 _proposalId) internal view returns(uint256) {
+    function _score(bytes32 _proposalId) internal view returns (uint256) {
         Proposal storage proposal = proposals[_proposalId];
         //proposal.stakes[NO] cannot be zero as the dao downstake > 0 for each proposal.
         return uint216(proposal.stakes[YES]).fraction(uint216(proposal.stakes[NO]));
     }
 
     /**
-      * @dev _isVotable check if the proposal is votable
-      * @param _proposalId the ID of the proposal
-      * @return bool true or false
-    */
-    function _isVotable(bytes32 _proposalId) internal view returns(bool) {
+     * @dev _isVotable check if the proposal is votable
+     * @param _proposalId the ID of the proposal
+     * @return bool true or false
+     */
+    function _isVotable(bytes32 _proposalId) internal view returns (bool) {
         ProposalState pState = proposals[_proposalId].state;
-        return ((pState == ProposalState.PreBoosted)||
-                (pState == ProposalState.Boosted)||
-                (pState == ProposalState.QuietEndingPeriod)||
-                (pState == ProposalState.Queued)
-        );
+        return ((pState == ProposalState.PreBoosted) ||
+            (pState == ProposalState.Boosted) ||
+            (pState == ProposalState.QuietEndingPeriod) ||
+            (pState == ProposalState.Queued));
     }
 }
 
 // File: @daostack/infra/contracts/votingMachines/GenesisProtocol.sol
 
 pragma solidity ^0.5.4;
-
-
-
 
 /**
  * @title GenesisProtocol implementation -an organization's voting machine scheme.
@@ -2187,25 +2253,26 @@ contract GenesisProtocol is IntVoteInterface, GenesisProtocolLogic {
 
     // Digest describing the data the user signs according EIP 712.
     // Needs to match what is passed to Metamask.
-    bytes32 public constant DELEGATION_HASH_EIP712 =
-    keccak256(abi.encodePacked(
-    "address GenesisProtocolAddress",
-    "bytes32 ProposalId",
-    "uint256 Vote",
-    "uint256 AmountToStake",
-    "uint256 Nonce"
-    ));
+    bytes32 public constant DELEGATION_HASH_EIP712 = keccak256(
+        abi.encodePacked(
+            "address GenesisProtocolAddress",
+            "bytes32 ProposalId",
+            "uint256 Vote",
+            "uint256 AmountToStake",
+            "uint256 Nonce"
+        )
+    );
 
-    mapping(address=>uint256) public stakesNonce; //stakes Nonce
+    mapping(address => uint256) public stakesNonce; //stakes Nonce
 
     /**
      * @dev Constructor
      */
     constructor(IERC20 _stakingToken)
-    public
-    // solhint-disable-next-line no-empty-blocks
-    GenesisProtocolLogic(_stakingToken) {
-    }
+        public
+        // solhint-disable-next-line no-empty-blocks
+        GenesisProtocolLogic(_stakingToken)
+    {}
 
     /**
      * @dev staking function
@@ -2215,7 +2282,11 @@ contract GenesisProtocol is IntVoteInterface, GenesisProtocolLogic {
      * @return bool true - the proposal has been executed
      *              false - otherwise.
      */
-    function stake(bytes32 _proposalId, uint256 _vote, uint256 _amount) external returns(bool) {
+    function stake(
+        bytes32 _proposalId,
+        uint256 _vote,
+        uint256 _amount
+    ) external returns (bool) {
         return _stake(_proposalId, _vote, _amount, msg.sender);
     }
 
@@ -2240,34 +2311,19 @@ contract GenesisProtocol is IntVoteInterface, GenesisProtocolLogic {
         uint256 _nonce,
         uint256 _signatureType,
         bytes calldata _signature
-        )
-        external
-        returns(bool)
-        {
+    ) external returns (bool) {
         // Recreate the digest the user signed
         bytes32 delegationDigest;
         if (_signatureType == 2) {
             delegationDigest = keccak256(
                 abi.encodePacked(
-                    DELEGATION_HASH_EIP712, keccak256(
-                        abi.encodePacked(
-                        address(this),
-                        _proposalId,
-                        _vote,
-                        _amount,
-                        _nonce)
-                    )
+                    DELEGATION_HASH_EIP712,
+                    keccak256(abi.encodePacked(address(this), _proposalId, _vote, _amount, _nonce))
                 )
             );
         } else {
-            delegationDigest = keccak256(
-                        abi.encodePacked(
-                        address(this),
-                        _proposalId,
-                        _vote,
-                        _amount,
-                        _nonce)
-                    ).toEthSignedMessageHash();
+            delegationDigest = keccak256(abi.encodePacked(address(this), _proposalId, _vote, _amount, _nonce))
+                .toEthSignedMessageHash();
         }
         address staker = delegationDigest.recover(_signature);
         //a garbage staker address due to wrong signature will revert due to lack of approval and funds.
@@ -2286,10 +2342,12 @@ contract GenesisProtocol is IntVoteInterface, GenesisProtocolLogic {
      * @return bool true - the proposal has been executed
      *              false - otherwise.
      */
-    function vote(bytes32 _proposalId, uint256 _vote, uint256 _amount, address _voter)
-    external
-    votable(_proposalId)
-    returns(bool) {
+    function vote(
+        bytes32 _proposalId,
+        uint256 _vote,
+        uint256 _amount,
+        address _voter
+    ) external votable(_proposalId) returns (bool) {
         Proposal storage proposal = proposals[_proposalId];
         Parameters memory params = parameters[proposal.paramsHash];
         address voter;
@@ -2302,40 +2360,40 @@ contract GenesisProtocol is IntVoteInterface, GenesisProtocolLogic {
         return internalVote(_proposalId, voter, _vote, _amount);
     }
 
-  /**
-   * @dev Cancel the vote of the msg.sender.
-   * cancel vote is not allow in genesisProtocol so this function doing nothing.
-   * This function is here in order to comply to the IntVoteInterface .
-   */
+    /**
+     * @dev Cancel the vote of the msg.sender.
+     * cancel vote is not allow in genesisProtocol so this function doing nothing.
+     * This function is here in order to comply to the IntVoteInterface .
+     */
     function cancelVote(bytes32 _proposalId) external votable(_proposalId) {
-       //this is not allowed
+        //this is not allowed
         return;
     }
 
     /**
-      * @dev execute check if the proposal has been decided, and if so, execute the proposal
-      * @param _proposalId the id of the proposal
-      * @return bool true - the proposal has been executed
-      *              false - otherwise.
+     * @dev execute check if the proposal has been decided, and if so, execute the proposal
+     * @param _proposalId the id of the proposal
+     * @return bool true - the proposal has been executed
+     *              false - otherwise.
      */
-    function execute(bytes32 _proposalId) external votable(_proposalId) returns(bool) {
+    function execute(bytes32 _proposalId) external votable(_proposalId) returns (bool) {
         return _execute(_proposalId);
     }
 
-  /**
-    * @dev getNumberOfChoices returns the number of choices possible in this proposal
-    * @return uint256 that contains number of choices
-    */
-    function getNumberOfChoices(bytes32) external view returns(uint256) {
+    /**
+     * @dev getNumberOfChoices returns the number of choices possible in this proposal
+     * @return uint256 that contains number of choices
+     */
+    function getNumberOfChoices(bytes32) external view returns (uint256) {
         return NUM_OF_CHOICES;
     }
 
     /**
-      * @dev getProposalTimes returns proposals times variables.
-      * @param _proposalId id of the proposal
-      * @return proposals times array
-      */
-    function getProposalTimes(bytes32 _proposalId) external view returns(uint[3] memory times) {
+     * @dev getProposalTimes returns proposals times variables.
+     * @param _proposalId id of the proposal
+     * @return proposals times array
+     */
+    function getProposalTimes(bytes32 _proposalId) external view returns (uint256[3] memory times) {
         return proposals[_proposalId].times;
     }
 
@@ -2346,100 +2404,109 @@ contract GenesisProtocol is IntVoteInterface, GenesisProtocolLogic {
      * @return uint256 vote - the voters vote
      *        uint256 reputation - amount of reputation committed by _voter to _proposalId
      */
-    function voteInfo(bytes32 _proposalId, address _voter) external view returns(uint, uint) {
+    function voteInfo(bytes32 _proposalId, address _voter) external view returns (uint256, uint256) {
         Voter memory voter = proposals[_proposalId].voters[_voter];
         return (voter.vote, voter.reputation);
     }
 
     /**
-    * @dev voteStatus returns the reputation voted for a proposal for a specific voting choice.
-    * @param _proposalId the ID of the proposal
-    * @param _choice the index in the
-    * @return voted reputation for the given choice
-    */
-    function voteStatus(bytes32 _proposalId, uint256 _choice) external view returns(uint256) {
+     * @dev voteStatus returns the reputation voted for a proposal for a specific voting choice.
+     * @param _proposalId the ID of the proposal
+     * @param _choice the index in the
+     * @return voted reputation for the given choice
+     */
+    function voteStatus(bytes32 _proposalId, uint256 _choice) external view returns (uint256) {
         return proposals[_proposalId].votes[_choice];
     }
 
     /**
-    * @dev isVotable check if the proposal is votable
-    * @param _proposalId the ID of the proposal
-    * @return bool true or false
-    */
-    function isVotable(bytes32 _proposalId) external view returns(bool) {
+     * @dev isVotable check if the proposal is votable
+     * @param _proposalId the ID of the proposal
+     * @return bool true or false
+     */
+    function isVotable(bytes32 _proposalId) external view returns (bool) {
         return _isVotable(_proposalId);
     }
 
     /**
-    * @dev proposalStatus return the total votes and stakes for a given proposal
-    * @param _proposalId the ID of the proposal
-    * @return uint256 preBoostedVotes YES
-    * @return uint256 preBoostedVotes NO
-    * @return uint256 total stakes YES
-    * @return uint256 total stakes NO
-    */
-    function proposalStatus(bytes32 _proposalId) external view returns(uint256, uint256, uint256, uint256) {
+     * @dev proposalStatus return the total votes and stakes for a given proposal
+     * @param _proposalId the ID of the proposal
+     * @return uint256 preBoostedVotes YES
+     * @return uint256 preBoostedVotes NO
+     * @return uint256 total stakes YES
+     * @return uint256 total stakes NO
+     */
+    function proposalStatus(bytes32 _proposalId)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         return (
-                proposals[_proposalId].preBoostedVotes[YES],
-                proposals[_proposalId].preBoostedVotes[NO],
-                proposals[_proposalId].stakes[YES],
-                proposals[_proposalId].stakes[NO]
+            proposals[_proposalId].preBoostedVotes[YES],
+            proposals[_proposalId].preBoostedVotes[NO],
+            proposals[_proposalId].stakes[YES],
+            proposals[_proposalId].stakes[NO]
         );
     }
 
-  /**
-    * @dev getProposalOrganization return the organizationId for a given proposal
-    * @param _proposalId the ID of the proposal
-    * @return bytes32 organization identifier
-    */
-    function getProposalOrganization(bytes32 _proposalId) external view returns(bytes32) {
+    /**
+     * @dev getProposalOrganization return the organizationId for a given proposal
+     * @param _proposalId the ID of the proposal
+     * @return bytes32 organization identifier
+     */
+    function getProposalOrganization(bytes32 _proposalId) external view returns (bytes32) {
         return (proposals[_proposalId].organizationId);
     }
 
     /**
-      * @dev getStaker return the vote and stake amount for a given proposal and staker
-      * @param _proposalId the ID of the proposal
-      * @param _staker staker address
-      * @return uint256 vote
-      * @return uint256 amount
-    */
-    function getStaker(bytes32 _proposalId, address _staker) external view returns(uint256, uint256) {
+     * @dev getStaker return the vote and stake amount for a given proposal and staker
+     * @param _proposalId the ID of the proposal
+     * @param _staker staker address
+     * @return uint256 vote
+     * @return uint256 amount
+     */
+    function getStaker(bytes32 _proposalId, address _staker) external view returns (uint256, uint256) {
         return (proposals[_proposalId].stakers[_staker].vote, proposals[_proposalId].stakers[_staker].amount);
     }
 
     /**
-      * @dev voteStake return the amount stakes for a given proposal and vote
-      * @param _proposalId the ID of the proposal
-      * @param _vote vote number
-      * @return uint256 stake amount
-    */
-    function voteStake(bytes32 _proposalId, uint256 _vote) external view returns(uint256) {
+     * @dev voteStake return the amount stakes for a given proposal and vote
+     * @param _proposalId the ID of the proposal
+     * @param _vote vote number
+     * @return uint256 stake amount
+     */
+    function voteStake(bytes32 _proposalId, uint256 _vote) external view returns (uint256) {
         return proposals[_proposalId].stakes[_vote];
     }
 
-  /**
-    * @dev voteStake return the winningVote for a given proposal
-    * @param _proposalId the ID of the proposal
-    * @return uint256 winningVote
-    */
-    function winningVote(bytes32 _proposalId) external view returns(uint256) {
+    /**
+     * @dev voteStake return the winningVote for a given proposal
+     * @param _proposalId the ID of the proposal
+     * @return uint256 winningVote
+     */
+    function winningVote(bytes32 _proposalId) external view returns (uint256) {
         return proposals[_proposalId].winningVote;
     }
 
     /**
-      * @dev voteStake return the state for a given proposal
-      * @param _proposalId the ID of the proposal
-      * @return ProposalState proposal state
-    */
-    function state(bytes32 _proposalId) external view returns(ProposalState) {
+     * @dev voteStake return the state for a given proposal
+     * @param _proposalId the ID of the proposal
+     * @return ProposalState proposal state
+     */
+    function state(bytes32 _proposalId) external view returns (ProposalState) {
         return proposals[_proposalId].state;
     }
 
-   /**
-    * @dev isAbstainAllow returns if the voting machine allow abstain (0)
-    * @return bool true or false
-    */
-    function isAbstainAllow() external pure returns(bool) {
+    /**
+     * @dev isAbstainAllow returns if the voting machine allow abstain (0)
+     * @return bool true or false
+     */
+    function isAbstainAllow() external pure returns (bool) {
         return false;
     }
 
@@ -2448,7 +2515,7 @@ contract GenesisProtocol is IntVoteInterface, GenesisProtocolLogic {
      * @return min - minimum number of choices
                max - maximum number of choices
      */
-    function getAllowedRangeOfChoices() external pure returns(uint256 min, uint256 max) {
+    function getAllowedRangeOfChoices() external pure returns (uint256 min, uint256 max) {
         return (YES, NO);
     }
 
@@ -2457,8 +2524,8 @@ contract GenesisProtocol is IntVoteInterface, GenesisProtocolLogic {
      * @param _proposalId the ID of the proposal
      * @return uint256 proposal score.
      */
-    function score(bytes32 _proposalId) public view returns(uint256) {
-        return  _score(_proposalId);
+    function score(bytes32 _proposalId) public view returns (uint256) {
+        return _score(_proposalId);
     }
 }
 
@@ -2466,11 +2533,7 @@ contract GenesisProtocol is IntVoteInterface, GenesisProtocolLogic {
 
 pragma solidity ^0.5.4;
 
-
-
-
 contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
-
     struct ProposalInfo {
         uint256 blockNumber; // the proposal's block number
         Avatar avatar; // the proposal's avatar
@@ -2484,11 +2547,11 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
     // VotingMaching  ->  proposalId  ->  ProposalInfo
     mapping(address => mapping(bytes32 => ProposalInfo)) public proposalsInfo;
 
-    function mintReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId)
-    external
-    onlyVotingMachine(_proposalId)
-    returns(bool)
-    {
+    function mintReputation(
+        uint256 _amount,
+        address _beneficiary,
+        bytes32 _proposalId
+    ) external onlyVotingMachine(_proposalId) returns (bool) {
         Avatar avatar = proposalsInfo[msg.sender][_proposalId].avatar;
         if (avatar == Avatar(0)) {
             return false;
@@ -2496,11 +2559,11 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         return ControllerInterface(avatar.owner()).mintReputation(_amount, _beneficiary, address(avatar));
     }
 
-    function burnReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId)
-    external
-    onlyVotingMachine(_proposalId)
-    returns(bool)
-    {
+    function burnReputation(
+        uint256 _amount,
+        address _beneficiary,
+        bytes32 _proposalId
+    ) external onlyVotingMachine(_proposalId) returns (bool) {
         Avatar avatar = proposalsInfo[msg.sender][_proposalId].avatar;
         if (avatar == Avatar(0)) {
             return false;
@@ -2512,11 +2575,8 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         IERC20 _stakingToken,
         address _beneficiary,
         uint256 _amount,
-        bytes32 _proposalId)
-    external
-    onlyVotingMachine(_proposalId)
-    returns(bool)
-    {
+        bytes32 _proposalId
+    ) external onlyVotingMachine(_proposalId) returns (bool) {
         Avatar avatar = proposalsInfo[msg.sender][_proposalId].avatar;
         if (avatar == Avatar(0)) {
             return false;
@@ -2524,7 +2584,7 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         return ControllerInterface(avatar.owner()).externalTokenTransfer(_stakingToken, _beneficiary, _amount, avatar);
     }
 
-    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns(uint256) {
+    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns (uint256) {
         Avatar avatar = proposalsInfo[msg.sender][_proposalId].avatar;
         if (proposalsInfo[msg.sender][_proposalId].avatar == Avatar(0)) {
             return 0;
@@ -2532,7 +2592,7 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         return _stakingToken.balanceOf(address(avatar));
     }
 
-    function getTotalReputationSupply(bytes32 _proposalId) external view returns(uint256) {
+    function getTotalReputationSupply(bytes32 _proposalId) external view returns (uint256) {
         ProposalInfo memory proposal = proposalsInfo[msg.sender][_proposalId];
         if (proposal.avatar == Avatar(0)) {
             return 0;
@@ -2540,7 +2600,7 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         return proposal.avatar.nativeReputation().totalSupplyAt(proposal.blockNumber);
     }
 
-    function reputationOf(address _owner, bytes32 _proposalId) external view returns(uint256) {
+    function reputationOf(address _owner, bytes32 _proposalId) external view returns (uint256) {
         ProposalInfo memory proposal = proposalsInfo[msg.sender][_proposalId];
         if (proposal.avatar == Avatar(0)) {
             return 0;
@@ -2552,11 +2612,6 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
 // File: contracts/universalSchemes/SchemeRegistrar.sol
 
 pragma solidity ^0.5.4;
-
-
-
-
-
 
 /**
  * @title A registrar for Schemes for organizations
@@ -2574,7 +2629,8 @@ contract SchemeRegistrar is UniversalScheme, VotingMachineCallbacks, ProposalExe
         string _descriptionHash
     );
 
-    event RemoveSchemeProposal(address indexed _avatar,
+    event RemoveSchemeProposal(
+        address indexed _avatar,
         bytes32 indexed _proposalId,
         address indexed _intVoteInterface,
         address _scheme,
@@ -2593,7 +2649,7 @@ contract SchemeRegistrar is UniversalScheme, VotingMachineCallbacks, ProposalExe
     }
 
     // A mapping from the organization (Avatar) address to the saved data of the organization:
-    mapping(address=>mapping(bytes32=>SchemeProposal)) public organizationsProposals;
+    mapping(address => mapping(bytes32 => SchemeProposal)) public organizationsProposals;
 
     // A mapping from hashes to parameters (use to store a particular configuration on the controller)
     struct Parameters {
@@ -2602,34 +2658,39 @@ contract SchemeRegistrar is UniversalScheme, VotingMachineCallbacks, ProposalExe
         IntVoteInterface intVote;
     }
 
-    mapping(bytes32=>Parameters) public parameters;
+    mapping(bytes32 => Parameters) public parameters;
 
     /**
-    * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
-    * @param _proposalId the ID of the voting in the voting machine
-    * @param _param a parameter of the voting result, 1 yes and 2 is no.
-    */
-    function executeProposal(bytes32 _proposalId, int256 _param) external onlyVotingMachine(_proposalId) returns(bool) {
+     * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
+     * @param _proposalId the ID of the voting in the voting machine
+     * @param _param a parameter of the voting result, 1 yes and 2 is no.
+     */
+    function executeProposal(bytes32 _proposalId, int256 _param)
+        external
+        onlyVotingMachine(_proposalId)
+        returns (bool)
+    {
         Avatar avatar = proposalsInfo[msg.sender][_proposalId].avatar;
         SchemeProposal memory proposal = organizationsProposals[address(avatar)][_proposalId];
         require(proposal.scheme != address(0));
         delete organizationsProposals[address(avatar)][_proposalId];
         emit ProposalDeleted(address(avatar), _proposalId);
         if (_param == 1) {
-
-          // Define controller and get the params:
+            // Define controller and get the params:
             ControllerInterface controller = ControllerInterface(avatar.owner());
 
-          // Add a scheme:
+            // Add a scheme:
             if (proposal.addScheme) {
-                require(controller.registerScheme(
+                require(
+                    controller.registerScheme(
                         proposal.scheme,
                         proposal.parametersHash,
                         proposal.permissions,
-                        address(avatar))
+                        address(avatar)
+                    )
                 );
             }
-          // Remove a scheme:
+            // Remove a scheme:
             if (!proposal.addScheme) {
                 require(controller.unregisterScheme(proposal.scheme, address(avatar)));
             }
@@ -2639,14 +2700,13 @@ contract SchemeRegistrar is UniversalScheme, VotingMachineCallbacks, ProposalExe
     }
 
     /**
-    * @dev hash the parameters, save them if necessary, and return the hash value
-    */
+     * @dev hash the parameters, save them if necessary, and return the hash value
+     */
     function setParameters(
         bytes32 _voteRegisterParams,
         bytes32 _voteRemoveParams,
         IntVoteInterface _intVote
-    ) public returns(bytes32)
-    {
+    ) public returns (bytes32) {
         bytes32 paramsHash = getParametersHash(_voteRegisterParams, _voteRemoveParams, _intVote);
         parameters[paramsHash].voteRegisterParams = _voteRegisterParams;
         parameters[paramsHash].voteRemoveParams = _voteRemoveParams;
@@ -2658,31 +2718,27 @@ contract SchemeRegistrar is UniversalScheme, VotingMachineCallbacks, ProposalExe
         bytes32 _voteRegisterParams,
         bytes32 _voteRemoveParams,
         IntVoteInterface _intVote
-    ) public pure returns(bytes32)
-    {
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(_voteRegisterParams, _voteRemoveParams, _intVote));
     }
 
     /**
-    * @dev create a proposal to register a scheme
-    * @param _avatar the address of the organization the scheme will be registered for
-    * @param _scheme the address of the scheme to be registered
-    * @param _parametersHash a hash of the configuration of the _scheme
-    * @param _permissions the permission of the scheme to be registered
-    * @param _descriptionHash proposal's description hash
-    * @return a proposal Id
-    * @dev NB: not only proposes the vote, but also votes for it
-    */
+     * @dev create a proposal to register a scheme
+     * @param _avatar the address of the organization the scheme will be registered for
+     * @param _scheme the address of the scheme to be registered
+     * @param _parametersHash a hash of the configuration of the _scheme
+     * @param _permissions the permission of the scheme to be registered
+     * @param _descriptionHash proposal's description hash
+     * @return a proposal Id
+     * @dev NB: not only proposes the vote, but also votes for it
+     */
     function proposeScheme(
         Avatar _avatar,
         address _scheme,
         bytes32 _parametersHash,
         bytes4 _permissions,
         string memory _descriptionHash
-    )
-    public
-    returns(bytes32)
-    {
+    ) public returns (bytes32) {
         // propose
         require(_scheme != address(0), "scheme cannot be zero");
         Parameters memory controllerParams = parameters[getParametersFromController(_avatar)];
@@ -2704,29 +2760,31 @@ contract SchemeRegistrar is UniversalScheme, VotingMachineCallbacks, ProposalExe
             address(_avatar),
             proposalId,
             address(controllerParams.intVote),
-            _scheme, _parametersHash,
+            _scheme,
+            _parametersHash,
             _permissions,
             _descriptionHash
         );
         organizationsProposals[address(_avatar)][proposalId] = proposal;
         proposalsInfo[address(controllerParams.intVote)][proposalId] = ProposalInfo({
-            blockNumber:block.number,
-            avatar:_avatar
+            blockNumber: block.number,
+            avatar: _avatar
         });
         return proposalId;
     }
 
     /**
-    * @dev propose to remove a scheme for a controller
-    * @param _avatar the address of the controller from which we want to remove a scheme
-    * @param _scheme the address of the scheme we want to remove
-    * @param _descriptionHash proposal description hash
-    * NB: not only registers the proposal, but also votes for it
-    */
-    function proposeToRemoveScheme(Avatar _avatar, address _scheme, string memory _descriptionHash)
-    public
-    returns(bytes32)
-    {
+     * @dev propose to remove a scheme for a controller
+     * @param _avatar the address of the controller from which we want to remove a scheme
+     * @param _scheme the address of the scheme we want to remove
+     * @param _descriptionHash proposal description hash
+     * NB: not only registers the proposal, but also votes for it
+     */
+    function proposeToRemoveScheme(
+        Avatar _avatar,
+        address _scheme,
+        string memory _descriptionHash
+    ) public returns (bytes32) {
         require(_scheme != address(0), "scheme cannot be zero");
         bytes32 paramsHash = getParametersFromController(_avatar);
         Parameters memory params = parameters[paramsHash];
@@ -2735,10 +2793,7 @@ contract SchemeRegistrar is UniversalScheme, VotingMachineCallbacks, ProposalExe
         bytes32 proposalId = intVote.propose(2, params.voteRemoveParams, msg.sender, address(_avatar));
         organizationsProposals[address(_avatar)][proposalId].scheme = _scheme;
         emit RemoveSchemeProposal(address(_avatar), proposalId, address(intVote), _scheme, _descriptionHash);
-        proposalsInfo[address(params.intVote)][proposalId] = ProposalInfo({
-            blockNumber:block.number,
-            avatar:_avatar
-        });
+        proposalsInfo[address(params.intVote)][proposalId] = ProposalInfo({blockNumber: block.number, avatar: _avatar});
         return proposalId;
     }
 }
