@@ -14,7 +14,7 @@ contract ERC20GuildPayable is ERC20Guild {
 
     uint256 public voteGas;
     uint256 public maxGasPrice;
-    
+
     /// @dev Initilizer
     /// @param _token The address of the token to be used
     /// @param _minimumProposalTime The minimun time for a proposal to be under votation
@@ -31,11 +31,11 @@ contract ERC20GuildPayable is ERC20Guild {
         uint256 _maxGasPrice
     ) public {
         require(address(_token) != address(0), "ERC20Guild: token is the zero address");
-        
+
         token = IERC20(_token);
         setConfig(_minimumProposalTime, _votesForExecution, _votesForCreation, _voteGas, _maxGasPrice);
     }
-    
+
     /// @dev Set the ERC20Guild configuration, can be called only executing a proposal 
     /// or when it is initilized
     /// @param _minimumProposalTime The minimun time for a proposal to be under votation
@@ -51,10 +51,10 @@ contract ERC20GuildPayable is ERC20Guild {
         uint256 _maxGasPrice
     ) public {
         require(
-            !initialized || (msg.sender == address(this)), 
+            !initialized || (msg.sender == address(this)),
             "ERC20Guild: Only callable by ERC20guild itself when initialized"
         );
-        
+
         initialized = true;
         minimumProposalTime = _minimumProposalTime;
         votesForExecution = _votesForExecution;
@@ -62,10 +62,10 @@ contract ERC20GuildPayable is ERC20Guild {
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
     }
-    
+
     /// @dev Allows the voting machine to receive ether to be used to refund voting costs
     function() external payable {}
-      
+
     /// @dev Set the amount of tokens to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote
     /// @param amount The amount of tokens to use as voting for the proposal
@@ -73,16 +73,15 @@ contract ERC20GuildPayable is ERC20Guild {
         super.setVote(proposalId, amount);
         _refundVote(msg.sender);
     }
-    
+
     /// @dev Internal function to refund a vote cost to a sender
     /// @param toAddress The address where the refund should be sent
     function _refundVote(address payable toAddress) internal {
       if (voteGas > 0) {
         uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
         if (address(this).balance >= gasRefund) {
-            toAddress.transfer(gasRefund);
+          toAddress.transfer(gasRefund);
         }
       }
     }
-
 }

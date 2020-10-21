@@ -92,4 +92,5 @@ contract ERC20GuildLockable is ERC20Guild {
     function votesOf(address account) public view returns(uint256) {
         return tokensLocked[account].amount;
     }
+
 }
