@@ -25,9 +25,8 @@ contract ERC20GuildSigned is ERC20Guild {
         bytes32 hashedVote = hashVote(voter, proposalId, amount);
         require(!signedVotes[hashedVote], 'ERC20GuildSigned: Already voted');
         require(
-          voter ==
-            hashedVote.toEthSignedMessageHash().recover(signature),
-          "wrong signer"
+          voter == hashedVote.toEthSignedMessageHash().recover(signature),
+          "ERC20GuildSigned: Wrong signer"
         );
         _setVote(voter, proposalId, amount);
         signedVotes[hashedVote] = true;
@@ -41,8 +40,9 @@ contract ERC20GuildSigned is ERC20Guild {
     function setVotes(
         bytes32[] memory proposalIds, uint256[] memory amounts, address[] memory voters, bytes[] memory signatures
     ) public {
-        for(uint i = 0; i < proposalIds.length; i ++)
+        for (uint i = 0; i < proposalIds.length; i ++) {
             setVote(proposalIds[i], amounts[i], voters[i], signatures[i]);
+        }
     }
     
     /// @dev Set the amount of tokens to vote in multiple proposals
@@ -56,5 +56,4 @@ contract ERC20GuildSigned is ERC20Guild {
     ) public pure returns(bytes32) {
         return keccak256(abi.encodePacked(voter, proposalId, amount));
     }
-  
 }

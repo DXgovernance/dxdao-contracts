@@ -57,7 +57,7 @@ contract ERC20GuildPermissioned is ERC20Guild {
         for (uint256 i = 0; i < proposals[proposalId].to.length; i++) {
             bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
             require(
-                callPermissions[proposals[proposalId].to[i]][proposalSignature] == true,
+                getCallPermission(proposals[proposalId].to[i], proposalSignature) == true,
                 "ERC20GuildPermissioned: Not allowed call"
             );
         }

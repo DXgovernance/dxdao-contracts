@@ -46,7 +46,7 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
     /// @param accounts The addresses of the token accounts
     /// @param snapshotIds The snapshotIds to be used
     function votesOfAt(address[] memory accounts, uint256[] memory snapshotIds) public view returns(uint256[] memory) {
-        uint256[] memory votes;
+        uint256[] memory votes = new uint256[](accounts.length);
         for(uint i = 0; i < accounts.length; i ++)
             votes[i] = votesOfAt(accounts[i], snapshotIds[i]);
         return votes;
@@ -109,6 +109,10 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
         uint256 _extraTime
     ) public isInitialized {
         bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, now, nonce));
+
+        // FIXME BlockRocket added - couldn't find any increment of _currentSnapshotId - presumed bug?
+        _currentSnapshotId = _currentSnapshotId.add(1);
+
         proposalSnapshots[proposalId] = _currentSnapshotId;
         super.createProposal(_to, _data, _value, _description, _contentHash, _extraTime);
     }

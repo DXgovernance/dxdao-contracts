@@ -73,11 +73,17 @@ contract ERC20GuildLockable is ERC20Guild {
     /// @dev Release tokens locked in the guild, this will decrease the voting power
     /// @param amount The amount of tokens to be released
     function releaseTokens(uint256 amount) public {
-        require(votesOf(msg.sender) >= amount);
-        require(tokensLocked[msg.sender].timestamp > block.timestamp);
+        require(votesOf(msg.sender) >= amount, "ERC20GuildLockable: Unable to release more tokens than locked");
+
+        // FIXME BlockRocket flipped this to < from > - please confirm correct
+        require(tokensLocked[msg.sender].timestamp < block.timestamp, "ERC20GuildLockable: Tokens still locked");
+
+        // FIXME Re-Entrancy? BlockRocket suggest setting amounts before the transfer for safety...
         token.transfer(msg.sender, amount);
+
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(amount);
         totalLocked = totalLocked.sub(amount);
+
         emit TokensReleased(msg.sender, amount);
     }
     

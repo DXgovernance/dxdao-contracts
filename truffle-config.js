@@ -48,7 +48,7 @@ module.exports = {
       host: "localhost",
       port: 8545,
       gas: 9000000,
-      gasPrice: 10000000000 //10 Gwei	
+      gasPrice: 8000000000 //10 Gwei
     },
     soliditycoverage: {
       host: "localhost",

@@ -21,6 +21,22 @@ All the contracts are organized in different folders:
 
 `npm test`
 
+or 
+
+`npx buidler test` to run via https://buidler.dev/
+
+## Coverage
+
+`truffle run coverage`
+
+or
+
+`npx buidler coverage`
+
+When running coverage tests checks gas will fail: "Coverage distorts gas consumption. Tests that check exact gas consumption should be skipped."
+
+https://github.com/sc-forks/solidity-coverage/blob/master/BUIDLER_README.md
+
 ## Migrate
 
 ### Get Reputation 
