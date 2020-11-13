@@ -9,7 +9,8 @@ usePlugin('buidler-gas-reporter');
 usePlugin('solidity-coverage');
 
 const INFURA_PROJECT_ID = process.env.PROTOTYPE_BR_INFURA_KEY;
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const MNEMONIC = process.env.KEY_MNEMONIC;
+
 
 module.exports = {
   solc: {
@@ -25,27 +26,27 @@ module.exports = {
   },
   networks: {
     buidlerevm: {
-      gasPrice: 8000000000, // 8 gwei
+      gasPrice: 10000000000, // 10 gwei
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${PRIVATE_KEY}`]
+      accounts: { mnemonic: MNEMONIC }
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${PRIVATE_KEY}`]
+      accounts: { mnemonic: MNEMONIC }
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${PRIVATE_KEY}`]
+      accounts: { mnemonic: MNEMONIC }
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${PRIVATE_KEY}`]
+      accounts: { mnemonic: MNEMONIC }
     },
     coverage: {
       url: 'http://localhost:8555',
-      gasPrice: 8000000000, // 8 gwei
+      gasPrice: 1
     }
   }
 };

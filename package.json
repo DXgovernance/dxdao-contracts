@@ -15,7 +15,7 @@
     "gasLimit": "6200000"
   },
   "scripts": {
-    "test": "./scripts/test.sh",
+    "test": "npx buidler test",
     "testnet": "./scripts/testnet.sh",
     "coverage": "./scripts/coverage.sh",
     "deploy": "node scripts/deploy.js",
