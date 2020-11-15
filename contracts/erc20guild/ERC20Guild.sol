@@ -17,6 +17,7 @@ contract ERC20Guild {
     IERC20 public token;
     bool public initialized = false;
     uint256 public nonce = 0;
+    string public name;
     uint256 public minimumProposalTime;
     uint256 public votesForExecution;
     uint256 public votesForCreation;
@@ -57,10 +58,12 @@ contract ERC20Guild {
         address erc20token,
         uint256 minimumProposalTime,
         uint256 votesForExecution,
-        uint256 votesForCreation
+        uint256 votesForCreation,
+        string memory _name
     ) public {
         require(address(erc20token) != address(0), "ERC20Guild: token is the zero address");
         
+        name = _name;
         token = IERC20(erc20token);
         _setConfig(minimumProposalTime, votesForExecution, votesForCreation);
         initialized = true;

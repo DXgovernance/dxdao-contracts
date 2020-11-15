@@ -35,6 +35,7 @@ interface IERC20Guild {
     function votesOf(address account) external view returns(uint256);
     function votesOf(address[] calldata accounts) external view returns(uint256[] memory) ;
     function token() external view returns (address);
+    function name() external view returns (string memory);
     function initialized() external view returns (bool);
     function nonce() external view returns (uint256);
     function minimumProposalTime() external view returns (uint256);

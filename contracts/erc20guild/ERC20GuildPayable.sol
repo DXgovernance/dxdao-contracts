@@ -27,13 +27,15 @@ contract ERC20GuildPayable is ERC20Guild {
         uint256 _minimumProposalTime,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
+        string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice
     ) public {
         require(address(_token) != address(0), "ERC20Guild: token is the zero address");
 
-        token = IERC20(_token);
-        setConfig(_minimumProposalTime, _votesForExecution, _votesForCreation, _voteGas, _maxGasPrice);
+        super.initialize(_token, _minimumProposalTime, _votesForExecution, _votesForCreation, _name);
+        voteGas = _voteGas;
+        maxGasPrice = _maxGasPrice;
     }
 
     /// @dev Set the ERC20Guild configuration, can be called only executing a proposal 
@@ -50,15 +52,7 @@ contract ERC20GuildPayable is ERC20Guild {
         uint256 _voteGas,
         uint256 _maxGasPrice
     ) public {
-        require(
-            !initialized || (msg.sender == address(this)),
-            "ERC20Guild: Only callable by ERC20guild itself when initialized"
-        );
-
-        initialized = true;
-        minimumProposalTime = _minimumProposalTime;
-        votesForExecution = _votesForExecution;
-        votesForCreation = _votesForCreation;
+        super.setConfig(_minimumProposalTime, _votesForExecution, _votesForCreation);
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
     }

@@ -60,6 +60,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
         new BN("0"),
         new BN("200"),
         new BN("100"),
+        "TestGuild",
         TIMELOCK
       );
 

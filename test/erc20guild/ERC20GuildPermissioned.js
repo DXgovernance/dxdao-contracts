@@ -45,7 +45,8 @@ contract("ERC20GuildPermissioned", function (accounts) {
       guildToken.address,
       minProposalTime,
       votesForExecution,
-      votesForCreation
+      votesForCreation,
+      "TestGuild"
     );
 
     actionMock = await ActionMock.new();
@@ -66,7 +67,8 @@ contract("ERC20GuildPermissioned", function (accounts) {
             helpers.NULL_ADDRESS,
             new BN("10"),
             new BN("10"),
-            new BN("10")
+            new BN("10"),
+            "TestGuild"
           );
           assert(false, "ERC20Guild: token is the zero address");
         } catch (error) {
@@ -80,7 +82,8 @@ contract("ERC20GuildPermissioned", function (accounts) {
             guildToken.address,
             new BN("10"),
             new BN("10"),
-            new BN("10")
+            new BN("10"),
+            "TestGuild"
           );
           assert(
             false,

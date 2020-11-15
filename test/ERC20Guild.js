@@ -60,7 +60,7 @@ contract("ERC20Guild", function(accounts) {
     let erc20Guild;
     beforeEach( async function(){
       erc20Guild = await ERC20Guild.new();
-      await erc20Guild.initialize(guildToken.address, 0, 200, 100);
+      await erc20Guild.initialize(guildToken.address, 0, 200, 100, "TestGuild");
       
       org = await helpers.setupOrganizationWithArrays(
         daoCreator,
@@ -92,7 +92,7 @@ contract("ERC20Guild", function(accounts) {
     it("cannot initialize with zero address", async function() {
       try {
         const newGuild = await ERC20Guild.new();
-        await newGuild.initialize(helpers.NULL_ADDRESS, 10, 10, 10);
+        await newGuild.initialize(helpers.NULL_ADDRESS, 10, 10, 10, "TestGuild");
         assert(false, "ERC20Guild: token is the zero address");
       } catch(error) {
         helpers.assertVMException(error);
@@ -101,7 +101,7 @@ contract("ERC20Guild", function(accounts) {
 
     it("cannot initialize twice", async function() {
       try {
-        await erc20Guild.initialize(guildToken.address, 10, 10, 10);
+        await erc20Guild.initialize(guildToken.address, 10, 10, 10, "TestGuild");
         assert(false, "ERC20Guild: Only callable by ERC20guild itself when initialized");
       } catch(error) {
         helpers.assertVMException(error);
@@ -160,7 +160,7 @@ contract("ERC20Guild", function(accounts) {
     let erc20GuildPermissioned;
     beforeEach( async function(){
       erc20GuildPermissioned = await ERC20GuildPermissioned.new();
-      await erc20GuildPermissioned.initialize(guildToken.address, 0, 200, 100);
+      await erc20GuildPermissioned.initialize(guildToken.address, 0, 200, 100, "TestGuild");
       
       org = await helpers.setupOrganizationWithArrays(
         daoCreator,
@@ -192,7 +192,7 @@ contract("ERC20Guild", function(accounts) {
     it("cannot initialize with zero address", async function() {
       try {
         const newGuild = await ERC20GuildPermissioned.new();
-        await newGuild.initialize(helpers.NULL_ADDRESS, 10, 10, 10);
+        await newGuild.initialize(helpers.NULL_ADDRESS, 10, 10, 10, "TestGuild");
         assert(false, "ERC20Guild: token is the zero address");
       } catch(error) {
         helpers.assertVMException(error);
@@ -201,7 +201,7 @@ contract("ERC20Guild", function(accounts) {
 
     it("cannot initialize twice", async function() {
       try {
-        await erc20GuildPermissioned.initialize(guildToken.address, 10, 10, 10);
+        await erc20GuildPermissioned.initialize(guildToken.address, 10, 10, 10, "TestGuild");
         assert(false, "ERC20Guild: Only callable by ERC20guild itself when initialized");
       } catch(error) {
         helpers.assertVMException(error);
@@ -215,7 +215,7 @@ contract("ERC20Guild", function(accounts) {
     let erc20GuildLockable;
     beforeEach( async function(){
       erc20GuildLockable = await ERC20GuildLockable.new();
-      await erc20GuildLockable.initialize(guildToken.address, 0, 200, 100, 1);
+      await erc20GuildLockable.initialize(guildToken.address, 0, 200, 100, "TestGuild", 1);
 
       guildToken.approve(erc20GuildLockable.address, 450, {from: accounts[ 0 ]});
       guildToken.approve(erc20GuildLockable.address, 50, {from: accounts[ 1 ]});
@@ -254,7 +254,7 @@ contract("ERC20Guild", function(accounts) {
     it("cannot initialize with zero address", async function() {
       try {
         const newGuild = await ERC20GuildLockable.new();
-        await newGuild.initialize(helpers.NULL_ADDRESS, 10, 10, 10, 1);
+        await newGuild.initialize(helpers.NULL_ADDRESS, 10, 10, 10, "TestGuild", 1);
         assert(false, "ERC20Guild: token is the zero address");
       } catch(error) {
         helpers.assertVMException(error);
@@ -268,7 +268,7 @@ contract("ERC20Guild", function(accounts) {
     let erc20GuildSnapshot;
     beforeEach( async function(){
       erc20GuildSnapshot = await ERC20GuildSnapshot.new();
-      await erc20GuildSnapshot.initialize(guildToken.address, 0, 200, 100, 1);
+      await erc20GuildSnapshot.initialize(guildToken.address, 0, 200, 100, "TestGuild", 1);
 
       guildToken.approve(erc20GuildSnapshot.address, 450, {from: accounts[ 0 ]});
       guildToken.approve(erc20GuildSnapshot.address, 50, {from: accounts[ 1 ]});
@@ -307,7 +307,7 @@ contract("ERC20Guild", function(accounts) {
     it("cannot initialize with zero address", async function() {
       try {
         const newGuild = await ERC20GuildSnapshot.new();
-        await newGuild.initialize(helpers.NULL_ADDRESS, 10, 10, 10, 1);
+        await newGuild.initialize(helpers.NULL_ADDRESS, 10, 10, 10, "TestGuild", 1);
         assert(false, "ERC20Guild: token is the zero address");
       } catch(error) {
         helpers.assertVMException(error);
@@ -316,7 +316,7 @@ contract("ERC20Guild", function(accounts) {
 
     it("cannot initialize twice", async function() {
       try {
-        await erc20GuildSnapshot.initialize(guildToken.address, 10, 10, 10);
+        await erc20GuildSnapshot.initialize(guildToken.address, 10, 10, 10, "TestGuild", 1);
         assert(false, "ERC20Guild: Only callable by ERC20guild itself when initialized");
       } catch(error) {
         helpers.assertVMException(error);

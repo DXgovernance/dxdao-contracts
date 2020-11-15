@@ -24,9 +24,10 @@ contract ERC20GuildPermissioned is ERC20Guild {
         address _token,
         uint256 _minimumProposalTime,
         uint256 _votesForExecution,
-        uint256 _votesForCreation
+        uint256 _votesForCreation,
+        string memory _name
     ) public {
-        super.initialize(_token, _minimumProposalTime, _votesForExecution, _votesForCreation);
+        super.initialize(_token, _minimumProposalTime, _votesForExecution, _votesForCreation, _name);
         callPermissions[address(this)][bytes4(keccak256("setConfig(uint256,uint256,uint256)"))] = true;
         callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = true;
     }

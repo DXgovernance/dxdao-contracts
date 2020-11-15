@@ -57,7 +57,8 @@ contract("ERC20Guild", function (accounts) {
       guildToken.address,
       new BN("0"),
       new BN("200"),
-      new BN("100")
+      new BN("100"),
+      "TestGuild"
     );
 
     const createDaoResult = await createDAO(erc20Guild, accounts);
@@ -109,7 +110,8 @@ contract("ERC20Guild", function (accounts) {
           helpers.NULL_ADDRESS,
           new BN("10"),
           new BN("10"),
-          new BN("10")
+          new BN("10"),
+          "TestGuild"
         ),
         "ERC20Guild: token is the zero address"
       );
@@ -121,7 +123,8 @@ contract("ERC20Guild", function (accounts) {
           guildToken.address,
           new BN("10"),
           new BN("10"),
-          new BN("10")
+          new BN("10"),
+          "TestGuild"
         ),
         "ERC20Guild: Only callable by ERC20guild itself when initialized"
       );

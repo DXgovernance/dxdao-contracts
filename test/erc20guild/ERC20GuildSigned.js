@@ -43,7 +43,8 @@ contract("ERC20GuildSigned", function (accounts) {
       guildToken.address,
       new BN("0"),
       new BN("200"),
-      new BN("100")
+      new BN("100"),
+      "TestGuild"
     );
 
     const createDaoResult = await createDAO(erc20GuildSigned, accounts);

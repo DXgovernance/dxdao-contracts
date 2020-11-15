@@ -49,6 +49,7 @@ contract("ERC20GuildLockable", function (accounts) {
         new BN("0"),
         new BN("200"),
         new BN("100"),
+        "TestGuild",
         TIMELOCK
       );
 
@@ -92,6 +93,7 @@ contract("ERC20GuildLockable", function (accounts) {
           new BN("0"),
           new BN("200"),
           new BN("100"),
+          "TestGuild",
           new BN("0")
         ),
         "ERC20Guild: lockTime should be higher than zero"
@@ -105,6 +107,7 @@ contract("ERC20GuildLockable", function (accounts) {
         new BN("0"),
         new BN("200"),
         new BN("100"),
+        "TestGuild",
         new BN("1000")
       );
       await expectRevert(
@@ -125,6 +128,7 @@ contract("ERC20GuildLockable", function (accounts) {
         new BN("0"),
         new BN("200"),
         new BN("100"),
+        "TestGuild",
         new BN("1000")
       );
 

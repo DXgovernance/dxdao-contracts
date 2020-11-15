@@ -19,13 +19,12 @@ require("chai").should();
 
 contract("ERC20GuildPayable", function (accounts) {
   const ZERO = new BN("0");
-  const MINUS_ONE = new BN("-1");
 
   let walletScheme, daoCreator, org, actionMock, votingMachine, guildToken;
 
-  const VOTE_GAS = new BN("95000"); // 95k - more than enough
+  const VOTE_GAS = new BN("50000"); // 50k
   const MAX_GAS_PRICE = new BN("8000000000"); // 8 gwei
-  const REAL_GAS_PRICE = new BN("8000000000"); // 8 gwei (check config)
+  const REAL_GAS_PRICE = new BN("10000000000"); // 8 gwei (check config)
 
   let erc20GuildPayable,
     genericCallDataVote,
@@ -62,6 +61,7 @@ contract("ERC20GuildPayable", function (accounts) {
       0,
       200,
       100,
+      "TestGuild",
       VOTE_GAS,
       MAX_GAS_PRICE
     );
@@ -143,7 +143,7 @@ contract("ERC20GuildPayable", function (accounts) {
       const tracker = await balance.tracker(accounts[1]);
 
       const txVote = await erc20GuildPayable.setVote(proposalIdGuild, 50, {
-        from: accounts[1],
+        from: accounts[1], gasPrice: REAL_GAS_PRICE
       });
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
 
@@ -152,14 +152,13 @@ contract("ERC20GuildPayable", function (accounts) {
       // mul by -1 as balance has decreased
       guildBalance = await guildTracker.delta();
       guildBalance.should.be.bignumber.equal(
-        VOTE_GAS.mul(MAX_GAS_PRICE).mul(MINUS_ONE)
+        VOTE_GAS.mul(MAX_GAS_PRICE).neg()
       );
-
       // account 1 should have a refund
       // the gas for the vote multipled by set gas price minus the real cost of gas multiplied by gas price
       let accounts1Balance = await tracker.delta();
-      accounts1Balance.should.be.bignumber.equal(
-        VOTE_GAS.mul(MAX_GAS_PRICE).sub(new BN(txGasUsed).mul(MAX_GAS_PRICE))
+      accounts1Balance.neg().should.be.bignumber.equal(
+        new BN(txGasUsed).mul(REAL_GAS_PRICE).sub(VOTE_GAS.mul(MAX_GAS_PRICE))
       );
     });
 
@@ -174,7 +173,7 @@ contract("ERC20GuildPayable", function (accounts) {
       const tracker = await balance.tracker(accounts[1]);
 
       const txVote = await erc20GuildPayable.setVote(proposalIdGuild, 50, {
-        from: accounts[1],
+        from: accounts[1], gasPrice: REAL_GAS_PRICE
       });
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
 
@@ -187,7 +186,7 @@ contract("ERC20GuildPayable", function (accounts) {
       // account 1 has paid as normal for the vote
       let accounts1Balance = await tracker.delta();
       accounts1Balance.should.be.bignumber.equal(
-        new BN(txGasUsed).mul(REAL_GAS_PRICE).mul(MINUS_ONE)
+        new BN(txGasUsed).mul(REAL_GAS_PRICE).neg()
       );
     });
   });
@@ -203,6 +202,7 @@ contract("ERC20GuildPayable", function (accounts) {
         0,
         200,
         100,
+        "TestGuild",
         VOTE_GAS,
         MAX_GAS_PRICE
       );
@@ -251,7 +251,7 @@ contract("ERC20GuildPayable", function (accounts) {
       const tracker = await balance.tracker(accounts[1]);
 
       const txVote = await erc20GuildPayable.setVote(proposalIdGuild, 50, {
-        from: accounts[1],
+        from: accounts[1], gasPrice: REAL_GAS_PRICE
       });
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
 
@@ -264,7 +264,7 @@ contract("ERC20GuildPayable", function (accounts) {
       // account 1 should not have a refund and should simply pay gas
       let accounts1Balance = await tracker.delta();
       accounts1Balance.should.be.bignumber.equal(
-        new BN(txGasUsed).mul(MAX_GAS_PRICE).mul(MINUS_ONE)
+        new BN(txGasUsed).mul(REAL_GAS_PRICE).neg()
       );
     });
   });
@@ -272,7 +272,7 @@ contract("ERC20GuildPayable", function (accounts) {
   describe("max gas price lower than transaction gas price", function () {
     const VOTE_GAS = new BN("95000"); // 95k - more than enough
     const MAX_GAS_PRICE = new BN("1000000000"); // 1 gwei
-    const REAL_GAS_PRICE = new BN("8000000000"); // 8 gwei (check config)
+    const REAL_GAS_PRICE = new BN("10000000000"); // 8 gwei (check config)
 
     beforeEach(async function () {
       erc20GuildPayable = await ERC20GuildPayable.new();
@@ -281,6 +281,7 @@ contract("ERC20GuildPayable", function (accounts) {
         0,
         200,
         100,
+        "TestGuild",
         VOTE_GAS,
         MAX_GAS_PRICE
       );
@@ -329,7 +330,7 @@ contract("ERC20GuildPayable", function (accounts) {
       const tracker = await balance.tracker(accounts[1]);
 
       const txVote = await erc20GuildPayable.setVote(proposalIdGuild, 50, {
-        from: accounts[1],
+        from: accounts[1], gasPrice: REAL_GAS_PRICE
       });
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
 
@@ -338,7 +339,7 @@ contract("ERC20GuildPayable", function (accounts) {
       // mul by -1 as balance has decreased
       guildBalance = await guildTracker.delta();
       guildBalance.should.be.bignumber.equal(
-        VOTE_GAS.mul(MAX_GAS_PRICE).mul(MINUS_ONE)
+        VOTE_GAS.mul(MAX_GAS_PRICE).neg()
       );
 
       // account 1 should have a small refund but not enough to cover tx gas
@@ -347,7 +348,7 @@ contract("ERC20GuildPayable", function (accounts) {
         new BN(txGasUsed)
           .mul(REAL_GAS_PRICE)
           .sub(VOTE_GAS.mul(MAX_GAS_PRICE))
-          .mul(MINUS_ONE)
+          .neg()
       );
     });
   });

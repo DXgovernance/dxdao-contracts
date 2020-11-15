@@ -29,7 +29,7 @@ contract DXDGuild is ERC20GuildSnapshot, ERC20GuildPermissioned, Ownable {
         uint256 _votesForCreation,
         address votingMachine
     ) public {
-        super.initialize(_token, _minimumProposalTime, _votesForExecution, _votesForCreation);
+        super.initialize(_token, _minimumProposalTime, _votesForExecution, _votesForCreation, "DXDGuild");
         callPermissions[votingMachine][bytes4(keccak256("vote(bytes32,uint256,uint256,address)"))] = true;
     }
     
