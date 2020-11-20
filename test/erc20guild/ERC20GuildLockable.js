@@ -46,7 +46,7 @@ contract("ERC20GuildLockable", function (accounts) {
       erc20GuildLockable = await ERC20GuildLockable.new();
       await erc20GuildLockable.initialize(
         guildToken.address,
-        new BN("0"),
+        new BN("30"),
         new BN("200"),
         new BN("100"),
         "TestGuild",
@@ -90,7 +90,7 @@ contract("ERC20GuildLockable", function (accounts) {
       await expectRevert(
         erc20GuildLockable.initialize(
           guildToken.address,
-          new BN("0"),
+          new BN("30"),
           new BN("200"),
           new BN("100"),
           "TestGuild",
@@ -104,7 +104,7 @@ contract("ERC20GuildLockable", function (accounts) {
       erc20GuildLockable = await ERC20GuildLockable.new();
       await erc20GuildLockable.initialize(
         guildToken.address,
-        new BN("0"),
+        new BN("30"),
         new BN("200"),
         new BN("100"),
         "TestGuild",
@@ -112,7 +112,7 @@ contract("ERC20GuildLockable", function (accounts) {
       );
       await expectRevert(
         erc20GuildLockable.setConfig(
-          new BN("0"),
+          new BN("30"),
           new BN("200"),
           new BN("100"),
           new BN("0")
@@ -125,7 +125,7 @@ contract("ERC20GuildLockable", function (accounts) {
       erc20GuildLockable = await ERC20GuildLockable.new();
       await erc20GuildLockable.initialize(
         guildToken.address,
-        new BN("0"),
+        new BN("30"),
         new BN("200"),
         new BN("100"),
         "TestGuild",

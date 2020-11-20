@@ -55,7 +55,7 @@ contract("ERC20Guild", function (accounts) {
     erc20Guild = await ERC20Guild.new();
     await erc20Guild.initialize(
       guildToken.address,
-      new BN("0"),
+      new BN("30"),
       new BN("200"),
       new BN("100"),
       "TestGuild"
@@ -96,7 +96,6 @@ contract("ERC20Guild", function (accounts) {
       value: [0],
       description: DESCRIPTION,
       contentHash: helpers.NULL_ADDRESS,
-      extraTime: 0,
       account: accounts[3],
     };
   });
@@ -140,7 +139,6 @@ contract("ERC20Guild", function (accounts) {
           [0],
           DESCRIPTION,
           helpers.NULL_ADDRESS,
-          0,
           { from: accounts[9] }
         ),
         "ERC20Guild: Not enough tokens to create proposal"
@@ -157,7 +155,6 @@ contract("ERC20Guild", function (accounts) {
           [0],
           DESCRIPTION,
           helpers.NULL_ADDRESS,
-          0,
           { from: accounts[3] }
         ),
         "ERC20Guild: Wrong length of to, data or value arrays"
@@ -174,7 +171,6 @@ contract("ERC20Guild", function (accounts) {
           [],
           DESCRIPTION,
           helpers.NULL_ADDRESS,
-          0,
           { from: accounts[3] }
         ),
         "ERC20Guild: Wrong length of to, data or value arrays"
@@ -183,7 +179,6 @@ contract("ERC20Guild", function (accounts) {
 
     it("cannot create a proposal with empty _to, _data and _value arrays", async function () {
       const ierc20Guild = await IERC20Guild.at(erc20Guild.address);
-
       await expectRevert(
         ierc20Guild.createProposal(
           [],
@@ -191,7 +186,6 @@ contract("ERC20Guild", function (accounts) {
           [],
           DESCRIPTION,
           helpers.NULL_ADDRESS,
-          0,
           { from: accounts[3] }
         ),
         "ERC20Guild: to, data value arrays cannot be empty"
@@ -218,7 +212,7 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(creator, accounts[3]);
       const now = await time.latest();
       assert.equal(startTime.toString(), now.toString());
-      assert.equal(endTime.toString(), now.toString()); // proposalTime and extra time are 0
+      assert.equal(endTime.toString(), now.add(new BN("30")).toString()); // proposalTime and extra time are 0
       assert.deepEqual(to, [votingMachine.address]);
       assert.deepEqual(data, [genericCallDataVote]);
       assert.deepEqual(
@@ -264,7 +258,7 @@ contract("ERC20Guild", function (accounts) {
 
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
 
-      await time.increase(time.duration.seconds(1));
+      await time.increase(time.duration.seconds(30));
       const receipt = await ierc20Guild.executeProposal(proposalIdGuild);
       expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
 
@@ -293,7 +287,7 @@ contract("ERC20Guild", function (accounts) {
 
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
 
-      await time.increase(time.duration.seconds(1));
+      await time.increase(time.duration.seconds(30));
       const receipt = await ierc20Guild.executeProposal(proposalIdGuild);
       expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
 
@@ -312,7 +306,6 @@ contract("ERC20Guild", function (accounts) {
       const ierc20Guild = await IERC20Guild.at(erc20Guild.address);
 
       const customProposal = Object.assign({}, genericProposal);
-      customProposal.extraTime = 1000;
       const proposalIdGuild = await createProposal(customProposal);
 
       const txVote = await setAllVotesOnProposal({
@@ -342,7 +335,7 @@ contract("ERC20Guild", function (accounts) {
 
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
 
-      await time.increase(time.duration.seconds(1));
+      await time.increase(time.duration.seconds(30));
 
       await expectRevert(
         ierc20Guild.executeProposal(proposalIdGuild),
@@ -425,7 +418,7 @@ contract("ERC20Guild", function (accounts) {
 
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
 
-      await time.increase(time.duration.seconds(1));
+      await time.increase(time.duration.seconds(30));
       const receipt = await ierc20Guild.executeProposal(proposalIdGuild);
       expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
 

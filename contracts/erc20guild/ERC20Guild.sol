@@ -88,15 +88,13 @@ contract ERC20Guild {
     /// @param _value The ETH value to be sent on each call to be executed
     /// @param _description A short description of the proposal
     /// @param _contentHash The content hash of the content reference of the proposal
-    /// @param _extraTime The extra time to be added to the proposalTime
     /// for the proposal to be executed
     function createProposal(
         address[] memory _to,
         bytes[] memory _data,
         uint256[] memory _value,
         string memory _description,
-        bytes memory _contentHash,
-        uint256 _extraTime
+        bytes memory _contentHash
     ) public isInitialized {
         require(
             votesOf(msg.sender) >= votesForCreation,
@@ -117,7 +115,7 @@ contract ERC20Guild {
         proposals[proposalId] = Proposal(
             msg.sender,
             now,
-            now.add(proposalTime).add(_extraTime),
+            now.add(proposalTime),
             _to,
             _data,
             _value,

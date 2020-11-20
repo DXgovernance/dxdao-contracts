@@ -25,8 +25,7 @@ interface IERC20Guild {
         bytes[] calldata _data,
         uint256[] calldata _value,
         string calldata _description,
-        bytes calldata _contentHash,
-        uint256 _extraTime
+        bytes calldata _contentHash
     ) external;
     function executeProposal(bytes32 proposalId) external;
     function setVote(bytes32 proposalId, uint256 amount) external;

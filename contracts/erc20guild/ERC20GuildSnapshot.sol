@@ -98,15 +98,13 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
     /// @param _value The ETH value to be sent on each call to be executed
     /// @param _description A short description of the proposal
     /// @param _contentHash The content hash of the content reference of the proposal
-    /// @param _extraTime The extra time to be added to the minimumProposalTime
     /// for teh proposal to be executed
     function createProposal(
         address[] memory _to,
         bytes[] memory _data,
         uint256[] memory _value,
         string memory _description,
-        bytes memory _contentHash,
-        uint256 _extraTime
+        bytes memory _contentHash
     ) public isInitialized {
         bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, now, nonce));
 
@@ -114,7 +112,7 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
         _currentSnapshotId = _currentSnapshotId.add(1);
 
         proposalSnapshots[proposalId] = _currentSnapshotId;
-        super.createProposal(_to, _data, _value, _description, _contentHash, _extraTime);
+        super.createProposal(_to, _data, _value, _description, _contentHash);
     }
 
     function _valueAt(

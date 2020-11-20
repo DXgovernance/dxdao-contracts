@@ -58,7 +58,7 @@ contract("ERC20GuildPayable", function (accounts) {
     erc20GuildPayable = await ERC20GuildPayable.new();
     await erc20GuildPayable.initialize(
       guildToken.address,
-      0,
+      30,
       200,
       100,
       "TestGuild",
@@ -101,7 +101,6 @@ contract("ERC20GuildPayable", function (accounts) {
       value: [0],
       description: DESCRIPTION,
       contentHash: helpers.NULL_ADDRESS,
-      extraTime: 0,
       account: accounts[3],
     };
   });
@@ -199,7 +198,7 @@ contract("ERC20GuildPayable", function (accounts) {
       erc20GuildPayable = await ERC20GuildPayable.new();
       await erc20GuildPayable.initialize(
         guildToken.address,
-        0,
+        30,
         200,
         100,
         "TestGuild",
@@ -278,7 +277,7 @@ contract("ERC20GuildPayable", function (accounts) {
       erc20GuildPayable = await ERC20GuildPayable.new();
       await erc20GuildPayable.initialize(
         guildToken.address,
-        0,
+        30,
         200,
         100,
         "TestGuild",

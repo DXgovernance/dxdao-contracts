@@ -41,7 +41,7 @@ contract("ERC20GuildSigned", function (accounts) {
     erc20GuildSigned = await ERC20GuildSigned.new();
     await erc20GuildSigned.initialize(
       guildToken.address,
-      new BN("0"),
+      new BN("30"),
       new BN("200"),
       new BN("100"),
       "TestGuild"
@@ -93,7 +93,6 @@ contract("ERC20GuildSigned", function (accounts) {
         [0],
         DESCRIPTION,
         helpers.NULL_ADDRESS,
-        0,
         { from: accounts[3] }
       );
 
@@ -136,7 +135,6 @@ contract("ERC20GuildSigned", function (accounts) {
         [0],
         DESCRIPTION,
         helpers.NULL_ADDRESS,
-        0,
         { from: accounts[3] }
       );
 
@@ -190,7 +188,6 @@ contract("ERC20GuildSigned", function (accounts) {
         [0],
         DESCRIPTION,
         helpers.NULL_ADDRESS,
-        0,
         { from: accounts[3] }
       );
 
@@ -242,7 +239,6 @@ contract("ERC20GuildSigned", function (accounts) {
         [0],
         DESCRIPTION,
         helpers.NULL_ADDRESS,
-        0,
         { from: accounts[3] }
       );
 

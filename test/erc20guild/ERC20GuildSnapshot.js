@@ -57,7 +57,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       erc20GuildSnapshot = await ERC20GuildSnapshot.new();
       await erc20GuildSnapshot.initialize(
         guildToken.address,
-        new BN("0"),
+        new BN("30"),
         new BN("200"),
         new BN("100"),
         "TestGuild",
@@ -172,7 +172,6 @@ contract("ERC20GuildSnapshot", function (accounts) {
         [0],
         "Voting Proposal",
         helpers.NULL_ADDRESS,
-        0,
         { from: accounts[2] }
       );
 
@@ -190,7 +189,6 @@ contract("ERC20GuildSnapshot", function (accounts) {
         [0],
         "Voting Proposal",
         helpers.NULL_ADDRESS,
-        0,
         { from: accounts[3] }
       );
 
@@ -270,7 +268,6 @@ contract("ERC20GuildSnapshot", function (accounts) {
         [0],
         "Voting Proposal",
         helpers.NULL_ADDRESS,
-        0,
         { from: accounts[2] }
       );
 
@@ -315,7 +312,6 @@ contract("ERC20GuildSnapshot", function (accounts) {
         [0],
         "Voting Proposal",
         helpers.NULL_ADDRESS,
-        0,
         { from: accounts[2] }
       );
 
@@ -368,7 +364,6 @@ contract("ERC20GuildSnapshot", function (accounts) {
         [0],
         "Voting Proposal",
         helpers.NULL_ADDRESS,
-        0,
         { from: accounts[2] }
       );
 

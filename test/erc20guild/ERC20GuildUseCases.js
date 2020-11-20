@@ -48,7 +48,7 @@ contract("ERC20Guild use cases", function (accounts) {
     erc20Guild = await ERC20Guild.new();
     await erc20Guild.initialize(
       guildToken.address,
-      new BN("0"),
+      new BN("30"),
       new BN("200"),
       new BN("100"),
       "TestGuild"
@@ -89,7 +89,6 @@ contract("ERC20Guild use cases", function (accounts) {
       value: [0],
       description: DESCRIPTION,
       contentHash: helpers.NULL_ADDRESS,
-      extraTime: 0,
       account: accounts[3],
     };
   });

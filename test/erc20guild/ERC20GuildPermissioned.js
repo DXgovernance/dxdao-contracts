@@ -21,7 +21,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
     guildToken,
     erc20GuildPermissioned;
 
-  const minProposalTime = new BN("0");
+  const proposalTime = new BN("0");
   const votesForExecution = new BN("200");
   const votesForCreation = new BN("100");
 
@@ -43,7 +43,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
     erc20GuildPermissioned = await ERC20GuildPermissioned.new();
     await erc20GuildPermissioned.initialize(
       guildToken.address,
-      minProposalTime,
+      proposalTime,
       votesForExecution,
       votesForCreation,
       "TestGuild"
@@ -100,7 +100,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
         // Check existing values are as expected
         (
           await erc20GuildPermissioned.proposalTime()
-        ).should.be.bignumber.equal(minProposalTime);
+        ).should.be.bignumber.equal(proposalTime);
         (
           await erc20GuildPermissioned.votesForExecution()
         ).should.be.bignumber.equal(votesForExecution);
@@ -129,7 +129,6 @@ contract("ERC20GuildPermissioned", function (accounts) {
           value: ["0"],
           description: "Update config",
           contentHash: helpers.NULL_ADDRESS,
-          extraTime: "0",
           account: accounts[2],
         });
 
@@ -177,7 +176,6 @@ contract("ERC20GuildPermissioned", function (accounts) {
           value: ["0"],
           description: "Update config",
           contentHash: helpers.NULL_ADDRESS,
-          extraTime: "0",
           account: accounts[2],
         });
 
@@ -192,7 +190,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
         // Check existing values are as expected
         (
           await erc20GuildPermissioned.proposalTime()
-        ).should.be.bignumber.equal(minProposalTime);
+        ).should.be.bignumber.equal(proposalTime);
         (
           await erc20GuildPermissioned.votesForExecution()
         ).should.be.bignumber.equal(votesForExecution);
@@ -221,7 +219,6 @@ contract("ERC20GuildPermissioned", function (accounts) {
           value: ["0"],
           description: "Update config",
           contentHash: helpers.NULL_ADDRESS,
-          extraTime: "0",
           account: accounts[2],
         });
 
@@ -241,7 +238,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
         // Check values are still the same
         (
           await erc20GuildPermissioned.proposalTime()
-        ).should.be.bignumber.equal(minProposalTime);
+        ).should.be.bignumber.equal(proposalTime);
         (
           await erc20GuildPermissioned.votesForExecution()
         ).should.be.bignumber.equal(votesForExecution);
@@ -264,7 +261,6 @@ contract("ERC20GuildPermissioned", function (accounts) {
           value: ["0"],
           description: "random function call",
           contentHash: helpers.NULL_ADDRESS,
-          extraTime: "0",
           account: accounts[2],
         });
 
@@ -311,7 +307,6 @@ contract("ERC20GuildPermissioned", function (accounts) {
           value: ["0"],
           description: "Update config",
           contentHash: helpers.NULL_ADDRESS,
-          extraTime: "0",
           account: accounts[2],
         });
 

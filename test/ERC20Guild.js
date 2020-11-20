@@ -129,7 +129,6 @@ contract("ERC20Guild", function(accounts) {
         [ 0 ],
         "Voting Proposal",
         helpers.NULL_ADDRESS,
-        0,
         {from: accounts[ 3 ]}
       );
 
@@ -139,7 +138,7 @@ contract("ERC20Guild", function(accounts) {
 
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild});
 
-      await time.increase(time.duration.seconds(1));
+      await time.increase(time.duration.seconds(30));
       const receipt = await ierc20Guild.executeProposal(proposalIdGuild);
       expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
 
