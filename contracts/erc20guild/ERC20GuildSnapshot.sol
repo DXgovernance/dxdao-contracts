@@ -105,14 +105,11 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
         uint256[] memory _value,
         string memory _description,
         bytes memory _contentHash
-    ) public isInitialized {
-        bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, now, nonce));
-
-        // FIXME BlockRocket added - couldn't find any increment of _currentSnapshotId - presumed bug?
+    ) public isInitialized returns(bytes32) {
+        bytes32 proposalId = super.createProposal(_to, _data, _value, _description, _contentHash);
         _currentSnapshotId = _currentSnapshotId.add(1);
-
         proposalSnapshots[proposalId] = _currentSnapshotId;
-        super.createProposal(_to, _data, _value, _description, _contentHash);
+        return proposalId;
     }
 
     function _valueAt(

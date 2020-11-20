@@ -16,7 +16,6 @@ contract ERC20Guild {
 
     IERC20 public token;
     bool public initialized = false;
-    uint256 public nonce = 0;
     string public name;
     uint256 public proposalTime;
     uint256 public votesForExecution;
@@ -95,7 +94,7 @@ contract ERC20Guild {
         uint256[] memory _value,
         string memory _description,
         bytes memory _contentHash
-    ) public isInitialized {
+    ) public isInitialized returns(bytes32) {
         require(
             votesOf(msg.sender) >= votesForCreation,
             "ERC20Guild: Not enough tokens to create proposal"
@@ -111,7 +110,7 @@ contract ERC20Guild {
             "ERC20Guild: to, data value arrays cannot be empty"
         );
 
-        bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, now, nonce));
+        bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, now));
         proposals[proposalId] = Proposal(
             msg.sender,
             now,
@@ -124,9 +123,9 @@ contract ERC20Guild {
             votesOf(msg.sender),
             false
         );
-        nonce ++;
         
         emit ProposalCreated(proposalId);
+        return proposalId;
     }
     
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
