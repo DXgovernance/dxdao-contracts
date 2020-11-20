@@ -218,7 +218,7 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(creator, accounts[3]);
       const now = await time.latest();
       assert.equal(startTime.toString(), now.toString());
-      assert.equal(endTime.toString(), now.toString()); // minimumProposalTime and extra time are 0
+      assert.equal(endTime.toString(), now.toString()); // proposalTime and extra time are 0
       assert.deepEqual(to, [votingMachine.address]);
       assert.deepEqual(data, [genericCallDataVote]);
       assert.deepEqual(

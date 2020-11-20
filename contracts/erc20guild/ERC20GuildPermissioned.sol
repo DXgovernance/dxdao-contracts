@@ -17,17 +17,17 @@ contract ERC20GuildPermissioned is ERC20Guild {
 
     /// @dev Initilizer
     /// @param _token The address of the token to be used
-    /// @param _minimumProposalTime The minimun time for a proposal to be under votation
+    /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     function initialize(
         address _token,
-        uint256 _minimumProposalTime,
+        uint256 _proposalTime,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
         string memory _name
     ) public {
-        super.initialize(_token, _minimumProposalTime, _votesForExecution, _votesForCreation, _name);
+        super.initialize(_token, _proposalTime, _votesForExecution, _votesForCreation, _name);
         callPermissions[address(this)][bytes4(keccak256("setConfig(uint256,uint256,uint256)"))] = true;
         callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = true;
     }

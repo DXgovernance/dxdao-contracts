@@ -99,7 +99,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
       it("Proposal for updating the config is successful (setConfig)", async function () {
         // Check existing values are as expected
         (
-          await erc20GuildPermissioned.minimumProposalTime()
+          await erc20GuildPermissioned.proposalTime()
         ).should.be.bignumber.equal(minProposalTime);
         (
           await erc20GuildPermissioned.votesForExecution()
@@ -109,14 +109,14 @@ contract("ERC20GuildPermissioned", function (accounts) {
         ).should.be.bignumber.equal(votesForCreation);
 
         // Create proposal for updated values
-        const updatedMinimumProposalTime = new BN("1");
+        const updatedproposalTime = new BN("1");
         const updatedVotesForExecution = new BN("100");
         const updatedVotesForCreation = new BN("50");
         const setConfigFunctionEncoded = await new web3.eth.Contract(
           ERC20GuildPermissioned.abi
         ).methods
           .setConfig(
-            updatedMinimumProposalTime,
+            updatedproposalTime,
             updatedVotesForExecution,
             updatedVotesForCreation
           )
@@ -145,8 +145,8 @@ contract("ERC20GuildPermissioned", function (accounts) {
 
         // Check values are updated
         (
-          await erc20GuildPermissioned.minimumProposalTime()
-        ).should.be.bignumber.equal(updatedMinimumProposalTime);
+          await erc20GuildPermissioned.proposalTime()
+        ).should.be.bignumber.equal(updatedproposalTime);
         (
           await erc20GuildPermissioned.votesForExecution()
         ).should.be.bignumber.equal(updatedVotesForExecution);
@@ -191,7 +191,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
 
         // Check existing values are as expected
         (
-          await erc20GuildPermissioned.minimumProposalTime()
+          await erc20GuildPermissioned.proposalTime()
         ).should.be.bignumber.equal(minProposalTime);
         (
           await erc20GuildPermissioned.votesForExecution()
@@ -201,14 +201,14 @@ contract("ERC20GuildPermissioned", function (accounts) {
         ).should.be.bignumber.equal(votesForCreation);
 
         // Create proposal for updated values
-        const updatedMinimumProposalTime = new BN("1");
+        const updatedproposalTime = new BN("1");
         const updatedVotesForExecution = new BN("100");
         const updatedVotesForCreation = new BN("50");
         const setConfigFunctionEncoded = await new web3.eth.Contract(
           ERC20GuildPermissioned.abi
         ).methods
           .setConfig(
-            updatedMinimumProposalTime,
+            updatedproposalTime,
             updatedVotesForExecution,
             updatedVotesForCreation
           )
@@ -240,7 +240,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
 
         // Check values are still the same
         (
-          await erc20GuildPermissioned.minimumProposalTime()
+          await erc20GuildPermissioned.proposalTime()
         ).should.be.bignumber.equal(minProposalTime);
         (
           await erc20GuildPermissioned.votesForExecution()

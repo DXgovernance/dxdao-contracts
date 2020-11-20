@@ -17,14 +17,14 @@ contract ERC20GuildPayable is ERC20Guild {
 
     /// @dev Initilizer
     /// @param _token The address of the token to be used
-    /// @param _minimumProposalTime The minimun time for a proposal to be under votation
+    /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     function initialize(
         address _token,
-        uint256 _minimumProposalTime,
+        uint256 _proposalTime,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
         string memory _name,
@@ -33,26 +33,26 @@ contract ERC20GuildPayable is ERC20Guild {
     ) public {
         require(address(_token) != address(0), "ERC20Guild: token is the zero address");
 
-        super.initialize(_token, _minimumProposalTime, _votesForExecution, _votesForCreation, _name);
+        super.initialize(_token, _proposalTime, _votesForExecution, _votesForCreation, _name);
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
     }
 
     /// @dev Set the ERC20Guild configuration, can be called only executing a proposal 
     /// or when it is initilized
-    /// @param _minimumProposalTime The minimun time for a proposal to be under votation
+    /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     function setConfig(
-        uint256 _minimumProposalTime,
+        uint256 _proposalTime,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice
     ) public {
-        super.setConfig(_minimumProposalTime, _votesForExecution, _votesForCreation);
+        super.setConfig(_proposalTime, _votesForExecution, _votesForCreation);
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
     }

@@ -18,28 +18,28 @@ contract DXDGuild is ERC20GuildSnapshot, ERC20GuildPermissioned, Ownable {
     
     /// @dev Initilizer
     /// @param _token The address of the token to be used
-    /// @param _minimumProposalTime The minimun time for a proposal to be under votation
+    /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param votingMachine The voting machine where the guild will vote
     function initialize(
         address _token,
-        uint256 _minimumProposalTime,
+        uint256 _proposalTime,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
         address votingMachine
     ) public {
-        super.initialize(_token, _minimumProposalTime, _votesForExecution, _votesForCreation, "DXDGuild");
+        super.initialize(_token, _proposalTime, _votesForExecution, _votesForCreation, "DXDGuild");
         callPermissions[votingMachine][bytes4(keccak256("vote(bytes32,uint256,uint256,address)"))] = true;
     }
     
     /// @dev Set the ERC20Guild configuration, can be called only executing a proposal 
     /// or when it is initilized
-    /// @param _minimumProposalTime The minimun time for a proposal to be under votation
+    /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     function setConfig(
-        uint256 _minimumProposalTime,
+        uint256 _proposalTime,
         uint256 _votesForExecution,
         uint256 _votesForCreation
     ) public {
@@ -49,7 +49,7 @@ contract DXDGuild is ERC20GuildSnapshot, ERC20GuildPermissioned, Ownable {
       );
       
       initialized = true;
-      minimumProposalTime = _minimumProposalTime;
+      proposalTime = _proposalTime;
       votesForExecution = _votesForExecution;
       votesForCreation = _votesForCreation;
     }

@@ -18,7 +18,7 @@ contract ERC20Guild {
     bool public initialized = false;
     uint256 public nonce = 0;
     string public name;
-    uint256 public minimumProposalTime;
+    uint256 public proposalTime;
     uint256 public votesForExecution;
     uint256 public votesForCreation;
     
@@ -51,12 +51,12 @@ contract ERC20Guild {
 
     /// @dev Initializer
     /// @param erc20token The address of the token to be used
-    /// @param minimumProposalTime The minimum time for a proposal to be under votation
+    /// @param proposalTime The minimum time for a proposal to be under votation
     /// @param votesForExecution The token votes needed for a proposal to be executed
     /// @param votesForCreation The minimum balance of tokens needed to create a proposal
     function initialize(
         address erc20token,
-        uint256 minimumProposalTime,
+        uint256 proposalTime,
         uint256 votesForExecution,
         uint256 votesForCreation,
         string memory _name
@@ -65,21 +65,21 @@ contract ERC20Guild {
         
         name = _name;
         token = IERC20(erc20token);
-        _setConfig(minimumProposalTime, votesForExecution, votesForCreation);
+        _setConfig(proposalTime, votesForExecution, votesForCreation);
         initialized = true;
     }
     
     /// @dev Set the ERC20Guild configuration, can be called only executing a proposal
     /// or when it is initialized
-    /// @param minimumProposalTime The minimum time for a proposal to be under votation
+    /// @param proposalTime The minimum time for a proposal to be under votation
     /// @param votesForExecution The token votes needed for a proposal to be executed
     /// @param votesForCreation The minimum balance of tokens needed to create a proposal
     function setConfig(
-        uint256 minimumProposalTime,
+        uint256 proposalTime,
         uint256 votesForExecution,
         uint256 votesForCreation
     ) public {
-        _setConfig(minimumProposalTime, votesForExecution, votesForCreation);
+        _setConfig(proposalTime, votesForExecution, votesForCreation);
     }
 
     /// @dev Create a proposal with an static call data and extra information
@@ -88,7 +88,7 @@ contract ERC20Guild {
     /// @param _value The ETH value to be sent on each call to be executed
     /// @param _description A short description of the proposal
     /// @param _contentHash The content hash of the content reference of the proposal
-    /// @param _extraTime The extra time to be added to the minimumProposalTime
+    /// @param _extraTime The extra time to be added to the proposalTime
     /// for the proposal to be executed
     function createProposal(
         address[] memory _to,
@@ -117,7 +117,7 @@ contract ERC20Guild {
         proposals[proposalId] = Proposal(
             msg.sender,
             now,
-            now.add(minimumProposalTime).add(_extraTime),
+            now.add(proposalTime).add(_extraTime),
             _to,
             _data,
             _value,
@@ -173,11 +173,11 @@ contract ERC20Guild {
     }
 
     /// @dev Internal function to set the configuration of the guild
-    /// @param _minimumProposalTime The minimum time for a proposal to be under votation
+    /// @param _proposalTime The minimum time for a proposal to be under votation
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     function _setConfig(
-        uint256 _minimumProposalTime,
+        uint256 _proposalTime,
         uint256 _votesForExecution,
         uint256 _votesForCreation
     ) internal {
@@ -186,7 +186,7 @@ contract ERC20Guild {
           "ERC20Guild: Only callable by ERC20guild itself when initialized"
       );
 
-      minimumProposalTime = _minimumProposalTime;
+      proposalTime = _proposalTime;
       votesForExecution = _votesForExecution;
       votesForCreation = _votesForCreation;
     }

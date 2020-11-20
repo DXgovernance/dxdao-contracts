@@ -26,13 +26,13 @@ contract ERC20GuildLockable is ERC20Guild {
 
     /// @dev Initilizer
     /// @param _token The address of the token to be used
-    /// @param _minimumProposalTime The minimun time for a proposal to be under votation
+    /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function initialize(
         address _token,
-        uint256 _minimumProposalTime,
+        uint256 _proposalTime,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
         string  memory _name,
@@ -40,24 +40,24 @@ contract ERC20GuildLockable is ERC20Guild {
     ) public {
         require(_lockTime > 0, "ERC20Guild: lockTime should be higher than zero");
         
-        super.initialize(_token, _minimumProposalTime, _votesForExecution, _votesForCreation, _name);
+        super.initialize(_token, _proposalTime, _votesForExecution, _votesForCreation, _name);
         lockTime = _lockTime;
     }
 
     /// @dev Set the ERC20Guild configuration, can be called only executing a proposal 
     /// or when it is initilized
-    /// @param _minimumProposalTime The minimun time for a proposal to be under votation
+    /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function setConfig(
-        uint256 _minimumProposalTime,
+        uint256 _proposalTime,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
         uint256 _lockTime
     ) public {
         require(_lockTime > 0, "ERC20Guild: lockTime should be higher than zero");
-        super.setConfig(_minimumProposalTime, _votesForExecution, _votesForCreation);
+        super.setConfig(_proposalTime, _votesForExecution, _votesForCreation);
         lockTime = _lockTime;
     }
     
@@ -75,14 +75,10 @@ contract ERC20GuildLockable is ERC20Guild {
     /// @param amount The amount of tokens to be released
     function releaseTokens(uint256 amount) public {
         require(votesOf(msg.sender) >= amount, "ERC20GuildLockable: Unable to release more tokens than locked");
-
         require(tokensLocked[msg.sender].timestamp < block.timestamp, "ERC20GuildLockable: Tokens still locked");
-
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(amount);
         totalLocked = totalLocked.sub(amount);
-
         token.transfer(msg.sender, amount);
-
         emit TokensReleased(msg.sender, amount);
     }
     
