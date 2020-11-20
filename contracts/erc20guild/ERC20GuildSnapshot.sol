@@ -93,20 +93,20 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
     
     /// @dev Create a proposal with an static call data and extra information
     /// Saves the snapshot id at the time of the proposal creation
-    /// @param _to The receiver addresses of each call to be executed
-    /// @param _data The data to be executed on each call to be executed
-    /// @param _value The ETH value to be sent on each call to be executed
-    /// @param _description A short description of the proposal
-    /// @param _contentHash The content hash of the content reference of the proposal
+    /// @param to The receiver addresses of each call to be executed
+    /// @param data The data to be executed on each call to be executed
+    /// @param value The ETH value to be sent on each call to be executed
+    /// @param description A short description of the proposal
+    /// @param contentHash The content hash of the content reference of the proposal
     /// for teh proposal to be executed
     function createProposal(
-        address[] memory _to,
-        bytes[] memory _data,
-        uint256[] memory _value,
-        string memory _description,
-        bytes memory _contentHash
+        address[] memory to,
+        bytes[] memory data,
+        uint256[] memory value,
+        string memory description,
+        bytes memory contentHash
     ) public isInitialized returns(bytes32) {
-        bytes32 proposalId = super.createProposal(_to, _data, _value, _description, _contentHash);
+        bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
         _currentSnapshotId = _currentSnapshotId.add(1);
         proposalSnapshots[proposalId] = _currentSnapshotId;
         return proposalId;

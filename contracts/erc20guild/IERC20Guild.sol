@@ -21,11 +21,11 @@ interface IERC20Guild {
         uint256 _votesForCreation
     ) external;
     function createProposal(
-        address[] calldata _to,
-        bytes[] calldata _data,
-        uint256[] calldata _value,
-        string calldata _description,
-        bytes calldata _contentHash
+        address[] calldata to,
+        bytes[] calldata data,
+        uint256[] calldata value,
+        string calldata description,
+        bytes calldata contentHash
     ) external;
     function executeProposal(bytes32 proposalId) external;
     function setVote(bytes32 proposalId, uint256 amount) external;
