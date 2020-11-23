@@ -39,19 +39,9 @@ contract("ERC20GuildPayable", function (accounts) {
   let genericProposal;
 
   beforeEach(async function () {
-    const guildTokenBalances = [
-      new BN("1000"),
-      new BN("50"),
-      new BN("100"),
-      new BN("100"),
-      new BN("100"),
-      new BN("200"),
-    ];
+    const guildTokenBalances = [1000, 50, 100, 100, 100, 200];
 
-    guildToken = await createAndSetupGuildToken(
-      accounts.slice(0, 6),
-      guildTokenBalances
-    );
+    guildToken = await createAndSetupGuildToken(accounts.slice(0, 6), guildTokenBalances);
 
     actionMock = await ActionMock.new();
 
@@ -119,9 +109,7 @@ contract("ERC20GuildPayable", function (accounts) {
       let guildBalance = await tracker.delta();
       guildBalance.should.be.bignumber.equal(ZERO); // empty
 
-      await send.ether(accounts[5], erc20GuildPayable.address, VOTE_GAS, {
-        from: accounts[5],
-      });
+      await send.ether(accounts[5], erc20GuildPayable.address, VOTE_GAS, { from: accounts[5] });
 
       guildBalance = await tracker.delta();
       guildBalance.should.be.bignumber.equal(VOTE_GAS);
@@ -133,9 +121,7 @@ contract("ERC20GuildPayable", function (accounts) {
       const guildTracker = await balance.tracker(erc20GuildPayable.address);
 
       // send ether to cover gas
-      await send.ether(accounts[0], erc20GuildPayable.address, ether("10"), {
-        from: accounts[0],
-      });
+      await send.ether(accounts[0], erc20GuildPayable.address, ether("10"), { from: accounts[0] });
       let guildBalance = await guildTracker.delta();
       guildBalance.should.be.bignumber.equal(ether("10"));
 
@@ -196,15 +182,7 @@ contract("ERC20GuildPayable", function (accounts) {
 
     beforeEach(async function () {
       erc20GuildPayable = await ERC20GuildPayable.new();
-      await erc20GuildPayable.initialize(
-        guildToken.address,
-        30,
-        200,
-        100,
-        "TestGuild",
-        VOTE_GAS,
-        MAX_GAS_PRICE
-      );
+      await erc20GuildPayable.initialize(guildToken.address, 30, 200, 100, "TestGuild", VOTE_GAS, MAX_GAS_PRICE);
 
       const createDaoResult = await createDAO(erc20GuildPayable, accounts);
       daoCreator = createDaoResult.daoCreator;
@@ -241,9 +219,7 @@ contract("ERC20GuildPayable", function (accounts) {
       const guildTracker = await balance.tracker(erc20GuildPayable.address);
 
       // send ether to cover gas
-      await send.ether(accounts[0], erc20GuildPayable.address, ether("10"), {
-        from: accounts[0],
-      });
+      await send.ether(accounts[0], erc20GuildPayable.address, ether("10"), { from: accounts[0] });
       let guildBalance = await guildTracker.delta();
       guildBalance.should.be.bignumber.equal(ether("10"));
 

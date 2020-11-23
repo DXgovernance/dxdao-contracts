@@ -21,24 +21,13 @@ contract("ERC20GuildPermissioned", function (accounts) {
     guildToken,
     erc20GuildPermissioned;
 
-  const proposalTime = new BN("0");
-  const votesForExecution = new BN("200");
-  const votesForCreation = new BN("100");
+  const proposalTime = 0;
+  const votesForExecution = 200;
+  const votesForCreation = 100;
 
   beforeEach(async function () {
-    const guildTokenBalances = [
-      new BN("1000"),
-      new BN("50"),
-      new BN("100"),
-      new BN("100"),
-      new BN("100"),
-      new BN("200"),
-    ];
-
-    guildToken = await createAndSetupGuildToken(
-      accounts.slice(0, 6),
-      guildTokenBalances
-    );
+    const guildTokenBalances = [1000, 50, 100, 100, 100, 200];
+    guildToken = await createAndSetupGuildToken(accounts.slice(0, 6), guildTokenBalances);
 
     erc20GuildPermissioned = await ERC20GuildPermissioned.new();
     await erc20GuildPermissioned.initialize(
@@ -63,13 +52,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
       it("cannot initialize with zero address", async function () {
         try {
           const newGuild = await ERC20GuildPermissioned.new();
-          await newGuild.initialize(
-            helpers.NULL_ADDRESS,
-            new BN("10"),
-            new BN("10"),
-            new BN("10"),
-            "TestGuild"
-          );
+          await newGuild.initialize(helpers.NULL_ADDRESS, 10, 10, 10, "TestGuild");
           assert(false, "ERC20Guild: token is the zero address");
         } catch (error) {
           helpers.assertVMException(error);
@@ -78,13 +61,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
 
       it("cannot initialize twice", async function () {
         try {
-          await erc20GuildPermissioned.initialize(
-            guildToken.address,
-            new BN("10"),
-            new BN("10"),
-            new BN("10"),
-            "TestGuild"
-          );
+          await erc20GuildPermissioned.initialize(guildToken.address, 10, 10, 10, "TestGuild");
           assert(
             false,
             "ERC20Guild: Only callable by ERC20guild itself when initialized"
@@ -98,20 +75,17 @@ contract("ERC20GuildPermissioned", function (accounts) {
     describe("Proposals which use the call permissions defined by initialize()", function () {
       it("Proposal for updating the config is successful (setConfig)", async function () {
         // Check existing values are as expected
-        (
-          await erc20GuildPermissioned.proposalTime()
-        ).should.be.bignumber.equal(proposalTime);
-        (
-          await erc20GuildPermissioned.votesForExecution()
-        ).should.be.bignumber.equal(votesForExecution);
-        (
-          await erc20GuildPermissioned.votesForCreation()
-        ).should.be.bignumber.equal(votesForCreation);
+        (await erc20GuildPermissioned.proposalTime())
+          .should.be.bignumber.equal(new BN(proposalTime));
+        (await erc20GuildPermissioned.votesForExecution())
+          .should.be.bignumber.equal(new BN(votesForExecution));
+        (await erc20GuildPermissioned.votesForCreation())
+          .should.be.bignumber.equal(new BN(votesForCreation));
 
         // Create proposal for updated values
-        const updatedproposalTime = new BN("1");
-        const updatedVotesForExecution = new BN("100");
-        const updatedVotesForCreation = new BN("50");
+        const updatedproposalTime = 1;
+        const updatedVotesForExecution = 100;
+        const updatedVotesForCreation = 50;
         const setConfigFunctionEncoded = await new web3.eth.Contract(
           ERC20GuildPermissioned.abi
         ).methods
@@ -143,15 +117,12 @@ contract("ERC20GuildPermissioned", function (accounts) {
         await erc20GuildPermissioned.executeProposal(proposalIdGuild);
 
         // Check values are updated
-        (
-          await erc20GuildPermissioned.proposalTime()
-        ).should.be.bignumber.equal(updatedproposalTime);
-        (
-          await erc20GuildPermissioned.votesForExecution()
-        ).should.be.bignumber.equal(updatedVotesForExecution);
-        (
-          await erc20GuildPermissioned.votesForCreation()
-        ).should.be.bignumber.equal(updatedVotesForCreation);
+        (await erc20GuildPermissioned.proposalTime())
+          .should.be.bignumber.equal(new BN(updatedproposalTime));
+        (await erc20GuildPermissioned.votesForExecution())
+          .should.be.bignumber.equal(new BN(updatedVotesForExecution));
+        (await erc20GuildPermissioned.votesForCreation())
+          .should.be.bignumber.equal(new BN(updatedVotesForCreation));
       });
 
       it("Proposal for setting new method allowance for guild is successful (setAllowance)", async function () {
@@ -161,13 +132,11 @@ contract("ERC20GuildPermissioned", function (accounts) {
 
         const setAllowanceEncoded = await new web3.eth.Contract(
           ERC20GuildPermissioned.abi
-        ).methods
-          .setAllowance(
-            [erc20GuildPermissioned.address],
-            [setConfigSignature],
-            [false]
-          )
-          .encodeABI();
+        ).methods.setAllowance(
+          [erc20GuildPermissioned.address],
+          [setConfigSignature],
+          [false]
+        ).encodeABI();
 
         const proposalIdGuild = await createProposal({
           guild: erc20GuildPermissioned,
@@ -188,29 +157,24 @@ contract("ERC20GuildPermissioned", function (accounts) {
         await erc20GuildPermissioned.executeProposal(proposalIdGuild);
 
         // Check existing values are as expected
-        (
-          await erc20GuildPermissioned.proposalTime()
-        ).should.be.bignumber.equal(proposalTime);
-        (
-          await erc20GuildPermissioned.votesForExecution()
-        ).should.be.bignumber.equal(votesForExecution);
-        (
-          await erc20GuildPermissioned.votesForCreation()
-        ).should.be.bignumber.equal(votesForCreation);
+        (await erc20GuildPermissioned.proposalTime())
+          .should.be.bignumber.equal(new BN(proposalTime));
+        (await erc20GuildPermissioned.votesForExecution())
+          .should.be.bignumber.equal(new BN(votesForExecution));
+        (await erc20GuildPermissioned.votesForCreation())
+          .should.be.bignumber.equal(new BN(votesForCreation));
 
         // Create proposal for updated values
-        const updatedproposalTime = new BN("1");
-        const updatedVotesForExecution = new BN("100");
-        const updatedVotesForCreation = new BN("50");
+        const updatedproposalTime = 1;
+        const updatedVotesForExecution = 100;
+        const updatedVotesForCreation = 50;
         const setConfigFunctionEncoded = await new web3.eth.Contract(
           ERC20GuildPermissioned.abi
-        ).methods
-          .setConfig(
-            updatedproposalTime,
-            updatedVotesForExecution,
-            updatedVotesForCreation
-          )
-          .encodeABI();
+        ).methods.setConfig(
+          updatedproposalTime,
+          updatedVotesForExecution,
+          updatedVotesForCreation
+        ).encodeABI();
 
         const setConfigProposalIdGuild = await createProposal({
           guild: erc20GuildPermissioned,
@@ -236,23 +200,17 @@ contract("ERC20GuildPermissioned", function (accounts) {
         );
 
         // Check values are still the same
-        (
-          await erc20GuildPermissioned.proposalTime()
-        ).should.be.bignumber.equal(proposalTime);
-        (
-          await erc20GuildPermissioned.votesForExecution()
-        ).should.be.bignumber.equal(votesForExecution);
-        (
-          await erc20GuildPermissioned.votesForCreation()
-        ).should.be.bignumber.equal(votesForCreation);
+        (await erc20GuildPermissioned.proposalTime())
+          .should.be.bignumber.equal(new BN(proposalTime));
+        (await erc20GuildPermissioned.votesForExecution())
+          .should.be.bignumber.equal(new BN(votesForExecution));
+        (await erc20GuildPermissioned.votesForCreation())
+          .should.be.bignumber.equal(new BN(votesForCreation));
       });
 
       it("Reverts when trying to get the permissioned guild to call an unauthorized method", async function () {
-        const testWithNoargsEncoded = await new web3.eth.Contract(
-          ActionMock.abi
-        ).methods
-          .testWithNoargs()
-          .encodeABI();
+        const testWithNoargsEncoded = await new web3.eth.Contract(ActionMock.abi)
+          .methods.testWithNoargs().encodeABI();
 
         const proposalIdGuild = await createProposal({
           guild: erc20GuildPermissioned,
@@ -292,13 +250,11 @@ contract("ERC20GuildPermissioned", function (accounts) {
 
         const setAllowanceEncoded = await new web3.eth.Contract(
           ERC20GuildPermissioned.abi
-        ).methods
-          .setAllowance(
-            [erc20GuildPermissioned.address],
-            [setConfigSignature],
-            []
-          )
-          .encodeABI();
+        ).methods.setAllowance(
+          [erc20GuildPermissioned.address],
+          [setConfigSignature],
+          []
+        ).encodeABI();
 
         const proposalIdGuild = await createProposal({
           guild: erc20GuildPermissioned,

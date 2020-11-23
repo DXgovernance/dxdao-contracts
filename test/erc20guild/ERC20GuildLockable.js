@@ -27,31 +27,13 @@ contract("ERC20GuildLockable", function (accounts) {
 
   describe("ERC20GuildLockable", function () {
     beforeEach(async function () {
-      const guildTokenBalances = [
-        new BN("1000"),
-        new BN("50"),
-        new BN("100"),
-        new BN("100"),
-        new BN("100"),
-        new BN("200"),
-      ];
-
-      guildToken = await createAndSetupGuildToken(
-        accounts.slice(0, 6),
-        guildTokenBalances
-      );
+      const guildTokenBalances = [1000, 50, 100, 100, 100, 200];
+      guildToken = await createAndSetupGuildToken(accounts.slice(0, 6), guildTokenBalances);
 
       actionMock = await ActionMock.new();
 
       erc20GuildLockable = await ERC20GuildLockable.new();
-      await erc20GuildLockable.initialize(
-        guildToken.address,
-        new BN("30"),
-        new BN("200"),
-        new BN("100"),
-        "TestGuild",
-        TIMELOCK
-      );
+      await erc20GuildLockable.initialize(guildToken.address, 30, 200, 100, "TestGuild", TIMELOCK);
 
       // ensure lock time is set in the contract
       (await erc20GuildLockable.lockTime()).should.be.bignumber.equal(TIMELOCK);
@@ -88,57 +70,25 @@ contract("ERC20GuildLockable", function (accounts) {
     it("cannot initialize with zero locktime", async function () {
       erc20GuildLockable = await ERC20GuildLockable.new();
       await expectRevert(
-        erc20GuildLockable.initialize(
-          guildToken.address,
-          new BN("30"),
-          new BN("200"),
-          new BN("100"),
-          "TestGuild",
-          new BN("0")
-        ),
+        erc20GuildLockable.initialize(guildToken.address, 30, 200, 100, "TestGuild", 0),
         "ERC20Guild: lockTime should be higher than zero"
       );
     });
 
     it("cannot setConfig with zero locktime", async function () {
       erc20GuildLockable = await ERC20GuildLockable.new();
-      await erc20GuildLockable.initialize(
-        guildToken.address,
-        new BN("30"),
-        new BN("200"),
-        new BN("100"),
-        "TestGuild",
-        new BN("1000")
-      );
+      await erc20GuildLockable.initialize(guildToken.address, 30, 200, 100, "TestGuild", 1);
       await expectRevert(
-        erc20GuildLockable.setConfig(
-          new BN("30"),
-          new BN("200"),
-          new BN("100"),
-          new BN("0")
-        ),
+        erc20GuildLockable.setConfig(30, 200, 100, 0),
         "ERC20Guild: lockTime should be higher than zero"
       );
     });
 
     it("cannot setConfig externally", async function () {
       erc20GuildLockable = await ERC20GuildLockable.new();
-      await erc20GuildLockable.initialize(
-        guildToken.address,
-        new BN("30"),
-        new BN("200"),
-        new BN("100"),
-        "TestGuild",
-        new BN("1000")
-      );
-
+      await erc20GuildLockable.initialize(guildToken.address, 30, 200, 100, "TestGuild", 10);
       await expectRevert(
-        erc20GuildLockable.setConfig(
-          new BN("0"),
-          new BN("200"),
-          new BN("100"),
-          new BN("100")
-        ),
+        erc20GuildLockable.setConfig(0, 200, 100, 100),
         "ERC20Guild: Only callable by ERC20guild itself when initialized"
       );
     });
@@ -153,15 +103,11 @@ contract("ERC20GuildLockable", function (accounts) {
       expectEvent(tx, "TokensLocked", { voter: accounts[1], value: "50" });
 
       const now = await time.latest();
-      const { amount, timestamp } = await erc20GuildLockable.tokensLocked(
-        accounts[1]
-      );
+      const { amount, timestamp } = await erc20GuildLockable.tokensLocked(accounts[1]);
       amount.should.be.bignumber.equal("50");
       timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
 
-      const votes = await erc20GuildLockable.methods["votesOf(address)"](
-        accounts[1]
-      );
+      const votes = await erc20GuildLockable.methods["votesOf(address)"](accounts[1]);
       votes.should.be.bignumber.equal("50");
 
       const totalLocked = await erc20GuildLockable.totalLocked();
@@ -170,18 +116,12 @@ contract("ERC20GuildLockable", function (accounts) {
 
     it("can release tokens", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildLockable.address, new BN("50"), {
-        from: accounts[2],
-      });
+      await guildToken.approve(erc20GuildLockable.address, 50, { from: accounts[2] });
 
-      const txLock = await erc20GuildLockable.lockTokens(new BN("50"), {
-        from: accounts[2],
-      });
+      const txLock = await erc20GuildLockable.lockTokens(50, { from: accounts[2] });
       expectEvent(txLock, "TokensLocked", { voter: accounts[2], value: "50" });
 
-      let votes = await erc20GuildLockable.methods["votesOf(address)"](
-        accounts[2]
-      );
+      let votes = await erc20GuildLockable.methods["votesOf(address)"](accounts[2]);
       votes.should.be.bignumber.equal("50");
 
       let totalLocked = await erc20GuildLockable.totalLocked();
@@ -191,9 +131,7 @@ contract("ERC20GuildLockable", function (accounts) {
       await time.latest();
       await time.increase(TIMELOCK.add(new BN("1")));
 
-      const txRelease = await erc20GuildLockable.releaseTokens(new BN("50"), {
-        from: accounts[2],
-      });
+      const txRelease = await erc20GuildLockable.releaseTokens(50, { from: accounts[2] });
       expectEvent(txRelease, "TokensReleased", {
         voter: accounts[2],
         value: "50",
@@ -208,13 +146,9 @@ contract("ERC20GuildLockable", function (accounts) {
 
     it("cannot release more token than locked", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildLockable.address, new BN("50"), {
-        from: accounts[2],
-      });
+      await guildToken.approve(erc20GuildLockable.address, 50, { from: accounts[2] });
 
-      const txLock = await erc20GuildLockable.lockTokens(new BN("50"), {
-        from: accounts[2],
-      });
+      const txLock = await erc20GuildLockable.lockTokens(50, { from: accounts[2] });
       expectEvent(txLock, "TokensLocked", { voter: accounts[2], value: "50" });
 
       // move past the time lock period
@@ -222,24 +156,20 @@ contract("ERC20GuildLockable", function (accounts) {
       await time.increase(TIMELOCK.add(new BN("1")));
 
       await expectRevert(
-        erc20GuildLockable.releaseTokens(new BN("100"), { from: accounts[2] }),
+        erc20GuildLockable.releaseTokens(100, { from: accounts[2] }),
         "ERC20GuildLockable: Unable to release more tokens than locked"
       );
     });
 
     it("cannot release before end of timelock", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildLockable.address, new BN("50"), {
-        from: accounts[2],
-      });
+      await guildToken.approve(erc20GuildLockable.address, 50, { from: accounts[2] });
 
-      const txLock = await erc20GuildLockable.lockTokens(new BN("50"), {
-        from: accounts[2],
-      });
+      const txLock = await erc20GuildLockable.lockTokens(50, { from: accounts[2] });
       expectEvent(txLock, "TokensLocked", { voter: accounts[2], value: "50" });
 
       await expectRevert(
-        erc20GuildLockable.releaseTokens(new BN("25"), { from: accounts[2] }),
+        erc20GuildLockable.releaseTokens(25, { from: accounts[2] }),
         "ERC20GuildLockable: Tokens still locked"
       );
     });
@@ -249,20 +179,16 @@ contract("ERC20GuildLockable", function (accounts) {
       bal.should.be.bignumber.equal("100");
 
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildLockable.address, new BN("100"), {
-        from: accounts[2],
-      });
+      await guildToken.approve(erc20GuildLockable.address, 100, { from: accounts[2] });
 
-      const txLock = await erc20GuildLockable.lockTokens(new BN("100"), {
-        from: accounts[2],
-      });
+      const txLock = await erc20GuildLockable.lockTokens(100, { from: accounts[2] });
       expectEvent(txLock, "TokensLocked", { voter: accounts[2], value: "100" });
 
       bal = await guildToken.balanceOf(accounts[2]);
       bal.should.be.bignumber.equal("0");
 
       await expectRevert(
-        guildToken.transfer(accounts[0], new BN("50"), { from: accounts[2] }),
+        guildToken.transfer(accounts[0], 50, { from: accounts[2] }),
         "ERC20: transfer amount exceeds balance"
       );
     });

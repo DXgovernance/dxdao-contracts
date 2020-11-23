@@ -25,41 +25,21 @@ const ProposalState = {
 };
 
 contract("ERC20Guild", function (accounts) {
-  let walletScheme, daoCreator, org, actionMock, votingMachine, guildToken;
-
-  let erc20Guild, genericCallDataVote, callData, genericCallData, proposalId;
+  let walletScheme, daoCreator, org, actionMock, votingMachine, guildToken,
+    erc20Guild, genericCallDataVote, callData, genericCallData, proposalId, genericProposal;
 
   const TEST_HASH = helpers.SOME_HASH;
 
   const DESCRIPTION = "Voting Proposal";
 
-  let genericProposal;
-
   beforeEach(async function () {
-    const guildTokenBalances = [
-      new BN("1000"),
-      new BN("50"),
-      new BN("100"),
-      new BN("100"),
-      new BN("100"),
-      new BN("200"),
-    ];
-
-    guildToken = await createAndSetupGuildToken(
-      accounts.slice(0, 6),
-      guildTokenBalances
-    );
+    const guildTokenBalances = [1000, 50, 100, 100, 100, 200];
+    guildToken = await createAndSetupGuildToken(accounts.slice(0, 6), guildTokenBalances);
 
     actionMock = await ActionMock.new();
 
     erc20Guild = await ERC20Guild.new();
-    await erc20Guild.initialize(
-      guildToken.address,
-      new BN("30"),
-      new BN("200"),
-      new BN("100"),
-      "TestGuild"
-    );
+    await erc20Guild.initialize(guildToken.address, 30, 200, 100, "TestGuild");
 
     const createDaoResult = await createDAO(erc20Guild, accounts);
     daoCreator = createDaoResult.daoCreator;
@@ -85,9 +65,7 @@ contract("ERC20Guild", function (accounts) {
 
     genericCallDataVote = await new web3.eth.Contract(
       votingMachine.contract.abi
-    ).methods
-      .vote(proposalId, 1, 0, helpers.NULL_ADDRESS)
-      .encodeABI();
+    ).methods.vote(proposalId, 1, 0, helpers.NULL_ADDRESS).encodeABI();
 
     genericProposal = {
       guild: erc20Guild,
@@ -103,28 +81,15 @@ contract("ERC20Guild", function (accounts) {
   describe("ERC20Guild", function () {
     it("cannot initialize with zero address", async function () {
       const newGuild = await ERC20Guild.new();
-
       await expectRevert(
-        newGuild.initialize(
-          helpers.NULL_ADDRESS,
-          new BN("10"),
-          new BN("10"),
-          new BN("10"),
-          "TestGuild"
-        ),
+        newGuild.initialize(helpers.NULL_ADDRESS, 10, 10, 10, "TestGuild"),
         "ERC20Guild: token is the zero address"
       );
     });
 
     it("cannot initialize twice", async function () {
       await expectRevert(
-        erc20Guild.initialize(
-          guildToken.address,
-          new BN("10"),
-          new BN("10"),
-          new BN("10"),
-          "TestGuild"
-        ),
+        erc20Guild.initialize(guildToken.address, 10, 10, 10, "TestGuild"),
         "ERC20Guild: Only callable by ERC20guild itself when initialized"
       );
     });
@@ -215,10 +180,7 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(endTime.toString(), now.add(new BN("30")).toString()); // proposalTime and extra time are 0
       assert.deepEqual(to, [votingMachine.address]);
       assert.deepEqual(data, [genericCallDataVote]);
-      assert.deepEqual(
-        value.map((bn) => bn.toString()),
-        ["0"]
-      );
+      assert.deepEqual( value.map((bn) => bn.toString()), ["0"] );
       assert.equal(description, DESCRIPTION);
       assert.equal(contentHash, helpers.NULL_ADDRESS);
       totalVotes.should.be.bignumber.equal("100");
@@ -235,10 +197,7 @@ contract("ERC20Guild", function (accounts) {
     it("can read votesOf multiple accounts", async function () {
       const ierc20Guild = await IERC20Guild.at(erc20Guild.address);
 
-      const res = await ierc20Guild.methods["votesOf(address[])"]([
-        accounts[1],
-        accounts[2],
-      ]);
+      const res = await ierc20Guild.methods["votesOf(address[])"]([ accounts[1], accounts[2] ]);
       res[0].should.be.bignumber.equal("50");
       res[1].should.be.bignumber.equal("100");
     });
@@ -328,9 +287,7 @@ contract("ERC20Guild", function (accounts) {
 
       const proposalIdGuild = await createProposal(genericProposal);
 
-      const txVote = await ierc20Guild.setVote(proposalIdGuild, new BN("1"), {
-        from: accounts[5],
-      });
+      const txVote = await ierc20Guild.setVote(proposalIdGuild, 1, { from: accounts[5], });
       expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
@@ -356,9 +313,7 @@ contract("ERC20Guild", function (accounts) {
 
       const callDataVote = await new web3.eth.Contract(
         votingMachine.contract.abi
-      ).methods
-        .vote(proposalId, 1, 0, helpers.NULL_ADDRESS)
-        .encodeABI();
+      ).methods.vote(proposalId, 1, 0, helpers.NULL_ADDRESS).encodeABI();
 
       const customProposal = Object.assign({}, genericProposal);
       customProposal.data = [callDataVote];
@@ -367,7 +322,7 @@ contract("ERC20Guild", function (accounts) {
       await expectRevert(
         ierc20Guild.setVotes(
           [proposalIdGuild, proposalIdGuild],
-          [new BN("10")],
+          [10],
           { from: accounts[5] }
         ),
         "ERC20Guild: Wrong length of proposalIds or amounts"
@@ -387,17 +342,14 @@ contract("ERC20Guild", function (accounts) {
 
       const callDataVote = await new web3.eth.Contract(
         votingMachine.contract.abi
-      ).methods
-        .vote(proposalId, 1, 0, helpers.NULL_ADDRESS)
-        .encodeABI();
+      ).methods.vote(proposalId, 1, 0, helpers.NULL_ADDRESS).encodeABI();
 
       const customProposal = Object.assign({}, genericProposal);
       customProposal.data = [callDataVote];
       const proposalIdGuild = await createProposal(customProposal);
 
       const txVote = await ierc20Guild.setVotes(
-        [proposalIdGuild, proposalIdGuild],
-        [10, 10],
+        [proposalIdGuild, proposalIdGuild], [10, 10],
         { from: accounts[5] }
       );
       expect(txVote.receipt.gasUsed).to.be.below(80000);
@@ -411,7 +363,7 @@ contract("ERC20Guild", function (accounts) {
 
       const proposalIdGuild = await createProposal(genericProposal);
 
-      const txVote = await ierc20Guild.setVote(proposalIdGuild, new BN("200"), {
+      const txVote = await ierc20Guild.setVote(proposalIdGuild, 200, {
         from: accounts[5],
       });
       expect(txVote.receipt.gasUsed).to.be.below(80000);
@@ -428,9 +380,7 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(executed, true);
 
       await expectRevert(
-        ierc20Guild.setVote(proposalIdGuild, new BN("10000"), {
-          from: accounts[5],
-        }),
+        ierc20Guild.setVote(proposalIdGuild, 10000, { from: accounts[5] }),
         "ERC20Guild: Proposal already executed"
       );
     });
@@ -441,9 +391,7 @@ contract("ERC20Guild", function (accounts) {
       const proposalIdGuild = await createProposal(genericProposal);
 
       await expectRevert(
-        ierc20Guild.setVote(proposalIdGuild, new BN("10000"), {
-          from: accounts[5],
-        }),
+        ierc20Guild.setVote(proposalIdGuild, 10000, { from: accounts[5] }),
         "ERC20Guild: Invalid amount"
       );
     });
@@ -453,17 +401,13 @@ contract("ERC20Guild", function (accounts) {
 
       const proposalIdGuild = await createProposal(genericProposal);
 
-      const txVoteAdd = await ierc20Guild.setVote(
-        proposalIdGuild,
-        new BN("200"),
-        { from: accounts[5] }
-      );
+      const txVoteAdd = await ierc20Guild.setVote( proposalIdGuild, 200, { from: accounts[5] } );
       expect(txVoteAdd.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVoteAdd, "VoteAdded", {
         proposalId: proposalIdGuild,
         voter: accounts[5],
-        tokens: new BN("200"),
+        tokens: "200",
       });
       let totalVotes = await ierc20Guild.getProposalVotes(
         proposalIdGuild,
@@ -471,22 +415,15 @@ contract("ERC20Guild", function (accounts) {
       );
       totalVotes.should.be.bignumber.equal("200");
 
-      const txVoteRemove = await ierc20Guild.setVote(
-        proposalIdGuild,
-        new BN("100"),
-        { from: accounts[5] }
-      );
+      const txVoteRemove = await ierc20Guild.setVote( proposalIdGuild, 100, { from: accounts[5] } );
       expect(txVoteRemove.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVoteRemove, "VoteRemoved", {
         proposalId: proposalIdGuild,
         voter: accounts[5],
-        tokens: new BN("100"),
+        tokens: "100",
       });
-      totalVotes = await ierc20Guild.getProposalVotes(
-        proposalIdGuild,
-        accounts[5]
-      );
+      totalVotes = await ierc20Guild.getProposalVotes(proposalIdGuild, accounts[5]);
       totalVotes.should.be.bignumber.equal("100");
     });
   });

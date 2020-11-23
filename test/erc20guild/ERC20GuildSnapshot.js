@@ -16,22 +16,23 @@ const {
 
 require("chai").should();
 
+const { createAndSetupGuildToken } = require("../helpers/guild");
+
 contract("ERC20GuildSnapshot", function (accounts) {
   let walletScheme, daoCreator, org, actionMock, votingMachine, guildToken;
 
   const TEST_HASH = helpers.SOME_HASH;
   const TIMELOCK = new BN("60");
 
-  beforeEach(async function () {
-    guildToken = await ERC20Mock.new(accounts[0], new BN("1000"));
-    guildToken.transfer(accounts[1], new BN("50"));
-    guildToken.transfer(accounts[2], new BN("100"));
-    guildToken.transfer(accounts[3], new BN("100"));
-    guildToken.transfer(accounts[4], new BN("100"));
-    guildToken.transfer(accounts[5], new BN("200"));
+  beforeEach(async function () {  
+    const guildTokenBalances = [1000, 50, 100, 100, 100, 200];
+    guildToken = await createAndSetupGuildToken(
+      accounts.slice(0, 6),
+      guildTokenBalances
+    );
 
     actionMock = await ActionMock.new();
-    const orgToken = await ERC20Mock.new(accounts[0], new BN("0"));
+    const orgToken = await ERC20Mock.new(accounts[0], 0);
     const controllerCreator = await DxControllerCreator.new({
       gas: constants.ARC_GAS_LIMIT,
     });
@@ -55,14 +56,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       proposalId;
     beforeEach(async function () {
       erc20GuildSnapshot = await ERC20GuildSnapshot.new();
-      await erc20GuildSnapshot.initialize(
-        guildToken.address,
-        new BN("30"),
-        new BN("200"),
-        new BN("100"),
-        "TestGuild",
-        TIMELOCK
-      );
+      await erc20GuildSnapshot.initialize(guildToken.address, 30, 200, 100, "TestGuild", TIMELOCK);
 
       // ensure lock time is set in the contract
       (await erc20GuildSnapshot.lockTime()).should.be.bignumber.equal(TIMELOCK);
@@ -121,50 +115,37 @@ contract("ERC20GuildSnapshot", function (accounts) {
 
     it("can lock tokens and check snapshot", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildSnapshot.address, new BN("50"), {
-        from: accounts[1],
-      });
+      await guildToken.approve(erc20GuildSnapshot.address, 50, {from: accounts[1]});
 
-      const tx = await erc20GuildSnapshot.lockTokens(new BN("50"), {
-        from: accounts[1],
-      });
+      const tx = await erc20GuildSnapshot.lockTokens(50, {from: accounts[1]});
       expectEvent(tx, "TokensLocked", {
         voter: accounts[1],
-        value: new BN("50"),
+        value: "50",
       });
 
       const now = await time.latest();
       const { amount, timestamp } = await erc20GuildSnapshot.tokensLocked(
         accounts[1]
       );
-      amount.should.be.bignumber.equal("50");
+      amount.should.be.bignumber.equal(new BN("50"));
       timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
 
       const votes = await erc20GuildSnapshot.methods["votesOf(address)"](
         accounts[1]
       );
-      votes.should.be.bignumber.equal("50");
+      votes.should.be.bignumber.equal(new BN("50"));
 
       const totalLocked = await erc20GuildSnapshot.totalLocked();
-      totalLocked.should.be.bignumber.equal("50");
+      totalLocked.should.be.bignumber.equal(new BN("50"));
     });
 
     it("can lock tokens for multiple accounts and check snapshot", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildSnapshot.address, new BN("100"), {
-        from: accounts[2],
-      });
-      await guildToken.approve(erc20GuildSnapshot.address, new BN("100"), {
-        from: accounts[3],
-      });
+      await guildToken.approve(erc20GuildSnapshot.address, 100, { from: accounts[2] });
+      await guildToken.approve(erc20GuildSnapshot.address, 100, { from: accounts[3] });
 
-      let tx = await erc20GuildSnapshot.lockTokens(new BN("100"), {
-        from: accounts[2],
-      });
-      expectEvent(tx, "TokensLocked", {
-        voter: accounts[2],
-        value: new BN("100"),
-      });
+      let tx = await erc20GuildSnapshot.lockTokens(100, { from: accounts[2], });
+      expectEvent(tx, "TokensLocked", { voter: accounts[2], value: "100" });
 
       await erc20GuildSnapshot.createProposal(
         [votingMachine.address],
@@ -175,13 +156,8 @@ contract("ERC20GuildSnapshot", function (accounts) {
         { from: accounts[2] }
       );
 
-      tx = await erc20GuildSnapshot.lockTokens(new BN("100"), {
-        from: accounts[3],
-      });
-      expectEvent(tx, "TokensLocked", {
-        voter: accounts[3],
-        value: new BN("100"),
-      });
+      tx = await erc20GuildSnapshot.lockTokens(100, { from: accounts[3], });
+      expectEvent(tx, "TokensLocked", { voter: accounts[3], value: "100" });
 
       await erc20GuildSnapshot.createProposal(
         [votingMachine.address],
@@ -194,73 +170,57 @@ contract("ERC20GuildSnapshot", function (accounts) {
 
       const res = await erc20GuildSnapshot.methods[
         "votesOfAt(address[],uint256[])"
-      ]([accounts[2], accounts[3]], [new BN("1"), new BN("2")]);
-      res[0].should.be.bignumber.equal("100");
-      res[1].should.be.bignumber.equal("100");
+      ]([accounts[2], accounts[3]], [1, 2]);
+      res[0].should.be.bignumber.equal(new BN("100"));
+      res[1].should.be.bignumber.equal(new BN("100"));
     });
 
     it("can lock tokens and release tokens", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildSnapshot.address, new BN("50"), {
+      await guildToken.approve(erc20GuildSnapshot.address, 50, {
         from: accounts[1],
       });
 
-      const tx = await erc20GuildSnapshot.lockTokens(new BN("50"), {
-        from: accounts[1],
-      });
-      expectEvent(tx, "TokensLocked", {
-        voter: accounts[1],
-        value: new BN("50"),
-      });
+      const tx = await erc20GuildSnapshot.lockTokens(50, { from: accounts[1], });
+      expectEvent(tx, "TokensLocked", { voter: accounts[1], value: "50", });
 
       const now = await time.latest();
-      const { amount, timestamp } = await erc20GuildSnapshot.tokensLocked(
-        accounts[1]
-      );
-      amount.should.be.bignumber.equal("50");
+      const { amount, timestamp } = await erc20GuildSnapshot.tokensLocked( accounts[1] );
+      amount.should.be.bignumber.equal(new BN("50"));
       timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
 
       const votes = await erc20GuildSnapshot.methods["votesOf(address)"](
         accounts[1]
       );
-      votes.should.be.bignumber.equal("50");
+      votes.should.be.bignumber.equal(new BN("50"));
 
       const totalLocked = await erc20GuildSnapshot.totalLocked();
-      totalLocked.should.be.bignumber.equal("50");
+      totalLocked.should.be.bignumber.equal(new BN("50"));
 
       await time.latest();
       await time.increase(TIMELOCK.add(new BN("1")));
 
-      await erc20GuildSnapshot.releaseTokens(new BN("50"), {
+      await erc20GuildSnapshot.releaseTokens(50, {
         from: accounts[1],
       });
     });
 
     it("can lock tokens and create proposal", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildSnapshot.address, new BN("100"), {
-        from: accounts[2],
-      });
+      await guildToken.approve(erc20GuildSnapshot.address, 100, { from: accounts[2], });
 
-      const tx = await erc20GuildSnapshot.lockTokens(new BN("100"), {
-        from: accounts[2],
-      });
-      expectEvent(tx, "TokensLocked", {
-        voter: accounts[2],
-        value: new BN("100"),
-      });
+      const tx = await erc20GuildSnapshot.lockTokens(100, { from: accounts[2], });
+      expectEvent(tx, "TokensLocked", { voter: accounts[2], value: "100" });
 
       const now = await time.latest();
-      const { amount, timestamp } = await erc20GuildSnapshot.tokensLocked(
-        accounts[2]
-      );
-      amount.should.be.bignumber.equal("100");
+      const { amount, timestamp } = await erc20GuildSnapshot.tokensLocked( accounts[2] );
+      amount.should.be.bignumber.equal(new BN("100"));
       timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
 
       const votes = await erc20GuildSnapshot.methods["votesOf(address)"](
         accounts[2]
       );
-      votes.should.be.bignumber.equal("100");
+      votes.should.be.bignumber.equal(new BN("100"));
 
       await erc20GuildSnapshot.createProposal(
         [votingMachine.address],
@@ -272,39 +232,34 @@ contract("ERC20GuildSnapshot", function (accounts) {
       );
 
       const totalLockedAt = await erc20GuildSnapshot.totalLockedAt(1);
-      totalLockedAt.should.be.bignumber.equal("100");
+      totalLockedAt.should.be.bignumber.equal(new BN("100"));
 
       const votesOfAt = await erc20GuildSnapshot.methods[
         "votesOfAt(address,uint256)"
-      ](accounts[2], new BN("1"));
-      votesOfAt.should.be.bignumber.equal("100");
+      ](accounts[2], 1);
+      votesOfAt.should.be.bignumber.equal(new BN("100"));
     });
 
     it("can not lock tokens, create proposal and setVote", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildSnapshot.address, new BN("100"), {
+      await guildToken.approve(erc20GuildSnapshot.address, 100, {
         from: accounts[2],
       });
 
-      const tx = await erc20GuildSnapshot.lockTokens(new BN("100"), {
-        from: accounts[2],
-      });
-      expectEvent(tx, "TokensLocked", {
-        voter: accounts[2],
-        value: new BN("100"),
-      });
+      const tx = await erc20GuildSnapshot.lockTokens(100, { from: accounts[2], });
+      expectEvent(tx, "TokensLocked", { voter: accounts[2], value: "100", });
 
       const now = await time.latest();
       const { amount, timestamp } = await erc20GuildSnapshot.tokensLocked(
         accounts[2]
       );
-      amount.should.be.bignumber.equal("100");
+      amount.should.be.bignumber.equal(new BN("100"));
       timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
 
       const votes = await erc20GuildSnapshot.methods["votesOf(address)"](
         accounts[2]
       );
-      votes.should.be.bignumber.equal("100");
+      votes.should.be.bignumber.equal(new BN("100"));
 
       const txGuild = await erc20GuildSnapshot.createProposal(
         [votingMachine.address],
@@ -315,13 +270,13 @@ contract("ERC20GuildSnapshot", function (accounts) {
         { from: accounts[2] }
       );
 
-      const totalLockedAt = await erc20GuildSnapshot.totalLockedAt(new BN("1"));
-      totalLockedAt.should.be.bignumber.equal("100");
+      const totalLockedAt = await erc20GuildSnapshot.totalLockedAt(1);
+      totalLockedAt.should.be.bignumber.equal(new BN("100"));
 
       const votesOfAt = await erc20GuildSnapshot.methods[
         "votesOfAt(address,uint256)"
-      ](accounts[2], new BN("1"));
-      votesOfAt.should.be.bignumber.equal("100");
+      ](accounts[2], 1);
+      votesOfAt.should.be.bignumber.equal(new BN("100"));
 
       const proposalIdGuild = await helpers.getValueFromLogs(
         txGuild,
@@ -329,26 +284,22 @@ contract("ERC20GuildSnapshot", function (accounts) {
         "ProposalCreated"
       );
 
-      const txVote = await erc20GuildSnapshot.setVote(
-        proposalIdGuild,
-        new BN("10"),
-        { from: accounts[2] }
-      );
+      const txVote = await erc20GuildSnapshot.setVote( proposalIdGuild, 10, { from: accounts[2] } );
       expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
     });
 
     it("can not check votesOfAt for invalid nonexistent ID", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildSnapshot.address, new BN("100"), {
+      await guildToken.approve(erc20GuildSnapshot.address, 100, {
         from: accounts[2],
       });
 
-      const tx = await erc20GuildSnapshot.lockTokens(new BN("100"), {
+      const tx = await erc20GuildSnapshot.lockTokens(100, {
         from: accounts[2],
       });
       expectEvent(tx, "TokensLocked", {
         voter: accounts[2],
-        value: new BN("100"),
+        value: "100",
       });
 
       const now = await time.latest();
@@ -370,7 +321,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       await expectRevert(
         erc20GuildSnapshot.methods["votesOfAt(address,uint256)"](
           accounts[2],
-          new BN("44")
+          44
         ),
         "ERC20Snapshot: nonexistent id"
       );
@@ -378,16 +329,16 @@ contract("ERC20GuildSnapshot", function (accounts) {
 
     it("can check votesOfAt for invalid nonexistent ID", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildSnapshot.address, new BN("100"), {
+      await guildToken.approve(erc20GuildSnapshot.address, 100, {
         from: accounts[2],
       });
 
-      const tx = await erc20GuildSnapshot.lockTokens(new BN("100"), {
+      const tx = await erc20GuildSnapshot.lockTokens(100, {
         from: accounts[2],
       });
       expectEvent(tx, "TokensLocked", {
         voter: accounts[2],
-        value: new BN("100"),
+        value: "100",
       });
 
       const now = await time.latest();
@@ -398,10 +349,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
 
       await expectRevert(
-        erc20GuildSnapshot.methods["votesOfAt(address,uint256)"](
-          accounts[2],
-          new BN("0")
-        ),
+        erc20GuildSnapshot.methods["votesOfAt(address,uint256)"]( accounts[2], 0),
         "ERC20Snapshot: id is 0"
       );
     });

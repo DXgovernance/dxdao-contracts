@@ -29,14 +29,7 @@ contract("ERC20Guild use cases", function (accounts) {
   let genericProposal;
 
   beforeEach(async function () {
-    const guildTokenBalances = [
-      new BN("1000"),
-      new BN("50"),
-      new BN("100"),
-      new BN("100"),
-      new BN("100"),
-      new BN("200"),
-    ];
+    const guildTokenBalances = [1000, 50, 100, 100, 100, 200];
 
     guildToken = await createAndSetupGuildToken(
       accounts.slice(0, 6),
@@ -46,13 +39,7 @@ contract("ERC20Guild use cases", function (accounts) {
     actionMock = await ActionMock.new();
 
     erc20Guild = await ERC20Guild.new();
-    await erc20Guild.initialize(
-      guildToken.address,
-      new BN("30"),
-      new BN("200"),
-      new BN("100"),
-      "TestGuild"
-    );
+    await erc20Guild.initialize(guildToken.address, 30, 200, 100, "TestGuild");
 
     const createDaoResult = await createDAO(erc20Guild, accounts);
     daoCreator = createDaoResult.daoCreator;
@@ -109,40 +96,40 @@ contract("ERC20Guild use cases", function (accounts) {
       const txVoteOne = await setXVotesOnProposal({
         guild: ierc20Guild,
         proposalId: proposalIdOne,
-        votes: new BN("10"),
+        votes: "10",
         account: accounts[4],
       });
 
       const txVoteTwo = await setXVotesOnProposal({
         guild: ierc20Guild,
         proposalId: proposalIdTwo,
-        votes: new BN("5"),
+        votes: "5",
         account: accounts[4],
       });
 
       const txVoteThree = await setXVotesOnProposal({
         guild: ierc20Guild,
         proposalId: proposalIdOne,
-        votes: new BN("1"),
+        votes: "1",
         account: accounts[3],
       });
 
       expectEvent(txVoteOne, "VoteAdded", {
         proposalId: proposalIdOne,
         voter: accounts[4],
-        tokens: new BN("10"),
+        tokens: "10"
       });
 
       expectEvent(txVoteTwo, "VoteAdded", {
         proposalId: proposalIdTwo,
         voter: accounts[4],
-        tokens: new BN("5"),
+        tokens: "5"
       });
 
       expectEvent(txVoteThree, "VoteAdded", {
         proposalId: proposalIdOne,
         voter: accounts[3],
-        tokens: new BN("1"),
+        tokens: "1"
       });
 
       let proposalOne = await ierc20Guild.getProposal(proposalIdOne);
@@ -154,14 +141,14 @@ contract("ERC20Guild use cases", function (accounts) {
       const txVoteFour = await setXVotesOnProposal({
         guild: ierc20Guild,
         proposalId: proposalIdOne,
-        votes: new BN("0"),
+        votes: "0",
         account: accounts[4],
       });
 
       expectEvent(txVoteFour, "VoteRemoved", {
         proposalId: proposalIdOne,
         voter: accounts[4],
-        tokens: new BN("10"),
+        tokens: "10"
       });
 
       proposalOne = await ierc20Guild.getProposal(proposalIdOne);

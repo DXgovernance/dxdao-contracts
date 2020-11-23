@@ -22,30 +22,14 @@ contract("ERC20GuildSigned", function (accounts) {
   const DESCRIPTION = "Voting Proposal";
 
   beforeEach(async function () {
-    const guildTokenBalances = [
-      new BN("1000"),
-      new BN("50"),
-      new BN("100"),
-      new BN("100"),
-      new BN("100"),
-      new BN("200"),
-    ];
+    const guildTokenBalances = [1000, 50, 100, 100, 100, 200];
 
-    guildToken = await createAndSetupGuildToken(
-      accounts.slice(0, 6),
-      guildTokenBalances
-    );
+    guildToken = await createAndSetupGuildToken(accounts.slice(0, 6), guildTokenBalances);
 
     actionMock = await ActionMock.new();
 
     erc20GuildSigned = await ERC20GuildSigned.new();
-    await erc20GuildSigned.initialize(
-      guildToken.address,
-      new BN("30"),
-      new BN("200"),
-      new BN("100"),
-      "TestGuild"
-    );
+    await erc20GuildSigned.initialize(guildToken.address,30, 200, 100, "TestGuild");
 
     const createDaoResult = await createDAO(erc20GuildSigned, accounts);
     daoCreator = createDaoResult.daoCreator;
@@ -78,11 +62,7 @@ contract("ERC20GuildSigned", function (accounts) {
 
   describe("ERC20GuildSigned", function () {
     it("can hash a vote", async function () {
-      const hashedVote = await erc20GuildSigned.hashVote(
-        accounts[1],
-        web3.utils.asciiToHex("abc123"),
-        new BN("50")
-      );
+      const hashedVote = await erc20GuildSigned.hashVote(accounts[1], web3.utils.asciiToHex("abc123"), 50);
       hashedVote.should.exist;
     });
 
@@ -101,11 +81,7 @@ contract("ERC20GuildSigned", function (accounts) {
         "proposalId",
         "ProposalCreated"
       );
-      const hashedVote = await erc20GuildSigned.hashVote(
-        accounts[1],
-        proposalIdGuild,
-        new BN("50")
-      );
+      const hashedVote = await erc20GuildSigned.hashVote(accounts[1], proposalIdGuild, 50);
       (await erc20GuildSigned.signedVotes(hashedVote)).should.be.equal(false);
 
       const signature = fixSignature(
@@ -116,10 +92,7 @@ contract("ERC20GuildSigned", function (accounts) {
       );
 
       const txVote = await erc20GuildSigned.setVote(
-        proposalIdGuild,
-        new BN("50"),
-        accounts[1],
-        signature,
+        proposalIdGuild, 50, accounts[1], signature,
         { from: accounts[1] }
       );
 
@@ -138,22 +111,10 @@ contract("ERC20GuildSigned", function (accounts) {
         { from: accounts[3] }
       );
 
-      const proposalIdGuild = await helpers.getValueFromLogs(
-        txGuild,
-        "proposalId",
-        "ProposalCreated"
-      );
+      const proposalIdGuild = await helpers.getValueFromLogs(txGuild, "proposalId", "ProposalCreated");
 
-      const hashedVote1 = await erc20GuildSigned.hashVote(
-        accounts[1],
-        proposalIdGuild,
-        new BN("50")
-      );
-      const hashedVote2 = await erc20GuildSigned.hashVote(
-        accounts[2],
-        proposalIdGuild,
-        new BN("50")
-      );
+      const hashedVote1 = await erc20GuildSigned.hashVote(accounts[1], proposalIdGuild, 50);
+      const hashedVote2 = await erc20GuildSigned.hashVote(accounts[2], proposalIdGuild, 50);
 
       const signature1 = fixSignature(
         await web3.eth.sign(hashedVote1, accounts[1])
@@ -196,11 +157,7 @@ contract("ERC20GuildSigned", function (accounts) {
         "proposalId",
         "ProposalCreated"
       );
-      const hashedVote = await erc20GuildSigned.hashVote(
-        accounts[1],
-        proposalIdGuild,
-        new BN("50")
-      );
+      const hashedVote = await erc20GuildSigned.hashVote(accounts[1], proposalIdGuild, 50);
       (await erc20GuildSigned.signedVotes(hashedVote)).should.be.equal(false);
 
       const signature = fixSignature(
@@ -212,7 +169,7 @@ contract("ERC20GuildSigned", function (accounts) {
 
       const txVote = await erc20GuildSigned.setVote(
         proposalIdGuild,
-        new BN("50"),
+        50,
         accounts[1],
         signature,
         { from: accounts[1] }
@@ -223,7 +180,7 @@ contract("ERC20GuildSigned", function (accounts) {
       await expectRevert(
         erc20GuildSigned.setVote(
           proposalIdGuild,
-          new BN("50"),
+          50,
           accounts[1],
           signature,
           { from: accounts[1] }
@@ -247,11 +204,7 @@ contract("ERC20GuildSigned", function (accounts) {
         "proposalId",
         "ProposalCreated"
       );
-      const hashedVote = await erc20GuildSigned.hashVote(
-        accounts[1],
-        proposalIdGuild,
-        new BN("50")
-      );
+      const hashedVote = await erc20GuildSigned.hashVote(accounts[1], proposalIdGuild, 50);
       (await erc20GuildSigned.signedVotes(hashedVote)).should.be.equal(false);
 
       const signature = fixSignature(
@@ -265,7 +218,7 @@ contract("ERC20GuildSigned", function (accounts) {
       await expectRevert(
         erc20GuildSigned.setVote(
           proposalIdGuild,
-          new BN("50"),
+          50,
           accounts[1],
           signature,
           { from: accounts[1] }
@@ -276,21 +229,12 @@ contract("ERC20GuildSigned", function (accounts) {
 
     it("cannot set a vote if not initialised", async function () {
       erc20GuildSigned = await ERC20GuildSigned.new();
-      const hashedVote = await erc20GuildSigned.hashVote(
-        accounts[1],
-        web3.utils.asciiToHex("abc123"),
-        new BN("50")
-      );
-      const signature = fixSignature(
-        await web3.eth.sign(hashedVote, accounts[1])
-      );
+      const hashedVote = await erc20GuildSigned.hashVote(accounts[1], web3.utils.asciiToHex("abc123"), 50);
+      const signature = fixSignature(await web3.eth.sign(hashedVote, accounts[1]));
 
       await expectRevert(
         erc20GuildSigned.setVote(
-          web3.utils.asciiToHex("abc123"),
-          new BN("50"),
-          accounts[1],
-          signature,
+          web3.utils.asciiToHex("abc123"), 50, accounts[1], signature,
           { from: accounts[1] }
         ),
         "ERC20Guild: Not initilized"
