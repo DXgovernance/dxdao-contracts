@@ -60,7 +60,7 @@ contract("ERC20Guild", function(accounts) {
     let erc20Guild;
     beforeEach( async function(){
       erc20Guild = await ERC20Guild.new();
-      await erc20Guild.initialize(guildToken.address, 0, 200, 100, "TestGuild");
+      await erc20Guild.initialize(guildToken.address, 30, 200, 100, "TestGuild");
       
       org = await helpers.setupOrganizationWithArrays(
         daoCreator,

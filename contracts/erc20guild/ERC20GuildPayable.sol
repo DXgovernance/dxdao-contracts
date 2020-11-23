@@ -32,7 +32,6 @@ contract ERC20GuildPayable is ERC20Guild {
         uint256 _maxGasPrice
     ) public {
         require(address(_token) != address(0), "ERC20Guild: token is the zero address");
-
         super.initialize(_token, _proposalTime, _votesForExecution, _votesForCreation, _name);
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;

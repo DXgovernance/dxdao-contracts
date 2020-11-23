@@ -39,7 +39,6 @@ contract ERC20GuildLockable is ERC20Guild {
         uint256 _lockTime
     ) public {
         require(_lockTime > 0, "ERC20Guild: lockTime should be higher than zero");
-        
         super.initialize(_token, _proposalTime, _votesForExecution, _votesForCreation, _name);
         lockTime = _lockTime;
     }

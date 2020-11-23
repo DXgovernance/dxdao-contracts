@@ -60,8 +60,7 @@ contract ERC20Guild {
         uint256 _votesForCreation,
         string memory _name
     ) public {
-        require(address(_token) != address(0), "ERC20Guild: token is the zero address");
-        
+        require(address(_token) != address(0), "ERC20Guild: token is the zero address");  
         name = _name;
         token = IERC20(_token);
         _setConfig(_proposalTime, _votesForExecution, _votesForCreation);
@@ -107,7 +106,6 @@ contract ERC20Guild {
             to.length > 0,
             "ERC20Guild: to, data value arrays cannot be empty"
         );
-
         bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, now));
         proposals[proposalId] = Proposal(
             msg.sender,
@@ -135,13 +133,11 @@ contract ERC20Guild {
             proposals[proposalId].totalVotes >= votesForExecution,
             "ERC20Guild: Not enough tokens to execute proposal"
         );
-     
         for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
             (bool success,) = proposals[proposalId].to[i]
                 .call.value(proposals[proposalId].value[i])(proposals[proposalId].data[i]);
             require(success, "ERC20Guild: Proposal call failed");
         }
-
         proposals[proposalId].executed = true;
         emit ProposalExecuted(proposalId);
     }
@@ -178,7 +174,8 @@ contract ERC20Guild {
           !initialized || (msg.sender == address(this)),
           "ERC20Guild: Only callable by ERC20guild itself when initialized"
       );
-
+      require(_proposalTime >= 0, "ERC20Guild: proposal time has to be more tha 0");
+      require(_votesForExecution > 0, "ERC20Guild: votes for execution has to be more than 0");
       proposalTime = _proposalTime;
       votesForExecution = _votesForExecution;
       votesForCreation = _votesForCreation;
