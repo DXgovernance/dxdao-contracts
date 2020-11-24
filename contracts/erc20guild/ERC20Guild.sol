@@ -39,8 +39,8 @@ contract ERC20Guild {
     
     event ProposalCreated(bytes32 indexed proposalId);
     event ProposalExecuted(bytes32 indexed proposalId);
-    event VoteAdded(bytes32 indexed proposalId, address voter, uint256 tokens);
-    event VoteRemoved(bytes32 indexed proposalId, address voter, uint256 tokens);
+    event VoteAdded(bytes32 indexed proposalId, address voter, uint256 amount);
+    event VoteRemoved(bytes32 indexed proposalId, address voter, uint256 amount);
     
     /// @dev Initialized modifier to require the contract to be initialized
     modifier isInitialized() {

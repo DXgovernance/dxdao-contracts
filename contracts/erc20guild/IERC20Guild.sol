@@ -12,14 +12,9 @@ interface IERC20Guild {
 
     event ProposalCreated(bytes32 indexed proposalId);
     event ProposalExecuted(bytes32 indexed proposalId);
-    event VoteAdded(bytes32 indexed proposalId, address voter, uint256 tokens);
-    event VoteRemoved(bytes32 indexed proposalId, address voter, uint256 tokens);
+    event VoteAdded(bytes32 indexed proposalId, address voter, uint256 amount);
+    event VoteRemoved(bytes32 indexed proposalId, address voter, uint256 amount);
     
-    function setConfig(
-        uint256 _proposalTime,
-        uint256 _votesForExecution,
-        uint256 _votesForCreation
-    ) external;
     function createProposal(
         address[] calldata to,
         bytes[] calldata data,
@@ -36,7 +31,6 @@ interface IERC20Guild {
     function token() external view returns (address);
     function name() external view returns (string memory);
     function initialized() external view returns (bool);
-    function nonce() external view returns (uint256);
     function proposalTime() external view returns (uint256);
     function votesForExecution() external view returns (uint256);
     function votesForCreation() external view returns (uint256);

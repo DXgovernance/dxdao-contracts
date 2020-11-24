@@ -402,7 +402,7 @@ contract("ERC20Guild", function (accounts) {
       expectEvent(txVoteAdd, "VoteAdded", {
         proposalId: proposalIdGuild,
         voter: accounts[5],
-        tokens: "200",
+        amount: "200",
       });
       let totalVotes = await ierc20Guild.getProposalVotes(
         proposalIdGuild,
@@ -416,7 +416,7 @@ contract("ERC20Guild", function (accounts) {
       expectEvent(txVoteRemove, "VoteRemoved", {
         proposalId: proposalIdGuild,
         voter: accounts[5],
-        tokens: "100",
+        amount: "100",
       });
       totalVotes = await ierc20Guild.getProposalVotes(proposalIdGuild, accounts[5]);
       totalVotes.should.be.bignumber.equal("100");

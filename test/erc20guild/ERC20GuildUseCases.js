@@ -108,19 +108,19 @@ contract("ERC20Guild use cases", function (accounts) {
       expectEvent(txVoteOne, "VoteAdded", {
         proposalId: proposalIdOne,
         voter: accounts[4],
-        tokens: "10"
+        amount: "10"
       });
 
       expectEvent(txVoteTwo, "VoteAdded", {
         proposalId: proposalIdTwo,
         voter: accounts[4],
-        tokens: "5"
+        amount: "5"
       });
 
       expectEvent(txVoteThree, "VoteAdded", {
         proposalId: proposalIdOne,
         voter: accounts[3],
-        tokens: "1"
+        amount: "1"
       });
 
       let proposalOne = await ierc20Guild.getProposal(proposalIdOne);
@@ -139,7 +139,7 @@ contract("ERC20Guild use cases", function (accounts) {
       expectEvent(txVoteFour, "VoteRemoved", {
         proposalId: proposalIdOne,
         voter: accounts[4],
-        tokens: "10"
+        amount: "10"
       });
 
       proposalOne = await ierc20Guild.getProposal(proposalIdOne);
