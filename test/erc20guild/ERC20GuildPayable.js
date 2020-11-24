@@ -32,29 +32,17 @@ contract("ERC20GuildPayable", function (accounts) {
     genericCallData,
     proposalId;
 
-  const TEST_HASH = helpers.SOME_HASH;
-
   const DESCRIPTION = "Voting Proposal";
 
   let genericProposal;
 
   beforeEach(async function () {
-    const guildTokenBalances = [1000, 50, 100, 100, 100, 200];
-
-    guildToken = await createAndSetupGuildToken(accounts.slice(0, 6), guildTokenBalances);
-
-    actionMock = await ActionMock.new();
-
-    erc20GuildPayable = await ERC20GuildPayable.new();
-    await erc20GuildPayable.initialize(
-      guildToken.address,
-      30,
-      200,
-      100,
-      "TestGuild",
-      VOTE_GAS,
-      MAX_GAS_PRICE
+    guildToken = await createAndSetupGuildToken(
+      accounts.slice(0, 6), [1000, 50, 100, 100, 100, 200]
     );
+    
+    erc20GuildPayable = await ERC20GuildPayable.new();
+    await erc20GuildPayable.initialize(guildToken.address, 30, 200, 100, "TestGuild", VOTE_GAS, MAX_GAS_PRICE);
 
     const createDaoResult = await createDAO(erc20GuildPayable, accounts);
     daoCreator = createDaoResult.daoCreator;
@@ -63,18 +51,16 @@ contract("ERC20GuildPayable", function (accounts) {
     org = createDaoResult.org;
 
     callData = helpers.testCallFrom(org.avatar.address);
+    actionMock = await ActionMock.new();
     genericCallData = helpers.encodeGenericCallData(
-      org.avatar.address,
-      actionMock.address,
-      callData,
-      0
+      org.avatar.address, actionMock.address, callData, 0
     );
 
     const tx = await walletScheme.proposeCalls(
       [org.controller.address],
       [genericCallData],
       [0],
-      TEST_HASH
+      helpers.SOME_HASH
     );
     proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
@@ -202,7 +188,7 @@ contract("ERC20GuildPayable", function (accounts) {
         [org.controller.address],
         [genericCallData],
         [0],
-        TEST_HASH
+        helpers.SOME_HASH
       );
       proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
@@ -279,7 +265,7 @@ contract("ERC20GuildPayable", function (accounts) {
         [org.controller.address],
         [genericCallData],
         [0],
-        TEST_HASH
+        helpers.SOME_HASH
       );
       proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 

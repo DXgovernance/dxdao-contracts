@@ -21,30 +21,25 @@ contract("ERC20GuildPermissioned", function (accounts) {
     guildToken,
     erc20GuildPermissioned;
 
-  const proposalTime = 0;
+  const proposalTime = 30;
   const votesForExecution = 200;
   const votesForCreation = 100;
 
   beforeEach(async function () {
-    const guildTokenBalances = [1000, 50, 100, 100, 100, 200];
-    guildToken = await createAndSetupGuildToken(accounts.slice(0, 6), guildTokenBalances);
-
-    erc20GuildPermissioned = await ERC20GuildPermissioned.new();
-    await erc20GuildPermissioned.initialize(
-      guildToken.address,
-      proposalTime,
-      votesForExecution,
-      votesForCreation,
-      "TestGuild"
+    guildToken = await createAndSetupGuildToken(
+      accounts.slice(0, 6), [1000, 50, 100, 100, 100, 200]
     );
-
+    
+    erc20GuildPermissioned = await ERC20GuildPermissioned.new();
+    await erc20GuildPermissioned.initialize(guildToken.address, 30, 200, 100, "TestGuild");
+    
     actionMock = await ActionMock.new();
-
     const createDaoResult = await createDAO(erc20GuildPermissioned, accounts);
     daoCreator = createDaoResult.daoCreator;
     walletScheme = createDaoResult.walletScheme;
     votingMachine = createDaoResult.votingMachine;
     org = createDaoResult.org;
+
   });
 
   describe("ERC20GuildPermissioned Core Tests", function () {
@@ -83,7 +78,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           .should.be.bignumber.equal(new BN(votesForCreation));
 
         // Create proposal for updated values
-        const updatedproposalTime = 1;
+        const updatedproposalTime = 31;
         const updatedVotesForExecution = 100;
         const updatedVotesForCreation = 50;
         const setConfigFunctionEncoded = await new web3.eth.Contract(
@@ -112,7 +107,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           account: accounts[5],
         });
 
-        await time.increaseTo("10000009999");
+        await time.increase(time.duration.seconds(30));
 
         await erc20GuildPermissioned.executeProposal(proposalIdGuild);
 
@@ -153,7 +148,8 @@ contract("ERC20GuildPermissioned", function (accounts) {
           proposalId: proposalIdGuild,
           account: accounts[5],
         });
-
+        
+        await time.increase(time.duration.seconds(30));
         await erc20GuildPermissioned.executeProposal(proposalIdGuild);
 
         // Check existing values are as expected
@@ -192,8 +188,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           account: accounts[5],
         });
 
-        await time.increaseTo("10000099999");
-
+        await time.increase(time.duration.seconds(30));
         await expectRevert(
           erc20GuildPermissioned.executeProposal(setConfigProposalIdGuild),
           "ERC20GuildPermissioned: Not allowed call"
@@ -272,7 +267,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           account: accounts[5],
         });
 
-        await time.increaseTo("10000199999");
+        await time.increase(time.duration.seconds(30));
 
         await expectRevert(
           erc20GuildPermissioned.executeProposal(proposalIdGuild),

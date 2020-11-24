@@ -28,16 +28,13 @@ contract("ERC20Guild", function (accounts) {
   let walletScheme, daoCreator, org, actionMock, votingMachine, guildToken,
     erc20Guild, genericCallDataVote, callData, genericCallData, proposalId, genericProposal;
 
-  const TEST_HASH = helpers.SOME_HASH;
-
   const DESCRIPTION = "Voting Proposal";
 
   beforeEach(async function () {
-    const guildTokenBalances = [1000, 50, 100, 100, 100, 200];
-    guildToken = await createAndSetupGuildToken(accounts.slice(0, 6), guildTokenBalances);
-
-    actionMock = await ActionMock.new();
-
+    guildToken = await createAndSetupGuildToken(
+      accounts.slice(0, 6), [1000, 50, 100, 100, 100, 200]
+    );
+    
     erc20Guild = await ERC20Guild.new();
     await erc20Guild.initialize(guildToken.address, 30, 200, 100, "TestGuild");
 
@@ -48,18 +45,16 @@ contract("ERC20Guild", function (accounts) {
     org = createDaoResult.org;
 
     callData = helpers.testCallFrom(org.avatar.address);
+    actionMock = await ActionMock.new();
     genericCallData = helpers.encodeGenericCallData(
-      org.avatar.address,
-      actionMock.address,
-      callData,
-      0
+      org.avatar.address, actionMock.address, callData, 0
     );
 
     const tx = await walletScheme.proposeCalls(
       [org.controller.address],
       [genericCallData],
       [0],
-      TEST_HASH
+      helpers.SOME_HASH
     );
     proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
@@ -307,7 +302,7 @@ contract("ERC20Guild", function (accounts) {
         [org.controller.address],
         [genericCallData],
         [0],
-        TEST_HASH
+        helpers.SOME_HASH
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
@@ -336,7 +331,7 @@ contract("ERC20Guild", function (accounts) {
         [org.controller.address],
         [genericCallData],
         [0],
-        TEST_HASH
+        helpers.SOME_HASH
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 

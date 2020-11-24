@@ -17,13 +17,10 @@ contract("ERC20GuildSigned", function (accounts) {
     genericCallData,
     proposalId;
 
-  const TEST_HASH = helpers.SOME_HASH;
-
   const DESCRIPTION = "Voting Proposal";
 
   beforeEach(async function () {
     const guildTokenBalances = [1000, 50, 100, 100, 100, 200];
-
     guildToken = await createAndSetupGuildToken(accounts.slice(0, 6), guildTokenBalances);
 
     actionMock = await ActionMock.new();
@@ -49,7 +46,7 @@ contract("ERC20GuildSigned", function (accounts) {
       [org.controller.address],
       [genericCallData],
       [0],
-      TEST_HASH
+      helpers.SOME_HASH
     );
     proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
