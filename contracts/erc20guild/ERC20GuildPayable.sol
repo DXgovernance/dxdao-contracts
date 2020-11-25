@@ -55,6 +55,18 @@ contract ERC20GuildPayable is ERC20Guild {
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
     }
+    
+    /// @dev Override standard setConfig method from ERC20Guild
+    /// @param _proposalTime The minimun time for a proposal to be under votation
+    /// @param _votesForExecution The token votes needed for a proposal to be executed
+    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    function setConfig(
+        uint256 _proposalTime,
+        uint256 _votesForExecution,
+        uint256 _votesForCreation
+    ) public {
+        revert("ERC20Guild: Cant call standard setConfig method of ERC20Guild");
+    }
 
     /// @dev Allows the voting machine to receive ether to be used to refund voting costs
     function() external payable {}

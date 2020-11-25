@@ -60,6 +60,18 @@ contract ERC20GuildLockable is ERC20Guild {
         lockTime = _lockTime;
     }
     
+    /// @dev Override standard setConfig method from ERC20Guild
+    /// @param _proposalTime The minimun time for a proposal to be under votation
+    /// @param _votesForExecution The token votes needed for a proposal to be executed
+    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    function setConfig(
+        uint256 _proposalTime,
+        uint256 _votesForExecution,
+        uint256 _votesForCreation
+    ) public {
+        revert("ERC20Guild: Cant call standard setConfig method of ERC20Guild");
+    }
+    
     /// @dev Lock tokens in the guild to be used as voting power
     /// @param amount The amount of tokens to be locked
     function lockTokens(uint256 amount) public {
