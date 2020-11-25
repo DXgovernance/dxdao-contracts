@@ -5,17 +5,27 @@ const ActionMock = artifacts.require("ActionMock.sol");
 const {
   BN,
   expectEvent,
+  expectRevert,
   balance,
   send,
   ether,
+  time
 } = require("@openzeppelin/test-helpers");
 const {
   createDAO,
   createAndSetupGuildToken,
   createProposal,
+  setAllVotesOnProposal
 } = require("../helpers/guild");
 
 require("chai").should();
+
+const ProposalState = {
+  submitted: 0,
+  passed: 1,
+  failed: 2,
+  executed: 3,
+};
 
 contract("ERC20GuildPayable", function (accounts) {
   const ZERO = new BN("0");
@@ -160,6 +170,156 @@ contract("ERC20GuildPayable", function (accounts) {
         new BN(txGasUsed).mul(REAL_GAS_PRICE).neg()
       );
     });
+    
+    it("not execute an ERC20guild setConfig proposal on the guild", async function () {  
+      const proposalIdGuild = await createProposal({
+        guild: erc20GuildPayable,
+        to: [erc20GuildPayable.address],
+        data: [
+          await new web3.eth.Contract(
+            ERC20GuildPayable.abi
+          ).methods.setConfig(15, 100, 50).encodeABI()
+        ],
+        value: [0],
+        description: "Test description",
+        contentHash: helpers.NULL_ADDRESS,
+        account: accounts[3],
+      });
+
+      const txVote = await setAllVotesOnProposal({
+        guild: erc20GuildPayable,
+        proposalId: proposalIdGuild,
+        account: accounts[5],
+      });
+
+      expect(txVote.receipt.gasUsed).to.be.below(80000);
+
+      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+
+      await time.increase(time.duration.seconds(30));
+      await expectRevert(
+        erc20GuildPayable.executeProposal(proposalIdGuild),
+        "ERC20Guild: Proposal call failed"
+      );
+
+      assert.equal(await erc20GuildPayable.proposalTime(), 30);
+      assert.equal(await erc20GuildPayable.votesForCreation(), 100);
+      assert.equal(await erc20GuildPayable.votesForExecution(), 200);
+      assert.equal(await erc20GuildPayable.voteGas(), 50000);
+      assert.equal(await erc20GuildPayable.maxGasPrice(), 8000000000);
+    });
+    
+    it("execute an ERC20GuildPayable setConfig proposal on the guild", async function () {  
+      const proposalIdGuild = await createProposal({
+        guild: erc20GuildPayable,
+        to: [erc20GuildPayable.address],
+        data: [
+          await new web3.eth.Contract(
+            ERC20GuildPayable.abi
+          ).methods.setConfig(15, 100, 50, 100000, 500000).encodeABI()
+        ],
+        value: [0],
+        description: "Test description",
+        contentHash: helpers.NULL_ADDRESS,
+        account: accounts[3],
+      });
+
+      const txVote = await setAllVotesOnProposal({
+        guild: erc20GuildPayable,
+        proposalId: proposalIdGuild,
+        account: accounts[5],
+      });
+
+      expect(txVote.receipt.gasUsed).to.be.below(80000);
+
+      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+
+      await time.increase(time.duration.seconds(30));
+      const receipt = await erc20GuildPayable.executeProposal(proposalIdGuild);
+      expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
+
+      assert.equal(await erc20GuildPayable.proposalTime(), 15);
+      assert.equal(await erc20GuildPayable.votesForCreation(), 50);
+      assert.equal(await erc20GuildPayable.votesForExecution(), 100);
+      assert.equal(await erc20GuildPayable.voteGas(), 100000);
+      assert.equal(await erc20GuildPayable.maxGasPrice(), 500000);
+    });
+    
+    it("execute a proposal in walletScheme from the guild", async function () {
+      const walletSchemeProposalData = helpers.encodeGenericCallData(
+        org.avatar.address, actionMock.address, helpers.testCallFrom(org.avatar.address), 0
+      )
+      const tx = await walletScheme.proposeCalls(
+        [org.controller.address],
+        [walletSchemeProposalData],
+        [0],
+        helpers.SOME_HASH
+      );
+      const walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+      const genericCallDataVote = await new web3.eth.Contract(
+        votingMachine.contract.abi
+      ).methods.vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS).encodeABI();
+    
+      const proposalIdGuild = await createProposal({
+        guild: erc20GuildPayable,
+        to: [votingMachine.address],
+        data: [genericCallDataVote],
+        value: [0],
+        description: "Test description",
+        contentHash: helpers.NULL_ADDRESS,
+        account: accounts[3],
+      });
+
+      const txVote = await setAllVotesOnProposal({
+        guild: erc20GuildPayable,
+        proposalId: proposalIdGuild,
+        account: accounts[5],
+      });
+
+      expect(txVote.receipt.gasUsed).to.be.below(80000);
+
+      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+
+      await time.increase(time.duration.seconds(30));
+      const receipt = await erc20GuildPayable.executeProposal(proposalIdGuild);
+      expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
+
+      await walletScheme.execute(walletSchemeProposalId);
+
+      const organizationProposal = await walletScheme.getOrganizationProposal(walletSchemeProposalId);
+      assert.equal(organizationProposal.state, ProposalState.executed);
+      assert.equal(organizationProposal.callData[0], walletSchemeProposalData);
+      assert.equal(organizationProposal.to[0], org.controller.address);
+      assert.equal(organizationProposal.value[0], 0);
+    });
+    
+    it("execute a proposal to a contract from the guild", async function () {
+      const proposalIdGuild = await createProposal({
+        guild: erc20GuildPayable,
+        to: [actionMock.address],
+        data: [helpers.testCallFrom(erc20GuildPayable.address)],
+        value: [0],
+        description: "Test description",
+        contentHash: helpers.NULL_ADDRESS,
+        account: accounts[3],
+      });
+
+      const txVote = await setAllVotesOnProposal({
+        guild: erc20GuildPayable,
+        proposalId: proposalIdGuild,
+        account: accounts[5],
+      });
+
+      expect(txVote.receipt.gasUsed).to.be.below(80000);
+
+      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+
+      await time.increase(time.duration.seconds(30));
+      const receipt = await erc20GuildPayable.executeProposal(proposalIdGuild);
+      expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
+    });
+    
   });
 
   describe("with zero gas allowance", function () {

@@ -226,6 +226,42 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(organizationProposal.to[0], org.controller.address);
       assert.equal(organizationProposal.value[0], 0);
     });
+    
+    it("execute a setConfig vote on the guild", async function () {
+      const ierc20Guild = await IERC20Guild.at(erc20Guild.address);
+
+      const proposalIdGuild = await createProposal({
+        guild: erc20Guild,
+        to: [erc20Guild.address],
+        data: [
+          await new web3.eth.Contract(
+            ERC20Guild.abi
+          ).methods.setConfig(15, 100, 50).encodeABI()
+        ],
+        value: [0],
+        description: DESCRIPTION,
+        contentHash: helpers.NULL_ADDRESS,
+        account: accounts[3],
+      });
+
+      const txVote = await setAllVotesOnProposal({
+        guild: ierc20Guild,
+        proposalId: proposalIdGuild,
+        account: accounts[5],
+      });
+
+      expect(txVote.receipt.gasUsed).to.be.below(80000);
+
+      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+
+      await time.increase(time.duration.seconds(30));
+      const receipt = await ierc20Guild.executeProposal(proposalIdGuild);
+      expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
+
+      assert.equal(await erc20Guild.proposalTime(), 15);
+      assert.equal(await erc20Guild.votesForCreation(), 50);
+      assert.equal(await erc20Guild.votesForExecution(), 100);
+    });
 
     it("cannot execute a positive vote on the voting machine from the guild twice", async function () {
       const ierc20Guild = await IERC20Guild.at(erc20Guild.address);
