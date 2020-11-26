@@ -13,16 +13,10 @@ const {
   createAndSetupGuildToken,
   createProposal,
   setAllVotesOnProposal,
+  GUILD_PROPOSAL_STATES
 } = require("../helpers/guild");
 
 require("chai").should();
-
-const ProposalState = {
-  submitted: 0,
-  passed: 1,
-  failed: 2,
-  executed: 3,
-};
 
 contract("ERC20Guild", function (accounts) {
   let walletScheme, daoCreator, org, actionMock, votingMachine, guildToken,
@@ -221,7 +215,7 @@ contract("ERC20Guild", function (accounts) {
       const organizationProposal = await walletScheme.getOrganizationProposal(
         proposalId
       );
-      assert.equal(organizationProposal.state, ProposalState.executed);
+      assert.equal(organizationProposal.state, GUILD_PROPOSAL_STATES.executed);
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
       assert.equal(organizationProposal.value[0], 0);

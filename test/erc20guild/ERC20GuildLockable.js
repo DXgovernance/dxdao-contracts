@@ -8,16 +8,15 @@ const {
   expectRevert,
   time,
 } = require("@openzeppelin/test-helpers");
-const { createDAO, createProposal, createAndSetupGuildToken, setAllVotesOnProposal } = require("../helpers/guild");
+const {
+  createDAO,
+  createProposal,
+  createAndSetupGuildToken,
+  setAllVotesOnProposal,
+  GUILD_PROPOSAL_STATES
+} = require("../helpers/guild");
 
 require("chai").should();
-
-const ProposalState = {
-  submitted: 0,
-  passed: 1,
-  failed: 2,
-  executed: 3,
-};
 
 contract("ERC20GuildLockable", function (accounts) {
   let walletScheme, daoCreator, org, actionMock, votingMachine, guildToken;
@@ -200,7 +199,7 @@ contract("ERC20GuildLockable", function (accounts) {
       await walletScheme.execute(walletSchemeProposalId);
 
       const organizationProposal = await walletScheme.getOrganizationProposal(walletSchemeProposalId);
-      assert.equal(organizationProposal.state, ProposalState.executed);
+      assert.equal(organizationProposal.state, GUILD_PROPOSAL_STATES.executed);
       assert.equal(organizationProposal.callData[0], walletSchemeProposalData);
       assert.equal(organizationProposal.to[0], org.controller.address);
       assert.equal(organizationProposal.value[0], 0);

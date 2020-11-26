@@ -66,7 +66,6 @@ contract("ERC20GuildSnapshot", function (accounts) {
     ).methods
       .vote(proposalId, 1, 0, helpers.NULL_ADDRESS)
       .encodeABI();
-
   });
 
   it("can lock tokens and check snapshot", async function () {
