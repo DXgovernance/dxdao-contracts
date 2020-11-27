@@ -36,8 +36,6 @@ contract("ERC20GuildPayable", function (accounts) {
     genericCallData,
     proposalId;
 
-  const DESCRIPTION = "Voting Proposal";
-
   let genericProposal;
 
   beforeEach(async function () {
@@ -79,7 +77,7 @@ contract("ERC20GuildPayable", function (accounts) {
       to: [votingMachine.address],
       data: [genericCallDataVote],
       value: [0],
-      description: DESCRIPTION,
+      description: "Guild Test Proposal",
       contentHash: helpers.NULL_ADDRESS,
       account: accounts[3],
     };
@@ -175,7 +173,7 @@ contract("ERC20GuildPayable", function (accounts) {
           ).methods.setConfig(15, 100, 50).encodeABI()
         ],
         value: [0],
-        description: "Test description",
+        description: "Guild Test Proposal",
         contentHash: helpers.NULL_ADDRESS,
         account: accounts[3],
       });
@@ -213,7 +211,7 @@ contract("ERC20GuildPayable", function (accounts) {
           ).methods.setConfig(15, 100, 50, 100000, 500000).encodeABI()
         ],
         value: [0],
-        description: "Test description",
+        description: "Guild Test Proposal",
         contentHash: helpers.NULL_ADDRESS,
         account: accounts[3],
       });
@@ -260,7 +258,7 @@ contract("ERC20GuildPayable", function (accounts) {
         to: [votingMachine.address],
         data: [genericCallDataVote],
         value: [0],
-        description: "Test description",
+        description: "Guild Test Proposal",
         contentHash: helpers.NULL_ADDRESS,
         account: accounts[3],
       });
@@ -294,7 +292,7 @@ contract("ERC20GuildPayable", function (accounts) {
         to: [actionMock.address],
         data: [helpers.testCallFrom(erc20GuildPayable.address)],
         value: [0],
-        description: "Test description",
+        description:"Guild Test Proposal",
         contentHash: helpers.NULL_ADDRESS,
         account: accounts[3],
       });

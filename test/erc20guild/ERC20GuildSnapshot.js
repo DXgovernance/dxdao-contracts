@@ -106,7 +106,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [votingMachine.address],
       [genericCallDataVote],
       [0],
-      "Voting Proposal",
+      "Guild Test Proposal",
       helpers.NULL_ADDRESS,
       { from: accounts[2] }
     );
@@ -118,7 +118,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [votingMachine.address],
       [genericCallDataVote],
       [0],
-      "Voting Proposal",
+      "Guild Test Proposal",
       helpers.NULL_ADDRESS,
       { from: accounts[3] }
     );
@@ -179,7 +179,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [votingMachine.address],
       [genericCallDataVote],
       [0],
-      "Voting Proposal",
+      "Guild Test Proposal",
       helpers.NULL_ADDRESS,
       { from: accounts[2] }
     );
@@ -218,7 +218,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [votingMachine.address],
       [genericCallDataVote],
       [0],
-      "Voting Proposal",
+      "Guild Test Proposal",
       helpers.NULL_ADDRESS,
       { from: accounts[2] }
     );
@@ -266,7 +266,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [votingMachine.address],
       [genericCallDataVote],
       [0],
-      "Voting Proposal",
+      "Guild Test Proposal",
       helpers.NULL_ADDRESS,
       { from: accounts[2] }
     );

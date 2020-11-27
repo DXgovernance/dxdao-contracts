@@ -17,8 +17,6 @@ contract("ERC20GuildSigned", function (accounts) {
     genericCallData,
     proposalId;
 
-  const DESCRIPTION = "Voting Proposal";
-
   beforeEach(async function () {
     const guildTokenBalances = [1000, 50, 100, 100, 100, 200];
     guildToken = await createAndSetupGuildToken(accounts.slice(0, 6), guildTokenBalances);
@@ -68,7 +66,7 @@ contract("ERC20GuildSigned", function (accounts) {
         [votingMachine.address],
         [genericCallDataVote],
         [0],
-        DESCRIPTION,
+        "Guild Test Proposal",
         helpers.NULL_ADDRESS,
         { from: accounts[3] }
       );
@@ -103,7 +101,7 @@ contract("ERC20GuildSigned", function (accounts) {
         [votingMachine.address],
         [genericCallDataVote],
         [0],
-        DESCRIPTION,
+        "Guild Test Proposal",
         helpers.NULL_ADDRESS,
         { from: accounts[3] }
       );
@@ -144,7 +142,7 @@ contract("ERC20GuildSigned", function (accounts) {
         [votingMachine.address],
         [genericCallDataVote],
         [0],
-        DESCRIPTION,
+        "Guild Test Proposal",
         helpers.NULL_ADDRESS,
         { from: accounts[3] }
       );
@@ -191,7 +189,7 @@ contract("ERC20GuildSigned", function (accounts) {
         [votingMachine.address],
         [genericCallDataVote],
         [0],
-        DESCRIPTION,
+        "Guild Test Proposal",
         helpers.NULL_ADDRESS,
         { from: accounts[3] }
       );

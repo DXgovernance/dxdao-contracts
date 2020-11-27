@@ -22,8 +22,6 @@ contract("ERC20Guild", function (accounts) {
   let walletScheme, daoCreator, org, actionMock, votingMachine, guildToken,
     erc20Guild, genericCallDataVote, callData, genericCallData, proposalId, genericProposal;
 
-  const DESCRIPTION = "Voting Proposal";
-
   beforeEach(async function () {
     guildToken = await createAndSetupGuildToken(
       accounts.slice(0, 6), [1000, 50, 100, 100, 100, 200]
@@ -61,7 +59,7 @@ contract("ERC20Guild", function (accounts) {
       to: [votingMachine.address],
       data: [genericCallDataVote],
       value: [0],
-      description: DESCRIPTION,
+      description: "Guild Test Proposal",
       contentHash: helpers.NULL_ADDRESS,
       account: accounts[3],
     };
@@ -91,7 +89,7 @@ contract("ERC20Guild", function (accounts) {
           [votingMachine.address],
           [genericCallDataVote],
           [0],
-          DESCRIPTION,
+          "Guild Test Proposal",
           helpers.NULL_ADDRESS,
           { from: accounts[9] }
         ),
@@ -107,7 +105,7 @@ contract("ERC20Guild", function (accounts) {
           [votingMachine.address],
           [],
           [0],
-          DESCRIPTION,
+          "Guild Test Proposal",
           helpers.NULL_ADDRESS,
           { from: accounts[3] }
         ),
@@ -123,7 +121,7 @@ contract("ERC20Guild", function (accounts) {
           [votingMachine.address],
           [genericCallDataVote],
           [],
-          DESCRIPTION,
+          "Guild Test Proposal",
           helpers.NULL_ADDRESS,
           { from: accounts[3] }
         ),
@@ -138,7 +136,7 @@ contract("ERC20Guild", function (accounts) {
           [],
           [],
           [],
-          DESCRIPTION,
+          "Guild Test Proposal",
           helpers.NULL_ADDRESS,
           { from: accounts[3] }
         ),
@@ -170,7 +168,7 @@ contract("ERC20Guild", function (accounts) {
       assert.deepEqual(to, [votingMachine.address]);
       assert.deepEqual(data, [genericCallDataVote]);
       assert.deepEqual( value.map((bn) => bn.toString()), ["0"] );
-      assert.equal(description, DESCRIPTION);
+      assert.equal(description, "Guild Test Proposal");
       assert.equal(contentHash, helpers.NULL_ADDRESS);
       totalVotes.should.be.bignumber.equal("100");
       assert.equal(executed, false);
@@ -233,7 +231,7 @@ contract("ERC20Guild", function (accounts) {
           ).methods.setConfig(15, 100, 50).encodeABI()
         ],
         value: [0],
-        description: DESCRIPTION,
+        description: "Guild Test Proposal",
         contentHash: helpers.NULL_ADDRESS,
         account: accounts[3],
       });
