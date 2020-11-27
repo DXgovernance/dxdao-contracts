@@ -1,10 +1,10 @@
-const HDWalletProvider = require('truffle-hdwallet-provider')	
+const HDWalletProvider = require("truffle-hdwallet-provider");	
 require("babel-polyfill");
 require("babel-register")({
   "presets": [ "es2015" ],
   "plugins": [ "syntax-async-functions", "transform-regenerator" ]
 });
-require('dotenv').config();
+require("dotenv").config();
 
 mnemonic = process.env.KEY_MNEMONIC;
 infuraApiKey = process.env.KEY_INFURA_API_KEY;
@@ -12,34 +12,34 @@ infuraApiKey = process.env.KEY_INFURA_API_KEY;
 module.exports = {
   networks: {
     mainnet: {	
-      provider: function () {	
-        return new HDWalletProvider(mnemonic, `https://mainnet.infura.io/v3/${infuraApiKey}`)	
+      provider: function() {	
+        return new HDWalletProvider(mnemonic, `https://mainnet.infura.io/v3/${infuraApiKey}`);	
       },	
-      network_id: '1',	
+      network_id: "1",	
       gas: 9000000,	
       gasPrice: 10000000000 //10 Gwei	
     },	
     rinkeby: {	
-      provider: function () {	
-        return new HDWalletProvider(mnemonic, `https://rinkeby.infura.io/v3/${infuraApiKey}`)	
+      provider: function() {	
+        return new HDWalletProvider(mnemonic, `https://rinkeby.infura.io/v3/${infuraApiKey}`);	
       },	
-      network_id: '4',	
+      network_id: "4",	
       gas: 9000000,	
       gasPrice: 10000000000 //10 Gwei	
     },	
     ropsten: {	
-      provider: function () {	
-        return new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/${infuraApiKey}`)	
+      provider: function() {	
+        return new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/${infuraApiKey}`);	
       },	
       network_id: '3',	
       gas: 9000000,	
       gasPrice: 10000000000 //10 Gwei	
     },	
     kovan: {	
-      provider: function () {	
-        return new HDWalletProvider(mnemonic, `https://kovan.infura.io/v3/${infuraApiKey}`)	
+      provider: function() {	
+        return new HDWalletProvider(mnemonic, `https://kovan.infura.io/v3/${infuraApiKey}`);	
       },	
-      network_id: '42',	
+      network_id: "42",	
       gas: 9000000,	
       gasPrice: 10000000000 //10 Gwei	
     },
@@ -48,7 +48,7 @@ module.exports = {
       host: "localhost",
       port: 8545,
       gas: 9000000,
-      gasPrice: 10000000000 //10 Gwei	
+      gasPrice: 10000000000 //10 Gwei
     },
     soliditycoverage: {
       host: "localhost",

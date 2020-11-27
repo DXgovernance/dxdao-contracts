@@ -14,7 +14,7 @@ const ActionMock = artifacts.require("./ActionMock.sol");
 const constants = require("./constants");
 const { encodePermission, decodePermission } = require("./permissions");
 const { encodeGenericCallData } = require("./walletScheme");
-const EthDecoder = require("@maticnetwork/eth-decoder")
+const EthDecoder = require("@maticnetwork/eth-decoder");
 
 export const logDecoder = new EthDecoder.default.LogDecoder(
   [
@@ -122,7 +122,7 @@ export function assertJumpOrOutOfGas(error) {
 
 export function assertVMException(error) {
   let condition = (
-    error.message.search("VM Exception") > -1
+    error.message.search("VM Exception") > -1 || error.message.search("Transaction reverted") > -1
   );
   assert.isTrue(condition, "Expected a VM Exception, got this instead:" + error.message);
 }
@@ -163,7 +163,7 @@ export const setupGenesisProtocol = async function(
   _daoBountyConst = 10,
   _activationTime = 0
 ) {
-  const votingMachine = 
+  const votingMachine =
     (votingMachineType == 'dxd') ? await DXDVotingMachine.new(token, {gas: constants.ARC_GAS_LIMIT})
     : await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
 
@@ -211,7 +211,7 @@ export const setupOrganizationWithArrays = async function(
     founderToken,
     founderReputation,
     cap,
-    {gas: constants.ARC_GAS_LIMIT}
+
   );
   assert.equal(tx.logs.length, 1);
   assert.equal(tx.logs[ 0 ].event, "NewOrg");

@@ -9,4 +9,10 @@ node_modules/
 site/
 yarn*
 coverage
+coverage.json
 .env
+.idea
+*.iml
+artifacts/
+cache/
+.coverage_cache/

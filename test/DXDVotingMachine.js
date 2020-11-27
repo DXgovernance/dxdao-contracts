@@ -455,7 +455,7 @@ contract("DXDVotingMachine", function(accounts) {
       );
       assert.equal((await dxdVotingMachine.contract.votesSignaled(proposalId, accounts[2])).voteDecision, 1);
       assert.equal((await dxdVotingMachine.contract.votesSignaled(proposalId, accounts[2])).amount, 60);
-      assert.equal(signalVoteTx.receipt.gasUsed, 66377);
+      expect(signalVoteTx.receipt.gasUsed).to.be.closeTo(50000, 25000);
       const voteInfoFromLog = signalVoteTx.logs[0].args;
       await dxdVotingMachine.contract.executeSignaledVote(
         voteInfoFromLog.proposalId,
@@ -477,7 +477,8 @@ contract("DXDVotingMachine", function(accounts) {
       );
       assert.equal((await dxdVotingMachine.contract.votesSignaled(proposalId, accounts[2])).voteDecision, 2);
       assert.equal((await dxdVotingMachine.contract.votesSignaled(proposalId, accounts[2])).amount, 0);
-      assert.equal(signalVoteTx.receipt.gasUsed, 47153);
+      expect(signalVoteTx.receipt.gasUsed).to.be.closeTo(50000, 25000);
+
       const voteInfoFromLog = signalVoteTx.logs[0].args;
       await dxdVotingMachine.contract.executeSignaledVote(
         voteInfoFromLog.proposalId,

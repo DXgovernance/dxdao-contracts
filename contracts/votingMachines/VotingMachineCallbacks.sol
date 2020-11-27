@@ -3,20 +3,33 @@ pragma solidity 0.5.17;
 import "../dxdao/DxController.sol";
 
 interface VotingMachineCallbacksInterface {
-    function mintReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId) external returns(bool);
-    function burnReputation(uint256 _amount, address _owner, bytes32 _proposalId) external returns(bool);
+    function mintReputation(
+        uint256 _amount,
+        address _beneficiary,
+        bytes32 _proposalId
+    ) external returns (bool);
 
-    function stakingTokenTransfer(IERC20 _stakingToken, address _beneficiary, uint256 _amount, bytes32 _proposalId)
-    external
-    returns(bool);
+    function burnReputation(
+        uint256 _amount,
+        address _owner,
+        bytes32 _proposalId
+    ) external returns (bool);
 
-    function getTotalReputationSupply(bytes32 _proposalId) external view returns(uint256);
-    function reputationOf(address _owner, bytes32 _proposalId) external view returns(uint256);
-    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns(uint256);
+    function stakingTokenTransfer(
+        IERC20 _stakingToken,
+        address _beneficiary,
+        uint256 _amount,
+        bytes32 _proposalId
+    ) external returns (bool);
+
+    function getTotalReputationSupply(bytes32 _proposalId) external view returns (uint256);
+
+    function reputationOf(address _owner, bytes32 _proposalId) external view returns (uint256);
+
+    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns (uint256);
 }
 
 contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
-
     struct ProposalInfo {
         uint256 blockNumber; // the proposal's block number
         Avatar avatar; // the proposal's avatar
@@ -30,11 +43,11 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
     // VotingMaching  ->  proposalId  ->  ProposalInfo
     mapping(address => mapping(bytes32 => ProposalInfo)) public proposalsInfo;
 
-    function mintReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId)
-    external
-    onlyVotingMachine(_proposalId)
-    returns(bool)
-    {
+    function mintReputation(
+        uint256 _amount,
+        address _beneficiary,
+        bytes32 _proposalId
+    ) external onlyVotingMachine(_proposalId) returns (bool) {
         Avatar avatar = proposalsInfo[msg.sender][_proposalId].avatar;
         if (avatar == Avatar(0)) {
             return false;
@@ -42,11 +55,11 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         return DxController(avatar.owner()).mintReputation(_amount, _beneficiary, address(avatar));
     }
 
-    function burnReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId)
-    external
-    onlyVotingMachine(_proposalId)
-    returns(bool)
-    {
+    function burnReputation(
+        uint256 _amount,
+        address _beneficiary,
+        bytes32 _proposalId
+    ) external onlyVotingMachine(_proposalId) returns (bool) {
         Avatar avatar = proposalsInfo[msg.sender][_proposalId].avatar;
         if (avatar == Avatar(0)) {
             return false;
@@ -58,11 +71,8 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         IERC20 _stakingToken,
         address _beneficiary,
         uint256 _amount,
-        bytes32 _proposalId)
-    external
-    onlyVotingMachine(_proposalId)
-    returns(bool)
-    {
+        bytes32 _proposalId
+    ) external onlyVotingMachine(_proposalId) returns (bool) {
         Avatar avatar = proposalsInfo[msg.sender][_proposalId].avatar;
         if (avatar == Avatar(0)) {
             return false;
@@ -70,7 +80,7 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         return DxController(avatar.owner()).externalTokenTransfer(_stakingToken, _beneficiary, _amount, avatar);
     }
 
-    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns(uint256) {
+    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns (uint256) {
         Avatar avatar = proposalsInfo[msg.sender][_proposalId].avatar;
         if (proposalsInfo[msg.sender][_proposalId].avatar == Avatar(0)) {
             return 0;
@@ -78,7 +88,7 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         return _stakingToken.balanceOf(address(avatar));
     }
 
-    function getTotalReputationSupply(bytes32 _proposalId) external view returns(uint256) {
+    function getTotalReputationSupply(bytes32 _proposalId) external view returns (uint256) {
         ProposalInfo memory proposal = proposalsInfo[msg.sender][_proposalId];
         if (proposal.avatar == Avatar(0)) {
             return 0;
@@ -86,7 +96,7 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         return proposal.avatar.nativeReputation().totalSupplyAt(proposal.blockNumber);
     }
 
-    function reputationOf(address _owner, bytes32 _proposalId) external view returns(uint256) {
+    function reputationOf(address _owner, bytes32 _proposalId) external view returns (uint256) {
         ProposalInfo memory proposal = proposalsInfo[msg.sender][_proposalId];
         if (proposal.avatar == Avatar(0)) {
             return 0;

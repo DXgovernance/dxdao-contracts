@@ -1,4 +1,11 @@
 module.exports = {
-  skipFiles: ['test/'],
+  skipFiles: [
+      'daostack/',
+      'dxdao/',
+      'schemes/',
+      'test/',
+      'utils/',
+      'votingMachines/',
+  ],
   istanbulReporter: ['html']
 };

@@ -363,7 +363,7 @@ contract("Controller", accounts =>  {
     let actionMock =  await ActionMock.new();
     const encodeABI = helpers.testCallFrom(avatar.address);
     var result = await controller.genericCall.call(actionMock.address, encodeABI, avatar.address, 0);
-    assert.equal(result[1], '0x0000000000000000000000000000000000000000000000000000000000000001');
+    assert.equal(result[ 1 ], "0x0000000000000000000000000000000000000000000000000000000000000001");
   });
 
   it("generic call withoutReturnValue", async() => {
@@ -374,7 +374,7 @@ contract("Controller", accounts =>  {
     const actionMockContract = await new web3.eth.Contract(actionMock.abi);
     const encodeABI = helpers.testCallWithoutReturnValueFrom(avatar.address);
     var tx = await controller.genericCall(actionMock.address, encodeABI, avatar.address, 0);
-    assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[0].values._success, true);
+    assert.equal(helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[ 0 ].values._success, true);
   });
   
   it("sendEther", async() => {
