@@ -91,7 +91,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           )
           .encodeABI();
 
-        const proposalIdGuild = await createProposal({
+        const guildProposalId = await createProposal({
           guild: erc20GuildPermissioned,
           to: [erc20GuildPermissioned.address],
           data: [setConfigFunctionEncoded],
@@ -103,13 +103,13 @@ contract("ERC20GuildPermissioned", function (accounts) {
 
         await setAllVotesOnProposal({
           guild: erc20GuildPermissioned,
-          proposalId: proposalIdGuild,
+          proposalId: guildProposalId,
           account: accounts[5],
         });
 
         await time.increase(time.duration.seconds(30));
 
-        await erc20GuildPermissioned.executeProposal(proposalIdGuild);
+        await erc20GuildPermissioned.executeProposal(guildProposalId);
 
         // Check values are updated
         (await erc20GuildPermissioned.proposalTime())
@@ -133,7 +133,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           [false]
         ).encodeABI();
 
-        const proposalIdGuild = await createProposal({
+        const guildProposalId = await createProposal({
           guild: erc20GuildPermissioned,
           to: [erc20GuildPermissioned.address],
           data: [setAllowanceEncoded],
@@ -145,12 +145,12 @@ contract("ERC20GuildPermissioned", function (accounts) {
 
         await setAllVotesOnProposal({
           guild: erc20GuildPermissioned,
-          proposalId: proposalIdGuild,
+          proposalId: guildProposalId,
           account: accounts[5],
         });
         
         await time.increase(time.duration.seconds(30));
-        await erc20GuildPermissioned.executeProposal(proposalIdGuild);
+        await erc20GuildPermissioned.executeProposal(guildProposalId);
 
         // Check existing values are as expected
         (await erc20GuildPermissioned.proposalTime())
@@ -172,7 +172,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           updatedVotesForCreation
         ).encodeABI();
 
-        const setConfigProposalIdGuild = await createProposal({
+        const setConfigguildProposalId = await createProposal({
           guild: erc20GuildPermissioned,
           to: [erc20GuildPermissioned.address],
           data: [setConfigFunctionEncoded],
@@ -184,13 +184,13 @@ contract("ERC20GuildPermissioned", function (accounts) {
 
         await setAllVotesOnProposal({
           guild: erc20GuildPermissioned,
-          proposalId: setConfigProposalIdGuild,
+          proposalId: setConfigguildProposalId,
           account: accounts[5],
         });
 
         await time.increase(time.duration.seconds(30));
         await expectRevert(
-          erc20GuildPermissioned.executeProposal(setConfigProposalIdGuild),
+          erc20GuildPermissioned.executeProposal(setConfigguildProposalId),
           "ERC20GuildPermissioned: Not allowed call"
         );
 
@@ -207,7 +207,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
         const testWithNoargsEncoded = await new web3.eth.Contract(ActionMock.abi)
           .methods.testWithNoargs().encodeABI();
 
-        const proposalIdGuild = await createProposal({
+        const guildProposalId = await createProposal({
           guild: erc20GuildPermissioned,
           to: [actionMock.address],
           data: [testWithNoargsEncoded],
@@ -219,12 +219,12 @@ contract("ERC20GuildPermissioned", function (accounts) {
 
         await setAllVotesOnProposal({
           guild: erc20GuildPermissioned,
-          proposalId: proposalIdGuild,
+          proposalId: guildProposalId,
           account: accounts[5],
         });
 
         await expectRevert(
-          erc20GuildPermissioned.executeProposal(proposalIdGuild),
+          erc20GuildPermissioned.executeProposal(guildProposalId),
           "ERC20GuildPermissioned: Not allowed call"
         );
       });
@@ -251,7 +251,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           []
         ).encodeABI();
 
-        const proposalIdGuild = await createProposal({
+        const guildProposalId = await createProposal({
           guild: erc20GuildPermissioned,
           to: [erc20GuildPermissioned.address],
           data: [setAllowanceEncoded],
@@ -263,14 +263,14 @@ contract("ERC20GuildPermissioned", function (accounts) {
 
         await setAllVotesOnProposal({
           guild: erc20GuildPermissioned,
-          proposalId: proposalIdGuild,
+          proposalId: guildProposalId,
           account: accounts[5],
         });
 
         await time.increase(time.duration.seconds(30));
 
         await expectRevert(
-          erc20GuildPermissioned.executeProposal(proposalIdGuild),
+          erc20GuildPermissioned.executeProposal(guildProposalId),
           "ERC20Guild: Proposal call failed"
         );
       });

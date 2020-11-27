@@ -34,7 +34,7 @@ contract("ERC20GuildPayable", function (accounts) {
     genericCallDataVote,
     callData,
     genericCallData,
-    proposalId;
+    walletSchemeProposalId;
 
   let genericProposal;
 
@@ -64,12 +64,12 @@ contract("ERC20GuildPayable", function (accounts) {
       [0],
       helpers.SOME_HASH
     );
-    proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
     genericCallDataVote = await new web3.eth.Contract(
       votingMachine.contract.abi
     ).methods
-      .vote(proposalId, 1, 0, helpers.NULL_ADDRESS)
+      .vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS)
       .encodeABI();
 
     genericProposal = {
@@ -104,7 +104,7 @@ contract("ERC20GuildPayable", function (accounts) {
     });
 
     it("can set a vote and refund gas", async function () {
-      const proposalIdGuild = await createProposal(genericProposal);
+      const guildProposalId = await createProposal(genericProposal);
 
       const guildTracker = await balance.tracker(erc20GuildPayable.address);
 
@@ -115,10 +115,10 @@ contract("ERC20GuildPayable", function (accounts) {
 
       const tracker = await balance.tracker(accounts[1]);
 
-      const txVote = await erc20GuildPayable.setVote(proposalIdGuild, 50, {
+      const txVote = await erc20GuildPayable.setVote(guildProposalId, 50, {
         from: accounts[1], gasPrice: REAL_GAS_PRICE
       });
-      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
       const txGasUsed = txVote.receipt.gasUsed;
 
@@ -136,7 +136,7 @@ contract("ERC20GuildPayable", function (accounts) {
     });
 
     it("can set a vote but no refund as contract has no ether", async function () {
-      const proposalIdGuild = await createProposal(genericProposal);
+      const guildProposalId = await createProposal(genericProposal);
 
       const guildTracker = await balance.tracker(erc20GuildPayable.address);
 
@@ -145,10 +145,10 @@ contract("ERC20GuildPayable", function (accounts) {
 
       const tracker = await balance.tracker(accounts[1]);
 
-      const txVote = await erc20GuildPayable.setVote(proposalIdGuild, 50, {
+      const txVote = await erc20GuildPayable.setVote(guildProposalId, 50, {
         from: accounts[1], gasPrice: REAL_GAS_PRICE
       });
-      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
       const txGasUsed = txVote.receipt.gasUsed;
 
@@ -164,7 +164,7 @@ contract("ERC20GuildPayable", function (accounts) {
     });
     
     it("not execute an ERC20guild setConfig proposal on the guild", async function () {  
-      const proposalIdGuild = await createProposal({
+      const guildProposalId = await createProposal({
         guild: erc20GuildPayable,
         to: [erc20GuildPayable.address],
         data: [
@@ -180,17 +180,17 @@ contract("ERC20GuildPayable", function (accounts) {
 
       const txVote = await setAllVotesOnProposal({
         guild: erc20GuildPayable,
-        proposalId: proposalIdGuild,
+        proposalId: guildProposalId,
         account: accounts[5],
       });
 
       expect(txVote.receipt.gasUsed).to.be.below(80000);
 
-      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
       await time.increase(time.duration.seconds(30));
       await expectRevert(
-        erc20GuildPayable.executeProposal(proposalIdGuild),
+        erc20GuildPayable.executeProposal(guildProposalId),
         "ERC20Guild: Proposal call failed"
       );
 
@@ -202,7 +202,7 @@ contract("ERC20GuildPayable", function (accounts) {
     });
     
     it("execute an ERC20GuildPayable setConfig proposal on the guild", async function () {  
-      const proposalIdGuild = await createProposal({
+      const guildProposalId = await createProposal({
         guild: erc20GuildPayable,
         to: [erc20GuildPayable.address],
         data: [
@@ -218,17 +218,17 @@ contract("ERC20GuildPayable", function (accounts) {
 
       const txVote = await setAllVotesOnProposal({
         guild: erc20GuildPayable,
-        proposalId: proposalIdGuild,
+        proposalId: guildProposalId,
         account: accounts[5],
       });
 
       expect(txVote.receipt.gasUsed).to.be.below(80000);
 
-      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
       await time.increase(time.duration.seconds(30));
-      const receipt = await erc20GuildPayable.executeProposal(proposalIdGuild);
-      expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
+      const receipt = await erc20GuildPayable.executeProposal(guildProposalId);
+      expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
       assert.equal(await erc20GuildPayable.proposalTime(), 15);
       assert.equal(await erc20GuildPayable.votesForCreation(), 50);
@@ -253,7 +253,7 @@ contract("ERC20GuildPayable", function (accounts) {
         votingMachine.contract.abi
       ).methods.vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS).encodeABI();
     
-      const proposalIdGuild = await createProposal({
+      const guildProposalId = await createProposal({
         guild: erc20GuildPayable,
         to: [votingMachine.address],
         data: [genericCallDataVote],
@@ -265,17 +265,17 @@ contract("ERC20GuildPayable", function (accounts) {
 
       const txVote = await setAllVotesOnProposal({
         guild: erc20GuildPayable,
-        proposalId: proposalIdGuild,
+        proposalId: guildProposalId,
         account: accounts[5],
       });
 
       expect(txVote.receipt.gasUsed).to.be.below(80000);
 
-      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
       await time.increase(time.duration.seconds(30));
-      const receipt = await erc20GuildPayable.executeProposal(proposalIdGuild);
-      expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
+      const receipt = await erc20GuildPayable.executeProposal(guildProposalId);
+      expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
       await walletScheme.execute(walletSchemeProposalId);
 
@@ -287,7 +287,7 @@ contract("ERC20GuildPayable", function (accounts) {
     });
     
     it("execute a proposal to a contract from the guild", async function () {
-      const proposalIdGuild = await createProposal({
+      const guildProposalId = await createProposal({
         guild: erc20GuildPayable,
         to: [actionMock.address],
         data: [helpers.testCallFrom(erc20GuildPayable.address)],
@@ -299,17 +299,17 @@ contract("ERC20GuildPayable", function (accounts) {
 
       const txVote = await setAllVotesOnProposal({
         guild: erc20GuildPayable,
-        proposalId: proposalIdGuild,
+        proposalId: guildProposalId,
         account: accounts[5],
       });
 
       expect(txVote.receipt.gasUsed).to.be.below(80000);
 
-      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
       await time.increase(time.duration.seconds(30));
-      const receipt = await erc20GuildPayable.executeProposal(proposalIdGuild);
-      expectEvent(receipt, "ProposalExecuted", { proposalId: proposalIdGuild });
+      const receipt = await erc20GuildPayable.executeProposal(guildProposalId);
+      expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
     });
     
   });
@@ -342,17 +342,17 @@ contract("ERC20GuildPayable", function (accounts) {
         [0],
         helpers.SOME_HASH
       );
-      proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
       genericCallDataVote = await new web3.eth.Contract(
         votingMachine.contract.abi
       ).methods
-        .vote(proposalId, 1, 0, helpers.NULL_ADDRESS)
+        .vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS)
         .encodeABI();
     });
 
     it("can set a vote and but no refund", async function () {
-      const proposalIdGuild = await createProposal(genericProposal);
+      const guildProposalId = await createProposal(genericProposal);
 
       const guildTracker = await balance.tracker(erc20GuildPayable.address);
 
@@ -363,10 +363,10 @@ contract("ERC20GuildPayable", function (accounts) {
 
       const tracker = await balance.tracker(accounts[1]);
 
-      const txVote = await erc20GuildPayable.setVote(proposalIdGuild, 50, {
+      const txVote = await erc20GuildPayable.setVote(guildProposalId, 50, {
         from: accounts[1], gasPrice: REAL_GAS_PRICE
       });
-      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
       const txGasUsed = txVote.receipt.gasUsed;
 
@@ -419,17 +419,17 @@ contract("ERC20GuildPayable", function (accounts) {
         [0],
         helpers.SOME_HASH
       );
-      proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
       genericCallDataVote = await new web3.eth.Contract(
         votingMachine.contract.abi
       ).methods
-        .vote(proposalId, 1, 0, helpers.NULL_ADDRESS)
+        .vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS)
         .encodeABI();
     });
 
     it("only refunds upto max gas price", async function () {
-      const proposalIdGuild = await createProposal(genericProposal);
+      const guildProposalId = await createProposal(genericProposal);
 
       const guildTracker = await balance.tracker(erc20GuildPayable.address);
 
@@ -442,10 +442,10 @@ contract("ERC20GuildPayable", function (accounts) {
 
       const tracker = await balance.tracker(accounts[1]);
 
-      const txVote = await erc20GuildPayable.setVote(proposalIdGuild, 50, {
+      const txVote = await erc20GuildPayable.setVote(guildProposalId, 50, {
         from: accounts[1], gasPrice: REAL_GAS_PRICE
       });
-      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
       const txGasUsed = txVote.receipt.gasUsed;
 

@@ -29,7 +29,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
     genericCallDataVote,
     callData,
     genericCallData,
-    proposalId;
+    walletSchemeProposalId;
 
   const TIMELOCK = new BN("60");
 
@@ -59,12 +59,12 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [0],
       helpers.SOME_HASH
     );
-    proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
     genericCallDataVote = await new web3.eth.Contract(
       votingMachine.contract.abi
     ).methods
-      .vote(proposalId, 1, 0, helpers.NULL_ADDRESS)
+      .vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS)
       .encodeABI();
   });
 
@@ -231,14 +231,14 @@ contract("ERC20GuildSnapshot", function (accounts) {
     ](accounts[2], 1);
     votesOfAt.should.be.bignumber.equal(new BN("100"));
 
-    const proposalIdGuild = await helpers.getValueFromLogs(
+    const guildProposalId = await helpers.getValueFromLogs(
       txGuild,
       "proposalId",
       "ProposalCreated"
     );
 
-    const txVote = await erc20GuildSnapshot.setVote( proposalIdGuild, 10, { from: accounts[2] } );
-    expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+    const txVote = await erc20GuildSnapshot.setVote( guildProposalId, 10, { from: accounts[2] } );
+    expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
   });
 
   it("can not check votesOfAt for invalid nonexistent ID", async function () {

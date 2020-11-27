@@ -39,7 +39,7 @@ contract("ERC20GuildSigned", function (accounts) {
       callData,
       0
     );
-
+    
     const tx = await walletScheme.proposeCalls(
       [org.controller.address],
       [genericCallData],
@@ -47,7 +47,7 @@ contract("ERC20GuildSigned", function (accounts) {
       helpers.SOME_HASH
     );
     proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-
+    
     genericCallDataVote = await new web3.eth.Contract(
       votingMachine.contract.abi
     ).methods
@@ -71,12 +71,12 @@ contract("ERC20GuildSigned", function (accounts) {
         { from: accounts[3] }
       );
 
-      const proposalIdGuild = await helpers.getValueFromLogs(
+      const guildProposalId = await helpers.getValueFromLogs(
         txGuild,
         "proposalId",
         "ProposalCreated"
       );
-      const hashedVote = await erc20GuildSigned.hashVote(accounts[1], proposalIdGuild, 50);
+      const hashedVote = await erc20GuildSigned.hashVote(accounts[1], guildProposalId, 50);
       (await erc20GuildSigned.signedVotes(hashedVote)).should.be.equal(false);
 
       const signature = fixSignature(
@@ -87,11 +87,11 @@ contract("ERC20GuildSigned", function (accounts) {
       );
 
       const txVote = await erc20GuildSigned.setVote(
-        proposalIdGuild, 50, accounts[1], signature,
+        guildProposalId, 50, accounts[1], signature,
         { from: accounts[1] }
       );
 
-      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
       (await erc20GuildSigned.signedVotes(hashedVote)).should.be.equal(true);
     });
@@ -106,10 +106,10 @@ contract("ERC20GuildSigned", function (accounts) {
         { from: accounts[3] }
       );
 
-      const proposalIdGuild = await helpers.getValueFromLogs(txGuild, "proposalId", "ProposalCreated");
+      const guildProposalId = await helpers.getValueFromLogs(txGuild, "proposalId", "ProposalCreated");
 
-      const hashedVote1 = await erc20GuildSigned.hashVote(accounts[1], proposalIdGuild, 50);
-      const hashedVote2 = await erc20GuildSigned.hashVote(accounts[2], proposalIdGuild, 50);
+      const hashedVote1 = await erc20GuildSigned.hashVote(accounts[1], guildProposalId, 50);
+      const hashedVote2 = await erc20GuildSigned.hashVote(accounts[2], guildProposalId, 50);
 
       const signature1 = fixSignature(
         await web3.eth.sign(hashedVote1, accounts[1])
@@ -121,7 +121,7 @@ contract("ERC20GuildSigned", function (accounts) {
       const txVote = await erc20GuildSigned.methods[
         "setVotes(bytes32[],uint256[],address[],bytes[])"
       ](
-        [proposalIdGuild, proposalIdGuild],
+        [guildProposalId, guildProposalId],
         [50, 50],
         [accounts[1], accounts[2]],
         [signature1, signature2],
@@ -147,12 +147,12 @@ contract("ERC20GuildSigned", function (accounts) {
         { from: accounts[3] }
       );
 
-      const proposalIdGuild = await helpers.getValueFromLogs(
+      const guildProposalId = await helpers.getValueFromLogs(
         txGuild,
         "proposalId",
         "ProposalCreated"
       );
-      const hashedVote = await erc20GuildSigned.hashVote(accounts[1], proposalIdGuild, 50);
+      const hashedVote = await erc20GuildSigned.hashVote(accounts[1], guildProposalId, 50);
       (await erc20GuildSigned.signedVotes(hashedVote)).should.be.equal(false);
 
       const signature = fixSignature(
@@ -163,18 +163,18 @@ contract("ERC20GuildSigned", function (accounts) {
       );
 
       const txVote = await erc20GuildSigned.setVote(
-        proposalIdGuild,
+        guildProposalId,
         50,
         accounts[1],
         signature,
         { from: accounts[1] }
       );
-      expectEvent(txVote, "VoteAdded", { proposalId: proposalIdGuild });
+      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
       (await erc20GuildSigned.signedVotes(hashedVote)).should.be.equal(true);
 
       await expectRevert(
         erc20GuildSigned.setVote(
-          proposalIdGuild,
+          guildProposalId,
           50,
           accounts[1],
           signature,
@@ -194,12 +194,12 @@ contract("ERC20GuildSigned", function (accounts) {
         { from: accounts[3] }
       );
 
-      const proposalIdGuild = await helpers.getValueFromLogs(
+      const guildProposalId = await helpers.getValueFromLogs(
         txGuild,
         "proposalId",
         "ProposalCreated"
       );
-      const hashedVote = await erc20GuildSigned.hashVote(accounts[1], proposalIdGuild, 50);
+      const hashedVote = await erc20GuildSigned.hashVote(accounts[1], guildProposalId, 50);
       (await erc20GuildSigned.signedVotes(hashedVote)).should.be.equal(false);
 
       const signature = fixSignature(
@@ -212,7 +212,7 @@ contract("ERC20GuildSigned", function (accounts) {
       // now call from different account aka accounts[1]
       await expectRevert(
         erc20GuildSigned.setVote(
-          proposalIdGuild,
+          guildProposalId,
           50,
           accounts[1],
           signature,
