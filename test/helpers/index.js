@@ -13,7 +13,7 @@ const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const constants = require("./constants");
 const { encodePermission, decodePermission } = require("./permissions");
-const { encodeGenericCallData } = require("./walletScheme");
+const { encodeGenericCallData, getWalletSchemeExecutionEvent } = require("./walletScheme");
 const EthDecoder = require("@maticnetwork/eth-decoder");
 
 export const logDecoder = new EthDecoder.default.LogDecoder(
@@ -309,4 +309,4 @@ export function testCallWithoutReturnValueFrom(address) {
   return new web3.eth.Contract(ActionMock.abi).methods.testWithoutReturnValue(address).encodeABI();
 }
 
-export { encodePermission, decodePermission, encodeGenericCallData };
+export { encodePermission, decodePermission, encodeGenericCallData, getWalletSchemeExecutionEvent };

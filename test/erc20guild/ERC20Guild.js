@@ -46,6 +46,7 @@ contract("ERC20Guild", function (accounts) {
       [org.controller.address],
       [genericCallData],
       [0],
+      "Test title",
       helpers.SOME_HASH
     );
     walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
@@ -208,8 +209,6 @@ contract("ERC20Guild", function (accounts) {
       const receipt = await ierc20Guild.executeProposal(guildProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
-      await walletScheme.execute(walletSchemeProposalId);
-
       const organizationProposal = await walletScheme.getOrganizationProposal(walletSchemeProposalId);
       assert.equal(organizationProposal.state, GUILD_PROPOSAL_STATES.executed);
       assert.equal(organizationProposal.callData[0], genericCallData);
@@ -271,8 +270,6 @@ contract("ERC20Guild", function (accounts) {
       const receipt = await ierc20Guild.executeProposal(guildProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
-      await walletScheme.execute(walletSchemeProposalId);
-
       const { executed } = await ierc20Guild.getProposal(guildProposalId);
       assert.equal(executed, true);
 
@@ -328,6 +325,7 @@ contract("ERC20Guild", function (accounts) {
         [org.controller.address],
         [genericCallData],
         [0],
+        "Test title",
         helpers.SOME_HASH
       );
       const walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
@@ -357,6 +355,7 @@ contract("ERC20Guild", function (accounts) {
         [org.controller.address],
         [genericCallData],
         [0],
+        "Test title",
         helpers.SOME_HASH
       );
       const walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
@@ -394,8 +393,6 @@ contract("ERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(30));
       const receipt = await ierc20Guild.executeProposal(guildProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
-
-      await walletScheme.execute(walletSchemeProposalId);
 
       const { executed } = await ierc20Guild.getProposal(guildProposalId);
       assert.equal(executed, true);

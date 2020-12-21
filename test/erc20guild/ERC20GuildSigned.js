@@ -44,6 +44,7 @@ contract("ERC20GuildSigned", function (accounts) {
       [org.controller.address],
       [genericCallData],
       [0],
+      "Test title",
       helpers.SOME_HASH
     );
     proposalId = await helpers.getValueFromLogs(tx, "_proposalId");

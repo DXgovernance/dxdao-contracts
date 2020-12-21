@@ -1,7 +1,6 @@
 import * as helpers from "../helpers";
 
 const constants = require("../helpers/constants");
-const WalletScheme = artifacts.require("WalletScheme.sol");
 const DaoCreator = artifacts.require("DaoCreator.sol");
 const DxControllerCreator = artifacts.require("DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("ERC20Mock.sol");
@@ -57,6 +56,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [org.controller.address],
       [genericCallData],
       [0],
+      "Test title",
       helpers.SOME_HASH
     );
     walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");

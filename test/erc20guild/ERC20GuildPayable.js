@@ -62,6 +62,7 @@ contract("ERC20GuildPayable", function (accounts) {
       [org.controller.address],
       [genericCallData],
       [0],
+      "Test title",
       helpers.SOME_HASH
     );
     walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
@@ -245,6 +246,7 @@ contract("ERC20GuildPayable", function (accounts) {
         [org.controller.address],
         [walletSchemeProposalData],
         [0],
+        "Test title",
         helpers.SOME_HASH
       );
       const walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
@@ -276,8 +278,6 @@ contract("ERC20GuildPayable", function (accounts) {
       await time.increase(time.duration.seconds(30));
       const receipt = await erc20GuildPayable.executeProposal(guildProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
-
-      await walletScheme.execute(walletSchemeProposalId);
 
       const organizationProposal = await walletScheme.getOrganizationProposal(walletSchemeProposalId);
       assert.equal(organizationProposal.state, GUILD_PROPOSAL_STATES.executed);
@@ -340,6 +340,7 @@ contract("ERC20GuildPayable", function (accounts) {
         [org.controller.address],
         [genericCallData],
         [0],
+        "Test title",
         helpers.SOME_HASH
       );
       walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
@@ -417,6 +418,7 @@ contract("ERC20GuildPayable", function (accounts) {
         [org.controller.address],
         [genericCallData],
         [0],
+        "Test title",
         helpers.SOME_HASH
       );
       walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
