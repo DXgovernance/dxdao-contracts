@@ -74,14 +74,14 @@ contract ERC20GuildPayable is ERC20Guild {
     /// @dev Set the amount of tokens to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote
     /// @param amount The amount of tokens to use as voting for the proposal
-    function setVote(bytes32 proposalId, uint256 amount) public isInitialized {
+    function setVote(bytes32 proposalId, uint256 amount) public {
         super.setVote(proposalId, amount);
         _refundVote(msg.sender);
     }
 
     /// @dev Internal function to refund a vote cost to a sender
     /// @param toAddress The address where the refund should be sent
-    function _refundVote(address payable toAddress) internal {
+    function _refundVote(address payable toAddress) internal isInitialized {
       if (voteGas > 0) {
         uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
         if (address(this).balance >= gasRefund) {

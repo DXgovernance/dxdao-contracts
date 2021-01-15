@@ -10,7 +10,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 /// @notice This smart contract has not be audited
 /// @dev Extends an ERC20 functionality into a Guild.
 /// An ERC20Guild can make decisions by creating proposals
-/// and vote on the token balance as voting power.
+/// and vote using the token balance as voting power.
 contract ERC20Guild {
     using SafeMath for uint256;
 
@@ -145,7 +145,7 @@ contract ERC20Guild {
     /// @dev Set the amount of tokens to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote
     /// @param amount The amount of tokens to use as voting for the proposal
-    function setVote(bytes32 proposalId, uint256 amount) public isInitialized {
+    function setVote(bytes32 proposalId, uint256 amount) public {
         _setVote(msg.sender, proposalId, amount);
     }
 
@@ -185,7 +185,7 @@ contract ERC20Guild {
     /// @param voter The address of the voter
     /// @param proposalId The id of the proposal to set the vote
     /// @param amount The amount of tokens to use as voting for the proposal
-    function _setVote(address voter, bytes32 proposalId, uint256 amount) internal {
+    function _setVote(address voter, bytes32 proposalId, uint256 amount) internal isInitialized {
         require(!proposals[proposalId].executed, "ERC20Guild: Proposal already executed");
         require(votesOf(voter) >=  amount, "ERC20Guild: Invalid amount");
         if (amount > proposals[proposalId].votes[voter]) {

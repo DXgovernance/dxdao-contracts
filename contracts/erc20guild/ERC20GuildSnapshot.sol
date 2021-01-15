@@ -55,7 +55,6 @@ contract ERC20GuildSnapshot is ERC20GuildLockable {
     /// @dev Get the total amount of tokes locked at a certain snapshotId
     function totalLockedAt(uint256 snapshotId) public view returns(uint256) {
         (bool snapshotted, uint256 value) = _valueAt(snapshotId, _totalLockedSnapshots);
-
         if (snapshotted)
             return value;
         else 

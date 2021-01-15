@@ -54,7 +54,7 @@ contract ERC20GuildPermissioned is ERC20Guild {
 
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
     /// @param proposalId The id of the proposal to be executed
-    function executeProposal(bytes32 proposalId) public isInitialized {
+    function executeProposal(bytes32 proposalId) public {
         for (uint256 i = 0; i < proposals[proposalId].to.length; i++) {
             bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
             require(
