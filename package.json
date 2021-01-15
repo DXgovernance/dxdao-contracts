@@ -16,15 +16,12 @@
   },
   "scripts": {
     "test": "npx buidler test",
-    "testnet": "./scripts/testnet.sh",
-    "coverage": "./scripts/coverage.sh",
+    "coverage": "NODE_OPTIONS=--max-old-space-size=4096 OVERRIDE_ARC_GAS_LIMIT=0xfffffffffff npx builder coverage",
+    "build": "rimraf artifacts cache && npx buidler compile",
     "deploy": "node scripts/deploy.js",
-    "start": "pm2 start truffle -- serve",
     "lint": "eslint .",
     "lint --fix": "eslint --fix .",
     "solhint": "solhint contracts/**/*.sol",
-    "truffle": "truffle",
-    "build": "rimraf build && truffle compile",
     "prettier": "prettier --write contracts/**/*.sol"
   },
   "devDependencies": {
