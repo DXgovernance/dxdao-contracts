@@ -1,5 +1,6 @@
 import * as helpers from "../helpers";
 
+const constants = require("../helpers/constants");
 const ERC20GuildLockable = artifacts.require("ERC20GuildLockable.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
 const {
@@ -94,11 +95,12 @@ contract("ERC20GuildLockable", function (accounts) {
         account: accounts[5],
       });
 
-      expect(txVote.receipt.gasUsed).to.be.below(80000);
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
-      await time.increase(time.duration.seconds(30));
+      await time.increase(time.duration.seconds(31));
       await expectRevert(
         erc20GuildLockable.executeProposal(guildProposalId),
         "ERC20Guild: Proposal call failed"
@@ -136,11 +138,12 @@ contract("ERC20GuildLockable", function (accounts) {
         account: accounts[5],
       });
 
-      expect(txVote.receipt.gasUsed).to.be.below(80000);
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
-      await time.increase(time.duration.seconds(30));
+      await time.increase(time.duration.seconds(31));
       const receipt = await erc20GuildLockable.executeProposal(guildProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
@@ -189,11 +192,12 @@ contract("ERC20GuildLockable", function (accounts) {
         account: accounts[5],
       });
 
-      expect(txVote.receipt.gasUsed).to.be.below(80000);
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
-      await time.increase(time.duration.seconds(30));
+      await time.increase(time.duration.seconds(31));
       const receipt = await erc20GuildLockable.executeProposal(guildProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
@@ -226,11 +230,12 @@ contract("ERC20GuildLockable", function (accounts) {
         account: accounts[5],
       });
 
-      expect(txVote.receipt.gasUsed).to.be.below(80000);
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
-      await time.increase(time.duration.seconds(30));
+      await time.increase(time.duration.seconds(31));
       const receipt = await erc20GuildLockable.executeProposal(guildProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
       expectEvent.inTransaction(receipt.tx, actionMock, "ReceivedEther");

@@ -1,4 +1,6 @@
 import * as helpers from "../helpers";
+
+const constants = require("../helpers/constants");
 const IERC20Guild = artifacts.require("IERC20Guild.sol");
 const ERC20Guild = artifacts.require("ERC20Guild.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
@@ -201,11 +203,12 @@ contract("ERC20Guild", function (accounts) {
         account: accounts[5],
       });
 
-      expect(txVote.receipt.gasUsed).to.be.below(80000);
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
-      await time.increase(time.duration.seconds(30));
+      await time.increase(time.duration.seconds(31));
       const receipt = await ierc20Guild.executeProposal(guildProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
@@ -239,11 +242,12 @@ contract("ERC20Guild", function (accounts) {
         account: accounts[5],
       });
 
-      expect(txVote.receipt.gasUsed).to.be.below(80000);
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
-      await time.increase(time.duration.seconds(30));
+      await time.increase(time.duration.seconds(31));
       const receipt = await ierc20Guild.executeProposal(guildProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
@@ -262,11 +266,12 @@ contract("ERC20Guild", function (accounts) {
         proposalId: guildProposalId,
         account: accounts[5],
       });
-      expect(txVote.receipt.gasUsed).to.be.below(80000);
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
-      await time.increase(time.duration.seconds(30));
+      await time.increase(time.duration.seconds(31));
       const receipt = await ierc20Guild.executeProposal(guildProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
@@ -290,7 +295,8 @@ contract("ERC20Guild", function (accounts) {
         proposalId: guildProposalId,
         account: accounts[5],
       });
-      expect(txVote.receipt.gasUsed).to.be.below(80000);
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
@@ -306,11 +312,13 @@ contract("ERC20Guild", function (accounts) {
       const guildProposalId = await createProposal(genericProposal);
 
       const txVote = await ierc20Guild.setVote(guildProposalId, 1, { from: accounts[5], });
-      expect(txVote.receipt.gasUsed).to.be.below(80000);
+      
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
-      await time.increase(time.duration.seconds(30));
+      await time.increase(time.duration.seconds(31));
 
       await expectRevert(
         ierc20Guild.executeProposal(guildProposalId),
@@ -372,7 +380,9 @@ contract("ERC20Guild", function (accounts) {
         [guildProposalId, guildProposalId], [10, 10],
         { from: accounts[5] }
       );
-      expect(txVote.receipt.gasUsed).to.be.below(80000);
+      
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
       expectEvent(txVote, "VoteRemoved", { proposalId: guildProposalId });
@@ -386,11 +396,13 @@ contract("ERC20Guild", function (accounts) {
       const txVote = await ierc20Guild.setVote(guildProposalId, 200, {
         from: accounts[5],
       });
-      expect(txVote.receipt.gasUsed).to.be.below(80000);
+      
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
-      await time.increase(time.duration.seconds(30));
+      await time.increase(time.duration.seconds(31));
       const receipt = await ierc20Guild.executeProposal(guildProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
@@ -420,7 +432,9 @@ contract("ERC20Guild", function (accounts) {
       const guildProposalId = await createProposal(genericProposal);
 
       const txVoteAdd = await ierc20Guild.setVote( guildProposalId, 200, { from: accounts[5] } );
-      expect(txVoteAdd.receipt.gasUsed).to.be.below(80000);
+      
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVoteAdd.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVoteAdd, "VoteAdded", {
         proposalId: guildProposalId,
@@ -434,7 +448,9 @@ contract("ERC20Guild", function (accounts) {
       totalVotes.should.be.bignumber.equal("200");
 
       const txVoteRemove = await ierc20Guild.setVote( guildProposalId, 100, { from: accounts[5] } );
-      expect(txVoteRemove.receipt.gasUsed).to.be.below(80000);
+      
+      if (constants.ARC_GAS_PRICE > 1)
+        expect(txVoteRemove.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVoteRemove, "VoteRemoved", {
         proposalId: guildProposalId,

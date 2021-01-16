@@ -1,3 +1,4 @@
 const ARC_GAS_LIMIT = process.env.OVERRIDE_ARC_GAS_LIMIT || 9000000;
+const ARC_GAS_PRICE = process.env.OVERRIDE_ARC_GAS_PRICE || 10000000000;
 
-module.exports = { ARC_GAS_LIMIT };
+module.exports = { ARC_GAS_LIMIT, ARC_GAS_PRICE };

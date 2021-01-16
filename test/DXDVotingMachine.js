@@ -32,7 +32,7 @@ contract("DXDVotingMachine", function(accounts) {
   const TEST_VALUE = 123;
   const TEST_HASH = helpers.SOME_HASH;
   const TEST_TITLE = "Test Title";
-  const GAS_PRICE = 10000000000;
+  const GAS_PRICE = constants.ARC_GAS_PRICE;
   const VOTE_GAS = 360000;
   const TOTAL_GAS_REFUND = VOTE_GAS * GAS_PRICE;
   

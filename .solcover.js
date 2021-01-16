@@ -1,8 +1,8 @@
 module.exports = {
   skipFiles: [
       'daostack/',
-      'dxdao/',
-      'schemes/',
+      'schemes/ContributionReward.sol',
+      'schemes/SchemeRegistrar.sol',
       'test/',
       'utils/',
       'votingMachines/',

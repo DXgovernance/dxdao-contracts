@@ -46,6 +46,10 @@ module.exports = {
     },
     coverage: {
       url: 'http://localhost:8555',
+      accounts: { 
+        mnemonic: MNEMONIC, 
+        accountsBalance: "10000000000000000000000000000000"
+      },
       gasPrice: 1
     }
   }

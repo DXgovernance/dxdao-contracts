@@ -16,7 +16,7 @@
   },
   "scripts": {
     "test": "npx buidler test",
-    "coverage": "NODE_OPTIONS=--max-old-space-size=4096 OVERRIDE_ARC_GAS_LIMIT=0xfffffffffff npx builder coverage",
+    "coverage": "./scripts/coverage.sh",
     "build": "rimraf artifacts cache && npx buidler compile",
     "deploy": "node scripts/deploy.js",
     "lint": "eslint .",

@@ -107,7 +107,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           account: accounts[5],
         });
 
-        await time.increase(time.duration.seconds(30));
+        await time.increase(time.duration.seconds(31));
 
         await erc20GuildPermissioned.executeProposal(guildProposalId);
 
@@ -149,7 +149,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           account: accounts[5],
         });
         
-        await time.increase(time.duration.seconds(30));
+        await time.increase(time.duration.seconds(31));
         await erc20GuildPermissioned.executeProposal(guildProposalId);
 
         // Check existing values are as expected
@@ -188,7 +188,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           account: accounts[5],
         });
 
-        await time.increase(time.duration.seconds(30));
+        await time.increase(time.duration.seconds(31));
         await expectRevert(
           erc20GuildPermissioned.executeProposal(setConfigguildProposalId),
           "ERC20GuildPermissioned: Not allowed call"
@@ -267,7 +267,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           account: accounts[5],
         });
 
-        await time.increase(time.duration.seconds(30));
+        await time.increase(time.duration.seconds(31));
 
         await expectRevert(
           erc20GuildPermissioned.executeProposal(guildProposalId),
