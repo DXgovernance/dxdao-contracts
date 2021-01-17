@@ -11,18 +11,13 @@
     "truffle.js",
     "tsconfig.json"
   ],
-  "config": {
-    "gasLimit": "6200000"
-  },
   "scripts": {
     "test": "npx hardhat test",
     "coverage": "./scripts/coverage.sh",
-    "build": "rimraf artifacts cache && npx hardhat compile",
+    "compile": "rimraf artifacts cache && npx hardhat compile",
     "deploy": "node scripts/deploy.js",
     "lint": "eslint .",
-    "lint --fix": "eslint --fix .",
-    "solhint": "solhint contracts/**/*.sol",
-    "prettier": "prettier --write contracts/**/*.sol"
+    "lint --fix": "eslint --fix ."
   },
   "devDependencies": {
     "@babel/cli": "^7.10.1",

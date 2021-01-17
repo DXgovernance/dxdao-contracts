@@ -1,6 +1,6 @@
 pragma solidity ^0.5.4;
 
-import "@daostack/infra/contracts/Reputation.sol";
+import "../daostack/controller/Reputation.sol";
 
 // is Reputation
 contract DxReputation is Reputation {

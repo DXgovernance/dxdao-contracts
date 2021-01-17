@@ -8,7 +8,7 @@ require('@nomiclabs/hardhat-truffle5');
 require('hardhat-gas-reporter');
 require('solidity-coverage');
 
-const INFURA_PROJECT_ID = process.env.PROTOTYPE_BR_INFURA_KEY;
+const INFURA_PROJECT_ID = process.env.KEY_INFURA_API_KEY;
 const MNEMONIC = process.env.KEY_MNEMONIC;
 
 module.exports = {
@@ -28,6 +28,7 @@ module.exports = {
   networks: {
     hardhat: {
       gasPrice: 10000000000, // 10 gwei
+      timeout: 60000
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
@@ -51,7 +52,8 @@ module.exports = {
         mnemonic: MNEMONIC, 
         accountsBalance: "10000000000000000000000000000000"
       },
-      gasPrice: 1
+      gasPrice: 1,
+      timeout: 60000
     }
   }
 };

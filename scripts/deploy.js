@@ -1,11 +1,7 @@
-const fs = require('fs');
-require('dotenv').config();
-const args = process.argv;
-const Web3 = require('web3');
-const HDWalletProvider = require('truffle-hdwallet-provider')
+const hre = require("hardhat");
+const fs = require("fs");
+const web3 = hre.web3;
 var moment = require("moment");
-const { setupLoader } = require('@openzeppelin/contract-loader');
-const constants = require("../test/helpers/constants");
 const { encodePermission } = require("../test/helpers/permissions");
 const repHolders = require('../.repHolders.json');
 
@@ -27,55 +23,23 @@ const orgName = "DXdao";
 const tokenName = "DXDNative";
 const tokenSymbol = "DXDN";
 
-// Get network to use from arguments
-let network, mnemonic, httpProviderUrl, web3;
-for (var i = 0; i < args.length; i++) {
-  if (args[i] == '--network')
-    network = args[i+1];
-}
-if (!network) throw('Not network selected, --network parameter missing');
+// Import Contracts
+const DxToken = artifacts.require("DxToken");
+const DxAvatar = artifacts.require("DxAvatar");
+const DxReputation = artifacts.require("DxReputation");
+const DxController = artifacts.require("DxController");
+const DaoCreator = artifacts.require("DaoCreator");
+const WalletScheme = artifacts.require("WalletScheme");
+const ContributionReward = artifacts.require("ContributionReward");
+const SchemeRegistrar = artifacts.require("SchemeRegistrar");
+const GenesisProtocol = artifacts.require("GenesisProtocol");
+const DXDVotingMachine = artifacts.require("DXDVotingMachine");
+const DxControllerCreator = artifacts.require("DxControllerCreator");
 
-mnemonic = process.env.KEY_MNEMONIC;
-httpProviderUrl = 'http://localhost:8545';
-
-// Get development keys
-if (network != 'develop') {
-  infuraApiKey = process.env.KEY_INFURA_API_KEY;
-  httpProviderUrl = `https://${network}.infura.io/v3/${infuraApiKey }`
-} 
-
-console.log('Running deploy on', httpProviderUrl)
-const provider = new HDWalletProvider(mnemonic, new Web3.providers.HttpProvider(httpProviderUrl), 0, 10);
-web3 = new Web3(provider);
-
-let outputFile = { network };
-
-// Deploy test organization with the following schemes:
-// WalletScheme with all permissions that uses DXDVotingMachine
-// WalletScheme with no permissions for quick decisions  that uses DXDVotingMachine
-// SchemeRegistrar that can register schemes, upgrade controller and set constraints that uses GenesisProtocol
-// ContributionReward scheme that can only execute generic calls that uses GenesisProtocol
 async function main() {
-  
-  // Load contracts from artifacts
+
   const accounts = await web3.eth.getAccounts();
-  const contractLoader = setupLoader({
-    provider: web3, defaultSender: accounts[0], defaultGas: constants.ARC_GAS_LIMIT
-  }).truffle;
-  outputFile.deployerAccount = accounts[0];
-
-  var DxToken = contractLoader.fromArtifact("DxToken");
-  var DxAvatar = contractLoader.fromArtifact("DxAvatar");
-  var DxReputation = contractLoader.fromArtifact("DxReputation");
-  var DxController = contractLoader.fromArtifact("DxController");
-  var DaoCreator = contractLoader.fromArtifact("DaoCreator");
-  var WalletScheme = contractLoader.fromArtifact("WalletScheme");
-  var ContributionReward = contractLoader.fromArtifact("ContributionReward");
-  var SchemeRegistrar = contractLoader.fromArtifact("SchemeRegistrar");
-  var GenesisProtocol = contractLoader.fromArtifact("GenesisProtocol");
-  var DXDVotingMachine = contractLoader.fromArtifact("DXDVotingMachine");
-  var DxControllerCreator = contractLoader.fromArtifact("DxControllerCreator");
-
+  
   // Deploy and mint reputation
   console.log('Deploying DxReputation...');
   var dxReputation = await DxReputation.new();
@@ -86,27 +50,28 @@ async function main() {
   }
   for (var i = 0; i < addressesMints.length; i++){
     console.log('Doint mint '+i+' of '+(addressesMints.length-1)+' of initial REP minting...')
-    await dxReputation.mintMultiple(addressesMints[i], amountMints[i]);
+    await dxReputation.mintMultiple(addressesMints[i], amountMints[i], { gas: 9000000 });
   }
+    
+  // Deploy DXtoken
+  var dxToken = await DxToken.new(tokenName, tokenSymbol, 0);
+  console.log("dxToken deployed to:", dxToken.address);
   
-  // Deploy empty token
-  console.log('Deploying DxToken...');
-  var dxToken = await DxToken.new(tokenName, tokenSymbol, 0, {gas: constants.ARC_GAS_LIMIT});
-
-  // Deploy Avatar
+  // Deploy DXAvatar
   console.log('Deploying DxAvatar...');
-  var dxAvatar = await DxAvatar.new(orgName, dxReputation.address, dxToken.address, {gas: constants.ARC_GAS_LIMIT});
+  var dxAvatar = await DxAvatar.new(orgName, dxReputation.address, dxToken.address);
 
-  // Deploy controller and transfer avatar to controller
+  // Deploy DXcontroller and transfer avatar to controller
   console.log('Deploying DxController...');
-  var dxController = await DxController.new(dxAvatar.address,{gas: constants.ARC_GAS_LIMIT});
+  var dxController = await DxController.new(dxAvatar.address);
   await dxAvatar.transferOwnership(dxController.address);
+  await dxReputation.transferOwnership(dxController.address);
   
   // Deploy GenesisProtocol and DXDVotingMachine:
   console.log('Deploying GenesisProtocol...');
-  var genesisProtocol = await GenesisProtocol.new( GEN_TOKEN, {gas: constants.ARC_GAS_LIMIT});
+  var genesisProtocol = await GenesisProtocol.new(GEN_TOKEN);
   console.log('Deploying DXDVotingMachine...');
-  var dxdVotingMachine = await DXDVotingMachine.new(DXD_TOKEN, {gas: constants.ARC_GAS_LIMIT});
+  var dxdVotingMachine = await DXDVotingMachine.new(DXD_TOKEN);
   
   async function encodeParameters(parameters) {
     return await genesisProtocol.getParametersHash(
@@ -296,7 +261,9 @@ async function main() {
   )
   await dxController.unregisterScheme(accounts[0], dxAvatar.address);
   
-  outputFile.addresses = {
+  const outputFile = JSON.parse(fs.readFileSync('.contracts.json'));
+  
+  outputFile[hre.network.name] = {
     "dxReputation": dxReputation.address,
     "dxController": dxController.address,
     "dxToken": dxToken.address,
@@ -308,10 +275,15 @@ async function main() {
     "masterWalletScheme": masterWalletScheme.address,
     "quickWalletScheme": quickWalletScheme.address
   };
-  console.log('Contracts deployed:', outputFile.addresses);
+  console.log('Contracts deployed:', outputFile);
   
   fs.writeFileSync('.contracts.json', JSON.stringify(outputFile, null, 2), {encoding:'utf8',flag:'w'})
   console.log('===============================================');
-} 
+}
 
-Promise.all([main()]).then(process.exit);
+main()
+  .then(() => process.exit(0))
+  .catch(error => {
+    console.error(error);
+    process.exit(1);
+  });

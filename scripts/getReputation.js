@@ -1,30 +1,21 @@
 const fs = require('fs');
-const Web3 = require('web3');
-const args = process.argv;
+const hre = require("hardhat");
+const web3 = hre.web3;
 require('dotenv').config();
-const zeroAddress = '0x0000000000000000000000000000000000000000';
-const BN = Web3.utils.BN;
-// Get network to use from arguments
-let network, repToken, fromBlock, toBlock;
-for (var i = 0; i < args.length; i++) {
-  if (args[i] == '--network')
-    network = args[i+1];
-  if (args[i] == '--repToken')
-    repToken = args[i+1];
-  if (args[i] == '--fromBlock')
-    fromBlock = args[i+1];
-  if (args[i] == '--toBlock')
-    toBlock = args[i+1];
-}
-if (!network) throw('Not network selected, --network parameter missing');
+const BN = web3.utils.BN;
 
-const httpProviderUrl = `https://${network}.infura.io/v3/${process.env.KEY_INFURA_API_KEY}`
-const web3 = new Web3(httpProviderUrl)
-console.log('Getting rep holders from', repToken, httpProviderUrl)
+// Get network to use from arguments
+const repTokenAddress = {
+  mainnet: "0x7a927a93f221976aae26d5d077477307170f0b7c"
+};
+const fromBlock = process.env.REP_FROM_BLOCK;
+const toBlock = process.env.REP_TO_BLOCK;
 
 const DXRepABI = [{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_user","type":"address"},{"name":"_amount","type":"uint256"}],"name":"mint","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_blockNumber","type":"uint256"}],"name":"balanceOfAt","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[],"name":"renounceOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"isOwner","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"_blockNumber","type":"uint256"}],"name":"totalSupplyAt","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_user","type":"address"},{"name":"_amount","type":"uint256"}],"name":"burn","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_to","type":"address"},{"indexed":false,"name":"_amount","type":"uint256"}],"name":"Mint","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_from","type":"address"},{"indexed":false,"name":"_amount","type":"uint256"}],"name":"Burn","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"previousOwner","type":"address"},{"indexed":true,"name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"}];
 
-const DXRep = new web3.eth.Contract(DXRepABI, repToken);
+const DXRep = new web3.eth.Contract(DXRepABI, repTokenAddress[hre.network.name]);
+
+console.log('Getting rep holders from', repTokenAddress[hre.network.name], hre.network.name);
 
 async function main() {
   const allEvents = await DXRep.getPastEvents("allEvents", {fromBlock, toBlock});
@@ -54,8 +45,8 @@ async function main() {
   }
   const repHolders = {
     addresses: addresses,
-    network: network,
-    repToken: repToken,
+    network: hre.network.name,
+    repToken: repTokenAddress[hre.network.name],
     fromBlock: fromBlock,
     toBlock: toBlock,
     totalRep: totalRep.toString()
@@ -64,4 +55,9 @@ async function main() {
   fs.writeFileSync('.repHolders.json', JSON.stringify(repHolders));
 } 
 
-Promise.all([main()]).then(process.exit);
+main()
+  .then(() => process.exit(0))
+  .catch(error => {
+    console.error(error);
+    process.exit(1);
+  });

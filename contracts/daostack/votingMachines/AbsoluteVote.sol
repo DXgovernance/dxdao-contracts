@@ -1,6 +1,6 @@
 pragma solidity ^0.5.11;
 
-import "@daostack/infra/contracts/Reputation.sol";
+import "../controller/Reputation.sol";
 import "./IntVoteInterface.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./VotingMachineCallbacksInterface.sol";
