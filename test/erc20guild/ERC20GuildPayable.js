@@ -396,7 +396,7 @@ contract("ERC20GuildPayable", function (accounts) {
 
   describe("max gas price lower than transaction gas price", function () {
     const VOTE_GAS = new BN("95000"); // 95k - more than enough
-    const MAX_GAS_PRICE = 1;
+    const MAX_GAS_PRICE = new BN("1");
 
     beforeEach(async function () {
       erc20GuildPayable = await ERC20GuildPayable.new();
