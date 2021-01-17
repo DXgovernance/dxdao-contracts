@@ -2,16 +2,15 @@
 
 Repository with all the smart contracts of DXdao governance, it keeps track of the contracts that are deployed on mainnet, allowing the test of new features with the same code used on mainnet.
 
+
 ## Contracts
 
 All the contracts are organized in different folders:
-- daostack: The smart contracts from daostack, the most important contract here is GenesisProtocol, which is used as voting machine for the schemes.
-- dxdao: This are the contracts taken from the DXdao deployed in mainnet, all of them copy pasted and with their entire inline code from the verified contracts in etherscan.
+- daostack: The smart contracts from daostack release version that was used at the moment of DXdao contracts deployment, they, taken from https://github.com/daostack/arc/releases/tag/0.0.1-rc.19.
+- dxdao: This are the smart contracts of the DXdao deployed in mainnet, taken from https://github.com/gnosis/dx-daostack. It also has the DXD guild and DXD voting machine that will be used in DXdao gov 1.x.
 - erc20guild: The smart contracts of a guild that uses an ERC20 as voting reputation for their decisions, a very simple organization and efficient organization.
-- globalConstraints: The smart contracts related with global constraints, it only has the GlobalConstraintInterface contract.
-- schemes: The smart contracts for the schemes used in the organization.
+- schemes: The smart contracts for the schemes used in DXdao gov 1.x.
 - utils: The smart contracts used to facilitate and automate the deployment of the DXdao.
-- votingMachines: The smart contracts to be used by the schemes to communicate with the voting machines.
 
 ## Install
 

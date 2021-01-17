@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "@daostack/infra/contracts/votingMachines/IntVoteInterface.sol";
 import "@daostack/infra/contracts/votingMachines/ProposalExecuteInterface.sol";
-import "../votingMachines/VotingMachineCallbacks.sol";
+import "../daostack/votingMachines/VotingMachineCallbacks.sol";
 
 /**
  * @title WalletScheme.

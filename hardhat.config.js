@@ -4,20 +4,21 @@ require("babel-register")({
   "presets": [ "es2015" ],
   "plugins": [ "syntax-async-functions", "transform-regenerator" ]
 });
-usePlugin('@nomiclabs/buidler-truffle5');
-usePlugin('buidler-gas-reporter');
-usePlugin('solidity-coverage');
+require('@nomiclabs/hardhat-truffle5');
+require('hardhat-gas-reporter');
+require('solidity-coverage');
 
 const INFURA_PROJECT_ID = process.env.PROTOTYPE_BR_INFURA_KEY;
 const MNEMONIC = process.env.KEY_MNEMONIC;
 
-
 module.exports = {
-  solc: {
+  solidity: {
     version: '0.5.17',
-    optimizer: {
-      enabled: true,
-      runs: 200
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
     }
   },
   gasReporter: {
@@ -25,7 +26,7 @@ module.exports = {
     enabled: process.env.ENABLE_GAS_REPORTER === 'true'
   },
   networks: {
-    buidlerevm: {
+    hardhat: {
       gasPrice: 10000000000, // 10 gwei
     },
     mainnet: {
