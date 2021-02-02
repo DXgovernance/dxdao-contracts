@@ -133,12 +133,12 @@ contract ERC20Guild {
             proposals[proposalId].totalVotes >= votesForExecution,
             "ERC20Guild: Not enough tokens to execute proposal"
         );
+        proposals[proposalId].executed = true;
         for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
             (bool success,) = proposals[proposalId].to[i]
                 .call.value(proposals[proposalId].value[i])(proposals[proposalId].data[i]);
             require(success, "ERC20Guild: Proposal call failed");
         }
-        proposals[proposalId].executed = true;
         emit ProposalExecuted(proposalId);
     }
     
