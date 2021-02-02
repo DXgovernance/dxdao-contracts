@@ -3,6 +3,7 @@ pragma solidity ^0.5.17;
 pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/Math.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 /// @title ERC20Guild - DRAFT
@@ -13,6 +14,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 /// and vote using the token balance as voting power.
 contract ERC20Guild {
     using SafeMath for uint256;
+    using Math for uint256;
 
     IERC20 public token;
     bool public initialized = false;
@@ -20,6 +22,8 @@ contract ERC20Guild {
     uint256 public proposalTime;
     uint256 public votesForExecution;
     uint256 public votesForCreation;
+    uint256 public voteGas;
+    uint256 public maxGasPrice;
     
     struct Proposal {
         address creator;
@@ -42,42 +46,53 @@ contract ERC20Guild {
     event VoteAdded(bytes32 indexed proposalId, address voter, uint256 amount);
     event VoteRemoved(bytes32 indexed proposalId, address voter, uint256 amount);
     
+    /// @dev Allows the voting machine to receive ether to be used to refund voting costs
+    function() external payable {}
+    
     /// @dev Initialized modifier to require the contract to be initialized
     modifier isInitialized() {
         require(initialized, "ERC20Guild: Not initilized");
         _;
     }
-
-    /// @dev Initializer
+    
+    /// @dev Initilizer
     /// @param _token The address of the token to be used
-    /// @param _proposalTime The minimum time for a proposal to be under votation
+    /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _voteGas The gas to be used to calculate the vote gas refund
+    /// @param _maxGasPrice The maximum gas price to be refunded
     function initialize(
         address _token,
         uint256 _proposalTime,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
-        string memory _name
+        string memory _name,
+        uint256 _voteGas,
+        uint256 _maxGasPrice
     ) public {
-        require(address(_token) != address(0), "ERC20Guild: token is the zero address");  
+        require(address(_token) != address(0), "ERC20Guild: token is the zero address");
         name = _name;
         token = IERC20(_token);
-        _setConfig(_proposalTime, _votesForExecution, _votesForCreation);
+        _setConfig(_proposalTime, _votesForExecution, _votesForCreation, _voteGas, _maxGasPrice);
         initialized = true;
     }
     
-    /// @dev Set the ERC20Guild configuration, can be called only executing a proposal
-    /// or when it is initialized
-    /// @param _proposalTime The minimum time for a proposal to be under votation
+    /// @dev Set the ERC20Guild configuration, can be called only executing a proposal 
+    /// or when it is initilized
+    /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _voteGas The gas to be used to calculate the vote gas refund
+    /// @param _maxGasPrice The maximum gas price to be refunded
     function setConfig(
         uint256 _proposalTime,
         uint256 _votesForExecution,
-        uint256 _votesForCreation
+        uint256 _votesForCreation,
+        uint256 _voteGas,
+        uint256 _maxGasPrice
     ) public {
-        _setConfig(_proposalTime, _votesForExecution, _votesForCreation);
+        _setConfig(_proposalTime, _votesForExecution, _votesForCreation, _voteGas, _maxGasPrice);
     }
 
     /// @dev Create a proposal with an static call data and extra information
@@ -147,6 +162,7 @@ contract ERC20Guild {
     /// @param amount The amount of tokens to use as voting for the proposal
     function setVote(bytes32 proposalId, uint256 amount) public {
         _setVote(msg.sender, proposalId, amount);
+        _refundVote(msg.sender);
     }
 
     /// @dev Set the amount of tokens to vote in multiple proposals
@@ -165,10 +181,14 @@ contract ERC20Guild {
     /// @param _proposalTime The minimum time for a proposal to be under votation
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _voteGas The gas to be used to calculate the vote gas refund
+    /// @param _maxGasPrice The maximum gas price to be refunded
     function _setConfig(
         uint256 _proposalTime,
         uint256 _votesForExecution,
-        uint256 _votesForCreation
+        uint256 _votesForCreation,
+        uint256 _voteGas,
+        uint256 _maxGasPrice
     ) internal {
       require(
           !initialized || (msg.sender == address(this)),
@@ -179,6 +199,8 @@ contract ERC20Guild {
       proposalTime = _proposalTime;
       votesForExecution = _votesForExecution;
       votesForCreation = _votesForCreation;
+      voteGas = _voteGas;
+      maxGasPrice = _maxGasPrice;
     }
 
     /// @dev Internal function to set the amount of tokens to vote in a proposal
@@ -204,6 +226,17 @@ contract ERC20Guild {
             );
         }
         proposals[proposalId].votes[voter] = amount;
+    }
+    
+    /// @dev Internal function to refund a vote cost to a sender
+    /// @param toAddress The address where the refund should be sent
+    function _refundVote(address payable toAddress) internal isInitialized {
+      if (voteGas > 0) {
+        uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
+        if (address(this).balance >= gasRefund) {
+          toAddress.transfer(gasRefund);
+        }
+      }
     }
 
     /// @dev Get the voting power of an address
