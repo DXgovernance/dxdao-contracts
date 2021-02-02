@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/math/Math.sol";
+import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 /// @title ERC20Guild - DRAFT
@@ -15,6 +16,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 contract ERC20Guild {
     using SafeMath for uint256;
     using Math for uint256;
+    using ECDSA for bytes32;
 
     IERC20 public token;
     bool public initialized = false;
@@ -24,6 +26,8 @@ contract ERC20Guild {
     uint256 public votesForCreation;
     uint256 public voteGas;
     uint256 public maxGasPrice;
+    
+    mapping(bytes32 => bool) public signedVotes;
     
     struct Proposal {
         address creator;
@@ -176,6 +180,37 @@ contract ERC20Guild {
         for(uint i = 0; i < proposalIds.length; i ++)
             _setVote(msg.sender, proposalIds[i], amounts[i]);
     }
+    
+    /// @dev Set the amount of tokens to vote in a proposal using a signed vote
+    /// @param proposalId The id of the proposal to set the vote
+    /// @param amount The amount of tokens to use as voting for the proposal
+    /// @param voter The address of the voter
+    /// @param signature The signature of the hashed vote
+    function setSignedVote(
+        bytes32 proposalId, uint256 amount, address voter, bytes memory signature
+    ) public isInitialized {
+        bytes32 hashedVote = hashVote(voter, proposalId, amount);
+        require(!signedVotes[hashedVote], 'ERC20GuildSigned: Already voted');
+        require(
+          voter == hashedVote.toEthSignedMessageHash().recover(signature),
+          "ERC20GuildSigned: Wrong signer"
+        );
+        _setVote(voter, proposalId, amount);
+        signedVotes[hashedVote] = true;
+    }
+    
+    /// @dev Set the amount of tokens to vote in multiple proposals using signed votes
+    /// @param proposalIds The ids of the proposals to set the votes
+    /// @param amounts The amounts of tokens to use as voting for each proposals
+    /// @param voters The accounts that signed the votes
+    /// @param signatures The vote signatures
+    function setSignedVotes(
+        bytes32[] memory proposalIds, uint256[] memory amounts, address[] memory voters, bytes[] memory signatures
+    ) public {
+        for (uint i = 0; i < proposalIds.length; i ++) {
+            setSignedVote(proposalIds[i], amounts[i], voters[i], signatures[i]);
+        }
+    }
 
     /// @dev Internal function to set the configuration of the guild
     /// @param _proposalTime The minimum time for a proposal to be under votation
@@ -300,6 +335,18 @@ contract ERC20Guild {
     /// @return the votes of the voter for the proposalId
     function getProposalVotes(bytes32 proposalId, address voter) public returns(uint256) {
         return(proposals[proposalId].votes[voter]);
+    }
+    
+    /// @dev Set the amount of tokens to vote in multiple proposals
+    /// @param voter The address of to be used to sign the vote
+    /// @param proposalId The id fo the proposal to be votes
+    /// @param amount The amount of votes to be hashed
+    function hashVote(
+        address voter,
+        bytes32 proposalId,
+        uint256 amount
+    ) public pure returns(bytes32) {
+        return keccak256(abi.encodePacked(voter, proposalId, amount));
     }
 
 }
