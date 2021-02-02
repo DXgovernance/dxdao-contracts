@@ -28,6 +28,7 @@ contract ERC20Guild {
     uint256 public maxGasPrice;
     
     mapping(bytes32 => bool) public signedVotes;
+    mapping(address => mapping(bytes4 => bool)) public callPermissions;
     
     struct Proposal {
         address creator;
@@ -49,7 +50,8 @@ contract ERC20Guild {
     event ProposalExecuted(bytes32 indexed proposalId);
     event VoteAdded(bytes32 indexed proposalId, address voter, uint256 amount);
     event VoteRemoved(bytes32 indexed proposalId, address voter, uint256 amount);
-    
+    event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
+
     /// @dev Allows the voting machine to receive ether to be used to refund voting costs
     function() external payable {}
     
@@ -79,6 +81,8 @@ contract ERC20Guild {
         name = _name;
         token = IERC20(_token);
         _setConfig(_proposalTime, _votesForExecution, _votesForCreation, _voteGas, _maxGasPrice);
+        callPermissions[address(this)][bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256)"))] = true;
+        callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = true;
         initialized = true;
     }
     
@@ -97,6 +101,27 @@ contract ERC20Guild {
         uint256 _maxGasPrice
     ) public {
         _setConfig(_proposalTime, _votesForExecution, _votesForCreation, _voteGas, _maxGasPrice);
+    }
+    
+    /// @dev Set the allowance of a call to be executed by the guild
+    /// @param to The address to be called
+    /// @param functionSignature The signature of the function
+    /// @param allowance If the function is allowed to be called or not
+    function setAllowance(
+        address[] memory to,
+        bytes4[] memory functionSignature,
+        bool[] memory allowance
+    ) public isInitialized {
+        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
+        require(
+            (to.length == functionSignature.length) && (to.length == allowance.length),
+            "ERC20Guild: Wrong length of to, functionSignature or allowance arrays"
+        );
+        for (uint256 i = 0; i < to.length; i++) {
+            require(functionSignature[i] != bytes4(0), "ERC20Guild: Empty sigantures not allowed");
+            callPermissions[to[i]][functionSignature[i]] = allowance[i];
+            emit SetAllowance(to[i], functionSignature[i], allowance[i]);
+        }
     }
 
     /// @dev Create a proposal with an static call data and extra information
@@ -154,6 +179,11 @@ contract ERC20Guild {
         );
         proposals[proposalId].executed = true;
         for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
+            bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
+            require(
+                getCallPermission(proposals[proposalId].to[i], proposalSignature) == true,
+                "ERC20Guild: Not allowed call"
+            );
             (bool success,) = proposals[proposalId].to[i]
                 .call.value(proposals[proposalId].value[i])(proposals[proposalId].data[i]);
             require(success, "ERC20Guild: Proposal call failed");
@@ -335,6 +365,20 @@ contract ERC20Guild {
     /// @return the votes of the voter for the proposalId
     function getProposalVotes(bytes32 proposalId, address voter) public returns(uint256) {
         return(proposals[proposalId].votes[voter]);
+    }
+    
+    /// @dev Get call data signature
+    function getFuncSignature(bytes memory data) public view returns (bytes4) {
+        bytes32 functionSignature = bytes32(0);
+        assembly {
+            functionSignature := mload(add(data, 32))
+        }
+        return bytes4(functionSignature);
+    }
+
+    /// @dev Get call signature permission
+    function getCallPermission(address to, bytes4 functionSignature) public view returns (bool) {
+        return callPermissions[to][functionSignature];
     }
     
     /// @dev Set the amount of tokens to vote in multiple proposals
