@@ -202,6 +202,39 @@ contract("ERC20GuildPermissioned", function (accounts) {
         (await erc20GuildPermissioned.votesForCreation())
           .should.be.bignumber.equal(new BN(votesForCreation));
       });
+      
+      it("Proposal for setting new method with empty signatyre allowance for guild shoudl fail", async function () {
+        const setAllowanceEncoded = await new web3.eth.Contract(
+          ERC20GuildPermissioned.abi
+        ).methods.setAllowance(
+          [actionMock.address],
+          ["0x0"],
+          [true]
+        ).encodeABI();
+
+        const guildProposalId = await createProposal({
+          guild: erc20GuildPermissioned,
+          to: [erc20GuildPermissioned.address],
+          data: [setAllowanceEncoded],
+          value: ["0"],
+          description: "Set empty allowance",
+          contentHash: helpers.NULL_ADDRESS,
+          account: accounts[2],
+        });
+
+        await setAllVotesOnProposal({
+          guild: erc20GuildPermissioned,
+          proposalId: guildProposalId,
+          account: accounts[5],
+        });
+        
+        await time.increase(time.duration.seconds(31));
+        await expectRevert(
+          erc20GuildPermissioned.executeProposal(guildProposalId),
+          "ERC20Guild: Proposal call failed"
+        );
+        (await erc20GuildPermissioned.getCallPermission(actionMock.address, "0x0")).should.equal(false);
+      });
 
       it("Reverts when trying to get the permissioned guild to call an unauthorized method", async function () {
         const testWithNoargsEncoded = await new web3.eth.Contract(ActionMock.abi)

@@ -47,6 +47,7 @@ contract ERC20GuildPermissioned is ERC20Guild {
             "ERC20Guild: Wrong length of to, functionSignature or allowance arrays"
         );
         for (uint256 i = 0; i < to.length; i++) {
+            require(functionSignature[i] != bytes4(0), "ERC20Guild: Empty sigantures not allowed");
             callPermissions[to[i]][functionSignature[i]] = allowance[i];
             emit SetAllowance(to[i], functionSignature[i], allowance[i]);
         }
