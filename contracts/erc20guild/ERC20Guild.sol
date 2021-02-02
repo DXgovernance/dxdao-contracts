@@ -6,6 +6,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/math/Math.sol";
 import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "../utils/TokenVault.sol";
 
 /// @title ERC20Guild - DRAFT
 /// @author github:AugustoL
@@ -26,9 +27,18 @@ contract ERC20Guild {
     uint256 public votesForCreation;
     uint256 public voteGas;
     uint256 public maxGasPrice;
+    uint256 public lockTime;
+    uint256 public totalLocked;
+    TokenVault public tokenVault;
     
     mapping(bytes32 => bool) public signedVotes;
     mapping(address => mapping(bytes4 => bool)) public callPermissions;
+    
+    struct TokenLock {
+      uint256 amount;
+      uint256 timestamp;
+    }
+    mapping(address => TokenLock) public tokensLocked;
     
     struct Proposal {
         address creator;
@@ -51,6 +61,8 @@ contract ERC20Guild {
     event VoteAdded(bytes32 indexed proposalId, address voter, uint256 amount);
     event VoteRemoved(bytes32 indexed proposalId, address voter, uint256 amount);
     event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
+    event TokensLocked(address voter, uint256 value);
+    event TokensReleased(address voter, uint256 value);
 
     /// @dev Allows the voting machine to receive ether to be used to refund voting costs
     function() external payable {}
@@ -68,6 +80,7 @@ contract ERC20Guild {
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function initialize(
         address _token,
         uint256 _proposalTime,
@@ -75,12 +88,13 @@ contract ERC20Guild {
         uint256 _votesForCreation,
         string memory _name,
         uint256 _voteGas,
-        uint256 _maxGasPrice
+        uint256 _maxGasPrice,
+        uint256 _lockTime
     ) public {
         require(address(_token) != address(0), "ERC20Guild: token is the zero address");
         name = _name;
         token = IERC20(_token);
-        _setConfig(_proposalTime, _votesForExecution, _votesForCreation, _voteGas, _maxGasPrice);
+        _setConfig(_proposalTime, _votesForExecution, _votesForCreation, _voteGas, _maxGasPrice, _lockTime);
         callPermissions[address(this)][bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256)"))] = true;
         callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = true;
         initialized = true;
@@ -93,14 +107,16 @@ contract ERC20Guild {
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function setConfig(
         uint256 _proposalTime,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
         uint256 _voteGas,
-        uint256 _maxGasPrice
+        uint256 _maxGasPrice,
+        uint256 _lockTime
     ) public {
-        _setConfig(_proposalTime, _votesForExecution, _votesForCreation, _voteGas, _maxGasPrice);
+        _setConfig(_proposalTime, _votesForExecution, _votesForCreation, _voteGas, _maxGasPrice, _lockTime);
     }
     
     /// @dev Set the allowance of a call to be executed by the guild
@@ -241,6 +257,27 @@ contract ERC20Guild {
             setSignedVote(proposalIds[i], amounts[i], voters[i], signatures[i]);
         }
     }
+    
+    /// @dev Lock tokens in the guild to be used as voting power
+    /// @param amount The amount of tokens to be locked
+    function lockTokens(uint256 amount) public {
+        tokenVault.deposit(msg.sender, amount);
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(amount);
+        tokensLocked[msg.sender].timestamp = block.timestamp.add(lockTime);
+        totalLocked = totalLocked.add(amount);
+        emit TokensLocked(msg.sender, amount);
+    }
+
+    /// @dev Release tokens locked in the guild, this will decrease the voting power
+    /// @param amount The amount of tokens to be released
+    function releaseTokens(uint256 amount) public {
+        require(votesOf(msg.sender) >= amount, "ERC20GuildLockable: Unable to release more tokens than locked");
+        require(tokensLocked[msg.sender].timestamp < block.timestamp, "ERC20GuildLockable: Tokens still locked");
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(amount);
+        totalLocked = totalLocked.sub(amount);
+        tokenVault.withdraw(msg.sender, amount);
+        emit TokensReleased(msg.sender, amount);
+    }
 
     /// @dev Internal function to set the configuration of the guild
     /// @param _proposalTime The minimum time for a proposal to be under votation
@@ -248,12 +285,14 @@ contract ERC20Guild {
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function _setConfig(
         uint256 _proposalTime,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
         uint256 _voteGas,
-        uint256 _maxGasPrice
+        uint256 _maxGasPrice,
+        uint256 _lockTime
     ) internal {
       require(
           !initialized || (msg.sender == address(this)),
@@ -266,6 +305,7 @@ contract ERC20Guild {
       votesForCreation = _votesForCreation;
       voteGas = _voteGas;
       maxGasPrice = _maxGasPrice;
+      lockTime = _lockTime;
     }
 
     /// @dev Internal function to set the amount of tokens to vote in a proposal
@@ -307,7 +347,7 @@ contract ERC20Guild {
     /// @dev Get the voting power of an address
     /// @param account The address of the token account
     function votesOf(address account) public view returns(uint256) {
-      return token.balanceOf(account);
+      return tokensLocked[account].amount;
     }
     
     /// @dev Get the voting power of multiple addresses
