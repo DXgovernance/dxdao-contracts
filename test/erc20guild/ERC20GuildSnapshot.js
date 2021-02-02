@@ -25,6 +25,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
     votingMachine,
     guildToken,
     erc20GuildSnapshot,
+    tokenVault,
     genericCallDataVote,
     callData,
     genericCallData,
@@ -51,6 +52,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
     genericCallData = helpers.encodeGenericCallData(
       org.avatar.address, actionMock.address, callData, 0
     );
+    tokenVault = await erc20GuildSnapshot.tokenVault();
     
     const tx = await walletScheme.proposeCalls(
       [org.controller.address],
@@ -70,7 +72,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
 
   it("can lock tokens and check snapshot", async function () {
     // approve lockable guild to "transfer in" tokens to lock
-    await guildToken.approve(erc20GuildSnapshot.address, 50, {from: accounts[1]});
+    await guildToken.approve(tokenVault, 50, {from: accounts[1]});
 
     const tx = await erc20GuildSnapshot.lockTokens(50, {from: accounts[1]});
     expectEvent(tx, "TokensLocked", {
@@ -96,8 +98,8 @@ contract("ERC20GuildSnapshot", function (accounts) {
 
   it("can lock tokens for multiple accounts and check snapshot", async function () {
     // approve lockable guild to "transfer in" tokens to lock
-    await guildToken.approve(erc20GuildSnapshot.address, 100, { from: accounts[2] });
-    await guildToken.approve(erc20GuildSnapshot.address, 100, { from: accounts[3] });
+    await guildToken.approve(tokenVault, 100, { from: accounts[2] });
+    await guildToken.approve(tokenVault, 100, { from: accounts[3] });
 
     let tx = await erc20GuildSnapshot.lockTokens(100, { from: accounts[2] });
     expectEvent(tx, "TokensLocked", { voter: accounts[2], value: "100" });
@@ -132,7 +134,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
 
   it("can lock tokens and release tokens", async function () {
     // approve lockable guild to "transfer in" tokens to lock
-    await guildToken.approve(erc20GuildSnapshot.address, 50, {
+    await guildToken.approve(tokenVault, 50, {
       from: accounts[1],
     });
 
@@ -162,7 +164,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
 
   it("can lock tokens and create proposal", async function () {
     // approve lockable guild to "transfer in" tokens to lock
-    await guildToken.approve(erc20GuildSnapshot.address, 100, { from: accounts[2] });
+    await guildToken.approve(tokenVault, 100, { from: accounts[2] });
 
     const tx = await erc20GuildSnapshot.lockTokens(100, { from: accounts[2] });
     expectEvent(tx, "TokensLocked", { voter: accounts[2], value: "100" });
@@ -195,7 +197,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
 
   it("can not lock tokens, create proposal and setVote", async function () {
     // approve lockable guild to "transfer in" tokens to lock
-    await guildToken.approve(erc20GuildSnapshot.address, 100, {
+    await guildToken.approve(tokenVault, 100, {
       from: accounts[2],
     });
 
@@ -243,7 +245,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
 
   it("can not check votesOfAt for invalid nonexistent ID", async function () {
     // approve lockable guild to "transfer in" tokens to lock
-    await guildToken.approve(erc20GuildSnapshot.address, 100, {
+    await guildToken.approve(tokenVault, 100, {
       from: accounts[2],
     });
 
@@ -282,7 +284,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
 
   it("can check votesOfAt for invalid nonexistent ID", async function () {
     // approve lockable guild to "transfer in" tokens to lock
-    await guildToken.approve(erc20GuildSnapshot.address, 100, {
+    await guildToken.approve(tokenVault, 100, {
       from: accounts[2],
     });
 

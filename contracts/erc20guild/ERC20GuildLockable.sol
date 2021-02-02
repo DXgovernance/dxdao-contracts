@@ -3,6 +3,7 @@ pragma solidity ^0.5.17;
 pragma experimental ABIEncoderV2;
 
 import "./ERC20Guild.sol";
+import "../utils/TokenVault.sol";
 
 /// @title ERC20GuildLockable -DRAFT
 /// @author github:AugustoL
@@ -20,6 +21,8 @@ contract ERC20GuildLockable is ERC20Guild {
     uint256 public totalLocked;
     
     uint256 public lockTime;
+    
+    TokenVault public tokenVault;
 
     event TokensLocked(address voter, uint256 value);
     event TokensReleased(address voter, uint256 value);
@@ -40,6 +43,8 @@ contract ERC20GuildLockable is ERC20Guild {
     ) public {
         require(_lockTime > 0, "ERC20Guild: lockTime should be higher than zero");
         super.initialize(_token, _proposalTime, _votesForExecution, _votesForCreation, _name);
+        tokenVault = new TokenVault();
+        tokenVault.initialize(_token, address(this));
         lockTime = _lockTime;
     }
 
@@ -75,7 +80,7 @@ contract ERC20GuildLockable is ERC20Guild {
     /// @dev Lock tokens in the guild to be used as voting power
     /// @param amount The amount of tokens to be locked
     function lockTokens(uint256 amount) public {
-        token.transferFrom(msg.sender, address(this), amount);
+        tokenVault.deposit(msg.sender, amount);
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(amount);
         tokensLocked[msg.sender].timestamp = block.timestamp.add(lockTime);
         totalLocked = totalLocked.add(amount);
@@ -89,7 +94,7 @@ contract ERC20GuildLockable is ERC20Guild {
         require(tokensLocked[msg.sender].timestamp < block.timestamp, "ERC20GuildLockable: Tokens still locked");
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(amount);
         totalLocked = totalLocked.sub(amount);
-        token.transfer(msg.sender, amount);
+        tokenVault.withdraw(msg.sender, amount);
         emit TokensReleased(msg.sender, amount);
     }
     

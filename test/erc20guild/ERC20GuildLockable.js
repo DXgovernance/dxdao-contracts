@@ -22,7 +22,7 @@ require("chai").should();
 contract("ERC20GuildLockable", function (accounts) {
   let walletScheme, daoCreator, org, actionMock, votingMachine, guildToken;
 
-  let erc20GuildLockable;
+  let erc20GuildLockable, tokenVault;
 
   const TIMELOCK = new BN("60");
 
@@ -41,6 +41,7 @@ contract("ERC20GuildLockable", function (accounts) {
       votingMachine = createDaoResult.votingMachine;
       org = createDaoResult.org;
       actionMock = await ActionMock.new();
+      tokenVault = await erc20GuildLockable.tokenVault();
     });
 
     it("cannot initialize with zero locktime", async function () {
@@ -70,9 +71,9 @@ contract("ERC20GuildLockable", function (accounts) {
     });
     
     it("not execute an ERC20guild setConfig proposal on the guild", async function () {
-      await guildToken.approve(erc20GuildLockable.address, 200, { from: accounts[5] });
+      await guildToken.approve(tokenVault, 200, { from: accounts[5] });
       await erc20GuildLockable.lockTokens(200, { from: accounts[5] });
-      await guildToken.approve(erc20GuildLockable.address, 100, { from: accounts[3] });
+      await guildToken.approve(tokenVault, 100, { from: accounts[3] });
       await erc20GuildLockable.lockTokens(100, { from: accounts[3] });
       
       const guildProposalId = await createProposal({
@@ -113,9 +114,9 @@ contract("ERC20GuildLockable", function (accounts) {
     });
     
     it("execute an ERC20GuildLockable setConfig proposal on the guild", async function () {
-      await guildToken.approve(erc20GuildLockable.address, 200, { from: accounts[5] });
+      await guildToken.approve(tokenVault, 200, { from: accounts[5] });
       await erc20GuildLockable.lockTokens(200, { from: accounts[5] });
-      await guildToken.approve(erc20GuildLockable.address, 100, { from: accounts[3] });
+      await guildToken.approve(tokenVault, 100, { from: accounts[3] });
       await erc20GuildLockable.lockTokens(100, { from: accounts[3] });
       
       const guildProposalId = await createProposal({
@@ -171,9 +172,9 @@ contract("ERC20GuildLockable", function (accounts) {
         votingMachine.contract.abi
       ).methods.vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS).encodeABI();
 
-      await guildToken.approve(erc20GuildLockable.address, 200, { from: accounts[5] });
+      await guildToken.approve(tokenVault, 200, { from: accounts[5] });
       await erc20GuildLockable.lockTokens(200, { from: accounts[5] });
-      await guildToken.approve(erc20GuildLockable.address, 100, { from: accounts[3] });
+      await guildToken.approve(tokenVault, 100, { from: accounts[3] });
       await erc20GuildLockable.lockTokens(100, { from: accounts[3] });
       
       const guildProposalId = await createProposal({
@@ -209,9 +210,9 @@ contract("ERC20GuildLockable", function (accounts) {
     });
     
     it("execute a proposal to a contract from the guild", async function () {
-      await guildToken.approve(erc20GuildLockable.address, 200, { from: accounts[5] });
+      await guildToken.approve(tokenVault, 200, { from: accounts[5] });
       await erc20GuildLockable.lockTokens(200, { from: accounts[5] });
-      await guildToken.approve(erc20GuildLockable.address, 100, { from: accounts[3] });
+      await guildToken.approve(tokenVault, 100, { from: accounts[3] });
       await erc20GuildLockable.lockTokens(100, { from: accounts[3] });
       
       const guildProposalId = await createProposal({
@@ -243,9 +244,7 @@ contract("ERC20GuildLockable", function (accounts) {
 
     it("can lock tokens", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildLockable.address, 50, {
-        from: accounts[1],
-      });
+      await guildToken.approve(tokenVault, 50, {from: accounts[1],});
 
       const tx = await erc20GuildLockable.lockTokens(50, { from: accounts[1] });
       expectEvent(tx, "TokensLocked", { voter: accounts[1], value: "50" });
@@ -264,7 +263,7 @@ contract("ERC20GuildLockable", function (accounts) {
 
     it("can release tokens", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildLockable.address, 50, { from: accounts[2] });
+      await guildToken.approve(tokenVault, 50, { from: accounts[2] });
 
       const txLock = await erc20GuildLockable.lockTokens(50, { from: accounts[2] });
       expectEvent(txLock, "TokensLocked", { voter: accounts[2], value: "50" });
@@ -294,7 +293,7 @@ contract("ERC20GuildLockable", function (accounts) {
 
     it("cannot release more token than locked", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildLockable.address, 50, { from: accounts[2] });
+      await guildToken.approve(tokenVault, 50, { from: accounts[2] });
 
       const txLock = await erc20GuildLockable.lockTokens(50, { from: accounts[2] });
       expectEvent(txLock, "TokensLocked", { voter: accounts[2], value: "50" });
@@ -311,7 +310,7 @@ contract("ERC20GuildLockable", function (accounts) {
 
     it("cannot release before end of timelock", async function () {
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildLockable.address, 50, { from: accounts[2] });
+      await guildToken.approve(tokenVault, 50, { from: accounts[2] });
 
       const txLock = await erc20GuildLockable.lockTokens(50, { from: accounts[2] });
       expectEvent(txLock, "TokensLocked", { voter: accounts[2], value: "50" });
@@ -327,7 +326,7 @@ contract("ERC20GuildLockable", function (accounts) {
       bal.should.be.bignumber.equal("100");
 
       // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(erc20GuildLockable.address, 100, { from: accounts[2] });
+      await guildToken.approve(tokenVault, 100, { from: accounts[2] });
 
       const txLock = await erc20GuildLockable.lockTokens(100, { from: accounts[2] });
       expectEvent(txLock, "TokensLocked", { voter: accounts[2], value: "100" });
