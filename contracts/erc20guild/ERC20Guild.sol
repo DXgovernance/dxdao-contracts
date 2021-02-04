@@ -24,7 +24,6 @@ contract ERC20Guild {
     using SafeMath for uint256;
     using Math for uint256;
     using ECDSA for bytes32;
-    using SafeMath for uint256;
     using Arrays for uint256[];
 
     IERC20 public token;
@@ -64,9 +63,9 @@ contract ERC20Guild {
         bytes contentHash;
         uint256 totalVotes;
         bool executed;
+        uint256 snapshotId;
         mapping(address => uint256) votes;
     }
-
     mapping(bytes32 => Proposal) public proposals;
     
     // Snapshotted values have arrays of ids and the value corresponding to that id. These could be an array of a
@@ -75,8 +74,8 @@ contract ERC20Guild {
         uint256[] ids;
         uint256[] values;
     }
-    
-    mapping(bytes32 => uint256) public proposalSnapshots;
+
+    // The snapshots used for votes and total tokens locked.
     mapping (address => Snapshots) private _votesSnapshots;
     Snapshots private _totalLockedSnapshots;
 
@@ -188,7 +187,6 @@ contract ERC20Guild {
         require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
         bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, now));
         _currentSnapshotId = _currentSnapshotId.add(1);
-        proposalSnapshots[proposalId] = _currentSnapshotId;
         proposals[proposalId] = Proposal(
             msg.sender,
             now,
@@ -199,7 +197,8 @@ contract ERC20Guild {
             description,
             contentHash,
             votesOf(msg.sender),
-            false
+            false,
+            _currentSnapshotId
         );
         
         emit ProposalCreated(proposalId);
@@ -234,7 +233,7 @@ contract ERC20Guild {
     /// @param amount The amount of votes to be set in the proposal
     function setVote(bytes32 proposalId, uint256 amount) public {
         require(
-            votesOfAt(msg.sender, proposalSnapshots[proposalId]) >=  amount,
+            votesOfAt(msg.sender, proposals[proposalId].snapshotId) >=  amount,
             "ERC20Guild: Invalid amount"
         );
         _setVote(msg.sender, proposalId, amount);
@@ -445,7 +444,8 @@ contract ERC20Guild {
         string memory description,
         bytes memory contentHash,
         uint256 totalVotes,
-        bool executed
+        bool executed,
+        uint256 snapshotId
     ) {
         Proposal memory proposal = proposals[proposalId];
         return(
@@ -458,7 +458,8 @@ contract ERC20Guild {
             proposal.description,
             proposal.contentHash,
             proposal.totalVotes,
-            proposal.executed
+            proposal.executed,
+            proposal.snapshotId
         );
     }
 
