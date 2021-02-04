@@ -9,12 +9,17 @@ import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "../utils/TokenVault.sol";
 import "../utils/Arrays.sol";
 
-/// @title ERC20Guild - DRAFT
+/// @title ERC20Guild
 /// @author github:AugustoL
-/// @notice This smart contract has not be audited
-/// @dev Extends an ERC20 functionality into a Guild.
-/// An ERC20Guild can make decisions by creating proposals
-/// and vote using the token balance as voting power.
+/// @dev Extends an ERC20 functionality into a Guild, adding a simple governance system over an ERC20 token.
+/// An ERC20Guild is a simple organization that execute actions if a minimun amount of positive votes are reached in 
+/// a certain amount of time.
+/// In order to vote a token hodler need to lock tokens in the guild.
+/// The tokens are locked for a minimum amount of time.
+/// The voting power equals the amount of tokens locked in the guild.
+/// A proposal is executed only when the mimimum amount of votes are reached before it finishes.
+/// The guild can execute only allowed functions, if a function is not allowed it first will need to set the allowance
+/// for it and then after being succesfully added to allowed functions a proposal for it execution can be created.
 contract ERC20Guild {
     using SafeMath for uint256;
     using Math for uint256;
@@ -34,15 +39,20 @@ contract ERC20Guild {
     uint256 public totalLocked;
     TokenVault public tokenVault;
     
+    // All the signed votes that were executed, to avoid double signed vote execution.
     mapping(bytes32 => bool) public signedVotes;
+    
+    // The signatures of the functions allowed, indexed first by address and then by function signature
     mapping(address => mapping(bytes4 => bool)) public callPermissions;
     
+    // The tokens locked indexed by token holder address.
     struct TokenLock {
       uint256 amount;
       uint256 timestamp;
     }
     mapping(address => TokenLock) public tokensLocked;
     
+    // Proposals indexed by proposal id.
     struct Proposal {
         address creator;
         uint256 startTime;
@@ -162,8 +172,7 @@ contract ERC20Guild {
     /// @param data The data to be executed on each call to be executed
     /// @param value The ETH value to be sent on each call to be executed
     /// @param description A short description of the proposal
-    /// @param contentHash The content hash of the content reference of the proposal
-    /// for the proposal to be executed
+    /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
         address[] memory to,
         bytes[] memory data,
@@ -222,7 +231,7 @@ contract ERC20Guild {
     
     /// @dev Set the amount of tokens to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote
-    /// @param amount The amount of tokens to use as voting for the proposal
+    /// @param amount The amount of votes to be set in the proposal
     function setVote(bytes32 proposalId, uint256 amount) public {
         require(
             votesOfAt(msg.sender, proposalSnapshots[proposalId]) >=  amount,
@@ -234,7 +243,7 @@ contract ERC20Guild {
 
     /// @dev Set the amount of tokens to vote in multiple proposals
     /// @param proposalIds The ids of the proposals to set the votes
-    /// @param amounts The amounts of tokens to use as voting for each proposals
+    /// @param amounts The amount of votes to be set in each proposal
     function setVotes(bytes32[] memory proposalIds, uint256[] memory amounts) public {
         require(
             proposalIds.length == amounts.length,
@@ -355,6 +364,7 @@ contract ERC20Guild {
     }
     
     /// @dev Internal function to refund a vote cost to a sender
+    /// The refund will be exeuted only if the voteGas is higher than zero and there is enough ETH balance in the guild.
     /// @param toAddress The address where the refund should be sent
     function _refundVote(address payable toAddress) internal isInitialized {
       if (voteGas > 0) {
@@ -366,13 +376,13 @@ contract ERC20Guild {
     }
 
     /// @dev Get the voting power of an address
-    /// @param account The address of the token account
+    /// @param account The address of the account
     function votesOf(address account) public view returns(uint256) {
       return tokensLocked[account].amount;
     }
     
     /// @dev Get the voting power of multiple addresses
-    /// @param accounts The addresses of the token accounts
+    /// @param accounts The addresses of the accounts
     function votesOf(address[] memory accounts) public view returns(uint256[] memory) {
       uint256[] memory votes = new uint256[](accounts.length);
       for (uint i = 0; i < accounts.length; i ++) {
@@ -382,7 +392,7 @@ contract ERC20Guild {
     }
     
     /// @dev Get the voting power of an address at a certain snapshotId
-    /// @param account The address of the token account
+    /// @param account The address of the account
     /// @param snapshotId The snapshotId to be used
     function votesOfAt(address account, uint256 snapshotId) public view returns (uint256) {
         (bool snapshotted, uint256 value) = _valueAt(snapshotId, _votesSnapshots[account]);
@@ -392,8 +402,8 @@ contract ERC20Guild {
             return votesOf(account);
     }
     
-    /// @dev Get the voting power of multiple addressese at a certain snapshotId
-    /// @param accounts The addresses of the token accounts
+    /// @dev Get the voting power of multiple addresses at a certain snapshotId
+    /// @param accounts The addresses of the accounts
     /// @param snapshotIds The snapshotIds to be used
     function votesOfAt(address[] memory accounts, uint256[] memory snapshotIds) public view returns(uint256[] memory) {
         uint256[] memory votes = new uint256[](accounts.length);
@@ -403,6 +413,7 @@ contract ERC20Guild {
     }
 
     /// @dev Get the total amount of tokes locked at a certain snapshotId
+    /// @param snapshotId The snapshotId to be used
     function totalLockedAt(uint256 snapshotId) public view returns(uint256) {
         (bool snapshotted, uint256 value) = _valueAt(snapshotId, _totalLockedSnapshots);
         if (snapshotted)
@@ -423,6 +434,7 @@ contract ERC20Guild {
     /// @return contentHash The content hash of the content reference of the proposal
     /// @return totalVotes The total votes of the proposal
     /// @return executed If the proposal was executed or not
+    /// @return snapshotId The snapshotId used for the proposal
     function getProposal(bytes32 proposalId) public returns(
         address creator,
         uint256 startTime,
@@ -450,15 +462,15 @@ contract ERC20Guild {
         );
     }
 
-    /// @dev Get the votes of a voter of a proposal
+    /// @dev Get the votes of a voter in a proposal
     /// @param proposalId The id of the proposal to get the information
     /// @param voter The address of the voter to get the votes
-    /// @return the votes of the voter for the proposalId
+    /// @return the votes of the voter for the requested proposal
     function getProposalVotes(bytes32 proposalId, address voter) public returns(uint256) {
         return(proposals[proposalId].votes[voter]);
     }
     
-    /// @dev Get call data signature
+    /// @dev Get the first four bytes (function signature) of a bytes variable
     function getFuncSignature(bytes memory data) public view returns (bytes4) {
         bytes32 functionSignature = bytes32(0);
         assembly {
@@ -472,10 +484,10 @@ contract ERC20Guild {
         return callPermissions[to][functionSignature];
     }
     
-    /// @dev Set the amount of tokens to vote in multiple proposals
-    /// @param voter The address of to be used to sign the vote
-    /// @param proposalId The id fo the proposal to be votes
-    /// @param amount The amount of votes to be hashed
+    /// @dev Get teh hash of the vote, this hash is later signed by the voter.
+    /// @param voter The address that will be used to sign the vote
+    /// @param proposalId The id fo the proposal to be voted
+    /// @param amount The amount of votes to be used
     function hashVote(
         address voter,
         bytes32 proposalId,
@@ -483,6 +495,10 @@ contract ERC20Guild {
     ) public pure returns(bytes32) {
         return keccak256(abi.encodePacked(voter, proposalId, amount));
     }
+    
+    ///
+    /// Private functions used to take track of snapshots in contract storage
+    ///
     
     function _valueAt(
       uint256 snapshotId, Snapshots storage snapshots
@@ -529,7 +545,7 @@ contract ERC20Guild {
             snapshots.values.push(currentValue);
         }
     }
-
+    
     function _lastSnapshotId(uint256[] storage ids) private view returns (uint256) {
         if (ids.length == 0) {
             return 0;

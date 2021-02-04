@@ -5,7 +5,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title TokenVault
- * @dev A smart contract to lock an ERC20 token in behalf of user trough an intermediary an admin contract.
+ * @dev A smart contract to lock an ERC20 token in behalf of user trough an intermediary admin contract.
  * User -> Admin Contract -> Token Vault Contract -> Admin Contract -> User.
  * Tokens can be deposited and withdrawal only with authorization of the locker account from the admin address.
  */
