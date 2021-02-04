@@ -269,10 +269,10 @@ contract ERC20Guild {
         bytes32 proposalId, uint256 amount, address voter, bytes memory signature
     ) public isInitialized {
         bytes32 hashedVote = hashVote(voter, proposalId, amount);
-        require(!signedVotes[hashedVote], 'ERC20GuildSigned: Already voted');
+        require(!signedVotes[hashedVote], 'ERC20Guild: Already voted');
         require(
           voter == hashedVote.toEthSignedMessageHash().recover(signature),
-          "ERC20GuildSigned: Wrong signer"
+          "ERC20Guild: Wrong signer"
         );
         _setVote(voter, proposalId, amount);
         signedVotes[hashedVote] = true;
@@ -306,8 +306,8 @@ contract ERC20Guild {
     /// @dev Release tokens locked in the guild, this will decrease the voting power
     /// @param amount The amount of tokens to be released
     function releaseTokens(uint256 amount) public {
-        require(votesOf(msg.sender) >= amount, "ERC20GuildLockable: Unable to release more tokens than locked");
-        require(tokensLocked[msg.sender].timestamp < block.timestamp, "ERC20GuildLockable: Tokens still locked");
+        require(votesOf(msg.sender) >= amount, "ERC20Guild: Unable to release more tokens than locked");
+        require(tokensLocked[msg.sender].timestamp < block.timestamp, "ERC20Guild: Tokens still locked");
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(amount);
