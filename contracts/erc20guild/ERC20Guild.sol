@@ -164,6 +164,14 @@ contract ERC20Guild {
             callPermissions[to[i]][functionSignature[i]] = allowance[i];
             emit SetAllowance(to[i], functionSignature[i], allowance[i]);
         }
+        require(
+          callPermissions[address(this)][bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256)"))],
+          "ERC20Guild: setConfig function allowance cant be turned off"
+        )
+        require(
+          callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))],
+          "ERC20Guild: setAllowance function allowance cant be turned off"
+        )
     }
 
     /// @dev Create a proposal with an static call data and extra information
