@@ -20,16 +20,20 @@ import "../utils/Arrays.sol";
 /// A proposal is executed only when the mimimum amount of votes are reached before it finishes.
 /// The guild can execute only allowed functions, if a function is not allowed it first will need to set the allowance
 /// for it and then after being succesfully added to allowed functions a proposal for it execution can be created.
+/// Once a proposal is approved it can execute only once during a certain period of time.
 contract ERC20Guild {
     using SafeMath for uint256;
     using Math for uint256;
     using ECDSA for bytes32;
     using Arrays for uint256[];
+    
+    enum ProposalState {Submitted, Rejected, Executed, Failed}
 
     IERC20 public token;
     bool public initialized = false;
     string public name;
     uint256 public proposalTime;
+    uint256 public timeForExecution;
     uint256 public votesForExecution;
     uint256 public votesForCreation;
     uint256 public voteGas;
@@ -62,7 +66,7 @@ contract ERC20Guild {
         string description;
         bytes contentHash;
         uint256 totalVotes;
-        bool executed;
+        ProposalState state;
         uint256 snapshotId;
         mapping(address => uint256) votes;
     }
@@ -83,13 +87,15 @@ contract ERC20Guild {
     uint256 private _currentSnapshotId;
     
     event ProposalCreated(bytes32 indexed proposalId);
+    event ProposalRejected(bytes32 indexed proposalId);
     event ProposalExecuted(bytes32 indexed proposalId);
+    event ProposalEnded(bytes32 indexed proposalId);
     event VoteAdded(bytes32 indexed proposalId, address voter, uint256 amount);
     event VoteRemoved(bytes32 indexed proposalId, address voter, uint256 amount);
     event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
     event TokensLocked(address voter, uint256 value);
     event TokensReleased(address voter, uint256 value);
-
+    
     /// @dev Allows the voting machine to receive ether to be used to refund voting costs
     function() external payable {}
     
@@ -102,6 +108,7 @@ contract ERC20Guild {
     /// @dev Initilizer
     /// @param _token The address of the token to be used
     /// @param _proposalTime The minimun time for a proposal to be under votation
+    /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
@@ -110,6 +117,7 @@ contract ERC20Guild {
     function initialize(
         address _token,
         uint256 _proposalTime,
+        uint256 _timeForExecution,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
         string memory _name,
@@ -120,8 +128,20 @@ contract ERC20Guild {
         require(address(_token) != address(0), "ERC20Guild: token is the zero address");
         name = _name;
         token = IERC20(_token);
-        _setConfig(_proposalTime, _votesForExecution, _votesForCreation, _voteGas, _maxGasPrice, _lockTime);
-        callPermissions[address(this)][bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256)"))] = true;
+        tokenVault = new TokenVault();
+        tokenVault.initialize(address(token), address(this));
+        _setConfig(
+          _proposalTime,
+          _timeForExecution,
+          _votesForExecution,
+          _votesForCreation,
+          _voteGas,
+          _maxGasPrice,
+          _lockTime
+        );
+        callPermissions[address(this)][
+          bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
+        ] = true;
         callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = true;
         initialized = true;
     }
@@ -129,6 +149,7 @@ contract ERC20Guild {
     /// @dev Set the ERC20Guild configuration, can be called only executing a proposal 
     /// or when it is initilized
     /// @param _proposalTime The minimun time for a proposal to be under votation
+    /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
@@ -136,13 +157,22 @@ contract ERC20Guild {
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function setConfig(
         uint256 _proposalTime,
+        uint256 _timeForExecution,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _lockTime
     ) public {
-        _setConfig(_proposalTime, _votesForExecution, _votesForCreation, _voteGas, _maxGasPrice, _lockTime);
+        _setConfig(
+          _proposalTime,
+          timeForExecution,
+          _votesForExecution,
+          _votesForCreation,
+          _voteGas,
+          _maxGasPrice,
+          _lockTime
+        );
     }
     
     /// @dev Set the allowance of a call to be executed by the guild
@@ -165,13 +195,15 @@ contract ERC20Guild {
             emit SetAllowance(to[i], functionSignature[i], allowance[i]);
         }
         require(
-          callPermissions[address(this)][bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256)"))],
+          callPermissions[address(this)][
+            bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
+          ],
           "ERC20Guild: setConfig function allowance cant be turned off"
-        )
+        );
         require(
           callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))],
           "ERC20Guild: setAllowance function allowance cant be turned off"
-        )
+        );
     }
 
     /// @dev Create a proposal with an static call data and extra information
@@ -205,7 +237,7 @@ contract ERC20Guild {
             description,
             contentHash,
             votesOf(msg.sender),
-            false,
+            ProposalState.Submitted,
             _currentSnapshotId
         );
         
@@ -215,25 +247,29 @@ contract ERC20Guild {
     
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
     /// @param proposalId The id of the proposal to be executed
-    function executeProposal(bytes32 proposalId) public isInitialized {
-        require(!proposals[proposalId].executed, "ERC20Guild: Proposal already executed");
+    function endProposal(bytes32 proposalId) public isInitialized {
+        require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
         require(proposals[proposalId].endTime < now, "ERC20Guild: Proposal hasnt ended yet");
-        require(
-            proposals[proposalId].totalVotes >= votesForExecution,
-            "ERC20Guild: Not enough tokens to execute proposal"
-        );
-        proposals[proposalId].executed = true;
-        for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
+        if (proposals[proposalId].totalVotes < votesForExecution){
+          proposals[proposalId].state = ProposalState.Rejected;
+          emit ProposalRejected(proposalId);
+        } else if (proposals[proposalId].endTime.add(timeForExecution) < now) {
+          proposals[proposalId].state = ProposalState.Failed;
+          emit ProposalEnded(proposalId);
+        } else {
+          proposals[proposalId].state = ProposalState.Executed;
+          for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
             bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
             require(
-                getCallPermission(proposals[proposalId].to[i], proposalSignature) == true,
-                "ERC20Guild: Not allowed call"
-            );
-            (bool success,) = proposals[proposalId].to[i]
+              getCallPermission(proposals[proposalId].to[i], proposalSignature),
+              "ERC20Guild: Not allowed call"
+              );
+              (bool success,) = proposals[proposalId].to[i]
                 .call.value(proposals[proposalId].value[i])(proposals[proposalId].data[i]);
-            require(success, "ERC20Guild: Proposal call failed");
+              require(success, "ERC20Guild: Proposal call failed");
+            }
+            emit ProposalExecuted(proposalId);
         }
-        emit ProposalExecuted(proposalId);
     }
     
     /// @dev Set the amount of tokens to vote in a proposal
@@ -318,6 +354,7 @@ contract ERC20Guild {
 
     /// @dev Internal function to set the configuration of the guild
     /// @param _proposalTime The minimum time for a proposal to be under votation
+    /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
@@ -325,6 +362,7 @@ contract ERC20Guild {
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function _setConfig(
         uint256 _proposalTime,
+        uint256 _timeForExecution,
         uint256 _votesForExecution,
         uint256 _votesForCreation,
         uint256 _voteGas,
@@ -337,7 +375,9 @@ contract ERC20Guild {
       );
       require(_proposalTime >= 0, "ERC20Guild: proposal time has to be more tha 0");
       require(_votesForExecution > 0, "ERC20Guild: votes for execution has to be more than 0");
+      require(_lockTime > 0, "ERC20Guild: lockTime should be higher than zero");
       proposalTime = _proposalTime;
+      timeForExecution = _timeForExecution;
       votesForExecution = _votesForExecution;
       votesForCreation = _votesForCreation;
       voteGas = _voteGas;
@@ -350,7 +390,7 @@ contract ERC20Guild {
     /// @param proposalId The id of the proposal to set the vote
     /// @param amount The amount of tokens to use as voting for the proposal
     function _setVote(address voter, bytes32 proposalId, uint256 amount) internal isInitialized {
-        require(!proposals[proposalId].executed, "ERC20Guild: Proposal already executed");
+        require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
         require(votesOf(voter) >=  amount, "ERC20Guild: Invalid amount");
         if (amount > proposals[proposalId].votes[voter]) {
             proposals[proposalId].totalVotes = proposals[proposalId].totalVotes.add(
@@ -452,7 +492,7 @@ contract ERC20Guild {
         string memory description,
         bytes memory contentHash,
         uint256 totalVotes,
-        bool executed,
+        ProposalState state,
         uint256 snapshotId
     ) {
         Proposal memory proposal = proposals[proposalId];
@@ -466,7 +506,7 @@ contract ERC20Guild {
             proposal.description,
             proposal.contentHash,
             proposal.totalVotes,
-            proposal.executed,
+            proposal.state,
             proposal.snapshotId
         );
     }
@@ -496,12 +536,8 @@ contract ERC20Guild {
     /// @dev Get teh hash of the vote, this hash is later signed by the voter.
     /// @param voter The address that will be used to sign the vote
     /// @param proposalId The id fo the proposal to be voted
+    function hashVote(address voter, bytes32 proposalId, uint256 amount) public pure returns(bytes32) {
     /// @param amount The amount of votes to be used
-    function hashVote(
-        address voter,
-        bytes32 proposalId,
-        uint256 amount
-    ) public pure returns(bytes32) {
         return keccak256(abi.encodePacked(voter, proposalId, amount));
     }
     
