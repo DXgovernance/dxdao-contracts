@@ -548,9 +548,9 @@ contract ERC20Guild {
     function _valueAt(
       uint256 snapshotId, Snapshots storage snapshots
     ) private view returns (bool, uint256) {
-        require(snapshotId > 0, "ERC20Snapshot: id is 0");
+        require(snapshotId > 0, "ERC20Guild: id is 0");
         // solhint-disable-next-line max-line-length
-        require(snapshotId <= _currentSnapshotId, "ERC20Snapshot: nonexistent id");
+        require(snapshotId <= _currentSnapshotId, "ERC20Guild: nonexistent id");
 
         // When a valid snapshot is queried, there are three possibilities:
         //  a) The queried value was not modified after the snapshot was taken. Therefore, a snapshot entry was never
