@@ -236,12 +236,12 @@ contract ERC20Guild {
             value,
             description,
             contentHash,
-            votesOf(msg.sender),
+            0,
             ProposalState.Submitted,
             _currentSnapshotId
         );
-        
         emit ProposalCreated(proposalId);
+        _setVote(msg.sender, proposalId, votesOf(msg.sender));
         return proposalId;
     }
     
