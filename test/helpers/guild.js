@@ -101,7 +101,7 @@ export async function setXVotesOnProposal({guild, proposalId, votes, account}) {
 
 export const GUILD_PROPOSAL_STATES = {
   submitted: 0,
-  passed: 1,
-  failed: 2,
-  executed: 3,
+  rejected: 1,
+  executed: 2,
+  failed: 3,
 };
