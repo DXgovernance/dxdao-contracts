@@ -484,7 +484,7 @@ contract ERC20Guild {
     /// @return totalVotes The total votes of the proposal
     /// @return executed If the proposal was executed or not
     /// @return snapshotId The snapshotId used for the proposal
-    function getProposal(bytes32 proposalId) public returns(
+    function getProposal(bytes32 proposalId) public view returns(
         address creator,
         uint256 startTime,
         uint256 endTime,
