@@ -17,7 +17,7 @@ These are the smart contracts of the DXdao deployed in mainnet, taken from https
 ### ERC20Guild
 The smart contracts to add a very basic, efficient and flexible governance layer over an ERC20 token.
 
-The guild executes previously authorized functions to smart contracts after a proposal to execute that function reaches the minimum amount of votes during a certain period of time.
+The guild **executes previously authorized functions** to smart contracts after a proposal to execute that function reaches the **minimum amount of votes** using **locked tokens as voting power** after a **period of time**.
 
 - The guild can execute only allowed functions, this means that if you want to call function X to smart contract P you will need to first submit a proposal to add the function X to smart contract P to be added to the allowed functions.
 
@@ -33,11 +33,16 @@ The guild executes previously authorized functions to smart contracts after a pr
 
 - The voter can sign a vote that can be executed by other account on his behalf.
 
-- When a proposal is created it enters the voting period, once the voting period passes if it does not have enough votes it will be rejected, it if has enough votes and executes successfully his function during a execution period of time it will be be executed successfully, if during that period of time the approved proposal cant be executed it will be set as failed and wont be able to be executed again.
+- When a proposal is created it enters the voting period. Once the voting period passes if the proposal dont have enough votes to execute, it will be rejected. If it has enough votes to execute and executes successfully during a the execution period of time, it will be finished successfully. If during that execution period of time the approved proposal cant be executed it will be set as failed and wont be able to be executed again.
 
 - The guild can be configured to automatically pay the voting costs back to the voter, for this the vote gas a max gas price to be use for vote refund needs to be set.
 
 - Each proposal has a description and a content hash that can be used to refer off-chain information.
+
+### DXDGuild
+
+The DXDGuild is an ERC20Guild with minimal modifications designed to be used to vote on the Genesis Protocol Voting Machine. The DXDGuild will have an amount of REP that will be used to vote in favor or against DXdao proposals.
+The DXDGuild will create two proposals per DXdao proposal that wants to participate. One proposal will be to execute a positive vote on the Genesis Protocol and the other to execute a negative vote on the Genesis Protocol. The proposals are created at the same time and therefore they resolve at the same time.
 
 ### Schemes
 The smart contracts for the schemes used in DXdao gov 1.x.

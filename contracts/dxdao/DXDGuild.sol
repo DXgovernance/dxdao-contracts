@@ -8,9 +8,7 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 /// @title DXDGuild
 /// @author github:AugustoL
-/// @notice This smart contract has not be audited.
-/// An ERC20Guild that can only vote on a voting machine by calling the vote funtion
-/// and can be configures only by its owner.
+/// An ERC20Guild for the DXD token designed to execute votes on Genesis Protocol Voting Machine.
 contract DXDGuild is ERC20Guild, Ownable {
 
   constructor() public ERC20Guild() {}
