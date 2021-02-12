@@ -41,6 +41,7 @@ contract ERC20Guild {
     uint256 public lockTime;
     uint256 public totalLocked;
     TokenVault public tokenVault;
+    uint256 public proposalNonce;
     
     // All the signed votes that were executed, to avoid double signed vote execution.
     mapping(bytes32 => bool) public signedVotes;
@@ -225,7 +226,8 @@ contract ERC20Guild {
             "ERC20Guild: Wrong length of to, data or value arrays"
         );
         require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
-        bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, now));
+        bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, now, proposalNonce));
+        proposalNonce = proposalNonce.add(1);
         _currentSnapshotId = _currentSnapshotId.add(1);
         proposals[proposalId] = Proposal(
             msg.sender,
