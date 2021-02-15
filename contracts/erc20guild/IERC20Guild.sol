@@ -80,6 +80,8 @@ interface IERC20Guild {
         uint256 snapshotId
     );
     function getProposalVotes(bytes32 proposalId, address voter) external view returns(uint256);
+    function getVotesForCreation() external view returns (uint256);
+    function getVotesForExecution() external view returns (uint256);
     function getFuncSignature(bytes calldata data) external view returns (bytes4);
     function getCallPermission(address to, bytes4 functionSignature) external view returns (bool);
     function votesOf(address[] calldata accounts) external view returns(uint256[] memory);

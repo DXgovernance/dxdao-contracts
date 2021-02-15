@@ -220,7 +220,7 @@ contract ERC20Guild {
         string memory description,
         bytes memory contentHash
     ) public isInitialized returns(bytes32) {
-        require(votesOf(msg.sender) >= votesForCreation, "ERC20Guild: Not enough tokens to create proposal");
+        require(votesOf(msg.sender) >= getVotesForCreation(), "ERC20Guild: Not enough tokens to create proposal");
         require(
             (to.length == data.length) && (to.length == value.length),
             "ERC20Guild: Wrong length of to, data or value arrays"
@@ -355,7 +355,7 @@ contract ERC20Guild {
     /// @param proposalId The id of the proposal to be executed
     function _endProposal(bytes32 proposalId) internal {
         if (
-          proposals[proposalId].totalVotes < votesForExecution
+          proposals[proposalId].totalVotes < getVotesForExecution()
           && proposals[proposalId].state == ProposalState.Submitted
         ){
           proposals[proposalId].state = ProposalState.Rejected;
@@ -547,6 +547,16 @@ contract ERC20Guild {
     /// @return the votes of the voter for the requested proposal
     function getProposalVotes(bytes32 proposalId, address voter) public returns(uint256) {
         return(proposals[proposalId].votes[voter]);
+    }
+    
+    /// @dev Get minimum amount of votes needed for creation
+    function getVotesForCreation() public view returns (uint256) {
+        return votesForCreation;
+    }
+    
+    /// @dev Get minimum amount of votes needed for proposal execution
+    function getVotesForExecution() public view returns (uint256) {
+        return votesForExecution;
     }
     
     /// @dev Get the first four bytes (function signature) of a bytes variable
