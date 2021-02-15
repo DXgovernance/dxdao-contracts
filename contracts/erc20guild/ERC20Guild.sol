@@ -226,52 +226,15 @@ contract ERC20Guild {
             "ERC20Guild: Wrong length of to, data or value arrays"
         );
         require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
-        bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, now, proposalNonce));
-        proposalNonce = proposalNonce.add(1);
-        _currentSnapshotId = _currentSnapshotId.add(1);
-        proposals[proposalId] = Proposal(
-            msg.sender,
-            now,
-            now.add(proposalTime),
-            to,
-            data,
-            value,
-            description,
-            contentHash,
-            0,
-            ProposalState.Submitted,
-            _currentSnapshotId
-        );
-        emit ProposalCreated(proposalId);
-        _setVote(msg.sender, proposalId, votesOf(msg.sender));
-        return proposalId;
+        return _createProposal(to, data, value, description, contentHash);
     }
     
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
     /// @param proposalId The id of the proposal to be executed
-    function endProposal(bytes32 proposalId) public isInitialized {
-        require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
-        require(proposals[proposalId].endTime < now, "ERC20Guild: Proposal hasnt ended yet");
-        if (proposals[proposalId].totalVotes < votesForExecution){
-          proposals[proposalId].state = ProposalState.Rejected;
-          emit ProposalRejected(proposalId);
-        } else if (proposals[proposalId].endTime.add(timeForExecution) < now) {
-          proposals[proposalId].state = ProposalState.Failed;
-          emit ProposalEnded(proposalId);
-        } else {
-          proposals[proposalId].state = ProposalState.Executed;
-          for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
-            bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
-            require(
-              getCallPermission(proposals[proposalId].to[i], proposalSignature),
-              "ERC20Guild: Not allowed call"
-              );
-              (bool success,) = proposals[proposalId].to[i]
-                .call.value(proposals[proposalId].value[i])(proposals[proposalId].data[i]);
-              require(success, "ERC20Guild: Proposal call failed");
-            }
-            emit ProposalExecuted(proposalId);
-        }
+    function endProposal(bytes32 proposalId) public {
+      require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
+      require(proposals[proposalId].endTime < now, "ERC20Guild: Proposal hasnt ended yet");
+      _endProposal(proposalId);
     }
     
     /// @dev Set the amount of tokens to vote in a proposal
@@ -352,6 +315,71 @@ contract ERC20Guild {
         totalLocked = totalLocked.sub(amount);
         tokenVault.withdraw(msg.sender, amount);
         emit TokensReleased(msg.sender, amount);
+    }
+    
+    /// @dev Create a proposal with an static call data and extra information
+    /// @param to The receiver addresses of each call to be executed
+    /// @param data The data to be executed on each call to be executed
+    /// @param value The ETH value to be sent on each call to be executed
+    /// @param description A short description of the proposal
+    /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
+    function _createProposal(
+        address[] memory to,
+        bytes[] memory data,
+        uint256[] memory value,
+        string memory description,
+        bytes memory contentHash
+    ) internal returns(bytes32) {
+        bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, now, proposalNonce));
+        proposalNonce = proposalNonce.add(1);
+        _currentSnapshotId = _currentSnapshotId.add(1);
+        proposals[proposalId] = Proposal(
+            msg.sender,
+            now,
+            now.add(proposalTime),
+            to,
+            data,
+            value,
+            description,
+            contentHash,
+            0,
+            ProposalState.Submitted,
+            _currentSnapshotId
+        );
+        emit ProposalCreated(proposalId);
+        _setVote(msg.sender, proposalId, votesOf(msg.sender));
+        return proposalId;
+    }
+    
+    /// @dev Execute a proposal that has already passed the votation time and has enough votes
+    /// @param proposalId The id of the proposal to be executed
+    function _endProposal(bytes32 proposalId) internal {
+        if (
+          proposals[proposalId].totalVotes < votesForExecution
+          && proposals[proposalId].state == ProposalState.Submitted
+        ){
+          proposals[proposalId].state = ProposalState.Rejected;
+          emit ProposalRejected(proposalId);
+        } else if (
+          proposals[proposalId].endTime.add(timeForExecution) < now
+          && proposals[proposalId].state == ProposalState.Submitted
+        ) {
+          proposals[proposalId].state = ProposalState.Failed;
+          emit ProposalEnded(proposalId);
+        } else if (proposals[proposalId].state == ProposalState.Submitted) {
+          proposals[proposalId].state = ProposalState.Executed;
+          for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
+            bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
+            require(
+              getCallPermission(proposals[proposalId].to[i], proposalSignature),
+              "ERC20Guild: Not allowed call"
+              );
+              (bool success,) = proposals[proposalId].to[i]
+                .call.value(proposals[proposalId].value[i])(proposals[proposalId].data[i]);
+              require(success, "ERC20Guild: Proposal call failed");
+            }
+            emit ProposalExecuted(proposalId);
+        }
     }
 
     /// @dev Internal function to set the configuration of the guild
