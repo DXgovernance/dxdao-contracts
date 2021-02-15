@@ -46,7 +46,7 @@ contract("DXDGuild", function (accounts) {
     
   beforeEach(async function () {
     guildToken = await createAndSetupGuildToken(
-      accounts.slice(0, 6), [1000, 50, 100, 100, 100, 200]
+      accounts.slice(0, 5), [0, 50, 100, 150, 200]
     );
     dxdGuild = await DXDGuild.new();
     
@@ -57,19 +57,19 @@ contract("DXDGuild", function (accounts) {
     org = createDaoResult.org;
     actionMock = await ActionMock.new();
     await dxdGuild.methods['initialize(address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,address)'](
-      guildToken.address, 30, 30, 200, 100, VOTE_GAS, MAX_GAS_PRICE, TIMELOCK, votingMachine.address
+      guildToken.address, 30, 30, 40, 20, VOTE_GAS, MAX_GAS_PRICE, TIMELOCK, votingMachine.address
     );
     tokenVault = await dxdGuild.tokenVault();
 
+    await guildToken.approve(tokenVault, 50, { from: accounts[1] });
     await guildToken.approve(tokenVault, 100, { from: accounts[2] });
-    await guildToken.approve(tokenVault, 100, { from: accounts[3] });
-    await guildToken.approve(tokenVault, 100, { from: accounts[4] });
-    await guildToken.approve(tokenVault, 200, { from: accounts[5] });
+    await guildToken.approve(tokenVault, 150, { from: accounts[3] });
+    await guildToken.approve(tokenVault, 200, { from: accounts[4] });
 
+    await dxdGuild.lockTokens(50, { from: accounts[1] });
     await dxdGuild.lockTokens(100, { from: accounts[2] });
-    await dxdGuild.lockTokens(100, { from: accounts[3] });
-    await dxdGuild.lockTokens(100, { from: accounts[4] });
-    await dxdGuild.lockTokens(200, { from: accounts[5] });
+    await dxdGuild.lockTokens(150, { from: accounts[3] });
+    await dxdGuild.lockTokens(200, { from: accounts[4] });
     
     tokenVault = await dxdGuild.tokenVault();
 
@@ -86,12 +86,12 @@ contract("DXDGuild", function (accounts) {
       value: [0],
       description: "Allow vote in voting machine",
       contentHash: helpers.NULL_ADDRESS,
-      account: accounts[3],
+      account: accounts[4],
     });
     await setAllVotesOnProposal({
       guild: dxdGuild,
       proposalId: allowVotingMachineProposalId,
-      account: accounts[5],
+      account: accounts[4],
     });
     await time.increase(time.duration.seconds(31));
     await dxdGuild.endProposal(allowVotingMachineProposalId);
@@ -114,18 +114,34 @@ contract("DXDGuild", function (accounts) {
 
   describe("DXDGuild", function () {
 
-    it.only("execute a positive vote on the voting machine from the dxd-guild", async function () {
+    it("execute a positive vote on the voting machine from the dxd-guild", async function () {
+      console.log((await dxdGuild.getVotesForCreation()).toString())
+      await expectRevert(
+        dxdGuild.createVotingMachineProposal(walletSchemeProposalId, {from: accounts[1]} ),
+        "DXDGuild: Not enough tokens to create proposal"
+      );
       const tx = await dxdGuild.createVotingMachineProposal(walletSchemeProposalId, {from: accounts[2]} );
 
       const positiveVoteProposalId = tx.logs[0].args.proposalId;
       const negativeVoteProposalId = tx.logs[2].args.proposalId;
-
-      console.log(positiveVoteProposalId, negativeVoteProposalId);
+      
+      await expectRevert(
+        dxdGuild.endProposal(positiveVoteProposalId),
+        "DXDGuild: Use endVotingMachineProposal to end proposals to voting machine"
+      );
+      await expectRevert(
+        dxdGuild.endProposal(positiveVoteProposalId),
+        "DXDGuild: Use endVotingMachineProposal to end proposals to voting machine"
+      );
+      await expectRevert(
+        dxdGuild.endVotingMachineProposal(walletSchemeProposalId),
+        "DXDGuild: Positive proposal hasnt ended yet"
+      );
       
       const txVote = await setAllVotesOnProposal({
         guild: dxdGuild,
         proposalId: positiveVoteProposalId,
-        account: accounts[5],
+        account: accounts[4],
       });
 
       if (constants.ARC_GAS_PRICE > 1)
@@ -133,8 +149,21 @@ contract("DXDGuild", function (accounts) {
 
       expectEvent(txVote, "VoteAdded", { proposalId: positiveVoteProposalId });
       await time.increase(time.duration.seconds(31));
-      const receipt = await dxdGuild.endProposal(positiveVoteProposalId);
+      await expectRevert(
+        dxdGuild.endProposal(positiveVoteProposalId),
+        "DXDGuild: Use endVotingMachineProposal to end proposals to voting machine"
+      );
+      await expectRevert(
+        dxdGuild.endProposal(negativeVoteProposalId),
+        "DXDGuild: Use endVotingMachineProposal to end proposals to voting machine"
+      );
+      const receipt = await dxdGuild.endVotingMachineProposal(walletSchemeProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: positiveVoteProposalId });
+      await expectRevert(
+        dxdGuild.endVotingMachineProposal(walletSchemeProposalId),
+        "DXDGuild: Positive proposal already executed"
+      );
+      await time.increase(time.duration.seconds(31));
       const proposalInfo = await dxdGuild.getProposal(positiveVoteProposalId);
       assert.equal(proposalInfo.state, GUILD_PROPOSAL_STATES.executed);
       assert.equal(proposalInfo.to[0], votingMachine.address);

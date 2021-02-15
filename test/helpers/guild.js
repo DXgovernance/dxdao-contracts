@@ -8,7 +8,8 @@ const { BN } = require("@openzeppelin/test-helpers");
 export async function createAndSetupGuildToken(accounts, balances) {
   const [ firstAccount, ...restOfAccounts ] = accounts;
   const [ firstBalance, ...restOfBalances ] = balances;
-  const guildToken = await ERC20Mock.new(firstAccount, firstBalance);
+  const totalSupply = balances.reduce((a,b) => a + b, 0);
+  const guildToken = await ERC20Mock.new(firstAccount, totalSupply);
 
   await Promise.all(restOfAccounts.map((account, idx) => {
     return guildToken.transfer(account, restOfBalances[ idx ]);

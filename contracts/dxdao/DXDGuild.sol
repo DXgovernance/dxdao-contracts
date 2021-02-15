@@ -29,8 +29,8 @@ contract DXDGuild is ERC20Guild, Ownable {
     /// @param _token The address of the token to be used
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votesForExecution The token votes needed for a proposal to be executed
-    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _votesForExecution The % of votes needed for a proposal to be executed based on the token total supply.
+    /// @param _votesForCreation The % of votes needed for a proposal to be created based on the token total supply.
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
@@ -62,6 +62,7 @@ contract DXDGuild is ERC20Guild, Ownable {
     }
     
     /// @dev Create a proposal with an static call data and extra information
+    /// The proposals created with this function cant call the voting machine.
     /// @param to The receiver addresses of each call to be executed
     /// @param data The data to be executed on each call to be executed
     /// @param value The ETH value to be sent on each call to be executed
@@ -74,7 +75,7 @@ contract DXDGuild is ERC20Guild, Ownable {
         string memory description,
         bytes memory contentHash
     ) public isInitialized returns(bytes32) {
-        require(votesOf(msg.sender) >= votesForCreation, "DXDGuild: Not enough tokens to create proposal");
+        require(votesOf(msg.sender) >= getVotesForCreation(), "DXDGuild: Not enough tokens to create proposal");
         require(
             (to.length == data.length) && (to.length == value.length),
             "DXDGuild: Wrong length of to, data or value arrays"
@@ -90,6 +91,7 @@ contract DXDGuild is ERC20Guild, Ownable {
     }
     
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
+    /// This function cant end voting machine proposals
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public {
       require(
@@ -101,12 +103,13 @@ contract DXDGuild is ERC20Guild, Ownable {
       _endProposal(proposalId);
     }
     
-    /// @dev Create a proposal to vote for yes or no on a proposal on a voting machine at the same time
+    /// @dev Create two proposals one to vote for a positive and another to vor for negative vote on a proposal on a
+    /// voting machine.
     /// @param votingMachineProposalId the proposalId of the voting machine
     function createVotingMachineProposal(
         bytes32 votingMachineProposalId
     ) public isInitialized {
-      require(votesOf(msg.sender) >= votesForCreation, "DXDGuild: Not enough tokens to create proposal");      
+      require(votesOf(msg.sender) >= getVotesForCreation(), "DXDGuild: Not enough tokens to create proposal");      
       address[] memory _to = new address[](1);
       _to[0] = votingMachine;
       bytes[] memory _data = new bytes[](1);
@@ -121,7 +124,8 @@ contract DXDGuild is ERC20Guild, Ownable {
       proposalsForVotingMachine[votingMachineProposals[votingMachineProposalId].negativeProposal] = true;
     }
     
-    /// @dev Ends proposals to vote for yes or no on a proposal on a voting machine at the same time
+    /// @dev End positive and negative proposals to vote on a voting machine, executing the one with the higher vote 
+    /// count first.
     /// @param votingMachineProposalId the proposalId of the voting machine
     function endVotingMachineProposal(
         bytes32 votingMachineProposalId
@@ -142,6 +146,16 @@ contract DXDGuild is ERC20Guild, Ownable {
         positiveProposal.state = ProposalState.Rejected;
         emit ProposalRejected(votingMachineProposals[votingMachineProposalId].positiveProposal);
       }
+    }
+    
+    /// @dev Get minimum amount of votes needed for creation
+    function getVotesForCreation() public view returns (uint256) {
+        return token.totalSupply().mul(votesForCreation).div(100);
+    }
+    
+    /// @dev Get minimum amount of votes needed for proposal execution
+    function getVotesForExecution() public view returns (uint256) {
+        return token.totalSupply().mul(votesForExecution).div(100);
     }
 
 }
