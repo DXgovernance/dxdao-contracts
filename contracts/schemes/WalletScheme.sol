@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 import "@daostack/infra/contracts/votingMachines/IntVoteInterface.sol";
 import "@daostack/infra/contracts/votingMachines/ProposalExecuteInterface.sol";
 import "../daostack/votingMachines/VotingMachineCallbacks.sol";
+import "./PermissionRegistry.sol";
 
 /**
  * @title WalletScheme.
@@ -36,6 +37,9 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     bytes32 public voteParams;
     Avatar public avatar;
     address public toAddress;
+    PermissionRegistry public permissionRegistry;
+    
+    bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
 
     /**
      * @dev initialize
@@ -46,7 +50,11 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      *  if address 0x0 is used it means any address.
      */
     function initialize(
-        Avatar _avatar, IntVoteInterface _votingMachine, bytes32 _voteParams, address _toAddress
+        Avatar _avatar,
+        IntVoteInterface _votingMachine,
+        bytes32 _voteParams,
+        address _toAddress,
+        address _permissionRegistry
     ) external {
         require(avatar == Avatar(0), "can be called only one time");
         require(_avatar != Avatar(0), "avatar cannot be zero");
@@ -54,6 +62,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         votingMachine = _votingMachine;
         voteParams = _voteParams;
         toAddress = _toAddress;
+        permissionRegistry = PermissionRegistry(_permissionRegistry);
     }
 
     /**
@@ -81,6 +90,19 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
               bytes memory callDataResult;
               bool callSuccess;
               for (uint256 i = 0; i < proposal.to.length; i++) {
+                  bytes4 callSignature = getFuncSignature(proposal.callData[i]);
+                  if (ERC20_TRANSFER_SIGNATURE == callSignature) {
+                    (address erc20TransferTo, uint256 amount) = abi.decode(proposal.callData[i], (address, uint256));
+                    (uint256 fromTime, uint256 valueAllowed) = permissionRegistry
+                      .getPermission(proposal.to[i], address(this), erc20TransferTo, callSignature);
+                    require(fromTime != 0 && now > fromTime);
+                    require(valueAllowed < amount);
+                  } else {
+                    (uint256 valueAllowed, uint256 fromTime) = permissionRegistry
+                      .getPermission(address(0), address(this), proposal.to[i], callSignature);
+                    require(fromTime != 0 && now > fromTime, "WalletScheme: Not allowed call");
+                    require(valueAllowed > proposal.value[i], "WalletScheme: Not allowed call");
+                  }
                   (callSuccess, callDataResult) = address(proposal.to[i]).call.value(proposal.value[i])(proposal.callData[i]);
                   callsDataResult[i] = callDataResult;
                   callsSucessResult[i] = callSuccess;
@@ -160,6 +182,15 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         proposals[proposalId].title,
         proposals[proposalId].descriptionHash
       );
+    }
+    
+    /// @dev Get call data signature
+    function getFuncSignature(bytes memory data) public view returns (bytes4) {
+        bytes32 functionSignature = bytes32(0);
+        assembly {
+            functionSignature := mload(add(data, 32))
+        }
+        return bytes4(functionSignature);
     }
     
     /**
