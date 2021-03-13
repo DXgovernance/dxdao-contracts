@@ -21,10 +21,15 @@ contract PermissionRegistry {
   
   uint256 public timeDelay;
   address public owner;
-  address public constant ANY_ADDRESS = address(0x0000000000000000000000000000000000000001);
-  bytes4 public constant ANY_SIGNATURE = bytes4(0x00000001);
+  address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
+  bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
   bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
+  bytes4 public constant SET_PERMISSION_SIGNATURE = bytes4(keccak256("setPermission(address,address,bytes4,uint256,bool)"));
 
+  event PermissionSet(
+    address asset, address from, address to, bytes4 functionSignature, uint256 fromTime, uint256 value
+  );
+  
   struct Permission {
     uint256 valueAllowed;
     uint256 fromTime;
@@ -39,7 +44,7 @@ contract PermissionRegistry {
         )
       )
     )
-  )public permissions;
+  ) public permissions;
 
   /**
    * @dev Constructor
@@ -87,8 +92,6 @@ contract PermissionRegistry {
   ) public {
     require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
     require(to != address(this), "PermissionRegistry: Cant change permissions to PermissionRegistry");
-    if (asset != address(0))
-      functionSignature = ANY_SIGNATURE;
     if (allowed){
       permissions[asset][from][to][functionSignature].fromTime = now.add(timeDelay);
       permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
@@ -96,6 +99,14 @@ contract PermissionRegistry {
       permissions[asset][from][to][functionSignature].fromTime = 0;
       permissions[asset][from][to][functionSignature].valueAllowed = 0;
     }
+    emit PermissionSet(
+      asset,
+      from,
+      to,
+      functionSignature,
+      permissions[asset][from][to][functionSignature].fromTime,
+      permissions[asset][from][to][functionSignature].valueAllowed
+    );
   }
   
   /**
@@ -115,16 +126,22 @@ contract PermissionRegistry {
     uint256 valueAllowed, 
     bool allowed
   ) public {
-    require(to == address(this) && msg.sender == owner, "PermissionRegistry: Cant change permissions to PermissionRegistry");
-    if (asset != address(0))
-      functionSignature = ANY_SIGNATURE;
-    if (allowed){
+    require(to != address(this), "PermissionRegistry: Cant change permissions to PermissionRegistry");
+    if (allowed) {
       permissions[asset][msg.sender][to][functionSignature].fromTime = now.add(timeDelay);
       permissions[asset][msg.sender][to][functionSignature].valueAllowed = valueAllowed;
     } else {
       permissions[asset][msg.sender][to][functionSignature].fromTime = 0;
       permissions[asset][msg.sender][to][functionSignature].valueAllowed = 0;
     }
+    emit PermissionSet(
+      asset,
+      msg.sender,
+      to,
+      functionSignature,
+      permissions[asset][msg.sender][to][functionSignature].fromTime,
+      permissions[asset][msg.sender][to][functionSignature].valueAllowed
+    );
   }
   
   /**
@@ -140,53 +157,61 @@ contract PermissionRegistry {
     address from, 
     address to, 
     bytes4 functionSignature
-  ) public returns (uint256 valueAllowed, uint256 fromTime) {
+  ) public view returns (uint256 valueAllowed, uint256 fromTime) {
     
-    // If the asset is an ERC20 token check the value al;lowed to be transfered
+    // bytes4(keccak256("implementation()")) == 0x5c60da1b
+    (bool proxyImplementationCallSuccess, bytes memory proxyImplementationCallData) =
+      address(to).staticcall(hex"5c60da1b");
+    
+    // If the receiver is a proxy contract check the permission against the implementation address
+    if (proxyImplementationCallSuccess){
+      to = abi.decode(proxyImplementationCallData, (address));
+    }
+    
+    Permission memory permission;
+    
+    // If the asset is an ERC20 token check the value allowed to be transfered
     if (asset != address(0)) {
 
-      if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].fromTime > 0) {
-        Permission memory permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
-        return (permission.valueAllowed, permission.fromTime);
-      } else if (permissions[asset][from][to][ANY_SIGNATURE].fromTime > 0) {
-        Permission memory permission = permissions[asset][from][to][ANY_SIGNATURE];
-        return (permission.valueAllowed, permission.fromTime);
+      // Check if there is a value allowed specifically to the `to` address
+      if (permissions[asset][from][to][ANY_SIGNATURE].fromTime > 0) {
+        permission = permissions[asset][from][to][ANY_SIGNATURE];
+      }
+      
+      // Check if there is a value allowed to any address
+      else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].fromTime > 0) {
+        permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
       }
     
     // If the asset is ETH check if there is an allowance to any address and function signature
     } else {
-      if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].fromTime > 0) {
-        Permission memory permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
-        return (permission.valueAllowed, permission.fromTime);
+      
+      // Always allow to execute the setPermission function
+      if (to == address(this) && functionSignature == SET_PERMISSION_SIGNATURE) {
+        return (0, 1);
+      }
         
-      // Check if there is an allowance to any address with a specific function signature
-      } else if ((permissions[asset][from][ANY_ADDRESS][functionSignature].fromTime > 0)) {
-        Permission memory permission = permissions[asset][from][ANY_ADDRESS][functionSignature];
-        return (permission.valueAllowed, permission.fromTime);        
-        
-      // Check if there is an allowance to specific address with a specific function signature
-      } else {
-        // bytes4(keccak256("implementation()")) == 0x5c60da1b
-        (bool proxyImplementationCallSuccess, bytes memory proxyImplementationCallData) =
-          address(to).staticcall(hex"5c60da1b");
-        
-        // If the receiver is a proxy contract check the permission against the proxy address
-        if (proxyImplementationCallSuccess){
-          to = abi.decode(proxyImplementationCallData, (address));
-        }
-        
-        // Check is there an allowance to any function in the to address
-        if ((permissions[asset][from][to][ANY_SIGNATURE].fromTime > 0)) {
-          Permission memory permission = permissions[asset][from][to][ANY_SIGNATURE];
-          return (permission.valueAllowed, permission.fromTime);
-          
-        // The last option is to return the allowance to a specific addres using  a specific signature
-        } else {
-          Permission memory permission = permissions[asset][from][to][functionSignature];
-          return (permission.valueAllowed, permission.fromTime);
-        }
+      // Check is there an allowance to the implementation address with the function signature
+      else if (permissions[asset][from][to][functionSignature].fromTime > 0) {
+        permission = permissions[asset][from][to][functionSignature];
+      }
+      
+      // Check is there an allowance to the implementation address for any function signature
+      else if (permissions[asset][from][to][ANY_SIGNATURE].fromTime > 0) {
+        permission = permissions[asset][from][to][ANY_SIGNATURE];
+      }
+      
+      // Check if there is there is an allowance to any address with the function signature
+      else if (permissions[asset][from][ANY_ADDRESS][functionSignature].fromTime > 0) {
+        permission = permissions[asset][from][ANY_ADDRESS][functionSignature];
+      }
+      
+      // Check if there is there is an allowance to any address and any function
+      else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].fromTime > 0) {
+        permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
       }
     }
+    return (permission.valueAllowed, permission.fromTime);
   }
 
 }

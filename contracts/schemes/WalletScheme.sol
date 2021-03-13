@@ -9,18 +9,13 @@ import "./PermissionRegistry.sol";
 /**
  * @title WalletScheme.
  * @dev  A scheme for proposing and executing calls to any contract except itself
+ * It has a value call controller address, in case of the controller address ot be set the scheme will be doing
+ * generic calls to the dao controller, if the controller address is not set it will eb executing raw calls.
+ * The scheme can only execute calls allowed to in the permission registry, if the controller address is set
+ * the permissions will be checked using teh avatar address as sender, if not the scheme address will be used as
+ * sender.
  */
 contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
-    event NewCallProposal(bytes32 indexed _proposalId);
-
-    event ProposalExecuted(bytes32 indexed _proposalId, bool[] _callsSucessResult, bytes[] _callsDataResult);
-
-    event ProposalExecutedByVotingMachine(bytes32 indexed _proposalId, int256 _param);
-
-    event ProposalRejected(bytes32 indexed _proposalId);
-
-    enum ProposalState {Submitted, Passed, Rejected, ExecutionSucceded, ExecutionFailed}
-
     struct Proposal {
         address[] to;
         bytes[] callData;
@@ -36,24 +31,30 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     IntVoteInterface public votingMachine;
     bytes32 public voteParams;
     Avatar public avatar;
-    address public toAddress;
+    address public controllerAddress;
     PermissionRegistry public permissionRegistry;
     
     bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
+
+    event NewCallProposal(bytes32 indexed _proposalId);
+    event ProposalExecuted(bytes32 indexed _proposalId, bool[] _callsSucessResult, bytes[] _callsDataResult);
+    event ProposalExecutedByVotingMachine(bytes32 indexed _proposalId, int256 _param);
+    event ProposalRejected(bytes32 indexed _proposalId);
+    enum ProposalState {Submitted, Rejected, ExecutionSucceded, ExecutionFailed}
 
     /**
      * @dev initialize
      * @param _avatar the avatar address
      * @param _votingMachine the voting machines address to
      * @param _voteParams voting machine parameters.
-     * @param _toAddress The address to receive the calls,
+     * @param _controllerAddress The address to receive the calls,
      *  if address 0x0 is used it means any address.
      */
     function initialize(
         Avatar _avatar,
         IntVoteInterface _votingMachine,
         bytes32 _voteParams,
-        address _toAddress,
+        address _controllerAddress,
         address _permissionRegistry
     ) external {
         require(avatar == Avatar(0), "can be called only one time");
@@ -61,7 +62,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         avatar = _avatar;
         votingMachine = _votingMachine;
         voteParams = _voteParams;
-        toAddress = _toAddress;
+        controllerAddress = _controllerAddress;
         permissionRegistry = PermissionRegistry(_permissionRegistry);
     }
 
@@ -70,96 +71,103 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      */
     function() external payable {}
 
-      /**
-       * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
-       * @param _proposalId the ID of the voting in the voting machine
-       * @param _decision a parameter of the voting result, 1 yes and 2 is no.
-       * @return bool success
-       */
-      function executeProposal(bytes32 _proposalId, int256 _decision)
-        external onlyVotingMachine(_proposalId) returns(bool)
-      {
-          Proposal storage proposal = proposals[_proposalId];
-          require(proposal.state == ProposalState.Submitted, "must be a submitted proposal");
+    /**
+     * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
+     * @param _proposalId the ID of the voting in the voting machine
+     * @param _decision a parameter of the voting result, 1 yes and 2 is no.
+     * @return bool success
+     */
+    function executeProposal(bytes32 _proposalId, int256 _decision)
+      external onlyVotingMachine(_proposalId) returns(bool)
+    {
+        Proposal storage proposal = proposals[_proposalId];
+        require(proposal.state == ProposalState.Submitted, "must be a submitted proposal");
 
-          if (_decision == 1) {
-              proposal.state = ProposalState.Passed;
+        // If decision is 1, it means the proposal was approved by the voting machine
+        if (_decision == 1) {
+          
+            proposal.state = ProposalState.ExecutionSucceded;  
+            bytes[] memory callsDataResult = new bytes[](proposal.to.length);
+            bool[] memory callsSucessResult = new bool[](proposal.to.length);
+            
+            for (uint256 i = 0; i < proposal.to.length; i++) {
               
-              bytes[] memory callsDataResult = new bytes[](proposal.to.length);
-              bool[] memory callsSucessResult = new bool[](proposal.to.length);
-              bytes memory callDataResult;
-              bool callSuccess;
-              for (uint256 i = 0; i < proposal.to.length; i++) {
-                  bytes4 callSignature = getFuncSignature(proposal.callData[i]);
-                  if (ERC20_TRANSFER_SIGNATURE == callSignature) {
-                    (address erc20TransferTo, uint256 amount) = abi.decode(proposal.callData[i], (address, uint256));
-                    (uint256 fromTime, uint256 valueAllowed) = permissionRegistry
-                      .getPermission(proposal.to[i], address(this), erc20TransferTo, callSignature);
-                    require(fromTime != 0 && now > fromTime);
-                    require(valueAllowed < amount);
+                if (isCallAllowed(proposal.to[i], proposal.callData[i], proposal.value[i])) {
+                  
+                  // If controller address is set the code needs to be encoded to generiCall function
+                  if (controllerAddress != address(0)) {
+                    bytes memory genericCallData = abi.encodeWithSignature(
+                      "genericCall(address,bytes,address,uint256)",
+                      proposal.to[i], proposal.callData[i], avatar, proposal.value[i]
+                    );
+                    (callsSucessResult[i], callsDataResult[i]) =
+                      address(controllerAddress).call.value(0)(genericCallData);
+                  
+                  // If controller address is not set the call is made to
                   } else {
-                    (uint256 valueAllowed, uint256 fromTime) = permissionRegistry
-                      .getPermission(address(0), address(this), proposal.to[i], callSignature);
-                    require(fromTime != 0 && now > fromTime, "WalletScheme: Not allowed call");
-                    require(valueAllowed > proposal.value[i], "WalletScheme: Not allowed call");
+                    (callsSucessResult[i], callsDataResult[i]) =
+                      address(proposal.to[i]).call.value(proposal.value[i])(proposal.callData[i]);
                   }
-                  (callSuccess, callDataResult) = address(proposal.to[i]).call.value(proposal.value[i])(proposal.callData[i]);
-                  callsDataResult[i] = callDataResult;
-                  callsSucessResult[i] = callSuccess;
-                  if (!callSuccess){
-                    proposals[_proposalId].state = ProposalState.ExecutionFailed;
-                    break;
-                  } 
-              }
-              proposals[_proposalId].state = ProposalState.ExecutionSucceded;
-              emit ProposalExecuted(_proposalId, callsSucessResult, callsDataResult);
-          } else {
-              proposal.state = ProposalState.Rejected;
-              emit ProposalRejected(_proposalId);
-          }
+                  
+                // If the call is not allowed the calls finish and is set to execution failed.
+                } else {
+                  callsDataResult[i] = bytes("0");
+                  callsSucessResult[i] = false;
+                }
+                if (!callsSucessResult[i]){
+                  proposals[_proposalId].state = ProposalState.ExecutionFailed;
+                  break;
+                } 
+                
+            }
+            emit ProposalExecuted(_proposalId, callsSucessResult, callsDataResult);
+            
+        // If decision is 2, it means the proposal was rejected by the voting machine
+        } else {
+            proposal.state = ProposalState.Rejected;
+            emit ProposalRejected(_proposalId);
+        }
 
-          emit ProposalExecutedByVotingMachine(_proposalId, _decision);
-          return true;
-      }
+        emit ProposalExecutedByVotingMachine(_proposalId, _decision);
+        return true;
+    }
 
-      /**
-      * @dev propose to call an address
-      *      The function trigger NewCallProposal event
-      * @param _to - The addresses to call
-      * @param _callData - The abi encode data for the calls
-      * @param _value value(ETH) to transfer with the calls
-      * @param _descriptionHash proposal description hash
-      * @return an id which represents the proposal
-      */
-      function proposeCalls(
-        address[] memory _to,
-        bytes[] memory _callData,
-        uint256[] memory _value,
-        string memory _title,
-        string memory _descriptionHash
-      ) public returns(bytes32) {
-          for(uint i = 0; i < _to.length; i ++) {
-            require(_to[i] != address(this), 'invalid proposal caller');
-            if (toAddress != address(0))
-              require(_to[i] == toAddress, 'invalid proposal caller');
-          }
-          require(_to.length == _callData.length, "invalid callData length");
-          require(_to.length == _value.length, "invalid _value length");
+    /**
+    * @dev propose to call an address
+    *      The function trigger NewCallProposal event
+    * @param _to - The addresses to call
+    * @param _callData - The abi encode data for the calls
+    * @param _value value(ETH) to transfer with the calls
+    * @param _descriptionHash proposal description hash
+    * @return an id which represents the proposal
+    */
+    function proposeCalls(
+      address[] memory _to,
+      bytes[] memory _callData,
+      uint256[] memory _value,
+      string memory _title,
+      string memory _descriptionHash
+    ) public returns(bytes32) {
+        for(uint i = 0; i < _to.length; i ++) {
+          require(_to[i] != address(this), 'invalid proposal caller');
+        }
+        require(_to.length == _callData.length, "invalid callData length");
+        require(_to.length == _value.length, "invalid _value length");
 
-          bytes32 proposalId = votingMachine.propose(2, voteParams, msg.sender, address(avatar));
-          proposals[proposalId] = Proposal({
-              to: _to,
-              callData: _callData,
-              value: _value,
-              state: ProposalState.Submitted,
-              title: _title,
-              descriptionHash: _descriptionHash
-          });
-          proposalsList.push(proposalId);
-          proposalsInfo[address(votingMachine)][proposalId] = ProposalInfo({blockNumber: block.number, avatar: avatar});
-          emit NewCallProposal(proposalId);
-          return proposalId;
-      }
+        bytes32 proposalId = votingMachine.propose(2, voteParams, msg.sender, address(avatar));
+        proposals[proposalId] = Proposal({
+            to: _to,
+            callData: _callData,
+            value: _value,
+            state: ProposalState.Submitted,
+            title: _title,
+            descriptionHash: _descriptionHash
+        });
+        proposalsList.push(proposalId);
+        proposalsInfo[address(votingMachine)][proposalId] = ProposalInfo({blockNumber: block.number, avatar: avatar});
+        emit NewCallProposal(proposalId);
+        return proposalId;
+    }
 
     /**
     * @dev Get the information of a proposal by id
@@ -182,6 +190,47 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         proposals[proposalId].title,
         proposals[proposalId].descriptionHash
       );
+    }
+    
+    /**
+    * @dev Get if the call is allowed ot not and with how much value
+    * @param to the receiver of the call
+    * @param data the data of the call
+    * @param value the value to be sent
+    */
+    function isCallAllowed(address to, bytes memory data, uint256 value) public returns (bool) {
+      uint256 fromTime;
+      uint256 valueAllowed;
+      address asset;
+
+      bytes4 callSignature = getFuncSignature(data);
+      if (ERC20_TRANSFER_SIGNATURE == callSignature) {
+        asset = to;
+        (to, value) = abi.decode(data, (address, uint256));
+        (valueAllowed, fromTime) = permissionRegistry
+          .getPermission(
+            asset,
+            controllerAddress != address(0) ? address(avatar) : address(this),
+            to,
+            callSignature
+          );
+      } else {
+        (valueAllowed, fromTime) = permissionRegistry
+          .getPermission(
+            asset,
+            controllerAddress != address(0) ? address(avatar) : address(this),
+            to,
+            callSignature
+          );
+      }
+      return fromTime > 0 && now > fromTime && valueAllowed >= value;
+    }
+    
+    /// @dev Get generic call controller data
+    function decodeGenericCall(bytes memory data) public view returns (
+      address _to, bytes memory _data, address _avatar, uint256 _value
+    ) {
+      return abi.decode(data, (address, bytes, address, uint256));
     }
     
     /// @dev Get call data signature
