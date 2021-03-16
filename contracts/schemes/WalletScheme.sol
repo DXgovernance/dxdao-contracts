@@ -95,7 +95,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                 if (isCallAllowed(proposal.to[i], proposal.callData[i], proposal.value[i])) {
                   
                   // If controller address is set the code needs to be encoded to generiCall function
-                  if (controllerAddress != address(0)) {
+                  if (controllerAddress != address(0) && proposal.to[i] != controllerAddress) {
                     bytes memory genericCallData = abi.encodeWithSignature(
                       "genericCall(address,bytes,address,uint256)",
                       proposal.to[i], proposal.callData[i], avatar, proposal.value[i]
@@ -103,6 +103,11 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                     (callsSucessResult[i], callsDataResult[i]) =
                       address(controllerAddress).call.value(0)(genericCallData);
                   
+                    // The success is form the generic call, but the result data is from the call to the controller
+                    (bool genericCallSucessResult, bytes memory genericCallDataResult) = 
+                      abi.decode(callsDataResult[i], (bool, bytes));
+                    callsSucessResult[i] = genericCallSucessResult;
+                    
                   // If controller address is not set the call is made to
                   } else {
                     (callsSucessResult[i], callsDataResult[i]) =
