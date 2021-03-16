@@ -161,7 +161,7 @@ contract PermissionRegistry {
     
     // bytes4(keccak256("implementation()")) == 0x5c60da1b
     (bool proxyImplementationCallSuccess, bytes memory proxyImplementationCallData) =
-      address(to).staticcall(hex"5c60da1b");
+      address(to).staticcall.gas(21000)(hex"5c60da1b");
     
     // If the receiver is a proxy contract check the permission against the implementation address
     if (proxyImplementationCallSuccess){
