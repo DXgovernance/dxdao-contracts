@@ -11,6 +11,7 @@ const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
+const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const constants = require("./constants");
 const { encodePermission, decodePermission } = require("./permissions");
 const { encodeGenericCallData, getWalletSchemeExecutionEvent } = require("./walletScheme");
@@ -25,7 +26,8 @@ export const logDecoder = new EthDecoder.default.LogDecoder(
     AbsoluteVote.abi,
     GenesisProtocol.abi,
     DXDVotingMachine.abi,
-    WalletScheme.abi
+    WalletScheme.abi,
+    PermissionRegistry.abi
   ]
 );
 
@@ -38,7 +40,8 @@ export const txDecoder = new EthDecoder.default.TxDecoder(
     AbsoluteVote.abi,
     GenesisProtocol.abi,
     DXDVotingMachine.abi,
-    WalletScheme.abi
+    WalletScheme.abi,
+    PermissionRegistry.abi
   ]
 );
 
@@ -47,6 +50,8 @@ export const NULL_HASH = "0x0000000000000000000000000000000000000000000000000000
 export const SOME_HASH = "0x1000000000000000000000000000000000000000000000000000000000000000";
 export const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 export const SOME_ADDRESS = "0x1000000000000000000000000000000000000000";
+export const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
+export const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
 export function getProposalAddress(tx) {
   // helper function that returns a proposal object from the ProposalCreated event
