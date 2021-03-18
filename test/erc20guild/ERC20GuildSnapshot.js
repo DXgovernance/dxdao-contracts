@@ -57,14 +57,14 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [genericCallData],
       [0],
       "Test title",
-      helpers.SOME_HASH
+      constants.SOME_HASH
     );
     walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
     genericCallDataVote = await new web3.eth.Contract(
       votingMachine.contract.abi
     ).methods
-      .vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS)
+      .vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS)
       .encodeABI();
   });
 
@@ -107,7 +107,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [genericCallDataVote],
       [0],
       "Guild Test Proposal",
-      helpers.NULL_ADDRESS,
+      constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
 
@@ -119,7 +119,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [genericCallDataVote],
       [0],
       "Guild Test Proposal",
-      helpers.NULL_ADDRESS,
+      constants.NULL_ADDRESS,
       { from: accounts[3] }
     );
 
@@ -180,7 +180,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [genericCallDataVote],
       [0],
       "Guild Test Proposal",
-      helpers.NULL_ADDRESS,
+      constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
 
@@ -219,7 +219,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [genericCallDataVote],
       [0],
       "Guild Test Proposal",
-      helpers.NULL_ADDRESS,
+      constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
 
@@ -267,7 +267,7 @@ contract("ERC20GuildSnapshot", function (accounts) {
       [genericCallDataVote],
       [0],
       "Guild Test Proposal",
-      helpers.NULL_ADDRESS,
+      constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
 

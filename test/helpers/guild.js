@@ -1,9 +1,11 @@
 import * as helpers from "./index";
+const constants = require("./constants");
 const ERC20Mock = artifacts.require("ERC20Mock.sol");
 const WalletScheme = artifacts.require("WalletScheme.sol");
+const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const DaoCreator = artifacts.require("DaoCreator.sol");
 const DxControllerCreator = artifacts.require("DxControllerCreator.sol");
-const { BN } = require("@openzeppelin/test-helpers");
+const { BN, time } = require("@openzeppelin/test-helpers");
 
 export async function createAndSetupGuildToken(accounts, balances) {
   const [ firstAccount, ...restOfAccounts ] = accounts;
@@ -28,7 +30,7 @@ export async function createDAO(guild, accounts, founderToken=  [ 0, 0, 0, 0 ], 
   const walletScheme = await WalletScheme.new();
 
   const votingMachine = await helpers.setupGenesisProtocol(
-    accounts, orgToken.address, 0, helpers.NULL_ADDRESS
+    accounts, orgToken.address, 0, constants.NULL_ADDRESS
   );
 
   const org = await helpers.setupOrganizationWithArrays(
@@ -37,13 +39,26 @@ export async function createDAO(guild, accounts, founderToken=  [ 0, 0, 0, 0 ], 
     founderToken,
     founderReputation
   );
+  
+  const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
 
   await walletScheme.initialize(
     org.avatar.address,
     votingMachine.address,
     votingMachine.params,
-    org.controller.address
+    org.controller.address,
+    permissionRegistry.address
   );
+  
+  await permissionRegistry.setAdminPermission(
+    constants.NULL_ADDRESS, 
+    org.avatar.address, 
+    constants.ANY_ADDRESS, 
+    constants.ANY_FUNC_SIGNATURE,
+    constants.MAX_UINT_256, 
+    true
+  );
+  await time.increase(10);
 
   await daoCreator.setSchemes(
     org.avatar.address,
@@ -86,7 +101,7 @@ export async function setAllVotesOnProposal({guild, proposalId, account}) {
   const votes = await guild.votesOf([account]);
   return guild.setVote(
     proposalId,
-    votes,
+    votes[0],
     {from: account}
   );
 }
@@ -98,10 +113,3 @@ export async function setXVotesOnProposal({guild, proposalId, votes, account}) {
     {from: account}
   );
 }
-
-export const GUILD_PROPOSAL_STATES = {
-  submitted: 0,
-  passed: 1,
-  failed: 2,
-  executed: 3,
-};

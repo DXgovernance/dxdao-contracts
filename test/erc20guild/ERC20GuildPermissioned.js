@@ -1,5 +1,6 @@
 import * as helpers from "../helpers";
 
+const constants = require("../helpers/constants");
 const ERC20GuildPermissioned = artifacts.require("ERC20GuildPermissioned.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
 const { BN, expectRevert, time } = require("@openzeppelin/test-helpers");
@@ -47,7 +48,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
       it("cannot initialize with zero address", async function () {
         try {
           const newGuild = await ERC20GuildPermissioned.new();
-          await newGuild.initialize(helpers.NULL_ADDRESS, 10, 10, 10, "TestGuild");
+          await newGuild.initialize(constants.NULL_ADDRESS, 10, 10, 10, "TestGuild");
           assert(false, "ERC20Guild: token is the zero address");
         } catch (error) {
           helpers.assertVMException(error);
@@ -97,7 +98,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           data: [setConfigFunctionEncoded],
           value: ["0"],
           description: "Update config",
-          contentHash: helpers.NULL_ADDRESS,
+          contentHash: constants.NULL_ADDRESS,
           account: accounts[2],
         });
 
@@ -139,7 +140,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           data: [setAllowanceEncoded],
           value: ["0"],
           description: "Update config",
-          contentHash: helpers.NULL_ADDRESS,
+          contentHash: constants.NULL_ADDRESS,
           account: accounts[2],
         });
 
@@ -178,7 +179,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           data: [setConfigFunctionEncoded],
           value: ["0"],
           description: "Update config",
-          contentHash: helpers.NULL_ADDRESS,
+          contentHash: constants.NULL_ADDRESS,
           account: accounts[2],
         });
 
@@ -213,7 +214,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           data: [testWithNoargsEncoded],
           value: ["0"],
           description: "random function call",
-          contentHash: helpers.NULL_ADDRESS,
+          contentHash: constants.NULL_ADDRESS,
           account: accounts[2],
         });
 
@@ -257,7 +258,7 @@ contract("ERC20GuildPermissioned", function (accounts) {
           data: [setAllowanceEncoded],
           value: ["0"],
           description: "Update config",
-          contentHash: helpers.NULL_ADDRESS,
+          contentHash: constants.NULL_ADDRESS,
           account: accounts[2],
         });
 

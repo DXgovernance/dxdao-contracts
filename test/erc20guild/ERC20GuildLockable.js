@@ -14,7 +14,6 @@ const {
   createProposal,
   createAndSetupGuildToken,
   setAllVotesOnProposal,
-  GUILD_PROPOSAL_STATES
 } = require("../helpers/guild");
 
 require("chai").should();
@@ -85,7 +84,7 @@ contract("ERC20GuildLockable", function (accounts) {
         ],
         value: [0],
         description: "Test description",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
 
@@ -95,7 +94,7 @@ contract("ERC20GuildLockable", function (accounts) {
         account: accounts[5],
       });
 
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -128,7 +127,7 @@ contract("ERC20GuildLockable", function (accounts) {
         ],
         value: [0],
         description: "Test description",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
 
@@ -138,7 +137,7 @@ contract("ERC20GuildLockable", function (accounts) {
         account: accounts[5],
       });
 
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -163,13 +162,13 @@ contract("ERC20GuildLockable", function (accounts) {
         [walletSchemeProposalData],
         [0],
         "Test Title",
-        helpers.SOME_HASH
+        constants.SOME_HASH
       );
       const walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
       const genericCallDataVote = await new web3.eth.Contract(
         votingMachine.contract.abi
-      ).methods.vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS).encodeABI();
+      ).methods.vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS).encodeABI();
 
       await guildToken.approve(erc20GuildLockable.address, 200, { from: accounts[5] });
       await erc20GuildLockable.lockTokens(200, { from: accounts[5] });
@@ -182,7 +181,7 @@ contract("ERC20GuildLockable", function (accounts) {
         data: [genericCallDataVote],
         value: [0],
         description: "Test description",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
 
@@ -192,7 +191,7 @@ contract("ERC20GuildLockable", function (accounts) {
         account: accounts[5],
       });
 
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -202,7 +201,7 @@ contract("ERC20GuildLockable", function (accounts) {
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
       const organizationProposal = await walletScheme.getOrganizationProposal(walletSchemeProposalId);
-      assert.equal(organizationProposal.state, GUILD_PROPOSAL_STATES.executed);
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
       assert.equal(organizationProposal.callData[0], walletSchemeProposalData);
       assert.equal(organizationProposal.to[0], org.controller.address);
       assert.equal(organizationProposal.value[0], 0);
@@ -220,7 +219,7 @@ contract("ERC20GuildLockable", function (accounts) {
         data: [helpers.testCallFrom(erc20GuildLockable.address)],
         value: [0],
         description: "Test description",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
 
@@ -230,7 +229,7 @@ contract("ERC20GuildLockable", function (accounts) {
         account: accounts[5],
       });
 
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });

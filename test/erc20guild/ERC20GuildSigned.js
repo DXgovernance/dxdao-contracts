@@ -1,5 +1,6 @@
 import * as helpers from "../helpers";
 
+const constants = require("../helpers/constants");
 const ERC20GuildSigned = artifacts.require("ERC20GuildSigned.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
 const { BN, expectEvent, expectRevert } = require("@openzeppelin/test-helpers");
@@ -45,14 +46,14 @@ contract("ERC20GuildSigned", function (accounts) {
       [genericCallData],
       [0],
       "Test title",
-      helpers.SOME_HASH
+      constants.SOME_HASH
     );
     proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     
     genericCallDataVote = await new web3.eth.Contract(
       votingMachine.contract.abi
     ).methods
-      .vote(proposalId, 1, 0, helpers.NULL_ADDRESS)
+      .vote(proposalId, 1, 0, constants.NULL_ADDRESS)
       .encodeABI();
   });
 
@@ -68,7 +69,7 @@ contract("ERC20GuildSigned", function (accounts) {
         [genericCallDataVote],
         [0],
         "Guild Test Proposal",
-        helpers.NULL_ADDRESS,
+        constants.NULL_ADDRESS,
         { from: accounts[3] }
       );
 
@@ -103,7 +104,7 @@ contract("ERC20GuildSigned", function (accounts) {
         [genericCallDataVote],
         [0],
         "Guild Test Proposal",
-        helpers.NULL_ADDRESS,
+        constants.NULL_ADDRESS,
         { from: accounts[3] }
       );
 
@@ -144,7 +145,7 @@ contract("ERC20GuildSigned", function (accounts) {
         [genericCallDataVote],
         [0],
         "Guild Test Proposal",
-        helpers.NULL_ADDRESS,
+        constants.NULL_ADDRESS,
         { from: accounts[3] }
       );
 
@@ -191,7 +192,7 @@ contract("ERC20GuildSigned", function (accounts) {
         [genericCallDataVote],
         [0],
         "Guild Test Proposal",
-        helpers.NULL_ADDRESS,
+        constants.NULL_ADDRESS,
         { from: accounts[3] }
       );
 

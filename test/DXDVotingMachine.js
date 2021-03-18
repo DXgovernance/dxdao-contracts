@@ -1,5 +1,6 @@
 import * as helpers from "./helpers";
 const constants = require("./helpers/constants");
+const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
@@ -8,18 +9,11 @@ const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const { toEthSignedMessageHash, fixSignature } = require('./helpers/sign');
-const BN = web3.utils.BN;
-
-const WalletSchemeProposalState = {
-  submitted: 0,
-  passed: 1,
-  rejected: 2,
-  executionSuccedd: 3,
-  executionFailed: 4
-};
+const { BN, time } = require("@openzeppelin/test-helpers");
 
 contract("DXDVotingMachine", function(accounts) {
   let standardTokenMock,
+    permissionRegistry,
     expensiveVoteWalletScheme,
     cheapVoteWalletScheme,
     walletScheme,
@@ -27,14 +21,10 @@ contract("DXDVotingMachine", function(accounts) {
     actionMock,
     genVotingMachine,
     dxdVotingMachine,
-    proposalId
+    proposalId;
   
-  const TEST_VALUE = 123;
-  const TEST_HASH = helpers.SOME_HASH;
-  const TEST_TITLE = "Test Title";
-  const GAS_PRICE = constants.ARC_GAS_PRICE;
   const VOTE_GAS = 360000;
-  const TOTAL_GAS_REFUND = VOTE_GAS * GAS_PRICE;
+  const TOTAL_GAS_REFUND = VOTE_GAS * constants.GAS_PRICE;
   
   function testCallFrom(address) {
     return new web3.eth.Contract(ActionMock.abi).methods.test(address).encodeABI();
@@ -49,9 +39,9 @@ contract("DXDVotingMachine", function(accounts) {
   beforeEach( async function(){
     actionMock = await ActionMock.new();
     const standardTokenMock = await ERC20Mock.new(accounts[1], 1000);
-    const controllerCreator = await DxControllerCreator.new({gas: constants.ARC_GAS_LIMIT});
+    const controllerCreator = await DxControllerCreator.new({gas: constants.GAS_LIMIT});
     const daoCreator = await DaoCreator.new(
-      controllerCreator.address, {gas: constants.ARC_GAS_LIMIT}
+      controllerCreator.address, {gas: constants.GAS_LIMIT}
     );
     org = await helpers.setupOrganizationWithArrays(
       daoCreator,
@@ -61,18 +51,32 @@ contract("DXDVotingMachine", function(accounts) {
     );
     
     genVotingMachine = await helpers.setupGenesisProtocol(
-      accounts, standardTokenMock.address, 'normal', helpers.NULL_ADDRESS
+      accounts, standardTokenMock.address, 'normal',  constants.NULL_ADDRESS
     );
     dxdVotingMachine = await helpers.setupGenesisProtocol(
-      accounts, standardTokenMock.address, 'dxd', helpers.NULL_ADDRESS
+      accounts, standardTokenMock.address, 'dxd',  constants.NULL_ADDRESS
     );
     
+    permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      constants.ANY_ADDRESS, 
+      constants.ANY_FUNC_SIGNATURE,
+      constants.MAX_UINT_256, 
+      true
+    );
+    
+    await time.increase(10);
+
     expensiveVoteWalletScheme = await WalletScheme.new();
     await expensiveVoteWalletScheme.initialize(
       org.avatar.address,
       genVotingMachine.address,
       genVotingMachine.params,
-      org.controller.address
+      org.controller.address,
+      permissionRegistry.address
     );
     
     cheapVoteWalletScheme = await WalletScheme.new();
@@ -80,7 +84,8 @@ contract("DXDVotingMachine", function(accounts) {
       org.avatar.address,
       dxdVotingMachine.address,
       dxdVotingMachine.params,
-      org.controller.address
+      org.controller.address,
+      permissionRegistry.address
     );
     
     await daoCreator.setSchemes(
@@ -112,7 +117,7 @@ contract("DXDVotingMachine", function(accounts) {
         from: accounts[0], to: org.avatar.address, value: web3.utils.toWei('1')
       });
       const setRefundConfData = new web3.eth.Contract(DXDVotingMachine.abi).methods.setOrganizationRefund(
-        VOTE_GAS, GAS_PRICE
+        VOTE_GAS, constants.GAS_PRICE
       ).encodeABI();
       const setRefundConfTx = await cheapVoteWalletScheme.proposeCalls(
         [org.controller.address], 
@@ -120,17 +125,17 @@ contract("DXDVotingMachine", function(accounts) {
           org.avatar.address, dxdVotingMachine.address, setRefundConfData, 0
         )],
         [0],
-        TEST_TITLE,
-        TEST_HASH
+        constants.TEST_TITLE,
+        constants.SOME_HASH
       );
       const setRefundConfProposalId = await helpers.getValueFromLogs(setRefundConfTx, "_proposalId");
       const organizationId = (await dxdVotingMachine.contract.proposals(setRefundConfProposalId)).organizationId
       assert.equal(await dxdVotingMachine.contract.organizations(organizationId), org.avatar.address);
-      await dxdVotingMachine.contract.vote(setRefundConfProposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[3]});
+      await dxdVotingMachine.contract.vote(setRefundConfProposalId, 1, 0,  constants.NULL_ADDRESS, {from: accounts[3]});
       const organizationRefundConf = await dxdVotingMachine.contract.organizationRefunds(org.avatar.address);
       assert.equal(0, organizationRefundConf.balance);
       assert.equal(VOTE_GAS, organizationRefundConf.voteGas);
-      assert.equal(GAS_PRICE, organizationRefundConf.maxGasPrice);
+      assert.equal(constants.GAS_PRICE, organizationRefundConf.maxGasPrice);
     })
     
     it("gas spent in PayableGenesisProtocol vote is less than GenesisProtocol vote", async function() {  
@@ -139,12 +144,12 @@ contract("DXDVotingMachine", function(accounts) {
         [org.controller.address], 
         [helpers.encodeGenericCallData(org.avatar.address, dxdVotingMachine.address, '0x0', web3.utils.toWei('1'))],
         [0],
-        TEST_TITLE,
-        TEST_HASH
+        constants.TEST_TITLE,
+        constants.SOME_HASH
       );
       const fundVotingMachineProposalId = await helpers.getValueFromLogs(fundVotingMachineTx, "_proposalId");
       await dxdVotingMachine.contract.vote(
-        fundVotingMachineProposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[3]}
+        fundVotingMachineProposalId, 1, 0,  constants.NULL_ADDRESS, {from: accounts[3]}
       );
       
       const genericCallData = helpers.encodeGenericCallData(
@@ -152,34 +157,34 @@ contract("DXDVotingMachine", function(accounts) {
       );
       
       let tx = await expensiveVoteWalletScheme.proposeCalls(
-        [org.controller.address], [genericCallData], [0], TEST_TITLE, TEST_HASH
+        [org.controller.address], [genericCallData], [0], constants.TEST_TITLE, constants.SOME_HASH
       );
       const expensiveProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
       let balanceBeforeVote = new BN(await web3.eth.getBalance(accounts[3]));
       tx = await genVotingMachine.contract.vote(
-        expensiveProposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[3], gasPrice: GAS_PRICE}
+        expensiveProposalId, 1, 0,  constants.NULL_ADDRESS, {from: accounts[3], gasPrice: constants.GAS_PRICE}
       );
       let balanceAfterVote = new BN(await web3.eth.getBalance(accounts[3]));
-      const gastVoteWithoutRefund = parseInt(balanceBeforeVote.sub(balanceAfterVote).div(new BN(GAS_PRICE)).toString())
+      const gastVoteWithoutRefund = parseInt(balanceBeforeVote.sub(balanceAfterVote).div(new BN(constants.GAS_PRICE)).toString())
       expect(tx.receipt.gasUsed).to.be.closeTo(gastVoteWithoutRefund, 1);
 
       let organizationProposal = await expensiveVoteWalletScheme.getOrganizationProposal(expensiveProposalId);
-      assert.equal(organizationProposal.state, WalletSchemeProposalState.executionSuccedd);
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
       assert.equal(organizationProposal.value[0], 0);
       
       // Vote with refund configured
       tx = await cheapVoteWalletScheme.proposeCalls(
-        [org.controller.address], [genericCallData], [0], TEST_TITLE, TEST_HASH
+        [org.controller.address], [genericCallData], [0], constants.TEST_TITLE, constants.SOME_HASH
       );
       const cheapProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
       balanceBeforeVote = new BN(await web3.eth.getBalance(accounts[3]));
       tx = await dxdVotingMachine.contract.vote(
-        cheapProposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[3], gasPrice: GAS_PRICE}
+        cheapProposalId, 1, 0,  constants.NULL_ADDRESS, {from: accounts[3], gasPrice: constants.GAS_PRICE}
       );
       balanceAfterVote = new BN(await web3.eth.getBalance(accounts[3]));
-      const gasVoteWithRefund = parseInt(balanceBeforeVote.sub(balanceAfterVote).div(new BN(GAS_PRICE)).toString());
+      const gasVoteWithRefund = parseInt(balanceBeforeVote.sub(balanceAfterVote).div(new BN(constants.GAS_PRICE)).toString());
       
       // Gas was taken from the organization refund balance and used to pay most of vote gas cost on two votes,
       // the vote approving the funding of the dxd voting machine and the one approving the other proposal
@@ -189,7 +194,7 @@ contract("DXDVotingMachine", function(accounts) {
       expect(tx.receipt.gasUsed - VOTE_GAS).to.be.closeTo(gasVoteWithRefund, 1);
 
       organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(cheapProposalId);
-      assert.equal(organizationProposal.state, WalletSchemeProposalState.executionSuccedd);
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
       assert.equal(organizationProposal.value[0], 0);
@@ -206,12 +211,12 @@ contract("DXDVotingMachine", function(accounts) {
           org.avatar.address, dxdVotingMachine.address, '0x0', votesRefund.toString()
         )],
         [0],
-        TEST_TITLE,
-        TEST_HASH
+        constants.TEST_TITLE,
+        constants.SOME_HASH
       );
       const fundVotingMachineProposalId = await helpers.getValueFromLogs(fundVotingMachineTx, "_proposalId");
       await dxdVotingMachine.contract.vote(
-        fundVotingMachineProposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[3], gasPrice: GAS_PRICE}
+        fundVotingMachineProposalId, 1, 0,  constants.NULL_ADDRESS, {from: accounts[3], gasPrice: constants.GAS_PRICE}
       );
       
       // Vote three times and pay only the first two
@@ -219,7 +224,7 @@ contract("DXDVotingMachine", function(accounts) {
         org.avatar.address, actionMock.address, testCallFrom(org.avatar.address), 0
       );
       let tx = await cheapVoteWalletScheme.proposeCalls(
-        [org.controller.address], [genericCallData], [0], TEST_TITLE, TEST_HASH
+        [org.controller.address], [genericCallData], [0], constants.TEST_TITLE, constants.SOME_HASH
       );
       let proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
       assert.equal(TOTAL_GAS_REFUND * 2,
@@ -227,14 +232,14 @@ contract("DXDVotingMachine", function(accounts) {
       )
       // Vote with higher gas than maxGasPrice and dont spend more than one vote refund
       await dxdVotingMachine.contract.vote(
-        proposalId, 2, 0, helpers.NULL_ADDRESS, {from: accounts[1], gasPrice: GAS_PRICE*2}
+        proposalId, 2, 0,  constants.NULL_ADDRESS, {from: accounts[1], gasPrice: constants.GAS_PRICE*2}
       );
       
       assert.equal(TOTAL_GAS_REFUND,
         Number((await dxdVotingMachine.contract.organizationRefunds(org.avatar.address)).balance)
       )
       await dxdVotingMachine.contract.vote(
-        proposalId, 2, 0, helpers.NULL_ADDRESS, {from: accounts[2], gasPrice: GAS_PRICE}
+        proposalId, 2, 0,  constants.NULL_ADDRESS, {from: accounts[2], gasPrice: constants.GAS_PRICE}
       );
       
       assert.equal(0,
@@ -242,18 +247,18 @@ contract("DXDVotingMachine", function(accounts) {
       )
       const balanceBeforeVote = new BN(await web3.eth.getBalance(accounts[3]));
       tx = await dxdVotingMachine.contract.vote(
-        proposalId, 1, 0, helpers.NULL_ADDRESS, {from: accounts[3], gasPrice: GAS_PRICE}
+        proposalId, 1, 0,  constants.NULL_ADDRESS, {from: accounts[3], gasPrice: constants.GAS_PRICE}
       );
       const balanceAfterVote = new BN(await web3.eth.getBalance(accounts[3]));
     
       // There wasnt enough gas balance in the voting machine to pay the gas refund of the last vote
       const gastVoteWithoutRefund = parseInt(
-        balanceBeforeVote.sub(balanceAfterVote).div(new BN(GAS_PRICE)).toString()
+        balanceBeforeVote.sub(balanceAfterVote).div(new BN(constants.GAS_PRICE)).toString()
       );
       expect(tx.receipt.gasUsed).to.be.closeTo(gastVoteWithoutRefund, 1);
       
       const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
-      assert.equal(organizationProposal.state, WalletSchemeProposalState.executionSuccedd);
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
       assert.equal(organizationProposal.value[0], 0);
@@ -265,19 +270,19 @@ contract("DXDVotingMachine", function(accounts) {
     beforeEach( async function(){
       const wallet = await Wallet.new();
       await web3.eth.sendTransaction({
-        from: accounts[0], to: org.avatar.address, value: TEST_VALUE
+        from: accounts[0], to: org.avatar.address, value: constants.TEST_VALUE
       });
       await wallet.transferOwnership(org.avatar.address);
     
       const genericCallDataTransfer = helpers.encodeGenericCallData(
-        org.avatar.address, wallet.address, "0x0", TEST_VALUE
+        org.avatar.address, wallet.address, "0x0", constants.TEST_VALUE
       );
       const payCallData = await new web3.eth.Contract(wallet.abi).methods.pay(accounts[1]).encodeABI();
       const genericCallDataPay = helpers.encodeGenericCallData(
         org.avatar.address, wallet.address, payCallData, 0
       );
       const callDataMintRep = await org.controller.contract.methods.mintReputation(
-        TEST_VALUE,
+        constants.TEST_VALUE,
         accounts[4],
         org.avatar.address
       ).encodeABI();
@@ -286,8 +291,8 @@ contract("DXDVotingMachine", function(accounts) {
         [org.controller.address, org.controller.address, org.controller.address],
         [genericCallDataTransfer, genericCallDataPay, callDataMintRep],
         [0, 0, 0],
-        TEST_TITLE,
-        TEST_HASH
+        constants.TEST_TITLE,
+        constants.SOME_HASH
       );
       proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     })
@@ -397,7 +402,7 @@ contract("DXDVotingMachine", function(accounts) {
       );
       
       const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
-      assert.equal(organizationProposal.state, WalletSchemeProposalState.executionSuccedd);
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
     });
     
     it("negative signed decision with less rep than the one held", async function() {
@@ -424,7 +429,7 @@ contract("DXDVotingMachine", function(accounts) {
       );
       
       const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
-      assert.equal(organizationProposal.state, WalletSchemeProposalState.rejected);
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.rejected);
     });
   });
   
@@ -433,20 +438,20 @@ contract("DXDVotingMachine", function(accounts) {
     beforeEach( async function(){
       const wallet = await Wallet.new();
       await web3.eth.sendTransaction({
-        from: accounts[0], to: org.avatar.address, value: TEST_VALUE
+        from: accounts[0], to: org.avatar.address, value: constants.TEST_VALUE
       });
       await wallet.transferOwnership(org.avatar.address);
     
       const genericCallDataTransfer = helpers.encodeGenericCallData(
-        org.avatar.address, wallet.address, "0x0", TEST_VALUE
+        org.avatar.address, wallet.address, "0x0", constants.TEST_VALUE
       );
     
       const tx = await cheapVoteWalletScheme.proposeCalls(
         [org.controller.address],
         [genericCallDataTransfer],
         [0],
-        TEST_TITLE,
-        TEST_HASH
+        constants.TEST_TITLE,
+        constants.SOME_HASH
       );
       proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     })
@@ -469,7 +474,7 @@ contract("DXDVotingMachine", function(accounts) {
       );
       assert.equal((await dxdVotingMachine.contract.votesSignaled(proposalId, accounts[3])).voteDecision, 0);
       const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
-      assert.equal(organizationProposal.state, WalletSchemeProposalState.executionSuccedd);
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
     });
     
     it("negative signal decision", async function() {
@@ -491,7 +496,7 @@ contract("DXDVotingMachine", function(accounts) {
       );
       assert.equal((await dxdVotingMachine.contract.votesSignaled(proposalId, accounts[3])).voteDecision, 0);
       const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
-      assert.equal(organizationProposal.state, WalletSchemeProposalState.rejected);
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.rejected);
     });
         
   });

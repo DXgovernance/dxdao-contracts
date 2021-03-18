@@ -45,14 +45,6 @@ export const txDecoder = new EthDecoder.default.TxDecoder(
   ]
 );
 
-export const MAX_UINT_256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-export const NULL_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
-export const SOME_HASH = "0x1000000000000000000000000000000000000000000000000000000000000000";
-export const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-export const SOME_ADDRESS = "0x1000000000000000000000000000000000000000";
-export const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
-export const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
-
 export function getProposalAddress(tx) {
   // helper function that returns a proposal object from the ProposalCreated event
   // in the logs of tx
@@ -143,7 +135,7 @@ export function assertJump(error) {
   assert.isAbove(error.message.search("invalid JUMP"), -1, "Invalid JUMP error must be returned" + error.message);
 }
 
-export const setupAbsoluteVote = async function(voteOnBehalf = NULL_ADDRESS, precReq = 50 ) {
+export const setupAbsoluteVote = async function(voteOnBehalf = constants.NULL_ADDRESS, precReq = 50 ) {
   const absoluteVote = await AbsoluteVote.new();
   // register some parameters
   absoluteVote.setParameters( precReq, voteOnBehalf);
@@ -155,7 +147,7 @@ export const setupGenesisProtocol = async function(
   accounts,
   token,
   votingMachineType = 'gen',
-  voteOnBehalf = NULL_ADDRESS,
+  voteOnBehalf = constants.NULL_ADDRESS,
   _queuedVoteRequiredPercentage = 50,
   _queuedVotePeriodLimit = 60,
   _boostedVotePeriodLimit = 60,
@@ -169,8 +161,8 @@ export const setupGenesisProtocol = async function(
   _activationTime = 0
 ) {
   const votingMachine =
-    (votingMachineType == 'dxd') ? await DXDVotingMachine.new(token, {gas: constants.ARC_GAS_LIMIT})
-    : await GenesisProtocol.new(token, {gas: constants.ARC_GAS_LIMIT});
+    (votingMachineType == 'dxd') ? await DXDVotingMachine.new(token, {gas: constants.GAS_LIMIT})
+    : await GenesisProtocol.new(token, {gas: constants.GAS_LIMIT});
 
   // register some parameters
   await votingMachine.setParameters(
@@ -238,7 +230,7 @@ export const setupOrganization = async function(
     [ founderToken ],
     [ founderReputation ],
     cap,
-    {gas: constants.ARC_GAS_LIMIT}
+    {gas: constants.GAS_LIMIT}
   );
   assert.equal(tx.logs.length, 1);
   assert.equal(tx.logs[ 0 ].event, "NewOrg");
@@ -314,4 +306,4 @@ export function testCallWithoutReturnValueFrom(address) {
   return new web3.eth.Contract(ActionMock.abi).methods.testWithoutReturnValue(address).encodeABI();
 }
 
-export { encodePermission, decodePermission, encodeGenericCallData, getWalletSchemeExecutionEvent };
+export { encodePermission, decodePermission, encodeGenericCallData, getWalletSchemeExecutionEvent, constants };
