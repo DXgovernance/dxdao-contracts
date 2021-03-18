@@ -5,9 +5,10 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 /**
  * @title PermissionRegistry.
  * @dev A registry of smart contracts functions and ERC20 transfers that are allowed to be called between contracts.
- * There owner of teh contract acts as admin and can set and overwrite any permission.
- * The regsitry allows setting "wildcard" permissions for recipients and functions, allowing call a specific 
- * function in any contract from address A, or any function to a specific contract.
+ * There owner of the contract acts as admin and can set and overwrite any permission.
+ * The registry allows setting "wildcard" permissions for recipients and functions, this means that permissions like
+ * this contract can call any contract, this contract can call this funciton to any contract or this contract call
+ * call any function in this contract can be set.
  * The smart contracts permissions are stored  using the asset 0x0 and stores the `from` address, `to` address,
  *   `value` uint256 and `fromTime` uint256, if `fromTime` is zero it meants the function is not allowed.
  * The ERC20 transfer permissions are stored using the asset of the ERC20 and stores the `from` address, `to` address,
@@ -49,7 +50,7 @@ contract PermissionRegistry {
   /**
    * @dev Constructor
    * @param _owner The owner of the registry that can set any permissions
-   * @param _timeDelay The amount of time taht has to pass after permission addition to allow execution
+   * @param _timeDelay The amount of time that has to pass after permission addition to allow execution
    */
   constructor(address _owner, uint256 _timeDelay) public {
     require(_owner != address(0), "PermissionRegistry: Invalid owner address");
@@ -59,6 +60,10 @@ contract PermissionRegistry {
     permissions[address(0)][_owner][address(this)][ANY_SIGNATURE].fromTime = now;
   }
   
+  /**
+   * @dev Transfer Ownership 
+   * @param newOwner The new owner of the registry that can set any permissions
+   */
   function transferOwnership(address newOwner) public {
     require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
     permissions[address(0)][owner][address(this)][ANY_SIGNATURE].fromTime = 0;
@@ -66,6 +71,10 @@ contract PermissionRegistry {
     owner = newOwner;
   }
   
+  /**
+   * @dev Set the time delay for a call to show as allowed
+   * @param newTimeDelay The new amount of time that has to pass after permission addition to allow execution
+   */
   function setTimeDelay(uint256 newTimeDelay) public {
     require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
     timeDelay = newTimeDelay;
@@ -79,7 +88,7 @@ contract PermissionRegistry {
    * @param from The address that will be called
    * @param to The address that will be called
    * @param functionSignature The signature of the function to be executed
-   * @param valueAllowed The amount of value allowed of teh asset to be sent
+   * @param valueAllowed The amount of value allowed of the asset to be sent
    * @param allowed If the function is allowed or not.
    */
   function setAdminPermission(
@@ -116,7 +125,7 @@ contract PermissionRegistry {
    * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
    * @param to The address that will be called
    * @param functionSignature The signature of the function to be executed
-   * @param valueAllowed The amount of value allowed of teh asset to be sent
+   * @param valueAllowed The amount of value allowed of the asset to be sent
    * @param allowed If the function is allowed or not.
    */
   function setPermission(
@@ -145,7 +154,7 @@ contract PermissionRegistry {
   }
   
   /**
-   * @dev Gets the time from which the function can be executed from a contract to another a with wich value.
+   * @dev Gets the time from which the function can be executed from a contract to another and with wich value.
    * In case of now being allowed to do the call it returns zero in both values
    * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
    * @param from The address from wich the call will be executed
