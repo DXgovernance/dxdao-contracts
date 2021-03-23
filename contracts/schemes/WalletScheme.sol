@@ -70,7 +70,9 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     /**
      * @dev Fallback function that allows the wallet to receive ETH
      */
-    function() external payable {}
+    function() external payable {
+      require(controllerAddress == address(0), "Cant receive if it will make generic calls to avatar");
+    }
 
     /**
      * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
