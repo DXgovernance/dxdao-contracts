@@ -12,7 +12,7 @@ import "./PermissionRegistry.sol";
  * It has a value call controller address, in case of the controller address ot be set the scheme will be doing
  * generic calls to the dao controller, if the controller address is not set it will eb executing raw calls.
  * The scheme can only execute calls allowed to in the permission registry, if the controller address is set
- * the permissions will be checked using teh avatar address as sender, if not the scheme address will be used as
+ * the permissions will be checked using the avatar address as sender, if not the scheme address will be used as
  * sender.
  */
 contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
@@ -47,8 +47,9 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      * @param _avatar the avatar address
      * @param _votingMachine the voting machines address to
      * @param _voteParams voting machine parameters.
-     * @param _controllerAddress The address to receive the calls,
-     *  if address 0x0 is used it means any address.
+     * @param _controllerAddress The address to receive the calls, if address 0x0 is used it wont make generic calls
+     * to the avatar
+     * @param _permissionRegistry The address of the permission registry contract
      */
     function initialize(
         Avatar _avatar,
