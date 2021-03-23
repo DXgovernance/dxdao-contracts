@@ -25,7 +25,6 @@ contract PermissionRegistry {
   address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
   bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
   bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
-  bytes4 public constant SET_PERMISSION_SIGNATURE = bytes4(keccak256("setPermission(address,address,bytes4,uint256,bool)"));
 
   event PermissionSet(
     address asset, address from, address to, bytes4 functionSignature, uint256 fromTime, uint256 value
@@ -100,7 +99,6 @@ contract PermissionRegistry {
     bool allowed
   ) public {
     require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
-    require(to != address(this), "PermissionRegistry: Cant change permissions to PermissionRegistry");
     if (allowed){
       permissions[asset][from][to][functionSignature].fromTime = now.add(timeDelay);
       permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
@@ -194,14 +192,9 @@ contract PermissionRegistry {
     
     // If the asset is ETH check if there is an allowance to any address and function signature
     } else {
-      
-      // Always allow to execute the setPermission function
-      if (to == address(this) && functionSignature == SET_PERMISSION_SIGNATURE) {
-        return (0, 1);
-      }
         
       // Check is there an allowance to the implementation address with the function signature
-      else if (permissions[asset][from][to][functionSignature].fromTime > 0) {
+      if (permissions[asset][from][to][functionSignature].fromTime > 0) {
         permission = permissions[asset][from][to][functionSignature];
       }
       

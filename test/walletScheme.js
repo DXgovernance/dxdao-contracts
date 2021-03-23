@@ -211,6 +211,24 @@ contract("WalletScheme", function(accounts) {
       .setPermission(
         constants.NULL_ADDRESS, actionMock.address, callData.substring(0,10), 666, true
       ).encodeABI();
+      
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      permissionRegistry.address, 
+      setPermissionData.substring(0,10),
+      0, 
+      true
+    );
+    
+    assert.equal(
+      (await permissionRegistry.getPermission(
+        constants.NULL_ADDRESS, org.avatar.address, permissionRegistry.address, setPermissionData.substring(0,10)
+      )).fromTime.toString(),
+      Number(await time.latest()) + 10
+    );
+    
+    await time.increase(10);
     
     // Proposal to allow calling actionMock
     const tx = await masterWalletScheme.proposeCalls(
@@ -722,6 +740,24 @@ contract("WalletScheme", function(accounts) {
       .setPermission(
         constants.NULL_ADDRESS, constants.ANY_ADDRESS, constants.ANY_FUNC_SIGNATURE, constants.MAX_UINT_256, true
       ).encodeABI();
+      
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      quickWalletScheme.address, 
+      permissionRegistry.address, 
+      setPermissionData.substring(0,10),
+      0, 
+      true
+    );
+    
+    assert.equal(
+      (await permissionRegistry.getPermission(
+        constants.NULL_ADDRESS, quickWalletScheme.address, permissionRegistry.address, setPermissionData.substring(0,10)
+      )).fromTime.toString(),
+      Number(await time.latest()) + 10
+    );
+    
+    await time.increase(10);
         
     // Proposal to allow calling actionMock
     const tx = await quickWalletScheme.proposeCalls(
