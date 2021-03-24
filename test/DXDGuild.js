@@ -16,8 +16,7 @@ const {
   createDAO,
   createAndSetupGuildToken,
   createProposal,
-  setAllVotesOnProposal,
-  GUILD_PROPOSAL_STATES
+  setAllVotesOnProposal
 } = require("./helpers/guild");
 
 require("chai").should();
@@ -28,7 +27,7 @@ contract("DXDGuild", function (accounts) {
   const TIMELOCK = new BN("60");
   const VOTE_GAS = new BN("50000"); // 50k
   const MAX_GAS_PRICE = new BN("8000000000"); // 8 gwei
-  const REAL_GAS_PRICE = new BN(constants.ARC_GAS_PRICE); // 8 gwei (check config)
+  const REAL_GAS_PRICE = new BN(constants.GAS_PRICE); // 8 gwei (check config)
 
   let walletScheme,
     daoCreator,
@@ -85,7 +84,7 @@ contract("DXDGuild", function (accounts) {
       ).encodeABI()],
       value: [0],
       description: "Allow vote in voting machine",
-      contentHash: helpers.NULL_ADDRESS,
+      contentHash: constants.NULL_ADDRESS,
       account: accounts[4],
     });
     await setAllVotesOnProposal({
@@ -104,18 +103,17 @@ contract("DXDGuild", function (accounts) {
       [walletSchemeProposalData],
       [0],
       "Test Title",
-      helpers.SOME_HASH
+      constants.SOME_HASH
     );
     walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     genericCallData = await new web3.eth.Contract(
       votingMachine.contract.abi
-    ).methods.vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS).encodeABI();
+    ).methods.vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS).encodeABI();
   });
 
   describe("DXDGuild", function () {
 
     it("execute a positive vote on the voting machine from the dxd-guild", async function () {
-      console.log((await dxdGuild.getVotesForCreation()).toString())
       await expectRevert(
         dxdGuild.createVotingMachineProposal(walletSchemeProposalId, {from: accounts[1]} ),
         "DXDGuild: Not enough tokens to create proposal"
@@ -165,7 +163,7 @@ contract("DXDGuild", function (accounts) {
       );
       await time.increase(time.duration.seconds(31));
       const proposalInfo = await dxdGuild.getProposal(positiveVoteProposalId);
-      assert.equal(proposalInfo.state, GUILD_PROPOSAL_STATES.executed);
+      assert.equal(proposalInfo.state, constants.WalletSchemeProposalState.executionSuccedd);
       assert.equal(proposalInfo.to[0], votingMachine.address);
       assert.equal(proposalInfo.value[0], 0);
     });

@@ -45,7 +45,7 @@ The DXDGuild is an ERC20Guild with minimal modifications designed to be used to 
 The DXDGuild will create two proposals per DXdao proposal that wants to participate. One proposal will be to execute a positive vote on the Genesis Protocol and the other to execute a negative vote on the Genesis Protocol. The proposals are created at the same time and therefore they resolve at the same time.
 
 ### Schemes
-The smart contracts for the schemes used in DXdao gov 1.x.
+The smart contracts of the schemes used in DXdao gov 1.x, which are all WalletSchemes that use a PermissionRegistry to execute only previously allowed calls.
 
 ### Utils
 The smart contracts used to facilitate and automate the deployment of the DXdao.

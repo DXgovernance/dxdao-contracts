@@ -17,8 +17,7 @@ const {
   createDAO,
   createAndSetupGuildToken,
   createProposal,
-  setAllVotesOnProposal,
-  GUILD_PROPOSAL_STATES
+  setAllVotesOnProposal
 } = require("./helpers/guild");
 
 require("chai").should();
@@ -29,7 +28,7 @@ contract("ERC20Guild", function (accounts) {
   const TIMELOCK = new BN("60");
   const VOTE_GAS = new BN("50000"); // 50k
   const MAX_GAS_PRICE = new BN("8000000000"); // 8 gwei
-  const REAL_GAS_PRICE = new BN(constants.ARC_GAS_PRICE); // 8 gwei (check config)
+  const REAL_GAS_PRICE = new BN(constants.GAS_PRICE); // 8 gwei (check config)
 
   let walletScheme,
     daoCreator,
@@ -85,7 +84,7 @@ contract("ERC20Guild", function (accounts) {
       ).encodeABI()],
       value: [0],
       description: "Allow vote in voting machine",
-      contentHash: helpers.NULL_ADDRESS,
+      contentHash: constants.NULL_ADDRESS,
       account: accounts[3],
     });
     await setAllVotesOnProposal({
@@ -104,19 +103,19 @@ contract("ERC20Guild", function (accounts) {
       [walletSchemeProposalData],
       [0],
       "Test Title",
-      helpers.SOME_HASH
+      constants.SOME_HASH
     );
     walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     genericCallData = await new web3.eth.Contract(
       votingMachine.contract.abi
-    ).methods.vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS).encodeABI();
+    ).methods.vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS).encodeABI();
     genericProposal = {
       guild: erc20Guild,
       to: [votingMachine.address],
       data: [genericCallData],
       value: [0],
       description: "Guild Test Proposal",
-      contentHash: helpers.NULL_ADDRESS,
+      contentHash: constants.NULL_ADDRESS,
       account: accounts[3],
     };
   });  
@@ -154,7 +153,7 @@ contract("ERC20Guild", function (accounts) {
         ],
         value: [0],
         description: "Test description",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
 
@@ -164,7 +163,7 @@ contract("ERC20Guild", function (accounts) {
         account: accounts[5],
       });
 
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -192,7 +191,7 @@ contract("ERC20Guild", function (accounts) {
         ],
         value: [0],
         description: "Test description",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
 
@@ -216,7 +215,7 @@ contract("ERC20Guild", function (accounts) {
         ],
         value: [0],
         description: "Test description",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
 
@@ -226,7 +225,7 @@ contract("ERC20Guild", function (accounts) {
         account: accounts[5],
       });
 
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -271,7 +270,7 @@ contract("ERC20Guild", function (accounts) {
         data: [setAllowanceEncoded],
         value: ["0"],
         description: "Update config",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[2],
       });
 
@@ -304,7 +303,7 @@ contract("ERC20Guild", function (accounts) {
         data: [setAllowanceEncoded],
         value: ["0"],
         description: "Set empty allowance",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[2],
       });
 
@@ -333,7 +332,7 @@ contract("ERC20Guild", function (accounts) {
           [genericCallData],
           [0],
           "Guild Test Proposal",
-          helpers.NULL_ADDRESS,
+          constants.NULL_ADDRESS,
           { from: accounts[9] }
         ),
         "ERC20Guild: Not enough tokens to create proposal"
@@ -347,7 +346,7 @@ contract("ERC20Guild", function (accounts) {
           [],
           [0],
           "Guild Test Proposal",
-          helpers.NULL_ADDRESS,
+          constants.NULL_ADDRESS,
           { from: accounts[3] }
         ),
         "ERC20Guild: Wrong length of to, data or value arrays"
@@ -361,7 +360,7 @@ contract("ERC20Guild", function (accounts) {
           [genericCallData],
           [],
           "Guild Test Proposal",
-          helpers.NULL_ADDRESS,
+          constants.NULL_ADDRESS,
           { from: accounts[3] }
         ),
         "ERC20Guild: Wrong length of to, data or value arrays"
@@ -375,7 +374,7 @@ contract("ERC20Guild", function (accounts) {
           [],
           [],
           "Guild Test Proposal",
-          helpers.NULL_ADDRESS,
+          constants.NULL_ADDRESS,
           { from: accounts[3] }
         ),
         "ERC20Guild: to, data value arrays cannot be empty"
@@ -392,7 +391,7 @@ contract("ERC20Guild", function (accounts) {
         data: [testWithNoargsEncoded],
         value: ["0"],
         description: "random function call",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[2],
       });
 
@@ -423,7 +422,7 @@ contract("ERC20Guild", function (accounts) {
         proposalId: guildProposalId,
         account: accounts[5],
       });
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -441,14 +440,14 @@ contract("ERC20Guild", function (accounts) {
 
       await erc20Guild.endProposal(guildProposalId);
       const { state } = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(state, GUILD_PROPOSAL_STATES.rejected);
+      assert.equal(state, constants.WalletSchemeProposalState.rejected);
     });
   });
   
   it("cannot set multiple votes with uneven arrays", async function () {  
     const callDataNegativeVote = await new web3.eth.Contract(
       votingMachine.contract.abi
-    ).methods.vote(walletSchemeProposalId, 2, 0, helpers.NULL_ADDRESS).encodeABI();
+    ).methods.vote(walletSchemeProposalId, 2, 0, constants.NULL_ADDRESS).encodeABI();
 
     const customProposal = Object.assign({}, genericProposal);
     customProposal.data = [callDataNegativeVote];
@@ -473,13 +472,13 @@ contract("ERC20Guild", function (accounts) {
         [genericCallData],
         [0],
         "Test title",
-        helpers.SOME_HASH
+        constants.SOME_HASH
       );
       const walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
       const callDataVote = await new web3.eth.Contract(
         votingMachine.contract.abi
-      ).methods.vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS).encodeABI();
+      ).methods.vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS).encodeABI();
 
       const customProposal = Object.assign({}, genericProposal);
       customProposal.data = [callDataVote];
@@ -490,7 +489,7 @@ contract("ERC20Guild", function (accounts) {
         { from: accounts[5] }
       );
       
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -504,7 +503,7 @@ contract("ERC20Guild", function (accounts) {
         from: accounts[5],
       });
       
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -514,7 +513,7 @@ contract("ERC20Guild", function (accounts) {
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
       const { state } = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(state, GUILD_PROPOSAL_STATES.executed);
+      assert.equal(state, constants.WalletSchemeProposalState.executionSuccedd);
 
       await expectRevert(
         erc20Guild.setVote(guildProposalId, 100, { from: accounts[3] }),
@@ -535,7 +534,7 @@ contract("ERC20Guild", function (accounts) {
 
       const txVoteAdd = await erc20Guild.setVote( guildProposalId, 200, { from: accounts[5] } );
       
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVoteAdd.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVoteAdd, "VoteAdded", {
@@ -551,7 +550,7 @@ contract("ERC20Guild", function (accounts) {
 
       const txVoteRemove = await erc20Guild.setVote( guildProposalId, 100, { from: accounts[5] } );
       
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVoteRemove.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVoteRemove, "VoteRemoved", {
@@ -574,7 +573,7 @@ contract("ERC20Guild", function (accounts) {
         data: [genericCallData],
         value: [0],
         description: "Test description",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
 
@@ -584,7 +583,7 @@ contract("ERC20Guild", function (accounts) {
         account: accounts[5],
       });
 
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -594,7 +593,7 @@ contract("ERC20Guild", function (accounts) {
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
       const organizationProposal = await walletScheme.getOrganizationProposal(walletSchemeProposalId);
-      assert.equal(organizationProposal.state, "3");
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
       assert.equal(organizationProposal.callData[0], walletSchemeProposalData);
       assert.equal(organizationProposal.to[0], org.controller.address);
       assert.equal(organizationProposal.value[0], 0);
@@ -613,7 +612,7 @@ contract("ERC20Guild", function (accounts) {
         ).encodeABI()],
         value: [0],
         description: "Allow vote in voting machine",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
       await setAllVotesOnProposal({
@@ -630,7 +629,7 @@ contract("ERC20Guild", function (accounts) {
         data: [helpers.testCallFrom(erc20Guild.address)],
         value: [0],
         description: "Test description",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
 
@@ -640,7 +639,7 @@ contract("ERC20Guild", function (accounts) {
         account: accounts[5],
       });
 
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -658,7 +657,7 @@ contract("ERC20Guild", function (accounts) {
         data: [helpers.testCallFrom(erc20Guild.address)],
         value: [0],
         description: "Test description",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
 
@@ -668,7 +667,7 @@ contract("ERC20Guild", function (accounts) {
         account: accounts[5],
       });
 
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -689,7 +688,7 @@ contract("ERC20Guild", function (accounts) {
         account: accounts[5],
       });
 
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -697,7 +696,7 @@ contract("ERC20Guild", function (accounts) {
       const receipt = await erc20Guild.endProposal(guildProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
       const proposalInfo = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(proposalInfo.state, GUILD_PROPOSAL_STATES.executed);
+      assert.equal(proposalInfo.state, constants.WalletSchemeProposalState.executionSuccedd);
       assert.equal(proposalInfo.data[0], genericCallData);
       assert.equal(proposalInfo.to[0], votingMachine.address);
       assert.equal(proposalInfo.value[0], 0);
@@ -712,7 +711,7 @@ contract("ERC20Guild", function (accounts) {
         proposalId: guildProposalId,
         account: accounts[5],
       });
-      if (constants.ARC_GAS_PRICE > 1)
+      if (constants.GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -722,7 +721,7 @@ contract("ERC20Guild", function (accounts) {
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
       const { state } = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(state, GUILD_PROPOSAL_STATES.executed);
+      assert.equal(state, constants.WalletSchemeProposalState.executionSuccedd);
 
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
@@ -757,9 +756,9 @@ contract("ERC20Guild", function (accounts) {
       assert.deepEqual(data, [genericCallData]);
       assert.deepEqual( value.map((bn) => bn.toString()), ["0"] );
       assert.equal(description, "Guild Test Proposal");
-      assert.equal(contentHash, helpers.NULL_ADDRESS);
+      assert.equal(contentHash, constants.NULL_ADDRESS);
       totalVotes.should.be.bignumber.equal("100");
-      assert.equal(state, GUILD_PROPOSAL_STATES.submitted);
+      assert.equal(state, constants.WalletSchemeProposalState.submitted);
     });
 
     it("can read votesOf single accounts", async function () {
@@ -908,7 +907,7 @@ contract("ERC20Guild", function (accounts) {
         data: [genericCallData],
         value: [0],
         description: "Test description",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[2],
       });
       await createProposal({
@@ -917,7 +916,7 @@ contract("ERC20Guild", function (accounts) {
         data: [genericCallData],
         value: [0],
         description: "Test description",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
       const res = await erc20Guild.votesOfAt([accounts[2], accounts[3]], [1, 2]);
@@ -964,7 +963,7 @@ contract("ERC20Guild", function (accounts) {
         [genericCallData],
         [0],
         "Guild Test Proposal",
-        helpers.NULL_ADDRESS,
+        constants.NULL_ADDRESS,
         { from: accounts[2] }
       );
 
@@ -990,7 +989,7 @@ contract("ERC20Guild", function (accounts) {
         [genericCallData],
         [0],
         "Guild Test Proposal",
-        helpers.NULL_ADDRESS,
+        constants.NULL_ADDRESS,
         { from: accounts[2] }
       );
 
@@ -1018,7 +1017,7 @@ contract("ERC20Guild", function (accounts) {
         [genericCallData],
         [0],
         "Guild Test Proposal",
-        helpers.NULL_ADDRESS,
+        constants.NULL_ADDRESS,
         { from: accounts[2] }
       );
 
@@ -1048,7 +1047,7 @@ contract("ERC20Guild", function (accounts) {
         ],
         value: [0],
         description: "Guild Test Proposal",
-        contentHash: helpers.NULL_ADDRESS,
+        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
       await setAllVotesOnProposal({
@@ -1090,7 +1089,7 @@ contract("ERC20Guild", function (accounts) {
         });
         expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
-        if (constants.ARC_GAS_PRICE > 1) {
+        if (constants.GAS_PRICE > 1) {
           const txGasUsed = txVote.receipt.gasUsed;
 
           // mul by -1 as balance has decreased
@@ -1122,7 +1121,7 @@ contract("ERC20Guild", function (accounts) {
         });
         expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
-        if (constants.ARC_GAS_PRICE > 1) {
+        if (constants.GAS_PRICE > 1) {
           const txGasUsed = txVote.receipt.gasUsed;
 
           // no change as still no ether
@@ -1146,13 +1145,13 @@ contract("ERC20Guild", function (accounts) {
           [walletSchemeProposalData],
           [0],
           "Test title",
-          helpers.SOME_HASH
+          constants.SOME_HASH
         );
         const walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
         const genericCallData = await new web3.eth.Contract(
           votingMachine.contract.abi
-        ).methods.vote(walletSchemeProposalId, 1, 0, helpers.NULL_ADDRESS).encodeABI();
+        ).methods.vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS).encodeABI();
       
         const guildProposalId = await createProposal({
           guild: erc20Guild,
@@ -1160,7 +1159,7 @@ contract("ERC20Guild", function (accounts) {
           data: [genericCallData],
           value: [0],
           description: "Guild Test Proposal",
-          contentHash: helpers.NULL_ADDRESS,
+          contentHash: constants.NULL_ADDRESS,
           account: accounts[3],
         });
 
@@ -1170,7 +1169,7 @@ contract("ERC20Guild", function (accounts) {
           account: accounts[5],
         });
 
-        if (constants.ARC_GAS_PRICE > 1)
+        if (constants.GAS_PRICE > 1)
           expect(txVote.receipt.gasUsed).to.be.below(80000);
 
         expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
@@ -1180,7 +1179,7 @@ contract("ERC20Guild", function (accounts) {
         expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
         const organizationProposal = await walletScheme.getOrganizationProposal(walletSchemeProposalId);
-        assert.equal(organizationProposal.state, "3");
+        assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
         assert.equal(organizationProposal.callData[0], walletSchemeProposalData);
         assert.equal(organizationProposal.to[0], org.controller.address);
         assert.equal(organizationProposal.value[0], 0);
@@ -1205,7 +1204,7 @@ contract("ERC20Guild", function (accounts) {
       });
       expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
 
-      if (constants.ARC_GAS_PRICE > 1) {
+      if (constants.GAS_PRICE > 1) {
         const txGasUsed = txVote.receipt.gasUsed;
 
         // mul by -1 as balance has decreased
@@ -1235,7 +1234,7 @@ contract("ERC20Guild", function (accounts) {
         [genericCallData],
         [0],
         "Guild Test Proposal",
-        helpers.NULL_ADDRESS,
+        constants.NULL_ADDRESS,
         { from: accounts[3] }
       );
 
@@ -1270,7 +1269,7 @@ contract("ERC20Guild", function (accounts) {
         [genericCallData],
         [0],
         "Guild Test Proposal",
-        helpers.NULL_ADDRESS,
+        constants.NULL_ADDRESS,
         { from: accounts[4] }
       );
 
@@ -1311,7 +1310,7 @@ contract("ERC20Guild", function (accounts) {
         [genericCallData],
         [0],
         "Guild Test Proposal",
-        helpers.NULL_ADDRESS,
+        constants.NULL_ADDRESS,
         { from: accounts[3] }
       );
 
@@ -1358,7 +1357,7 @@ contract("ERC20Guild", function (accounts) {
         [genericCallData],
         [0],
         "Guild Test Proposal",
-        helpers.NULL_ADDRESS,
+        constants.NULL_ADDRESS,
         { from: accounts[3] }
       );
 

@@ -22,7 +22,7 @@ const setup = async function(accounts, permission = "0", registerScheme = accoun
   var sender = accounts[ 0 ];
   if (permission !== "0") {
     sender = accounts[ 1 ];
-    _controller = await DxController.new(avatar.address, {from: sender, gas: constants.ARC_GAS_LIMIT});
+    _controller = await DxController.new(avatar.address, {from: sender, gas: constants.GAS_LIMIT});
     await _controller.registerScheme(
       registerScheme, "0x0000000000000000000000000000000000000000", permission, avatar.address, {from: accounts[ 1 ]}
     );
@@ -35,7 +35,7 @@ const setup = async function(accounts, permission = "0", registerScheme = accoun
       assert.equal(events[ 0 ].args._scheme, registerScheme);
     });
   } else {
-    _controller = await DxController.new(avatar.address, {from: sender, gas: constants.ARC_GAS_LIMIT});
+    _controller = await DxController.new(avatar.address, {from: sender, gas: constants.GAS_LIMIT});
     await _controller.getPastEvents("RegisterScheme", {
       fromBlock: 0,
       toBlock: "latest"
@@ -181,7 +181,7 @@ contract("Controller", accounts =>  {
     assert.equal(tx.logs.length, 0);
   });
 
-  it("unregister schemes - check permissions unregister scheme", async() => {
+  it("unregister schemes - check permissions unregister scheme", async () => {
     // Check scheme has at least the permissions it is changing, and at least the current permissions.
     //1. setup
     controller = await setup(accounts);
@@ -190,14 +190,14 @@ contract("Controller", accounts =>  {
     var tx;
     var registeredScheme = accounts[ 1 ];
     var unregisteredScheme = accounts[ 2 ];
-    for(i = 0; i <= 15; i++ ){
+    for(i = 0; i <= 5; i++ ){
       //registered scheme has already permission to register(2)
       tx = await controller.registerScheme(
         registeredScheme, "0x0000000000000000000000000000000000000000", "0x" + uint32.toHex(i | 3), avatar.address
       );
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[ 0 ].event, "RegisterScheme");
-      for(j = 0; j <= 15; j++ ){
+      for(j = 0; j <= 5; j++ ){
         tx = await controller.registerScheme(
           unregisteredScheme, "0x0000000000000000000000000000000000000000", "0x" + uint32.toHex(j), avatar.address
         );
@@ -379,7 +379,7 @@ contract("Controller", accounts =>  {
   
   it("sendEther", async() => {
     controller = await setup(accounts);
-    let otherAvatar = await DxAvatar.new("otheravatar", helpers.NULL_ADDRESS, avatar.address);
+    let otherAvatar = await DxAvatar.new("otheravatar", constants.NULL_ADDRESS, avatar.address);
     await avatar.transferOwnership(controller.address);
     //send some ether to the avatar
     await web3.eth.sendTransaction({from: accounts[ 0 ], to: avatar.address, value: web3.utils.toWei("1", "ether")});
@@ -478,7 +478,7 @@ contract("Controller", accounts =>  {
     controller = await setup(accounts);
     var globalConstraints = await constraint("registerScheme");
     try {
-      await controller.registerScheme(accounts[ 1 ], helpers.NULL_HASH, "0x00000000", avatar.address);
+      await controller.registerScheme(accounts[ 1 ], constants.NULL_HASH, "0x00000000", avatar.address);
       assert(false, "registerScheme should fail due to the global constraint ");
     } catch(ex){
       helpers.assertVMException(ex);
@@ -487,7 +487,7 @@ contract("Controller", accounts =>  {
     var globalConstraintsCount = await controller.globalConstraintsCount(avatar.address);
     assert.equal(globalConstraintsCount[ 0 ], 0);
     assert.equal(globalConstraintsCount[ 1 ], 0);
-    let tx =  await controller.registerScheme(accounts[ 1 ], helpers.NULL_HASH, "0x00000000", avatar.address);
+    let tx =  await controller.registerScheme(accounts[ 1 ], constants.NULL_HASH, "0x00000000", avatar.address);
     assert.equal(tx.logs.length, 1);
     assert.equal(tx.logs[ 0 ].event, "RegisterScheme");
   });
@@ -509,7 +509,8 @@ contract("Controller", accounts =>  {
     assert.equal(tx.logs.length, 1);
     assert.equal(tx.logs[ 0 ].event, "UnregisterScheme");
   });
-  it("globalConstraints generic call  add & remove", async() => {
+  
+  it("globalConstraints generic call add & remove", async() => {
     controller = await setup(accounts, "0x00000014");
     var globalConstraints = await constraint("genericCall");
     await avatar.transferOwnership(controller.address);
@@ -542,7 +543,7 @@ contract("Controller", accounts =>  {
   it("globalConstraints sendEther  add & remove", async() => {
     controller = await setup(accounts);
     var globalConstraints = await constraint("sendEther");
-    let otherAvatar = await DxAvatar.new("otheravatar", helpers.NULL_ADDRESS, avatar.address);
+    let otherAvatar = await DxAvatar.new("otheravatar", constants.NULL_ADDRESS, avatar.address);
     await avatar.transferOwnership(controller.address);
     web3.eth.sendTransaction({from: accounts[ 0 ], to: avatar.address, value: web3.utils.toWei("1", "ether")});
 
@@ -570,7 +571,7 @@ contract("Controller", accounts =>  {
     assert.equal(otherAvatarBalance, 1);
   });
 
-  it("globalConstraints externalTokenTransfer  add & remove", async() => {
+  it("globalConstraints externalTokenTransfer add & remove", async() => {
     controller = await setup(accounts);
     var globalConstraints = await constraint("externalTokenTransfer");
     var standardToken = await ERC20Mock.new(avatar.address, 100);
@@ -604,11 +605,9 @@ contract("Controller", accounts =>  {
 
 
   it("getNativeReputation", async() => {
-
     controller = await setup(accounts);
     var nativeReputation = await controller.getNativeReputation(avatar.address);
     assert.equal(nativeReputation, reputation.address);
-
   });
 
   it("globalConstraints externalTokenTransferFrom , externalTokenApproval", async() => {
