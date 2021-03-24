@@ -10,7 +10,8 @@ const { BN, time } = require("@openzeppelin/test-helpers");
 export async function createAndSetupGuildToken(accounts, balances) {
   const [ firstAccount, ...restOfAccounts ] = accounts;
   const [ firstBalance, ...restOfBalances ] = balances;
-  const guildToken = await ERC20Mock.new(firstAccount, firstBalance);
+  const totalSupply = balances.reduce((a,b) => a + b, 0);
+  const guildToken = await ERC20Mock.new(firstAccount, totalSupply);
 
   await Promise.all(restOfAccounts.map((account, idx) => {
     return guildToken.transfer(account, restOfBalances[ idx ]);
@@ -113,3 +114,10 @@ export async function setXVotesOnProposal({guild, proposalId, votes, account}) {
     {from: account}
   );
 }
+
+export const GUILD_PROPOSAL_STATES = {
+  submitted: 0,
+  rejected: 1,
+  executed: 2,
+  failed: 3,
+};

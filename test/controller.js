@@ -181,7 +181,7 @@ contract("Controller", accounts =>  {
     assert.equal(tx.logs.length, 0);
   });
 
-  it("unregister schemes - check permissions unregister scheme", async() => {
+  it("unregister schemes - check permissions unregister scheme", async () => {
     // Check scheme has at least the permissions it is changing, and at least the current permissions.
     //1. setup
     controller = await setup(accounts);
@@ -190,14 +190,14 @@ contract("Controller", accounts =>  {
     var tx;
     var registeredScheme = accounts[ 1 ];
     var unregisteredScheme = accounts[ 2 ];
-    for(i = 0; i <= 15; i++ ){
+    for(i = 0; i <= 5; i++ ){
       //registered scheme has already permission to register(2)
       tx = await controller.registerScheme(
         registeredScheme, "0x0000000000000000000000000000000000000000", "0x" + uint32.toHex(i | 3), avatar.address
       );
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[ 0 ].event, "RegisterScheme");
-      for(j = 0; j <= 15; j++ ){
+      for(j = 0; j <= 5; j++ ){
         tx = await controller.registerScheme(
           unregisteredScheme, "0x0000000000000000000000000000000000000000", "0x" + uint32.toHex(j), avatar.address
         );
@@ -224,7 +224,6 @@ contract("Controller", accounts =>  {
         }
       }
     }
-    done();
   });
 
   it("call with none valid avatar should revert", async() => {
