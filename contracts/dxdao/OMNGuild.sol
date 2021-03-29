@@ -156,9 +156,8 @@ contract OMNGuild is ERC20Guild, Ownable {
       bytes[] memory _data;
       uint256[] memory _value;
       
-      // question: Should the account credited with this answer for the purpose of bond claims be this guild?
       _data[0] = abi.encodeWithSelector(
-        submitAnswerByArbitratorSignature, questionId, answer, address(this)
+        submitAnswerByArbitratorSignature, questionId, answer, msg.sender
       );
       
       _value[0] = 0;
