@@ -167,7 +167,7 @@ contract ERC20Guild {
     ) public {
         _setConfig(
           _proposalTime,
-          timeForExecution,
+          _timeForExecution,
           _votesForExecution,
           _votesForCreation,
           _voteGas,
