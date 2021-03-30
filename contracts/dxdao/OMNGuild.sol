@@ -26,6 +26,14 @@ contract OMNGuild is ERC20Guild, Ownable {
       keccak256("submitAnswerByArbitrator(bytes32,bytes32,address)")
     );
     uint32 internal _questionNonce;
+    uint256 public marketCreatorReward;
+    uint256 public succesfulVoteReward;
+    uint256 public unsuccesfulVoteReward;
+    
+    enum VoteStatus {NO_VOTE, POSITIVE, NEGATIVE, REWARD_CLAIMED}
+
+    // Saves which accounts voted in market validation proposals and their decision.
+    mapping(bytes32 => mapping(address => VoteStatus)) public voteStatus;
 
     /// @dev Initilizer
     /// Sets the call permission to arbitrate markets allowed by default and create the market question tempate in 
@@ -78,16 +86,27 @@ contract OMNGuild is ERC20Guild, Ownable {
     /// @param _realityIO The address of the realityIO contract
     /// @param _realityIOTemplateId The tempalte id to be used for the question in reality.io
     /// @param _marketValidationTime The amount of time in seconds for the market validation question
+    /// @param _marketCreatorReward The amount of OMN tokens in wei unit to be reward to a market validation creator
+    /// @param _succesfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a succesful 
+    ///  vote
+    /// @param _unsuccesfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccesful
+    ///  vote
     function setOMNGuildConfig(
         uint256 _maxAmountVotes,
         address _realityIO,
         uint256 _realityIOTemplateId,
-        uint32 _marketValidationTime
+        uint32 _marketValidationTime,
+        uint256 _marketCreatorReward,
+        uint256 _succesfulVoteReward,
+        uint256 _unsuccesfulVoteReward
     ) public isInitialized {
         realityIO = _realityIO;
         realityIOTemplateIndex = _realityIOTemplateId;
         maxAmountVotes = _maxAmountVotes;
         marketValidationTime = _marketValidationTime;
+        marketCreatorReward = _marketCreatorReward;
+        succesfulVoteReward = _succesfulVoteReward;
+        unsuccesfulVoteReward = _unsuccesfulVoteReward;
     }
     
     /// @dev Create proposals with an static call data and extra information
@@ -141,29 +160,66 @@ contract OMNGuild is ERC20Guild, Ownable {
     /// The proposal will only be votable for two days.
     /// @param questionId the id of the question Id to be set as invalid
     function createMarketValidationProposal(bytes32 questionId) public isInitialized returns (bytes32) {
-      require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");
-      string memory question = string(abi.encodePacked("Is market with ", questionId, " valid?"));
+        require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");
+        string memory question = string(abi.encodePacked("Is market with ", questionId, " valid?"));
 
-      bytes32 questionId = IRealityIO(realityIO).askQuestion(
-        realityIOTemplateIndex, question, address(this), marketValidationTime, _questionNonce, now
-      );
-      _questionNonce ++;
+        bytes32 questionId = IRealityIO(realityIO).askQuestion(
+          realityIOTemplateIndex, question, address(this), marketValidationTime, _questionNonce, now
+        );
+        _questionNonce ++;
+        
+        // question: Is this how we set the question to true? with this answer?
+        bytes32 answer = keccak256(abi.encodePacked(true));
+        
+        address[] memory _to;
+        bytes[] memory _data;
+        uint256[] memory _value;
+        
+        _data[0] = abi.encodeWithSelector(
+          submitAnswerByArbitratorSignature, questionId, answer, msg.sender
+        );
+        
+        _value[0] = 0;
+        _to[0] = address(realityIO);
+        questionIds[questionId] = _createProposal(_to, _data, _value, question, abi.encodePacked(questionId));
+        return questionIds[questionId];
+    }
+    
+    /// @dev Claim the vote rewards of multiple proposals at once
+    /// @param proposalIds The ids of the proposal already finished were a vote was set and vote reward not claimed
+    function claimVoteRewards(bytes32[] memory proposalIds) public {
+      uint256 reward;
+      for(uint i = 0; i < proposalIds.length; i ++) {
+        require(voteStatus[proposalIds[i]][msg.sender] != VoteStatus.NO_VOTE, "OMNGuild: Didnt voted in proposal");
+        require(voteStatus[proposalIds[i]][msg.sender] != VoteStatus.REWARD_CLAIMED, "OMNGuild: Vote reward already claimed");
       
-      // question:Is this how we set the question to true? with this answer?
-      bytes32 answer = keccak256(abi.encodePacked(true));
+        // If proposal executed and vote was positive or proposal rejected and vote was negative the vote reward is for
+        // a succesful vote
+        if ((
+          proposals[proposalIds[i]].state == ProposalState.Executed && 
+          voteStatus[proposalIds[i]][msg.sender] == VoteStatus.POSITIVE
+        ) || (
+          proposals[proposalIds[i]].state == ProposalState.Rejected && 
+          voteStatus[proposalIds[i]][msg.sender] == VoteStatus.NEGATIVE
+        )) {
+          reward.add(succesfulVoteReward);
+          
+        // If proposal executed and vote was negative or proposal rejected and vote was positive the vote reward is for
+        // a unsuccesful vote
+        } else if ((
+          proposals[proposalIds[i]].state == ProposalState.Rejected && 
+          voteStatus[proposalIds[i]][msg.sender] == VoteStatus.POSITIVE
+        ) || (
+          proposals[proposalIds[i]].state == ProposalState.Executed && 
+          voteStatus[proposalIds[i]][msg.sender] == VoteStatus.NEGATIVE
+        )) {
+          reward.add(unsuccesfulVoteReward);
+        }
+        
+        voteStatus[proposalIds[i]][msg.sender] = VoteStatus.REWARD_CLAIMED;
+      }
       
-      address[] memory _to;
-      bytes[] memory _data;
-      uint256[] memory _value;
-      
-      _data[0] = abi.encodeWithSelector(
-        submitAnswerByArbitratorSignature, questionId, answer, msg.sender
-      );
-      
-      _value[0] = 0;
-      _to[0] = address(realityIO);
-      questionIds[questionId] = _createProposal(_to, _data, _value, question, abi.encodePacked(questionId));
-      return questionIds[questionId];
+      _sendTokenReward(msg.sender, reward);
     }
   
     /// @dev Internal function to set the amount of tokens to vote in a proposal
@@ -171,11 +227,24 @@ contract OMNGuild is ERC20Guild, Ownable {
     /// @param proposalId The id of the proposal to set the vote
     /// @param amount The amount of tokens to use as voting for the proposal
     function _setVote(address voter, bytes32 proposalId, uint256 amount) internal isInitialized {
-        require(proposals[proposalId].votes[voter] == 0, "OMNGuild: Already voted");
+        require(voteStatus[proposalId][msg.sender] == VoteStatus.NO_VOTE, "OMNGuild: Already voted");
         require(amount <= maxAmountVotes, "OMNGuild: Cant vote with more votes than max amount of votes");
+        if (amount > 0) {
+          voteStatus[proposalId][msg.sender] = VoteStatus.POSITIVE;
+        } else {
+          voteStatus[proposalId][msg.sender] = VoteStatus.NEGATIVE;
+        }
         super._setVote(voter, proposalId, amount);
     }
     
+    /// @dev Internal function to send a reward of OMN tokens (if the balance is enough) to an address
+    /// @param to The address to recieve the token
+    /// @param amount The amount of OMN tokens to be sent in wei units
+    function _sendTokenReward(address to, uint256 amount) internal {
+        if (token.balanceOf(address(this)) > amount) {
+            token.transfer(to, amount);
+        }
+    }
     
     /// @dev Get minimum amount of votes needed for creation
     function getVotesForCreation() public view returns (uint256) {
