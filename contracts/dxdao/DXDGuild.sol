@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.5.17;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../erc20guild/ERC20Guild.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 /// @title DXDGuild
 /// @author github:AugustoL
 /// An ERC20Guild for the DXD token designed to execute votes on Genesis Protocol Voting Machine.
-contract DXDGuild is ERC20Guild, Ownable {
-
-  constructor() public ERC20Guild() {}
+contract DXDGuild is ERC20Guild, OwnableUpgradeable {
+    using SafeMathUpgradeable for uint256;
     
     address public votingMachine;
     bytes4 public voteFuncSignature = bytes4(keccak256("vote(bytes32,uint256,uint256,address)"));
@@ -45,7 +44,7 @@ contract DXDGuild is ERC20Guild, Ownable {
         uint256 _maxGasPrice,
         uint256 _lockTime,
         address _votingMachine
-    ) public {
+    ) public initializer {
         super.initialize(
           _token,
           _proposalTime,
@@ -74,7 +73,7 @@ contract DXDGuild is ERC20Guild, Ownable {
         uint256[] memory value,
         string memory description,
         bytes memory contentHash
-    ) public isInitialized returns(bytes32) {
+    ) override public isInitialized returns(bytes32) {
         require(votesOf(msg.sender) >= getVotesForCreation(), "DXDGuild: Not enough tokens to create proposal");
         require(
             (to.length == data.length) && (to.length == value.length),
@@ -93,13 +92,13 @@ contract DXDGuild is ERC20Guild, Ownable {
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
     /// This function cant end voting machine proposals
     /// @param proposalId The id of the proposal to be executed
-    function endProposal(bytes32 proposalId) public {
+    function endProposal(bytes32 proposalId) override public {
       require(
         !proposalsForVotingMachine[proposalId],
         "DXDGuild: Use endVotingMachineProposal to end proposals to voting machine"
       );
       require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
-      require(proposals[proposalId].endTime < now, "ERC20Guild: Proposal hasnt ended yet");
+      require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasnt ended yet");
       _endProposal(proposalId);
     }
     
@@ -134,8 +133,8 @@ contract DXDGuild is ERC20Guild, Ownable {
       Proposal storage negativeProposal = proposals[votingMachineProposals[votingMachineProposalId].negativeProposal];
       require(positiveProposal.state == ProposalState.Submitted, "DXDGuild: Positive proposal already executed");
       require(negativeProposal.state == ProposalState.Submitted, "DXDGuild: Negative proposal already executed");
-      require(positiveProposal.endTime < now, "DXDGuild: Positive proposal hasnt ended yet");
-      require(negativeProposal.endTime < now, "DXDGuild: Negative proposal hasnt ended yet");
+      require(positiveProposal.endTime < block.timestamp, "DXDGuild: Positive proposal hasnt ended yet");
+      require(negativeProposal.endTime < block.timestamp, "DXDGuild: Negative proposal hasnt ended yet");
       
       if (positiveProposal.totalVotes > negativeProposal.totalVotes) {
         _endProposal(votingMachineProposals[votingMachineProposalId].positiveProposal);
@@ -149,12 +148,12 @@ contract DXDGuild is ERC20Guild, Ownable {
     }
     
     /// @dev Get minimum amount of votes needed for creation
-    function getVotesForCreation() public view returns (uint256) {
+    function getVotesForCreation() override public view returns (uint256) {
         return token.totalSupply().mul(votesForCreation).div(100);
     }
     
     /// @dev Get minimum amount of votes needed for proposal execution
-    function getVotesForExecution() public view returns (uint256) {
+    function getVotesForExecution() override public view returns (uint256) {
         return token.totalSupply().mul(votesForExecution).div(100);
     }
 

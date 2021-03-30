@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.5.17;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../erc20guild/ERC20Guild.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
-contract IRealityIO {
+abstract contract IRealityIO {
   function askQuestion(
     uint256 template_id, string memory question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce
-  ) public payable returns (bytes32);
+  ) public virtual payable returns (bytes32);
 }
 
 /// @title OMNGuild
 /// @author github:AugustoL
-contract OMNGuild is ERC20Guild, Ownable {
+contract OMNGuild is ERC20Guild, OwnableUpgradeable {
+    using SafeMathUpgradeable for uint256;
 
-  constructor() public ERC20Guild() {}
-    
     uint256 public maxAmountVotes;
     address public realityIO;
     uint256 public realityIOTemplateIndex;
@@ -61,7 +61,7 @@ contract OMNGuild is ERC20Guild, Ownable {
         uint256 _maxAmountVotes,
         address _realityIO,
         uint256 _realityIOTemplateId
-    ) public {
+    ) public initializer {
         super.initialize(
           _token,
           _proposalTime,
@@ -164,7 +164,7 @@ contract OMNGuild is ERC20Guild, Ownable {
         string memory question = string(abi.encodePacked("Is market with ", questionId, " valid?"));
 
         bytes32 questionId = IRealityIO(realityIO).askQuestion(
-          realityIOTemplateIndex, question, address(this), marketValidationTime, _questionNonce, now
+          realityIOTemplateIndex, question, address(this), marketValidationTime, _questionNonce, block.timestamp
         );
         _questionNonce ++;
         
@@ -221,12 +221,15 @@ contract OMNGuild is ERC20Guild, Ownable {
       
       _sendTokenReward(msg.sender, reward);
     }
-  
-    /// @dev Internal function to set the amount of tokens to vote in a proposal
-    /// @param voter The address of the voter
+    
+    /// @dev Set the amount of tokens to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote
-    /// @param amount The amount of tokens to use as voting for the proposal
-    function _setVote(address voter, bytes32 proposalId, uint256 amount) internal isInitialized {
+    /// @param amount The amount of votes to be set in the proposal
+    function setVote(bytes32 proposalId, uint256 amount) override public virtual {
+        require(
+            votesOfAt(msg.sender, proposals[proposalId].snapshotId) >=  amount,
+            "ERC20Guild: Invalid amount"
+        );
         require(voteStatus[proposalId][msg.sender] == VoteStatus.NO_VOTE, "OMNGuild: Already voted");
         require(amount <= maxAmountVotes, "OMNGuild: Cant vote with more votes than max amount of votes");
         if (amount > 0) {
@@ -234,7 +237,32 @@ contract OMNGuild is ERC20Guild, Ownable {
         } else {
           voteStatus[proposalId][msg.sender] = VoteStatus.NEGATIVE;
         }
-        super._setVote(voter, proposalId, amount);
+        _setVote(msg.sender, proposalId, amount);
+        _refundVote(msg.sender);
+    }
+
+    /// @dev Set the amount of tokens to vote in multiple proposals
+    /// @param proposalIds The ids of the proposals to set the votes
+    /// @param amounts The amount of votes to be set in each proposal
+    function setVotes(bytes32[] memory proposalIds, uint256[] memory amounts) override public virtual {
+        require(
+            proposalIds.length == amounts.length,
+            "ERC20Guild: Wrong length of proposalIds or amounts"
+        );
+        for(uint i = 0; i < proposalIds.length; i ++){
+            require(
+                votesOfAt(msg.sender, proposals[proposalIds[i]].snapshotId) >=  amounts[i],
+                "ERC20Guild: Invalid amount"
+            );
+            require(voteStatus[proposalIds[i]][msg.sender] == VoteStatus.NO_VOTE, "OMNGuild: Already voted");
+            require(amounts[i] <= maxAmountVotes, "OMNGuild: Cant vote with more votes than max amount of votes");
+            if (amounts[i] > 0) {
+              voteStatus[proposalIds[i]][msg.sender] = VoteStatus.POSITIVE;
+            } else {
+              voteStatus[proposalIds[i]][msg.sender] = VoteStatus.NEGATIVE;
+            }
+            _setVote(msg.sender, proposalIds[i], amounts[i]);
+          }
     }
     
     /// @dev Internal function to send a reward of OMN tokens (if the balance is enough) to an address
@@ -247,12 +275,12 @@ contract OMNGuild is ERC20Guild, Ownable {
     }
     
     /// @dev Get minimum amount of votes needed for creation
-    function getVotesForCreation() public view returns (uint256) {
+    function getVotesForCreation() override public view returns (uint256) {
         return token.totalSupply().mul(votesForCreation).div(100);
     }
     
     /// @dev Get minimum amount of votes needed for proposal execution
-    function getVotesForExecution() public view returns (uint256) {
+    function getVotesForExecution() override public view returns (uint256) {
         return token.totalSupply().mul(votesForExecution).div(100);
     }
 
