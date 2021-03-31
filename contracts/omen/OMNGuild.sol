@@ -158,12 +158,12 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
     
     /// @dev Create a proposal that will mark an OMN market as invalid in realito.io if quorum is reached.
     /// The proposal will only be votable for two days.
-    /// @param questionId the id of the question Id to be set as invalid
-    function createMarketValidationProposal(bytes32 questionId) public isInitialized returns (bytes32) {
+    /// @param marketToValidateId the id of the question Id to be set as invalid
+    function createMarketValidationProposal(bytes32 marketToValidateId) public isInitialized returns (bytes32) {
         require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");
-        string memory question = string(abi.encodePacked("Is market with ", questionId, " valid?"));
+        string memory question = string(abi.encodePacked("Is market with ", marketToValidateId, " valid?"));
 
-        bytes32 questionId = IRealityIO(realityIO).askQuestion(
+        bytes32 marketValidationQuestionId = IRealityIO(realityIO).askQuestion(
           realityIOTemplateIndex, question, address(this), marketValidationTime, _questionNonce, block.timestamp
         );
         _questionNonce ++;
@@ -176,13 +176,14 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
         uint256[] memory _value;
         
         _data[0] = abi.encodeWithSelector(
-          submitAnswerByArbitratorSignature, questionId, answer, msg.sender
+          submitAnswerByArbitratorSignature, marketValidationQuestionId, answer, msg.sender
         );
         
         _value[0] = 0;
         _to[0] = address(realityIO);
-        questionIds[questionId] = _createProposal(_to, _data, _value, question, abi.encodePacked(questionId));
-        return questionIds[questionId];
+        questionIds[marketValidationQuestionId] =
+          _createProposal(_to, _data, _value, question, abi.encodePacked(marketValidationQuestionId));
+        return questionIds[marketValidationQuestionId];
     }
     
     /// @dev Claim the vote rewards of multiple proposals at once
