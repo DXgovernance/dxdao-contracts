@@ -34,9 +34,18 @@ module.exports = {
     ],
     overrides: {
       "contracts/omen/OMNToken.sol": { version: "0.7.0" },
-      "contracts/omen/OMNGuild.sol": { version: "0.7.0" },
-      "contracts/dxdao/DXDGuild.sol": { version: "0.7.0" },
-      "contracts/erc20guild/ERC20Guild.sol": { version: "0.7.0" },
+      "contracts/omen/OMNGuild.sol": {
+        version: "0.7.0",
+        settings: { optimizer: { enabled: true, runs: 100 } }
+      },
+      "contracts/dxdao/DXDGuild.sol": {
+        version: "0.7.0",
+        settings: { optimizer: { enabled: true, runs: 100 } }
+      },
+      "contracts/erc20guild/ERC20Guild.sol": {
+        version: "0.7.0",
+        settings: { optimizer: { enabled: true, runs: 100 } }
+      },
       "contracts/erc20guild/IERC20Guild.sol": { version: "0.7.0" },
     }
   },
