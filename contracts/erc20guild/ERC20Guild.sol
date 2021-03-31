@@ -103,6 +103,7 @@ contract ERC20Guild is Initializable {
     
     /// @dev Allows the voting machine to receive ether to be used to refund voting costs
     fallback() external payable {}
+    receive() external payable {}
     
     /// @dev Initialized modifier to require the contract to be initialized
     modifier isInitialized() {
