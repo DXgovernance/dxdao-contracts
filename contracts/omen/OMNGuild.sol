@@ -211,8 +211,9 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
     
     /// @dev Claim the vote rewards of multiple proposals at once
     /// @param proposalIds The ids of the proposal already finished were a vote was set and vote reward not claimed
+    /// @param voter The address of the voter to receiver the rewards
     // TO DO ,maybe claim for other accounts
-    function claimMarketValidationVoteRewards(bytes32[] memory proposalIds) public {
+    function claimMarketValidationVoteRewards(bytes32[] memory proposalIds, address voter) public {
       uint256 reward;
       for(uint i = 0; i < proposalIds.length; i ++) {
         require(
@@ -224,27 +225,27 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
             proposals[proposalIds[i]].state == ProposalState.Rejected,
             "OMNGuild: Proposal to claim should be executed or rejected"
         );
-        require(!rewardsClaimed[proposalIds[i]][msg.sender], "OMNGuild: Vote reward already claimed");
+        require(!rewardsClaimed[proposalIds[i]][voter], "OMNGuild: Vote reward already claimed");
         // If proposal was executed and vote was positive the vote was for a succesful action
         if (
           proposals[proposalIds[i]].state == ProposalState.Executed && 
-          proposals[proposalIds[i]].votes[msg.sender] > 0
+          proposals[proposalIds[i]].votes[voter] > 0
         ) {
           reward.add(succesfulVoteReward.div(positiveVotesCount[proposalIds[i]]));
         // If proposal was rejected and vote was positive the vote was for a unsuccesful action
         } else if (
           proposals[proposalIds[i]].state == ProposalState.Rejected && 
-          proposals[proposalIds[i]].votes[msg.sender] > 0
+          proposals[proposalIds[i]].votes[voter] > 0
         ) {
           reward.add(unsuccesfulVoteReward.div(positiveVotesCount[proposalIds[i]]));
         }
         
         // Mark reward as claimed
-        rewardsClaimed[proposalIds[i]][msg.sender] = true;
+        rewardsClaimed[proposalIds[i]][voter] = true;
       }
       
       // Send the total reward
-      _sendTokenReward(msg.sender, reward);
+      _sendTokenReward(voter, reward);
     }
     
     /// @dev Set the amount of tokens to vote in a proposal
