@@ -3,13 +3,12 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../erc20guild/ERC20Guild.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 /// @title OMNGuild
 /// TO DO: Add description
 /// @author github:AugustoL
-contract OMNGuild is ERC20Guild, OwnableUpgradeable {
+contract OMNGuild is ERC20Guild {
     using SafeMathUpgradeable for uint256;
 
     uint256 public maxAmountVotes;
