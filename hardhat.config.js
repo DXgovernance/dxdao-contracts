@@ -23,7 +23,7 @@ module.exports = {
           }
         },
       },{
-        version: '0.7.0',
+        version: '0.7.6',
         settings: {
           optimizer: {
             enabled: true,
@@ -33,20 +33,20 @@ module.exports = {
       }
     ],
     overrides: {
-      "contracts/omen/OMNToken.sol": { version: "0.7.0" },
+      "contracts/omen/OMNToken.sol": { version: "0.7.6" },
       "contracts/omen/OMNGuild.sol": {
-        version: "0.7.0",
+        version: "0.7.6",
         settings: { optimizer: { enabled: true, runs: 100 } }
       },
       "contracts/dxdao/DXDGuild.sol": {
-        version: "0.7.0",
+        version: "0.7.6",
         settings: { optimizer: { enabled: true, runs: 100 } }
       },
       "contracts/erc20guild/ERC20Guild.sol": {
-        version: "0.7.0",
+        version: "0.7.6",
         settings: { optimizer: { enabled: true, runs: 100 } }
       },
-      "contracts/erc20guild/IERC20Guild.sol": { version: "0.7.0" },
+      "contracts/erc20guild/IERC20Guild.sol": { version: "0.7.6" },
     }
   },
   gasReporter: {
