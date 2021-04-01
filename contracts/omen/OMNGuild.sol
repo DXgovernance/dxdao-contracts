@@ -5,33 +5,45 @@ pragma experimental ABIEncoderV2;
 import "../erc20guild/ERC20Guild.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
-/// @title OMNGuild
-/// TO DO: Add description
-/// @author github:AugustoL
+/// @title OMNGuild - OMEN Token ERC20Guild
+/// The OMN guild will use the OMN token for governance, having to lock the tokens, and needing a minimum amount of 
+/// tokens locked to create proposals.
+/// The guild will be used for OMN token governance and to arbitrate markets validation in omen, using reality.io
+/// boolean question markets "Is market MARKET_ID valid?".
+/// The guild will be summoned to arbitrate a market validation if required.
+/// The voters who vote in market validation proposals will recieve a vote reward.
 contract OMNGuild is ERC20Guild {
     using SafeMathUpgradeable for uint256;
 
+    // The max amount of votes that can de used in a proposal
     uint256 public maxAmountVotes;
+    
+    // The address of the reality.io smart contract
     address public realityIO;
+    
+    // The function signature of function to be exeucted by the guild to resolve a question in reality.io
     bytes4 public submitAnswerByArbitratorSignature = bytes4(
       keccak256("submitAnswerByArbitrator(bytes32,bytes32,address)")
     );
+    
+    // This amount of OMN tokens to be distributed among voters depending on their vote decision and amount
     uint256 public succesfulVoteReward;
     uint256 public unsuccesfulVoteReward;
-        
+    
+    // Reality.io Question IDs => Market validation proposals
     struct MarketValidationProposal {
       bytes32 marketValid;
       bytes32 marketInvalid;
     }
-    // Question id => valid and invalid proposals
     mapping(bytes32 => MarketValidationProposal) public marketValidationProposals;
     
-    // Market validation proposal ids => QuestionIds
+    // Market validation proposal ids => Reality.io Question IDs
     mapping(bytes32 => bytes32) public proposalsForMarketValidation;
 
     // Saves which accounts claimed their market validation vote rewards
     mapping(bytes32 => mapping(address => bool)) public rewardsClaimed;
     
+    // Save how much accounts voted in a proposal
     mapping(bytes32 => uint256) public positiveVotesCount;
 
     /// @dev Initilizer
@@ -41,7 +53,9 @@ contract OMNGuild is ERC20Guild {
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
     /// @param _votesForExecution The % of votes needed for a proposal to be executed based on the token total supply.
+    /// 10000 == 100%, 5000 == 50% and 2500 == 25%
     /// @param _votesForCreation The % of votes needed for a proposal to be created based on the token total supply.
+    /// 10000 == 100%, 5000 == 50% and 2500 == 25%
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
@@ -173,7 +187,7 @@ contract OMNGuild is ERC20Guild {
     
     /// @dev Ends the market validation by executing the proposal with higher votes and rejecting the other
     /// @param questionId the proposalId of the voting machine
-    function endMarketValidationProposal( bytes32 questionId ) public isInitialized {
+    function endMarketValidationProposal( bytes32 questionId ) public {
         Proposal storage marketValidProposal = proposals[marketValidationProposals[questionId].marketValid];
         Proposal storage marketInvalidProposal = proposals[marketValidationProposals[questionId].marketInvalid];
         
@@ -209,7 +223,6 @@ contract OMNGuild is ERC20Guild {
     /// @dev Claim the vote rewards of multiple proposals at once
     /// @param proposalIds The ids of the proposal already finished were a vote was set and vote reward not claimed
     /// @param voter The address of the voter to receiver the rewards
-    // TO DO ,maybe claim for other accounts
     function claimMarketValidationVoteRewards(bytes32[] memory proposalIds, address voter) public {
       uint256 reward;
       for(uint i = 0; i < proposalIds.length; i ++) {
