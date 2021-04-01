@@ -6,34 +6,37 @@ import "../erc20guild/ERC20Guild.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
-abstract contract IRealityIO {
-  function askQuestion(
-    uint256 template_id, string memory question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce
-  ) public virtual payable returns (bytes32);
-}
-
 /// @title OMNGuild
+/// TO DO: Add description
 /// @author github:AugustoL
 contract OMNGuild is ERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
     uint256 public maxAmountVotes;
     address public realityIO;
-    uint256 public realityIOTemplateIndex;
-    uint32 public marketValidationTime;
-    mapping(bytes32 => bytes32) public questionIds;
     bytes4 public submitAnswerByArbitratorSignature = bytes4(
       keccak256("submitAnswerByArbitrator(bytes32,bytes32,address)")
     );
-    uint32 internal _questionNonce;
-    uint256 public marketCreatorReward;
     uint256 public succesfulVoteReward;
     uint256 public unsuccesfulVoteReward;
     
     enum VoteStatus {NO_VOTE, POSITIVE, NEGATIVE, REWARD_CLAIMED}
+    
+    struct MarketValidationProposal {
+      bytes32 marketValid;
+      bytes32 marketInvalid;
+    }
+    // Question id => valid and invalid proposals
+    mapping(bytes32 => MarketValidationProposal) public marketValidationProposals;
+    
+    // Stores the proposalids that are for market validation
+    mapping(bytes32 => bool) public proposalsForMarketValidation;
 
     // Saves which accounts voted in market validation proposals and their decision.
     mapping(bytes32 => mapping(address => VoteStatus)) public voteStatus;
+    
+    mapping(bytes32 => uint256) public positiveVotesCount;
+    mapping(bytes32 => uint256) public negativeVotesCount;
 
     /// @dev Initilizer
     /// Sets the call permission to arbitrate markets allowed by default and create the market question tempate in 
@@ -48,7 +51,6 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     /// @param _maxAmountVotes The max amount of votes allowed ot have
     /// @param _realityIO The address of the realityIO contract
-    /// @param _realityIOTemplateId The tempalte id to be used for the question in reality.io
     function initialize(
         address _token,
         uint256 _proposalTime,
@@ -59,8 +61,7 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
         uint256 _maxGasPrice,
         uint256 _lockTime,
         uint256 _maxAmountVotes,
-        address _realityIO,
-        uint256 _realityIOTemplateId
+        address _realityIO
     ) public initializer {
         super.initialize(
           _token,
@@ -74,9 +75,7 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
           _lockTime
         );
         realityIO = _realityIO;
-        realityIOTemplateIndex = _realityIOTemplateId;
         maxAmountVotes = _maxAmountVotes;
-        marketValidationTime = 2 days;
         callPermissions[realityIO][submitAnswerByArbitratorSignature] = true;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256"))] = true;
     }
@@ -84,9 +83,6 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
     /// @dev Set OMNGuild specific parameters
     /// @param _maxAmountVotes The max amount of votes allowed ot have
     /// @param _realityIO The address of the realityIO contract
-    /// @param _realityIOTemplateId The tempalte id to be used for the question in reality.io
-    /// @param _marketValidationTime The amount of time in seconds for the market validation question
-    /// @param _marketCreatorReward The amount of OMN tokens in wei unit to be reward to a market validation creator
     /// @param _succesfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a succesful 
     ///  vote
     /// @param _unsuccesfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccesful
@@ -94,17 +90,11 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
     function setOMNGuildConfig(
         uint256 _maxAmountVotes,
         address _realityIO,
-        uint256 _realityIOTemplateId,
-        uint32 _marketValidationTime,
-        uint256 _marketCreatorReward,
         uint256 _succesfulVoteReward,
         uint256 _unsuccesfulVoteReward
     ) public isInitialized {
         realityIO = _realityIO;
-        realityIOTemplateIndex = _realityIOTemplateId;
         maxAmountVotes = _maxAmountVotes;
-        marketValidationTime = _marketValidationTime;
-        marketCreatorReward = _marketCreatorReward;
         succesfulVoteReward = _succesfulVoteReward;
         unsuccesfulVoteReward = _unsuccesfulVoteReward;
     }
@@ -156,38 +146,75 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
         return proposalsCreated;
     }
     
-    /// @dev Create a proposal that will mark an OMN market as invalid in realito.io if quorum is reached.
-    /// The proposal will only be votable for two days.
-    /// @param marketToValidateId the id of the question Id to be set as invalid
-    function createMarketValidationProposal(bytes32 marketToValidateId) public isInitialized returns (bytes32) {
-        require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");
-        string memory question = string(abi.encodePacked("Is market with ", marketToValidateId, " valid?"));
+    /// @dev Create two proposals one to vote for the validation fo a market in realityIo
+    /// @param questionId the id of the question to be validated in realitiyIo
+    function createMarketValidationProposal(bytes32 questionId) public isInitialized {
+      require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");      
+      
+      address[] memory _to;
+      bytes[] memory _data;
+      uint256[] memory _value;
+      bytes memory _contentHash = abi.encodePacked(questionId);
+      _value[0] = 0;
+      _to[0] = realityIO;
+        
+      // Create market valid proposal
+      _data[0] = abi.encodeWithSelector(
+        submitAnswerByArbitratorSignature, questionId, keccak256(abi.encodePacked(true)), address(this)
+      );
+      marketValidationProposals[questionId].marketValid = 
+        _createProposal( _to, _data, _value, string("Market valid"), _contentHash );
+      
+      proposalsForMarketValidation[marketValidationProposals[questionId].marketValid] = true;
+      // Create market invalid proposal
+      _data[0] = abi.encodeWithSelector(
+        submitAnswerByArbitratorSignature, questionId, keccak256(abi.encodePacked(false)), address(this)
+      );
+      marketValidationProposals[questionId].marketInvalid = 
+        _createProposal( _to, _data, _value, string("Market invalid"), _contentHash );
+      proposalsForMarketValidation[marketValidationProposals[questionId].marketInvalid] = true;
 
-        bytes32 marketValidationQuestionId = IRealityIO(realityIO).askQuestion(
-          realityIOTemplateIndex, question, address(this), marketValidationTime, _questionNonce, block.timestamp
-        );
-        _questionNonce ++;
-        
-        // question: Is this how we set the question to true? with this answer?
-        bytes32 answer = keccak256(abi.encodePacked(true));
-        
-        address[] memory _to;
-        bytes[] memory _data;
-        uint256[] memory _value;
-        
-        _data[0] = abi.encodeWithSelector(
-          submitAnswerByArbitratorSignature, marketValidationQuestionId, answer, msg.sender
-        );
-        
-        _value[0] = 0;
-        _to[0] = address(realityIO);
-        questionIds[marketValidationQuestionId] =
-          _createProposal(_to, _data, _value, question, abi.encodePacked(marketValidationQuestionId));
-        return questionIds[marketValidationQuestionId];
+    }
+    
+    /// @dev Ends the market validation by executing the proposal with higher votes and rejecting the other
+    /// @param questionId the proposalId of the voting machine
+    function endMarketValidationProposal( bytes32 questionId ) public isInitialized {
+      
+      Proposal storage marketValidProposal = proposals[marketValidationProposals[questionId].marketValid];
+      Proposal storage marketInvalidProposal = proposals[marketValidationProposals[questionId].marketInvalid];
+      
+      require(marketValidProposal.state == ProposalState.Submitted, "OMNGuild: Market valid proposal already executed");
+      require(marketInvalidProposal.state == ProposalState.Submitted, "OMNGuild: Market invalid proposal already executed");
+      require(marketValidProposal.endTime < block.timestamp, "OMNGuild: Market valid proposal hasnt ended yet");
+      require(marketInvalidProposal.endTime < block.timestamp, "OMNGuild: Market invalid proposal hasnt ended yet");
+      
+      if (marketValidProposal.totalVotes > marketInvalidProposal.totalVotes) {
+        _endProposal(marketValidationProposals[questionId].marketValid);
+        marketInvalidProposal.state = ProposalState.Rejected;
+        emit ProposalRejected(marketValidationProposals[questionId].marketInvalid);
+      } else {
+        _endProposal(marketValidationProposals[questionId].marketInvalid);
+        marketValidProposal.state = ProposalState.Rejected;
+        emit ProposalRejected(marketValidationProposals[questionId].marketValid);
+      }
+    }
+    
+    /// @dev Execute a proposal that has already passed the votation time and has enough votes
+    /// This function cant end market validation proposals
+    /// @param proposalId The id of the proposal to be executed
+    function endProposal(bytes32 proposalId) override public {
+      require(
+        !proposalsForMarketValidation[proposalId],
+        "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
+      );
+      require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
+      require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasnt ended yet");
+      _endProposal(proposalId);
     }
     
     /// @dev Claim the vote rewards of multiple proposals at once
     /// @param proposalIds The ids of the proposal already finished were a vote was set and vote reward not claimed
+    // TO DO ,maybe claim for other accounts
     function claimVoteRewards(bytes32[] memory proposalIds) public {
       uint256 reward;
       for(uint i = 0; i < proposalIds.length; i ++) {
@@ -196,25 +223,29 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
       
         // If proposal executed and vote was positive or proposal rejected and vote was negative the vote reward is for
         // a succesful vote
-        if ((
+        if (
           proposals[proposalIds[i]].state == ProposalState.Executed && 
           voteStatus[proposalIds[i]][msg.sender] == VoteStatus.POSITIVE
-        ) || (
+        ) {
+          reward.add(succesfulVoteReward.div(positiveVotesCount[proposalIds[i]]));
+        } else if (
           proposals[proposalIds[i]].state == ProposalState.Rejected && 
           voteStatus[proposalIds[i]][msg.sender] == VoteStatus.NEGATIVE
-        )) {
-          reward.add(succesfulVoteReward);
+        ) {
+          reward.add(succesfulVoteReward.div(negativeVotesCount[proposalIds[i]]));
           
         // If proposal executed and vote was negative or proposal rejected and vote was positive the vote reward is for
         // a unsuccesful vote
-        } else if ((
+        } else if (
           proposals[proposalIds[i]].state == ProposalState.Rejected && 
           voteStatus[proposalIds[i]][msg.sender] == VoteStatus.POSITIVE
-        ) || (
+        ) {
+          reward.add(unsuccesfulVoteReward.div(positiveVotesCount[proposalIds[i]]));
+        } else if (
           proposals[proposalIds[i]].state == ProposalState.Executed && 
           voteStatus[proposalIds[i]][msg.sender] == VoteStatus.NEGATIVE
-        )) {
-          reward.add(unsuccesfulVoteReward);
+        ) {
+          reward.add(unsuccesfulVoteReward).div(negativeVotesCount[proposalIds[i]]);
         }
         
         voteStatus[proposalIds[i]][msg.sender] = VoteStatus.REWARD_CLAIMED;
@@ -235,8 +266,10 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
         require(amount <= maxAmountVotes, "OMNGuild: Cant vote with more votes than max amount of votes");
         if (amount > 0) {
           voteStatus[proposalId][msg.sender] = VoteStatus.POSITIVE;
+          positiveVotesCount[proposalId].add(1);
         } else {
           voteStatus[proposalId][msg.sender] = VoteStatus.NEGATIVE;
+          negativeVotesCount[proposalId].add(1);
         }
         _setVote(msg.sender, proposalId, amount);
         _refundVote(msg.sender);
@@ -259,8 +292,10 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
             require(amounts[i] <= maxAmountVotes, "OMNGuild: Cant vote with more votes than max amount of votes");
             if (amounts[i] > 0) {
               voteStatus[proposalIds[i]][msg.sender] = VoteStatus.POSITIVE;
+              positiveVotesCount[proposalIds[i]].add(1);
             } else {
               voteStatus[proposalIds[i]][msg.sender] = VoteStatus.NEGATIVE;
+              negativeVotesCount[proposalIds[i]].add(1);
             }
             _setVote(msg.sender, proposalIds[i], amounts[i]);
           }
@@ -277,12 +312,12 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
     
     /// @dev Get minimum amount of votes needed for creation
     function getVotesForCreation() override public view returns (uint256) {
-        return token.totalSupply().mul(votesForCreation).div(100);
+        return token.totalSupply().mul(votesForCreation).div(10000);
     }
     
     /// @dev Get minimum amount of votes needed for proposal execution
     function getVotesForExecution() override public view returns (uint256) {
-        return token.totalSupply().mul(votesForExecution).div(100);
+        return token.totalSupply().mul(votesForExecution).div(10000);
     }
 
 }

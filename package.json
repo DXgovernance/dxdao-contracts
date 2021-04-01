@@ -67,6 +67,7 @@
   "dependencies": {
     "@daostack/infra": "0.0.1-rc.19",
     "@maticnetwork/eth-decoder": "0.0.2",
+    "@openzeppelin/contracts": "3.4.0",
     "@openzeppelin/contracts-upgradeable": "3.4.0",
     "@openzeppelin/test-helpers": "^0.5.6",
     "chai": "^4.2.0",
