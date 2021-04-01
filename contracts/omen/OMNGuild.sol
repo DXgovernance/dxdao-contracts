@@ -19,9 +19,7 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
     );
     uint256 public succesfulVoteReward;
     uint256 public unsuccesfulVoteReward;
-    
-    enum VoteStatus {NO_VOTE, POSITIVE, NEGATIVE, REWARD_CLAIMED}
-    
+        
     struct MarketValidationProposal {
       bytes32 marketValid;
       bytes32 marketInvalid;
@@ -29,14 +27,13 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
     // Question id => valid and invalid proposals
     mapping(bytes32 => MarketValidationProposal) public marketValidationProposals;
     
-    // Stores the proposalids that are for market validation
-    mapping(bytes32 => bool) public proposalsForMarketValidation;
+    // Market validation proposal ids => QuestionIds
+    mapping(bytes32 => bytes32) public proposalsForMarketValidation;
 
-    // Saves which accounts voted in market validation proposals and their decision.
-    mapping(bytes32 => mapping(address => VoteStatus)) public voteStatus;
+    // Saves which accounts claimed their market validation vote rewards
+    mapping(bytes32 => mapping(address => bool)) public rewardsClaimed;
     
     mapping(bytes32 => uint256) public positiveVotesCount;
-    mapping(bytes32 => uint256) public negativeVotesCount;
 
     /// @dev Initilizer
     /// Sets the call permission to arbitrate markets allowed by default and create the market question tempate in 
@@ -165,14 +162,14 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
       marketValidationProposals[questionId].marketValid = 
         _createProposal( _to, _data, _value, string("Market valid"), _contentHash );
       
-      proposalsForMarketValidation[marketValidationProposals[questionId].marketValid] = true;
+      proposalsForMarketValidation[marketValidationProposals[questionId].marketValid] = questionId;
       // Create market invalid proposal
       _data[0] = abi.encodeWithSelector(
         submitAnswerByArbitratorSignature, questionId, keccak256(abi.encodePacked(false)), address(this)
       );
       marketValidationProposals[questionId].marketInvalid = 
         _createProposal( _to, _data, _value, string("Market invalid"), _contentHash );
-      proposalsForMarketValidation[marketValidationProposals[questionId].marketInvalid] = true;
+      proposalsForMarketValidation[marketValidationProposals[questionId].marketInvalid] = questionId;
 
     }
     
@@ -204,7 +201,7 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) override public {
       require(
-        !proposalsForMarketValidation[proposalId],
+        proposalsForMarketValidation[proposalId] == bytes32(0),
         "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
       );
       require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
@@ -215,42 +212,38 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
     /// @dev Claim the vote rewards of multiple proposals at once
     /// @param proposalIds The ids of the proposal already finished were a vote was set and vote reward not claimed
     // TO DO ,maybe claim for other accounts
-    function claimVoteRewards(bytes32[] memory proposalIds) public {
+    function claimMarketValidationVoteRewards(bytes32[] memory proposalIds) public {
       uint256 reward;
       for(uint i = 0; i < proposalIds.length; i ++) {
-        require(voteStatus[proposalIds[i]][msg.sender] != VoteStatus.NO_VOTE, "OMNGuild: Didnt voted in proposal");
-        require(voteStatus[proposalIds[i]][msg.sender] != VoteStatus.REWARD_CLAIMED, "OMNGuild: Vote reward already claimed");
-      
-        // If proposal executed and vote was positive or proposal rejected and vote was negative the vote reward is for
-        // a succesful vote
+        require(
+            proposalsForMarketValidation[proposalIds[i]] != bytes32(0),
+            "OMNGuild: Cant claim from proposal that isnt for market validation"
+        );
+        require(
+            proposals[proposalIds[i]].state == ProposalState.Executed ||
+            proposals[proposalIds[i]].state == ProposalState.Rejected,
+            "OMNGuild: Proposal to claim should be executed or rejected"
+        );
+        require(!rewardsClaimed[proposalIds[i]][msg.sender], "OMNGuild: Vote reward already claimed");
+        // If proposal was executed and vote was positive the vote was for a succesful action
         if (
           proposals[proposalIds[i]].state == ProposalState.Executed && 
-          voteStatus[proposalIds[i]][msg.sender] == VoteStatus.POSITIVE
+          proposals[proposalIds[i]].votes[msg.sender] > 0
         ) {
           reward.add(succesfulVoteReward.div(positiveVotesCount[proposalIds[i]]));
+        // If proposal was rejected and vote was positive the vote was for a unsuccesful action
         } else if (
           proposals[proposalIds[i]].state == ProposalState.Rejected && 
-          voteStatus[proposalIds[i]][msg.sender] == VoteStatus.NEGATIVE
-        ) {
-          reward.add(succesfulVoteReward.div(negativeVotesCount[proposalIds[i]]));
-          
-        // If proposal executed and vote was negative or proposal rejected and vote was positive the vote reward is for
-        // a unsuccesful vote
-        } else if (
-          proposals[proposalIds[i]].state == ProposalState.Rejected && 
-          voteStatus[proposalIds[i]][msg.sender] == VoteStatus.POSITIVE
+          proposals[proposalIds[i]].votes[msg.sender] > 0
         ) {
           reward.add(unsuccesfulVoteReward.div(positiveVotesCount[proposalIds[i]]));
-        } else if (
-          proposals[proposalIds[i]].state == ProposalState.Executed && 
-          voteStatus[proposalIds[i]][msg.sender] == VoteStatus.NEGATIVE
-        ) {
-          reward.add(unsuccesfulVoteReward).div(negativeVotesCount[proposalIds[i]]);
         }
         
-        voteStatus[proposalIds[i]][msg.sender] = VoteStatus.REWARD_CLAIMED;
+        // Mark reward as claimed
+        rewardsClaimed[proposalIds[i]][msg.sender] = true;
       }
       
+      // Send the total reward
       _sendTokenReward(msg.sender, reward);
     }
     
@@ -262,14 +255,10 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
             votesOfAt(msg.sender, proposals[proposalId].snapshotId) >=  amount,
             "ERC20Guild: Invalid amount"
         );
-        require(voteStatus[proposalId][msg.sender] == VoteStatus.NO_VOTE, "OMNGuild: Already voted");
+        require(proposals[proposalId].votes[msg.sender] == 0, "OMNGuild: Already voted");
         require(amount <= maxAmountVotes, "OMNGuild: Cant vote with more votes than max amount of votes");
         if (amount > 0) {
-          voteStatus[proposalId][msg.sender] = VoteStatus.POSITIVE;
           positiveVotesCount[proposalId].add(1);
-        } else {
-          voteStatus[proposalId][msg.sender] = VoteStatus.NEGATIVE;
-          negativeVotesCount[proposalId].add(1);
         }
         _setVote(msg.sender, proposalId, amount);
         _refundVote(msg.sender);
@@ -288,14 +277,10 @@ contract OMNGuild is ERC20Guild, OwnableUpgradeable {
                 votesOfAt(msg.sender, proposals[proposalIds[i]].snapshotId) >=  amounts[i],
                 "ERC20Guild: Invalid amount"
             );
-            require(voteStatus[proposalIds[i]][msg.sender] == VoteStatus.NO_VOTE, "OMNGuild: Already voted");
+            require(proposals[proposalIds[i]].votes[msg.sender] == 0, "OMNGuild: Already voted");
             require(amounts[i] <= maxAmountVotes, "OMNGuild: Cant vote with more votes than max amount of votes");
             if (amounts[i] > 0) {
-              voteStatus[proposalIds[i]][msg.sender] = VoteStatus.POSITIVE;
               positiveVotesCount[proposalIds[i]].add(1);
-            } else {
-              voteStatus[proposalIds[i]][msg.sender] = VoteStatus.NEGATIVE;
-              negativeVotesCount[proposalIds[i]].add(1);
             }
             _setVote(msg.sender, proposalIds[i], amounts[i]);
           }
