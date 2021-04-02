@@ -27,8 +27,8 @@ contract OMNGuild is ERC20Guild {
     );
     
     // This amount of OMN tokens to be distributed among voters depending on their vote decision and amount
-    uint256 public succesfulVoteReward;
-    uint256 public unsuccesfulVoteReward;
+    uint256 public successfulVoteReward;
+    uint256 public unsuccessfulVoteReward;
     
     // Reality.io Question IDs => Market validation proposals
     struct MarketValidationProposal {
@@ -93,20 +93,20 @@ contract OMNGuild is ERC20Guild {
     /// @dev Set OMNGuild specific parameters
     /// @param _maxAmountVotes The max amount of votes allowed ot have
     /// @param _realityIO The address of the realityIO contract
-    /// @param _succesfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a succesful 
+    /// @param _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a succesful 
     ///  vote
-    /// @param _unsuccesfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccesful
+    /// @param _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccesful
     ///  vote
     function setOMNGuildConfig(
         uint256 _maxAmountVotes,
         address _realityIO,
-        uint256 _succesfulVoteReward,
-        uint256 _unsuccesfulVoteReward
+        uint256 _successfulVoteReward,
+        uint256 _unsuccessfulVoteReward
     ) public isInitialized {
         realityIO = _realityIO;
         maxAmountVotes = _maxAmountVotes;
-        succesfulVoteReward = _succesfulVoteReward;
-        unsuccesfulVoteReward = _unsuccesfulVoteReward;
+        successfulVoteReward = _successfulVoteReward;
+        unsuccessfulVoteReward = _unsuccessfulVoteReward;
     }
     
     /// @dev Create proposals with an static call data and extra information
@@ -241,13 +241,13 @@ contract OMNGuild is ERC20Guild {
             proposals[proposalIds[i]].state == ProposalState.Executed && 
             proposals[proposalIds[i]].votes[voter] > 0
           ) {
-            reward.add(succesfulVoteReward.div(positiveVotesCount[proposalIds[i]]));
+            reward.add(successfulVoteReward.div(positiveVotesCount[proposalIds[i]]));
           // If proposal was rejected and vote was positive the vote was for a unsuccesful action
           } else if (
             proposals[proposalIds[i]].state == ProposalState.Rejected && 
             proposals[proposalIds[i]].votes[voter] > 0
           ) {
-            reward.add(unsuccesfulVoteReward.div(positiveVotesCount[proposalIds[i]]));
+            reward.add(unsuccessfulVoteReward.div(positiveVotesCount[proposalIds[i]]));
           }
           
           // Mark reward as claimed
