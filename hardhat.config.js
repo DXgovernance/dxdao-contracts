@@ -7,9 +7,13 @@ require("babel-register")({
 require('@nomiclabs/hardhat-truffle5');
 require('hardhat-gas-reporter');
 require('solidity-coverage');
+require('@openzeppelin/hardhat-upgrades');
+require("@nomiclabs/hardhat-etherscan");
+
 
 const INFURA_PROJECT_ID = process.env.KEY_INFURA_API_KEY;
 const MNEMONIC = process.env.KEY_MNEMONIC;
+const ETHERSCAN_API_KEY = process.env.KEY_ETHERSCAN;
 
 module.exports = {
   solidity: {
@@ -22,6 +26,14 @@ module.exports = {
             runs: 200
           }
         },
+      },{
+        version: '0.6.8',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200
+          }
+        }
       },{
         version: '0.7.6',
         settings: {
@@ -87,5 +99,7 @@ module.exports = {
       gasPrice: 1,
       timeout: 60000
     }
-  }
+  },
+  etherscan: { apiKey: ETHERSCAN_API_KEY }
+
 };
