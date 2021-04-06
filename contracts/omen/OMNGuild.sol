@@ -22,9 +22,7 @@ contract OMNGuild is ERC20Guild {
     address public realityIO;
     
     // The function signature of function to be exeucted by the guild to resolve a question in reality.io
-    bytes4 public submitAnswerByArbitratorSignature = bytes4(
-      keccak256("submitAnswerByArbitrator(bytes32,bytes32,address)")
-    );
+    bytes4 public submitAnswerByArbitratorSignature;
     
     // This amount of OMN tokens to be distributed among voters depending on their vote decision and amount
     uint256 public successfulVoteReward;
@@ -84,6 +82,9 @@ contract OMNGuild is ERC20Guild {
         );
         realityIO = _realityIO;
         maxAmountVotes = _maxAmountVotes;
+        submitAnswerByArbitratorSignature = bytes4(
+          keccak256("submitAnswerByArbitrator(bytes32,bytes32,address)")
+        );
         callPermissions[realityIO][submitAnswerByArbitratorSignature] = true;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256"))] = true;
     }
