@@ -13,12 +13,40 @@ const MNEMONIC = process.env.KEY_MNEMONIC;
 
 module.exports = {
   solidity: {
-    version: '0.5.17',
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200
+    compilers: [
+      {
+        version: '0.5.17',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200
+          }
+        },
+      },{
+        version: '0.7.6',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200
+          }
+        }
       }
+    ],
+    overrides: {
+      "contracts/omen/OMNToken.sol": { version: "0.7.6" },
+      "contracts/omen/OMNGuild.sol": {
+        version: "0.7.6",
+        settings: { optimizer: { enabled: true, runs: 100 } }
+      },
+      "contracts/dxdao/DXDGuild.sol": {
+        version: "0.7.6",
+        settings: { optimizer: { enabled: true, runs: 100 } }
+      },
+      "contracts/erc20guild/ERC20Guild.sol": {
+        version: "0.7.6",
+        settings: { optimizer: { enabled: true, runs: 100 } }
+      },
+      "contracts/erc20guild/IERC20Guild.sol": { version: "0.7.6" },
     }
   },
   gasReporter: {
@@ -27,6 +55,10 @@ module.exports = {
   },
   networks: {
     hardhat: {
+      throwOnTransactionFailures: true,
+      throwOnCallFailures: true,
+      allowUnlimitedContractSize: true,
+      gasLimit: 9000000,
       gasPrice: 10000000000, // 10 gwei
       timeout: 60000
     },

@@ -1,7 +1,9 @@
-pragma solidity 0.5.17;
+// SPDX-License-Identifier: AGPL-3.0
+pragma solidity ^0.7.6;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 /**
  * @title TokenVault
@@ -9,10 +11,10 @@ import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
  * User -> Admin Contract -> Token Vault Contract -> Admin Contract -> User.
  * Tokens can be deposited and withdrawal only with authorization of the locker account from the admin address.
  */
-contract TokenVault {
-    using SafeMath for uint256;
+contract TokenVault is Initializable{
+    using SafeMathUpgradeable for uint256;
 
-    IERC20 public token;
+    IERC20Upgradeable public token;
     address public admin;
     bool public initialized = false;
     mapping(address => uint256) public balances;
@@ -26,8 +28,8 @@ contract TokenVault {
     /// @dev Initializer
     /// @param _token The address of the token to be used
     /// @param _admin The address of the contract that will execute deposits and withdrawals 
-    function initialize(address _token, address _admin) public {
-        token = IERC20(_token);
+    function initialize(address _token, address _admin) initializer public {
+        token = IERC20Upgradeable(_token);
         admin = _admin;
         initialized = true;
     }

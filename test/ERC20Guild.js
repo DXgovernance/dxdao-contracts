@@ -134,7 +134,7 @@ contract("ERC20Guild", function (accounts) {
       erc20Guild = await ERC20Guild.at(erc20Guild.address);
       await expectRevert(
         erc20Guild.initialize(guildToken.address, 30, 30, 200, 100, "TestGuild", 0, 0, 1),
-        "ERC20Guild: Only callable by ERC20guild itself when initialized"
+        "Initializable: contract is already initialized"
       );
     });
     
