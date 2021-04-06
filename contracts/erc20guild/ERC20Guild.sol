@@ -31,7 +31,7 @@ contract ERC20Guild is Initializable {
     enum ProposalState {Submitted, Rejected, Executed, Failed}
 
     IERC20Upgradeable public token;
-    bool public initialized = false;
+    bool public initialized;
     string public name;
     uint256 public proposalTime;
     uint256 public timeForExecution;

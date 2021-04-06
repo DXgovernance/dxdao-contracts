@@ -22,9 +22,7 @@ contract OMNGuild is ERC20Guild {
     address public realityIO;
     
     // The function signature of function to be exeucted by the guild to resolve a question in reality.io
-    bytes4 public submitAnswerByArbitratorSignature = bytes4(
-      keccak256("submitAnswerByArbitrator(bytes32,bytes32,address)")
-    );
+    bytes4 public submitAnswerByArbitratorSignature;
     
     // This amount of OMN tokens to be distributed among voters depending on their vote decision and amount
     uint256 public successfulVoteReward;
@@ -51,8 +49,8 @@ contract OMNGuild is ERC20Guild {
     /// reality.io to be used on markets created with the guild
     /// @param _token The address of the token to be used
     /// @param _proposalTime The minimun time for a proposal to be under votation
-    /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votesForExecution The amount of votes (in wei unit) needed for a proposal to be executed
+    /// @param _votesForExecution The % of votes needed for a proposal to be executed based on the token total supply.
+    /// 10000 == 100%, 5000 == 50% and 2500 == 25%
     /// @param _votesForCreation The amount of votes (in wei unit) needed for a proposal to be created
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
@@ -84,6 +82,9 @@ contract OMNGuild is ERC20Guild {
         );
         realityIO = _realityIO;
         maxAmountVotes = _maxAmountVotes;
+        submitAnswerByArbitratorSignature = bytes4(
+          keccak256("submitAnswerByArbitrator(bytes32,bytes32,address)")
+        );
         callPermissions[realityIO][submitAnswerByArbitratorSignature] = true;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256"))] = true;
     }
@@ -311,7 +312,7 @@ contract OMNGuild is ERC20Guild {
     
     /// @dev Get minimum amount of votes needed for proposal execution
     function getVotesForExecution() override public view returns (uint256) {
-        return votesForExecution;
+        return totalLocked.mul(votesForExecution).div(10000);
     }
 
 }

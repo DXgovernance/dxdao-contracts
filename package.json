@@ -14,16 +14,19 @@
   "scripts": {
     "test": "npx hardhat test",
     "coverage": "./scripts/coverage.sh",
-    "compile": "rimraf artifacts cache && npx hardhat compile",
+    "compile": "rm -rf artifacts cache && npx hardhat compile",
     "deploy": "node scripts/deploy.js",
     "lint": "eslint .",
     "lint --fix": "eslint --fix ."
   },
   "devDependencies": {
     "@babel/cli": "^7.10.1",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-etherscan": "^2.1.1",
     "@nomiclabs/hardhat-truffle5": "^2.0.0",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contract-loader": "^0.6.1",
+    "@openzeppelin/hardhat-upgrades": "^1.6.0",
     "@truffle/contract": "^4.2.21",
     "babel-eslint": "^10.1.0",
     "babel-plugin-syntax-async-functions": "^6.13.0",
@@ -43,6 +46,7 @@
     "eslint-plugin-react": "^7.20.0",
     "eslint-plugin-standard": "^3.0.1",
     "ethereumjs-abi": "^0.6.5",
+    "ethers": "^5.1.0",
     "hardhat": "^2.0.8",
     "hardhat-gas-reporter": "^1.0.4",
     "pm2": "^2.9.3",

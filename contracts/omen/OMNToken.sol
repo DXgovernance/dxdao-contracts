@@ -10,14 +10,19 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract OMNToken is ERC20Upgradeable, OwnableUpgradeable {
   
-  function mint(address account, uint256 amount) public onlyOwner returns (bool) {
-      _mint(account, amount);
-      return true;
-  }
+    function initialize() initializer public {
+        __Ownable_init();
+        __ERC20_init("Omen Token", "OMN");
+    }
   
-  function burn(address account, uint256 amount) public onlyOwner returns (bool) {
-      _burn(account, amount);
-      return true;
-  }
+    function mint(address account, uint256 amount) public onlyOwner returns (bool) {
+        _mint(account, amount);
+        return true;
+    }
+    
+    function burn(address account, uint256 amount) public onlyOwner returns (bool) {
+        _burn(account, amount);
+        return true;
+    }
 
 }
