@@ -11,6 +11,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 contract OMNToken is ERC20Upgradeable, OwnableUpgradeable {
   
     function initialize() initializer public {
+        __Ownable_init();
         __ERC20_init("Omen Token", "OMN");
     }
   
