@@ -312,7 +312,7 @@ contract OMNGuild is ERC20Guild {
     
     /// @dev Get minimum amount of votes needed for proposal execution
     function getVotesForExecution() override public view returns (uint256) {
-        return token.totalSupply().mul(votesForExecution).div(10000);
+        return totalLocked.mul(votesForExecution).div(10000);
     }
 
 }
