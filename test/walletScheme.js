@@ -12,7 +12,15 @@ const { time } = require("@openzeppelin/test-helpers");
 
 contract("WalletScheme", function(accounts) {
   
-  let standardTokenMock, permissionRegistry, masterWalletScheme, quickWalletScheme, daoCreator, org, actionMock, votingMachine;
+  let standardTokenMock,
+  permissionRegistry,
+  masterWalletScheme,
+  quickWalletScheme,
+  daoCreator,
+  org,
+  actionMock,
+  votingMachine,
+  testToken;
   
   function decodeGenericCallError(genericCallDataReturn) {
     assert.equal(genericCallDataReturn.substring(0, 10), web3.eth.abi.encodeFunctionSignature("Error(string)"));
@@ -29,6 +37,7 @@ contract("WalletScheme", function(accounts) {
   
   beforeEach( async function(){
     actionMock = await ActionMock.new();
+    testToken = await ERC20Mock.new(accounts[1], 1000);
     const standardTokenMock = await ERC20Mock.new(accounts[1], 1000);
     const controllerCreator = await DxControllerCreator.new({gas: constants.GAS_LIMIT});
     daoCreator = await DaoCreator.new(
@@ -857,5 +866,153 @@ contract("WalletScheme", function(accounts) {
     assert.equal(organizationProposal.to[2], org.controller.address);
     assert.equal(organizationProposal.value[2], 0);
   });
+  
+  describe("ERC20 Transfers", async function(){
+    
+    it("MasterWalletScheme - positive decision - proposal executed - ERC20 transfer allowed by permission registry from scheme", async function() {
+      await testToken.transfer(org.avatar.address, 200, {from: accounts[1]});
+      
+      await permissionRegistry.setAdminPermission(
+        constants.NULL_ADDRESS, 
+        org.avatar.address, 
+        constants.ANY_ADDRESS, 
+        constants.ANY_FUNC_SIGNATURE,
+        constants.MAX_UINT_256, 
+        false
+      );
+      
+      const setPermissionData = new web3.eth.Contract(PermissionRegistry.abi).methods
+        .setPermission(
+          testToken.address, actionMock.address, constants.ANY_FUNC_SIGNATURE, 100, true
+        ).encodeABI();
+        
+      await permissionRegistry.setAdminPermission(
+        constants.NULL_ADDRESS, 
+        org.avatar.address, 
+        permissionRegistry.address, 
+        setPermissionData.substring(0,10),
+        0, 
+        true
+      );
+      
+      assert.equal(
+        (await permissionRegistry.getPermission(
+          constants.NULL_ADDRESS, org.avatar.address, permissionRegistry.address, setPermissionData.substring(0,10)
+        )).fromTime.toString(),
+        Number(await time.latest()) + 10
+      );
+      
+      await time.increase(10);
+      
+      // Proposal to allow calling actionMock
+      const tx = await masterWalletScheme.proposeCalls(
+        [permissionRegistry.address], [setPermissionData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      );
+      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const voteTx = await votingMachine.contract.vote(
+        proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+      );
+      const setPermissionTime = Number(await time.latest());
+      const erc20TransferPermission = await permissionRegistry.getPermission(
+        testToken.address, org.avatar.address, actionMock.address, constants.ANY_FUNC_SIGNATURE
+      )
+      assert.equal(erc20TransferPermission.fromTime.toString(), setPermissionTime + 10);
+      assert.equal(erc20TransferPermission.valueAllowed.toString(), 100);
+      
+      await time.increase(10);
+      
+      const transferData = await new web3.eth.Contract(testToken.abi).methods.transfer(actionMock.address, "50").encodeABI();
+      assert.equal(await testToken.balanceOf(org.avatar.address), "200");
+      
+      const tx2 = await masterWalletScheme.proposeCalls(
+        [testToken.address], [transferData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      );
+      const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
+      await votingMachine.contract.vote(
+        proposalId2, 1, 0, constants.NULL_ADDRESS, {from: accounts[2], gas: constants.GAS_LIMIT}
+      );
+      assert.equal(await testToken.balanceOf(org.avatar.address), "150");
+      
+      const organizationProposal = await masterWalletScheme.getOrganizationProposal(proposalId2);
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
+      assert.equal(organizationProposal.callData[0], transferData);
+      assert.equal(organizationProposal.to[0], testToken.address);
+      assert.equal(organizationProposal.value[0], 0);
+    });
+    
+    it("QuickWalletScheme - positive decision - proposal executed - ERC20 transfer allowed by permission registry from scheme", async function() {
+      await testToken.transfer(quickWalletScheme.address, 200, {from: accounts[1]});
+      
+      await permissionRegistry.setAdminPermission(
+        constants.NULL_ADDRESS, 
+        quickWalletScheme.address, 
+        constants.ANY_ADDRESS, 
+        constants.ANY_FUNC_SIGNATURE,
+        constants.MAX_UINT_256, 
+        false
+      );
+      
+      const setPermissionData = new web3.eth.Contract(PermissionRegistry.abi).methods
+        .setPermission(
+          testToken.address, actionMock.address, constants.ANY_FUNC_SIGNATURE, 100, true
+        ).encodeABI();
+        
+      await permissionRegistry.setAdminPermission(
+        constants.NULL_ADDRESS, 
+        quickWalletScheme.address, 
+        permissionRegistry.address, 
+        setPermissionData.substring(0,10),
+        0, 
+        true
+      );
+      
+      assert.equal(
+        (await permissionRegistry.getPermission(
+          constants.NULL_ADDRESS, quickWalletScheme.address, permissionRegistry.address, setPermissionData.substring(0,10)
+        )).fromTime.toString(),
+        Number(await time.latest()) + 10
+      );
+      
+      await time.increase(10);
+      
+      // Proposal to allow calling actionMock
+      const tx = await quickWalletScheme.proposeCalls(
+        [permissionRegistry.address], [setPermissionData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      );
+      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const voteTx = await votingMachine.contract.vote(
+        proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+      );
+      const setPermissionTime = Number(await time.latest());
+
+      assert.equal(
+        (await permissionRegistry.getPermission(
+          testToken.address, quickWalletScheme.address, actionMock.address, constants.ANY_FUNC_SIGNATURE
+        )).fromTime.toString(),
+        setPermissionTime + 10
+      );
+      
+      await time.increase(10);
+      
+      const transferData = await new web3.eth.Contract(testToken.abi).methods.transfer(actionMock.address, "50").encodeABI();
+      assert.equal(await testToken.balanceOf(quickWalletScheme.address), "200");
+
+      const tx2 = await quickWalletScheme.proposeCalls(
+        [testToken.address], [transferData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      );
+      const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
+      await votingMachine.contract.vote(
+        proposalId2, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+      );
+      assert.equal(await testToken.balanceOf(quickWalletScheme.address), "150");
+      
+      const organizationProposal = await quickWalletScheme.getOrganizationProposal(proposalId2);
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
+      assert.equal(organizationProposal.callData[0], transferData);
+      assert.equal(organizationProposal.to[0], testToken.address);
+      assert.equal(organizationProposal.value[0], 0);
+    });
+    
+  })
   
 });
