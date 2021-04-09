@@ -24,7 +24,6 @@ contract PermissionRegistry {
   address public owner;
   address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
   bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
-  bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
 
   event PermissionSet(
     address asset, address from, address to, bytes4 functionSignature, uint256 fromTime, uint256 value
