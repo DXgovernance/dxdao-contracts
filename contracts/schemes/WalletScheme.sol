@@ -291,22 +291,4 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     function getOrganizationProposals() public view returns (bytes32[] memory) {
       return proposalsList;
     }
-    
-    /**
-    * @dev Override mintReputation function from VotingMachineCallbacks
-    */
-    function mintReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId)
-      external onlyVotingMachine(_proposalId) returns(bool)
-    {
-      return false;
-    }
-    
-    /**
-    * @dev Override burnReputation function from VotingMachineCallbacks
-    */
-    function burnReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId)
-      external onlyVotingMachine(_proposalId) returns(bool)
-    {
-      return false;
-    }
 }
