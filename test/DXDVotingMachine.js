@@ -47,7 +47,7 @@ contract("DXDVotingMachine", function(accounts) {
       daoCreator,
       [accounts[0], accounts[1], accounts[2], accounts[3]],
       [0, 0, 0, 0],
-      [10, 10, 10, 70]
+      [1000, 1000, 1000, 7000]
     );
     
     genVotingMachine = await helpers.setupGenesisProtocol(
@@ -408,13 +408,13 @@ contract("DXDVotingMachine", function(accounts) {
     it("negative signed decision with less rep than the one held", async function() {
       // The voter has 70 rep but votes with 60 rep
       const voteHash = await dxdVotingMachine.contract.hashVote(
-        dxdVotingMachine.address, proposalId, accounts[3], 2, 60
+        dxdVotingMachine.address, proposalId, accounts[3], 2, 6000
       );
       const votesignature = fixSignature(await web3.eth.sign(voteHash, accounts[3]));  
       assert.equal(accounts[3], web3.eth.accounts.recover(voteHash, votesignature));
       
       const shareVoteTx = await dxdVotingMachine.contract.shareSignedVote(
-        dxdVotingMachine.address, proposalId, 2, 60, votesignature, { from: accounts[3] }
+        dxdVotingMachine.address, proposalId, 2, 6000, votesignature, { from: accounts[3] }
       );
       const voteInfoFromLog = shareVoteTx.logs[0].args;
 
@@ -459,10 +459,10 @@ contract("DXDVotingMachine", function(accounts) {
     it("positive signal decision", async function() {
       assert.equal((await dxdVotingMachine.contract.votesSignaled(proposalId, accounts[3])).voteDecision, 0);
       const signalVoteTx = await dxdVotingMachine.contract.signalVote(
-        proposalId, 1, 60, { from: accounts[3] }
+        proposalId, 1, 6000, { from: accounts[3] }
       );
       assert.equal((await dxdVotingMachine.contract.votesSignaled(proposalId, accounts[3])).voteDecision, 1);
-      assert.equal((await dxdVotingMachine.contract.votesSignaled(proposalId, accounts[3])).amount, 60);
+      assert.equal((await dxdVotingMachine.contract.votesSignaled(proposalId, accounts[3])).amount, 6000);
       expect(signalVoteTx.receipt.gasUsed).to.be.closeTo(50000, 25000);
       const voteInfoFromLog = signalVoteTx.logs[0].args;
       await dxdVotingMachine.contract.executeSignaledVote(
