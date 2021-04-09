@@ -10,7 +10,8 @@ import "./PermissionRegistry.sol";
  * @title WalletScheme.
  * @dev  A scheme for proposing and executing calls to any contract except itself
  * It has a value call controller address, in case of the controller address ot be set the scheme will be doing
- * generic calls to the dao controller, if the controller address is not set it will eb executing raw calls.
+ * generic calls to the dao controller. If the controller address is not set it will e executing raw calls form the 
+ * scheme itself.
  * The scheme can only execute calls allowed to in the permission registry, if the controller address is set
  * the permissions will be checked using the avatar address as sender, if not the scheme address will be used as
  * sender.
@@ -68,7 +69,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     }
 
     /**
-     * @dev Fallback function that allows the wallet to receive ETH
+     * @dev Fallback function that allows the wallet to receive ETH when the controller address is not set
      */
     function() external payable {
       require(controllerAddress == address(0), "Cant receive if it will make generic calls to avatar");
@@ -141,8 +142,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     }
 
     /**
-    * @dev propose to call an address
-    *      The function trigger NewCallProposal event
+    * @dev Propose calls to be executed, the calls have to be allowed by the permission registry
     * @param _to - The addresses to call
     * @param _callData - The abi encode data for the calls
     * @param _value value(ETH) to transfer with the calls
@@ -162,7 +162,10 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         require(_to.length == _callData.length, "invalid callData length");
         require(_to.length == _value.length, "invalid _value length");
 
+        // Get the proposal id that will be used from the voting machine
         bytes32 proposalId = votingMachine.propose(2, voteParams, msg.sender, address(avatar));
+        
+        // Add the proposal to the proposals mapping, proposals list and proposals information mapping
         proposals[proposalId] = Proposal({
             to: _to,
             callData: _callData,
@@ -201,6 +204,22 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     }
     
     /**
+    * @dev Get the information of a proposal by index
+    * @param proposalIndex the index of the proposal in the proposals list
+    */
+    function getOrganizationProposalByIndex(uint256 proposalIndex) public view 
+      returns (
+        address[] memory to,
+        bytes[] memory callData,
+        uint256[] memory value,
+        ProposalState state,
+        string memory title,
+        string memory descriptionHash
+    ) {
+      return getOrganizationProposal(proposalsList[proposalIndex]);
+    }
+    
+    /**
     * @dev Get if the call is allowed ot not and with how much value
     * @param to the receiver of the call
     * @param data the data of the call
@@ -214,7 +233,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
       bytes4 callSignature = getFuncSignature(data);
       if (ERC20_TRANSFER_SIGNATURE == callSignature) {
         asset = to;
-        (to, value) = abi.decode(data, (address, uint256));
+        (to, value) = erc20TransferDecode(data);
         (valueAllowed, fromTime) = permissionRegistry
           .getPermission(
             asset,
@@ -234,14 +253,23 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
       return fromTime > 0 && now > fromTime && valueAllowed >= value;
     }
     
-    /// @dev Get generic call controller data
-    function decodeGenericCall(bytes memory data) public view returns (
-      address _to, bytes memory _data, address _avatar, uint256 _value
-    ) {
-      return abi.decode(data, (address, bytes, address, uint256));
+    /**
+     * @dev Decodes abi encoded data with selector for "transfer(address,uint256)".
+     * @param _data ERC20 Transfer encoded data.
+     * @return to The account to receive the tokens
+     * @return value The value of tokens to be sent
+     */
+    function erc20TransferDecode(bytes memory _data) public pure returns(address to, uint256 value) {
+        assembly {
+            to := mload(add(_data, 36))
+            value := mload(add(_data, 68))
+        }
     }
     
-    /// @dev Get call data signature
+    /**
+    * @dev Get call data signature
+    * @param data The bytes data of the data to get the signature
+    */
     function getFuncSignature(bytes memory data) public view returns (bytes4) {
         bytes32 functionSignature = bytes32(0);
         assembly {
@@ -262,23 +290,5 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     */
     function getOrganizationProposals() public view returns (bytes32[] memory) {
       return proposalsList;
-    }
-    
-    /**
-    * @dev Override mintReputation function from VotingMachineCallbacks
-    */
-    function mintReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId)
-      external onlyVotingMachine(_proposalId) returns(bool)
-    {
-      return false;
-    }
-    
-    /**
-    * @dev Override burnReputation function from VotingMachineCallbacks
-    */
-    function burnReputation(uint256 _amount, address _beneficiary, bytes32 _proposalId)
-      external onlyVotingMachine(_proposalId) returns(bool)
-    {
-      return false;
     }
 }

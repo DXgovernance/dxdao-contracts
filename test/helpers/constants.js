@@ -10,6 +10,7 @@ export const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
 export const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 export const TEST_VALUE = 666;
 export const TEST_TITLE = "Awesome Proposal Title";
+export const ERC20_TRANSFER_SIGNATURE = "0xa9059cbb";
 
 export const WalletSchemeProposalState = {
   submitted: 0,
