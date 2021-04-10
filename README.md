@@ -1,7 +1,53 @@
 # DXdao-contracts
 
-Repository with all the smart contracts of DXdao governance, it keeps track of the contracts that are deployed on mainnet, allowing the test of new features with the same code used on mainnet.
+Repository with all the smart contracts for DXdao 1.x Governance.
 
+## Configuration
+
+Set your `.env` file following the `.env.example` file:
+```
+// Required
+KEY_MNEMONIC="Seed Pharse Here"
+KEY_INFURA_API_KEY="xxxx"
+
+// Required to verify smart contracts
+KEY_ETHERSCAN="xxx"
+
+// Required for get reputation script
+REP_FROM_BLOCK=7850172
+REP_TO_BLOCK=12212988
+```
+
+## Commands
+
+### Install
+
+`yarn`
+
+### Test
+
+`yarn test`
+
+### Gas Report
+
+It will run the tests and report the gas cost of each function executed in every smart contract in the tests.
+
+`ENABLE_GAS_REPORTER=true yarn test`
+
+### Reputation Mapping
+
+This script will get the DXdao Rep from mainnet DXdao rep token and REP mapping smart contract.
+
+`yarn hardhat run --network mainnet scripts/getReputation.js`
+
+### Coverage
+
+`yarn hardhat coverage`
+
+### DXvote contracts Deployment
+
+`yarn hardhat run --network rinkeby scripts/deploy-dxvote.js
+`
 
 ## Contracts
 
@@ -9,10 +55,15 @@ All the contracts are organized in different folders:
 
 ### Daostack
 
-The smart contracts from daostack release version that was used at the moment of DXdao contracts deployment, they, taken from https://github.com/daostack/arc/releases/tag/0.0.1-rc.19.
+The smart contracts used for the DXdao avatar, reputation, native token and controller taken from daostack release version that was used at the moment of DXdao contracts deployment. https://github.com/daostack/arc/releases/tag/0.0.1-rc.19.
 
 ### DXdao
 These are the smart contracts of the DXdao deployed in mainnet, taken from https://github.com/gnosis/dx-daostack. It also has the DXD guild and DXD voting machine that will be used in DXdao gov 1.x.
+
+### Schemes
+The smart contracts of the schemes used in DXdao gov 1.x, which are all WalletSchemes that use a PermissionRegistry to execute only previously allowed calls.
+
+![dxdao-gov-1-x-schemes](assets/1-x-contracts.png)
 
 ### ERC20Guild
 The smart contracts to add a very basic, efficient and flexible governance layer over an ERC20 token.
@@ -44,53 +95,5 @@ The guild **executes previously authorized functions** to smart contracts after 
 The DXDGuild is an ERC20Guild with minimal modifications designed to be used to vote on the Genesis Protocol Voting Machine. The DXDGuild will have an amount of REP that will be used to vote in favor or against DXdao proposals.
 The DXDGuild will create two proposals per DXdao proposal that wants to participate. One proposal will be to execute a positive vote on the Genesis Protocol and the other to execute a negative vote on the Genesis Protocol. The proposals are created at the same time and therefore they resolve at the same time.
 
-### Schemes
-The smart contracts of the schemes used in DXdao gov 1.x, which are all WalletSchemes that use a PermissionRegistry to execute only previously allowed calls.
-
 ### Utils
 The smart contracts used to facilitate and automate the deployment of the DXdao.
-
-## Install
-
-`npm install`
-
-## Test
-
-`npm test`
-
-or 
-
-`npx buidler test` to run via https://buidler.dev/
-
-## Coverage
-
-`truffle run coverage`
-
-or
-
-`npx buidler coverage`
-
-When running coverage tests checks gas will fail: "Coverage distorts gas consumption. Tests that check exact gas consumption should be skipped."
-
-https://github.com/sc-forks/solidity-coverage/blob/master/BUIDLER_README.md
-
-## Migrate
-
-### Get Reputation 
-
-Get the initial reputation you want to use for migration with `getReputation` script.
-```
-node scripts/getReputation.js --network mainnet --repToken 0x7a927a93f221976aae26d5d077477307170f0b7c --fromBlock 7850172 --toBlock 10782410
-```
-
-### Deployment
-
-The migrate script will deploy the same DXdao contracts that are deployed on mainnet with a main WalletScheme that will have all permissions, a quick WalletScheme to execute quick decisions with no controller permissions, an SchemeRegitrar that can manage schemes, constraints and upgrade the controller and a common ContributionReward scheme that can only execute generic calls.
-
-Regarding VotingMachines the WalletScheme and QuickWalletScheme will use a DXDVotingMachine and SchemeRegistrar and ContributionReward scheme will use GenesisProtocol.
-
-The parameters used in the schemes are the sames that are used on mainnet but with a quicker configuration to get boosted proposals passed in 1-3 days depending the scheme.
-
-The migration can be executed with:
-
-`npm run deploy -- --network kovan`
