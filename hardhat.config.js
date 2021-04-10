@@ -76,19 +76,30 @@ module.exports = {
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: { mnemonic: MNEMONIC }
+      accounts: { mnemonic: MNEMONIC },
+      gasLimit: 9000000,
+      gasPrice: 100000000000, // 100 gwei
+      timeout: 60000
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: { mnemonic: MNEMONIC }
+      accounts: { mnemonic: MNEMONIC },
+      gasLimit: 9000000,
+      gasPrice: 1000000000, // 1 gwei
+      timeout: 60000
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: { mnemonic: MNEMONIC }
+      accounts: { mnemonic: MNEMONIC },
+      gasLimit: 9000000,
+      gasPrice: 1000000000 // 1 gwei
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: { mnemonic: MNEMONIC }
+      accounts: { mnemonic: MNEMONIC },
+      gasLimit: 9000000,
+      gasPrice: 10,
+      timeout: 60000
     },
     coverage: {
       url: 'http://localhost:8555',
