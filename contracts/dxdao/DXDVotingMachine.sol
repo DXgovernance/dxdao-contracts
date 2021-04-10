@@ -229,5 +229,28 @@ contract DXDVotingMachine is GenesisProtocol {
     ) public pure returns(bytes32) {
       return keccak256(abi.encodePacked(votingMachine, proposalId, voter, voteDecision, amount));
     }
+    
+    /**
+    * @dev proposalStatusWithVotes return the total votes, preBoostedVotes and stakes for a given proposal
+    * @param _proposalId the ID of the proposal
+    * @return uint256 votes YES
+    * @return uint256 votes NO
+    * @return uint256 preBoostedVotes YES
+    * @return uint256 preBoostedVotes NO
+    * @return uint256 total stakes YES
+    * @return uint256 total stakes NO
+    */
+    function proposalStatusWithVotes(bytes32 _proposalId) external view returns(
+      uint256, uint256, uint256, uint256, uint256, uint256
+    ) {
+      return (
+        proposals[_proposalId].votes[YES],
+        proposals[_proposalId].votes[NO],
+        proposals[_proposalId].preBoostedVotes[YES],
+        proposals[_proposalId].preBoostedVotes[NO],
+        proposals[_proposalId].stakes[YES],
+        proposals[_proposalId].stakes[NO]
+      );
+    }
 
 }
