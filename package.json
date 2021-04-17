@@ -29,6 +29,8 @@
     "@openzeppelin/contract-loader": "^0.6.1",
     "@openzeppelin/hardhat-upgrades": "^1.6.0",
     "@truffle/contract": "^4.2.21",
+    "@truffle/hdwallet-provider": "^1.2.6",
+    "arb-ethers-web3-bridge": "^0.7.3",
     "babel-eslint": "^10.1.0",
     "babel-plugin-syntax-async-functions": "^6.13.0",
     "babel-polyfill": "^6.26.0",

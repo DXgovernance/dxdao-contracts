@@ -114,6 +114,13 @@ module.exports = {
       gasPrice: 10,
       timeout: 60000
     },
+    arbitrum: {
+      url: 'https://kovan4.arbitrum.io/rpc',
+      accounts: { mnemonic: MNEMONIC },
+      gasPrice: 0,
+      chainId: 212984383488152,
+      timeout: 60000
+    },
     coverage: {
       url: 'http://localhost:8555',
       accounts: { 

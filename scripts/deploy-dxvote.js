@@ -4,6 +4,8 @@ const web3 = hre.web3;
 var moment = require("moment");
 const { encodePermission } = require("../test/helpers/permissions");
 const repHolders = require('../.repHolders.json');
+const wrapProvider = require('arb-ethers-web3-bridge').wrapProvider;
+const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 // Get initial REP holders
 let founders = [], initialRep = [], initialTokens = [];
@@ -31,6 +33,10 @@ const PermissionRegistry = artifacts.require("PermissionRegistry");
 const DXDVotingMachine = artifacts.require("DXDVotingMachine");
 
 async function main() {
+
+  if (hre.network.name == "arbitrum") {
+    hre.network.provider = wrapProvider(new HDWalletProvider(hre.network.config.accounts.mnemonic, hre.network.config.url))
+  }
 
   const accounts = await web3.eth.getAccounts();
   const fromBlock = (await web3.eth.getBlock('latest')).number;
