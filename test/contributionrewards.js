@@ -10,6 +10,9 @@ const DaoCreator = artifacts.require("./DaoCreator.sol");
 const ControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const Avatar = artifacts.require("./DxAvatar.sol");
 const Redeemer = artifacts.require("./Redeemer.sol");
+const ETHRelayer = artifacts.require("./ETHRelayer.sol");
+const GnosisProxy = artifacts.require("./GnosisProxy.sol");
+const GnosisSafe = artifacts.require("./GnosisSafe.sol");
 
 const { BN, expectEvent, expectRevert, time } = require("@openzeppelin/test-helpers");
 
@@ -236,6 +239,63 @@ contract('ContributionReward', (accounts) => {
       var eth = await web3.eth.getBalance(otherAvatar.address);
       assert.equal(eth,ethReward);
      });
+     
+     it("execute proposeContributionReward to expensive receiver fallback function will fail in redeem", async function() {
+       var testSetup = await setup(accounts);
+       var ethReward = 666;
+       var periodLength = 50;
+       var numberOfPeriods = 1;
+       //send some ether to the org avatar
+       var gnosisSafe = await GnosisSafe.new();
+       var gnosisProxy = await GnosisProxy.new(gnosisSafe.address);
+       await web3.eth.sendTransaction({from:accounts[0], to:testSetup.org.avatar.address, value: 666});
+       var tx = await testSetup.contributionReward.proposeContributionReward(
+         testSetup.org.avatar.address,
+         web3.utils.asciiToHex("description"),
+         0,
+         [0 , ethReward, 0, periodLength, numberOfPeriods],
+         testSetup.standardTokenMock.address,
+         gnosisProxy.address
+       );
+       //Vote with reputation to trigger execution
+       var proposalId = await helpers.getValueFromLogs(tx, '_proposalId',1);
+       await testSetup.contributionRewardParams.votingMachine.contract.vote(proposalId,1,0,constants.NULL_ADDRESS,{from:accounts[2]});
+       await time.increase(periodLength+1);
+       try {
+         await testSetup.contributionReward.redeem(proposalId, testSetup.org.avatar.address,[false,false,true,false]);
+       } catch (e) {
+         assert.equal(e, "Error: Transaction reverted without a reason");
+       }
+       assert.equal(await web3.eth.getBalance(gnosisProxy.address), 0);
+     });
+     
+    it("execute proposeContributionReward send across relayer ", async function() {
+      var testSetup = await setup(accounts);
+      var ethReward = 666;
+      var periodLength = 50;
+      var numberOfPeriods = 1;
+      //send some ether to the org avatar
+      var gnosisSafe = await GnosisSafe.new();
+      var gnosisProxy = await GnosisProxy.new(gnosisSafe.address);
+      var ethRelayer = await ETHRelayer.new(gnosisProxy.address);
+      await web3.eth.sendTransaction({from:accounts[0], to:testSetup.org.avatar.address, value: 666});
+      var tx = await testSetup.contributionReward.proposeContributionReward(
+        testSetup.org.avatar.address,
+        web3.utils.asciiToHex("description"),
+        0,
+        [0 , ethReward, 0, periodLength, numberOfPeriods],
+        testSetup.standardTokenMock.address,
+        ethRelayer.address
+      );
+      //Vote with reputation to trigger execution
+      var proposalId = await helpers.getValueFromLogs(tx, '_proposalId',1);
+      await testSetup.contributionRewardParams.votingMachine.contract.vote(proposalId,1,0,constants.NULL_ADDRESS,{from:accounts[2]});
+      await time.increase(periodLength+1);
+      await testSetup.contributionReward.redeem(proposalId, testSetup.org.avatar.address,[false,false,true,false]);
+      assert.equal(await web3.eth.getBalance(ethRelayer.address) ,ethReward);
+      await ethRelayer.relay();
+      assert.equal(await web3.eth.getBalance(gnosisProxy.address) ,ethReward);
+    });
 
     it("execute proposeContributionReward  send externalToken ", async function() {
       var testSetup = await setup(accounts);
