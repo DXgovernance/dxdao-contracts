@@ -47,7 +47,7 @@
     "eslint-plugin-standard": "^3.0.1",
     "ethereumjs-abi": "^0.6.5",
     "ethers": "^5.1.0",
-    "hardhat": "^2.0.8",
+    "hardhat": "^2.2.0",
     "hardhat-gas-reporter": "^1.0.4",
     "pm2": "^2.9.3",
     "promisify": "^0.0.3",
