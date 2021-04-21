@@ -61,7 +61,8 @@ contract("WalletScheme", function(accounts) {
       votingMachine.address,
       votingMachine.params,
       org.controller.address,
-      permissionRegistry.address
+      permissionRegistry.address,
+      "Master Wallet"
     );
     
     quickWalletScheme = await WalletScheme.new();
@@ -70,7 +71,8 @@ contract("WalletScheme", function(accounts) {
       votingMachine.address,
       votingMachine.params,
       constants.NULL_ADDRESS,
-      permissionRegistry.address
+      permissionRegistry.address,
+      "Quick Wallet"
     );
     
     await permissionRegistry.setAdminPermission(
@@ -508,7 +510,8 @@ contract("WalletScheme", function(accounts) {
         accounts[0],
         accounts[0],
         constants.NULL_ADDRESS,
-        permissionRegistry.address
+        permissionRegistry.address,
+        "Master Wallet"
       );
       assert(false, "cannot init twice");
     } catch(error) {

@@ -97,7 +97,8 @@ contract("DXdao", function(accounts) {
       votingMachine.address,
       votingMachine.params,
       controller.address,
-      permissionRegistry.address
+      permissionRegistry.address,
+      "Master Scheme"
     );
     
     await daoCreator.setSchemes(

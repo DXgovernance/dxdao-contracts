@@ -34,6 +34,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     Avatar public avatar;
     address public controllerAddress;
     PermissionRegistry public permissionRegistry;
+    string public schemeName;
     
     bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
 
@@ -57,7 +58,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         IntVoteInterface _votingMachine,
         bytes32 _voteParams,
         address _controllerAddress,
-        address _permissionRegistry
+        address _permissionRegistry,
+        string calldata _schemeName
     ) external {
         require(avatar == Avatar(0), "can be called only one time");
         require(_avatar != Avatar(0), "avatar cannot be zero");
@@ -66,6 +68,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         voteParams = _voteParams;
         controllerAddress = _controllerAddress;
         permissionRegistry = PermissionRegistry(_permissionRegistry);
+        schemeName = _schemeName;
     }
 
     /**

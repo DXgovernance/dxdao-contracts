@@ -92,7 +92,8 @@ module.exports = {
       url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
       accounts: { mnemonic: MNEMONIC },
       gasLimit: 9000000,
-      gasPrice: 1000000000 // 1 gwei
+      gasPrice: 1000000000, // 1 gwei
+      timeout: 60000
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${INFURA_PROJECT_ID}`,
