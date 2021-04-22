@@ -160,9 +160,9 @@ contract OMNGuild is ERC20Guild {
     function createMarketValidationProposal(bytes32 questionId) public isInitialized {
         require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");      
         
-        address[] memory _to = new address[](100);
-        bytes[] memory _data = new bytes[](100);
-        uint256[] memory _value  = new uint256[](100);
+        address[] memory _to = new address[](1);
+        bytes[] memory _data = new bytes[](1);
+        uint256[] memory _value  = new uint256[](1);
         bytes memory _contentHash = abi.encodePacked(questionId);
 
         _value[0] = 0;
