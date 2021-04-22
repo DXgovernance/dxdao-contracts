@@ -131,13 +131,13 @@ contract OMNGuild is ERC20Guild {
             "OMNGuild: Wrong length of description or contentHash arrays"
         );
         require(to.length > 0, "OMNGuild: to, data value arrays cannot be empty");
-        bytes32[] memory proposalsCreated;
+        bytes32[] memory proposalsCreated  = new bytes32[](description.length);
         uint256 proposalsToCreate = description.length;
         uint256 callsPerProposal = to.length.div(proposalsToCreate);
         for(uint proposalIndex = 0; proposalIndex < proposalsToCreate; proposalIndex ++) {
-            address[] memory _to;
-            bytes[] memory _data;
-            uint256[] memory _value;
+            address[] memory _to = new address[](callsPerProposal);
+            bytes[] memory _data = new bytes[](callsPerProposal);
+            uint256[] memory _value = new uint256[](callsPerProposal);
             uint256 callIndex;
             for(
                 uint callIndexInProposals = callsPerProposal.mul(proposalIndex);
@@ -160,10 +160,11 @@ contract OMNGuild is ERC20Guild {
     function createMarketValidationProposal(bytes32 questionId) public isInitialized {
         require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");      
         
-        address[] memory _to;
-        bytes[] memory _data;
-        uint256[] memory _value;
+        address[] memory _to = new address[](1);
+        bytes[] memory _data = new bytes[](1);
+        uint256[] memory _value  = new uint256[](1);
         bytes memory _contentHash = abi.encodePacked(questionId);
+
         _value[0] = 0;
         _to[0] = realityIO;
           
