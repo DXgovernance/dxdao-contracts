@@ -45,6 +45,8 @@ module.exports = {
       }
     ],
     overrides: {
+      "contracts/utils/GnosisSafe/GnosisProxy.sol": { version: "0.5.14" },
+      "contracts/utils/GnosisSafe/GnosisSafe.sol": { version: "0.5.14" },
       "contracts/omen/OMNToken.sol": { version: "0.7.6" },
       "contracts/omen/OMNGuild.sol": {
         version: "0.7.6",
