@@ -77,7 +77,8 @@ contract("DXDVotingMachine", function(accounts) {
       genVotingMachine.params,
       org.controller.address,
       permissionRegistry.address,
-      "Expensive Scheme"
+      "Expensive Scheme",
+      86400
     );
     
     cheapVoteWalletScheme = await WalletScheme.new();
@@ -87,7 +88,8 @@ contract("DXDVotingMachine", function(accounts) {
       dxdVotingMachine.params,
       org.controller.address,
       permissionRegistry.address,
-      "Cheap Scheme"
+      "Cheap Scheme",
+      86400
     );
     
     await daoCreator.setSchemes(
