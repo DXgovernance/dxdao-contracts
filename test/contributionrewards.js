@@ -614,7 +614,7 @@ contract('ContributionReward', (accounts) => {
     await testSetup.contributionRewardParams.votingMachine.contract.vote(proposalId,1,0,constants.NULL_ADDRESS,{from:accounts[1]});
     await standardTokenMock.approve(testSetup.contributionRewardParams.votingMachine.contract.address,1000, {from: accounts[0]});
     await testSetup.contributionRewardParams.votingMachine.contract.stake(proposalId,1,1000, {from: accounts[0]});
-    await time.increase(60+1);
+    await time.increase(86400+1);
     var arcUtils = await Redeemer.new();
     var redeemRewards = await arcUtils.redeem.call(
       testSetup.contributionReward.address,
@@ -711,7 +711,7 @@ contract('ContributionReward', (accounts) => {
     var proposalId = await helpers.getValueFromLogs(tx, '_proposalId',1);
 
     await testSetup.contributionRewardParams.votingMachine.contract.vote(proposalId,1,0,constants.NULL_ADDRESS,{from:accounts[1]});
-    await time.increase(60+1);
+    await time.increase(172800+1);
     var arcUtils = await Redeemer.new();
     await arcUtils.redeem(
       testSetup.contributionReward.address,

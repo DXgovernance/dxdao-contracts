@@ -16,5 +16,5 @@ export const WalletSchemeProposalState = {
   submitted: 0,
   rejected: 1,
   executionSuccedd: 2,
-  executionFailed: 3
+  executionTimeout: 3
 };
