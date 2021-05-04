@@ -9,7 +9,7 @@ const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const { toEthSignedMessageHash, fixSignature } = require('./helpers/sign');
-const { BN, time } = require("@openzeppelin/test-helpers");
+const { BN, time, expectEvent } = require("@openzeppelin/test-helpers");
 
 contract("DXDVotingMachine", function(accounts) {
   let standardTokenMock,
@@ -53,9 +53,12 @@ contract("DXDVotingMachine", function(accounts) {
     genVotingMachine = await helpers.setupGenesisProtocol(
       accounts, standardTokenMock.address, 'normal',  constants.NULL_ADDRESS
     );
+    await standardTokenMock.approve(genVotingMachine.contract.address, 1000, {from: accounts[1]});
+
     dxdVotingMachine = await helpers.setupGenesisProtocol(
       accounts, standardTokenMock.address, 'dxd',  constants.NULL_ADDRESS
     );
+    await standardTokenMock.approve(dxdVotingMachine.contract.address, 1000, {from: accounts[1]});
     
     permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
     
@@ -78,7 +81,7 @@ contract("DXDVotingMachine", function(accounts) {
       org.controller.address,
       permissionRegistry.address,
       "Expensive Scheme",
-      86400
+      172800
     );
     
     cheapVoteWalletScheme = await WalletScheme.new();
@@ -89,7 +92,7 @@ contract("DXDVotingMachine", function(accounts) {
       org.controller.address,
       permissionRegistry.address,
       "Cheap Scheme",
-      86400
+      172800
     );
     
     await daoCreator.setSchemes(
@@ -503,6 +506,119 @@ contract("DXDVotingMachine", function(accounts) {
       assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.rejected);
     });
         
+  });
+  
+  describe('Required % of votes in boosted proposals', function() {
+    
+    beforeEach( async function() {
+      await web3.eth.sendTransaction({
+        from: accounts[0], to: org.avatar.address, value: web3.utils.toWei('1')
+      });
+      const setBoostedVoteRequiredPercentageData = new web3.eth.Contract(DXDVotingMachine.abi).methods
+        .setBoostedVoteRequiredPercentage(cheapVoteWalletScheme.address, dxdVotingMachine.params, 20).encodeABI();
+      const setBoostedVoteRequiredPercentageTx = await cheapVoteWalletScheme.proposeCalls(
+        [org.controller.address], 
+        [helpers.encodeGenericCallData(
+          org.avatar.address, dxdVotingMachine.address, setBoostedVoteRequiredPercentageData, 0
+        )],
+        [0],
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      );
+      const setBoostedVoteRequiredPercentageProposalId = await helpers
+        .getValueFromLogs(setBoostedVoteRequiredPercentageTx, "_proposalId");
+      const organizationId = (await dxdVotingMachine.contract
+        .proposals(setBoostedVoteRequiredPercentageProposalId)).organizationId
+      assert.equal(await dxdVotingMachine.contract.organizations(organizationId), org.avatar.address);
+      await dxdVotingMachine.contract
+        .vote(setBoostedVoteRequiredPercentageProposalId, 1, 0,  constants.NULL_ADDRESS, {from: accounts[3]});
+      const organizationRefundConf = await dxdVotingMachine.contract.organizationRefunds(org.avatar.address);
+      assert.equal(20, await dxdVotingMachine.contract.getBoostedVoteRequiredPercentage(
+        org.avatar.address, cheapVoteWalletScheme.address, dxdVotingMachine.params
+      ));
+      
+    });
+    
+    it("boosted proposal succed with enough votes", async function() {  
+      const genericCallData = helpers.encodeGenericCallData(
+        org.avatar.address, actionMock.address, testCallFrom(org.avatar.address), 0
+      );
+      const tx = await cheapVoteWalletScheme.proposeCalls(
+        [org.controller.address], [genericCallData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      );
+      const testProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const stakeTx = await dxdVotingMachine.contract.stake(testProposalId, 1, 1000, {from: accounts[1]});
+
+      expectEvent(stakeTx.receipt, 'StateChange', {
+        _proposalId: testProposalId,
+        _proposalState: "4"
+      });
+      await time.increase(3600+1);
+      await dxdVotingMachine.contract.vote(
+        testProposalId, 1, 0,  constants.NULL_ADDRESS, {from: accounts[2], gasPrice: constants.GAS_PRICE}
+      );
+      await dxdVotingMachine.contract.vote(
+        testProposalId, 1, 0,  constants.NULL_ADDRESS, {from: accounts[1], gasPrice: constants.GAS_PRICE}
+      );
+      await time.increase(86400+1);
+      const executeTx = await dxdVotingMachine.contract.execute(
+        testProposalId, {from: accounts[1], gasPrice: constants.GAS_PRICE}
+      );
+      // Check it changed to executed in redeem
+      await expectEvent.inTransaction(
+        executeTx.tx,
+        dxdVotingMachine.contract,
+        'StateChange', {
+          _proposalId: testProposalId,
+          _proposalState: "2"
+        }
+      );
+
+      const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(testProposalId);
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
+      assert.equal(organizationProposal.callData[0], genericCallData);
+      assert.equal(organizationProposal.to[0], org.controller.address);
+      assert.equal(organizationProposal.value[0], 0);
+    });
+    
+    it("boosted proposal fails with enough votes", async function() {  
+      const genericCallData = helpers.encodeGenericCallData(
+        org.avatar.address, actionMock.address, testCallFrom(org.avatar.address), 0
+      );
+      const tx = await cheapVoteWalletScheme.proposeCalls(
+        [org.controller.address], [genericCallData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      );
+      const testProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const stakeTx = await dxdVotingMachine.contract.stake(testProposalId, 1, 1000, {from: accounts[1]});
+
+      expectEvent(stakeTx.receipt, 'StateChange', {
+        _proposalId: testProposalId,
+        _proposalState: "4"
+      });
+      await time.increase(3600+1);
+      await dxdVotingMachine.contract.vote(
+        testProposalId, 1, 0,  constants.NULL_ADDRESS, {from: accounts[2], gasPrice: constants.GAS_PRICE}
+      );
+      await time.increase(86400+1);
+      const executeTx = await dxdVotingMachine.contract.execute(
+        testProposalId, {from: accounts[1], gasPrice: constants.GAS_PRICE}
+      );
+      // Check it changed to executed in redeem
+      await expectEvent.inTransaction(
+        executeTx.tx,
+        dxdVotingMachine.contract,
+        'StateChange', {
+          _proposalId: testProposalId,
+          _proposalState: "1"
+        }
+      );
+
+      const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(testProposalId);
+      assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.rejected);
+      assert.equal(organizationProposal.callData[0], genericCallData);
+      assert.equal(organizationProposal.to[0], org.controller.address);
+      assert.equal(organizationProposal.value[0], 0);
+    });
   });
 
 });
