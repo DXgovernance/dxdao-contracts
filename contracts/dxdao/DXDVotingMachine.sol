@@ -15,7 +15,10 @@ import "@daostack/infra/contracts/votingMachines/GenesisProtocol.sol";
 contract DXDVotingMachine is GenesisProtocol {
 
     uint256 constant private MAX_BOOSTED_PROPOSALS = 4096;
-
+    
+    // organization id scheme => parameters hash => required % of votes in boosted proposal
+    mapping(bytes32 => mapping(bytes32 => uint256)) public boostedVoteRequiredPercentage; 
+    
     struct OrganizationRefunds {
       uint256 balance;
       uint256 voteGas;
@@ -74,6 +77,21 @@ contract DXDVotingMachine is GenesisProtocol {
     function setOrganizationRefund(uint256 _voteGas, uint256 _maxGasPrice) public {
       organizationRefunds[msg.sender].voteGas = _voteGas;
       organizationRefunds[msg.sender].maxGasPrice = _maxGasPrice;
+    }
+    
+    
+    /**
+    * @dev Config the requried % of votes needed in a boosted proposal in a scheme, only callable by the avatar
+    * @param _scheme the scheme address that wants to be configured
+    * @param _paramsHash the paramemeters configuration hashed of the scheme
+    * @param _boostedVotePeriodLimit the required % of votes needed in a boosted proposal to be executed on that scheme
+    */
+    function setBoostedVoteRequiredPercentage(
+      address _scheme, bytes32 _paramsHash, uint256 _boostedVotePeriodLimit
+    ) public {
+      boostedVoteRequiredPercentage[
+        keccak256(abi.encodePacked(_scheme, msg.sender))
+      ][_paramsHash] = _boostedVotePeriodLimit;
     }
     
     /**
@@ -256,6 +274,18 @@ contract DXDVotingMachine is GenesisProtocol {
     }
     
     /**
+    * @dev Get the requried % of votes needed in a boosted proposal in a scheme
+    * @param avatar the avatar address
+    * @param scheme the scheme address
+    * @param paramsHash the paramemeters configuration hashed of the scheme
+    */
+    function getBoostedVoteRequiredPercentage(
+      address avatar, address scheme, bytes32 paramsHash
+    ) public view returns (uint256) {
+      return boostedVoteRequiredPercentage[keccak256(abi.encodePacked(scheme, avatar))][paramsHash];
+    }
+    
+    /**
       * @dev execute check if the proposal has been decided, and if so, execute the proposal
       * @param _proposalId the id of the proposal
       * @return bool true - the proposal has been executed
@@ -270,6 +300,10 @@ contract DXDVotingMachine is GenesisProtocol {
         VotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(_proposalId);
         //first divide by 100 to prevent overflow
         uint256 executionBar = (totalReputation/100) * params.queuedVoteRequiredPercentage;
+        uint256 _boostedVoteRequiredPercentage = boostedVoteRequiredPercentage[
+          proposal.organizationId
+        ][proposal.paramsHash];
+        uint256 boostedExecutionBar = (totalReputation/100) * _boostedVoteRequiredPercentage;
         ExecutionState executionState = ExecutionState.None;
         uint256 averageDownstakesOfBoosted;
         uint256 confidenceThreshold;
@@ -343,14 +377,19 @@ contract DXDVotingMachine is GenesisProtocol {
             (proposal.state == ProposalState.QuietEndingPeriod)) {
             // solhint-disable-next-line not-rely-on-time
             if ((now - proposal.times[1]) >= proposal.currentBoostedVotePeriodLimit) {
-                proposal.state = ProposalState.Executed;
-                executionState = ExecutionState.BoostedTimeOut;
+                if (proposal.votes[proposal.winningVote] >= boostedExecutionBar) {
+                  proposal.state = ProposalState.Executed;
+                  executionState = ExecutionState.BoostedBarCrossed;
+                } else {
+                  proposal.state = ProposalState.ExpiredInQueue;
+                  proposal.winningVote = NO;
+                  executionState = ExecutionState.BoostedTimeOut;
+                }
             }
         }
 
         if (executionState != ExecutionState.None) {
-            if ((executionState == ExecutionState.BoostedTimeOut) ||
-                (executionState == ExecutionState.BoostedBarCrossed)) {
+            if (executionState == ExecutionState.BoostedBarCrossed) {
                 orgBoostedProposalsCnt[tmpProposal.organizationId] =
                 orgBoostedProposalsCnt[tmpProposal.organizationId].sub(1);
                 //remove a value from average = ((average * nbValues) - value) / (nbValues - 1);
