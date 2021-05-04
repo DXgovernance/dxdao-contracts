@@ -18,3 +18,10 @@ export const WalletSchemeProposalState = {
   executionSuccedd: 2,
   executionTimeout: 3
 };
+
+export const GuildProposalState = {
+  Submitted: 0,
+  Rejected: 1,
+  Executed: 2,
+  Failed: 3
+};

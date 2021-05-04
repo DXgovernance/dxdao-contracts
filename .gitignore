@@ -18,3 +18,7 @@ cache/
 .coverage_cache/
 .repHolders.json
 .openzeppelin
+*.swp
+*.swo
+.bash_hist*
+tags
