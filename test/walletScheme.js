@@ -8,7 +8,7 @@ const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
 
-const { time } = require("@openzeppelin/test-helpers");
+const { time, expectRevert, expectEvent } = require("@openzeppelin/test-helpers");
 
 contract("WalletScheme", function(accounts) {
   
@@ -62,7 +62,8 @@ contract("WalletScheme", function(accounts) {
       votingMachine.params,
       org.controller.address,
       permissionRegistry.address,
-      "Master Wallet"
+      "Master Wallet",
+      86400
     );
     
     quickWalletScheme = await WalletScheme.new();
@@ -72,7 +73,8 @@ contract("WalletScheme", function(accounts) {
       votingMachine.params,
       constants.NULL_ADDRESS,
       permissionRegistry.address,
-      "Quick Wallet"
+      "Quick Wallet",
+      86400
     );
     
     await permissionRegistry.setAdminPermission(
@@ -182,15 +184,26 @@ contract("WalletScheme", function(accounts) {
       [org.controller.address], [genericCallData], [0], constants.TEST_TITLE, constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    await expectRevert(
+      votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "call not allowed"
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
+    await time.increase(86400);
+    
     await votingMachine.contract.vote(
       proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
     );
-        
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(proposalId);
-    assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionFailed);
-    assert.equal(organizationProposal.callData[0], genericCallData);
-    assert.equal(organizationProposal.to[0], org.controller.address);
-    assert.equal(organizationProposal.value[0], 0);
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.executionTimeout
+    );
   });
   
   it("MasterWalletScheme - positive decision - proposal executed - allowed by permission registry from scheme", async function() {
@@ -326,19 +339,27 @@ contract("WalletScheme", function(accounts) {
       [actionMock.address], [callData], [constants.TEST_VALUE], constants.TEST_TITLE, constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+    await expectRevert(
+      votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "call execution failed"
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
+    await time.increase(86400);
+    
     tx = await votingMachine.contract.vote(
       proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
     );
-
-    const executionEvent = helpers.getWalletSchemeExecutionEvent(tx)
-    const returnValue = web3.eth.abi.decodeParameters(["bool", "bytes"], 
-      executionEvent.values._callsDataResult[0]);
     
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(proposalId);
-    assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionFailed);
-    assert.equal(organizationProposal.callData[0], callData);
-    assert.equal(organizationProposal.to[0], actionMock.address);
-    assert.equal(organizationProposal.value[0], constants.TEST_VALUE);
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.executionTimeout
+    );
   });
 
   it("MasterWalletScheme - positive decision - proposal executed without return value", async function() {
@@ -511,7 +532,8 @@ contract("WalletScheme", function(accounts) {
         accounts[0],
         constants.NULL_ADDRESS,
         permissionRegistry.address,
-        "Master Wallet"
+        "Master Wallet",
+        86400
       );
       assert(false, "cannot init twice");
     } catch(error) {
@@ -594,27 +616,35 @@ contract("WalletScheme", function(accounts) {
     assert.equal(organizationProposal.value[1], 0);
   });
 
-  it("QuickWalletScheme - proposal with data - positive decision - proposal execute and show revert in return", async function() {
+  it("QuickWalletScheme - proposal with data - positive decision - proposal execution fail and timeout", async function() {
     const callData = helpers.testCallFrom(constants.NULL_ADDRESS);
     
     let tx = await quickWalletScheme.proposeCalls(
       [actionMock.address], [callData], [0], constants.TEST_TITLE, constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    tx = await votingMachine.contract.vote(
-      proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2], gas: 600000}
-    );
-    const executionEvent = helpers.getWalletSchemeExecutionEvent(tx)
-    assert.equal(
-      decodeGenericCallError(executionEvent.values._callsDataResult[0]),
-      "the caller must be equal to _addr"
+  
+    await expectRevert(
+      votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "call execution failed"
     );
     
-    const organizationProposal = await quickWalletScheme.getOrganizationProposal(proposalId);
-    assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionFailed);
-    assert.equal(organizationProposal.callData[0], callData);
-    assert.equal(organizationProposal.to[0], actionMock.address);
-    assert.equal(organizationProposal.value[0], 0);
+    assert.equal(
+      (await quickWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
+    await time.increase(86400);
+    
+    tx = await votingMachine.contract.vote(
+      proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+    );
+    
+    assert.equal(
+      (await quickWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.executionTimeout
+    );
+    
   });
 
   it("QuickWalletScheme - proposal with data - positive decision - proposal executed without return value", async function() {
@@ -693,21 +723,49 @@ contract("WalletScheme", function(accounts) {
     const proposalIdRemoveScheme = await helpers.getValueFromLogs(tx, "_proposalId");
 
     // Add Scheme
-    tx = await votingMachine.contract.vote(
-      proposalIdAddScheme, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+    await expectRevert(
+      votingMachine.contract.vote( proposalIdAddScheme, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "call execution failed"
     );
+    assert.equal(
+      (await quickWalletScheme.getOrganizationProposal(proposalIdAddScheme)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
     const addedScheme = await org.controller.schemes(constants.SOME_ADDRESS);
     assert.equal(addedScheme.paramsHash, "0x0000000000000000000000000000000000000000000000000000000000000000");
     assert.equal(addedScheme.permissions, "0x00000000");
     
     // Remove Scheme
-    await votingMachine.contract.vote(
-      proposalIdRemoveScheme, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+    await expectRevert(
+      votingMachine.contract.vote( proposalIdRemoveScheme, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "call execution failed"
+    );
+    assert.equal(
+      (await quickWalletScheme.getOrganizationProposal(proposalIdRemoveScheme)).state,
+      constants.WalletSchemeProposalState.submitted
     );
     
     const removedScheme = await org.controller.schemes(masterWalletScheme.address);
     assert.equal(removedScheme.paramsHash, votingMachine.params);
     assert.equal(removedScheme.permissions, "0x0000001f");
+    
+    await time.increase(86400);
+    await votingMachine.contract.vote(
+      proposalIdAddScheme, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+    );
+    assert.equal(
+      (await quickWalletScheme.getOrganizationProposal(proposalIdAddScheme)).state,
+      constants.WalletSchemeProposalState.executionTimeout
+    );
+    
+    await votingMachine.contract.vote(
+      proposalIdRemoveScheme, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+    );
+    assert.equal(
+      (await quickWalletScheme.getOrganizationProposal(proposalIdRemoveScheme)).state,
+      constants.WalletSchemeProposalState.executionTimeout
+    );
   });
   
   it("QuickWalletScheme - positive decision - proposal executed - allowed by permission registry from scheme", async function() {
