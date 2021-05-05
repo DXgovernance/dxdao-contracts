@@ -104,7 +104,7 @@ contract OMNGuild is ERC20Guild {
         uint256 _successfulVoteReward,
         uint256 _unsuccessfulVoteReward
     ) public isInitialized {
-        require(msg.sender == address(this), "Only the OMEN Guild can configure the guild");
+        require(msg.sender == address(this), "OMNGuild: Only the Guild can configure the guild");
         realitIO = _realitIO;
         maxAmountVotes = _maxAmountVotes;
         successfulVoteReward = _successfulVoteReward;
@@ -116,7 +116,7 @@ contract OMNGuild is ERC20Guild {
     /// @param questionId the id of the question to be validated in realitiyIo
     function createMarketValidationProposal(bytes32 questionId) public isInitialized {
         require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");
-        require(realitIO.getOpeningTS(questionId) + 60*60*24*2 > block.timestamp, "Realit.io question is over 2 days old");
+        require(realitIO.getOpeningTS(questionId) + 60*60*24*2 > block.timestamp, "OMNGuild: Realit.io question is over 2 days old");
         
         address[] memory _to = new address[](1);
         bytes[] memory _data = new bytes[](1);
@@ -224,7 +224,7 @@ contract OMNGuild is ERC20Guild {
     function setVote(bytes32 proposalId, uint256 amount) override public virtual {
         require(
             votesOfAt(msg.sender, proposals[proposalId].snapshotId) >=  amount,
-            "ERC20Guild: Invalid amount"
+            "OMNGuild: Invalid amount"
         );
 
         require(proposals[proposalId].votes[msg.sender] == 0, "OMNGuild: Already voted on proposal");
@@ -244,12 +244,12 @@ contract OMNGuild is ERC20Guild {
     function setVotes(bytes32[] memory proposalIds, uint256[] memory amounts) override public virtual {
         require(
             proposalIds.length == amounts.length,
-            "ERC20Guild: Wrong length of proposalIds or amounts"
+            "OMNGuild: Wrong length of proposalIds or amounts"
         );
         for(uint i = 0; i < proposalIds.length; i ++){
             require(
                 votesOfAt(msg.sender, proposals[proposalIds[i]].snapshotId) >=  amounts[i],
-                "ERC20Guild: Invalid amount"
+                "OMNGuild: Invalid amount"
             );
             require(proposals[proposalIds[i]].votes[msg.sender] == 0, "OMNGuild: Already voted on this proprosal");
             require(proposals[marketValidationProposals[proposalsForMarketValidation[proposalIds[i]]].marketValid].votes[msg.sender] == 0, "OMNGuild: Already voted on this market valid proposal");
@@ -266,7 +266,7 @@ contract OMNGuild is ERC20Guild {
     /// @param to The address to recieve the token
     /// @param amount The amount of OMN tokens to be sent in wei units
     function _sendTokenReward(address to, uint256 amount) internal {
-        require(token.balanceOf(address(this)) > amount, "Rewards are temporarily unavailable. Please try again later.");
+        require(token.balanceOf(address(this)) > amount, "OMNGuild: Rewards are temporarily unavailable. Please try again later.");
         token.transfer(to, amount);
     }
     
