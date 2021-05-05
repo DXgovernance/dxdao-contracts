@@ -16,7 +16,8 @@ contract DXDVotingMachine is GenesisProtocol {
 
     uint256 constant private MAX_BOOSTED_PROPOSALS = 4096;
     
-    // organization id scheme => parameters hash => required % of votes in boosted proposal
+    // organization id scheme => parameters hash => required % of votes in boosted proposal.
+    // 100 == 1%, 2500 == 25%.
     mapping(bytes32 => mapping(bytes32 => uint256)) public boostedVoteRequiredPercentage; 
     
     struct OrganizationRefunds {
@@ -303,7 +304,7 @@ contract DXDVotingMachine is GenesisProtocol {
         uint256 _boostedVoteRequiredPercentage = boostedVoteRequiredPercentage[
           proposal.organizationId
         ][proposal.paramsHash];
-        uint256 boostedExecutionBar = (totalReputation/100) * _boostedVoteRequiredPercentage;
+        uint256 boostedExecutionBar = (totalReputation/10000) * _boostedVoteRequiredPercentage;
         ExecutionState executionState = ExecutionState.None;
         uint256 averageDownstakesOfBoosted;
         uint256 confidenceThreshold;
