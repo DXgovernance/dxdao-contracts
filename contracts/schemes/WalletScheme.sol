@@ -1,6 +1,7 @@
 pragma solidity 0.5.17;
 pragma experimental ABIEncoderV2;
 
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "@daostack/infra/contracts/votingMachines/IntVoteInterface.sol";
 import "@daostack/infra/contracts/votingMachines/ProposalExecuteInterface.sol";
 import "../daostack/votingMachines/VotingMachineCallbacks.sol";
@@ -17,6 +18,8 @@ import "./PermissionRegistry.sol";
  * sender.
  */
 contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
+    using SafeMath for uint256;
+
     struct Proposal {
         address[] to;
         bytes[] callData;
@@ -24,6 +27,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         ProposalState state;
         string title;
         string descriptionHash;
+        uint256 submittedTime;
     }
 
     mapping(bytes32 => Proposal) public proposals;
@@ -35,14 +39,18 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     address public controllerAddress;
     PermissionRegistry public permissionRegistry;
     string public schemeName;
+    uint256 public maxProposalTime;
     
     bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
+    bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
+    address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
 
     event NewCallProposal(bytes32 indexed _proposalId);
     event ProposalExecuted(bytes32 indexed _proposalId, bool[] _callsSucessResult, bytes[] _callsDataResult);
     event ProposalExecutedByVotingMachine(bytes32 indexed _proposalId, int256 _param);
     event ProposalRejected(bytes32 indexed _proposalId);
-    enum ProposalState {Submitted, Rejected, ExecutionSucceded, ExecutionFailed}
+    event ProposalExecutionTimeout(bytes32 indexed _proposalId);
+    enum ProposalState {Submitted, Rejected, ExecutionSucceded, ExecutionTimeout}
 
     /**
      * @dev initialize
@@ -52,6 +60,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      * @param _controllerAddress The address to receive the calls, if address 0x0 is used it wont make generic calls
      * to the avatar
      * @param _permissionRegistry The address of the permission registry contract
+     * @param _maxProposalTime The maximum amount of time in seconds a proposal without executed since submitted time
      */
     function initialize(
         Avatar _avatar,
@@ -59,16 +68,19 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         bytes32 _voteParams,
         address _controllerAddress,
         address _permissionRegistry,
-        string calldata _schemeName
+        string calldata _schemeName,
+        uint256 _maxProposalTime
     ) external {
         require(avatar == Avatar(0), "can be called only one time");
         require(_avatar != Avatar(0), "avatar cannot be zero");
+        require(_maxProposalTime >= 86400, "_maxProposalTime cant be less than 86400 seconds");
         avatar = _avatar;
         votingMachine = _votingMachine;
         voteParams = _voteParams;
         controllerAddress = _controllerAddress;
         permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
+        maxProposalTime = _maxProposalTime;
     }
 
     /**
@@ -76,6 +88,17 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      */
     function() external payable {
       require(controllerAddress == address(0), "Cant receive if it will make generic calls to avatar");
+    }
+    
+    /**
+     * @dev Set the max proposal time from the avatar address
+     * @param _maxProposalTime New max proposal time in seconds to be used
+     * @return bool success
+     */
+    function setMaxProposalTime(uint256 _maxProposalTime) external {
+      require(msg.sender == address(avatar), "setMaxProposalTime is callable only form the avatar");
+      require(_maxProposalTime >= 86400, "_maxProposalTime cant be less than 86400 seconds");
+      maxProposalTime = _maxProposalTime;
     }
 
     /**
@@ -93,14 +116,25 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         // If decision is 1, it means the proposal was approved by the voting machine
         if (_decision == 1) {
           
-            proposal.state = ProposalState.ExecutionSucceded;  
-            bytes[] memory callsDataResult = new bytes[](proposal.to.length);
-            bool[] memory callsSucessResult = new bool[](proposal.to.length);
-            
-            for (uint256 i = 0; i < proposal.to.length; i++) {
+            // If the amount of time passed since submission plus max proposal time is higher than block timestamp
+            // the proposal timeout execution is reached and proposal cant be executed from now on
+            if (proposal.submittedTime.add(maxProposalTime) < now) {
+              proposal.state = ProposalState.ExecutionTimeout;
+              emit ProposalExecutionTimeout(_proposalId);
+            } else {
+          
+              // If one call fails the transaction will revert
+              proposal.state = ProposalState.ExecutionSucceded;
+              bytes[] memory callsDataResult = new bytes[](proposal.to.length);
+              bool[] memory callsSucessResult = new bool[](proposal.to.length);
               
-                if (isCallAllowed(proposal.to[i], proposal.callData[i], proposal.value[i])) {
-                  
+              for (uint256 i = 0; i < proposal.to.length; i++) {
+                
+                  require(
+                    isCallAllowed(proposal.to[i], proposal.callData[i], proposal.value[i]),
+                    "call not allowed"
+                  );
+                      
                   // If controller address is set the code needs to be encoded to generiCall function
                   if (controllerAddress != address(0) && proposal.to[i] != controllerAddress) {
                     bytes memory genericCallData = abi.encodeWithSignature(
@@ -111,7 +145,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                       address(controllerAddress).call.value(0)(genericCallData);
                   
                     // The success is form the generic call, but the result data is from the call to the controller
-                    (bool genericCallSucessResult, bytes memory genericCallDataResult) = 
+                    (bool genericCallSucessResult,) = 
                       abi.decode(callsDataResult[i], (bool, bytes));
                     callsSucessResult[i] = genericCallSucessResult;
                     
@@ -121,18 +155,12 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                       address(proposal.to[i]).call.value(proposal.value[i])(proposal.callData[i]);
                   }
                   
-                // If the call is not allowed the calls finish and is set to execution failed.
-                } else {
-                  callsDataResult[i] = bytes("0");
-                  callsSucessResult[i] = false;
-                }
-                if (!callsSucessResult[i]){
-                  proposals[_proposalId].state = ProposalState.ExecutionFailed;
-                  break;
-                } 
-                
+                  require(callsSucessResult[i], "call execution failed");
+              
+              }
+              emit ProposalExecuted(_proposalId, callsSucessResult, callsDataResult);
+            
             }
-            emit ProposalExecuted(_proposalId, callsSucessResult, callsDataResult);
             
         // If decision is 2, it means the proposal was rejected by the voting machine
         } else {
@@ -159,8 +187,12 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
       string memory _title,
       string memory _descriptionHash
     ) public returns(bytes32) {
+      
+        // Check the proposal calls
         for(uint i = 0; i < _to.length; i ++) {
           require(_to[i] != address(this), 'invalid proposal caller');
+          require(_to[i] != ANY_ADDRESS, "cant propose calls to 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa address");
+          require(getFuncSignature(_callData[i]) != ANY_SIGNATURE, "cant propose calls with 0xaaaaaaaa signature");
         }
         require(_to.length == _callData.length, "invalid callData length");
         require(_to.length == _value.length, "invalid _value length");
@@ -175,7 +207,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             value: _value,
             state: ProposalState.Submitted,
             title: _title,
-            descriptionHash: _descriptionHash
+            descriptionHash: _descriptionHash,
+            submittedTime: now
         });
         proposalsList.push(proposalId);
         proposalsInfo[address(votingMachine)][proposalId] = ProposalInfo({blockNumber: block.number, avatar: avatar});
@@ -194,7 +227,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         uint256[] memory value,
         ProposalState state,
         string memory title,
-        string memory descriptionHash
+        string memory descriptionHash,
+        uint256 submittedTime
     ) {
       return (
         proposals[proposalId].to,
@@ -202,7 +236,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         proposals[proposalId].value,
         proposals[proposalId].state,
         proposals[proposalId].title,
-        proposals[proposalId].descriptionHash
+        proposals[proposalId].descriptionHash,
+        proposals[proposalId].submittedTime
       );
     }
     
@@ -217,7 +252,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         uint256[] memory value,
         ProposalState state,
         string memory title,
-        string memory descriptionHash
+        string memory descriptionHash,
+        uint256 submittedTime
     ) {
       return getOrganizationProposal(proposalsList[proposalIndex]);
     }
@@ -228,12 +264,13 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     * @param data the data of the call
     * @param value the value to be sent
     */
-    function isCallAllowed(address to, bytes memory data, uint256 value) public returns (bool) {
+    function isCallAllowed(address to, bytes memory data, uint256 value) public view returns (bool) {
       uint256 fromTime;
       uint256 valueAllowed;
       address asset;
 
       bytes4 callSignature = getFuncSignature(data);
+      
       if (ERC20_TRANSFER_SIGNATURE == callSignature) {
         asset = to;
         (to, value) = erc20TransferDecode(data);
@@ -273,7 +310,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     * @dev Get call data signature
     * @param data The bytes data of the data to get the signature
     */
-    function getFuncSignature(bytes memory data) public view returns (bytes4) {
+    function getFuncSignature(bytes memory data) public pure returns (bytes4) {
         bytes32 functionSignature = bytes32(0);
         assembly {
             functionSignature := mload(add(data, 32))
