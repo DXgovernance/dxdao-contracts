@@ -246,6 +246,9 @@ contract('ContributionReward', (accounts) => {
      });
      
      it("execute proposeContributionReward to expensive receiver fallback function will fail in redeem", async function() {
+       // skip if it is in coverage
+       if (constants.GAS_LIMIT == "0xfffffffffff")
+        return;
        var testSetup = await setup(accounts);
        var ethReward = 666;
        var periodLength = 50;
