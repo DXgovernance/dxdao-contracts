@@ -52,7 +52,7 @@ async function main() {
     amountMints.push(initialRep.splice(0, 100));
   }
   for (var i = 0; i < addressesMints.length; i++){
-    console.log('Doint mint '+i+' of '+(addressesMints.length-1)+' of initial REP minting...')
+    console.log('Doing mint '+i+' of '+(addressesMints.length-1)+' of initial REP minting...')
     await dxReputation.mintMultiple(addressesMints[i], amountMints[i], { gas: 9000000 });
   }
   
@@ -148,7 +148,8 @@ async function main() {
     masterWalletSchemeParamsHash,
     dxController.address,
     permissionRegistry.address,
-    "Master Wallet"
+    "Master Wallet",
+    86400
   );
   
   // Deploy QuickWalletScheme:
@@ -178,7 +179,8 @@ async function main() {
     quickWalletSchemeParamsHash,
     NULL_ADDRESS,
     permissionRegistry.address,
-    "Quick Wallet"
+    "Quick Wallet",
+    86400
   );
   
   console.log("Setting permissions...");
