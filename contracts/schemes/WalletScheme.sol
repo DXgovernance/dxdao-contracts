@@ -249,9 +249,12 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
       
         // Check the proposal calls
         for(uint i = 0; i < _to.length; i ++) {
-          require(_to[i] != address(this), 'invalid proposal caller');
-          require(_to[i] != ANY_ADDRESS, "cant propose calls to 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa address");
-          require(getFuncSignature(_callData[i]) != ANY_SIGNATURE, "cant propose calls with 0xaaaaaaaa signature");
+            bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
+            require(_to[i] != address(this), 'invalid proposal caller');
+            require(_to[i] != ANY_ADDRESS, "cant propose calls to 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa address");
+            require(callDataFuncSignature != ANY_SIGNATURE, "cant propose calls with 0xaaaaaaaa signature");
+            if (callDataFuncSignature == ERC20_TRANSFER_SIGNATURE)
+                require(_value[i] == 0, "cant propose ERC20 trasnfers with value");
         }
         require(_to.length == _callData.length, "invalid callData length");
         require(_to.length == _value.length, "invalid _value length");
