@@ -75,7 +75,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         string calldata _schemeName,
         uint256 _maxProposalTime
     ) external {
-        require(avatar == Avatar(0), "can be called only one time");
+        require(avatar == Avatar(0), "cannot init twice");
         require(_avatar != Avatar(0), "avatar cannot be zero");
         require(_maxProposalTime >= 86400, "_maxProposalTime cant be less than 86400 seconds");
         avatar = _avatar;
@@ -250,13 +250,12 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         // Check the proposal calls
         for(uint i = 0; i < _to.length; i ++) {
             bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
-            require(_to[i] != address(this), 'invalid proposal caller');
+            require(_to[i] != address(this) || (callDataFuncSignature == bytes4(0xa169093b) && _value[i] == 0), 'invalid proposal caller');
             require(_to[i] != ANY_ADDRESS, "cant propose calls to 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa address");
             require(callDataFuncSignature != ANY_SIGNATURE, "cant propose calls with 0xaaaaaaaa signature");
-            if (callDataFuncSignature == ERC20_TRANSFER_SIGNATURE)
-                require(_value[i] == 0, "cant propose ERC20 trasnfers with value");
+            require(callDataFuncSignature != ERC20_TRANSFER_SIGNATURE || _value[i] == 0, "cant propose ERC20 trasnfers with value");
         }
-        require(_to.length == _callData.length, "invalid callData length");
+        require(_to.length == _callData.length, "invalid _callData length");
         require(_to.length == _value.length, "invalid _value length");
 
         // Get the proposal id that will be used from the voting machine
