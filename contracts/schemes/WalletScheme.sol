@@ -91,7 +91,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      * @dev Fallback function that allows the wallet to receive ETH when the controller address is not set
      */
     function() external payable {
-      require(controllerAddress == address(0), "Cant receive if it will make generic calls to avatar");
+        require(controllerAddress == address(0), "Cant receive if it will make generic calls to avatar");
     }
     
     /**
@@ -100,9 +100,9 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      * @return bool success
      */
     function setMaxProposalTime(uint256 _maxProposalTime) external {
-      require(msg.sender == address(avatar), "setMaxProposalTime is callable only form the avatar");
-      require(_maxProposalTime >= 86400, "_maxProposalTime cant be less than 86400 seconds");
-      maxProposalTime = _maxProposalTime;
+        require(msg.sender == address(avatar), "setMaxProposalTime is callable only form the avatar");
+        require(_maxProposalTime >= 86400, "_maxProposalTime cant be less than 86400 seconds");
+        maxProposalTime = _maxProposalTime;
     }
 
     /**
@@ -240,11 +240,11 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     * @return an id which represents the proposal
     */
     function proposeCalls(
-      address[] memory _to,
-      bytes[] memory _callData,
-      uint256[] memory _value,
-      string memory _title,
-      string memory _descriptionHash
+        address[] memory _to,
+        bytes[] memory _callData,
+        uint256[] memory _value,
+        string memory _title,
+        string memory _descriptionHash
     ) public returns(bytes32) {
       
         // Check the proposal calls
@@ -282,8 +282,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     * @dev Get the information of a proposal by id
     * @param proposalId the ID of the proposal
     */
-    function getOrganizationProposal(bytes32 proposalId) public view 
-      returns (
+    function getOrganizationProposal(bytes32 proposalId) public view returns (
         address[] memory to,
         bytes[] memory callData,
         uint256[] memory value,
@@ -307,8 +306,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     * @dev Get the information of a proposal by index
     * @param proposalIndex the index of the proposal in the proposals list
     */
-    function getOrganizationProposalByIndex(uint256 proposalIndex) public view 
-      returns (
+    function getOrganizationProposalByIndex(uint256 proposalIndex) public view returns (
         address[] memory to,
         bytes[] memory callData,
         uint256[] memory value,
@@ -349,13 +347,13 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     * @dev Get the proposals length
     */
     function getOrganizationProposalsLength() public view returns (uint256) {
-      return proposalsList.length;
+        return proposalsList.length;
     }
     
     /**
     * @dev Get the proposals ids
     */
     function getOrganizationProposals() public view returns (bytes32[] memory) {
-      return proposalsList;
+        return proposalsList;
     }
 }
