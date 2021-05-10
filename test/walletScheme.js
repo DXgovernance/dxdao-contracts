@@ -119,30 +119,30 @@ contract("WalletScheme", function(accounts) {
     );
   });
   
-  it("MasterWalletScheme - setMaxProposalTime is callable only form the avatar", async function() {
+  it("MasterWalletScheme - setMaxSecondsForExecution is callable only form the avatar", async function() {
     expectRevert(
-      masterWalletScheme.setMaxProposalTime(executionTimeout+666),
-      "setMaxProposalTime is callable only form the avatar"
+      masterWalletScheme.setMaxSecondsForExecution(executionTimeout+666),
+      "setMaxSecondsForExecution is callable only form the avatar"
     );
-    assert.equal(await masterWalletScheme.maxProposalTime(), executionTimeout);
+    assert.equal(await masterWalletScheme.maxSecondsForExecution(), executionTimeout);
   });
   
   it("MasterWalletScheme - proposal to change max proposal time - positive decision - proposal executed", async function() {
-    const setMaxProposalTimeData = web3.eth.abi.encodeFunctionCall({
-      name: 'setMaxProposalTime',
+    const setMaxSecondsForExecutionData = web3.eth.abi.encodeFunctionCall({
+      name: 'setMaxSecondsForExecution',
       type: 'function',
       inputs: [{
         type: 'uint256',
-        name: '_maxProposalTime'
+        name: '_maxSecondsForExecution'
       }]
     }, [executionTimeout+666]);
     
     expectRevert(masterWalletScheme.proposeCalls(
-      [masterWalletScheme.address], [setMaxProposalTimeData], [1], constants.TEST_TITLE, constants.SOME_HASH
+      [masterWalletScheme.address], [setMaxSecondsForExecutionData], [1], constants.TEST_TITLE, constants.SOME_HASH
     ), "invalid proposal caller");
     
     const tx = await masterWalletScheme.proposeCalls(
-      [masterWalletScheme.address], [setMaxProposalTimeData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      [masterWalletScheme.address], [setMaxSecondsForExecutionData], [0], constants.TEST_TITLE, constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await votingMachine.contract.vote(
@@ -151,28 +151,28 @@ contract("WalletScheme", function(accounts) {
     
     const organizationProposal = await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
-    assert.equal(organizationProposal.callData[0], setMaxProposalTimeData);
+    assert.equal(organizationProposal.callData[0], setMaxSecondsForExecutionData);
     assert.equal(organizationProposal.to[0], masterWalletScheme.address);
     assert.equal(organizationProposal.value[0], 0);
-    assert.equal(await masterWalletScheme.maxProposalTime(), executionTimeout+666);
+    assert.equal(await masterWalletScheme.maxSecondsForExecution(), executionTimeout+666);
   });
   
   it("MasterWalletScheme - proposal to change max proposal time fails- positive decision - proposal fails", async function() {
-    const setMaxProposalTimeData = web3.eth.abi.encodeFunctionCall({
-      name: 'setMaxProposalTime',
+    const setMaxSecondsForExecutionData = web3.eth.abi.encodeFunctionCall({
+      name: 'setMaxSecondsForExecution',
       type: 'function',
       inputs: [{
         type: 'uint256',
-        name: '_maxProposalTime'
+        name: '_maxSecondsForExecution'
       }]
     }, [86400-1]);
     
     expectRevert(masterWalletScheme.proposeCalls(
-      [masterWalletScheme.address], [setMaxProposalTimeData], [1], constants.TEST_TITLE, constants.SOME_HASH
+      [masterWalletScheme.address], [setMaxSecondsForExecutionData], [1], constants.TEST_TITLE, constants.SOME_HASH
     ), "invalid proposal caller");
     
     const tx = await masterWalletScheme.proposeCalls(
-      [masterWalletScheme.address], [setMaxProposalTimeData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      [masterWalletScheme.address], [setMaxSecondsForExecutionData], [0], constants.TEST_TITLE, constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(votingMachine.contract.vote(
@@ -187,19 +187,19 @@ contract("WalletScheme", function(accounts) {
     
     const organizationProposal = await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionTimeout);
-    assert.equal(organizationProposal.callData[0], setMaxProposalTimeData);
+    assert.equal(organizationProposal.callData[0], setMaxSecondsForExecutionData);
     assert.equal(organizationProposal.to[0], masterWalletScheme.address);
     assert.equal(organizationProposal.value[0], 0);
-    assert.equal(await masterWalletScheme.maxProposalTime(), executionTimeout);
+    assert.equal(await masterWalletScheme.maxSecondsForExecution(), executionTimeout);
   });
   
   it("MasterWalletScheme - proposal with data or value to wallet scheme address fail", async function() {
-    const setMaxProposalTimeData = web3.eth.abi.encodeFunctionCall({
-      name: 'setMaxProposalTime',
+    const setMaxSecondsForExecutionData = web3.eth.abi.encodeFunctionCall({
+      name: 'setMaxSecondsForExecution',
       type: 'function',
       inputs: [{
         type: 'uint256',
-        name: '_maxProposalTime'
+        name: '_maxSecondsForExecution'
       }]
     }, [executionTimeout+666])
     
@@ -747,7 +747,7 @@ contract("WalletScheme", function(accounts) {
         permissionRegistry.address,
         "Master Wallet",
         86400-1
-      ),"_maxProposalTime cant be less than 86400 seconds"
+      ),"_maxSecondsForExecution cant be less than 86400 seconds"
     );
     await expectRevert(unitializedWalletScheme.initialize(
         constants.NULL_ADDRESS,
