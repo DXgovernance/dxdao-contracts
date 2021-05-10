@@ -46,14 +46,19 @@ async function main() {
   var dxReputation = await DxReputation.new();
   console.log("DX Reputation deployed to:", dxReputation.address);
 
-  var addressesMints = [], amountMints = [];  
-  while (founders.length > 0){
-    addressesMints.push(founders.splice(0, 100));
-    amountMints.push(initialRep.splice(0, 100));
-  }
-  for (var i = 0; i < addressesMints.length; i++){
-    console.log('Doing mint '+i+' of '+(addressesMints.length-1)+' of initial REP minting...')
-    await dxReputation.mintMultiple(addressesMints[i], amountMints[i], { gas: 9000000 });
+  var addressesMints = [], amountMints = []; 
+  if (hre.network.name == "arbitrum") {
+    console.log('Doing mint of '+(founders.length)+' initial REP holders...')
+    await dxReputation.mintMultiple(founders, initialRep);
+  } else {
+    while (founders.length > 0){
+      addressesMints.push(founders.splice(0, 100));
+      amountMints.push(initialRep.splice(0, 100));
+    }
+    for (var i = 0; i < addressesMints.length; i++){
+      console.log('Doing mint '+i+' of '+(addressesMints.length-1)+' of initial REP minting...')
+      await dxReputation.mintMultiple(addressesMints[i], amountMints[i]);
+    }
   }
   
   // Deploy DXtoken
