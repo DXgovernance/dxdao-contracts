@@ -22,6 +22,7 @@ contract("WalletScheme", function(accounts) {
   votingMachine,
   testToken;
   
+  const executionTimeout = 172800 + 86400; // _queuedVotePeriodLimit + _boostedVotePeriodLimit
   function decodeGenericCallError(genericCallDataReturn) {
     assert.equal(genericCallDataReturn.substring(0, 10), web3.eth.abi.encodeFunctionSignature("Error(string)"));
     const errorMsgBytesLength = web3.utils.hexToNumber("0x" + genericCallDataReturn.substring(74, 138)) * 2;
@@ -47,7 +48,7 @@ contract("WalletScheme", function(accounts) {
       daoCreator,
       [accounts[0], accounts[1], accounts[2]],
       [1000, 1000, 1000],
-      [20, 10, 70]
+      [20000, 10000, 70000]
     );
     votingMachine = await helpers.setupGenesisProtocol(
       accounts, standardTokenMock.address, 'dxd'
@@ -63,7 +64,7 @@ contract("WalletScheme", function(accounts) {
       org.controller.address,
       permissionRegistry.address,
       "Master Wallet",
-      86400
+      executionTimeout
     );
     
     quickWalletScheme = await WalletScheme.new();
@@ -74,7 +75,7 @@ contract("WalletScheme", function(accounts) {
       constants.NULL_ADDRESS,
       permissionRegistry.address,
       "Quick Wallet",
-      86400
+      executionTimeout
     );
     
     await permissionRegistry.setAdminPermission(
@@ -120,12 +121,9 @@ contract("WalletScheme", function(accounts) {
   
   it("MasterWalletScheme - proposal with data - negative decision - proposal rejected", async function() {
     const callData = helpers.testCallFrom(org.avatar.address);
-    const genericCallData = helpers.encodeGenericCallData(
-      org.avatar.address, actionMock.address, callData, 0
-    );
     
     let tx = await masterWalletScheme.proposeCalls(
-      [org.controller.address], [genericCallData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      [actionMock.address], [callData], [0], constants.TEST_TITLE, constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     tx = await votingMachine.contract.vote(
@@ -138,19 +136,16 @@ contract("WalletScheme", function(accounts) {
     assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.rejected);
     assert.equal(organizationProposal.descriptionHash, constants.SOME_HASH);
     assert.equal(organizationProposal.title, constants.TEST_TITLE);
-    assert.equal(organizationProposal.callData[0], genericCallData);
-    assert.equal(organizationProposal.to[0], org.controller.address);
+    assert.equal(organizationProposal.callData[0], callData);
+    assert.equal(organizationProposal.to[0], actionMock.address);
     assert.equal(organizationProposal.value[0], 0);
   });
 
   it("MasterWalletScheme - proposal with data - positive decision - proposal executed", async function() {
     const callData = helpers.testCallFrom(org.avatar.address);
-    const genericCallData = helpers.encodeGenericCallData(
-      org.avatar.address, actionMock.address, callData, 0
-    );
     
     const tx = await masterWalletScheme.proposeCalls(
-      [org.controller.address], [genericCallData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      [actionMock.address], [callData], [0], constants.TEST_TITLE, constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await votingMachine.contract.vote(
@@ -159,8 +154,8 @@ contract("WalletScheme", function(accounts) {
     
     const organizationProposal = await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.executionSuccedd);
-    assert.equal(organizationProposal.callData[0], genericCallData);
-    assert.equal(organizationProposal.to[0], org.controller.address);
+    assert.equal(organizationProposal.callData[0], callData);
+    assert.equal(organizationProposal.to[0], actionMock.address);
     assert.equal(organizationProposal.value[0], 0);
   });
   
@@ -176,12 +171,9 @@ contract("WalletScheme", function(accounts) {
     );
     
     const callData = helpers.testCallFrom(org.avatar.address);
-    const genericCallData = helpers.encodeGenericCallData(
-      org.avatar.address, actionMock.address, callData, 0
-    );
     
     const tx = await masterWalletScheme.proposeCalls(
-      [org.controller.address], [genericCallData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      [actionMock.address], [callData], [0], constants.TEST_TITLE, constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(
@@ -194,7 +186,85 @@ contract("WalletScheme", function(accounts) {
       constants.WalletSchemeProposalState.submitted
     );
     
-    await time.increase(86400);
+    await time.increase(executionTimeout);
+    
+    await votingMachine.contract.vote(
+      proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.executionTimeout
+    );
+  });
+  
+  it("MasterWalletScheme - positive decision - proposal executed - not allowed value by permission registry", async function() {
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      constants.ANY_ADDRESS, 
+      constants.ANY_FUNC_SIGNATURE,
+      100, 
+      true
+    );
+    
+    const callData = helpers.testCallFrom(org.avatar.address);
+    
+    const tx = await masterWalletScheme.proposeCalls(
+      [actionMock.address], [callData], [101], constants.TEST_TITLE, constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    await expectRevert(
+      votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "value call not allowed"
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
+    await time.increase(executionTimeout+1);
+    
+    await votingMachine.contract.vote(
+      proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.executionTimeout
+    );
+  });
+  
+  it("MasterWalletScheme - positive decision - proposal executed - not allowed value by permission registry in multiple calls", async function() {
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      constants.ANY_ADDRESS, 
+      constants.ANY_FUNC_SIGNATURE,
+      100, 
+      true
+    );
+    
+    const callData = helpers.testCallFrom(org.avatar.address);
+    
+    const tx = await masterWalletScheme.proposeCalls(
+      [actionMock.address, actionMock.address], [callData, callData], [50, 51], constants.TEST_TITLE, constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    await expectRevert(
+      votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "value call not allowed"
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
+    await time.increase(executionTimeout+1);
     
     await votingMachine.contract.vote(
       proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
@@ -350,7 +420,7 @@ contract("WalletScheme", function(accounts) {
       constants.WalletSchemeProposalState.submitted
     );
     
-    await time.increase(86400);
+    await time.increase(executionTimeout);
     
     tx = await votingMachine.contract.vote(
       proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
@@ -476,13 +546,7 @@ contract("WalletScheme", function(accounts) {
     });
     await wallet.transferOwnership(org.avatar.address);
     
-    const genericCallDataTransfer = helpers.encodeGenericCallData(
-      org.avatar.address, wallet.address, "0x0", constants.TEST_VALUE
-    );
     const payCallData = await new web3.eth.Contract(wallet.abi).methods.pay(accounts[1]).encodeABI();
-    const genericCallDataPay = helpers.encodeGenericCallData(
-      org.avatar.address, wallet.address, payCallData, 0
-    );
     const callDataMintRep = await org.controller.contract.methods.mintReputation(
       constants.TEST_VALUE,
       accounts[4],
@@ -533,7 +597,7 @@ contract("WalletScheme", function(accounts) {
         constants.NULL_ADDRESS,
         permissionRegistry.address,
         "Master Wallet",
-        86400
+        executionTimeout
       );
       assert(false, "cannot init twice");
     } catch(error) {
@@ -634,7 +698,7 @@ contract("WalletScheme", function(accounts) {
       constants.WalletSchemeProposalState.submitted
     );
     
-    await time.increase(86400);
+    await time.increase(executionTimeout);
     
     tx = await votingMachine.contract.vote(
       proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
@@ -750,7 +814,7 @@ contract("WalletScheme", function(accounts) {
     assert.equal(removedScheme.paramsHash, votingMachine.params);
     assert.equal(removedScheme.permissions, "0x0000001f");
     
-    await time.increase(86400);
+    await time.increase(executionTimeout);
     await votingMachine.contract.vote(
       proposalIdAddScheme, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
     );
@@ -999,6 +1063,52 @@ contract("WalletScheme", function(accounts) {
       assert.equal(organizationProposal.callData[0], transferData);
       assert.equal(organizationProposal.to[0], testToken.address);
       assert.equal(organizationProposal.value[0], 0);
+    });
+    
+    it("MasterWalletScheme - positive decision - proposal executed - not allowed ERC20 value by permission registry in multiple calls", async function() {
+      
+      await permissionRegistry.setAdminPermission(
+        testToken.address, 
+        org.avatar.address, 
+        constants.ANY_ADDRESS, 
+        constants.ANY_FUNC_SIGNATURE,
+        101, 
+        true
+      );
+      
+      const callData = helpers.testCallFrom(org.avatar.address);
+      
+      const transferData = await new web3.eth.Contract(testToken.abi)
+        .methods.transfer(actionMock.address, "51").encodeABI();
+
+      const tx = await masterWalletScheme.proposeCalls(
+        [testToken.address, testToken.address],
+        [transferData, transferData],
+        [0, 0],
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      );
+      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      await expectRevert(
+        votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+        "value call not allowed"
+      );
+      
+      assert.equal(
+        (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+        constants.WalletSchemeProposalState.submitted
+      );
+      
+      await time.increase(executionTimeout);
+      
+      await votingMachine.contract.vote(
+        proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+      );
+      
+      assert.equal(
+        (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+        constants.WalletSchemeProposalState.executionTimeout
+      );
     });
     
     it("QuickWalletScheme - positive decision - proposal executed - ERC20 transfer allowed by permission registry from scheme", async function() {

@@ -41,6 +41,10 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     string public schemeName;
     uint256 public maxProposalTime;
     
+    // This mapping is used as "memory storage" in executeProposal function, to keep track of the total value
+    // transfered of by asset and address, it saves both aseet and address as keccak256(asset, recipient)
+    mapping(bytes32 => uint256) totalValueTransferedInCall;
+    
     bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
     bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
     address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
@@ -108,66 +112,121 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      * @return bool success
      */
     function executeProposal(bytes32 _proposalId, int256 _decision)
-      external onlyVotingMachine(_proposalId) returns(bool)
+        external onlyVotingMachine(_proposalId) returns(bool)
     {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.state == ProposalState.Submitted, "must be a submitted proposal");
-
+        
+        // If the amount of time passed since submission plus max proposal time is higher than block timestamp
+        // the proposal timeout execution is reached and proposal cant be executed from now on
+        if (proposal.submittedTime.add(maxProposalTime) < now) {
+            proposal.state = ProposalState.ExecutionTimeout;
+            emit ProposalExecutionTimeout(_proposalId);
+        
         // If decision is 1, it means the proposal was approved by the voting machine
-        if (_decision == 1) {
+        } else if (_decision == 1) {
           
-            // If the amount of time passed since submission plus max proposal time is higher than block timestamp
-            // the proposal timeout execution is reached and proposal cant be executed from now on
-            if (proposal.submittedTime.add(maxProposalTime) < now) {
-              proposal.state = ProposalState.ExecutionTimeout;
-              emit ProposalExecutionTimeout(_proposalId);
-            } else {
-          
-              // If one call fails the transaction will revert
-              proposal.state = ProposalState.ExecutionSucceded;
-              bytes[] memory callsDataResult = new bytes[](proposal.to.length);
-              bool[] memory callsSucessResult = new bool[](proposal.to.length);
+            // Get the total amount transfered by asset and recipients
+            // Keep track of the permissionsIds that are loaded into storage to remove them later
+            bytes32 permissionHash;
+            bytes32[] memory permissionHashUsed = new bytes32[](proposal.to.length);
+            for (uint256 i = 0; i < proposal.to.length; i++) {
+                if (ERC20_TRANSFER_SIGNATURE == getFuncSignature(proposal.callData[i])) {
+                    (address _to, uint256 _value) = erc20TransferDecode(proposal.callData[i]);
+                    permissionHash = keccak256(abi.encodePacked(proposal.to[i], _to));
+                    totalValueTransferedInCall[permissionHash] =
+                        totalValueTransferedInCall[permissionHash].add(_value);
+                } else {
+                    permissionHash = keccak256(abi.encodePacked(address(0), proposal.to[i]));
+                    totalValueTransferedInCall[permissionHash] =
+                        totalValueTransferedInCall[permissionHash].add(proposal.value[i]);
+                }
+                permissionHashUsed[i] = permissionHash;
+            }
+        
+            // If one call fails the transaction will revert
+            proposal.state = ProposalState.ExecutionSucceded;
+            bytes[] memory callsDataResult = new bytes[](proposal.to.length);
+            bool[] memory callsSucessResult = new bool[](proposal.to.length);
+            
+            for (uint256 i = 0; i < proposal.to.length; i++) {
               
-              for (uint256 i = 0; i < proposal.to.length; i++) {
+                // Gets the time form which the call is allowed to be executed and the value to be transfered
+                uint256 _fromTime;
+                uint256 _valueAllowed;
+                bytes4 callSignature = getFuncSignature(proposal.callData[i]);
                 
-                  require(
-                    isCallAllowed(proposal.to[i], proposal.callData[i], proposal.value[i]),
-                    "call not allowed"
-                  );
-                      
-                  // If controller address is set the code needs to be encoded to generiCall function
-                  if (controllerAddress != address(0) && proposal.to[i] != controllerAddress) {
+                // Checks that thte value tha is transfered (in ETH or ERC20) is lower or equal to the one that is
+                // allowed for the function that wants to be executed
+                if (ERC20_TRANSFER_SIGNATURE == callSignature) {
+                    (address _to, uint256 _) = erc20TransferDecode(proposal.callData[i]);
+                    (_valueAllowed, _fromTime) = permissionRegistry
+                        .getPermission(
+                            proposal.to[i],
+                            controllerAddress != address(0) ? address(avatar) : address(this),
+                            _to,
+                            callSignature
+                        );
+                    require(
+                        _valueAllowed >= totalValueTransferedInCall[keccak256(abi.encodePacked(proposal.to[i], _to))],
+                        "erc20 value call not allowed"
+                    );
+                } else {
+                    (_valueAllowed, _fromTime) = permissionRegistry
+                        .getPermission(
+                            address(0),
+                            controllerAddress != address(0) ? address(avatar) : address(this),
+                            proposal.to[i],
+                            callSignature
+                        );
+                    require(
+                        _valueAllowed >= totalValueTransferedInCall[keccak256(abi.encodePacked(address(0), proposal.to[i]))],
+                        "value call not allowed"
+                    );
+                }
+                
+                // Check that the time from which the call can be executed means is higher than zero (which means that
+                // is allowed) and that is lower than the actual timestamp
+                require(_fromTime > 0 && now > _fromTime, "call not allowed");
+                
+                // If controller address is set the code needs to be encoded to generiCall function
+                if (controllerAddress != address(0) && proposal.to[i] != controllerAddress) {
                     bytes memory genericCallData = abi.encodeWithSignature(
-                      "genericCall(address,bytes,address,uint256)",
-                      proposal.to[i], proposal.callData[i], avatar, proposal.value[i]
+                        "genericCall(address,bytes,address,uint256)",
+                        proposal.to[i], proposal.callData[i], avatar, proposal.value[i]
                     );
                     (callsSucessResult[i], callsDataResult[i]) =
-                      address(controllerAddress).call.value(0)(genericCallData);
+                        address(controllerAddress).call.value(0)(genericCallData);
                   
                     // The success is form the generic call, but the result data is from the call to the controller
                     (bool genericCallSucessResult,) = 
-                      abi.decode(callsDataResult[i], (bool, bytes));
+                        abi.decode(callsDataResult[i], (bool, bytes));
                     callsSucessResult[i] = genericCallSucessResult;
-                    
-                  // If controller address is not set the call is made to
-                  } else {
-                    (callsSucessResult[i], callsDataResult[i]) =
-                      address(proposal.to[i]).call.value(proposal.value[i])(proposal.callData[i]);
-                  }
                   
-                  require(callsSucessResult[i], "call execution failed");
-              
-              }
-              emit ProposalExecuted(_proposalId, callsSucessResult, callsDataResult);
+                // If controller address is not set the call is made to
+                } else {
+                    (callsSucessResult[i], callsDataResult[i]) =
+                        address(proposal.to[i]).call.value(proposal.value[i])(proposal.callData[i]);
+                }
+                
+                // If the call reverted the entire execution will revert
+                require(callsSucessResult[i], "call execution failed");
             
             }
+            
+            // Delete all totalValueTransferedInCall values saved in storage
+            for (uint256 i = 0; i < permissionHashUsed.length; i++) {
+                delete totalValueTransferedInCall[permissionHashUsed[i]];
+            }
+            
+            emit ProposalExecuted(_proposalId, callsSucessResult, callsDataResult);
             
         // If decision is 2, it means the proposal was rejected by the voting machine
         } else {
             proposal.state = ProposalState.Rejected;
             emit ProposalRejected(_proposalId);
         }
-
+        
         emit ProposalExecutedByVotingMachine(_proposalId, _decision);
         return true;
     }
@@ -256,41 +315,6 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         uint256 submittedTime
     ) {
       return getOrganizationProposal(proposalsList[proposalIndex]);
-    }
-    
-    /**
-    * @dev Get if the call is allowed ot not and with how much value
-    * @param to the receiver of the call
-    * @param data the data of the call
-    * @param value the value to be sent
-    */
-    function isCallAllowed(address to, bytes memory data, uint256 value) public view returns (bool) {
-      uint256 fromTime;
-      uint256 valueAllowed;
-      address asset;
-
-      bytes4 callSignature = getFuncSignature(data);
-      
-      if (ERC20_TRANSFER_SIGNATURE == callSignature) {
-        asset = to;
-        (to, value) = erc20TransferDecode(data);
-        (valueAllowed, fromTime) = permissionRegistry
-          .getPermission(
-            asset,
-            controllerAddress != address(0) ? address(avatar) : address(this),
-            to,
-            callSignature
-          );
-      } else {
-        (valueAllowed, fromTime) = permissionRegistry
-          .getPermission(
-            asset,
-            controllerAddress != address(0) ? address(avatar) : address(this),
-            to,
-            callSignature
-          );
-      }
-      return fromTime > 0 && now > fromTime && valueAllowed >= value;
     }
     
     /**
