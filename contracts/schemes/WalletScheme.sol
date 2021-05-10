@@ -39,13 +39,15 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     address public controllerAddress;
     PermissionRegistry public permissionRegistry;
     string public schemeName;
-    uint256 public maxProposalTime;
+    uint256 public maxSecondsForExecution;
     
     // This mapping is used as "memory storage" in executeProposal function, to keep track of the total value
     // transfered of by asset and address, it saves both aseet and address as keccak256(asset, recipient)
     mapping(bytes32 => uint256) totalValueTransferedInCall;
     
     bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
+    bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
+        bytes4(keccak256("setMaxSecondsForExecution(uint256)"));
     bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
     address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
 
@@ -64,7 +66,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      * @param _controllerAddress The address to receive the calls, if address 0x0 is used it wont make generic calls
      * to the avatar
      * @param _permissionRegistry The address of the permission registry contract
-     * @param _maxProposalTime The maximum amount of time in seconds a proposal without executed since submitted time
+     * @param _maxSecondsForExecution The maximum amount of time in seconds a proposal without executed since submitted time
      */
     function initialize(
         Avatar _avatar,
@@ -73,18 +75,18 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         address _controllerAddress,
         address _permissionRegistry,
         string calldata _schemeName,
-        uint256 _maxProposalTime
+        uint256 _maxSecondsForExecution
     ) external {
         require(avatar == Avatar(0), "cannot init twice");
         require(_avatar != Avatar(0), "avatar cannot be zero");
-        require(_maxProposalTime >= 86400, "_maxProposalTime cant be less than 86400 seconds");
+        require(_maxSecondsForExecution >= 86400, "_maxSecondsForExecution cant be less than 86400 seconds");
         avatar = _avatar;
         votingMachine = _votingMachine;
         voteParams = _voteParams;
         controllerAddress = _controllerAddress;
         permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
-        maxProposalTime = _maxProposalTime;
+        maxSecondsForExecution = _maxSecondsForExecution;
     }
 
     /**
@@ -95,14 +97,14 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     }
     
     /**
-     * @dev Set the max proposal time from the avatar address
-     * @param _maxProposalTime New max proposal time in seconds to be used
+     * @dev Set the max amount of seconds that a proposal has to be executed, only callable from the avatar address
+     * @param _maxSecondsForExecution New max proposal time in seconds to be used
      * @return bool success
      */
-    function setMaxProposalTime(uint256 _maxProposalTime) external {
-        require(msg.sender == address(avatar), "setMaxProposalTime is callable only form the avatar");
-        require(_maxProposalTime >= 86400, "_maxProposalTime cant be less than 86400 seconds");
-        maxProposalTime = _maxProposalTime;
+    function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external {
+        require(msg.sender == address(avatar), "setMaxSecondsForExecution is callable only form the avatar");
+        require(_maxSecondsForExecution >= 86400, "_maxSecondsForExecution cant be less than 86400 seconds");
+        maxSecondsForExecution = _maxSecondsForExecution;
     }
 
     /**
@@ -119,7 +121,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         
         // If the amount of time passed since submission plus max proposal time is lower than block timestamp
         // the proposal timeout execution is reached and proposal cant be executed from now on
-        if (proposal.submittedTime.add(maxProposalTime) < now) {
+        if (proposal.submittedTime.add(maxSecondsForExecution) < now) {
             proposal.state = ProposalState.ExecutionTimeout;
             emit ProposalExecutionTimeout(_proposalId);
         
@@ -250,7 +252,11 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         // Check the proposal calls
         for(uint i = 0; i < _to.length; i ++) {
             bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
-            require(_to[i] != address(this) || (callDataFuncSignature == bytes4(0xa169093b) && _value[i] == 0), 'invalid proposal caller');
+            require(
+                _to[i] != address(this)
+                || (callDataFuncSignature == SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE && _value[i] == 0)
+                , 'invalid proposal caller'
+            );
             require(_to[i] != ANY_ADDRESS, "cant propose calls to 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa address");
             require(callDataFuncSignature != ANY_SIGNATURE, "cant propose calls with 0xaaaaaaaa signature");
             require(callDataFuncSignature != ERC20_TRANSFER_SIGNATURE || _value[i] == 0, "cant propose ERC20 trasnfers with value");
