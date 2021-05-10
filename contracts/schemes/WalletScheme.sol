@@ -117,7 +117,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.state == ProposalState.Submitted, "must be a submitted proposal");
         
-        // If the amount of time passed since submission plus max proposal time is higher than block timestamp
+        // If the amount of time passed since submission plus max proposal time is lower than block timestamp
         // the proposal timeout execution is reached and proposal cant be executed from now on
         if (proposal.submittedTime.add(maxProposalTime) < now) {
             proposal.state = ProposalState.ExecutionTimeout;
