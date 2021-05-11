@@ -266,11 +266,9 @@ contract('ContributionReward', (accounts) => {
        var proposalId = await helpers.getValueFromLogs(tx, '_proposalId',1);
        await testSetup.contributionRewardParams.votingMachine.contract.vote(proposalId,1,0,constants.NULL_ADDRESS,{from:accounts[2]});
        await time.increase(periodLength+1);
-       try {
-         await testSetup.contributionReward.redeem(proposalId, testSetup.org.avatar.address,[false,false,true,false]);
-       } catch (e) {
-         assert.equal(e, "Error: Transaction reverted without a reason");
-       }
+       await expectRevert.unspecified(
+         testSetup.contributionReward.redeem(proposalId, testSetup.org.avatar.address,[false,false,true,false])
+       )
        assert.equal(await web3.eth.getBalance(gnosisProxy.address), 0);
      });
      
