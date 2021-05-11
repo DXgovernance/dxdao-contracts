@@ -252,14 +252,20 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         // Check the proposal calls
         for(uint i = 0; i < _to.length; i ++) {
             bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
+            
+            // Check that no proposals are submitted to wildcard address and function signature
+            require(_to[i] != ANY_ADDRESS, "cant propose calls to 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa address");
+            require(callDataFuncSignature != ANY_SIGNATURE, "cant propose calls with 0xaaaaaaaa signature");
+            
+            // Only allow proposing calls to this address to call setMaxSecondsForExecution function
             require(
                 _to[i] != address(this)
                 || (callDataFuncSignature == SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE && _value[i] == 0)
                 , 'invalid proposal caller'
             );
-            require(_to[i] != ANY_ADDRESS, "cant propose calls to 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa address");
-            require(callDataFuncSignature != ANY_SIGNATURE, "cant propose calls with 0xaaaaaaaa signature");
-            require(callDataFuncSignature != ERC20_TRANSFER_SIGNATURE || _value[i] == 0, "cant propose ERC20 trasnfers with value");
+            
+            // This will fail only when and ERC20 transfer with ETH value is proposed
+            require(callDataFuncSignature != ERC20_TRANSFER_SIGNATURE || _value[i] == 0, "cant propose ERC20 transfers with value");
         }
         require(_to.length == _callData.length, "invalid _callData length");
         require(_to.length == _value.length, "invalid _value length");
