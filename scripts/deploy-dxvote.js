@@ -15,7 +15,9 @@ for (var address in repHolders.addresses) {
   initialTokens.push(0);
 }
 
-const DXD_TOKEN = "0xa700BdAba48A3D96219247111B0b708Dc0b51033";
+const DXD_TOKEN = {
+  rinkeby: "0xa700BdAba48A3D96219247111B0b708Dc0b51033"
+};
 const MULTICALL_ADDRESS = "0xa1b0a36c7aE04A84EBF493e03dF0aC295eE90747";
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -31,6 +33,7 @@ const DxController = artifacts.require("DxController");
 const WalletScheme = artifacts.require("WalletScheme");
 const PermissionRegistry = artifacts.require("PermissionRegistry");
 const DXDVotingMachine = artifacts.require("DXDVotingMachine");
+const ERC20Mock = artifacts.require("ERC20Mock");
 
 async function main() {
 
@@ -78,9 +81,20 @@ async function main() {
   await dxAvatar.transferOwnership(dxController.address);
   await dxReputation.transferOwnership(dxController.address);
   
+  let votingMachineTokenAddress;
+  if (!DXD_TOKEN[network]) {
+      console.log("Creating new voting machine token...");
+      const newVotingMachineToken = await ERC20Mock.new(accounts[0], web3.utils.toWei('10000'))
+      votingMachineTokenAddress = newVotingMachineToken.address;
+      console.log("Voting machine token deployed to:", votingMachineTokenAddress);
+  } else {
+    votingMachineTokenAddress = DXD_TOKEN[network];
+    console.log("Using pre configured voting machine token:", votingMachineTokenAddress);
+  }
+  
   // Deploy DXDVotingMachine
   console.log('Deploying DXDVotingMachine...');
-  var dxdVotingMachine = await DXDVotingMachine.new(DXD_TOKEN);
+  var dxdVotingMachine = await DXDVotingMachine.new(votingMachineTokenAddress);
   console.log("DXDVotingMachine deployed to:", dxdVotingMachine.address);
   
   async function encodeParameters(parameters) {

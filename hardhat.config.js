@@ -11,8 +11,6 @@ require('@openzeppelin/hardhat-upgrades');
 require("@nomiclabs/hardhat-etherscan");
 require('hardhat-dependency-compiler');
 
-
-
 const INFURA_PROJECT_ID = process.env.KEY_INFURA_API_KEY;
 const MNEMONIC = process.env.KEY_MNEMONIC;
 const ETHERSCAN_API_KEY = process.env.KEY_ETHERSCAN;
@@ -133,9 +131,9 @@ module.exports = {
   },
   etherscan: { apiKey: ETHERSCAN_API_KEY },
 
-dependencyCompiler: {
-      paths: [
-              '@realitio/realitio-contracts/truffle/contracts/Realitio.sol',
-        ],
-}
+  dependencyCompiler: {
+    paths: [
+      '@realitio/realitio-contracts/truffle/contracts/Realitio.sol',
+    ],
+  }
 };
