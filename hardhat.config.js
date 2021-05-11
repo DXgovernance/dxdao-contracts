@@ -113,15 +113,6 @@ module.exports = {
       gasLimit: 9000000,
       gasPrice: 10,
       timeout: 60000
-    },
-    coverage: {
-      url: 'http://localhost:8555',
-      accounts: { 
-        mnemonic: MNEMONIC, 
-        accountsBalance: "10000000000000000000000000000000"
-      },
-      gasPrice: 1,
-      timeout: 60000
     }
   },
   etherscan: { apiKey: ETHERSCAN_API_KEY },
