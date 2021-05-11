@@ -1001,6 +1001,81 @@ contract("WalletScheme", function(accounts) {
       assert.equal(organizationProposal.value[0], 0);
     });
     
+    it("MasterWalletScheme - positive decision - proposal executed - not allowed ERC20 value by permission registry in multiple calls", async function() {
+      
+      await permissionRegistry.setAdminPermission(
+        testToken.address, 
+        org.avatar.address, 
+        constants.ANY_ADDRESS, 
+        constants.ANY_FUNC_SIGNATURE,
+        101, 
+        true
+      );
+      
+      const callData = helpers.testCallFrom(org.avatar.address);
+      
+      const transferData = await new web3.eth.Contract(testToken.abi)
+        .methods.transfer(actionMock.address, "51").encodeABI();
+
+      const tx = await masterWalletScheme.proposeCalls(
+        [testToken.address, testToken.address],
+        [transferData, transferData],
+        [0, 0],
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      );
+      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      await expectRevert(
+        votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+        "value call not allowed"
+      );
+      
+      assert.equal(
+        (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+        constants.WalletSchemeProposalState.submitted
+      );
+      
+      await time.increase(executionTimeout);
+      
+      await votingMachine.contract.vote(
+        proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+      );
+      
+      assert.equal(
+        (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+        constants.WalletSchemeProposalState.executionTimeout
+      );
+    });
+    
+    it("MasterWalletScheme - positive decision - proposal executed - not allowed ERC20 transfer with value", async function() {
+      
+      await permissionRegistry.setAdminPermission(
+        testToken.address, 
+        org.avatar.address, 
+        constants.ANY_ADDRESS, 
+        constants.ANY_FUNC_SIGNATURE,
+        101, 
+        true
+      );
+      
+      const callData = helpers.testCallFrom(org.avatar.address);
+      
+      const transferData = await new web3.eth.Contract(testToken.abi)
+        .methods.transfer(actionMock.address, "100").encodeABI();
+
+      await expectRevert(
+        masterWalletScheme.proposeCalls(
+          [testToken.address],
+          [transferData],
+          [1],
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "cant propose ERC20 transfers with value"
+      );
+    
+    });
+    
     it("QuickWalletScheme - positive decision - proposal executed - ERC20 transfer allowed by permission registry from scheme", async function() {
       await testToken.transfer(quickWalletScheme.address, 200, {from: accounts[1]});
       
