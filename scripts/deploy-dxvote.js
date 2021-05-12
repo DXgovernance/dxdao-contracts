@@ -7,6 +7,10 @@ const repHolders = require('../.repHolders.json');
 const wrapProvider = require('arb-ethers-web3-bridge').wrapProvider;
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // Get initial REP holders
 let founders = [], initialRep = [], initialTokens = [];
 for (let address in repHolders.addresses) {
@@ -84,8 +88,10 @@ async function main() {
       for (let i = 0; i < addressesMints.length; i++){
         console.log('Doing mint '+i+' of '+(addressesMints.length-1)+' of initial REP minting...')
         await dxReputation.mintMultiple(addressesMints[i], amountMints[i]);
+        await sleep(30000);
       }
     }
+    contractsFile[networkName].fromBlock = fromBlock;
     contractsFile[networkName].reputation = dxReputation.address;
     fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   }
