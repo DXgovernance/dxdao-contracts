@@ -30,6 +30,36 @@ const MAX_UINT_256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
+const MASTER_WALLET_SCHEME_PARAMS = {
+  queuedVoteRequiredPercentage: 50, 
+  queuedVotePeriodLimit: moment.duration(48, 'hours').asSeconds(), 
+  boostedVotePeriodLimit: moment.duration(18, 'hours').asSeconds(), 
+  preBoostedVotePeriodLimit: moment.duration(6, 'hours').asSeconds(), 
+  thresholdConst: 1500, 
+  quietEndingPeriod: moment.duration(1, 'hours').asSeconds(), 
+  proposingRepReward: 0, 
+  votersReputationLossRatio: 0, 
+  minimumDaoBounty: web3.utils.toWei("0.1"),
+  daoBountyConst: 2, 
+  activationTime: moment().unix(),
+  voteOnBehalf: NULL_ADDRESS
+}
+
+const QUICK_WALLET_SCHEME_PARAMS = {
+  queuedVoteRequiredPercentage: 50, 
+  queuedVotePeriodLimit: moment.duration(24, 'hours').asSeconds(), 
+  boostedVotePeriodLimit: moment.duration(9, 'hours').asSeconds(), 
+  preBoostedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(), 
+  thresholdConst: 1100, 
+  quietEndingPeriod: moment.duration(0.5, 'hours').asSeconds(), 
+  proposingRepReward: 0, 
+  votersReputationLossRatio: 0, 
+  minimumDaoBounty: web3.utils.toWei("0.05"),
+  daoBountyConst: 2, 
+  activationTime: moment().unix(),
+  voteOnBehalf: NULL_ADDRESS
+};
+
 // Import Contracts
 const DxToken = artifacts.require("DxToken");
 const DxAvatar = artifacts.require("DxAvatar");
@@ -166,6 +196,7 @@ async function main() {
     dxdVotingMachine = await DXDVotingMachine.new(votingMachineTokenAddress);
     console.log("DXDVotingMachine deployed to:", dxdVotingMachine.address);
     contractsFile[networkName].votingMachine = dxdVotingMachine.address;
+    contractsFile[networkName].votingMachineToken = votingMachineTokenAddress;
     if (networkName != "hardhat")
       fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   
@@ -232,23 +263,9 @@ async function main() {
     console.log('Deploying MasterWalletScheme...');
     masterWalletScheme = await WalletScheme.new();
     console.log("Master WalletScheme deployed to:", masterWalletScheme.address);
-  
-    const masterWalletSchemeParams = {
-      queuedVoteRequiredPercentage: 50, 
-      queuedVotePeriodLimit: moment.duration(2, 'hours').asSeconds(), 
-      boostedVotePeriodLimit: moment.duration(30, 'minutes').asSeconds(), 
-      preBoostedVotePeriodLimit: moment.duration(30, 'minutes').asSeconds(), 
-      thresholdConst: 1500, 
-      quietEndingPeriod: moment.duration(20, 'minutes').asSeconds(), 
-      proposingRepReward: 0, 
-      votersReputationLossRatio: 0, 
-      minimumDaoBounty: web3.utils.toWei("0.1"),
-      daoBountyConst: 2, 
-      activationTime: moment().unix(),
-      voteOnBehalf: NULL_ADDRESS
-    }
-    let masterWalletSchemeParamsHash = await encodeParameters(masterWalletSchemeParams);
-    await setDXDVotingMachineParameters(masterWalletSchemeParams)
+    
+    let masterWalletSchemeParamsHash = await encodeParameters(MASTER_WALLET_SCHEME_PARAMS);
+    await setDXDVotingMachineParameters(MASTER_WALLET_SCHEME_PARAMS)
     await masterWalletScheme.initialize(
       dxAvatar.address,
       dxdVotingMachine.address,
@@ -297,22 +314,8 @@ async function main() {
     quickWalletScheme = await WalletScheme.new();
     console.log("Quick WalletScheme deployed to:", quickWalletScheme.address);
     
-    const quickWalletSchemeParams = {
-      queuedVoteRequiredPercentage: 50, 
-      queuedVotePeriodLimit: moment.duration(1, 'hours').asSeconds(), 
-      boostedVotePeriodLimit: moment.duration(20, 'minutes').asSeconds(), 
-      preBoostedVotePeriodLimit: moment.duration(10, 'minutes').asSeconds(), 
-      thresholdConst: 1100, 
-      quietEndingPeriod: moment.duration(10, 'minutes').asSeconds(), 
-      proposingRepReward: 0, 
-      votersReputationLossRatio: 0, 
-      minimumDaoBounty: web3.utils.toWei("0.05"),
-      daoBountyConst: 2, 
-      activationTime: moment().unix(),
-      voteOnBehalf: NULL_ADDRESS
-    };
-    let quickWalletSchemeParamsHash = await encodeParameters(quickWalletSchemeParams);
-    await setDXDVotingMachineParameters(quickWalletSchemeParams)
+    let quickWalletSchemeParamsHash = await encodeParameters(QUICK_WALLET_SCHEME_PARAMS);
+    await setDXDVotingMachineParameters(QUICK_WALLET_SCHEME_PARAMS)
     await quickWalletScheme.initialize(
       dxAvatar.address,
       dxdVotingMachine.address,
