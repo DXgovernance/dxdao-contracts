@@ -43,7 +43,7 @@ async function main() {
   
   const contractsFile = JSON.parse(fs.readFileSync('.contracts.json'));
   const networkName = hre.network.name;
-  if (!contractsFile[networkName]) 
+  if (!contractsFile[networkName] || networkName == 'hardhat') 
     contractsFile[networkName] = { schemes: {} };
     
   if (networkName == "arbitrum") {
@@ -63,7 +63,8 @@ async function main() {
     multicall = await Multicall.new();
     console.log("Multicall deployed to:", multicall.address);
     contractsFile[networkName].multicall = multicall.address;
-    fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    if (networkName != "hardhat")
+      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   }
   
   // Deploy and mint reputation
@@ -93,7 +94,8 @@ async function main() {
     }
     contractsFile[networkName].fromBlock = fromBlock;
     contractsFile[networkName].reputation = dxReputation.address;
-    fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    if (networkName != "hardhat")
+      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   }
     
   // Deploy DXtoken
@@ -106,7 +108,8 @@ async function main() {
     dxToken = await DxToken.new("", "", 0);
     console.log("DXToken (useless token just used for deployment) deployed to:", dxToken.address);
     contractsFile[networkName].token = dxToken.address;
-    fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    if (networkName != "hardhat")
+      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   }
   
   // Deploy DXAvatar
@@ -119,7 +122,8 @@ async function main() {
     dxAvatar = await DxAvatar.new("DXdao", dxToken.address, dxReputation.address);
     console.log("DXdao Avatar deployed to:", dxAvatar.address);
     contractsFile[networkName].avatar = dxAvatar.address;
-    fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    if (networkName != "hardhat")
+      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   }
   
   // Deploy DXcontroller and transfer avatar to controller
@@ -134,7 +138,8 @@ async function main() {
     await dxAvatar.transferOwnership(dxController.address);
     await dxReputation.transferOwnership(dxController.address);
     contractsFile[networkName].controller = dxController.address;
-    fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    if (networkName != "hardhat")
+      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   }
   
   // Deploy DXDVotingMachine
@@ -159,7 +164,8 @@ async function main() {
     dxdVotingMachine = await DXDVotingMachine.new(votingMachineTokenAddress);
     console.log("DXDVotingMachine deployed to:", dxdVotingMachine.address);
     contractsFile[networkName].votingMachine = dxdVotingMachine.address;
-    fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    if (networkName != "hardhat")
+      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   
   }
   
@@ -211,7 +217,8 @@ async function main() {
     );
     console.log("Permission Registry deployed to:", permissionRegistry.address);
     contractsFile[networkName].permissionRegistry = permissionRegistry.address;
-    fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    if (networkName != "hardhat")
+      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   }
   
   // Deploy MasterWalletScheme
@@ -262,7 +269,8 @@ async function main() {
     );
     
     console.log('Registering Master WalletScheme...');
-    fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    if (networkName != "hardhat")
+      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
     contractsFile[networkName].schemes.masterWallet = masterWalletScheme.address;
     await dxController.registerScheme(
       masterWalletScheme.address,
@@ -333,7 +341,8 @@ async function main() {
     
     console.log('Registering Quick WalletScheme...');
     contractsFile[networkName].schemes.quickWallet = quickWalletScheme.address;
-    fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    if (networkName != "hardhat")
+      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
     await dxController.registerScheme(
       quickWalletScheme.address,
       quickWalletSchemeParamsHash,
@@ -355,7 +364,8 @@ async function main() {
     await dxController.unregisterScheme(accounts[0], dxAvatar.address);
   } catch (e) {
     contractsFile[networkName] = {}
-    fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    if (networkName != "hardhat")
+      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   }
 
   console.log('Contracts deployed:', contractsFile);
