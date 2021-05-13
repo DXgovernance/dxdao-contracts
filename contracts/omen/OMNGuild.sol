@@ -330,7 +330,7 @@ contract OMNGuild is ERC20Guild {
         votesForExecution = (_votesForExecution>0?_votesForExecution:votesForExecution);
         voteGas           = (_voteGas>0?_voteGas:voteGas);
         maxGasPrice       = (_maxGasPrice>0?_maxGasPrice:maxGasPrice);
-        maxAmountVotes    =  (_maxAmountVotes>0?_maxAmountVotes:maxAmountVotes);
+        maxAmountVotes    = (_maxAmountVotes>0?_maxAmountVotes:maxAmountVotes);
         
         bytes32 ret = _createProposal(to, data, value, description, contentHash);
 
