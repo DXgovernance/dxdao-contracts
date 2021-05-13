@@ -325,21 +325,21 @@ contract OMNGuild is ERC20Guild {
         _tmp[3]  =  voteGas;
         _tmp[4]  =  maxGasPrice;
         _tmp[5]  =  maxAmountVotes;
-        proposalTime       =                     (_proposalTime>0?_proposalTime:proposalTime);
-        timeForExecution   =                     (_timeForExecution>0?_timeForExecution:timeForExecution);
-        votesForExecution  =                     (_votesForExecution>0?_votesForExecution:votesForExecution);
-        voteGas            =                     (_voteGas>0?_voteGas:voteGas);
-        maxGasPrice        =                     (_maxGasPrice>0?_maxGasPrice:maxGasPrice);
-        maxAmountVotes     =                     (_maxAmountVotes>0?_maxAmountVotes:maxAmountVotes);
+        proposalTime      = (_proposalTime>0?_proposalTime:proposalTime);
+        timeForExecution  = (_timeForExecution>0?_timeForExecution:timeForExecution);
+        votesForExecution = (_votesForExecution>0?_votesForExecution:votesForExecution);
+        voteGas           = (_voteGas>0?_voteGas:voteGas);
+        maxGasPrice       = (_maxGasPrice>0?_maxGasPrice:maxGasPrice);
+        maxAmountVotes    =  (_maxAmountVotes>0?_maxAmountVotes:maxAmountVotes);
         
         bytes32 ret = _createProposal(to, data, value, description, contentHash);
 
-        proposalTime       =  _tmp[0];
-        timeForExecution   =  _tmp[1];
-        votesForExecution  =  _tmp[2];
-        voteGas            =  _tmp[3];
-        maxGasPrice        =  _tmp[4];
-        maxAmountVotes     =  _tmp[5];
+        proposalTime      = _tmp[0];
+        timeForExecution  = _tmp[1];
+        votesForExecution = _tmp[2];
+        voteGas           = _tmp[3];
+        maxGasPrice       = _tmp[4];
+        maxAmountVotes    = _tmp[5];
 
         return ret;
     }
