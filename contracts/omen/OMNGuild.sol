@@ -292,13 +292,23 @@ contract OMNGuild is ERC20Guild {
     /// @param description A short description of the proposal
     /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     /// @param _proposalTime The minimum time for a proposal to be under votation
+    /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
+    /// @param _votesForExecution The token votes needed for a proposal to be executed
+    /// @param _voteGas The gas to be used to calculate the vote gas refund
+    /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _maxAmountVotes The max amount of votes allowed ot have
     function createCustomProposal(
         address[] memory to,
         bytes[] memory data,
         uint256[] memory value,
         string memory description,
         bytes memory contentHash,
-        uint256 _proposalTime
+        uint256 _proposalTime,
+        uint256 _timeForExecution,
+        uint256 _votesForExecution,
+        uint256 _voteGas,
+        uint256 _maxGasPrice,
+        uint256 _maxAmountVotes
     ) public virtual isInitialized returns(bytes32) {
         require(customPermission[msg.sender]==true, "OMNGuild: Not approved for custom proposals");
         require(
@@ -307,10 +317,30 @@ contract OMNGuild is ERC20Guild {
         );
         require(to.length > 0, "OMNGuild: to, data value arrays cannot be empty");
         require(_proposalTime >= 0, "OMNGuild: proposal time has to be more tha 0");
-        uint256 proposalTimeTmp = proposalTime;
-        proposalTime = _proposalTime;
+
+        uint256[] memory _tmp = new uint256[](6);
+        _tmp[0]  =  proposalTime;
+        _tmp[1]  =  timeForExecution;
+        _tmp[2]  =  votesForExecution;
+        _tmp[3]  =  voteGas;
+        _tmp[4]  =  maxGasPrice;
+        _tmp[5]  =  maxAmountVotes;
+        proposalTime       =                     _proposalTime;
+        timeForExecution   =                     _timeForExecution;
+        votesForExecution  =                     _votesForExecution;
+        voteGas            =                     _voteGas;
+        maxGasPrice        =                     _maxGasPrice;
+        maxAmountVotes     =                     _maxAmountVotes;
+        
         bytes32 ret = _createProposal(to, data, value, description, contentHash);
-        proposalTime = proposalTimeTmp;
+
+        proposalTime       =  _tmp[0];
+        timeForExecution   =  _tmp[1];
+        votesForExecution  =  _tmp[2];
+        voteGas            =  _tmp[3];
+        maxGasPrice        =  _tmp[4];
+        maxAmountVotes     =  _tmp[5];
+
         return ret;
     }
 
