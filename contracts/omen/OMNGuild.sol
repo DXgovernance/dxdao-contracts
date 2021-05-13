@@ -46,7 +46,7 @@ contract OMNGuild is ERC20Guild {
     mapping(bytes32 => uint256) public positiveVotesCount;
 
     // who can create proposals with custom parameter(s)
-	mapping(address => bool) public customPermission;
+    mapping(address => bool) public customPermission;
     event AllowCustomProposer(address proposer);
 
     /// @dev Initilizer
@@ -306,12 +306,12 @@ contract OMNGuild is ERC20Guild {
             "ERC20Guild: Wrong length of to, data or value arrays"
         );
         require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
-		require(_proposalTime >= 0, "ERC20Guild: proposal time has to be more tha 0");
-		uint256 proposalTimeTmp = proposalTime;
-		proposalTime = _proposalTime;
+        require(_proposalTime >= 0, "ERC20Guild: proposal time has to be more tha 0");
+        uint256 proposalTimeTmp = proposalTime;
+        proposalTime = _proposalTime;
         bytes32 ret = _createProposal(to, data, value, description, contentHash);
-		proposalTime = proposalTimeTmp;
-		return ret;
+        proposalTime = proposalTimeTmp;
+        return ret;
     }
 
     /// @dev Allows custom proposers
@@ -320,7 +320,7 @@ contract OMNGuild is ERC20Guild {
         address proposer
     ) public virtual isInitialized {
         require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
-		customPermission[proposer] = true;
-		emit AllowCustomProposer(proposer);
+        customPermission[proposer] = true;
+        emit AllowCustomProposer(proposer);
     }
 }
