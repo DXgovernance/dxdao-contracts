@@ -285,7 +285,7 @@ contract OMNGuild is ERC20Guild {
         return totalLocked.mul(votesForExecution).div(10000);
     }
 
-    /// @dev Create a proposal with an static call data and extra information
+    /// @dev Create a proposal with a static call data, extra information, and a custom proposalTime
     /// @param to The receiver addresses of each call to be executed
     /// @param data The data to be executed on each call to be executed
     /// @param value The ETH value to be sent on each call to be executed
@@ -303,10 +303,10 @@ contract OMNGuild is ERC20Guild {
         require(customPermission[msg.sender]==true, "OMNGuild: Not approved for custom proposals");
         require(
             (to.length == data.length) && (to.length == value.length),
-            "ERC20Guild: Wrong length of to, data or value arrays"
+            "OMNGuild: Wrong length of to, data or value arrays"
         );
-        require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
-        require(_proposalTime >= 0, "ERC20Guild: proposal time has to be more tha 0");
+        require(to.length > 0, "OMNGuild: to, data value arrays cannot be empty");
+        require(_proposalTime >= 0, "OMNGuild: proposal time has to be more tha 0");
         uint256 proposalTimeTmp = proposalTime;
         proposalTime = _proposalTime;
         bytes32 ret = _createProposal(to, data, value, description, contentHash);
@@ -319,7 +319,7 @@ contract OMNGuild is ERC20Guild {
     function allowCustomProposer(
         address proposer
     ) public virtual isInitialized {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
+        require(msg.sender == address(this), "OMNGuild: Only callable by OMNGuild itself");
         customPermission[proposer] = true;
         emit AllowCustomProposer(proposer);
     }
