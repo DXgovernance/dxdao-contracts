@@ -1,3 +1,4 @@
+/* vim:set expandtab ts=4: */
 import * as helpers from "./helpers";
 const constants = require("./helpers/constants");
 const OMNGuild = artifacts.require("OMNGuild");
@@ -394,7 +395,113 @@ contract("OMNGuild", function(accounts) {
                     { from: accounts[3] }),
                 "OMNGuild: Already voted");
         });
+        it.only("test createAdminProposal", async function() {
+            const dataGarbage = web3.utils.asciiToHex ("garbage");
+            await expectRevert(
+                    omnGuild.createAdminProposal(
+                    [accounts[3]],  //  to:
+                    [ dataGarbage ],  //  data:
+                    [0],  //  value:
+                    "allowAdminProposer",  //  description:
+                    constants.NULL_ADDRESS,  //  contentHash:
+                    110000,  //  _proposalTime:
+                    0,  //  _timeForExecution:
+                    0,  //  _votesForExecution:
+                    0,  //  _voteGas:
+                    0,  //  _maxGasPrice:
+                ),
+                "ERC20Guild: Not approved for admin proposals");
 
+            const data = await new web3.eth.Contract(
+                  OMNGuild.abi
+                ).methods.allowAdminProposer(
+                    accounts[0]
+                  ).encodeABI()
+            const guildProposalId = await createProposal({
+              guild: omnGuild,
+              to: [omnGuild.address],
+              data: [ data ],
+              value: [0],
+              description: "allowAdminProposer",
+              contentHash: constants.NULL_ADDRESS,
+              account: accounts[1],
+            });
+            await time.increase(time.duration.seconds(60*60*24*7+1000));
+            await omnGuild.setVote(
+                guildProposalId,
+                40, {
+                    from: accounts[4]
+                });
+            await omnGuild.endProposal(guildProposalId);
+
+            await expectRevert(
+                    omnGuild.createAdminProposal(
+                    [],  //  to:
+                    [ dataGarbage ],  //  data:
+                    [0],  //  value:
+                    "allowAdminProposer",  //  description:
+                    constants.NULL_ADDRESS,  //  contentHash:
+                    110000,  //  _proposalTime:
+                    0,  //  _timeForExecution:
+                    0,  //  _votesForExecution:
+                    0,  //  _voteGas:
+                    0,  //  _maxGasPrice:
+                ),
+                "ERC20Guild: Wrong length of to, data or value arrays");
+            await expectRevert(
+                    omnGuild.createAdminProposal(
+                    [],  //  to:
+                    [],  //  data:
+                    [],  //  value:
+                    "allowAdminProposer",  //  description:
+                    constants.NULL_ADDRESS,  //  contentHash:
+                    110000,  //  _proposalTime:
+                    0,  //  _timeForExecution:
+                    0,  //  _votesForExecution:
+                    0,  //  _voteGas:
+                    0,  //  _maxGasPrice:
+                ),
+                "ERC20Guild: to, data value arrays cannot be empty");
+            await expectRevert(
+                    omnGuild.createAdminProposal(
+                    [accounts[3]],  //  to:
+                    [ dataGarbage ],  //  data:
+                    [0],  //  value:
+                    "allowAdminProposer",  //  description:
+                    constants.NULL_ADDRESS,  //  contentHash:
+                    11000,  //  _proposalTime:
+                    0,  //  _timeForExecution:
+                    0,  //  _votesForExecution:
+                    0,  //  _voteGas:
+                    0,  //  _maxGasPrice:
+                ),
+                "ERC20Guild: not even an admin can slip something by that fast.");
+            const tx = await omnGuild.createAdminProposal(
+                [accounts[3]],  //  to:
+                [ dataGarbage ],  //  data:
+                [0],  //  value:
+                "allowAdminProposer",  //  description:
+                constants.NULL_ADDRESS,  //  contentHash:
+                110000,  //  _proposalTime:
+                0,  //  _timeForExecution:
+                0,  //  _votesForExecution:
+                0,  //  _voteGas:
+                0,  //  _maxGasPrice:
+            );
+            const guildProposalIdB = helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
+            await omnGuild.setVote(
+                guildProposalIdB,
+                40, {
+                    from: accounts[4]
+                });
+            console.log("b");
+            await time.increase(time.duration.seconds(100000));
+            await expectRevert(
+               omnGuild.endProposal(guildProposalIdB),
+               "ERC20Guild: Proposal hasnt ended yet");
+            await time.increase(time.duration.seconds(20000));
+            await omnGuild.endProposal(guildProposalIdB);
+        });
     });
 });
 
