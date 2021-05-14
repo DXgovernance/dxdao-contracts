@@ -706,6 +706,16 @@ contract ERC20Guild is Initializable {
         }
     }
 
+    /// @dev Allows admin proposers
+    /// @param proposer The address to allow
+    function allowAdminProposer(
+        address proposer
+    ) public virtual isInitialized {
+        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20Guild itself");
+        adminPermission[proposer] = true;
+        emit AllowAdminProposer(proposer);
+    }
+
     /// @dev Create a proposal with a static call data, extra information, and a admin settings
     /// @param to The receiver addresses of each call to be executed
     /// @param data The data to be executed on each call to be executed
@@ -729,13 +739,13 @@ contract ERC20Guild is Initializable {
         uint256 _voteGas,
         uint256 _maxGasPrice
     ) public virtual isInitialized returns(bytes32) {
-        require(adminPermission[msg.sender]==true, "OMNGuild: Not approved for admin proposals");
+        require(adminPermission[msg.sender]==true, "ERC20Guild: Not approved for admin proposals");
+		require(_proposalTime >= 60*60*24 || _proposalTime == 0, "ERC20Guild: not even an admin can slip something by that fast.");
         require(
             (to.length == data.length) && (to.length == value.length),
-            "OMNGuild: Wrong length of to, data or value arrays"
+            "ERC20Guild: Wrong length of to, data or value arrays"
         );
-        require(to.length > 0, "OMNGuild: to, data value arrays cannot be empty");
-        require(_proposalTime >= 0, "OMNGuild: proposal time has to be more tha 0");
+        require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
 
         uint256[] memory _tmp = new uint256[](5);
         _tmp[0]  =  proposalTime;
@@ -759,15 +769,5 @@ contract ERC20Guild is Initializable {
         maxGasPrice       = _tmp[4];
 
         return proposalId;
-    }
-
-    /// @dev Allows admin proposers
-    /// @param proposer The address to allow
-    function allowAdminProposer(
-        address proposer
-    ) public virtual isInitialized {
-        require(msg.sender == address(this), "OMNGuild: Only callable by OMNGuild itself");
-        adminPermission[proposer] = true;
-        emit AllowAdminProposer(proposer);
     }
 }
