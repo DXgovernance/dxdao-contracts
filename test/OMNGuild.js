@@ -395,7 +395,7 @@ contract("OMNGuild", function(accounts) {
                     { from: accounts[3] }),
                 "OMNGuild: Already voted");
         });
-        it.only("test createAdminProposal", async function() {
+        it("test createAdminProposal", async function() {
             const dataGarbage = web3.utils.asciiToHex ("garbage");
             await expectRevert(
                     omnGuild.createAdminProposal(

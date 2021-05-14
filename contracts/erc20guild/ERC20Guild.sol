@@ -433,8 +433,8 @@ contract ERC20Guild is Initializable {
             bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
             require(
                 proposals[proposalId].admin || 
-                getCallPermission(proposals[proposalId].to[i], proposalSignature),
-                "ERC20Guild: Not allowed call"
+              getCallPermission(proposals[proposalId].to[i], proposalSignature),
+              "ERC20Guild: Not allowed call"
               );
               (bool success,) = proposals[proposalId].to[i]
                 .call{value: proposals[proposalId].value[i]}(proposals[proposalId].data[i]);
