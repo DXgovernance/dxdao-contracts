@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
+/* vim:set expandtab ts=4: */
 pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
+/* vim:set expandtab ts=4: */
 pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
@@ -71,6 +72,7 @@ contract ERC20Guild is Initializable {
         ProposalState state;
         uint256 snapshotId;
         mapping(address => uint256) votes;
+        bool admin;
     }
     mapping(bytes32 => Proposal) public proposals;
     
@@ -91,6 +93,9 @@ contract ERC20Guild is Initializable {
     // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
     uint256 private _currentSnapshotId;
     
+    // who can create proposals with admin parameter(s)
+    mapping(address => bool) public adminPermission;
+
     event ProposalCreated(bytes32 indexed proposalId);
     event ProposalRejected(bytes32 indexed proposalId);
     event ProposalExecuted(bytes32 indexed proposalId);
@@ -100,6 +105,7 @@ contract ERC20Guild is Initializable {
     event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
     event TokensLocked(address voter, uint256 value);
     event TokensReleased(address voter, uint256 value);
+    event AllowAdminProposer(address proposer);
     
     /// @dev Allows the voting machine to receive ether to be used to refund voting costs
     fallback() external payable {}
@@ -149,6 +155,7 @@ contract ERC20Guild is Initializable {
           bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
         ] = true;
         callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = true;
+        callPermissions[address(this)][bytes4(keccak256("allowAdminProposer(address)"))] = true;
         initialized = true;
     }
     
@@ -425,8 +432,9 @@ contract ERC20Guild is Initializable {
           for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
             bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
             require(
-              getCallPermission(proposals[proposalId].to[i], proposalSignature),
-              "ERC20Guild: Not allowed call"
+                proposals[proposalId].admin || 
+                getCallPermission(proposals[proposalId].to[i], proposalSignature),
+                "ERC20Guild: Not allowed call"
               );
               (bool success,) = proposals[proposalId].to[i]
                 .call{value: proposals[proposalId].value[i]}(proposals[proposalId].data[i]);
@@ -698,4 +706,68 @@ contract ERC20Guild is Initializable {
         }
     }
 
+    /// @dev Create a proposal with a static call data, extra information, and a admin settings
+    /// @param to The receiver addresses of each call to be executed
+    /// @param data The data to be executed on each call to be executed
+    /// @param value The ETH value to be sent on each call to be executed
+    /// @param description A short description of the proposal
+    /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
+    /// @param _proposalTime The minimum time for a proposal to be under votation
+    /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
+    /// @param _votesForExecution The token votes needed for a proposal to be executed
+    /// @param _voteGas The gas to be used to calculate the vote gas refund
+    /// @param _maxGasPrice The maximum gas price to be refunded
+    function createAdminProposal(
+        address[] memory to,
+        bytes[] memory data,
+        uint256[] memory value,
+        string memory description,
+        bytes memory contentHash,
+        uint256 _proposalTime,
+        uint256 _timeForExecution,
+        uint256 _votesForExecution,
+        uint256 _voteGas,
+        uint256 _maxGasPrice
+    ) public virtual isInitialized returns(bytes32) {
+        require(adminPermission[msg.sender]==true, "OMNGuild: Not approved for admin proposals");
+        require(
+            (to.length == data.length) && (to.length == value.length),
+            "OMNGuild: Wrong length of to, data or value arrays"
+        );
+        require(to.length > 0, "OMNGuild: to, data value arrays cannot be empty");
+        require(_proposalTime >= 0, "OMNGuild: proposal time has to be more tha 0");
+
+        uint256[] memory _tmp = new uint256[](5);
+        _tmp[0]  =  proposalTime;
+        _tmp[1]  =  timeForExecution;
+        _tmp[2]  =  votesForExecution;
+        _tmp[3]  =  voteGas;
+        _tmp[4]  =  maxGasPrice;
+        proposalTime      = (_proposalTime>0?_proposalTime:proposalTime);
+        timeForExecution  = (_timeForExecution>0?_timeForExecution:timeForExecution);
+        votesForExecution = (_votesForExecution>0?_votesForExecution:votesForExecution);
+        voteGas           = (_voteGas>0?_voteGas:voteGas);
+        maxGasPrice       = (_maxGasPrice>0?_maxGasPrice:maxGasPrice);
+        
+        bytes32 proposalId = _createProposal(to, data, value, description, contentHash);
+        proposals[proposalId].admin = true;
+
+        proposalTime      = _tmp[0];
+        timeForExecution  = _tmp[1];
+        votesForExecution = _tmp[2];
+        voteGas           = _tmp[3];
+        maxGasPrice       = _tmp[4];
+
+        return proposalId;
+    }
+
+    /// @dev Allows admin proposers
+    /// @param proposer The address to allow
+    function allowAdminProposer(
+        address proposer
+    ) public virtual isInitialized {
+        require(msg.sender == address(this), "OMNGuild: Only callable by OMNGuild itself");
+        adminPermission[proposer] = true;
+        emit AllowAdminProposer(proposer);
+    }
 }
