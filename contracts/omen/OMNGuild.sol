@@ -46,10 +46,6 @@ contract OMNGuild is ERC20Guild {
     // Save how much accounts voted in a proposal
     mapping(bytes32 => uint256) public positiveVotesCount;
 
-    // who can create proposals with custom parameter(s)
-    mapping(address => bool) public customPermission;
-    event AllowCustomProposer(address proposer);
-
     /// @dev Initilizer
     /// Sets the call permission to arbitrate markets allowed by default and create the market question tempate in 
     /// realit.io to be used on markets created with the guild
@@ -94,7 +90,6 @@ contract OMNGuild is ERC20Guild {
         );
         callPermissions[address(realitIO)][submitAnswerByArbitratorSignature] = true;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256)"))] = true;
-        callPermissions[address(this)][bytes4(keccak256("allowCustomProposer(address)"))] = true;
     }
     
     /// @dev Set OMNGuild specific parameters
