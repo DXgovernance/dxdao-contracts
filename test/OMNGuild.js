@@ -395,10 +395,10 @@ contract("OMNGuild", function(accounts) {
                     { from: accounts[3] }),
                 "OMNGuild: Already voted");
         });
-        it("test createAdminProposal", async function() {
+        it("test createProposal", async function() {
             const dataGarbage = web3.utils.asciiToHex ("garbage");
             await expectRevert(
-                    omnGuild.createAdminProposal(
+                    omnGuild.createProposal(
                     [accounts[3]],  //  to:
                     [ dataGarbage ],  //  data:
                     [0],  //  value:
@@ -435,7 +435,7 @@ contract("OMNGuild", function(accounts) {
             await omnGuild.endProposal(guildProposalId);
 
             await expectRevert(
-                    omnGuild.createAdminProposal(
+                    omnGuild.createProposal(
                     [],  //  to:
                     [ dataGarbage ],  //  data:
                     [0],  //  value:
@@ -449,7 +449,7 @@ contract("OMNGuild", function(accounts) {
                 ),
                 "ERC20Guild: Wrong length of to, data or value arrays");
             await expectRevert(
-                    omnGuild.createAdminProposal(
+                    omnGuild.createProposal(
                     [],  //  to:
                     [],  //  data:
                     [],  //  value:
@@ -463,7 +463,7 @@ contract("OMNGuild", function(accounts) {
                 ),
                 "ERC20Guild: to, data value arrays cannot be empty");
             await expectRevert(
-                    omnGuild.createAdminProposal(
+                    omnGuild.createProposal(
                     [accounts[3]],  //  to:
                     [ dataGarbage ],  //  data:
                     [0],  //  value:
@@ -476,7 +476,7 @@ contract("OMNGuild", function(accounts) {
                     0,  //  _maxGasPrice:
                 ),
                 "ERC20Guild: not even an admin can slip something by that fast.");
-            const tx = await omnGuild.createAdminProposal(
+            const tx = await omnGuild.createProposal(
                 [accounts[3]],  //  to:
                 [ dataGarbage ],  //  data:
                 [0],  //  value:
