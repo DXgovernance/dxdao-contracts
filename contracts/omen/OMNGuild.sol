@@ -345,7 +345,7 @@ contract OMNGuild is ERC20Guild {
         uint256 _maxGasPrice
     ) public virtual isInitialized returns(bytes32) {
         require(adminPermission[msg.sender]==true, "ERC20Guild: Not approved for admin proposals");
-		require(_proposalTime >= 60*60*24 || _proposalTime == 0, "ERC20Guild: not even an admin can slip something by that fast.");
+        require(_proposalTime >= 60*60*24 || _proposalTime == 0, "ERC20Guild: not even an admin can slip something by that fast.");
         require(
             (to.length == data.length) && (to.length == value.length),
             "ERC20Guild: Wrong length of to, data or value arrays"
