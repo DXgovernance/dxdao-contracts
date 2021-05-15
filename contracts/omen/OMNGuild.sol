@@ -333,7 +333,7 @@ contract OMNGuild is ERC20Guild {
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _maxAmountVotes The max amount of votes allowed ot have
-    function createAdminProposal(
+    function createProposal(
         address[] memory to,
         bytes[] memory data,
         uint256[] memory value,
@@ -375,7 +375,7 @@ contract OMNGuild is ERC20Guild {
         votesForExecution = _tmp[2];
         voteGas           = _tmp[3];
         maxGasPrice       = _tmp[4];
-        maxAmountVotes       = _tmp[4];
+        maxAmountVotes    = _tmp[5];
 
         return proposalId;
     }
