@@ -72,6 +72,7 @@ contract ERC20Guild is Initializable {
         ProposalState state;
         uint256 snapshotId;
         mapping(address => uint256) votes;
+        bool admin;
     }
     mapping(bytes32 => Proposal) public proposals;
     
