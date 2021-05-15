@@ -47,7 +47,7 @@ contract OMNGuild is ERC20Guild {
     mapping(bytes32 => uint256) public positiveVotesCount;
 
     // who can create proposals with admin parameter(s)
-    mapping(address => bool) public adminPermission;
+    mapping(address => bool) public adminProposer;
     event AllowAdminProposer(address proposer);
 
     /// @dev Initilizer
@@ -200,7 +200,7 @@ contract OMNGuild is ERC20Guild {
           for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
             bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
             require(
-                proposals[proposalId].admin || 
+                adminProposer[proposals[proposalId].creator] || 
               getCallPermission(proposals[proposalId].to[i], proposalSignature),
               "ERC20Guild: Not allowed call"
               );
@@ -317,7 +317,7 @@ contract OMNGuild is ERC20Guild {
         address proposer
     ) public virtual isInitialized {
         require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20Guild itself");
-        adminPermission[proposer] = true;
+        adminProposer[proposer] = true;
         emit AllowAdminProposer(proposer);
     }
 
@@ -332,7 +332,8 @@ contract OMNGuild is ERC20Guild {
     /// @param _votesForExecution The token votes needed for a proposal to be executed
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
-    function createProposal(
+    /// @param _maxAmountVotes The max amount of votes allowed ot have
+    function createAdminProposal(
         address[] memory to,
         bytes[] memory data,
         uint256[] memory value,
@@ -342,36 +343,39 @@ contract OMNGuild is ERC20Guild {
         uint256 _timeForExecution,
         uint256 _votesForExecution,
         uint256 _voteGas,
-        uint256 _maxGasPrice
+        uint256 _maxGasPrice,
+        uint256 _maxAmountVotes
     ) public virtual isInitialized returns(bytes32) {
-        require(adminPermission[msg.sender]==true, "ERC20Guild: Not approved for admin proposals");
-        require(_proposalTime >= 60*60*24 || _proposalTime == 0, "ERC20Guild: not even an admin can slip something by that fast.");
+        require(adminProposer[msg.sender]==true, "ERC20Guild: Not approved for admin proposals");
+		require(_proposalTime >= 60*60*24 || _proposalTime == 0, "ERC20Guild: not even an admin can slip something by that fast.");
         require(
             (to.length == data.length) && (to.length == value.length),
             "ERC20Guild: Wrong length of to, data or value arrays"
         );
         require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
 
-        uint256[] memory _tmp = new uint256[](5);
+        uint256[] memory _tmp = new uint256[](6);
         _tmp[0]  =  proposalTime;
         _tmp[1]  =  timeForExecution;
         _tmp[2]  =  votesForExecution;
         _tmp[3]  =  voteGas;
         _tmp[4]  =  maxGasPrice;
+        _tmp[5]  =  maxAmountVotes;
         proposalTime      = (_proposalTime>0?_proposalTime:proposalTime);
         timeForExecution  = (_timeForExecution>0?_timeForExecution:timeForExecution);
         votesForExecution = (_votesForExecution>0?_votesForExecution:votesForExecution);
         voteGas           = (_voteGas>0?_voteGas:voteGas);
         maxGasPrice       = (_maxGasPrice>0?_maxGasPrice:maxGasPrice);
+        maxAmountVotes       = (_maxAmountVotes>0?_maxAmountVotes:maxAmountVotes);
         
         bytes32 proposalId = _createProposal(to, data, value, description, contentHash);
-        proposals[proposalId].admin = true;
 
         proposalTime      = _tmp[0];
         timeForExecution  = _tmp[1];
         votesForExecution = _tmp[2];
         voteGas           = _tmp[3];
         maxGasPrice       = _tmp[4];
+        maxAmountVotes       = _tmp[4];
 
         return proposalId;
     }

@@ -395,10 +395,10 @@ contract("OMNGuild", function(accounts) {
                     { from: accounts[3] }),
                 "OMNGuild: Already voted");
         });
-        it("test createProposal", async function() {
+        it("test createAdminProposal", async function() {
             const dataGarbage = web3.utils.asciiToHex ("garbage");
             await expectRevert(
-                    omnGuild.createProposal(
+                    omnGuild.createAdminProposal(
                     [accounts[3]],  //  to:
                     [ dataGarbage ],  //  data:
                     [0],  //  value:
@@ -409,6 +409,7 @@ contract("OMNGuild", function(accounts) {
                     0,  //  _votesForExecution:
                     0,  //  _voteGas:
                     0,  //  _maxGasPrice:
+                    0  //  _maxAmountVotes:
                 ),
                 "ERC20Guild: Not approved for admin proposals");
 
@@ -435,7 +436,7 @@ contract("OMNGuild", function(accounts) {
             await omnGuild.endProposal(guildProposalId);
 
             await expectRevert(
-                    omnGuild.createProposal(
+                    omnGuild.createAdminProposal(
                     [],  //  to:
                     [ dataGarbage ],  //  data:
                     [0],  //  value:
@@ -446,10 +447,11 @@ contract("OMNGuild", function(accounts) {
                     0,  //  _votesForExecution:
                     0,  //  _voteGas:
                     0,  //  _maxGasPrice:
+                    0  //  _maxAmountVotes:
                 ),
                 "ERC20Guild: Wrong length of to, data or value arrays");
             await expectRevert(
-                    omnGuild.createProposal(
+                    omnGuild.createAdminProposal(
                     [],  //  to:
                     [],  //  data:
                     [],  //  value:
@@ -460,10 +462,11 @@ contract("OMNGuild", function(accounts) {
                     0,  //  _votesForExecution:
                     0,  //  _voteGas:
                     0,  //  _maxGasPrice:
+                    0  //  _maxAmountVotes:
                 ),
                 "ERC20Guild: to, data value arrays cannot be empty");
             await expectRevert(
-                    omnGuild.createProposal(
+                    omnGuild.createAdminProposal(
                     [accounts[3]],  //  to:
                     [ dataGarbage ],  //  data:
                     [0],  //  value:
@@ -474,9 +477,10 @@ contract("OMNGuild", function(accounts) {
                     0,  //  _votesForExecution:
                     0,  //  _voteGas:
                     0,  //  _maxGasPrice:
+                    0  //  _maxAmountVotes:
                 ),
                 "ERC20Guild: not even an admin can slip something by that fast.");
-            const tx = await omnGuild.createProposal(
+            const tx = await omnGuild.createAdminProposal(
                 [accounts[3]],  //  to:
                 [ dataGarbage ],  //  data:
                 [0],  //  value:
@@ -487,6 +491,7 @@ contract("OMNGuild", function(accounts) {
                 0,  //  _votesForExecution:
                 0,  //  _voteGas:
                 0,  //  _maxGasPrice:
+                0  //  _maxAmountVotes:
             );
             const guildProposalIdB = helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
             await omnGuild.setVote(
