@@ -354,15 +354,8 @@ contract OMNGuild is ERC20Guild {
         uint256 proposalTime = (proposers[msg.sender].proposalTime>0?proposers[msg.sender].proposalTime:proposalTime);
         uint256 defaultVotesForCreation = votesForCreation;
         uint256 votesForCreation = (proposers[msg.sender].votesForCreation>0?proposers[msg.sender].votesForCreation:votesForCreation);
-
-        // copied from ERC20Guild:createProposal
-        require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");
-        require(
-            (to.length == data.length) && (to.length == value.length),
-            "OMNGuild: Wrong length of to, data or value arrays"
-        );
-        require(to.length > 0, "OMNGuild: to, data value arrays cannot be empty");
-        bytes32 proposalId = _createProposal(to, data, value, description, contentHash);
+        
+        bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
 
         // revert default overrides
         proposalTime = defaultProposalTime;

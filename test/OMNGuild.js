@@ -436,24 +436,6 @@ contract("OMNGuild", function(accounts) {
             await time.increase(time.duration.seconds(60*60*24*7+1000));
             await omnGuild.endProposal(setProposerPropasalId);
 
-            await expectRevert(
-                    omnGuild.createProposal(
-                    [],  //  to:
-                    [ dataGarbage ],  //  data:
-                    [0],  //  value:
-                    "allowAdminProposer",  //  description:
-                    constants.NULL_ADDRESS,  //  contentHash:
-                ),
-                "OMNGuild: Wrong length of to, data or value arrays");
-            await expectRevert(
-                    omnGuild.createProposal(
-                    [],  //  to:
-                    [],  //  data:
-                    [],  //  value:
-                    "allowAdminProposer",  //  description:
-                    constants.NULL_ADDRESS,  //  contentHash:
-                ),
-                "OMNGuild: to, data value arrays cannot be empty");
             await omnGuild.setVote(
                 garbageProposal,
                 40, {
