@@ -98,7 +98,10 @@ contract("OMNGuild", function(accounts) {
 
         await time.increase(time.duration.seconds(60*60*24*7+1000));
 
-        await omnGuild.endProposal(guildProposalId);
+        const receipt = await omnGuild.endProposal(guildProposalId);
+        expectEvent(receipt, "ProposalExecuted", {
+            proposalId: guildProposalId
+        });
 
         const latest=(await time.latest()).toNumber();
         questionId = (await realitio.askQuestion(0 /* template_id */ , "Is market with [questionID] valid?", omnGuild.address, 60*60*24*2 /* timeout, */ , latest /* opening_ts */ , 0 /* nonce */ )).receipt.logs[0].args.question_id;
@@ -395,7 +398,7 @@ contract("OMNGuild", function(accounts) {
                     { from: accounts[3] }),
                 "OMNGuild: Already voted");
         });
-        it("test createProposal", async function() {
+        it.only("test createProposal", async function() {
             const dataGarbage = web3.utils.asciiToHex ("garbage");
             const tx = await omnGuild.createProposal(
                 [accounts[3]],  //  to:
@@ -408,9 +411,6 @@ contract("OMNGuild", function(accounts) {
             await expectRevert(
                omnGuild.endProposal(garbageProposal),
                "Proposal hasnt ended yet");
-            await time.increase(time.duration.seconds(60*60*24*8));
-            await expectRevert(omnGuild.endProposal(garbageProposal),
-                "Not allowed call");
             const data = await new web3.eth.Contract(
                   OMNGuild.abi
                 ).methods.setProposer(
@@ -419,7 +419,7 @@ contract("OMNGuild", function(accounts) {
                     110000,  // proposalTime
                     0, // votesForCreation
                   ).encodeABI()
-            const setProposerPropasalId = await createProposal({
+            const setProposerProposalId = await createProposal({
               guild: omnGuild,
               to: [omnGuild.address],
               data: [ data ],
@@ -429,19 +429,27 @@ contract("OMNGuild", function(accounts) {
               account: accounts[1],
             });
             await omnGuild.setVote(
-                setProposerPropasalId,
+                setProposerProposalId,
                 40, {
                     from: accounts[4]
                 });
             await time.increase(time.duration.seconds(60*60*24*7+1000));
-            await omnGuild.endProposal(setProposerPropasalId);
+            await expectRevert(omnGuild.endProposal(garbageProposal),
+                "Not allowed call");
+            const receipt = await omnGuild.endProposal(setProposerProposalId);
+            expectEvent(receipt, "ProposalExecuted", {
+                proposalId: setProposerProposalId
+            });
 
             await omnGuild.setVote(
                 garbageProposal,
                 40, {
                     from: accounts[4]
                 });
-            await omnGuild.endProposal(garbageProposal);
+            const receiptForGarbage = await omnGuild.endProposal(garbageProposal);
+            expectEvent(receiptForGarbage, "ProposalExecuted", {
+                proposalId: garbageProposal
+            });
         });
     });
 });
@@ -537,7 +545,10 @@ contract("OMNGuild", function(accounts) {
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
 
-            await omnGuild.endProposal(guildProposalId);
+            const receipt = await omnGuild.endProposal(guildProposalId);
+            expectEvent(receipt, "ProposalExecuted", {
+                proposalId: guildProposalId
+            });
 
             const latest=(await time.latest()).toNumber();
             questionId = (await realitio.askQuestion(0 /* template_id */ , "Is market with [questionID] valid?", omnGuild.address, 60*60*24*2 /* timeout, */ , latest /* opening_ts */ , 0 /* nonce */ )).receipt.logs[0].args.question_id;
@@ -574,7 +585,10 @@ contract("OMNGuild", function(accounts) {
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
 
-            await omnGuild.endProposal(guildProposalId);
+            const receipt = await omnGuild.endProposal(guildProposalId);
+            expectEvent(receipt, "ProposalExecuted", {
+                proposalId: guildProposalId
+            });
 
             const latest=(await time.latest()).toNumber();
             questionId = (await realitio.askQuestion(0 /* template_id */ , "Is market with [questionID] valid?", omnGuild.address, 60*60*24*2 /* timeout, */ , latest /* opening_ts */ , 0 /* nonce */ )).receipt.logs[0].args.question_id;
