@@ -1,4 +1,3 @@
-/* vim:set expandtab ts=4: */
 import * as helpers from "./helpers";
 const constants = require("./helpers/constants");
 const OMNGuild = artifacts.require("OMNGuild");

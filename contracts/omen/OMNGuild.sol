@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0
-/* vim:set expandtab ts=4: */
 pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
@@ -46,7 +45,7 @@ contract OMNGuild is ERC20Guild {
     // Save how much accounts voted in a proposal
     mapping(bytes32 => uint256) public positiveVotesCount;
 
-    struct Proposer {
+    struct SpecialProposerPermission {
         bool allowAnyProposal;
         uint256 votesForCreation;
         uint256 proposalTime;
@@ -55,7 +54,7 @@ contract OMNGuild is ERC20Guild {
     bool allowThisProposal;
 
     // set per proposer settings
-    mapping(address => Proposer) public proposers;
+    mapping(address => SpecialProposerPermission) public proposers;
     event SetProposer(address _proposer, bool _allowAnyProposal, uint256 _proposalTime, uint256 _votesForCreation);
 
     /// @dev Initilizer
@@ -335,9 +334,9 @@ contract OMNGuild is ERC20Guild {
         
         // store and override defaults
         uint256 defaultProposalTime = proposalTime;
-        uint256 proposalTime = (proposers[msg.sender].proposalTime>0?proposers[msg.sender].proposalTime:proposalTime);
+        uint256 proposalTime = (proposers[msg.sender].proposalTime > 0 ? proposers[msg.sender].proposalTime:proposalTime);
         uint256 defaultVotesForCreation = votesForCreation;
-        uint256 votesForCreation = (proposers[msg.sender].votesForCreation>0?proposers[msg.sender].votesForCreation:votesForCreation);
+        uint256 votesForCreation = (proposers[msg.sender].votesForCreation > 0 ? proposers[msg.sender].votesForCreation:votesForCreation);
         
         bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
 
