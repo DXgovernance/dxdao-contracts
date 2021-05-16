@@ -46,9 +46,15 @@ contract OMNGuild is ERC20Guild {
     // Save how much accounts voted in a proposal
     mapping(bytes32 => uint256) public positiveVotesCount;
 
-    // who can create proposals with admin parameter(s)
-    mapping(address => bool) public adminProposer;
-    event AllowAdminProposer(address proposer);
+    struct Proposer {
+        bool allowAnyProposal;
+        uint256 votesForCreation;
+        uint256 proposalTime;
+    }
+
+    // set per proposer settings
+    mapping(address => Proposer) public proposers;
+    event SetProposer(address _proposer, bool _allowAnyProposal, uint256 _proposalTime, uint256 _votesForCreation);
 
     /// @dev Initilizer
     /// Sets the call permission to arbitrate markets allowed by default and create the market question tempate in 
@@ -94,7 +100,7 @@ contract OMNGuild is ERC20Guild {
         );
         callPermissions[address(realitIO)][submitAnswerByArbitratorSignature] = true;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256)"))] = true;
-        callPermissions[address(this)][bytes4(keccak256("allowAdminProposer(address)"))] = true;
+        callPermissions[address(this)][bytes4(keccak256("setProposer(address,bool,uint256,uint256)"))] = true;
     }
     
     /// @dev Set OMNGuild specific parameters
@@ -181,32 +187,32 @@ contract OMNGuild is ERC20Guild {
             proposalsForMarketValidation[proposalId] == bytes32(0),
             "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
         );
-        require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
-        require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasnt ended yet");
+        require(proposals[proposalId].state == ProposalState.Submitted, "OMNGuild: Proposal already executed");
+        require(proposals[proposalId].endTime < block.timestamp, "OMNGuild: Proposal hasnt ended yet");
         if (
-          proposals[proposalId].totalVotes < getVotesForExecution()
-          && proposals[proposalId].state == ProposalState.Submitted
+            proposals[proposalId].totalVotes < getVotesForExecution()
+            && proposals[proposalId].state == ProposalState.Submitted
         ){
-          proposals[proposalId].state = ProposalState.Rejected;
-          emit ProposalRejected(proposalId);
+            proposals[proposalId].state = ProposalState.Rejected;
+            emit ProposalRejected(proposalId);
         } else if (
-          proposals[proposalId].endTime.add(timeForExecution) < block.timestamp
-          && proposals[proposalId].state == ProposalState.Submitted
+            proposals[proposalId].endTime.add(timeForExecution) < block.timestamp
+            && proposals[proposalId].state == ProposalState.Submitted
         ) {
-          proposals[proposalId].state = ProposalState.Failed;
-          emit ProposalEnded(proposalId);
+            proposals[proposalId].state = ProposalState.Failed;
+            emit ProposalEnded(proposalId);
         } else if (proposals[proposalId].state == ProposalState.Submitted) {
-          proposals[proposalId].state = ProposalState.Executed;
-          for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
-            bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
-            require(
-                adminProposer[proposals[proposalId].creator] || 
-              getCallPermission(proposals[proposalId].to[i], proposalSignature),
-              "ERC20Guild: Not allowed call"
-              );
-              (bool success,) = proposals[proposalId].to[i]
-                .call{value: proposals[proposalId].value[i]}(proposals[proposalId].data[i]);
-              require(success, "ERC20Guild: Proposal call failed");
+            proposals[proposalId].state = ProposalState.Executed;
+            for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
+                bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
+                require(
+                    proposers[proposals[proposalId].creator].allowAnyProposal || 
+                    getCallPermission(proposals[proposalId].to[i], proposalSignature),
+                    "OMNGuild: Not allowed call"
+                );
+                (bool success,) = proposals[proposalId].to[i]
+                  .call{value: proposals[proposalId].value[i]}(proposals[proposalId].data[i]);
+                require(success, "OMNGuild: Proposal call failed");
             }
             emit ProposalExecuted(proposalId);
         }
@@ -311,71 +317,56 @@ contract OMNGuild is ERC20Guild {
     function getVotesForExecution() override public view returns (uint256) {
         return totalLocked.mul(votesForExecution).div(10000);
     }
-    /// @dev Allows admin proposers
-    /// @param proposer The address to allow
-    function allowAdminProposer(
-        address proposer
+    /// @dev configure custom proposers
+    /// @param _proposer The address to allow
+    /// @param _allowAnyProposal if allowances are checked in endProposal
+    /// @param _proposalTime The minimum time for a proposal to be under votation
+    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    function setProposer(
+        address _proposer,
+        bool _allowAnyProposal,
+        uint256 _proposalTime,
+        uint256 _votesForCreation
     ) public virtual isInitialized {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20Guild itself");
-        adminProposer[proposer] = true;
-        emit AllowAdminProposer(proposer);
+        require(msg.sender == address(this), "OMNGuild: Only callable by the guild itself");
+        proposers[_proposer].allowAnyProposal = _allowAnyProposal;
+        proposers[_proposer].proposalTime = _proposalTime;
+        proposers[_proposer].votesForCreation = _votesForCreation;
+        emit SetProposer(_proposer,_allowAnyProposal,_proposalTime,_votesForCreation);
     }
 
-    /// @dev Create a proposal with a static call data, extra information, and a admin settings
+    /// @dev Create a proposal with a static call data
     /// @param to The receiver addresses of each call to be executed
     /// @param data The data to be executed on each call to be executed
     /// @param value The ETH value to be sent on each call to be executed
     /// @param description A short description of the proposal
     /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
-    /// @param _proposalTime The minimum time for a proposal to be under votation
-    /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votesForExecution The token votes needed for a proposal to be executed
-    /// @param _voteGas The gas to be used to calculate the vote gas refund
-    /// @param _maxGasPrice The maximum gas price to be refunded
-    /// @param _maxAmountVotes The max amount of votes allowed ot have
-    function createProposal(
+    function createProposal (
         address[] memory to,
         bytes[] memory data,
         uint256[] memory value,
         string memory description,
-        bytes memory contentHash,
-        uint256 _proposalTime,
-        uint256 _timeForExecution,
-        uint256 _votesForExecution,
-        uint256 _voteGas,
-        uint256 _maxGasPrice,
-        uint256 _maxAmountVotes
-    ) public virtual isInitialized returns(bytes32) {
-        require(adminProposer[msg.sender]==true, "ERC20Guild: Not approved for admin proposals");
-		require(_proposalTime >= 60*60*24 || _proposalTime == 0, "ERC20Guild: not even an admin can slip something by that fast.");
+        bytes memory contentHash
+    ) override public virtual isInitialized returns(bytes32) {
+        
+        // store and override defaults
+        uint256 defaultProposalTime = proposalTime;
+        uint256 proposalTime = (proposers[msg.sender].proposalTime>0?proposers[msg.sender].proposalTime:proposalTime);
+        uint256 defaultVotesForCreation = votesForCreation;
+        uint256 votesForCreation = (proposers[msg.sender].votesForCreation>0?proposers[msg.sender].votesForCreation:votesForCreation);
+
+        // copied from ERC20Guild:createProposal
+        require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");
         require(
             (to.length == data.length) && (to.length == value.length),
-            "ERC20Guild: Wrong length of to, data or value arrays"
+            "OMNGuild: Wrong length of to, data or value arrays"
         );
-        require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
-
-        uint256[] memory _tmp = new uint256[](6);
-        _tmp[0]  =  proposalTime;
-        _tmp[1]  =  timeForExecution;
-        _tmp[2]  =  votesForExecution;
-        _tmp[3]  =  voteGas;
-        _tmp[4]  =  maxGasPrice;
-        _tmp[5]  =  maxAmountVotes;
-        proposalTime      = (_proposalTime>0?_proposalTime:proposalTime);
-        timeForExecution  = (_timeForExecution>0?_timeForExecution:timeForExecution);
-        votesForExecution = (_votesForExecution>0?_votesForExecution:votesForExecution);
-        voteGas           = (_voteGas>0?_voteGas:voteGas);
-        maxGasPrice       = (_maxGasPrice>0?_maxGasPrice:maxGasPrice);
-        maxAmountVotes       = (_maxAmountVotes>0?_maxAmountVotes:maxAmountVotes);
-        
+        require(to.length > 0, "OMNGuild: to, data value arrays cannot be empty");
         bytes32 proposalId = _createProposal(to, data, value, description, contentHash);
 
-        proposalTime      = _tmp[0];
-        timeForExecution  = _tmp[1];
-        votesForExecution = _tmp[2];
-        voteGas           = _tmp[3];
-        maxGasPrice       = _tmp[4];
-        maxAmountVotes    = _tmp[5];
+        // revert default overrides
+        proposalTime = defaultProposalTime;
+        votesForCreation = defaultVotesForCreation;
 
         return proposalId;
     }

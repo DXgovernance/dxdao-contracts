@@ -172,7 +172,7 @@ contract("OMNGuild", function(accounts) {
             assert.equal(await realitio.getFinalAnswer(questionId),  soliditySha3((true)));
         });
 
-        const msgD = "ERC20Guild: Proposal already executed";
+        const msgD = "OMNGuild: Proposal already executed";
         it(msgD, async function() {
             await expectRevert(
                 omnGuild.endProposal(guildProposalId),
@@ -397,33 +397,34 @@ contract("OMNGuild", function(accounts) {
         });
         it("test createProposal", async function() {
             const dataGarbage = web3.utils.asciiToHex ("garbage");
+            const tx = await omnGuild.createProposal(
+                [accounts[3]],  //  to:
+                [ dataGarbage ],  //  data:
+                [0],  //  value:
+                "allowAdminProposer",  //  description:
+                constants.NULL_ADDRESS,  //  contentHash:
+            );
+            const guildProposalIdB = helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
             await expectRevert(
-                    omnGuild.createProposal(
-                    [accounts[3]],  //  to:
-                    [ dataGarbage ],  //  data:
-                    [0],  //  value:
-                    "allowAdminProposer",  //  description:
-                    constants.NULL_ADDRESS,  //  contentHash:
-                    110000,  //  _proposalTime:
-                    0,  //  _timeForExecution:
-                    0,  //  _votesForExecution:
-                    0,  //  _voteGas:
-                    0,  //  _maxGasPrice:
-                    0  //  _maxAmountVotes:
-                ),
-                "ERC20Guild: Not approved for admin proposals");
-
+               omnGuild.endProposal(guildProposalIdB),
+               "OMNGuild: Proposal hasnt ended yet");
+            await time.increase(time.duration.seconds(86400*8));
+            await expectRevert(omnGuild.endProposal(guildProposalIdB),
+                "OMNGuild: Not allowed call");
             const data = await new web3.eth.Contract(
                   OMNGuild.abi
-                ).methods.allowAdminProposer(
-                    accounts[0]
+                ).methods.setProposer(
+                    accounts[0], // proposer
+                    true, // allowAnyProposal
+                    110000,  // proposalTime
+                    0, // votesForCreation
                   ).encodeABI()
             const guildProposalId = await createProposal({
               guild: omnGuild,
               to: [omnGuild.address],
               data: [ data ],
               value: [0],
-              description: "allowAdminProposer",
+              description: "setProposer",
               contentHash: constants.NULL_ADDRESS,
               account: accounts[1],
             });
@@ -442,14 +443,8 @@ contract("OMNGuild", function(accounts) {
                     [0],  //  value:
                     "allowAdminProposer",  //  description:
                     constants.NULL_ADDRESS,  //  contentHash:
-                    110000,  //  _proposalTime:
-                    0,  //  _timeForExecution:
-                    0,  //  _votesForExecution:
-                    0,  //  _voteGas:
-                    0,  //  _maxGasPrice:
-                    0  //  _maxAmountVotes:
                 ),
-                "ERC20Guild: Wrong length of to, data or value arrays");
+                "OMNGuild: Wrong length of to, data or value arrays");
             await expectRevert(
                     omnGuild.createProposal(
                     [],  //  to:
@@ -457,54 +452,13 @@ contract("OMNGuild", function(accounts) {
                     [],  //  value:
                     "allowAdminProposer",  //  description:
                     constants.NULL_ADDRESS,  //  contentHash:
-                    110000,  //  _proposalTime:
-                    0,  //  _timeForExecution:
-                    0,  //  _votesForExecution:
-                    0,  //  _voteGas:
-                    0,  //  _maxGasPrice:
-                    0  //  _maxAmountVotes:
                 ),
-                "ERC20Guild: to, data value arrays cannot be empty");
-            await expectRevert(
-                    omnGuild.createProposal(
-                    [accounts[3]],  //  to:
-                    [ dataGarbage ],  //  data:
-                    [0],  //  value:
-                    "allowAdminProposer",  //  description:
-                    constants.NULL_ADDRESS,  //  contentHash:
-                    11000,  //  _proposalTime:
-                    0,  //  _timeForExecution:
-                    0,  //  _votesForExecution:
-                    0,  //  _voteGas:
-                    0,  //  _maxGasPrice:
-                    0  //  _maxAmountVotes:
-                ),
-                "ERC20Guild: not even an admin can slip something by that fast.");
-            const tx = await omnGuild.createProposal(
-                [accounts[3]],  //  to:
-                [ dataGarbage ],  //  data:
-                [0],  //  value:
-                "allowAdminProposer",  //  description:
-                constants.NULL_ADDRESS,  //  contentHash:
-                110000,  //  _proposalTime:
-                0,  //  _timeForExecution:
-                0,  //  _votesForExecution:
-                0,  //  _voteGas:
-                0,  //  _maxGasPrice:
-                0  //  _maxAmountVotes:
-            );
-            const guildProposalIdB = helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
+                "OMNGuild: to, data value arrays cannot be empty");
             await omnGuild.setVote(
                 guildProposalIdB,
                 40, {
                     from: accounts[4]
                 });
-            console.log("b");
-            await time.increase(time.duration.seconds(100000));
-            await expectRevert(
-               omnGuild.endProposal(guildProposalIdB),
-               "ERC20Guild: Proposal hasnt ended yet");
-            await time.increase(time.duration.seconds(20000));
             await omnGuild.endProposal(guildProposalIdB);
         });
     });
@@ -596,7 +550,7 @@ contract("OMNGuild", function(accounts) {
 
             await expectRevert(
                 omnGuild.endProposal(guildProposalId),
-                "ERC20Guild: Proposal hasnt ended yet"
+                "OMNGuild: Proposal hasnt ended yet"
             );
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
