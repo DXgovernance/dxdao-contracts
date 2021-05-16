@@ -195,8 +195,10 @@ contract OMNGuild is ERC20Guild {
             proposalsForMarketValidation[proposalId] == bytes32(0),
             "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
         );
+        require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
+        require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasnt ended yet");
         allowThisProposal = proposers[proposals[proposalId].creator].allowAnyProposal;
-        super.endProposal(proposalId);
+        _endProposal(proposalId);
         allowThisProposal = false;
     }
     

@@ -398,7 +398,7 @@ contract("OMNGuild", function(accounts) {
                     { from: accounts[3] }),
                 "OMNGuild: Already voted");
         });
-        it.only("test createProposal", async function() {
+        it("test createProposal", async function() {
             const dataGarbage = web3.utils.asciiToHex ("garbage");
             const tx = await omnGuild.createProposal(
                 [accounts[3]],  //  to:
