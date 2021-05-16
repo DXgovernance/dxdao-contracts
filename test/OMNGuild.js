@@ -401,9 +401,9 @@ contract("OMNGuild", function(accounts) {
         it("test createProposal", async function() {
             const dataGarbage = web3.utils.asciiToHex ("garbage");
             const tx = await omnGuild.createProposal(
-                [accounts[3]],  //  to:
+                [ accounts[3] ],  //  to:
                 [ dataGarbage ],  //  data:
-                [0],  //  value:
+                [ 0 ],  //  value:
                 "allowAdminProposer",  //  description:
                 constants.NULL_ADDRESS,  //  contentHash:
             );
@@ -421,7 +421,7 @@ contract("OMNGuild", function(accounts) {
                   ).encodeABI()
             const setProposerProposalId = await createProposal({
               guild: omnGuild,
-              to: [omnGuild.address],
+              to: [ omnGuild.address ],
               data: [ data ],
               value: [0],
               description: "setProposer",
