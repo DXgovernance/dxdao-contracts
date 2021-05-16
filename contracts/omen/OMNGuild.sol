@@ -52,6 +52,8 @@ contract OMNGuild is ERC20Guild {
         uint256 proposalTime;
     }
 
+    bool allowThisProposal;
+
     // set per proposer settings
     mapping(address => Proposer) public proposers;
     event SetProposer(address _proposer, bool _allowAnyProposal, uint256 _proposalTime, uint256 _votesForCreation);
@@ -179,6 +181,12 @@ contract OMNGuild is ERC20Guild {
         }
     }
     
+    /// @dev Get call signature permission
+    function getCallPermission(address to, bytes4 functionSignature) override public view virtual returns (bool) {
+        return allowThisProposal || 
+            callPermissions[to][functionSignature];
+    }
+
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
     /// This function cant end market validation proposals
     /// @param proposalId The id of the proposal to be executed
@@ -187,35 +195,9 @@ contract OMNGuild is ERC20Guild {
             proposalsForMarketValidation[proposalId] == bytes32(0),
             "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
         );
-        require(proposals[proposalId].state == ProposalState.Submitted, "OMNGuild: Proposal already executed");
-        require(proposals[proposalId].endTime < block.timestamp, "OMNGuild: Proposal hasnt ended yet");
-        if (
-            proposals[proposalId].totalVotes < getVotesForExecution()
-            && proposals[proposalId].state == ProposalState.Submitted
-        ){
-            proposals[proposalId].state = ProposalState.Rejected;
-            emit ProposalRejected(proposalId);
-        } else if (
-            proposals[proposalId].endTime.add(timeForExecution) < block.timestamp
-            && proposals[proposalId].state == ProposalState.Submitted
-        ) {
-            proposals[proposalId].state = ProposalState.Failed;
-            emit ProposalEnded(proposalId);
-        } else if (proposals[proposalId].state == ProposalState.Submitted) {
-            proposals[proposalId].state = ProposalState.Executed;
-            for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
-                bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
-                require(
-                    proposers[proposals[proposalId].creator].allowAnyProposal || 
-                    getCallPermission(proposals[proposalId].to[i], proposalSignature),
-                    "OMNGuild: Not allowed call"
-                );
-                (bool success,) = proposals[proposalId].to[i]
-                  .call{value: proposals[proposalId].value[i]}(proposals[proposalId].data[i]);
-                require(success, "OMNGuild: Proposal call failed");
-            }
-            emit ProposalExecuted(proposalId);
-        }
+        allowThisProposal = proposers[proposals[proposalId].creator].allowAnyProposal;
+        super.endProposal(proposalId);
+        allowThisProposal = false;
     }
     
     /// @dev Claim the vote rewards of multiple proposals at once

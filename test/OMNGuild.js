@@ -172,7 +172,7 @@ contract("OMNGuild", function(accounts) {
             assert.equal(await realitio.getFinalAnswer(questionId),  soliditySha3((true)));
         });
 
-        const msgD = "OMNGuild: Proposal already executed";
+        const msgD = "Proposal already executed";
         it(msgD, async function() {
             await expectRevert(
                 omnGuild.endProposal(guildProposalId),
@@ -407,10 +407,10 @@ contract("OMNGuild", function(accounts) {
             const garbageProposal = helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
             await expectRevert(
                omnGuild.endProposal(garbageProposal),
-               "OMNGuild: Proposal hasnt ended yet");
+               "Proposal hasnt ended yet");
             await time.increase(time.duration.seconds(60*60*24*8));
             await expectRevert(omnGuild.endProposal(garbageProposal),
-                "OMNGuild: Not allowed call");
+                "Not allowed call");
             const data = await new web3.eth.Contract(
                   OMNGuild.abi
                 ).methods.setProposer(
@@ -532,7 +532,7 @@ contract("OMNGuild", function(accounts) {
 
             await expectRevert(
                 omnGuild.endProposal(guildProposalId),
-                "OMNGuild: Proposal hasnt ended yet"
+                "Proposal hasnt ended yet"
             );
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
