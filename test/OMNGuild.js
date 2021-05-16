@@ -404,12 +404,12 @@ contract("OMNGuild", function(accounts) {
                 "allowAdminProposer",  //  description:
                 constants.NULL_ADDRESS,  //  contentHash:
             );
-            const guildProposalIdB = helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
+            const garbageProposal = helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
             await expectRevert(
-               omnGuild.endProposal(guildProposalIdB),
+               omnGuild.endProposal(garbageProposal),
                "OMNGuild: Proposal hasnt ended yet");
-            await time.increase(time.duration.seconds(86400*8));
-            await expectRevert(omnGuild.endProposal(guildProposalIdB),
+            await time.increase(time.duration.seconds(60*60*24*8));
+            await expectRevert(omnGuild.endProposal(garbageProposal),
                 "OMNGuild: Not allowed call");
             const data = await new web3.eth.Contract(
                   OMNGuild.abi
@@ -419,7 +419,7 @@ contract("OMNGuild", function(accounts) {
                     110000,  // proposalTime
                     0, // votesForCreation
                   ).encodeABI()
-            const guildProposalId = await createProposal({
+            const setProposerPropasalId = await createProposal({
               guild: omnGuild,
               to: [omnGuild.address],
               data: [ data ],
@@ -428,13 +428,13 @@ contract("OMNGuild", function(accounts) {
               contentHash: constants.NULL_ADDRESS,
               account: accounts[1],
             });
-            await time.increase(time.duration.seconds(60*60*24*7+1000));
             await omnGuild.setVote(
-                guildProposalId,
+                setProposerPropasalId,
                 40, {
                     from: accounts[4]
                 });
-            await omnGuild.endProposal(guildProposalId);
+            await time.increase(time.duration.seconds(60*60*24*7+1000));
+            await omnGuild.endProposal(setProposerPropasalId);
 
             await expectRevert(
                     omnGuild.createProposal(
@@ -455,11 +455,11 @@ contract("OMNGuild", function(accounts) {
                 ),
                 "OMNGuild: to, data value arrays cannot be empty");
             await omnGuild.setVote(
-                guildProposalIdB,
+                garbageProposal,
                 40, {
                     from: accounts[4]
                 });
-            await omnGuild.endProposal(guildProposalIdB);
+            await omnGuild.endProposal(garbageProposal);
         });
     });
 });
