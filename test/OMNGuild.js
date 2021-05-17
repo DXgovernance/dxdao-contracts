@@ -218,18 +218,18 @@ contract("OMNGuild", function(accounts) {
 
             await expectRevert(
                 omnGuild.setVote(
-					marketValidationProposalInvalid,
-					1, {
-						from: accounts[4]
+                    marketValidationProposalInvalid,
+                    1, {
+                        from: accounts[4]
                 }),
                 "OMNGuild: Already voted"
             );
             await expectRevert(
                 omnGuild.setVote(
-					marketValidationProposalValid,
-					1, {
-						from: accounts[4]
-				}),
+                    marketValidationProposalValid,
+                    1, {
+                        from: accounts[4]
+                }),
                 "OMNGuild: Already voted"
             );
         });
