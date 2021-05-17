@@ -458,9 +458,13 @@ contract("OMNGuild", function(accounts) {
                 });
             await time.increase(time.duration.seconds(60*60*24*7+1000));
             await expectRevert(omnGuild.endProposal(testProposal), "Not allowed call");
-            const receipt = await omnGuild.endProposal(setAllowanceProposalId);
-            expectEvent(receipt, "ProposalExecuted", {
+            const setAllowanceReceipt = await omnGuild.endProposal(setAllowanceProposalId);
+            expectEvent(setAllowanceReceipt, "ProposalExecuted", {
                 proposalId: setAllowanceProposalId
+            });
+            const receipt = await omnGuild.endProposal(setSpecialProposerPermissionProposalId);
+            expectEvent(receipt, "ProposalExecuted", {
+                proposalId: setSpecialProposerPermissionProposalId
             });
 
             await omnGuild.setVote(

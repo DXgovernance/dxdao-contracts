@@ -99,7 +99,7 @@ contract OMNGuild is ERC20Guild {
         );
         callPermissions[address(realitIO)][submitAnswerByArbitratorSignature] = true;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256)"))] = true;
-        callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,bytes4[],bool,uint256,uint256)"))] = true;
+        callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,uint256,uint256)"))] = true;
     }
     
     /// @dev Set OMNGuild specific parameters
