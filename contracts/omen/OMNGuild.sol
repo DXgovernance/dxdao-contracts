@@ -46,6 +46,7 @@ contract OMNGuild is ERC20Guild {
     mapping(bytes32 => uint256) public positiveVotesCount;
 
     struct SpecialProposerPermission {
+        bool exists;
         uint256 votesForCreation;
         uint256 proposalTime;
     }
@@ -299,6 +300,7 @@ contract OMNGuild is ERC20Guild {
         uint256 _votesForCreation
     ) public virtual isInitialized {
         require(msg.sender == address(this), "OMNGuild: Only callable by the guild itself");
+        specialProposerPermissions[_proposer].exists = true;
         specialProposerPermissions[_proposer].proposalTime = _proposalTime;
         specialProposerPermissions[_proposer].votesForCreation = _votesForCreation;
         emit SetSpecialProposerPermission(_proposer, _proposalTime, _votesForCreation);
@@ -318,17 +320,20 @@ contract OMNGuild is ERC20Guild {
         bytes memory contentHash
     ) override public virtual isInitialized returns(bytes32) {
         
+		if ( ! specialProposerPermissions[msg.sender].exists )
+			return super.createProposal(to, data, value, description, contentHash);
+
         // store and override defaults
-        uint256 defaultProposalTime = proposalTime;
-        uint256 proposalTime = (specialProposerPermissions[msg.sender].proposalTime > 0 ? specialProposerPermissions[msg.sender].proposalTime:proposalTime);
-        uint256 defaultVotesForCreation = votesForCreation;
-        uint256 votesForCreation = (specialProposerPermissions[msg.sender].votesForCreation > 0 ? specialProposerPermissions[msg.sender].votesForCreation:votesForCreation);
+		uint256  proposalTime_      =  proposalTime;
+		uint256  votesForCreation_  =  votesForCreation;
+		uint256  proposalTime       =  specialProposerPermissions[msg.sender].proposalTime;
+		uint256  votesForCreation   =  specialProposerPermissions[msg.sender].votesForCreation;
         
         bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
 
         // revert default overrides
-        proposalTime = defaultProposalTime;
-        votesForCreation = defaultVotesForCreation;
+		proposalTime      =  proposalTime_;
+		votesForCreation  =  votesForCreation_;
 
         return proposalId;
     }
