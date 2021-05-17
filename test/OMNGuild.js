@@ -417,7 +417,8 @@ contract("OMNGuild", function(accounts) {
                   OMNGuild.abi
                 ).methods.setSpecialProposerPermission(
                     accounts[0], // proposer
-                    [ testCall ] ,
+                    [ testCall ],
+					true,
                     110000,  // proposalTime
                     0, // votesForCreation
                   ).encodeABI()

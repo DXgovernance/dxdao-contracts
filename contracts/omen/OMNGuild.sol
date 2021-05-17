@@ -55,7 +55,7 @@ contract OMNGuild is ERC20Guild {
 
     // set per proposer settings
     mapping(address => SpecialProposerPermission) public specialProposerPermissions;
-    event SetSpecialProposerPermission(address _proposer, bytes4[] _functionsAllowedToAnywhere, uint256 _proposalTime, uint256 _votesForCreation);
+    event SetSpecialProposerPermission(address _proposer, bytes4[] _functionsAllowedToAnywhere, bool _allowance, uint256 _proposalTime, uint256 _votesForCreation);
 
     /// @dev Initilizer
     /// Sets the call permission to arbitrate markets allowed by default and create the market question tempate in 
@@ -101,7 +101,7 @@ contract OMNGuild is ERC20Guild {
         );
         callPermissions[address(realitIO)][submitAnswerByArbitratorSignature] = true;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256)"))] = true;
-        callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,bytes4[],uint256,uint256)"))] = true;
+        callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,bytes4[],bool,uint256,uint256)"))] = true;
     }
     
     /// @dev Set OMNGuild specific parameters
@@ -304,20 +304,22 @@ contract OMNGuild is ERC20Guild {
     /// @dev set special proposer permissions
     /// @param _proposer The address to allow
     /// @param _functionsAllowedToAnywhere functions the proposer can propose be made to anywhere
+	/// @param _allowance true to enable the function allowances, false to disable
     /// @param _proposalTime The minimum time for a proposal to be under votation
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     function setSpecialProposerPermission(
         address _proposer,
-        bytes4[] calldata _functionsAllowedToAnywhere, 
+        bytes4[] memory _functionsAllowedToAnywhere, 
+        bool _allowance,
         uint256 _proposalTime, 
         uint256 _votesForCreation
     ) public virtual isInitialized {
         require(msg.sender == address(this), "OMNGuild: Only callable by the guild itself");
         for (uint256 i = 0; i < _functionsAllowedToAnywhere.length; i++) 
-            specialProposerPermissions[_proposer].functionsAllowedToAnywhere[_functionsAllowedToAnywhere[i]] = true;
+            specialProposerPermissions[_proposer].functionsAllowedToAnywhere[_functionsAllowedToAnywhere[i]] = _allowance;
         specialProposerPermissions[_proposer].proposalTime = _proposalTime;
         specialProposerPermissions[_proposer].votesForCreation = _votesForCreation;
-        emit SetSpecialProposerPermission(_proposer, _functionsAllowedToAnywhere, _proposalTime, _votesForCreation);
+        emit SetSpecialProposerPermission(_proposer, _functionsAllowedToAnywhere, _allowance, _proposalTime, _votesForCreation);
     }
 
     /// @dev Create a proposal with a static call data
