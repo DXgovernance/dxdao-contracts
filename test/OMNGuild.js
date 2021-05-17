@@ -398,12 +398,12 @@ contract("OMNGuild", function(accounts) {
                 "OMNGuild: Already voted");
         });
         it("test createProposal", async function() {
-            const testCall = web3.eth.abi.encodeFunctionSignature("setVote(bytes32,uint256)");
+            const testCall = web3.eth.abi.encodeFunctionSignature("getVotesForExecution()");
             const testData = await new web3.eth.Contract(
                   OMNGuild.abi
-                ).methods.setVote(testCall,2).encodeABI();
+                ).methods.getVotesForExecution().encodeABI();
             const tx = await omnGuild.createProposal(
-                [ accounts[3] ],  //  to:
+                [ accounts[0] ],  //  to:
                 [ testData ],  //  data:
                 [ 0 ],  //  value:
                 "allow functions to anywhere",  //  description:
@@ -413,12 +413,32 @@ contract("OMNGuild", function(accounts) {
             await expectRevert(
                omnGuild.endProposal(testProposal),
                "Proposal hasnt ended yet");
+            const setAllowanceData = await new web3.eth.Contract(
+                  OMNGuild.abi
+                ).methods.setAllowance(
+                    [ accounts[0] ],
+                    [ testCall ],  
+                    [ true ], 
+                  ).encodeABI()
+            const setAllowanceProposalId = await createProposal({
+              guild: omnGuild,
+              to: [ omnGuild.address ],
+              data: [ setAllowanceData ],
+              value: [0],
+              description: "setAllowance",
+              contentHash: constants.NULL_ADDRESS,
+              account: accounts[1],
+            });
+            await omnGuild.setVote(
+                setAllowanceProposalId,
+                40, {
+                    from: accounts[4]
+                });
+
             const data = await new web3.eth.Contract(
                   OMNGuild.abi
                 ).methods.setSpecialProposerPermission(
                     accounts[0], // proposer
-                    [ testCall ],
-					true,
                     110000,  // proposalTime
                     0, // votesForCreation
                   ).encodeABI()
@@ -437,11 +457,10 @@ contract("OMNGuild", function(accounts) {
                     from: accounts[4]
                 });
             await time.increase(time.duration.seconds(60*60*24*7+1000));
-            await expectRevert(omnGuild.endProposal(testProposal),
-                "Not allowed call");
-            const receipt = await omnGuild.endProposal(setSpecialProposerPermissionProposalId);
+            await expectRevert(omnGuild.endProposal(testProposal), "Not allowed call");
+            const receipt = await omnGuild.endProposal(setAllowanceProposalId);
             expectEvent(receipt, "ProposalExecuted", {
-                proposalId: setSpecialProposerPermissionProposalId
+                proposalId: setAllowanceProposalId
             });
 
             await omnGuild.setVote(

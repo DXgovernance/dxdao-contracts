@@ -46,16 +46,13 @@ contract OMNGuild is ERC20Guild {
     mapping(bytes32 => uint256) public positiveVotesCount;
 
     struct SpecialProposerPermission {
-        mapping(bytes4 => bool) functionsAllowedToAnywhere;
         uint256 votesForCreation;
         uint256 proposalTime;
     }
 
-    bytes32 thisProposalId;
-
     // set per proposer settings
     mapping(address => SpecialProposerPermission) public specialProposerPermissions;
-    event SetSpecialProposerPermission(address _proposer, bytes4[] _functionsAllowedToAnywhere, bool _allowance, uint256 _proposalTime, uint256 _votesForCreation);
+    event SetSpecialProposerPermission(address _proposer, uint256 _proposalTime, uint256 _votesForCreation);
 
     /// @dev Initilizer
     /// Sets the call permission to arbitrate markets allowed by default and create the market question tempate in 
@@ -180,13 +177,6 @@ contract OMNGuild is ERC20Guild {
         }
     }
     
-    /// @dev Get call signature permission
-    function getCallPermission(address to, bytes4 functionSignature) override public view virtual returns (bool) {
-        return specialProposerPermissions[proposals[thisProposalId].creator].
-                functionsAllowedToAnywhere[functionSignature] ||
-            callPermissions[to][functionSignature];
-    }
-
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
     /// This function cant end market validation proposals
     /// @param proposalId The id of the proposal to be executed
@@ -195,11 +185,9 @@ contract OMNGuild is ERC20Guild {
             proposalsForMarketValidation[proposalId] == bytes32(0),
             "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
         );
-        thisProposalId = proposalId;
         require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
         require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasnt ended yet");
         _endProposal(proposalId);
-        delete thisProposalId;
     }
     
     /// @dev Claim the vote rewards of multiple proposals at once
@@ -303,23 +291,17 @@ contract OMNGuild is ERC20Guild {
     }
     /// @dev set special proposer permissions
     /// @param _proposer The address to allow
-    /// @param _functionsAllowedToAnywhere functions the proposer can propose be made to anywhere
-	/// @param _allowance true to enable the function allowances, false to disable
     /// @param _proposalTime The minimum time for a proposal to be under votation
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
     function setSpecialProposerPermission(
         address _proposer,
-        bytes4[] memory _functionsAllowedToAnywhere, 
-        bool _allowance,
         uint256 _proposalTime, 
         uint256 _votesForCreation
     ) public virtual isInitialized {
         require(msg.sender == address(this), "OMNGuild: Only callable by the guild itself");
-        for (uint256 i = 0; i < _functionsAllowedToAnywhere.length; i++) 
-            specialProposerPermissions[_proposer].functionsAllowedToAnywhere[_functionsAllowedToAnywhere[i]] = _allowance;
         specialProposerPermissions[_proposer].proposalTime = _proposalTime;
         specialProposerPermissions[_proposer].votesForCreation = _votesForCreation;
-        emit SetSpecialProposerPermission(_proposer, _functionsAllowedToAnywhere, _allowance, _proposalTime, _votesForCreation);
+        emit SetSpecialProposerPermission(_proposer, _proposalTime, _votesForCreation);
     }
 
     /// @dev Create a proposal with a static call data
