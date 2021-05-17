@@ -398,7 +398,7 @@ contract("OMNGuild", function(accounts) {
                 "OMNGuild: Already voted");
         });
 
-        it.only("test createProposal", async function() {
+        it("test createProposal", async function() {
             await expectRevert(omnGuild.setSpecialProposerPermission(accounts[2],3,4), "Only callable by the guild");
 
             const testCall = web3.eth.abi.encodeFunctionSignature("getVotesForExecution()");
