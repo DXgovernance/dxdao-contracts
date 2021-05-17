@@ -412,32 +412,32 @@ contract("OMNGuild", function(accounts) {
                "Proposal hasnt ended yet");
             const data = await new web3.eth.Contract(
                   OMNGuild.abi
-                ).methods.setProposer(
+                ).methods.setSpecialProposerPermission(
                     accounts[0], // proposer
                     true, // allowAnyProposal
                     110000,  // proposalTime
                     0, // votesForCreation
                   ).encodeABI()
-            const setProposerProposalId = await createProposal({
+            const setSpecialProposerPermissionProposalId = await createProposal({
               guild: omnGuild,
               to: [ omnGuild.address ],
               data: [ data ],
               value: [0],
-              description: "setProposer",
+              description: "setSpecialProposerPermission",
               contentHash: constants.NULL_ADDRESS,
               account: accounts[1],
             });
             await omnGuild.setVote(
-                setProposerProposalId,
+                setSpecialProposerPermissionProposalId,
                 40, {
                     from: accounts[4]
                 });
             await time.increase(time.duration.seconds(60*60*24*7+1000));
             await expectRevert(omnGuild.endProposal(garbageProposal),
                 "Not allowed call");
-            const receipt = await omnGuild.endProposal(setProposerProposalId);
+            const receipt = await omnGuild.endProposal(setSpecialProposerPermissionProposalId);
             expectEvent(receipt, "ProposalExecuted", {
-                proposalId: setProposerProposalId
+                proposalId: setSpecialProposerPermissionProposalId
             });
 
             await omnGuild.setVote(

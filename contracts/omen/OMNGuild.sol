@@ -51,11 +51,11 @@ contract OMNGuild is ERC20Guild {
         uint256 proposalTime;
     }
 
-    bool allowThisProposal;
+    bytes32 thisProposalId;
 
     // set per proposer settings
-    mapping(address => SpecialProposerPermission) public proposers;
-    event SetProposer(address _proposer, bool _allowAnyProposal, uint256 _proposalTime, uint256 _votesForCreation);
+    mapping(address => SpecialProposerPermission) public specialProposerPermissions;
+    event SetSpecialProposerPermission(address _proposer, bool _allowAnyProposal, uint256 _proposalTime, uint256 _votesForCreation);
 
     /// @dev Initilizer
     /// Sets the call permission to arbitrate markets allowed by default and create the market question tempate in 
@@ -101,7 +101,7 @@ contract OMNGuild is ERC20Guild {
         );
         callPermissions[address(realitIO)][submitAnswerByArbitratorSignature] = true;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256)"))] = true;
-        callPermissions[address(this)][bytes4(keccak256("setProposer(address,bool,uint256,uint256)"))] = true;
+        callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,bool,uint256,uint256)"))] = true;
     }
     
     /// @dev Set OMNGuild specific parameters
@@ -182,7 +182,7 @@ contract OMNGuild is ERC20Guild {
     
     /// @dev Get call signature permission
     function getCallPermission(address to, bytes4 functionSignature) override public view virtual returns (bool) {
-        return allowThisProposal || 
+        return specialProposerPermissions[proposals[thisProposalId].creator].allowAnyProposal ||
             callPermissions[to][functionSignature];
     }
 
@@ -194,11 +194,11 @@ contract OMNGuild is ERC20Guild {
             proposalsForMarketValidation[proposalId] == bytes32(0),
             "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
         );
+        thisProposalId = proposalId;
         require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
         require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasnt ended yet");
-        allowThisProposal = proposers[proposals[proposalId].creator].allowAnyProposal;
         _endProposal(proposalId);
-        allowThisProposal = false;
+        delete thisProposalId;
     }
     
     /// @dev Claim the vote rewards of multiple proposals at once
@@ -305,17 +305,17 @@ contract OMNGuild is ERC20Guild {
     /// @param _allowAnyProposal if allowances are checked in endProposal
     /// @param _proposalTime The minimum time for a proposal to be under votation
     /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
-    function setProposer(
+    function setSpecialProposerPermission(
         address _proposer,
         bool _allowAnyProposal,
         uint256 _proposalTime,
         uint256 _votesForCreation
     ) public virtual isInitialized {
         require(msg.sender == address(this), "OMNGuild: Only callable by the guild itself");
-        proposers[_proposer].allowAnyProposal = _allowAnyProposal;
-        proposers[_proposer].proposalTime = _proposalTime;
-        proposers[_proposer].votesForCreation = _votesForCreation;
-        emit SetProposer(_proposer,_allowAnyProposal,_proposalTime,_votesForCreation);
+        specialProposerPermissions[_proposer].allowAnyProposal = _allowAnyProposal;
+        specialProposerPermissions[_proposer].proposalTime = _proposalTime;
+        specialProposerPermissions[_proposer].votesForCreation = _votesForCreation;
+        emit SetSpecialProposerPermission(_proposer,_allowAnyProposal,_proposalTime,_votesForCreation);
     }
 
     /// @dev Create a proposal with a static call data
@@ -334,9 +334,9 @@ contract OMNGuild is ERC20Guild {
         
         // store and override defaults
         uint256 defaultProposalTime = proposalTime;
-        uint256 proposalTime = (proposers[msg.sender].proposalTime > 0 ? proposers[msg.sender].proposalTime:proposalTime);
+        uint256 proposalTime = (specialProposerPermissions[msg.sender].proposalTime > 0 ? specialProposerPermissions[msg.sender].proposalTime:proposalTime);
         uint256 defaultVotesForCreation = votesForCreation;
-        uint256 votesForCreation = (proposers[msg.sender].votesForCreation > 0 ? proposers[msg.sender].votesForCreation:votesForCreation);
+        uint256 votesForCreation = (specialProposerPermissions[msg.sender].votesForCreation > 0 ? specialProposerPermissions[msg.sender].votesForCreation:votesForCreation);
         
         bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
 
