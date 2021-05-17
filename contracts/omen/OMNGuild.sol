@@ -329,7 +329,7 @@ contract OMNGuild is ERC20Guild {
         uint256  votesForCreation_  =  votesForCreation;
         proposalTime       =  specialProposerPermissions[msg.sender].proposalTime;
         votesForCreation   =  specialProposerPermissions[msg.sender].votesForCreation;
-		
+        
         bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
 
         // revert default overrides
