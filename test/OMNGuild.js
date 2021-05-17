@@ -102,7 +102,7 @@ contract("OMNGuild", function(accounts) {
             proposalId: guildProposalId
         });
 
-        const latest=(await time.latest()).toNumber();
+        const latest = (await time.latest()).toNumber();
         questionId = (await realitio.askQuestion(0 /* template_id */ , "Is market with [questionID] valid?", omnGuild.address, 60*60*24*2 /* timeout, */ , latest /* opening_ts */ , 0 /* nonce */ )).receipt.logs[0].args.question_id;
 
         await realitio.submitAnswer(questionId, soliditySha3((true)), 0, {
@@ -170,8 +170,8 @@ contract("OMNGuild", function(accounts) {
             assert.equal(proposalInfo.state, constants.GuildProposalState.Executed);
             assert.equal(proposalInfo.to[0], realitio.address);
             assert.equal(proposalInfo.value[0], 0);
-            assert.equal(await realitio.isFinalized(questionId),true);
-            assert.equal(await realitio.getFinalAnswer(questionId),  soliditySha3((true)));
+            assert.equal(await realitio.isFinalized(questionId), true);
+            assert.equal(await realitio.getFinalAnswer(questionId), soliditySha3((true)));
         });
 
         const msgD = "Proposal already executed";
@@ -218,18 +218,18 @@ contract("OMNGuild", function(accounts) {
 
             await expectRevert(
                 omnGuild.setVote(
-                marketValidationProposalInvalid,
-                1, {
-                    from: accounts[4]
+					marketValidationProposalInvalid,
+					1, {
+						from: accounts[4]
                 }),
                 "OMNGuild: Already voted"
             );
             await expectRevert(
                 omnGuild.setVote(
-                marketValidationProposalValid,
-                1, {
-                    from: accounts[4]
-                }),
+					marketValidationProposalValid,
+					1, {
+						from: accounts[4]
+				}),
                 "OMNGuild: Already voted"
             );
         });
@@ -502,7 +502,7 @@ contract("OMNGuild", function(accounts) {
             await time.increase(time.duration.seconds(4));
             const receiptForTestPropsal2 = await omnGuild.endProposal(testProposal2);
             expectEvent(receiptForTestPropsal2,
-				"ProposalExecuted", {
+                "ProposalExecuted", {
                 proposalId: testProposal2
             });
         });
