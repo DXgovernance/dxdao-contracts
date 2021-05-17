@@ -397,7 +397,10 @@ contract("OMNGuild", function(accounts) {
                     { from: accounts[3] }),
                 "OMNGuild: Already voted");
         });
-        it("test createProposal", async function() {
+
+        it.only("test createProposal", async function() {
+			await expectRevert(omnGuild.setSpecialProposerPermission(accounts[2],3,4), "Only callable by the guild");
+
             const testCall = web3.eth.abi.encodeFunctionSignature("getVotesForExecution()");
             const testData = await new web3.eth.Contract(
                   OMNGuild.abi
@@ -410,9 +413,6 @@ contract("OMNGuild", function(accounts) {
                 constants.NULL_ADDRESS,  //  contentHash:
             );
             const testProposal = helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
-            await expectRevert(
-               omnGuild.endProposal(testProposal),
-               "Proposal hasnt ended yet");
             const setAllowanceData = await new web3.eth.Contract(
                   OMNGuild.abi
                 ).methods.setAllowance(
@@ -435,11 +435,20 @@ contract("OMNGuild", function(accounts) {
                     from: accounts[4]
                 });
 
+			await time.increase(time.duration.seconds(60*60*24*7+1000));
+            await expectRevert(omnGuild.endProposal(testProposal), "Not allowed call");
+            const setAllowanceReceipt = await omnGuild.endProposal(setAllowanceProposalId);
+            expectEvent(setAllowanceReceipt, "ProposalExecuted", {
+                proposalId: setAllowanceProposalId
+            });
+
+
+
             const data = await new web3.eth.Contract(
                   OMNGuild.abi
                 ).methods.setSpecialProposerPermission(
                     accounts[0], // proposer
-                    110000,  // proposalTime
+                    12000000,  // proposalTime
                     0, // votesForCreation
                   ).encodeABI()
             const setSpecialProposerPermissionProposalId = await createProposal({
@@ -456,25 +465,44 @@ contract("OMNGuild", function(accounts) {
                 40, {
                     from: accounts[4]
                 });
-            await time.increase(time.duration.seconds(60*60*24*7+1000));
-            await expectRevert(omnGuild.endProposal(testProposal), "Not allowed call");
-            const setAllowanceReceipt = await omnGuild.endProposal(setAllowanceProposalId);
-            expectEvent(setAllowanceReceipt, "ProposalExecuted", {
-                proposalId: setAllowanceProposalId
-            });
+            
+			await time.increase(time.duration.seconds(60*60*24*7+1000));
             const receipt = await omnGuild.endProposal(setSpecialProposerPermissionProposalId);
+            expectEvent(receipt, "SetSpecialProposerPermission", {
+				_proposer: accounts[0],
+				_proposalTime: "12000000",
+				_votesForCreation: "0"
+            });
             expectEvent(receipt, "ProposalExecuted", {
                 proposalId: setSpecialProposerPermissionProposalId
             });
 
+			const releaseReceipt = await omnGuild.releaseTokens(60); 
+            expectEvent(releaseReceipt, "TokensReleased", {
+				voter: accounts[0]
+            });
+
+            const tx2 = await omnGuild.createProposal(
+                [ accounts[0] ],  //  to:
+                [ testData ],  //  data:
+                [ 0 ],  //  value:
+                "allow functions to anywhere",  //  description:
+                constants.NULL_ADDRESS,  //  contentHash:
+            );
+            const testProposal2 = helpers.getValueFromLogs(tx2, "proposalId", "ProposalCreated");
             await omnGuild.setVote(
-                testProposal,
+                testProposal2,
                 40, {
                     from: accounts[4]
                 });
-            const receiptForGarbage = await omnGuild.endProposal(testProposal);
+			await time.increase(time.duration.seconds(11999998));
+            await expectRevert(
+               omnGuild.endProposal(testProposal2),
+               "Proposal hasnt ended yet");
+			await time.increase(time.duration.seconds(4));
+            const receiptForGarbage = await omnGuild.endProposal(testProposal2);
             expectEvent(receiptForGarbage, "ProposalExecuted", {
-                proposalId: testProposal
+                proposalId: testProposal2
             });
         });
     });

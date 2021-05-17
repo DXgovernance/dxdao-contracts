@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
+
 pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
@@ -326,9 +327,9 @@ contract OMNGuild is ERC20Guild {
         // store and override defaults
         uint256  proposalTime_      =  proposalTime;
         uint256  votesForCreation_  =  votesForCreation;
-        uint256  proposalTime       =  specialProposerPermissions[msg.sender].proposalTime;
-        uint256  votesForCreation   =  specialProposerPermissions[msg.sender].votesForCreation;
-        
+        proposalTime       =  specialProposerPermissions[msg.sender].proposalTime;
+        votesForCreation   =  specialProposerPermissions[msg.sender].votesForCreation;
+		
         bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
 
         // revert default overrides
