@@ -501,8 +501,8 @@ contract("OMNGuild", function(accounts) {
                "Proposal hasnt ended yet");
             await time.increase(time.duration.seconds(4));
             const receiptForTestPropsal2 = await omnGuild.endProposal(testProposal2);
-            expectEvent(receiptForTestPropsal2
-                    , "ProposalExecuted", {
+            expectEvent(receiptForTestPropsal2,
+				"ProposalExecuted", {
                 proposalId: testProposal2
             });
         });
