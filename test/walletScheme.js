@@ -1318,7 +1318,7 @@ contract("WalletScheme", function(accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "cant propose ERC20 trasnfers with value"
+        "cant propose ERC20 transfers with value"
       );
     
     });
