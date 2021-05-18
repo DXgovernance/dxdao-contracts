@@ -320,20 +320,20 @@ contract OMNGuild is ERC20Guild {
         bytes memory contentHash
     ) override public virtual isInitialized returns(bytes32) {
         
-		uint256  proposalTime_      =  proposalTime;
-		uint256  votesForCreation_  =  votesForCreation;
+        uint256  proposalTime_      =  proposalTime;
+        uint256  votesForCreation_  =  votesForCreation;
 
         if ( specialProposerPermissions[msg.sender].exists ) {
-			// store and override defaults
-			proposalTime       =  specialProposerPermissions[msg.sender].proposalTime;
-			votesForCreation   =  specialProposerPermissions[msg.sender].votesForCreation;
-		}
-			
-		bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
+            // override defaults
+            proposalTime       =  specialProposerPermissions[msg.sender].proposalTime;
+            votesForCreation   =  specialProposerPermissions[msg.sender].votesForCreation;
+        }
+            
+        bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
 
-		// revert default overrides
-		proposalTime      =  proposalTime_;
-		votesForCreation  =  votesForCreation_;
+        // revert overrides
+        proposalTime      =  proposalTime_;
+        votesForCreation  =  votesForCreation_;
 
         return proposalId;
     }
