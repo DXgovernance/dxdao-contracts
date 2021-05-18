@@ -113,13 +113,19 @@ module.exports = {
       gasLimit: 9000000,
       gasPrice: 10,
       timeout: 60000
+    },
+    "arbitrum-testnet-v5": {
+      url: 'https://kovan5.arbitrum.io/rpc',
+      accounts: { mnemonic: MNEMONIC },
+      gasPrice: 0,
+      chainId: 144545313136048,
+      timeout: 60000
     }
   },
   etherscan: { apiKey: ETHERSCAN_API_KEY },
-
-dependencyCompiler: {
-      paths: [
-              '@realitio/realitio-contracts/truffle/contracts/Realitio.sol',
-        ],
-}
+  dependencyCompiler: {
+    paths: [
+      '@realitio/realitio-contracts/truffle/contracts/Realitio.sol',
+    ],
+  }
 };
