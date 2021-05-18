@@ -45,6 +45,16 @@ contract OMNGuild is ERC20Guild {
     // Save how much accounts voted in a proposal
     mapping(bytes32 => uint256) public positiveVotesCount;
 
+    struct SpecialProposerPermission {
+        bool exists;
+        uint256 votesForCreation;
+        uint256 proposalTime;
+    }
+
+    // set per proposer settings
+    mapping(address => SpecialProposerPermission) public specialProposerPermissions;
+    event SetSpecialProposerPermission(address _proposer, uint256 _proposalTime, uint256 _votesForCreation);
+
     /// @dev Initilizer
     /// Sets the call permission to arbitrate markets allowed by default and create the market question tempate in 
     /// realit.io to be used on markets created with the guild
@@ -89,6 +99,7 @@ contract OMNGuild is ERC20Guild {
         );
         callPermissions[address(realitIO)][submitAnswerByArbitratorSignature] = true;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256)"))] = true;
+        callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,uint256,uint256)"))] = true;
     }
     
     /// @dev Set OMNGuild specific parameters
@@ -279,5 +290,51 @@ contract OMNGuild is ERC20Guild {
     function getVotesForExecution() override public view returns (uint256) {
         return totalLocked.mul(votesForExecution).div(10000);
     }
+    /// @dev set special proposer permissions
+    /// @param _proposer The address to allow
+    /// @param _proposalTime The minimum time for a proposal to be under votation
+    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    function setSpecialProposerPermission(
+        address _proposer,
+        uint256 _proposalTime, 
+        uint256 _votesForCreation
+    ) public virtual isInitialized {
+        require(msg.sender == address(this), "OMNGuild: Only callable by the guild itself");
+        specialProposerPermissions[_proposer].exists = true;
+        specialProposerPermissions[_proposer].proposalTime = _proposalTime;
+        specialProposerPermissions[_proposer].votesForCreation = _votesForCreation;
+        emit SetSpecialProposerPermission(_proposer, _proposalTime, _votesForCreation);
+    }
 
+    /// @dev Create a proposal with a static call data
+    /// @param to The receiver addresses of each call to be executed
+    /// @param data The data to be executed on each call to be executed
+    /// @param value The ETH value to be sent on each call to be executed
+    /// @param description A short description of the proposal
+    /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
+    function createProposal (
+        address[] memory to,
+        bytes[] memory data,
+        uint256[] memory value,
+        string memory description,
+        bytes memory contentHash
+    ) override public virtual isInitialized returns(bytes32) {
+        
+        uint256  proposalTime_      =  proposalTime;
+        uint256  votesForCreation_  =  votesForCreation;
+
+        if ( specialProposerPermissions[msg.sender].exists ) {
+            // override defaults
+            proposalTime       =  specialProposerPermissions[msg.sender].proposalTime;
+            votesForCreation   =  specialProposerPermissions[msg.sender].votesForCreation;
+        }
+            
+        bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
+
+        // revert overrides
+        proposalTime      =  proposalTime_;
+        votesForCreation  =  votesForCreation_;
+
+        return proposalId;
+    }
 }
