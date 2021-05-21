@@ -242,14 +242,14 @@ async function main() {
   } else {
     
     let votingMachineTokenAddress;
-    if (!DXD_TOKEN[network]) {
+    if (!DXD_TOKEN[networkName]) {
         console.log("Creating new voting machine token...");
         const newVotingMachineToken = await ERC20Mock.new(accounts[0], web3.utils.toWei('101000000'));
         await newVotingMachineToken.transfer(dxAvatar.address, web3.utils.toWei('100000000'));
         votingMachineTokenAddress = newVotingMachineToken.address;
         console.log("Voting machine token deployed to:", votingMachineTokenAddress);
     } else {
-      votingMachineTokenAddress = DXD_TOKEN[network];
+      votingMachineTokenAddress = DXD_TOKEN[networkName];
       console.log("Using pre configured voting machine token:", votingMachineTokenAddress);
     }
     
