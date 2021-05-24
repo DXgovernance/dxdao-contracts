@@ -1500,6 +1500,18 @@ contract("WalletScheme", function(accounts) {
   
   describe("Permission Registry", async function(){
 
+    it("Permission Registry - fail in deploying wring wrong args", async function() {
+      await expectRevert(
+        PermissionRegistry.new(constants.NULL_ADDRESS, 10),
+        "PermissionRegistry: Invalid owner address"
+      );
+      
+      await expectRevert(
+        PermissionRegistry.new(org.avatar.address, 0),
+        "PermissionRegistry: Invalid time delay"
+      );
+    })
+    
     it("Permission Registry - transfer ownerhip and set time delay", async function() {
       
       await permissionRegistry.setAdminPermission(
@@ -1520,7 +1532,49 @@ contract("WalletScheme", function(accounts) {
         false
       );
       
+      await permissionRegistry.setAdminPermission(
+        constants.NULL_ADDRESS, 
+        accounts[1], 
+        constants.ANY_ADDRESS, 
+        constants.ANY_FUNC_SIGNATURE,
+        constants.MAX_UINT_256, 
+        true
+      );
+      
+      await expectRevert(
+        permissionRegistry.setPermission(
+          constants.NULL_ADDRESS, 
+          permissionRegistry.address, 
+          constants.ANY_FUNC_SIGNATURE,
+          constants.MAX_UINT_256, 
+          true
+        ),
+        "PermissionRegistry: Cant change permissions to PermissionRegistry"
+      );
+      
       await permissionRegistry.transferOwnership(org.avatar.address);
+      
+      await expectRevert(
+        permissionRegistry.setAdminPermission(
+          constants.NULL_ADDRESS, 
+          quickWalletScheme.address, 
+          constants.ANY_ADDRESS, 
+          constants.ANY_FUNC_SIGNATURE,
+          constants.MAX_UINT_256, 
+          true
+        ),
+        "PermissionRegistry: Only callable by owner"
+      );
+      
+      await expectRevert(
+        permissionRegistry.setTimeDelay(60),
+        "PermissionRegistry: Only callable by owner"
+      );
+      
+      await expectRevert(
+        permissionRegistry.transferOwnership(accounts[0]),
+        "PermissionRegistry: Only callable by owner"
+      );
       
       const setTimeDelayData = new web3.eth.Contract(PermissionRegistry.abi).methods
         .setTimeDelay(60).encodeABI();
