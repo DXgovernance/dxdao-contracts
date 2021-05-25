@@ -13,8 +13,6 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
  *   `value` uint256 and `fromTime` uint256, if `fromTime` is zero it meants the function is not allowed.
  * The ERC20 transfer permissions are stored using the asset of the ERC20 and stores the `from` address, `to` address,
  *   `value` uint256 and `fromTime` uint256, if `fromTime` is zero it meants the function is not allowed.
- * It supports EIP 1157 minimal proxies, this means that the permissions to proxies has to be set to the
- * implementation address and not the proxy address
  */
 
 contract PermissionRegistry {
@@ -164,15 +162,6 @@ contract PermissionRegistry {
     address to, 
     bytes4 functionSignature
   ) public view returns (uint256 valueAllowed, uint256 fromTime) {
-    
-    // bytes4(keccak256("implementation()")) == 0x5c60da1b
-    (bool proxyImplementationCallSuccess, bytes memory proxyImplementationCallData) =
-      address(to).staticcall.gas(21000)(hex"5c60da1b");
-    
-    // If the receiver is a proxy contract check the permission against the implementation address
-    if (proxyImplementationCallSuccess){
-      to = abi.decode(proxyImplementationCallData, (address));
-    }
     
     Permission memory permission;
     
