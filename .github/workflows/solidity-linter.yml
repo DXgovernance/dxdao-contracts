@@ -25,5 +25,9 @@ jobs:
       - name: Install Dependencies
         run: yarn
         
+      - name: Set exit on error
+        run: set -o errexit
+
+        
       - name: Solidity Linter
         run: yarn solidity-linter
