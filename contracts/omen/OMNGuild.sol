@@ -45,6 +45,16 @@ contract OMNGuild is ERC20Guild {
     // Save how much accounts voted in a proposal
     mapping(bytes32 => uint256) public positiveVotesCount;
 
+    struct SpecialProposerPermission {
+        bool exists;
+        uint256 votesForCreation;
+        uint256 proposalTime;
+    }
+
+    // set per proposer settings
+    mapping(address => SpecialProposerPermission) public specialProposerPermissions;
+    event SetSpecialProposerPermission(address _proposer, uint256 _proposalTime, uint256 _votesForCreation);
+
     /// @dev Initilizer
     /// Sets the call permission to arbitrate markets allowed by default and create the market question tempate in 
     /// realit.io to be used on markets created with the guild
@@ -89,6 +99,7 @@ contract OMNGuild is ERC20Guild {
         );
         callPermissions[address(realitIO)][submitAnswerByArbitratorSignature] = true;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256)"))] = true;
+        callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,uint256,uint256)"))] = true;
     }
     
     /// @dev Set OMNGuild specific parameters
@@ -104,65 +115,19 @@ contract OMNGuild is ERC20Guild {
         uint256 _successfulVoteReward,
         uint256 _unsuccessfulVoteReward
     ) public isInitialized {
-        require(msg.sender == address(this), "Only the OMEN Guild can configure the guild");
+        require(msg.sender == address(this), "OMNGuild: Only the Guild can configure the guild");
         realitIO = _realitIO;
         maxAmountVotes = _maxAmountVotes;
         successfulVoteReward = _successfulVoteReward;
         unsuccessfulVoteReward = _unsuccessfulVoteReward;
     }
     
-    /// @dev Create proposals with an static call data and extra information
-    /// @param to The receiver addresses of each call to be executed
-    /// @param data The data to be executed on each call to be executed
-    /// @param value The ETH value to be sent on each call to be executed
-    /// @param description A short description of the proposal
-    /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
-    function createProposals(
-        address[] memory to,
-        bytes[] memory data,
-        uint256[] memory value,
-        string[] memory description,
-        bytes[] memory contentHash
-    ) public isInitialized returns(bytes32[] memory) {
-        require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");
-        require(
-            (to.length == data.length) && (to.length == value.length),
-            "OMNGuild: Wrong length of to, data or value arrays"
-        );
-        require(
-            (description.length == contentHash.length),
-            "OMNGuild: Wrong length of description or contentHash arrays"
-        );
-        require(to.length > 0, "OMNGuild: to, data value arrays cannot be empty");
-        bytes32[] memory proposalsCreated  = new bytes32[](description.length);
-        uint256 proposalsToCreate = description.length;
-        uint256 callsPerProposal = to.length.div(proposalsToCreate);
-        for(uint proposalIndex = 0; proposalIndex < proposalsToCreate; proposalIndex ++) {
-            address[] memory _to = new address[](callsPerProposal);
-            bytes[] memory _data = new bytes[](callsPerProposal);
-            uint256[] memory _value = new uint256[](callsPerProposal);
-            uint256 callIndex;
-            for(
-                uint callIndexInProposals = callsPerProposal.mul(proposalIndex);
-                callIndexInProposals < callsPerProposal;
-                callIndexInProposals ++
-            ) {
-                _to[callIndex] = to[callIndexInProposals];
-                _data[callIndex] = data[callIndexInProposals];
-                _value[callIndex] = value[callIndexInProposals];
-                callIndex ++;
-            }
-            proposalsCreated[proposalIndex] =
-              _createProposal(_to, _data, _value, description[proposalIndex], contentHash[proposalIndex]);
-        }
-        return proposalsCreated;
-    }
     
     /// @dev Create two proposals one to vote for the validation fo a market in realitIO
     /// @param questionId the id of the question to be validated in realitiyIo
     function createMarketValidationProposal(bytes32 questionId) public isInitialized {
-        require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");   // I.B.2.c
-        require(realitIO.getOpeningTS(questionId) + 60*60*24*2 > block.timestamp, "Realit.io question is over 2 days old"); // I.B.2.d
+        require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");
+        require(realitIO.getOpeningTS(questionId) + 60*60*24*2 > block.timestamp, "OMNGuild: Realit.io question is over 2 days old");
         
         address[] memory _to = new address[](1);
         bytes[] memory _data = new bytes[](1);
@@ -270,12 +235,12 @@ contract OMNGuild is ERC20Guild {
     function setVote(bytes32 proposalId, uint256 amount) override public virtual {
         require(
             votesOfAt(msg.sender, proposals[proposalId].snapshotId) >=  amount,
-            "ERC20Guild: Invalid amount"
+            "OMNGuild: Invalid amount"
         );
 
-        require(proposals[proposalId].votes[msg.sender] == 0, "OMNGuild: Already voted1");
-        require(proposals[marketValidationProposals[proposalsForMarketValidation[proposalId]].marketValid].votes[msg.sender] == 0, "OMNGuild: Already voted2");
-        require(proposals[marketValidationProposals[proposalsForMarketValidation[proposalId]].marketInvalid].votes[msg.sender]  == 0, "OMNGuild: Already voted3");
+        require(proposals[proposalId].votes[msg.sender] == 0, "OMNGuild: Already voted on proposal");
+        require(proposals[marketValidationProposals[proposalsForMarketValidation[proposalId]].marketValid].votes[msg.sender] == 0, "OMNGuild: Already voted on market valid proprosal");
+        require(proposals[marketValidationProposals[proposalsForMarketValidation[proposalId]].marketInvalid].votes[msg.sender]  == 0, "OMNGuild: Already voted on market invalid proposal");
         require(amount <= maxAmountVotes, "OMNGuild: Cant vote with more votes than max amount of votes");
         if (amount > 0) {
           positiveVotesCount[proposalId] = positiveVotesCount[proposalId].add(1);
@@ -290,16 +255,16 @@ contract OMNGuild is ERC20Guild {
     function setVotes(bytes32[] memory proposalIds, uint256[] memory amounts) override public virtual {
         require(
             proposalIds.length == amounts.length,
-            "ERC20Guild: Wrong length of proposalIds or amounts"
+            "OMNGuild: Wrong length of proposalIds or amounts"
         );
         for(uint i = 0; i < proposalIds.length; i ++){
             require(
                 votesOfAt(msg.sender, proposals[proposalIds[i]].snapshotId) >=  amounts[i],
-                "ERC20Guild: Invalid amount"
+                "OMNGuild: Invalid amount"
             );
-            require(proposals[proposalIds[i]].votes[msg.sender] == 0, "OMNGuild: Already voted4");
-            require(proposals[marketValidationProposals[proposalsForMarketValidation[proposalIds[i]]].marketValid].votes[msg.sender] == 0, "OMNGuild: Already voted5");
-            require(proposals[marketValidationProposals[proposalsForMarketValidation[proposalIds[i]]].marketInvalid].votes[msg.sender]  == 0, "OMNGuild: Already voted6");
+            require(proposals[proposalIds[i]].votes[msg.sender] == 0, "OMNGuild: Already voted on this proprosal");
+            require(proposals[marketValidationProposals[proposalsForMarketValidation[proposalIds[i]]].marketValid].votes[msg.sender] == 0, "OMNGuild: Already voted on this market valid proposal");
+            require(proposals[marketValidationProposals[proposalsForMarketValidation[proposalIds[i]]].marketInvalid].votes[msg.sender]  == 0, "OMNGuild: Already voted on this market invalid proposal");
             require(amounts[i] <= maxAmountVotes, "OMNGuild: Cant vote with more votes than max amount of votes");
             if (amounts[i] > 0) {
                 positiveVotesCount[proposalIds[i]] = positiveVotesCount[proposalIds[i]].add(1);
@@ -312,7 +277,7 @@ contract OMNGuild is ERC20Guild {
     /// @param to The address to recieve the token
     /// @param amount The amount of OMN tokens to be sent in wei units
     function _sendTokenReward(address to, uint256 amount) internal {
-        require(token.balanceOf(address(this)) > amount, "Rewards are temporarily unavailable. Please try again later.");
+        require(token.balanceOf(address(this)) > amount, "OMNGuild: Rewards are temporarily unavailable. Please try again later.");
         token.transfer(to, amount);
     }
     
@@ -325,5 +290,51 @@ contract OMNGuild is ERC20Guild {
     function getVotesForExecution() override public view returns (uint256) {
         return totalLocked.mul(votesForExecution).div(10000);
     }
+    /// @dev set special proposer permissions
+    /// @param _proposer The address to allow
+    /// @param _proposalTime The minimum time for a proposal to be under votation
+    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    function setSpecialProposerPermission(
+        address _proposer,
+        uint256 _proposalTime, 
+        uint256 _votesForCreation
+    ) public virtual isInitialized {
+        require(msg.sender == address(this), "OMNGuild: Only callable by the guild itself");
+        specialProposerPermissions[_proposer].exists = true;
+        specialProposerPermissions[_proposer].proposalTime = _proposalTime;
+        specialProposerPermissions[_proposer].votesForCreation = _votesForCreation;
+        emit SetSpecialProposerPermission(_proposer, _proposalTime, _votesForCreation);
+    }
 
+    /// @dev Create a proposal with a static call data
+    /// @param to The receiver addresses of each call to be executed
+    /// @param data The data to be executed on each call to be executed
+    /// @param value The ETH value to be sent on each call to be executed
+    /// @param description A short description of the proposal
+    /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
+    function createProposal (
+        address[] memory to,
+        bytes[] memory data,
+        uint256[] memory value,
+        string memory description,
+        bytes memory contentHash
+    ) override public virtual isInitialized returns(bytes32) {
+        
+        uint256  proposalTime_      =  proposalTime;
+        uint256  votesForCreation_  =  votesForCreation;
+
+        if ( specialProposerPermissions[msg.sender].exists ) {
+            // override defaults
+            proposalTime       =  specialProposerPermissions[msg.sender].proposalTime;
+            votesForCreation   =  specialProposerPermissions[msg.sender].votesForCreation;
+        }
+            
+        bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
+
+        // revert overrides
+        proposalTime      =  proposalTime_;
+        votesForCreation  =  votesForCreation_;
+
+        return proposalId;
+    }
 }
