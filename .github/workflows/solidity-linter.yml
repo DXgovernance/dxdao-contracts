@@ -1,0 +1,33 @@
+name: solidity-linter
+  
+on:
+  push:
+    branches: [ '**' ]
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.13.1]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+        
+      - name: Install Dependencies
+        run: yarn
+        
+      - name: Set exit on error
+        run: set -o errexit
+
+        
+      - name: Solidity Linter
+        run: yarn solidity-linter

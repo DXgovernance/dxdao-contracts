@@ -78,8 +78,7 @@ contract PermissionRegistry {
   
   /**
    * @dev Sets the time from which the function can be executed from a contract to another a with wich value.
-   * This function is meant to be used by the owner of the contract to set and overwrite any permission
-   * The form address used in this setPermission function is taken form msg.sender, allowing a direct use of the registry
+   * This function is used only by the permission registry owner to set and overwrite any permission.
    * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
    * @param from The address that will be called
    * @param to The address that will be called
@@ -115,8 +114,6 @@ contract PermissionRegistry {
   
   /**
    * @dev Sets the time from which the function can be executed from a contract to another a with wich value.
-   * In case of setting the function top not allowed it sets to zero both values
-   * The form address used in this setPermission function is taken form msg.sender, allowing a direct use of the registry
    * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
    * @param to The address that will be called
    * @param functionSignature The signature of the function to be executed

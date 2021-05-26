@@ -66,7 +66,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      * @param _controllerAddress The address to receive the calls, if address 0x0 is used it wont make generic calls
      * to the avatar
      * @param _permissionRegistry The address of the permission registry contract
-     * @param _maxSecondsForExecution The maximum amount of time in seconds a proposal without executed since submitted time
+     * @param _maxSecondsForExecution The maximum amount of time in seconds  for a proposal without executed since
+     * submitted time
      */
     function initialize(
         Avatar _avatar,
@@ -182,7 +183,9 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                             callSignature
                         );
                     require(
-                        _valueAllowed >= totalValueTransferedInCall[keccak256(abi.encodePacked(address(0), proposal.to[i]))],
+                        _valueAllowed >= totalValueTransferedInCall[
+                            keccak256(abi.encodePacked(address(0), proposal.to[i]))
+                        ],
                         "value call not allowed"
                     );
                 }
@@ -265,7 +268,10 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             );
             
             // This will fail only when and ERC20 transfer with ETH value is proposed
-            require(callDataFuncSignature != ERC20_TRANSFER_SIGNATURE || _value[i] == 0, "cant propose ERC20 transfers with value");
+            require(
+                callDataFuncSignature != ERC20_TRANSFER_SIGNATURE || _value[i] == 0,
+                "cant propose ERC20 transfers with value"
+            );
         }
         require(_to.length == _callData.length, "invalid _callData length");
         require(_to.length == _value.length, "invalid _value length");
