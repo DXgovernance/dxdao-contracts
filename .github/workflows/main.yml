@@ -1,4 +1,4 @@
-name: solidity-linter
+name: main
   
 on:
   push:
@@ -6,8 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-
+  setup:
     runs-on: ubuntu-latest
 
     strategy:
@@ -20,14 +19,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: ${{ matrix.node-version }}
-        
+          node-version: 12.13.1
       - name: Install Dependencies
         run: yarn
-        
-      - name: Set exit on error
-        run: set -o errexit
-
-        
       - name: Solidity Linter
         run: yarn solidity-linter
+      - name: Solidity Tests
+        run: npx hardhat test
+      - name: Solidity Coverage
+        run: NODE_OPTIONS=--max-old-space-size=4096 OVERRIDE_GAS_LIMIT=0xfffffffffff OVERRIDE_GAS_PRICE=1 npx hardhat coverage
