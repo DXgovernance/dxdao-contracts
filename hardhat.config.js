@@ -60,7 +60,14 @@ const hardharNetworks = process.env.CI
     url: `https://kovan.infura.io/v3/${INFURA_PROJECT_ID}`,
     accounts: { mnemonic: MNEMONIC },
     gasLimit: 9000000,
-    gasPrice: 10,
+    gasPrice: 1000000000, // 1 gwei
+    timeout: 60000
+  },
+  xdai: {
+    url: `https://rpc.xdaichain.com/`,
+    accounts: { mnemonic: MNEMONIC },
+    gasLimit: 17000000,
+    gasPrice: 2000000000, // 2 gwei
     timeout: 60000
   },
   "arbitrum-testnet-v5": {
