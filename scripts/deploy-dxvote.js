@@ -21,7 +21,7 @@ for (let address in repHolders.addresses) {
 
 const DXD_TOKEN = {
   rinkeby: "0x417A288152A5a13b843135Db5Dc72Ea007a9EB8d",
-  xdai: "0xb90D6bec20993Be5d72A5ab353343f7a0281f158",
+  // xdai: "0xb90D6bec20993Be5d72A5ab353343f7a0281f158",
   mainnet: "0xa1d65E8fB6e87b60FECCBc582F7f97804B725521"
 };
 
@@ -46,6 +46,20 @@ const MASTER_WALLET_SCHEME_PARAMS = {
     voteOnBehalf: NULL_ADDRESS
   },
   rinkeby: {
+    queuedVoteRequiredPercentage: 50, 
+    queuedVotePeriodLimit: moment.duration(48, 'hours').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(18, 'hours').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(6, 'hours').asSeconds(), 
+    thresholdConst: 1500, 
+    quietEndingPeriod: moment.duration(1, 'hours').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 0, 
+    minimumDaoBounty: web3.utils.toWei("0.1"),
+    daoBountyConst: 2, 
+    activationTime: moment().unix(),
+    voteOnBehalf: NULL_ADDRESS
+  },
+  xdai: {
     queuedVoteRequiredPercentage: 50, 
     queuedVotePeriodLimit: moment.duration(48, 'hours').asSeconds(), 
     boostedVotePeriodLimit: moment.duration(18, 'hours').asSeconds(), 
@@ -104,6 +118,20 @@ const QUICK_WALLET_SCHEME_PARAMS = {
     activationTime: moment().unix(),
     voteOnBehalf: NULL_ADDRESS
   },
+  xdai: {
+    queuedVoteRequiredPercentage: 50, 
+    queuedVotePeriodLimit: moment.duration(24, 'hours').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(9, 'hours').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(), 
+    thresholdConst: 1100, 
+    quietEndingPeriod: moment.duration(0.5, 'hours').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 0, 
+    minimumDaoBounty: web3.utils.toWei("0.05"),
+    daoBountyConst: 2, 
+    activationTime: moment().unix(),
+    voteOnBehalf: NULL_ADDRESS
+  },
   "arbitrum-testnet-v5": {
     queuedVoteRequiredPercentage: 50, 
     queuedVotePeriodLimit: moment.duration(12, 'hours').asSeconds(), 
@@ -133,7 +161,7 @@ const Multicall = artifacts.require("Multicall");
 
 async function main() {
   
-  const contractsFile = JSON.parse(fs.readFileSync('.contracts.json'));
+  const contractsFile = fs.existsSync('.contracts.json') ? JSON.parse(fs.readFileSync('.contracts.json')) : {};
   const networkName = hre.network.name;
   if (!contractsFile[networkName] || networkName == 'hardhat') 
     contractsFile[networkName] = { schemes: {} };
@@ -168,6 +196,7 @@ async function main() {
     console.log('Deploying DxReputation...');
     dxReputation = await DxReputation.new();
     console.log("DX Reputation deployed to:", dxReputation.address);
+    await sleep(30000);
 
     let addressesMints = [], amountMints = []; 
     if (networkName == "arbitrum-testnet-v5") {
@@ -203,6 +232,7 @@ async function main() {
     if (networkName != "hardhat")
       fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   }
+  await sleep(30000);
   
   // Deploy DXAvatar
   let dxAvatar;
@@ -217,6 +247,7 @@ async function main() {
     if (networkName != "hardhat")
       fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   }
+  await sleep(30000);
   
   // Deploy DXcontroller and transfer avatar to controller
   let dxController;
@@ -233,6 +264,7 @@ async function main() {
     if (networkName != "hardhat")
       fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   }
+  await sleep(30000);
   
   // Deploy DXDVotingMachine
   let dxdVotingMachine;
@@ -262,6 +294,7 @@ async function main() {
       fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   
   }
+  await sleep(30000);
   
   async function hashParameters(parameters) {
     return await dxdVotingMachine.getParametersHash(
@@ -314,6 +347,7 @@ async function main() {
     if (networkName != "hardhat")
       fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   }
+  await sleep(30000);
   
   // Deploy MasterWalletScheme
   let masterWalletScheme;
@@ -325,6 +359,8 @@ async function main() {
     masterWalletScheme = await WalletScheme.new();
     console.log("Master WalletScheme deployed to:", masterWalletScheme.address);
     
+    await sleep(30000);
+
     let masterWalletSchemeParamsHash = await hashParameters(MASTER_WALLET_SCHEME_PARAMS[networkName]);
     await setDXDVotingMachineParameters(MASTER_WALLET_SCHEME_PARAMS[networkName])
     await masterWalletScheme.initialize(
@@ -334,7 +370,7 @@ async function main() {
       dxController.address,
       permissionRegistry.address,
       "Master Wallet",
-      86400
+      Math.max(86400, MASTER_WALLET_SCHEME_PARAMS[networkName].queuedVotePeriodLimit * 2)
     );
     
     console.log("Setting avatar permissions...");
@@ -375,6 +411,8 @@ async function main() {
     quickWalletScheme = await WalletScheme.new();
     console.log("Quick WalletScheme deployed to:", quickWalletScheme.address);
     
+    await sleep(30000);
+
     let quickWalletSchemeParamsHash = await hashParameters(QUICK_WALLET_SCHEME_PARAMS[networkName]);
     await setDXDVotingMachineParameters(QUICK_WALLET_SCHEME_PARAMS[networkName])
     await quickWalletScheme.initialize(
@@ -384,7 +422,7 @@ async function main() {
       NULL_ADDRESS,
       permissionRegistry.address,
       "Quick Wallet",
-      86400
+      Math.max(86400, QUICK_WALLET_SCHEME_PARAMS[networkName].queuedVotePeriodLimit * 2)
     );
     
     console.log("Setting avatar and quick wallet scheme permissions...");
@@ -395,7 +433,7 @@ async function main() {
       ANY_FUNC_SIGNATURE,
       MAX_UINT_256,
       true
-    );    
+    );
     await permissionRegistry.setAdminPermission(
       NULL_ADDRESS, 
       quickWalletScheme.address, 
