@@ -70,6 +70,12 @@ const hardharNetworks = process.env.CI
     gasPrice: 2000000000, // 2 gwei
     timeout: 60000
   },
+  arbitrum: {
+    url: `https://arb1.arbitrum.io/rpc`,
+    accounts: { mnemonic: MNEMONIC },
+    chainId: 42161,
+    timeout: 60000
+  },
   "arbitrum-testnet-v5": {
     url: 'https://kovan5.arbitrum.io/rpc',
     accounts: { mnemonic: MNEMONIC },

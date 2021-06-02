@@ -82,6 +82,20 @@ const MASTER_WALLET_SCHEME_PARAMS = {
     activationTime: moment().unix(),
     voteOnBehalf: NULL_ADDRESS
   },
+  arbitrum: {
+    queuedVoteRequiredPercentage: 50, 
+    queuedVotePeriodLimit: moment.duration(48, 'hours').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(18, 'hours').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(6, 'hours').asSeconds(), 
+    thresholdConst: 1500, 
+    quietEndingPeriod: moment.duration(1, 'hours').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 0, 
+    minimumDaoBounty: web3.utils.toWei("0.1"),
+    daoBountyConst: 2, 
+    activationTime: moment().unix(),
+    voteOnBehalf: NULL_ADDRESS
+  },
   "arbitrum-testnet-v5": {
     queuedVoteRequiredPercentage: 50, 
     queuedVotePeriodLimit: moment.duration(24, 'hours').asSeconds(), 
@@ -141,6 +155,20 @@ const QUICK_WALLET_SCHEME_PARAMS = {
     activationTime: moment().unix(),
     voteOnBehalf: NULL_ADDRESS
   },
+  arbitrum: {
+    queuedVoteRequiredPercentage: 50, 
+    queuedVotePeriodLimit: moment.duration(24, 'hours').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(9, 'hours').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(), 
+    thresholdConst: 1100, 
+    quietEndingPeriod: moment.duration(0.5, 'hours').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 0, 
+    minimumDaoBounty: web3.utils.toWei("0.05"),
+    daoBountyConst: 2, 
+    activationTime: moment().unix(),
+    voteOnBehalf: NULL_ADDRESS
+  },
   "arbitrum-testnet-v5": {
     queuedVoteRequiredPercentage: 50, 
     queuedVotePeriodLimit: moment.duration(12, 'hours').asSeconds(), 
@@ -175,13 +203,13 @@ async function main() {
   if (!contractsFile[networkName] || networkName == 'hardhat') 
     contractsFile[networkName] = { schemes: {} };
     
-  if (networkName == "arbitrum-testnet-v5") {
+  if ((networkName == "arbitrum-testnet-v5") || (networkName == "arbitrum")) {
     hre.network.provider = wrapProvider(new HDWalletProvider(hre.network.config.accounts.mnemonic, hre.network.config.url))
   }
 
   const accounts = await web3.eth.getAccounts();
   const fromBlock = (await web3.eth.getBlock('latest')).number;
-  
+
   // Deploy Multicall
   let multicall;
   if (contractsFile[networkName].multicall) {
@@ -208,7 +236,7 @@ async function main() {
     await sleep(30000);
 
     let addressesMints = [], amountMints = []; 
-    if (networkName == "arbitrum-testnet-v5") {
+    if (networkName == "arbitrum-testnet-v5" || networkName == "arbitrum" ) {
       console.log('Doing mint of '+(founders.length)+' initial REP holders...')
       await dxReputation.mintMultiple(founders, initialRep);
     } else {
