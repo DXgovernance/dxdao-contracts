@@ -20,9 +20,18 @@ for (let address in repHolders.addresses) {
 }
 
 const DXD_TOKEN = {
-  rinkeby: "0x417A288152A5a13b843135Db5Dc72Ea007a9EB8d",
-  // xdai: "0xb90D6bec20993Be5d72A5ab353343f7a0281f158",
-  mainnet: "0xa1d65E8fB6e87b60FECCBc582F7f97804B725521"
+  rinkeby: {
+    address: "0x417A288152A5a13b843135Db5Dc72Ea007a9EB8d",
+    fromBlock: 8569799
+  },
+  // xdai: {
+  //   address: "0xb90D6bec20993Be5d72A5ab353343f7a0281f158",
+  //   fromBlock: 15040609 
+  // },
+  mainnet: {
+    address: "0xa1d65E8fB6e87b60FECCBc582F7f97804B725521",
+    fromBlock: 10012634 
+  }
 };
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -282,6 +291,7 @@ async function main() {
         console.log("Voting machine token deployed to:", votingMachineTokenAddress);
     } else {
       votingMachineTokenAddress = DXD_TOKEN[networkName];
+      contractsFile[networkName].fromBlock = Math.min(fromBlock, DXD_TOKEN[networkName].fromBlock);
       console.log("Using pre configured voting machine token:", votingMachineTokenAddress);
     }
     
