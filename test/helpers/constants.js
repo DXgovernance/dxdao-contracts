@@ -13,15 +13,17 @@ export const TEST_TITLE = "Awesome Proposal Title";
 export const ERC20_TRANSFER_SIGNATURE = "0xa9059cbb";
 
 export const WalletSchemeProposalState = {
-  submitted: 0,
-  rejected: 1,
-  executionSuccedd: 2,
-  executionTimeout: 3
+  none: 0,
+  submitted: 1,
+  rejected: 2,
+  executionSuccedd: 3,
+  executionTimeout: 4
 };
 
 export const GuildProposalState = {
-  Submitted: 0,
-  Rejected: 1,
-  Executed: 2,
-  Failed: 3
+  None: 0,
+  Submitted: 1,
+  Rejected: 2,
+  Executed: 3,
+  Failed: 4
 };

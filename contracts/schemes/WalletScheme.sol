@@ -56,7 +56,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     event ProposalExecutedByVotingMachine(bytes32 indexed _proposalId, int256 _param);
     event ProposalRejected(bytes32 indexed _proposalId);
     event ProposalExecutionTimeout(bytes32 indexed _proposalId);
-    enum ProposalState {Submitted, Rejected, ExecutionSucceded, ExecutionTimeout}
+    enum ProposalState {None, Submitted, Rejected, ExecutionSucceded, ExecutionTimeout}
 
     /**
      * @dev initialize
