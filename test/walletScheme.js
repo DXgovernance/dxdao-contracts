@@ -1719,6 +1719,57 @@ contract("WalletScheme", function(accounts) {
       )).valueAllowed,  0);
     
     });
+    
+    it("Permission Registry - fail on trying ot bypass permission in one proposal", async function() {
+      
+      // Fail to reproduce "Bypass by ownerhip" vulnerability reported in 2.3 in wallet-scheme-2 audit
+      
+      // Remove previous permission to avatar
+      await permissionRegistry.setAdminPermission(
+        constants.NULL_ADDRESS, 
+        org.avatar.address, 
+        constants.ANY_ADDRESS, 
+        constants.ANY_FUNC_SIGNATURE,
+        constants.MAX_UINT_256, 
+        false
+      );
+      
+      await permissionRegistry.transferOwnership(org.avatar.address);
+      
+      const callData = helpers.testCallFrom(org.avatar.address);
+        
+      const setTimeDelayData = new web3.eth.Contract(PermissionRegistry.abi).methods
+        .setTimeDelay(0).encodeABI();
+        
+      const setPermissionData = new web3.eth.Contract(PermissionRegistry.abi).methods
+        .setAdminPermission(
+          constants.NULL_ADDRESS, org.avatar.address, actionMock.address, callData.substring(0,10), 666, true
+        ).encodeABI();
+      
+      const tx = await masterWalletScheme.proposeCalls(
+        [permissionRegistry.address, permissionRegistry.address, actionMock.address],
+        [setTimeDelayData, setPermissionData, callData],
+        [0, 0, 0],
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      );
+      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      
+      const setPermissionCallAllowedFromTime = (await permissionRegistry.getPermission(
+        constants.NULL_ADDRESS, masterWalletScheme.address, permissionRegistry.address, setPermissionData.substring(0,10)
+      )).fromTime;
+      
+      await expectRevert(
+        votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}),
+        "call not allowed"
+      );
+      
+      assert.equal(
+        (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+        constants.WalletSchemeProposalState.executionSuccedd
+      );
+    
+    });
   });
   
 });
