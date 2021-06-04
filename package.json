@@ -78,6 +78,8 @@
     "@openzeppelin/contracts-upgradeable": "3.4.0",
     "@openzeppelin/test-helpers": "^0.5.11",
     "@realitio/realitio-contracts": ">=0.0.0",
+    "@truffle/hdwallet-provider": "^1.4.0",
+    "arb-ethers-web3-bridge": "^0.7.3",
     "chai": "^4.2.0",
     "math": "0.0.3",
     "moment": "^2.27.0",
