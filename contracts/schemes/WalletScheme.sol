@@ -43,7 +43,14 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     
     // This mapping is used as "memory storage" in executeProposal function, to keep track of the total value
     // transfered of by asset and address, it saves both aseet and address as keccak256(asset, recipient)
-    mapping(bytes32 => uint256) totalValueTransferedInCall;
+    mapping(bytes32 => uint256) internal valueTransferedByAssetAndRecipient;
+    
+    // This mapping is used as "memory storage" in executeProposal function, to keep track of the total value
+    // transfered of by asset in the call execution
+    mapping(address => uint256) internal valueTransferedByAsset;
+    
+    // Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
+    bool internal executingProposal;
     
     bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
     bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
@@ -117,6 +124,9 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     function executeProposal(bytes32 _proposalId, int256 _decision)
         external onlyVotingMachine(_proposalId) returns(bool)
     {
+        require(!executingProposal, "proposal execution already running");
+        executingProposal = true;
+        
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.state == ProposalState.Submitted, "must be a submitted proposal");
         
@@ -133,30 +143,71 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             // Keep track of the permissionsIds that are loaded into storage to remove them later
             bytes32 permissionHash;
             bytes32[] memory permissionHashUsed = new bytes32[](proposal.to.length);
+            address[] memory assetsUsed = new address[](proposal.to.length);
             for (uint256 i = 0; i < proposal.to.length; i++) {
                 if (ERC20_TRANSFER_SIGNATURE == getFuncSignature(proposal.callData[i])) {
                     (address _to, uint256 _value) = erc20TransferDecode(proposal.callData[i]);
                     permissionHash = keccak256(abi.encodePacked(proposal.to[i], _to));
-                    totalValueTransferedInCall[permissionHash] =
-                        totalValueTransferedInCall[permissionHash].add(_value);
+                    
+                    // Save asset in assets used to check later and add the used value transfered
+                    if (valueTransferedByAsset[proposal.to[i]] == 0)
+                      assetsUsed[i] = proposal.to[i];
+                    
+                    valueTransferedByAsset[proposal.to[i]] =
+                      valueTransferedByAsset[proposal.to[i]].add(_value);
+                    
+                    // Save permission in permissions used to check later and add the value transfered
+                    if (valueTransferedByAssetAndRecipient[permissionHash] == 0)
+                      permissionHashUsed[i] = permissionHash;
+                    
+                    valueTransferedByAssetAndRecipient[permissionHash] =
+                        valueTransferedByAssetAndRecipient[permissionHash].add(_value);
                 } else {
                     permissionHash = keccak256(abi.encodePacked(address(0), proposal.to[i]));
-                    totalValueTransferedInCall[permissionHash] =
-                        totalValueTransferedInCall[permissionHash].add(proposal.value[i]);
+                    
+                    // Save asset in assets used to check later and add the used value transfered
+                    if (valueTransferedByAsset[address(0)] == 0)
+                      assetsUsed[i] = address(0);
+                    
+                    valueTransferedByAsset[address(0)] =
+                      valueTransferedByAsset[address(0)].add(proposal.value[i]);
+                    
+                    // Save permission in permissions used to check later and add the value transfered
+                    if (valueTransferedByAssetAndRecipient[permissionHash] == 0)
+                      permissionHashUsed[i] = permissionHash;
+                    
+                    valueTransferedByAssetAndRecipient[permissionHash] =
+                        valueTransferedByAssetAndRecipient[permissionHash].add(proposal.value[i]);
                 }
-                permissionHashUsed[i] = permissionHash;
+                
             }
         
             // If one call fails the transaction will revert
             proposal.state = ProposalState.ExecutionSucceded;
             bytes[] memory callsDataResult = new bytes[](proposal.to.length);
             bool[] memory callsSucessResult = new bool[](proposal.to.length);
+            uint256 _fromTime;
+            uint256 _valueAllowed;
+            
+            // Check and delete all valueTransferedByAsset values saved in storage
+            for (uint256 i = 0; i < assetsUsed.length; i++) {
+              (_valueAllowed, _fromTime) = permissionRegistry
+                  .getPermission(
+                      assetsUsed[i],
+                      controllerAddress != address(0) ? address(avatar) : address(this),
+                      ANY_ADDRESS,
+                      ANY_SIGNATURE
+                  );
+                require(
+                    (_fromTime == 0) || (_fromTime > 0 && _valueAllowed >= valueTransferedByAsset[assetsUsed[i]]),
+                    "total value transfered of asset in proposal not allowed"
+                );
+                delete valueTransferedByAsset[assetsUsed[i]];
+            }
             
             for (uint256 i = 0; i < proposal.to.length; i++) {
               
                 // Gets the time form which the call is allowed to be executed and the value to be transfered
-                uint256 _fromTime;
-                uint256 _valueAllowed;
                 bytes4 callSignature = getFuncSignature(proposal.callData[i]);
                 
                 // Checks that thte value tha is transfered (in ETH or ERC20) is lower or equal to the one that is
@@ -171,7 +222,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                             callSignature
                         );
                     require(
-                        _valueAllowed >= totalValueTransferedInCall[keccak256(abi.encodePacked(proposal.to[i], _to))],
+                        _valueAllowed >= valueTransferedByAssetAndRecipient[keccak256(abi.encodePacked(proposal.to[i], _to))],
                         "erc20 value call not allowed"
                     );
                 } else {
@@ -183,7 +234,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                             callSignature
                         );
                     require(
-                        _valueAllowed >= totalValueTransferedInCall[
+                        _valueAllowed >= valueTransferedByAssetAndRecipient[
                             keccak256(abi.encodePacked(address(0), proposal.to[i]))
                         ],
                         "value call not allowed"
@@ -219,9 +270,9 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             
             }
             
-            // Delete all totalValueTransferedInCall values saved in storage
+            // Delete all valueTransferedByAssetAndRecipient values saved in storage
             for (uint256 i = 0; i < permissionHashUsed.length; i++) {
-                delete totalValueTransferedInCall[permissionHashUsed[i]];
+                delete valueTransferedByAssetAndRecipient[permissionHashUsed[i]];
             }
             
             emit ProposalExecuted(_proposalId, callsSucessResult, callsDataResult);
@@ -233,6 +284,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         }
         
         emit ProposalExecutedByVotingMachine(_proposalId, _decision);
+        executingProposal = false;
         return true;
     }
 

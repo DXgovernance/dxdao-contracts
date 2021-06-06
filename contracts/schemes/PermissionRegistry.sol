@@ -13,6 +13,8 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
  *   `value` uint256 and `fromTime` uint256, if `fromTime` is zero it meants the function is not allowed.
  * The ERC20 transfer permissions are stored using the asset of the ERC20 and stores the `from` address, `to` address,
  *   `value` uint256 and `fromTime` uint256, if `fromTime` is zero it meants the function is not allowed.
+ * The permissions for [asset][0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa][0xaaaaaaaa] are used for global transfer
+ * limit, if it is set, it wont allowed a higher total value transfered in the proposal higher to the one set there.
  */
 
 contract PermissionRegistry {
@@ -95,6 +97,8 @@ contract PermissionRegistry {
     bool allowed
   ) public {
     require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
+    require(from != address(0), "PermissionRegistry: Cant use address(0) as from");
+    require(from != owner || to != address(this), "PermissionRegistry: Cant set owner permissions");
     if (allowed){
       permissions[asset][from][to][functionSignature].fromTime = now.add(timeDelay);
       permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
@@ -127,7 +131,8 @@ contract PermissionRegistry {
     uint256 valueAllowed, 
     bool allowed
   ) public {
-    require(to != address(this), "PermissionRegistry: Cant change permissions to PermissionRegistry");
+    require(to != address(this), "PermissionRegistry: Cant set permissions to PermissionRegistry");
+    require(msg.sender != owner && to != address(this), "PermissionRegistry: Cant set owner permissions");
     if (allowed) {
       permissions[asset][msg.sender][to][functionSignature].fromTime = now.add(timeDelay);
       permissions[asset][msg.sender][to][functionSignature].valueAllowed = valueAllowed;
