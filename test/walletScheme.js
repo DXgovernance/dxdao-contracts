@@ -38,7 +38,7 @@ contract("WalletScheme", function(accounts) {
   
   beforeEach( async function(){
     actionMock = await ActionMock.new();
-    testToken = await ERC20Mock.new(accounts[1], 1000);
+    testToken = await ERC20Mock.new(accounts[1], 10000);
     const standardTokenMock = await ERC20Mock.new(accounts[1], 1000);
     const controllerCreator = await DxControllerCreator.new({gas: constants.GAS_LIMIT});
     daoCreator = await DaoCreator.new(
@@ -334,7 +334,12 @@ contract("WalletScheme", function(accounts) {
     );
   });
   
-  it("MasterWalletScheme - positive decision - proposal executed - not allowed value by permission registry", async function() {
+  it("MasterWalletScheme - global ETH value transfered not allowed value by permission registry", async function() {
+    
+    await web3.eth.sendTransaction({ from: accounts[0], to: org.avatar.address, value: 1000 });
+    const actionMock2 = await ActionMock.new();
+    const actionMock3 = await ActionMock.new();
+    const callData = helpers.testCallFrom(org.avatar.address);
     
     await permissionRegistry.setAdminPermission(
       constants.NULL_ADDRESS, 
@@ -345,7 +350,138 @@ contract("WalletScheme", function(accounts) {
       true
     );
     
+    const tx = await masterWalletScheme.proposeCalls(
+      [actionMock.address, actionMock2.address, actionMock3.address],
+      [callData, callData, callData],
+      [50, 50, 1],
+      constants.TEST_TITLE, constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    await expectRevert(
+      votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "revert total value transfered of asset in proposal not allowed"
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
+    await time.increase(executionTimeout+1);
+    
+    await votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.executionTimeout
+    );
+    
+    // This proposal passes because the value transfered is within the global limits
+    const proposalId2 = await helpers.getValueFromLogs( await masterWalletScheme.proposeCalls(
+      [actionMock.address, actionMock2.address, actionMock3.address],
+      [callData, callData, callData],
+      [50, 50, 0],
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    ), "_proposalId");
+    
+    await votingMachine.contract.vote( proposalId2, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId2)).state,
+      constants.WalletSchemeProposalState.executionSuccedd
+    );
+  });
+  
+  it("MasterWalletScheme - global ERC20 value transfered not allowed value by permission registry", async function() {
+    
+    
+    await testToken.transfer(org.avatar.address, 1000, { from: accounts[1] });
+    const actionMock2 = await ActionMock.new();
+    const actionMock3 = await ActionMock.new();
     const callData = helpers.testCallFrom(org.avatar.address);
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      constants.ANY_ADDRESS, 
+      constants.ANY_FUNC_SIGNATURE,
+      100, 
+      false
+    );
+    
+    await permissionRegistry.setAdminPermission(
+      testToken.address, 
+      org.avatar.address, 
+      constants.ANY_ADDRESS, 
+      constants.ANY_FUNC_SIGNATURE,
+      100, 
+      true
+    );
+
+    const tx = await masterWalletScheme.proposeCalls(
+      [testToken.address, testToken.address, testToken.address],
+      [
+        helpers.encodeERC20Transfer(actionMock.address, "49"), 
+        helpers.encodeERC20Transfer(actionMock2.address, "51"), 
+        helpers.encodeERC20Transfer(actionMock3.address, "1")
+      ],
+      [0, 0, 0],
+      constants.TEST_TITLE, constants.SOME_HASH
+    );
+
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    await expectRevert(
+      votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "revert total value transfered of asset in proposal not allowed"
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
+    await time.increase(executionTimeout+1);
+    
+    await votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.executionTimeout
+    );
+    
+    // This proposal passes because the value transfered is within the global limits
+    const proposalId2 = await helpers.getValueFromLogs( await masterWalletScheme.proposeCalls(
+      [testToken.address, testToken.address, testToken.address],
+      [
+        helpers.encodeERC20Transfer(actionMock.address, "49"), 
+        helpers.encodeERC20Transfer(actionMock2.address, "49"), 
+        helpers.encodeERC20Transfer(actionMock3.address, "1")
+      ],
+      [0, 0, 0],
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    ), "_proposalId");
+    
+    await votingMachine.contract.vote( proposalId2, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId2)).state,
+      constants.WalletSchemeProposalState.executionSuccedd
+    );
+  });
+  
+  it("MasterWalletScheme - positive decision - proposal executed - not allowed value by permission registry", async function() {
+    const callData = helpers.testCallFrom(org.avatar.address);
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      constants.ANY_ADDRESS, 
+      callData.substring(0,10),
+      100, 
+      true
+    );
     
     const tx = await masterWalletScheme.proposeCalls(
       [actionMock.address], [callData], [101], constants.TEST_TITLE, constants.SOME_HASH
@@ -373,18 +509,79 @@ contract("WalletScheme", function(accounts) {
     );
   });
   
-  it("MasterWalletScheme - positive decision - proposal executed - not allowed value by permission registry in multiple calls", async function() {
+  it("MasterWalletScheme - transfered value not allowed by permission registry in multiple calls, using ANY_ADDRESS", async function() {
     
+    // Global transfer limit of ETH is not set, which means is not checked
     await permissionRegistry.setAdminPermission(
       constants.NULL_ADDRESS, 
       org.avatar.address, 
       constants.ANY_ADDRESS, 
       constants.ANY_FUNC_SIGNATURE,
+      constants.MAX_UINT_256, 
+      false
+    );
+    
+    const callData = helpers.testCallFrom(org.avatar.address);
+    
+    // Set limit of 100 wei to any address 
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      constants.ANY_ADDRESS, 
+      callData.substring(0,10),
       100, 
       true
     );
     
+    const tx = await masterWalletScheme.proposeCalls(
+      [actionMock.address, actionMock.address], [callData, callData], [50, 51], constants.TEST_TITLE, constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    await expectRevert(
+      votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "value call not allowed"
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
+    await time.increase(executionTimeout+1);
+    
+    await votingMachine.contract.vote(
+      proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.executionTimeout
+    );
+  });
+  
+  it("MasterWalletScheme - transfered value not allowed by permission registry in multiple calls, using unique address", async function() {
+    
+    // Global transfer limit of ETH is not set, which means is not checked
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      constants.ANY_ADDRESS, 
+      constants.ANY_FUNC_SIGNATURE,
+      constants.MAX_UINT_256, 
+      false
+    );
+    
     const callData = helpers.testCallFrom(org.avatar.address);
+    
+    // Set limit of 100 wei to any address 
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      actionMock.address, 
+      callData.substring(0,10),
+      100, 
+      true
+    );
     
     const tx = await masterWalletScheme.proposeCalls(
       [actionMock.address, actionMock.address], [callData, callData], [50, 51], constants.TEST_TITLE, constants.SOME_HASH
@@ -500,7 +697,7 @@ contract("WalletScheme", function(accounts) {
     assert.equal(organizationProposal.value[0], 0);
   });
   
-  it("MasterWalletScheme - positive decision - proposal executed - allowed any func signature by permission registry from scheme", async function() {
+  it("MasterWalletScheme - allowed any func signature by permission registry from scheme", async function() {
     const callData = helpers.testCallFrom(org.avatar.address);
     
     assert.notEqual(
@@ -1329,7 +1526,7 @@ contract("WalletScheme", function(accounts) {
       
       await time.increase(30);
       
-      const transferData = await new web3.eth.Contract(testToken.abi).methods.transfer(actionMock.address, "50").encodeABI();
+      const transferData = helpers.encodeERC20Transfer(actionMock.address, "50");
       assert.equal(await testToken.balanceOf(org.avatar.address), "200");
       
       const tx2 = await masterWalletScheme.proposeCalls(
@@ -1350,19 +1547,18 @@ contract("WalletScheme", function(accounts) {
     
     it("MasterWalletScheme - positive decision - proposal executed - not allowed ERC20 value by permission registry in multiple calls", async function() {
       
+      const callData = helpers.testCallFrom(org.avatar.address);
+      
       await permissionRegistry.setAdminPermission(
         testToken.address, 
         org.avatar.address, 
         constants.ANY_ADDRESS, 
-        constants.ANY_FUNC_SIGNATURE,
+        callData.substring(0,10),
         101, 
         true
       );
       
-      const callData = helpers.testCallFrom(org.avatar.address);
-      
-      const transferData = await new web3.eth.Contract(testToken.abi)
-        .methods.transfer(actionMock.address, "51").encodeABI();
+      const transferData = helpers.encodeERC20Transfer(actionMock.address, "51");
 
       const tx = await masterWalletScheme.proposeCalls(
         [testToken.address, testToken.address],
@@ -1407,8 +1603,7 @@ contract("WalletScheme", function(accounts) {
       
       const callData = helpers.testCallFrom(org.avatar.address);
       
-      const transferData = await new web3.eth.Contract(testToken.abi)
-        .methods.transfer(actionMock.address, "100").encodeABI();
+      const transferData = helpers.encodeERC20Transfer(actionMock.address, "100");
 
       await expectRevert(
         masterWalletScheme.proposeCalls(
@@ -1477,7 +1672,7 @@ contract("WalletScheme", function(accounts) {
       
       await time.increase(30);
       
-      const transferData = await new web3.eth.Contract(testToken.abi).methods.transfer(actionMock.address, "50").encodeABI();
+      const transferData = helpers.encodeERC20Transfer(actionMock.address, "50");
       assert.equal(await testToken.balanceOf(quickWalletScheme.address), "200");
 
       const tx2 = await quickWalletScheme.proposeCalls(
@@ -1514,6 +1709,18 @@ contract("WalletScheme", function(accounts) {
     
     it("Permission Registry - transfer ownerhip and set time delay", async function() {
       
+      await expectRevert(
+        permissionRegistry.setAdminPermission(
+          constants.NULL_ADDRESS,
+          accounts[0],
+          permissionRegistry.address,
+          constants.ANY_FUNC_SIGNATURE,
+          constants.MAX_UINT_256,
+          true
+        ),
+        "PermissionRegistry: Cant set owner permissions"
+      );
+      
       await permissionRegistry.setAdminPermission(
         constants.NULL_ADDRESS, 
         org.avatar.address, 
@@ -1549,7 +1756,7 @@ contract("WalletScheme", function(accounts) {
           constants.MAX_UINT_256, 
           true
         ),
-        "PermissionRegistry: Cant change permissions to PermissionRegistry"
+        "PermissionRegistry: Cant set permissions to PermissionRegistry"
       );
       
       await permissionRegistry.transferOwnership(org.avatar.address);
@@ -1766,7 +1973,7 @@ contract("WalletScheme", function(accounts) {
       
       assert.equal(
         (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WalletSchemeProposalState.submitted
       );
     
     });

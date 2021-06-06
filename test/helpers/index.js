@@ -306,4 +306,18 @@ export function testCallWithoutReturnValueFrom(address) {
   return new web3.eth.Contract(ActionMock.abi).methods.testWithoutReturnValue(address).encodeABI();
 }
 
+export function encodeERC20Transfer(to, value) {
+  return web3.eth.abi.encodeFunctionCall({
+    name: 'transfer',
+    type: 'function',
+    inputs: [{
+      type: 'address',
+      name: 'to'
+    },{
+      type: 'uint256',
+      name: 'value'
+    }]
+  }, [to, value]);
+}
+
 export { encodePermission, decodePermission, encodeGenericCallData, getWalletSchemeExecutionEvent, constants };
