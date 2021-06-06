@@ -53,6 +53,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     bool internal executingProposal;
     
     bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
+    bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
     bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
         bytes4(keccak256("setMaxSecondsForExecution(uint256)"));
     bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
@@ -141,12 +142,14 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
           
             // Get the total amount transfered by asset and recipients
             // Keep track of the permissionsIds that are loaded into storage to remove them later
+            bytes4 callDataFuncSignature;
             bytes32 permissionHash;
             bytes32[] memory permissionHashUsed = new bytes32[](proposal.to.length);
             address[] memory assetsUsed = new address[](proposal.to.length);
             for (uint256 i = 0; i < proposal.to.length; i++) {
-                if (ERC20_TRANSFER_SIGNATURE == getFuncSignature(proposal.callData[i])) {
-                    (address _to, uint256 _value) = erc20TransferDecode(proposal.callData[i]);
+                callDataFuncSignature = getFuncSignature(proposal.callData[i]);
+                if (ERC20_TRANSFER_SIGNATURE == callDataFuncSignature || ERC20_APPROVE_SIGNATURE == callDataFuncSignature) {
+                    (address _to, uint256 _value) = erc20TransferOrApproveDecode(proposal.callData[i]);
                     permissionHash = keccak256(abi.encodePacked(proposal.to[i], _to));
                     
                     // Save asset in assets used to check later and add the used value transfered
@@ -208,18 +211,18 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             for (uint256 i = 0; i < proposal.to.length; i++) {
               
                 // Gets the time form which the call is allowed to be executed and the value to be transfered
-                bytes4 callSignature = getFuncSignature(proposal.callData[i]);
+                callDataFuncSignature = getFuncSignature(proposal.callData[i]);
                 
                 // Checks that thte value tha is transfered (in ETH or ERC20) is lower or equal to the one that is
                 // allowed for the function that wants to be executed
-                if (ERC20_TRANSFER_SIGNATURE == callSignature) {
-                    (address _to, uint256 _) = erc20TransferDecode(proposal.callData[i]);
+                if (ERC20_TRANSFER_SIGNATURE == callDataFuncSignature || ERC20_APPROVE_SIGNATURE == callDataFuncSignature) {
+                    (address _to, uint256 _) = erc20TransferOrApproveDecode(proposal.callData[i]);
                     (_valueAllowed, _fromTime) = permissionRegistry
                         .getPermission(
                             proposal.to[i],
                             controllerAddress != address(0) ? address(avatar) : address(this),
                             _to,
-                            callSignature
+                            callDataFuncSignature
                         );
                     require(
                         _valueAllowed >= valueTransferedByAssetAndRecipient[keccak256(abi.encodePacked(proposal.to[i], _to))],
@@ -231,7 +234,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                             address(0),
                             controllerAddress != address(0) ? address(avatar) : address(this),
                             proposal.to[i],
-                            callSignature
+                            callDataFuncSignature
                         );
                     require(
                         _valueAllowed >= valueTransferedByAssetAndRecipient[
@@ -319,9 +322,10 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                 , 'invalid proposal caller'
             );
             
-            // This will fail only when and ERC20 transfer with ETH value is proposed
+            // This will fail only when and ERC20 transfer or approve with ETH value is proposed
             require(
-                callDataFuncSignature != ERC20_TRANSFER_SIGNATURE || _value[i] == 0,
+                (callDataFuncSignature != ERC20_TRANSFER_SIGNATURE && callDataFuncSignature != ERC20_APPROVE_SIGNATURE)
+                || _value[i] == 0,
                 "cant propose ERC20 transfers with value"
             );
         }
@@ -389,11 +393,11 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     
     /**
      * @dev Decodes abi encoded data with selector for "transfer(address,uint256)".
-     * @param _data ERC20 Transfer encoded data.
+     * @param _data ERC20 addres and value encoded data.
      * @return to The account to receive the tokens
-     * @return value The value of tokens to be sent
+     * @return value The value of tokens to be transfered/approved
      */
-    function erc20TransferDecode(bytes memory _data) public pure returns(address to, uint256 value) {
+    function erc20TransferOrApproveDecode(bytes memory _data) public pure returns(address to, uint256 value) {
         assembly {
             to := mload(add(_data, 36))
             value := mload(add(_data, 68))
