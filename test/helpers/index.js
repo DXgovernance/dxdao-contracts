@@ -320,4 +320,18 @@ export function encodeERC20Transfer(to, value) {
   }, [to, value]);
 }
 
+export function encodeERC20Approve(to, value) {
+  return web3.eth.abi.encodeFunctionCall({
+    name: 'approve',
+    type: 'function',
+    inputs: [{
+      type: 'address',
+      name: 'to'
+    },{
+      type: 'uint256',
+      name: 'value'
+    }]
+  }, [to, value]);
+}
+
 export { encodePermission, decodePermission, encodeGenericCallData, getWalletSchemeExecutionEvent, constants };

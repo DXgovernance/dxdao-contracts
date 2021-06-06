@@ -395,7 +395,6 @@ contract("WalletScheme", function(accounts) {
   
   it("MasterWalletScheme - global ERC20 value transfered not allowed value by permission registry", async function() {
     
-    
     await testToken.transfer(org.avatar.address, 1000, { from: accounts[1] });
     const actionMock2 = await ActionMock.new();
     const actionMock3 = await ActionMock.new();
@@ -457,6 +456,83 @@ contract("WalletScheme", function(accounts) {
         helpers.encodeERC20Transfer(actionMock.address, "49"), 
         helpers.encodeERC20Transfer(actionMock2.address, "49"), 
         helpers.encodeERC20Transfer(actionMock3.address, "1")
+      ],
+      [0, 0, 0],
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    ), "_proposalId");
+    
+    await votingMachine.contract.vote( proposalId2, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId2)).state,
+      constants.WalletSchemeProposalState.executionSuccedd
+    );
+  });
+  
+  it("MasterWalletScheme - global ERC20 value approved not allowed value by permission registry", async function() {
+    
+    await testToken.transfer(org.avatar.address, 1000, { from: accounts[1] });
+    const actionMock2 = await ActionMock.new();
+    const actionMock3 = await ActionMock.new();
+    const callData = helpers.testCallFrom(org.avatar.address);
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      constants.ANY_ADDRESS, 
+      constants.ANY_FUNC_SIGNATURE,
+      100, 
+      false
+    );
+    
+    await permissionRegistry.setAdminPermission(
+      testToken.address, 
+      org.avatar.address, 
+      constants.ANY_ADDRESS, 
+      constants.ANY_FUNC_SIGNATURE,
+      100, 
+      true
+    );
+
+    const tx = await masterWalletScheme.proposeCalls(
+      [testToken.address, testToken.address, testToken.address],
+      [
+        helpers.encodeERC20Approve(actionMock.address, "49"), 
+        helpers.encodeERC20Approve(actionMock2.address, "51"), 
+        helpers.encodeERC20Approve(actionMock3.address, "1")
+      ],
+      [0, 0, 0],
+      constants.TEST_TITLE, constants.SOME_HASH
+    );
+
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    await expectRevert(
+      votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "revert total value transfered of asset in proposal not allowed"
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
+    await time.increase(executionTimeout+1);
+    
+    await votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      constants.WalletSchemeProposalState.executionTimeout
+    );
+    
+    // This proposal passes because the value transfered is within the global limits
+    const proposalId2 = await helpers.getValueFromLogs( await masterWalletScheme.proposeCalls(
+      [testToken.address, testToken.address, testToken.address],
+      [
+        helpers.encodeERC20Approve(actionMock.address, "49"), 
+        helpers.encodeERC20Approve(actionMock2.address, "49"), 
+        helpers.encodeERC20Approve(actionMock3.address, "1")
       ],
       [0, 0, 0],
       constants.TEST_TITLE,
@@ -1590,7 +1666,7 @@ contract("WalletScheme", function(accounts) {
       );
     });
     
-    it("MasterWalletScheme - positive decision - proposal executed - not allowed ERC20 transfer with value", async function() {
+    it("MasterWalletScheme - not allowed ERC20 transfer with value", async function() {
       
       await permissionRegistry.setAdminPermission(
         testToken.address, 
@@ -1604,6 +1680,34 @@ contract("WalletScheme", function(accounts) {
       const callData = helpers.testCallFrom(org.avatar.address);
       
       const transferData = helpers.encodeERC20Transfer(actionMock.address, "100");
+
+      await expectRevert(
+        masterWalletScheme.proposeCalls(
+          [testToken.address],
+          [transferData],
+          [1],
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "cant propose ERC20 transfers with value"
+      );
+    
+    });
+    
+    it("MasterWalletScheme - not allowed ERC20 approve with value", async function() {
+      
+      await permissionRegistry.setAdminPermission(
+        testToken.address, 
+        org.avatar.address, 
+        constants.ANY_ADDRESS, 
+        constants.ANY_FUNC_SIGNATURE,
+        101, 
+        true
+      );
+      
+      const callData = helpers.testCallFrom(org.avatar.address);
+      
+      const transferData = helpers.encodeERC20Approve(actionMock.address, "100");
 
       await expectRevert(
         masterWalletScheme.proposeCalls(
