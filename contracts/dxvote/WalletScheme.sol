@@ -54,6 +54,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     // Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
     bool internal executingProposal;
     
+    string public SCHEME_TYPE = "Wallet Scheme v1";
     bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
     bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
     bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
