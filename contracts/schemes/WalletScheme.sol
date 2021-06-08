@@ -16,6 +16,8 @@ import "./PermissionRegistry.sol";
  * The scheme can only execute calls allowed to in the permission registry, if the controller address is set
  * the permissions will be checked using the avatar address as sender, if not the scheme address will be used as
  * sender.
+ * The permissions for [asset][SCHEME_ADDRESS][ANY_SIGNATURE] are used for global transfer limit, if it is set,
+ * it wont allowed a higher total value transfered in the proposal higher to the one set there.
  */
 contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     using SafeMath for uint256;
@@ -198,7 +200,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                   .getPermission(
                       assetsUsed[i],
                       controllerAddress != address(0) ? address(avatar) : address(this),
-                      ANY_ADDRESS,
+                      address(this),
                       ANY_SIGNATURE
                   );
                 require(

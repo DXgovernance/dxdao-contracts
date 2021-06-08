@@ -427,11 +427,29 @@ contract("WalletScheme", function(accounts) {
   });
   
   it("Global ETH transfer value not allowed value by permission registry", async function() {
-    
+
     await permissionRegistry.setAdminPermission(
       constants.NULL_ADDRESS, 
       org.avatar.address, 
       constants.ANY_ADDRESS, 
+      constants.ANY_FUNC_SIGNATURE,
+      constants.MAX_UINT_256,
+      false
+    );
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      actionMock.address, 
+      constants.ANY_FUNC_SIGNATURE,
+      constants.MAX_UINT_256,
+      true
+    );
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      masterWalletScheme.address, 
       constants.ANY_FUNC_SIGNATURE,
       100, 
       true
@@ -471,6 +489,15 @@ contract("WalletScheme", function(accounts) {
       constants.NULL_ADDRESS, 
       org.avatar.address, 
       constants.ANY_ADDRESS, 
+      constants.ANY_FUNC_SIGNATURE,
+      52, 
+      true
+    );
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      masterWalletScheme.address, 
       constants.ANY_FUNC_SIGNATURE,
       100, 
       true
@@ -1446,6 +1473,15 @@ contract("WalletScheme", function(accounts) {
         testToken.address, 
         org.avatar.address, 
         constants.ANY_ADDRESS, 
+        constants.ANY_FUNC_SIGNATURE,
+        51, 
+        true
+      );
+      
+      await permissionRegistry.setAdminPermission(
+        testToken.address, 
+        org.avatar.address, 
+        masterWalletScheme.address, 
         constants.ANY_FUNC_SIGNATURE,
         101, 
         true

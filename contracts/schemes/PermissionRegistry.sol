@@ -13,8 +13,6 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
  *   `value` uint256 and `fromTime` uint256, if `fromTime` is zero it meants the function is not allowed.
  * The ERC20 transfer permissions are stored using the asset of the ERC20 and stores the `from` address, `to` address,
  *   `value` uint256 and `fromTime` uint256, if `fromTime` is zero it meants the function is not allowed.
- * The permissions for [asset][0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa][0xaaaaaaaa] are used for global transfer
- * limit, if it is set, it wont allowed a higher total value transfered in the proposal higher to the one set there.
  */
 
 contract PermissionRegistry {
