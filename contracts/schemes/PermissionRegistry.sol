@@ -95,6 +95,8 @@ contract PermissionRegistry {
     bool allowed
   ) public {
     require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
+    require(from != address(0), "PermissionRegistry: Cant use address(0) as from");
+    require(from != owner || to != address(this), "PermissionRegistry: Cant set owner permissions");
     if (allowed){
       permissions[asset][from][to][functionSignature].fromTime = now.add(timeDelay);
       permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
@@ -127,7 +129,8 @@ contract PermissionRegistry {
     uint256 valueAllowed, 
     bool allowed
   ) public {
-    require(to != address(this), "PermissionRegistry: Cant change permissions to PermissionRegistry");
+    require(to != address(this), "PermissionRegistry: Cant set permissions to PermissionRegistry");
+    require(msg.sender != owner && to != address(this), "PermissionRegistry: Cant set owner permissions");
     if (allowed) {
       permissions[asset][msg.sender][to][functionSignature].fromTime = now.add(timeDelay);
       permissions[asset][msg.sender][to][functionSignature].valueAllowed = valueAllowed;

@@ -28,7 +28,7 @@ contract ERC20Guild is Initializable {
     using ECDSAUpgradeable for bytes32;
     using Arrays for uint256[];
     
-    enum ProposalState {Submitted, Rejected, Executed, Failed}
+    enum ProposalState {None, Submitted, Rejected, Executed, Failed}
 
     IERC20Upgradeable public token;
     bool public initialized;

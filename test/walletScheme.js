@@ -8,6 +8,7 @@ const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
 
+const { fixSignature } = require('./helpers/sign');
 const { time, expectRevert } = require("@openzeppelin/test-helpers");
 
 contract("WalletScheme", function(accounts) {
@@ -295,7 +296,98 @@ contract("WalletScheme", function(accounts) {
     assert.equal(organizationProposal.value[0], 0);
   });
   
-  it("MasterWalletScheme - positive decision - proposal executed - not allowed by permission registry", async function() {
+  it("MasterWalletScheme - proposal with data - positive decision - proposal executed", async function() {
+    const callData = helpers.testCallFrom(org.avatar.address);
+    
+    const proposalId1 = helpers.getValueFromLogs(await masterWalletScheme.proposeCalls(
+      [actionMock.address], [callData], [0], constants.TEST_TITLE, constants.SOME_HASH
+    ), "_proposalId");
+    
+    // Use signed votes to try to exeucte a proposal inside a proposal execution
+    const voteHash = await votingMachine.contract.hashVote(
+      votingMachine.address, proposalId1, accounts[2], 1, 0
+    );
+    const voteSignature = fixSignature(await web3.eth.sign(voteHash, accounts[2]));
+    
+    const executeSignedVoteData = await votingMachine.contract.contract.methods.executeSignedVote(
+      votingMachine.address,
+      proposalId1,
+      accounts[2],
+      1,
+      0,
+      voteSignature
+    ).encodeABI();
+    
+    const actionMockExecuteCallWithRequiredData = await actionMock.contract.methods.executeCallWithRequiredSuccess(
+      masterWalletScheme.address, executeSignedVoteData, 0
+    ).encodeABI();
+      
+    const actionMockExecuteCallData = await actionMock.contract.methods.executeCall(
+      masterWalletScheme.address, executeSignedVoteData, 0
+    ).encodeABI();
+
+    // It wont allow submitting a proposal to call the wallet scheme itself, the scheme itself is only callable to call
+    // setMaxSecondsForExecution function.
+    await expectRevert(masterWalletScheme.proposeCalls(
+      [masterWalletScheme.address],
+      [executeSignedVoteData],
+      [0],
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    ), "invalid proposal caller");
+    
+    // If we execute the proposal adn we check that it succed it will fail because it does not allow the re execution
+    // of a proposal when another is on the way, the revert will happen in the voting action when the proposal is
+    // executed
+    const proposalId2 = await helpers.getValueFromLogs(await masterWalletScheme.proposeCalls(
+      [actionMock.address],
+      [actionMockExecuteCallWithRequiredData],
+      [0],
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    ), "_proposalId");
+    
+    await expectRevert(votingMachine.contract.vote(
+      proposalId2, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+    ), "call execution failed");
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId1)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId2)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
+    // If we execute a proposal but we dont check the returned value it will still wont execute.
+    // The proposal trying to execute propoposalId1 will success but proposal1 wont be exeucted sucessfuly, it will 
+    // still be submitted state.
+    const proposalId3 = await helpers.getValueFromLogs(await masterWalletScheme.proposeCalls(
+      [actionMock.address],
+      [actionMockExecuteCallData],
+      [0],
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    ), "_proposalId");
+    await votingMachine.contract.vote(
+      proposalId3, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId1)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalId3)).state,
+      constants.WalletSchemeProposalState.executionSuccedd
+    );
+
+  });
+  
+  it("Not allowed by permission registry", async function() {
     
     await permissionRegistry.setAdminPermission(
       constants.NULL_ADDRESS, 
@@ -334,12 +426,30 @@ contract("WalletScheme", function(accounts) {
     );
   });
   
-  it("MasterWalletScheme - positive decision - proposal executed - not allowed value by permission registry", async function() {
-    
+  it("Global ETH transfer value not allowed value by permission registry", async function() {
+
     await permissionRegistry.setAdminPermission(
       constants.NULL_ADDRESS, 
       org.avatar.address, 
       constants.ANY_ADDRESS, 
+      constants.ANY_FUNC_SIGNATURE,
+      constants.MAX_UINT_256,
+      false
+    );
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      actionMock.address, 
+      constants.ANY_FUNC_SIGNATURE,
+      constants.MAX_UINT_256,
+      true
+    );
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      masterWalletScheme.address, 
       constants.ANY_FUNC_SIGNATURE,
       100, 
       true
@@ -353,7 +463,7 @@ contract("WalletScheme", function(accounts) {
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(
       votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
-      "value call not allowed"
+      "total value transfered of asset in proposal not allowed"
     );
     
     assert.equal(
@@ -380,6 +490,15 @@ contract("WalletScheme", function(accounts) {
       org.avatar.address, 
       constants.ANY_ADDRESS, 
       constants.ANY_FUNC_SIGNATURE,
+      52, 
+      true
+    );
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS, 
+      org.avatar.address, 
+      masterWalletScheme.address, 
+      constants.ANY_FUNC_SIGNATURE,
       100, 
       true
     );
@@ -392,7 +511,7 @@ contract("WalletScheme", function(accounts) {
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
-      "value call not allowed"
+      "total value transfered of asset in proposal not allowed"
     );
     
     assert.equal(
@@ -1355,6 +1474,15 @@ contract("WalletScheme", function(accounts) {
         org.avatar.address, 
         constants.ANY_ADDRESS, 
         constants.ANY_FUNC_SIGNATURE,
+        51, 
+        true
+      );
+      
+      await permissionRegistry.setAdminPermission(
+        testToken.address, 
+        org.avatar.address, 
+        masterWalletScheme.address, 
+        constants.ANY_FUNC_SIGNATURE,
         101, 
         true
       );
@@ -1374,7 +1502,7 @@ contract("WalletScheme", function(accounts) {
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
       await expectRevert(
         votingMachine.contract.vote( proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
-        "value call not allowed"
+        "total value transfered of asset in proposal not allowed"
       );
       
       assert.equal(
@@ -1549,7 +1677,7 @@ contract("WalletScheme", function(accounts) {
           constants.MAX_UINT_256, 
           true
         ),
-        "PermissionRegistry: Cant change permissions to PermissionRegistry"
+        "PermissionRegistry: Cant set permissions to PermissionRegistry"
       );
       
       await permissionRegistry.transferOwnership(org.avatar.address);
