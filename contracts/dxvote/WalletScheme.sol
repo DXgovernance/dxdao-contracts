@@ -21,6 +21,16 @@ import "./PermissionRegistry.sol";
  */
 contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     using SafeMath for uint256;
+    
+    string public SCHEME_TYPE = "Wallet Scheme v1";
+    bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
+    bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
+    bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
+        bytes4(keccak256("setMaxSecondsForExecution(uint256)"));
+    bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
+    address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
+
+    enum ProposalState {None, Submitted, Rejected, ExecutionSucceded, ExecutionTimeout}
 
     struct Proposal {
         address[] to;
@@ -54,20 +64,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     // Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
     bool internal executingProposal;
     
-    string public SCHEME_TYPE = "Wallet Scheme v1";
-    bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
-    bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
-    bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
-        bytes4(keccak256("setMaxSecondsForExecution(uint256)"));
-    bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
-    address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
-
-    event NewCallProposal(bytes32 indexed _proposalId);
-    event ProposalExecuted(bytes32 indexed _proposalId, bool[] _callsSucessResult, bytes[] _callsDataResult);
-    event ProposalExecutedByVotingMachine(bytes32 indexed _proposalId, int256 _param);
-    event ProposalRejected(bytes32 indexed _proposalId);
-    event ProposalExecutionTimeout(bytes32 indexed _proposalId);
-    enum ProposalState {None, Submitted, Rejected, ExecutionSucceded, ExecutionTimeout}
+    event ProposalStateChange(bytes32 indexed _proposalId, uint256 indexed _state);
+    event ExecutionResults(bytes32 indexed _proposalId, bool[] _callsSucessResult, bytes[] _callsDataResult);
 
     /**
      * @dev initialize
@@ -138,7 +136,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         // the proposal timeout execution is reached and proposal cant be executed from now on
         if (proposal.submittedTime.add(maxSecondsForExecution) < now) {
             proposal.state = ProposalState.ExecutionTimeout;
-            emit ProposalExecutionTimeout(_proposalId);
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionTimeout));
         
         // If decision is 1, it means the proposal was approved by the voting machine
         } else if (_decision == 1) {
@@ -280,16 +278,15 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             for (uint256 i = 0; i < permissionHashUsed.length; i++) {
                 delete valueTransferedByAssetAndRecipient[permissionHashUsed[i]];
             }
-            
-            emit ProposalExecuted(_proposalId, callsSucessResult, callsDataResult);
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceded));
+            emit ExecutionResults(_proposalId, callsSucessResult, callsDataResult);
             
         // If decision is 2, it means the proposal was rejected by the voting machine
         } else {
             proposal.state = ProposalState.Rejected;
-            emit ProposalRejected(_proposalId);
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         }
         
-        emit ProposalExecutedByVotingMachine(_proposalId, _decision);
         executingProposal = false;
         return true;
     }
@@ -350,7 +347,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         });
         proposalsList.push(proposalId);
         proposalsInfo[address(votingMachine)][proposalId] = ProposalInfo({blockNumber: block.number, avatar: avatar});
-        emit NewCallProposal(proposalId);
+        emit ProposalStateChange(proposalId, uint256(ProposalState.Submitted));
         return proposalId;
     }
 

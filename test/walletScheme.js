@@ -266,8 +266,8 @@ contract("WalletScheme", function(accounts) {
     tx = await votingMachine.contract.vote(
       proposalId, 2, 0, constants.NULL_ADDRESS, {from: accounts[2]}
     );
-    const executionEvent = helpers.getWalletSchemeExecutionEvent(tx);
-    assert.equal(executionEvent.name, 'ProposalRejected');
+    const stateChangeEvent = helpers.getWalletSchemeEvent(tx, 'ProposalStateChange');
+    assert.equal(stateChangeEvent.values._state, 2);
     
     const organizationProposal = await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.rejected);
@@ -797,8 +797,7 @@ contract("WalletScheme", function(accounts) {
     tx = await votingMachine.contract.vote(
       proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
     );
-    const executionEvent = helpers.getWalletSchemeExecutionEvent(tx)
-
+    const executionEvent = helpers.getWalletSchemeEvent(tx, 'ExecutionResults')
     const returnValue = web3.eth.abi.decodeParameters(["bool", "bytes"], 
       executionEvent.values._callsDataResult[0]);
     assert.equal(returnValue["0"], true);
@@ -1017,8 +1016,8 @@ contract("WalletScheme", function(accounts) {
     tx = await votingMachine.contract.vote(
       proposalId, 2, 0, constants.NULL_ADDRESS, {from: accounts[2]}
     );
-    const executionEvent = helpers.getWalletSchemeExecutionEvent(tx);
-    assert.equal(executionEvent.name, 'ProposalRejected');
+    const stateChangeEvent = helpers.getWalletSchemeEvent(tx, 'ProposalStateChange');
+    assert.equal(stateChangeEvent.values._state, 2);
     
     const organizationProposal = await quickWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(organizationProposal.state, constants.WalletSchemeProposalState.rejected);
@@ -1123,7 +1122,7 @@ contract("WalletScheme", function(accounts) {
     tx = await votingMachine.contract.vote(
       proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
     );
-    const executionEvent = helpers.getWalletSchemeExecutionEvent(tx)
+    const executionEvent = helpers.getWalletSchemeEvent(tx, 'ExecutionResults')
 
     const returnValues = executionEvent.values._callsDataResult[0];
     assert.equal(returnValues, "0x");
@@ -1365,7 +1364,7 @@ contract("WalletScheme", function(accounts) {
     tx = await votingMachine.contract.vote(
       proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
     );
-    const executionEvent = helpers.getWalletSchemeExecutionEvent(tx)
+    const executionEvent = helpers.getWalletSchemeEvent(tx, 'ExecutionResults')
     assert.equal(executionEvent.values._callsSucessResult[0], true);
     assert.equal(executionEvent.values._callsSucessResult[1], true);
     assert.equal(executionEvent.values._callsSucessResult[2], true);

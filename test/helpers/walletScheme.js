@@ -8,11 +8,8 @@ export function encodeGenericCallData(avatar, to, data, value) {
     .genericCall(to, data, avatar, value).encodeABI();
 }
 
-export function getWalletSchemeExecutionEvent(tx) {
+export function getWalletSchemeEvent(tx, eventName) {
  const logDecoder = new EthDecoder.default.LogDecoder( [WalletScheme.abi] );
   const logs = logDecoder.decodeLogs(tx.receipt.rawLogs);
-  return logs.map((event) => {
-    if (event.name == 'ProposalExecuted' || event.name == 'ProposalRejected')
-      return event;
-  })[0]
+  return logs.find((event) => event.name == eventName);
 }
