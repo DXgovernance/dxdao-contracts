@@ -180,7 +180,7 @@ contract("WalletScheme", function(accounts) {
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(votingMachine.contract.vote(
       proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
-    ), "revert call execution failed");
+    ), "call execution failed");
     
     await time.increase(executionTimeout);
     
