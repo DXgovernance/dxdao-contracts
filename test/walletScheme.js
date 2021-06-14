@@ -65,7 +65,8 @@ contract("WalletScheme", function(accounts) {
       org.controller.address,
       permissionRegistry.address,
       "Master Wallet",
-      executionTimeout
+      executionTimeout,
+      5
     );
     
     quickWalletScheme = await WalletScheme.new();
@@ -76,7 +77,8 @@ contract("WalletScheme", function(accounts) {
       constants.NULL_ADDRESS,
       permissionRegistry.address,
       "Quick Wallet",
-      executionTimeout
+      executionTimeout,
+      0
     );
     
     await permissionRegistry.setAdminPermission(
@@ -855,6 +857,51 @@ contract("WalletScheme", function(accounts) {
     assert.equal(burnRepProposal.value[0], 0);
   });
   
+  it("MasterWalletScheme - proposal to mint more REP than allow reverts", async function() {
+    const totalSupplyWhenExecuting = await org.reputation.totalSupply();
+    const maxToMint = ((totalSupplyWhenExecuting * 105) / 100) - totalSupplyWhenExecuting;
+    const repLockedInExecutionBlock = 70000 / 10;
+
+    const data0 = await org.controller.contract.methods.mintReputation(
+      maxToMint + repLockedInExecutionBlock,
+      accounts[4],
+      org.avatar.address
+    ).encodeABI();
+    
+    const data1 = await org.controller.contract.methods.mintReputation(
+        maxToMint + repLockedInExecutionBlock - 1,
+        accounts[4],
+        org.avatar.address
+      ).encodeABI();
+    var tx = await masterWalletScheme.proposeCalls(
+      [org.controller.address], [ data0 ], [0], constants.TEST_TITLE, constants.NULL_HASH
+    );
+    const proposalIdMintRepToFail = await helpers.getValueFromLogs(tx, "_proposalId");
+    
+    var tx = await masterWalletScheme.proposeCalls(
+      [org.controller.address], [data1], [0], constants.TEST_TITLE, constants.NULL_HASH
+    );
+    const proposalIdMintRep = await helpers.getValueFromLogs(tx, "_proposalId");
+    
+    await expectRevert(
+      votingMachine.contract.vote(proposalIdMintRepToFail, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}),
+      "maxRepPercentageToMint passed"
+    );
+    await votingMachine.contract.vote(proposalIdMintRep, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]})
+
+    assert.equal(await org.reputation.balanceOf(accounts[4]), maxToMint + repLockedInExecutionBlock - 1);
+
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalIdMintRepToFail)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalIdMintRep)).state,
+      constants.WalletSchemeProposalState.executionSuccedd
+    );
+    
+  });
+  
   it("MasterWalletScheme - proposals adding/removing schemes - execute registerScheme & removeScheme", async function() {
     const callDataRegisterScheme = await org.controller.contract.methods.registerScheme(
       constants.SOME_ADDRESS,
@@ -964,7 +1011,8 @@ contract("WalletScheme", function(accounts) {
         constants.NULL_ADDRESS,
         permissionRegistry.address,
         "Master Wallet",
-        86400-1
+        86400-1,
+        5
       ),"_maxSecondsForExecution cant be less than 86400 seconds"
     );
     await expectRevert(unitializedWalletScheme.initialize(
@@ -974,7 +1022,8 @@ contract("WalletScheme", function(accounts) {
         constants.NULL_ADDRESS,
         permissionRegistry.address,
         "Master Wallet",
-        executionTimeout
+        executionTimeout,
+        5
       ),"avatar cannot be zero"
     );
   });
@@ -987,7 +1036,8 @@ contract("WalletScheme", function(accounts) {
         constants.NULL_ADDRESS,
         permissionRegistry.address,
         "Master Wallet",
-        executionTimeout
+        executionTimeout,
+        5
       ), "cannot init twice"
     );
   });

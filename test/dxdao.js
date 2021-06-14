@@ -99,7 +99,8 @@ contract("DXdao", function(accounts) {
       controller.address,
       permissionRegistry.address,
       "Master Scheme",
-      86400
+      86400,
+      5
     );
     
     await daoCreator.setSchemes(

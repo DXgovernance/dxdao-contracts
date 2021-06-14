@@ -52,6 +52,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     PermissionRegistry public permissionRegistry;
     string public schemeName;
     uint256 public maxSecondsForExecution;
+    uint256 public maxRepPercentageToMint;
     
     // This mapping is used as "memory storage" in executeProposal function, to keep track of the total value
     // transfered of by asset and address, it saves both aseet and address as keccak256(asset, recipient)
@@ -85,7 +86,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         address _controllerAddress,
         address _permissionRegistry,
         string calldata _schemeName,
-        uint256 _maxSecondsForExecution
+        uint256 _maxSecondsForExecution,
+        uint256 _maxRepPercentageToMint
     ) external {
         require(avatar == Avatar(0), "cannot init twice");
         require(_avatar != Avatar(0), "avatar cannot be zero");
@@ -97,6 +99,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
         maxSecondsForExecution = _maxSecondsForExecution;
+        maxRepPercentageToMint = _maxRepPercentageToMint;
     }
 
     /**
@@ -187,7 +190,6 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             }
         
             // If one call fails the transaction will revert
-            proposal.state = ProposalState.ExecutionSucceded;
             bytes[] memory callsDataResult = new bytes[](proposal.to.length);
             bool[] memory callsSucessResult = new bool[](proposal.to.length);
             uint256 _fromTime;
@@ -273,11 +275,21 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                 require(callsSucessResult[i], "call execution failed");
             
             }
+            // Cant mint more REP than the allowed percentaje set in the wallet scheme initialization
+            require(
+              avatar.nativeReputation().totalSupplyAt(block.number - 1)
+                .mul(uint256(100).add(maxRepPercentageToMint))
+                .div(100)
+              >
+              avatar.nativeReputation().totalSupply(),
+              "maxRepPercentageToMint passed"
+            );
             
             // Delete all valueTransferedByAssetAndRecipient values saved in storage
             for (uint256 i = 0; i < permissionHashUsed.length; i++) {
                 delete valueTransferedByAssetAndRecipient[permissionHashUsed[i]];
             }
+            proposal.state = ProposalState.ExecutionSucceded;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceded));
             emit ExecutionResults(_proposalId, callsSucessResult, callsDataResult);
             
