@@ -155,15 +155,6 @@ contract("PermissionRegistry", function(accounts) {
       false
     );
     
-    await permissionRegistry.setAdminPermission(
-      constants.NULL_ADDRESS, 
-      accounts[1], 
-      constants.ANY_ADDRESS, 
-      constants.ANY_FUNC_SIGNATURE,
-      constants.MAX_UINT_256, 
-      true
-    );
-    
     await expectRevert(
       permissionRegistry.setPermission(
         constants.NULL_ADDRESS, 
@@ -222,7 +213,6 @@ contract("PermissionRegistry", function(accounts) {
     );
     
     const tx1 = await votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]});
-    
     const testCallAllowedFromTime = (await permissionRegistry.getPermission(
       constants.NULL_ADDRESS, quickWalletScheme.address, actionMock.address, callData.substring(0,10)
     )).fromTime;
