@@ -1,8 +1,11 @@
-import * as helpers from "./helpers";
-const constants = require("./helpers/constants");
-const DXDGuild = artifacts.require("DXDGuild.sol");
-const ActionMock = artifacts.require("ActionMock.sol");
-const { fixSignature } = require("./helpers/sign");
+import * as helpers from "../helpers";
+const { fixSignature } = require("../helpers/sign");
+const {
+  createDAO,
+  createAndSetupGuildToken,
+  createProposal,
+  setAllVotesOnProposal
+} = require("../helpers/guild");
 const {
   BN,
   expectEvent,
@@ -12,17 +15,15 @@ const {
   ether,
   time
 } = require("@openzeppelin/test-helpers");
-const {
-  createDAO,
-  createAndSetupGuildToken,
-  createProposal,
-  setAllVotesOnProposal
-} = require("./helpers/guild");
+
+const DXDGuild = artifacts.require("DXDGuild.sol");
+const ActionMock = artifacts.require("ActionMock.sol");
 
 require("chai").should();
 
 contract("DXDGuild", function (accounts) {
   
+  const constants = helpers.constants;
   const ZERO = new BN("0");
   const TIMELOCK = new BN("60");
   const VOTE_GAS = new BN("50000"); // 50k

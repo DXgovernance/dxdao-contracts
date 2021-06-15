@@ -2,10 +2,11 @@
 // Copied from https://github.com/daostack/arc/blob/master/test/contributionsreward.js
 //
 
-import * as helpers from './helpers';
-const constants = require('./helpers/constants');
+import * as helpers from '../helpers';
+const constants = require('../helpers/constants');
+
 const ContributionReward = artifacts.require("./ContributionReward.sol");
-const ERC20Mock = artifacts.require('./test/ERC20Mock.sol');
+const ERC20Mock = artifacts.require('./ERC20Mock.sol');
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const ControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const Avatar = artifacts.require("./DxAvatar.sol");
