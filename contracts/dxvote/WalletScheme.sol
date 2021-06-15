@@ -91,7 +91,9 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     ) external {
         require(avatar == Avatar(0), "WalletScheme: cannot init twice");
         require(_avatar != Avatar(0), "WalletScheme: avatar cannot be zero");
-        require(_maxSecondsForExecution >= 86400, "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds");
+        require(
+            _maxSecondsForExecution >= 86400, "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
+        );
         avatar = _avatar;
         votingMachine = _votingMachine;
         voteParams = _voteParams;
@@ -115,8 +117,12 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      * @return bool success
      */
     function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external {
-        require(msg.sender == address(avatar), "WalletScheme: setMaxSecondsForExecution is callable only form the avatar");
-        require(_maxSecondsForExecution >= 86400, "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds");
+        require(
+            msg.sender == address(avatar), "WalletScheme: setMaxSecondsForExecution is callable only form the avatar"
+        );
+        require(
+            _maxSecondsForExecution >= 86400, "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
+        );
         maxSecondsForExecution = _maxSecondsForExecution;
     }
 
@@ -152,7 +158,10 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             address[] memory assetsUsed = new address[](proposal.to.length);
             for (uint256 i = 0; i < proposal.to.length; i++) {
                 callDataFuncSignature = getFuncSignature(proposal.callData[i]);
-                if (ERC20_TRANSFER_SIGNATURE == callDataFuncSignature || ERC20_APPROVE_SIGNATURE == callDataFuncSignature) {
+                if (
+                    ERC20_TRANSFER_SIGNATURE == callDataFuncSignature
+                    || ERC20_APPROVE_SIGNATURE == callDataFuncSignature
+                ) {
                     (address _to, uint256 _value) = erc20TransferOrApproveDecode(proposal.callData[i]);
                     permissionHash = keccak256(abi.encodePacked(proposal.to[i], _to));
                     
@@ -218,7 +227,10 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                 
                 // Checks that thte value tha is transfered (in ETH or ERC20) is lower or equal to the one that is
                 // allowed for the function that wants to be executed
-                if (ERC20_TRANSFER_SIGNATURE == callDataFuncSignature || ERC20_APPROVE_SIGNATURE == callDataFuncSignature) {
+                if (
+                    ERC20_TRANSFER_SIGNATURE == callDataFuncSignature
+                    || ERC20_APPROVE_SIGNATURE == callDataFuncSignature
+                ) {
                     (address _to, uint256 _) = erc20TransferOrApproveDecode(proposal.callData[i]);
                     (_valueAllowed, _fromTime) = permissionRegistry
                         .getPermission(
@@ -228,7 +240,9 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                             callDataFuncSignature
                         );
                     require(
-                        _valueAllowed >= valueTransferedByAssetAndRecipient[keccak256(abi.encodePacked(proposal.to[i], _to))],
+                        _valueAllowed
+                        >=
+                        valueTransferedByAssetAndRecipient[keccak256(abi.encodePacked(proposal.to[i], _to))],
                         "WalletScheme: erc20 value call not allowed"
                     );
                 } else {
@@ -249,7 +263,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                 
                 // Check that the time from which the call can be executed means is higher than zero (which means that
                 // is allowed) and that is lower than the actual timestamp
-                require(_fromTime > 0 && now > _fromTime, "call not allowed");
+                require(_fromTime > 0 && now > _fromTime, "WalletScheme: call not allowed");
                 
                 // If controller address is set the code needs to be encoded to generiCall function
                 if (controllerAddress != address(0) && proposal.to[i] != controllerAddress) {
@@ -324,8 +338,14 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
             
             // Check that no proposals are submitted to wildcard address and function signature
-            require(_to[i] != ANY_ADDRESS, "cant propose calls to 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa address");
-            require(callDataFuncSignature != ANY_SIGNATURE, "cant propose calls with 0xaaaaaaaa signature");
+            require(
+                _to[i] != ANY_ADDRESS,
+                "WalletScheme: cant propose calls to 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa address"
+            );
+            require(
+              callDataFuncSignature != ANY_SIGNATURE,
+              "WalletScheme: cant propose calls with 0xaaaaaaaa signature"
+            );
             
             // Only allow proposing calls to this address to call setMaxSecondsForExecution function
             require(
