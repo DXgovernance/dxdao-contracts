@@ -50,7 +50,8 @@ export async function createDAO(guild, accounts, founderToken=  [ 0, 0, 0, 0 ], 
     org.controller.address,
     permissionRegistry.address,
     "Wallet Scheme",
-    86400
+    86400,
+    5
   );
   
   await permissionRegistry.setAdminPermission(

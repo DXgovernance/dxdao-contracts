@@ -21,6 +21,16 @@ import "./PermissionRegistry.sol";
  */
 contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     using SafeMath for uint256;
+    
+    string public SCHEME_TYPE = "Wallet Scheme v1";
+    bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
+    bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
+    bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
+        bytes4(keccak256("setMaxSecondsForExecution(uint256)"));
+    bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
+    address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
+
+    enum ProposalState {None, Submitted, Rejected, ExecutionSucceded, ExecutionTimeout}
 
     struct Proposal {
         address[] to;
@@ -42,6 +52,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     PermissionRegistry public permissionRegistry;
     string public schemeName;
     uint256 public maxSecondsForExecution;
+    uint256 public maxRepPercentageToMint;
     
     // This mapping is used as "memory storage" in executeProposal function, to keep track of the total value
     // transfered of by asset and address, it saves both aseet and address as keccak256(asset, recipient)
@@ -54,19 +65,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     // Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
     bool internal executingProposal;
     
-    bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
-    bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
-    bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
-        bytes4(keccak256("setMaxSecondsForExecution(uint256)"));
-    bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
-    address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
-
-    event NewCallProposal(bytes32 indexed _proposalId);
-    event ProposalExecuted(bytes32 indexed _proposalId, bool[] _callsSucessResult, bytes[] _callsDataResult);
-    event ProposalExecutedByVotingMachine(bytes32 indexed _proposalId, int256 _param);
-    event ProposalRejected(bytes32 indexed _proposalId);
-    event ProposalExecutionTimeout(bytes32 indexed _proposalId);
-    enum ProposalState {None, Submitted, Rejected, ExecutionSucceded, ExecutionTimeout}
+    event ProposalStateChange(bytes32 indexed _proposalId, uint256 indexed _state);
+    event ExecutionResults(bytes32 indexed _proposalId, bool[] _callsSucessResult, bytes[] _callsDataResult);
 
     /**
      * @dev initialize
@@ -86,11 +86,12 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         address _controllerAddress,
         address _permissionRegistry,
         string calldata _schemeName,
-        uint256 _maxSecondsForExecution
+        uint256 _maxSecondsForExecution,
+        uint256 _maxRepPercentageToMint
     ) external {
-        require(avatar == Avatar(0), "cannot init twice");
-        require(_avatar != Avatar(0), "avatar cannot be zero");
-        require(_maxSecondsForExecution >= 86400, "_maxSecondsForExecution cant be less than 86400 seconds");
+        require(avatar == Avatar(0), "WalletScheme: cannot init twice");
+        require(_avatar != Avatar(0), "WalletScheme: avatar cannot be zero");
+        require(_maxSecondsForExecution >= 86400, "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds");
         avatar = _avatar;
         votingMachine = _votingMachine;
         voteParams = _voteParams;
@@ -98,13 +99,14 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
         maxSecondsForExecution = _maxSecondsForExecution;
+        maxRepPercentageToMint = _maxRepPercentageToMint;
     }
 
     /**
      * @dev Fallback function that allows the wallet to receive ETH when the controller address is not set
      */
     function() external payable {
-        require(controllerAddress == address(0), "Cant receive if it will make generic calls to avatar");
+        require(controllerAddress == address(0), "WalletScheme: Cant receive if it will make generic calls to avatar");
     }
     
     /**
@@ -113,8 +115,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      * @return bool success
      */
     function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external {
-        require(msg.sender == address(avatar), "setMaxSecondsForExecution is callable only form the avatar");
-        require(_maxSecondsForExecution >= 86400, "_maxSecondsForExecution cant be less than 86400 seconds");
+        require(msg.sender == address(avatar), "WalletScheme: setMaxSecondsForExecution is callable only form the avatar");
+        require(_maxSecondsForExecution >= 86400, "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds");
         maxSecondsForExecution = _maxSecondsForExecution;
     }
 
@@ -127,17 +129,17 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     function executeProposal(bytes32 _proposalId, int256 _decision)
         external onlyVotingMachine(_proposalId) returns(bool)
     {
-        require(!executingProposal, "proposal execution already running");
+        require(!executingProposal, "WalletScheme: proposal execution already running");
         executingProposal = true;
         
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.state == ProposalState.Submitted, "must be a submitted proposal");
+        require(proposal.state == ProposalState.Submitted, "WalletScheme: must be a submitted proposal");
         
         // If the amount of time passed since submission plus max proposal time is lower than block timestamp
         // the proposal timeout execution is reached and proposal cant be executed from now on
         if (proposal.submittedTime.add(maxSecondsForExecution) < now) {
             proposal.state = ProposalState.ExecutionTimeout;
-            emit ProposalExecutionTimeout(_proposalId);
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionTimeout));
         
         // If decision is 1, it means the proposal was approved by the voting machine
         } else if (_decision == 1) {
@@ -188,7 +190,6 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             }
         
             // If one call fails the transaction will revert
-            proposal.state = ProposalState.ExecutionSucceded;
             bytes[] memory callsDataResult = new bytes[](proposal.to.length);
             bool[] memory callsSucessResult = new bool[](proposal.to.length);
             uint256 _fromTime;
@@ -205,7 +206,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                   );
                 require(
                     (_fromTime == 0) || (_fromTime > 0 && _valueAllowed >= valueTransferedByAsset[assetsUsed[i]]),
-                    "total value transfered of asset in proposal not allowed"
+                    "WalletScheme: total value transfered of asset in proposal not allowed"
                 );
                 delete valueTransferedByAsset[assetsUsed[i]];
             }
@@ -228,7 +229,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                         );
                     require(
                         _valueAllowed >= valueTransferedByAssetAndRecipient[keccak256(abi.encodePacked(proposal.to[i], _to))],
-                        "erc20 value call not allowed"
+                        "WalletScheme: erc20 value call not allowed"
                     );
                 } else {
                     (_valueAllowed, _fromTime) = permissionRegistry
@@ -242,7 +243,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                         _valueAllowed >= valueTransferedByAssetAndRecipient[
                             keccak256(abi.encodePacked(address(0), proposal.to[i]))
                         ],
-                        "value call not allowed"
+                        "WalletScheme: value call not allowed"
                     );
                 }
                 
@@ -271,24 +272,33 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                 }
                 
                 // If the call reverted the entire execution will revert
-                require(callsSucessResult[i], "call execution failed");
+                require(callsSucessResult[i], "WalletScheme: call execution failed");
             
             }
+            // Cant mint more REP than the allowed percentaje set in the wallet scheme initialization
+            require(
+              avatar.nativeReputation().totalSupplyAt(block.number - 1)
+                .mul(uint256(100).add(maxRepPercentageToMint))
+                .div(100)
+              >
+              avatar.nativeReputation().totalSupply(),
+              "WalletScheme: maxRepPercentageToMint passed"
+            );
             
             // Delete all valueTransferedByAssetAndRecipient values saved in storage
             for (uint256 i = 0; i < permissionHashUsed.length; i++) {
                 delete valueTransferedByAssetAndRecipient[permissionHashUsed[i]];
             }
-            
-            emit ProposalExecuted(_proposalId, callsSucessResult, callsDataResult);
+            proposal.state = ProposalState.ExecutionSucceded;
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceded));
+            emit ExecutionResults(_proposalId, callsSucessResult, callsDataResult);
             
         // If decision is 2, it means the proposal was rejected by the voting machine
         } else {
             proposal.state = ProposalState.Rejected;
-            emit ProposalRejected(_proposalId);
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         }
         
-        emit ProposalExecutedByVotingMachine(_proposalId, _decision);
         executingProposal = false;
         return true;
     }
@@ -321,18 +331,18 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             require(
                 _to[i] != address(this)
                 || (callDataFuncSignature == SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE && _value[i] == 0)
-                , 'invalid proposal caller'
+                , "WalletScheme: invalid proposal caller"
             );
             
             // This will fail only when and ERC20 transfer or approve with ETH value is proposed
             require(
                 (callDataFuncSignature != ERC20_TRANSFER_SIGNATURE && callDataFuncSignature != ERC20_APPROVE_SIGNATURE)
                 || _value[i] == 0,
-                "cant propose ERC20 transfers with value"
+                "WalletScheme: cant propose ERC20 transfers with value"
             );
         }
-        require(_to.length == _callData.length, "invalid _callData length");
-        require(_to.length == _value.length, "invalid _value length");
+        require(_to.length == _callData.length, "WalletScheme: invalid _callData length");
+        require(_to.length == _value.length, "WalletScheme: invalid _value length");
 
         // Get the proposal id that will be used from the voting machine
         bytes32 proposalId = votingMachine.propose(2, voteParams, msg.sender, address(avatar));
@@ -349,7 +359,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         });
         proposalsList.push(proposalId);
         proposalsInfo[address(votingMachine)][proposalId] = ProposalInfo({blockNumber: block.number, avatar: avatar});
-        emit NewCallProposal(proposalId);
+        emit ProposalStateChange(proposalId, uint256(ProposalState.Submitted));
         return proposalId;
     }
 

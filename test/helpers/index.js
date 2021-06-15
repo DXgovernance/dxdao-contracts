@@ -1,6 +1,8 @@
-/**
-    helpers for tests
-*/
+const constants = require("./constants");
+const { encodePermission, decodePermission } = require("./permissions");
+const { encodeGenericCallData, getWalletSchemeEvent } = require("./walletScheme");
+
+const EthDecoder = require("@maticnetwork/eth-decoder");
 
 const Avatar = artifacts.require("./Avatar.sol");
 const Controller = artifacts.require("./Controller.sol");
@@ -12,10 +14,6 @@ const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
-const constants = require("./constants");
-const { encodePermission, decodePermission } = require("./permissions");
-const { encodeGenericCallData, getWalletSchemeExecutionEvent } = require("./walletScheme");
-const EthDecoder = require("@maticnetwork/eth-decoder");
 
 export const logDecoder = new EthDecoder.default.LogDecoder(
   [
@@ -334,4 +332,4 @@ export function encodeERC20Approve(to, value) {
   }, [to, value]);
 }
 
-export { encodePermission, decodePermission, encodeGenericCallData, getWalletSchemeExecutionEvent, constants };
+export { encodePermission, decodePermission, encodeGenericCallData, getWalletSchemeEvent, constants };

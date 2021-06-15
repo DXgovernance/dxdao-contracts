@@ -1,5 +1,8 @@
-import * as helpers from "./helpers";
-const constants = require("./helpers/constants");
+import * as helpers from "../helpers";
+const { toEthSignedMessageHash, fixSignature } = require('../helpers/sign');
+
+const { BN, time, expectEvent } = require("@openzeppelin/test-helpers");
+
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
@@ -8,8 +11,6 @@ const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
-const { toEthSignedMessageHash, fixSignature } = require('./helpers/sign');
-const { BN, time, expectEvent } = require("@openzeppelin/test-helpers");
 
 contract("DXDVotingMachine", function(accounts) {
   let standardTokenMock,
@@ -23,6 +24,7 @@ contract("DXDVotingMachine", function(accounts) {
     dxdVotingMachine,
     proposalId;
   
+  const constants = helpers.constants;
   const VOTE_GAS = 360000;
   const TOTAL_GAS_REFUND = VOTE_GAS * constants.GAS_PRICE;
   
@@ -81,7 +83,8 @@ contract("DXDVotingMachine", function(accounts) {
       org.controller.address,
       permissionRegistry.address,
       "Expensive Scheme",
-      172800
+      172800,
+      5
     );
     
     cheapVoteWalletScheme = await WalletScheme.new();
@@ -92,7 +95,8 @@ contract("DXDVotingMachine", function(accounts) {
       org.controller.address,
       permissionRegistry.address,
       "Cheap Scheme",
-      172800
+      172800,
+      5
     );
     
     await daoCreator.setSchemes(

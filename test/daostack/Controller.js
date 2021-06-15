@@ -1,4 +1,5 @@
-const helpers = require("./helpers");
+const helpers = require("../helpers");
+
 const DxController = artifacts.require("./DxController.sol");
 const DxReputation = artifacts.require("./DxReputation.sol");
 const DxAvatar = artifacts.require("./DxAvatar.sol");
@@ -6,7 +7,7 @@ const DxToken   = artifacts.require("./DxToken.sol");
 const GlobalConstraintMock = artifacts.require("./test/GlobalConstraintMock.sol");
 const ActionMock = artifacts.require("./test/ActionMock.sol");
 const ERC20Mock = artifacts.require("./test/ERC20Mock.sol");
-var constants = require("./helpers/constants");
+var constants = require("../helpers/constants");
 
 var uint32 = require("uint32");
 let reputation, avatar, token, controller;

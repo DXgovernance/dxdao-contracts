@@ -1,5 +1,5 @@
-import * as helpers from "./helpers";
-const constants = require("./helpers/constants");
+import * as helpers from "../helpers";
+
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const DxController = artifacts.require("./DxController.sol");
@@ -21,6 +21,8 @@ const createCallToActionMock = async function(_sender, _actionMock) {
 };
 
 contract("DXdao", function(accounts) {
+
+  const constants = helpers.constants;
 
   it("Wallet - execute proposeVote -positive decision - check action - with DXDVotingMachine", async function() {  
     const votingMachineToken = await ERC20Mock.new(accounts[ 0 ], 1000);
@@ -99,7 +101,8 @@ contract("DXdao", function(accounts) {
       controller.address,
       permissionRegistry.address,
       "Master Scheme",
-      86400
+      86400,
+      5
     );
     
     await daoCreator.setSchemes(
