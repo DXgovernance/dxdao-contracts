@@ -76,11 +76,11 @@ const hardharNetworks = process.env.CI
     chainId: 42161,
     timeout: 60000
   },
-  "arbitrum-testnet-v5": {
-    url: 'https://kovan5.arbitrum.io/rpc',
+  arbitrumTestnet: {
+    url: 'https://rinkeby.arbitrum.io/rpc',
     accounts: { mnemonic: MNEMONIC },
     gasPrice: 0,
-    chainId: 144545313136048,
+    chainId: 421611,
     timeout: 60000
   }
 };

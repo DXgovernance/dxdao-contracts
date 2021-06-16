@@ -6,184 +6,12 @@ const { encodePermission } = require("../test/helpers/permissions");
 const repHolders = require('../.repHolders.json');
 const wrapProvider = require('arb-ethers-web3-bridge').wrapProvider;
 const HDWalletProvider = require('@truffle/hdwallet-provider');
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// Get initial REP holders
-let founders = [], initialRep = [], initialTokens = [];
-for (let address in repHolders.addresses) {
-  founders.push(address);
-  initialRep.push(repHolders.addresses[address]);
-  initialTokens.push(0);
-}
-
-const DXD_TOKEN = {
-  rinkeby: {
-    address: "0x417A288152A5a13b843135Db5Dc72Ea007a9EB8d",
-    fromBlock: 8569799
-  },
-  // xdai: {
-  //   address: "0xb90D6bec20993Be5d72A5ab353343f7a0281f158",
-  //   fromBlock: 15040609 
-  // },
-  mainnet: {
-    address: "0xa1d65E8fB6e87b60FECCBc582F7f97804B725521",
-    fromBlock: 10012634 
-  }
-};
+const { getDeploymentConfig } = require("./deployment-config.js")
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 const MAX_UINT_256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
-
-const MASTER_WALLET_SCHEME_PARAMS = {
-  hardhat: {
-    queuedVoteRequiredPercentage: 50, 
-    queuedVotePeriodLimit: moment.duration(48, 'hours').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(18, 'hours').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(6, 'hours').asSeconds(), 
-    thresholdConst: 1500, 
-    quietEndingPeriod: moment.duration(1, 'hours').asSeconds(), 
-    proposingRepReward: 0, 
-    votersReputationLossRatio: 0, 
-    minimumDaoBounty: web3.utils.toWei("0.1"),
-    daoBountyConst: 2, 
-    activationTime: moment().unix(),
-    voteOnBehalf: NULL_ADDRESS
-  },
-  rinkeby: {
-    queuedVoteRequiredPercentage: 50, 
-    queuedVotePeriodLimit: moment.duration(48, 'hours').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(18, 'hours').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(6, 'hours').asSeconds(), 
-    thresholdConst: 1500, 
-    quietEndingPeriod: moment.duration(1, 'hours').asSeconds(), 
-    proposingRepReward: 0, 
-    votersReputationLossRatio: 0, 
-    minimumDaoBounty: web3.utils.toWei("0.1"),
-    daoBountyConst: 2, 
-    activationTime: moment().unix(),
-    voteOnBehalf: NULL_ADDRESS
-  },
-  xdai: {
-    queuedVoteRequiredPercentage: 50, 
-    queuedVotePeriodLimit: moment.duration(48, 'hours').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(18, 'hours').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(6, 'hours').asSeconds(), 
-    thresholdConst: 1500, 
-    quietEndingPeriod: moment.duration(1, 'hours').asSeconds(), 
-    proposingRepReward: 0, 
-    votersReputationLossRatio: 0, 
-    minimumDaoBounty: web3.utils.toWei("0.1"),
-    daoBountyConst: 2, 
-    activationTime: moment().unix(),
-    voteOnBehalf: NULL_ADDRESS
-  },
-  arbitrum: {
-    queuedVoteRequiredPercentage: 50, 
-    queuedVotePeriodLimit: moment.duration(48, 'hours').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(18, 'hours').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(6, 'hours').asSeconds(), 
-    thresholdConst: 1500, 
-    quietEndingPeriod: moment.duration(1, 'hours').asSeconds(), 
-    proposingRepReward: 0, 
-    votersReputationLossRatio: 0, 
-    minimumDaoBounty: web3.utils.toWei("0.1"),
-    daoBountyConst: 2, 
-    activationTime: moment().unix(),
-    voteOnBehalf: NULL_ADDRESS
-  },
-  "arbitrum-testnet-v5": {
-    queuedVoteRequiredPercentage: 50, 
-    queuedVotePeriodLimit: moment.duration(24, 'hours').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(9, 'hours').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(), 
-    thresholdConst: 1500, 
-    quietEndingPeriod: moment.duration(0.5, 'hours').asSeconds(), 
-    proposingRepReward: 0, 
-    votersReputationLossRatio: 0, 
-    minimumDaoBounty: web3.utils.toWei("0.1"),
-    daoBountyConst: 2, 
-    activationTime: moment().unix(),
-    voteOnBehalf: NULL_ADDRESS
-  }
-}
-
-const QUICK_WALLET_SCHEME_PARAMS = {
-  hardhat: {
-    queuedVoteRequiredPercentage: 50, 
-    queuedVotePeriodLimit: moment.duration(24, 'hours').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(9, 'hours').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(), 
-    thresholdConst: 1100, 
-    quietEndingPeriod: moment.duration(0.5, 'hours').asSeconds(), 
-    proposingRepReward: 0, 
-    votersReputationLossRatio: 0, 
-    minimumDaoBounty: web3.utils.toWei("0.05"),
-    daoBountyConst: 2, 
-    activationTime: moment().unix(),
-    voteOnBehalf: NULL_ADDRESS
-  }, 
-  rinkeby: {
-    queuedVoteRequiredPercentage: 50, 
-    queuedVotePeriodLimit: moment.duration(24, 'hours').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(9, 'hours').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(), 
-    thresholdConst: 1100, 
-    quietEndingPeriod: moment.duration(0.5, 'hours').asSeconds(), 
-    proposingRepReward: 0, 
-    votersReputationLossRatio: 0, 
-    minimumDaoBounty: web3.utils.toWei("0.05"),
-    daoBountyConst: 2, 
-    activationTime: moment().unix(),
-    voteOnBehalf: NULL_ADDRESS
-  },
-  xdai: {
-    queuedVoteRequiredPercentage: 50, 
-    queuedVotePeriodLimit: moment.duration(24, 'hours').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(9, 'hours').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(), 
-    thresholdConst: 1100, 
-    quietEndingPeriod: moment.duration(0.5, 'hours').asSeconds(), 
-    proposingRepReward: 0, 
-    votersReputationLossRatio: 0, 
-    minimumDaoBounty: web3.utils.toWei("0.05"),
-    daoBountyConst: 2, 
-    activationTime: moment().unix(),
-    voteOnBehalf: NULL_ADDRESS
-  },
-  arbitrum: {
-    queuedVoteRequiredPercentage: 50, 
-    queuedVotePeriodLimit: moment.duration(24, 'hours').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(9, 'hours').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(), 
-    thresholdConst: 1100, 
-    quietEndingPeriod: moment.duration(0.5, 'hours').asSeconds(), 
-    proposingRepReward: 0, 
-    votersReputationLossRatio: 0, 
-    minimumDaoBounty: web3.utils.toWei("0.05"),
-    daoBountyConst: 2, 
-    activationTime: moment().unix(),
-    voteOnBehalf: NULL_ADDRESS
-  },
-  "arbitrum-testnet-v5": {
-    queuedVoteRequiredPercentage: 50, 
-    queuedVotePeriodLimit: moment.duration(12, 'hours').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(4.5, 'hours').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(1.5, 'hours').asSeconds(), 
-    thresholdConst: 1100, 
-    quietEndingPeriod: moment.duration(0.25, 'hours').asSeconds(), 
-    proposingRepReward: 0, 
-    votersReputationLossRatio: 0, 
-    minimumDaoBounty: web3.utils.toWei("0.05"),
-    daoBountyConst: 2, 
-    activationTime: moment().unix(),
-    voteOnBehalf: NULL_ADDRESS
-  }
-};
 
 // Import Contracts
 const DxToken = artifacts.require("DxToken");
@@ -200,10 +28,27 @@ async function main() {
   
   const contractsFile = fs.existsSync('.contracts.json') ? JSON.parse(fs.readFileSync('.contracts.json')) : {};
   const networkName = hre.network.name;
+  
+  function sleep(ms) {
+    if (networkName != "hardhat")
+      return new Promise(resolve => setTimeout(resolve, ms));
+    else return;
+  }
+  
+  const deploymentConfig = getDeploymentConfig(networkName);
+  
+  // Get initial REP holders
+  let founders = [], initialRep = [], initialTokens = [];
+  for (let address in deploymentConfig.reputation.addresses) {
+    founders.push(address);
+    initialRep.push(deploymentConfig.reputation.addresses[address]);
+    initialTokens.push(0);
+  }
+  
   if (!contractsFile[networkName] || networkName == 'hardhat') 
     contractsFile[networkName] = { schemes: {} };
     
-  if ((networkName == "arbitrum-testnet-v5") || (networkName == "arbitrum")) {
+  if ((networkName == "arbitrumTestnet") || (networkName == "arbitrum")) {
     hre.network.provider = wrapProvider(new HDWalletProvider(hre.network.config.accounts.mnemonic, hre.network.config.url))
   }
 
@@ -236,7 +81,7 @@ async function main() {
     await sleep(30000);
 
     let addressesMints = [], amountMints = []; 
-    if (networkName == "arbitrum-testnet-v5" || networkName == "arbitrum" ) {
+    if (networkName == "arbitrumTestnet" || networkName == "arbitrum" ) {
       console.log('Doing mint of '+(founders.length)+' initial REP holders...')
       await dxReputation.mintMultiple(founders, initialRep);
     } else {
@@ -304,71 +149,35 @@ async function main() {
   await sleep(30000);
   
   // Deploy DXDVotingMachine
-  let dxdVotingMachine;
+  let votingMachine;
   if (contractsFile[networkName].votingMachine) {
     console.log('Using DXDVotingMachine already deployed on', contractsFile[networkName].votingMachine);
-    dxdVotingMachine = await DXDVotingMachine.at(contractsFile[networkName].votingMachine);
+    votingMachine = await DXDVotingMachine.at(contractsFile[networkName].votingMachine);
   } else {
     
     let votingMachineTokenAddress;
-    if (!DXD_TOKEN[networkName]) {
+    if (!deploymentConfig.votingMachineToken) {
         console.log("Creating new voting machine token...");
         const newVotingMachineToken = await ERC20Mock.new(accounts[0], web3.utils.toWei('101000000'));
         await newVotingMachineToken.transfer(dxAvatar.address, web3.utils.toWei('100000000'));
         votingMachineTokenAddress = newVotingMachineToken.address;
         console.log("Voting machine token deployed to:", votingMachineTokenAddress);
     } else {
-      votingMachineTokenAddress = DXD_TOKEN[networkName];
-      contractsFile[networkName].fromBlock = Math.min(fromBlock, DXD_TOKEN[networkName].fromBlock);
+      votingMachineTokenAddress = deploymentConfig.votingMachineToken;
+      contractsFile[networkName].fromBlock = Math.min(fromBlock, deploymentConfig.votingMachineToken.fromBlock);
       console.log("Using pre configured voting machine token:", votingMachineTokenAddress);
     }
     
     console.log('Deploying DXDVotingMachine...');
-    dxdVotingMachine = await DXDVotingMachine.new(votingMachineTokenAddress);
-    console.log("DXDVotingMachine deployed to:", dxdVotingMachine.address);
-    contractsFile[networkName].votingMachine = dxdVotingMachine.address;
+    votingMachine = await DXDVotingMachine.new(votingMachineTokenAddress);
+    console.log("DXDVotingMachine deployed to:", votingMachine.address);
+    contractsFile[networkName].votingMachine = votingMachine.address;
     contractsFile[networkName].votingMachineToken = votingMachineTokenAddress;
     if (networkName != "hardhat")
       fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
   
   }
   await sleep(30000);
-  
-  async function hashParameters(parameters) {
-    return await dxdVotingMachine.getParametersHash(
-      [
-        parameters.queuedVoteRequiredPercentage,
-        parameters.queuedVotePeriodLimit,
-        parameters.boostedVotePeriodLimit,
-        parameters.preBoostedVotePeriodLimit,
-        parameters.thresholdConst,
-        parameters.quietEndingPeriod,
-        parameters.proposingRepReward,
-        parameters.votersReputationLossRatio,
-        parameters.minimumDaoBounty,
-        parameters.daoBountyConst,
-        parameters.activationTime,
-      ], parameters.voteOnBehalf
-    );
-  }
-  
-  async function setDXDVotingMachineParameters(parameters) {
-    return await dxdVotingMachine.setParameters(
-      [
-        parameters.queuedVoteRequiredPercentage,
-        parameters.queuedVotePeriodLimit,
-        parameters.boostedVotePeriodLimit,
-        parameters.preBoostedVotePeriodLimit,
-        parameters.thresholdConst,
-        parameters.quietEndingPeriod,
-        parameters.proposingRepReward,
-        parameters.votersReputationLossRatio,
-        parameters.minimumDaoBounty,
-        parameters.daoBountyConst,
-        parameters.activationTime,
-      ], parameters.voteOnBehalf
-    );
-  }
   
   // Deploy PermissionRegistry
   let permissionRegistry;
@@ -377,9 +186,32 @@ async function main() {
     permissionRegistry = await PermissionRegistry.at(contractsFile[networkName].permissionRegistry);
   } else {
     console.log('Deploying PermissionRegistry...');
-    permissionRegistry = await PermissionRegistry.new(
-      accounts[0], moment.duration(1, 'hours').asSeconds()
-    );
+    permissionRegistry = await PermissionRegistry.new(accounts[0], 1);
+
+    await Promise.all([
+      dxController.contract._jsonInterface.find(method => method.name == 'mintTokens').signature,
+      dxController.contract._jsonInterface.find(method => method.name == 'unregisterSelf').signature,
+      dxController.contract._jsonInterface.find(method => method.name == 'addGlobalConstraint').signature,
+      dxController.contract._jsonInterface.find(method => method.name == 'removeGlobalConstraint').signature,
+      dxController.contract._jsonInterface.find(method => method.name == 'upgradeController').signature,
+      dxController.contract._jsonInterface.find(method => method.name == 'sendEther').signature,
+      dxController.contract._jsonInterface.find(method => method.name == 'externalTokenTransfer').signature,
+      dxController.contract._jsonInterface.find(method => method.name == 'externalTokenTransferFrom').signature,
+      dxController.contract._jsonInterface.find(method => method.name == 'externalTokenApproval').signature,
+      dxController.contract._jsonInterface.find(method => method.name == 'metaData').signature
+    ].map(async (funcSignature) => {
+      await permissionRegistry.setAdminPermission(
+        NULL_ADDRESS, 
+        dxAvatar.address, 
+        dxController.address, 
+        funcSignature,
+        MAX_UINT_256, 
+        false
+      );
+    }));
+    
+    await permissionRegistry.setTimeDelay(deploymentConfig.permissionRegistryDelay);
+    
     console.log("Permission Registry deployed to:", permissionRegistry.address);
     contractsFile[networkName].permissionRegistry = permissionRegistry.address;
     if (networkName != "hardhat")
@@ -387,119 +219,99 @@ async function main() {
   }
   await sleep(30000);
   
-  // Deploy MasterWalletScheme
-  let masterWalletScheme;
-  if (contractsFile[networkName].schemes.masterWallet) {
-    console.log('Using Master WalletScheme already deployed on', contractsFile[networkName].schemes.masterWallet);
-    masterWalletScheme = await WalletScheme.at(contractsFile[networkName].schemes.masterWallet);
-  } else {
-    console.log('Deploying MasterWalletScheme...');
-    masterWalletScheme = await WalletScheme.new();
-    console.log("Master WalletScheme deployed to:", masterWalletScheme.address);
+  // Deploy Schemes
+  for (var i = 0; i < deploymentConfig.schemes.length; i++) {
+    const schemeConfiguration = deploymentConfig.schemes[i];
     
-    await sleep(30000);
+    if (contractsFile[networkName].schemes[schemeConfiguration.name]) {
+      console.log(`Using ${schemeConfiguration.name} already deployed on ${contractsFile[networkName].schemes[schemeConfiguration.name].address}`);
+      masterWalletScheme = await WalletScheme.at(contractsFile[networkName].schemes[schemeConfiguration.name].address);
+    } else {
+      
+      console.log(`Deploying ${schemeConfiguration.name}...`);
+      const newScheme = await WalletScheme.new();
+      console.log(`${schemeConfiguration.name} deployed to: ${newScheme.address}`);
+      
+      await sleep(30000);
+      
+      const timeNow = moment().unix();
+      let schemeParamsHash = await votingMachine.getParametersHash(
+        [
+          schemeConfiguration.queuedVoteRequiredPercentage,
+          schemeConfiguration.queuedVotePeriodLimit,
+          schemeConfiguration.boostedVotePeriodLimit,
+          schemeConfiguration.preBoostedVotePeriodLimit,
+          schemeConfiguration.thresholdConst,
+          schemeConfiguration.quietEndingPeriod,
+          schemeConfiguration.proposingRepReward,
+          schemeConfiguration.votersReputationLossRatio,
+          schemeConfiguration.minimumDaoBounty,
+          schemeConfiguration.daoBountyConst,
+          timeNow,
+        ], NULL_ADDRESS
+      );
 
-    let masterWalletSchemeParamsHash = await hashParameters(MASTER_WALLET_SCHEME_PARAMS[networkName]);
-    await setDXDVotingMachineParameters(MASTER_WALLET_SCHEME_PARAMS[networkName])
-    await masterWalletScheme.initialize(
-      dxAvatar.address,
-      dxdVotingMachine.address,
-      masterWalletSchemeParamsHash,
-      dxController.address,
-      permissionRegistry.address,
-      "Master Wallet",
-      Math.max(86400, MASTER_WALLET_SCHEME_PARAMS[networkName].queuedVotePeriodLimit * 2)
-    );
-    
-    console.log("Setting avatar permissions...");
-    // Allows any function to be executed from the dxdao to any address with a max value of 5 ETH
-    await permissionRegistry.setAdminPermission(
-      NULL_ADDRESS, 
-      dxAvatar.address, 
-      ANY_ADDRESS, 
-      ANY_FUNC_SIGNATURE,
-      web3.utils.toWei("5"),
-      true
-    );
-    
-    console.log('Registering Master WalletScheme...');
-    await dxController.registerScheme(
-      masterWalletScheme.address,
-      masterWalletSchemeParamsHash,
-      encodePermission({
-        canGenericCall: true,
-        canUpgrade: true,
-        canChangeConstraints: true,
-        canRegisterSchemes: true
-      }),
-      dxAvatar.address
-    )
-    contractsFile[networkName].schemes.masterWallet = masterWalletScheme.address;
-    if (networkName != "hardhat")
-      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
-  }
-  
-  // Deploy QuickWalletScheme:
-  let quickWalletScheme;
-  if (contractsFile[networkName].schemes.quickWallet) {
-    console.log('Using Quick WalletScheme already deployed on', contractsFile[networkName].schemes.quickWallet);
-    quickWalletScheme = await WalletScheme.at(contractsFile[networkName].schemes.quickWallet);
-  } else {
-    console.log('Deploying MasterWalletScheme...');
-    quickWalletScheme = await WalletScheme.new();
-    console.log("Quick WalletScheme deployed to:", quickWalletScheme.address);
-    
-    await sleep(30000);
-
-    let quickWalletSchemeParamsHash = await hashParameters(QUICK_WALLET_SCHEME_PARAMS[networkName]);
-    await setDXDVotingMachineParameters(QUICK_WALLET_SCHEME_PARAMS[networkName])
-    await quickWalletScheme.initialize(
-      dxAvatar.address,
-      dxdVotingMachine.address,
-      quickWalletSchemeParamsHash,
-      NULL_ADDRESS,
-      permissionRegistry.address,
-      "Quick Wallet",
-      Math.max(86400, QUICK_WALLET_SCHEME_PARAMS[networkName].queuedVotePeriodLimit * 2)
-    );
-    
-    console.log("Setting avatar and quick wallet scheme permissions...");
-    await permissionRegistry.setAdminPermission(
-      NULL_ADDRESS, 
-      dxAvatar.address, 
-      quickWalletScheme.address, 
-      ANY_FUNC_SIGNATURE,
-      MAX_UINT_256,
-      true
-    );
-    await permissionRegistry.setAdminPermission(
-      NULL_ADDRESS, 
-      quickWalletScheme.address, 
-      ANY_ADDRESS, 
-      ANY_FUNC_SIGNATURE,
-      MAX_UINT_256,
-      true
-    );
-    
-    console.log('Registering Quick WalletScheme...');
-    await dxController.registerScheme(
-      quickWalletScheme.address,
-      quickWalletSchemeParamsHash,
-      encodePermission({
-        canGenericCall: false,
-        canUpgrade: false,
-        canChangeConstraints: false,
-        canRegisterSchemes: false
-      }),
-      dxAvatar.address
-    );
-    contractsFile[networkName].schemes.quickWallet = quickWalletScheme.address;
-    if (networkName != "hardhat")
-      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+      await votingMachine.setParameters(
+        [
+          schemeConfiguration.queuedVoteRequiredPercentage,
+          schemeConfiguration.queuedVotePeriodLimit,
+          schemeConfiguration.boostedVotePeriodLimit,
+          schemeConfiguration.preBoostedVotePeriodLimit,
+          schemeConfiguration.thresholdConst,
+          schemeConfiguration.quietEndingPeriod,
+          schemeConfiguration.proposingRepReward,
+          schemeConfiguration.votersReputationLossRatio,
+          schemeConfiguration.minimumDaoBounty,
+          schemeConfiguration.daoBountyConst,
+          timeNow,
+        ], NULL_ADDRESS
+      );
+      
+      await newScheme.initialize(
+        dxAvatar.address,
+        votingMachine.address,
+        schemeParamsHash,
+        schemeConfiguration.callToController ? dxController.address : NULL_ADDRESS,
+        permissionRegistry.address,
+        schemeConfiguration.name,
+        Math.max(86400, schemeConfiguration.maxSecondsForExecution),
+        schemeConfiguration.maxRepPercentageToMint
+      );
+      
+      console.log("Setting scheme permissions...");
+      await Promise.all(schemeConfiguration.permissions.map(async (permission) => {
+        await permissionRegistry.setAdminPermission(
+          permission.asset, 
+          schemeConfiguration.callToController ? dxController.address : newScheme.address,
+          permission.to, 
+          permission.functionSignature,
+          permission.value,
+          permission.allowed
+        );
+      }))
+      
+      console.log('Registering scheme in controller...');
+      await dxController.registerScheme(
+        newScheme.address,
+        schemeParamsHash,
+        encodePermission(schemeConfiguration.controllerPermissions),
+        dxAvatar.address
+      );
+      
+      if (schemeConfiguration.boostedVoteRequiredPercentage > 0){
+        console.log('Setting boosted vote required percentage in voting machine...');
+        await votingMachine.setBoostedVoteRequiredPercentage(
+          newScheme.address, schemeParamsHash, schemeConfiguration.boostedVoteRequiredPercentage
+        );
+      }
+      contractsFile[networkName].schemes.masterWallet = newScheme.address;
+      if (networkName != "hardhat")
+        fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    }
   }
 
   console.log("Transfering ownership...");
-  // Transfer permission registry ownership to dxdao
+  // Transfer permission registry ownership to dao
   try {
     await permissionRegistry.transferOwnership(dxAvatar.address);
     await dxController.unregisterScheme(accounts[0], dxAvatar.address);
@@ -542,7 +354,7 @@ async function main() {
   } catch(e) {}
   try {
     await hre.run("verify:verify", {
-      address: dxdVotingMachine.address,
+      address: votingMachine.address,
       contract: `${DXDVotingMachine._hArtifact.sourceName}:${DXDVotingMachine._hArtifact.contractName}`,
       constructorArguments: [DXD_TOKEN],
     })
