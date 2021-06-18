@@ -166,7 +166,7 @@ async function main() {
         votingMachineTokenAddress = newVotingMachineToken.address;
         console.log("Voting machine token deployed to:", votingMachineTokenAddress);
     } else {
-      votingMachineTokenAddress = deploymentConfig.votingMachineToken;
+      votingMachineTokenAddress = deploymentConfig.votingMachineToken.address;
       contractsFile[networkName].fromBlock = Math.min(fromBlock, deploymentConfig.votingMachineToken.fromBlock);
       console.log("Using pre configured voting machine token:", votingMachineTokenAddress);
     }
@@ -193,7 +193,7 @@ async function main() {
     // Only allow the functions mintReputation, burnReputation, genericCall, registerScheme and unregisterScheme to be
     // called to in the controller contract from a scheme that calls the controller.
     // This permissions makes the other functions inaccessible
-    await Promise.all([
+    const notAllowedControllerFunctions = [
       dxController.contract._jsonInterface.find(method => method.name == 'mintTokens').signature,
       dxController.contract._jsonInterface.find(method => method.name == 'unregisterSelf').signature,
       dxController.contract._jsonInterface.find(method => method.name == 'addGlobalConstraint').signature,
@@ -204,16 +204,17 @@ async function main() {
       dxController.contract._jsonInterface.find(method => method.name == 'externalTokenTransferFrom').signature,
       dxController.contract._jsonInterface.find(method => method.name == 'externalTokenApproval').signature,
       dxController.contract._jsonInterface.find(method => method.name == 'metaData').signature
-    ].map(async (funcSignature) => {
+    ];
+    for (var i = 0; i < notAllowedControllerFunctions.length; i++) {
       await permissionRegistry.setAdminPermission(
         NULL_ADDRESS, 
         dxAvatar.address, 
         dxController.address, 
-        funcSignature,
+        notAllowedControllerFunctions[i],
         MAX_UINT_256, 
         false
       );
-    }));
+    }
     
     // Set the permission delay in the permission registry
     await permissionRegistry.setTimeDelay(deploymentConfig.permissionRegistryDelay);
@@ -289,7 +290,7 @@ async function main() {
         await permissionRegistry.setAdminPermission(
           permission.asset, 
           schemeConfiguration.callToController ? dxController.address : newScheme.address,
-          permission.to, 
+          permission.to == "SCHEME" ? newScheme.address : permission.to,
           permission.functionSignature,
           permission.value,
           permission.allowed
@@ -409,7 +410,7 @@ async function main() {
     await hre.run("verify:verify", {
       address: permissionRegistry.address,
       contract: `${PermissionRegistry._hArtifact.sourceName}:${PermissionRegistry._hArtifact.contractName}`,
-      constructorArguments: [accounts[0], moment.duration(1, 'hours').asSeconds()],
+      constructorArguments: [accounts[0], 1],
     });
     console.error("PermissionRegistry verified", permissionRegistry.address);
   } catch(e) {
