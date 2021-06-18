@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 
-contract DXdaoNFTMinter is ERC721, Ownable {
+contract DXdaoNFT is ERC721, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
-    constructor() public ERC721("DXdao NFT", "DXNFT") {}
+    constructor() ERC721("DXdao NFT", "DXNFT") {}
 
     function mint(address recipient, string memory tokenURI)
         public onlyOwner

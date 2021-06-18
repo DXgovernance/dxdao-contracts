@@ -14,6 +14,8 @@ const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
+const DXDVestingFactory = artifacts.require("./DXDVestingFactory.sol");
+const DXdaoNFT = artifacts.require("./DXdaoNFT.sol");
 
 export const logDecoder = new EthDecoder.default.LogDecoder(
   [
@@ -25,7 +27,9 @@ export const logDecoder = new EthDecoder.default.LogDecoder(
     GenesisProtocol.abi,
     DXDVotingMachine.abi,
     WalletScheme.abi,
-    PermissionRegistry.abi
+    PermissionRegistry.abi,
+    DXDVestingFactory.abi,
+    DXdaoNFT.abi
   ]
 );
 
