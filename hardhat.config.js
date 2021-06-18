@@ -60,7 +60,7 @@ const hardharNetworks = process.env.CI
     url: `https://kovan.infura.io/v3/${INFURA_PROJECT_ID}`,
     accounts: { mnemonic: MNEMONIC },
     gasLimit: 9000000,
-    gasPrice: 1000000000, // 1 gwei
+    gasPrice: 100000000, // 0.1 gwei
     timeout: 60000
   },
   xdai: {
