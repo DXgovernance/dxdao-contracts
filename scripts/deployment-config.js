@@ -9,31 +9,32 @@ const MAX_UINT_256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
-const DXD_TOKEN = {
-  rinkeby: {
-    address: "0x417A288152A5a13b843135Db5Dc72Ea007a9EB8d",
-    fromBlock: 8569799
+const networksConfig = {
+  dxdToken: {
+    rinkeby: {
+      address: "0x417A288152A5a13b843135Db5Dc72Ea007a9EB8d",
+      fromBlock: 8569799
+    },
+    xdai: {
+      address: "0xb90D6bec20993Be5d72A5ab353343f7a0281f158",
+      fromBlock: 15040609 
+    },
+    mainnet: {
+      address: "0xa1d65E8fB6e87b60FECCBc582F7f97804B725521",
+      fromBlock: 10012634 
+    }
   },
-  xdai: {
-    address: "0xb90D6bec20993Be5d72A5ab353343f7a0281f158",
-    fromBlock: 15040609 
-  },
-  mainnet: {
-    address: "0xa1d65E8fB6e87b60FECCBc582F7f97804B725521",
-    fromBlock: 10012634 
+  permissionRegistryDelay: {
+    hardhat: moment.duration(1, 'hours').asSeconds(),
+    rinkeby: moment.duration(1, 'days').asSeconds(),
+    xdai: moment.duration(2, 'days').asSeconds(),
+    mainnet: moment.duration(3, 'days').asSeconds()
   }
 };
 
-const permissionRegistryDelay = {
-  hardhat: moment.duration(1, 'hours').asSeconds(),
-  rinkeby: moment.duration(1, 'days').asSeconds(),
-  xdai: moment.duration(2, 'days').asSeconds(),
-  mainnet: moment.duration(3, 'days').asSeconds()
-}
-
 const schemesConfig = {
   hardhat: [{
-    name: "Registrar Wallet Scheme",
+    name: "RegistrarWalletScheme",
     callToController: true,
     maxSecondsForExecution: moment.duration(21, 'days').asSeconds(),
     maxRepPercentageToMint: 0,
@@ -46,17 +47,17 @@ const schemesConfig = {
     permissions: [],
     queuedVoteRequiredPercentage: 75,
     boostedVoteRequiredPercentage: 2500,
-    queuedVotePeriodLimit: moment.duration(14, 'days').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(5, 'days').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(2, 'days').asSeconds(), 
-    thresholdConst: 2000, 
-    quietEndingPeriod: moment.duration(12, 'hours').asSeconds(), 
-    proposingRepReward: 0, 
-    votersReputationLossRatio: 100, 
+    queuedVotePeriodLimit: moment.duration(14, 'days').asSeconds(),
+    boostedVotePeriodLimit: moment.duration(5, 'days').asSeconds(),
+    preBoostedVotePeriodLimit: moment.duration(2, 'days').asSeconds(),
+    thresholdConst: 2000,
+    quietEndingPeriod: moment.duration(12, 'hours').asSeconds(),
+    proposingRepReward: 0,
+    votersReputationLossRatio: 100,
     minimumDaoBounty: web3.utils.toWei("100"),
     daoBountyConst: 2,
   },{
-    name: "Master Wallet Scheme",
+    name: "MasterWalletScheme",
     callToController: true,
     maxSecondsForExecution: moment.duration(21, 'days').asSeconds(),
     maxRepPercentageToMint: 5,
@@ -74,7 +75,7 @@ const schemesConfig = {
       allowed: true
     }],
     queuedVoteRequiredPercentage: 50,
-    boostedVoteRequiredPercentage: 100,
+    boostedVoteRequiredPercentage: 5,
     queuedVotePeriodLimit: moment.duration(14, 'days').asSeconds(), 
     boostedVotePeriodLimit: moment.duration(5, 'days').asSeconds(), 
     preBoostedVotePeriodLimit: moment.duration(2, 'days').asSeconds(), 
@@ -85,8 +86,8 @@ const schemesConfig = {
     minimumDaoBounty: web3.utils.toWei("10"),
     daoBountyConst: 2
   },{
-    name: "Quick Wallet Scheme",
-    callToController: true,
+    name: "QuickWalletScheme",
+    callToController: false,
     maxSecondsForExecution: moment.duration(14, 'days').asSeconds(),
     maxRepPercentageToMint: 1,
     controllerPermissions: {
@@ -103,7 +104,7 @@ const schemesConfig = {
       allowed: true
     }],
     queuedVoteRequiredPercentage: 50,
-    boostedVoteRequiredPercentage: 0,
+    boostedVoteRequiredPercentage: 1,
     queuedVotePeriodLimit: moment.duration(7, 'days').asSeconds(), 
     boostedVotePeriodLimit: moment.duration(3, 'days').asSeconds(), 
     preBoostedVotePeriodLimit: moment.duration(0.5, 'days').asSeconds(), 
@@ -118,9 +119,9 @@ const schemesConfig = {
 
 export const getDeploymentConfig = function(network) {
   return {
-    votingMachineToken: DXD_TOKEN[network],
+    votingMachineToken: networksConfig.dxdToken[network],
     schemes: schemesConfig[network],
     reputation: repHolders,
-    permissionRegistryDelay: permissionRegistryDelay[network]
+    permissionRegistryDelay: networksConfig.permissionRegistryDelay[network]
   };
 }

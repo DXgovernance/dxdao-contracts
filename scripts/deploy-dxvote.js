@@ -23,6 +23,8 @@ const PermissionRegistry = artifacts.require("PermissionRegistry");
 const DXDVotingMachine = artifacts.require("DXDVotingMachine");
 const ERC20Mock = artifacts.require("ERC20Mock");
 const Multicall = artifacts.require("Multicall");
+const DXdaoNFT = artifacts.require("DXdaoNFT");
+const DXDVestingFactory = artifacts.require("DXDVestingFactory");
 
 async function main() {
   
@@ -32,6 +34,12 @@ async function main() {
   function sleep(ms) {
     if (networkName != "hardhat")
       return new Promise(resolve => setTimeout(resolve, ms));
+    else return;
+  }
+  
+  function saveContractsFile(contractsFile) {
+    if (networkName != "hardhat")
+      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
     else return;
   }
   
@@ -65,8 +73,7 @@ async function main() {
     multicall = await Multicall.new();
     console.log("Multicall deployed to:", multicall.address);
     contractsFile[networkName].multicall = multicall.address;
-    if (networkName != "hardhat")
-      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    saveContractsFile(contractsFile);
   }
   
   // Deploy and mint reputation
@@ -97,8 +104,7 @@ async function main() {
     }
     contractsFile[networkName].fromBlock = fromBlock;
     contractsFile[networkName].reputation = dxReputation.address;
-    if (networkName != "hardhat")
-      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    saveContractsFile(contractsFile);
   }
     
   // Deploy DXtoken
@@ -111,8 +117,7 @@ async function main() {
     dxToken = await DxToken.new("", "", 0);
     console.log("DXToken (useless token just used for deployment) deployed to:", dxToken.address);
     contractsFile[networkName].token = dxToken.address;
-    if (networkName != "hardhat")
-      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    saveContractsFile(contractsFile);
   }
   await sleep(30000);
   
@@ -126,8 +131,7 @@ async function main() {
     dxAvatar = await DxAvatar.new("DXdao", dxToken.address, dxReputation.address);
     console.log("DXdao Avatar deployed to:", dxAvatar.address);
     contractsFile[networkName].avatar = dxAvatar.address;
-    if (networkName != "hardhat")
-      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    saveContractsFile(contractsFile);
   }
   await sleep(30000);
   
@@ -143,8 +147,7 @@ async function main() {
     await dxAvatar.transferOwnership(dxController.address);
     await dxReputation.transferOwnership(dxController.address);
     contractsFile[networkName].controller = dxController.address;
-    if (networkName != "hardhat")
-      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    saveContractsFile(contractsFile);
   }
   await sleep(30000);
   
@@ -173,8 +176,7 @@ async function main() {
     console.log("DXDVotingMachine deployed to:", votingMachine.address);
     contractsFile[networkName].votingMachine = votingMachine.address;
     contractsFile[networkName].votingMachineToken = votingMachineTokenAddress;
-    if (networkName != "hardhat")
-      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    saveContractsFile(contractsFile);
   
   }
   await sleep(30000);
@@ -188,6 +190,9 @@ async function main() {
     console.log('Deploying PermissionRegistry...');
     permissionRegistry = await PermissionRegistry.new(accounts[0], 1);
 
+    // Only allow the functions mintReputation, burnReputation, genericCall, registerScheme and unregisterScheme to be
+    // called to in the controller contract from a scheme that calls the controller.
+    // This permissions makes the other functions inaccessible
     await Promise.all([
       dxController.contract._jsonInterface.find(method => method.name == 'mintTokens').signature,
       dxController.contract._jsonInterface.find(method => method.name == 'unregisterSelf').signature,
@@ -210,12 +215,12 @@ async function main() {
       );
     }));
     
+    // Set the permission delay in the permission registry
     await permissionRegistry.setTimeDelay(deploymentConfig.permissionRegistryDelay);
     
     console.log("Permission Registry deployed to:", permissionRegistry.address);
     contractsFile[networkName].permissionRegistry = permissionRegistry.address;
-    if (networkName != "hardhat")
-      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    saveContractsFile(contractsFile);
   }
   await sleep(30000);
   
@@ -267,6 +272,7 @@ async function main() {
         ], NULL_ADDRESS
       );
       
+      console.log("Initializing scheme...");
       await newScheme.initialize(
         dxAvatar.address,
         votingMachine.address,
@@ -304,82 +310,123 @@ async function main() {
           newScheme.address, schemeParamsHash, schemeConfiguration.boostedVoteRequiredPercentage
         );
       }
-      contractsFile[networkName].schemes.masterWallet = newScheme.address;
-      if (networkName != "hardhat")
-        fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+      contractsFile[networkName].schemes[schemeConfiguration.name] = newScheme.address;
+      saveContractsFile(contractsFile);
     }
   }
-
+  
+  // Deploy dxDaoNFT if it is not set
+  let dxDaoNFT;
+  if (!deploymentConfig.dxdaoNFT) {
+    console.log("Deploying DXdaoNFT...");
+    dxDaoNFT = await DXdaoNFT.new();
+    contractsFile[networkName].dxDaoNFT = dxDaoNFT.address;
+  } else {
+    console.log("Using DXdaoNFT deployed on", deploymentConfig.dxDaoNFT);
+    contractsFile[networkName].dxDaoNFT = deploymentConfig.dxDaoNFT;
+  }
+  
+  // Deploy DXDVestingFactory if it is not set
+  let dxdVestingFactory;
+  if (!deploymentConfig.dxdVestingFactory) {
+    console.log("Deploying DXDVestingFactory...");
+    dxdVestingFactory = await DXDVestingFactory.new(contractsFile[networkName].votingMachineToken);
+    contractsFile[networkName].vestingFactory = dxdVestingFactory.address;
+  } else {
+    console.log("Using DXDVestingFactory deployed on", deploymentConfig.dxdVestingFactory);
+    contractsFile[networkName].vestingFactory = deploymentConfig.dxdVestingFactory;
+  }
+  
+  
+  // Transfer all ownership and power to the dao
   console.log("Transfering ownership...");
-  // Transfer permission registry ownership to dao
   try {
     await permissionRegistry.transferOwnership(dxAvatar.address);
+    await dxDaoNFT.transferOwnership(dxAvatar.address);
     await dxController.unregisterScheme(accounts[0], dxAvatar.address);
   } catch (e) {
+    console.error("Error transfering ownership", e);
     contractsFile[networkName] = {}
-    if (networkName != "hardhat")
-      fs.writeFileSync('.contracts.json', JSON.stringify(contractsFile, null, 2), {encoding:'utf8',flag:'w'});
+    saveContractsFile(contractsFile);
   }
-
+  
+  // Deployment Finished
   console.log('Contracts deployed:', contractsFile);
   
+  // Verifying smart contracts if possible
   console.log("Verifying contracts...");
   try {
     await hre.run("verify:verify", {
       address: dxReputation.address,
       contract: `${DxReputation._hArtifact.sourceName}:${DxReputation._hArtifact.contractName}`,
       constructorArguments: [],
-    })
-  } catch (e) {}
+    });
+    console.error("DxReputation verified", dxReputation.address);
+  } catch (e) {
+    console.error("Couldnt verify DxReputation", dxReputation.address);
+  }
   try {
     await hre.run("verify:verify", {
       address: dxToken.address,
       contract: `${DxToken._hArtifact.sourceName}:${DxToken._hArtifact.contractName}`,
       constructorArguments: ["", "", 0],
-    })
-  } catch(e) {}
+    });
+    console.error("DxToken verified", dxToken.address);
+  } catch(e) {
+    console.error("Couldnt verify DxToken", dxToken.address);
+  }
   try {
     await hre.run("verify:verify", {
       address: dxAvatar.address,
       contract: `${DxAvatar._hArtifact.sourceName}:${DxAvatar._hArtifact.contractName}`,
       constructorArguments: ["DXdao", dxReputation.address, dxToken.address],
-    })
-  } catch(e) {}
+    });
+    console.error("DxAvatar verified", dxAvatar.address);
+  } catch(e) {
+    console.error("Couldnt verify DxAvatar", dxAvatar.address);
+  }
   try {
     await hre.run("verify:verify", {
       address: dxController.address,
       contract: `${DxController._hArtifact.sourceName}:${DxController._hArtifact.contractName}`,
       constructorArguments: [dxAvatar.address],
-    })
-  } catch(e) {}
+    });
+    console.error("DxController verified", dxController.address);
+  } catch(e) {
+    console.error("Couldnt verify DxController", dxController.address);
+  }
   try {
     await hre.run("verify:verify", {
       address: votingMachine.address,
       contract: `${DXDVotingMachine._hArtifact.sourceName}:${DXDVotingMachine._hArtifact.contractName}`,
       constructorArguments: [DXD_TOKEN],
-    })
-  } catch(e) {}
+    });
+    console.error("DXDVotingMachine verified", votingMachine.address);
+  } catch(e) {
+    console.error("Couldnt verify DXDVotingMachine", votingMachine.address);
+  }
   try {
     await hre.run("verify:verify", {
       address: permissionRegistry.address,
       contract: `${PermissionRegistry._hArtifact.sourceName}:${PermissionRegistry._hArtifact.contractName}`,
       constructorArguments: [accounts[0], moment.duration(1, 'hours').asSeconds()],
-    })
-  } catch(e) {}
-  try {
-    await hre.run("verify:verify", {
-      address: masterWalletScheme.address,
-      contract: `${WalletScheme._hArtifact.sourceName}:${WalletScheme._hArtifact.contractName}`,
-      constructorArguments: [],
-    })
-  } catch(e) {}
-  try {
-    await hre.run("verify:verify", {
-      address: quickWalletScheme.address,
-      contract: `${WalletScheme._hArtifact.sourceName}:${WalletScheme._hArtifact.contractName}`,
-      constructorArguments: [],
-    })
-  } catch(e) {}
+    });
+    console.error("PermissionRegistry verified", permissionRegistry.address);
+  } catch(e) {
+    console.error("Couldnt verify PermissionRegistry", permissionRegistry.address);
+  }
+  await Promise.all(Object.keys(contractsFile[networkName].schemes).map(async (schemeAddress) => {
+    try {
+      await hre.run("verify:verify", {
+        address: schemeAddress,
+        contract: `${WalletScheme._hArtifact.sourceName}:${WalletScheme._hArtifact.contractName}`,
+        constructorArguments: [],
+      });
+      console.error("WalletScheme verified", schemeAddress);
+    } catch(e) {
+      console.error("Couldnt verify WalletScheme", schemeAddress);
+    }
+  }));
 }
 
 main()
