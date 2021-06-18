@@ -36,18 +36,18 @@ It will run the tests and report the gas cost of each function executed in every
 
 ### Reputation Mapping
 
-This script will get the DXdao Rep from mainnet DXdao rep token and REP mapping smart contract.
+This script will get the DXdao Rep from mainnet or xdai DXdao rep token and REP mapping smart contract.
 
-`yarn hardhat run --network mainnet scripts/getReputation.js`
+`yarn hardhat run --network NETWORK scripts/getReputation.js`
 
 ### Coverage
 
-`yarn hardhat coverage`
+`yarn coverage`
 
 ### DXvote contracts Deployment
 
-`yarn hardhat run --network rinkeby scripts/deploy-dxvote.js
-`
+This script will get deploy DXvote with the configuration set in the scripts/deployment-config.js file.
+`yarn hardhat run --network NETWORK scripts/deploy-dxvote.js`
 
 ## Contracts
 
@@ -58,6 +58,7 @@ The contracts are organized in different folders:
 The smart contracts used for the DXdao avatar, reputation, native token and controller taken from daostack release version that was used at the moment of DXdao contracts deployment with minimal changes done over them.
 
 Code taken from: https://github.com/daostack/arc/releases/tag/0.0.1-rc.19
+
 ### DXdao
 These are the smart contracts of the DXdao deployed in mainnet.
 
@@ -65,15 +66,48 @@ Code taken from: https://github.com/gnosis/dx-daostack.
 
 ### DXvote
 
-The smart contracts of the schemes used in DXdao gov 1.x. It consist of one voting machine that receives the votes and stakes, the state of a proposal will be changing over time (depending of the votes and stakes over it) when a proposal passes the Wallet Scheme will check that the calls to be executed are allowed in the Permission Registry, if the check passes the proposal is executed successfully.
+The smart contracts used in DXdao gov 1.x dapp. It consist of the DXDVotingMachine, PermissionRegsitry and WalletScheme contracts, this are used with the existent DXdao daostack contracts deployed on mainnet.
+The Wallet Scheme creates and register the proposals in the Voting Machine, the voting machine receives the votes and stakes, the state of a proposal will be changing over time (depending of the votes and stakes over it). When a proposal is approved the Wallet Scheme will check that the calls to be executed are allowed in the Permission Registry, if the check passes the proposal is executed successfully.
 
 There can be multiple Wallet Schemes being used at the same time and each of them will have their own configuration and permissions, allowing DXdao to distribute funds and configure the access to them.
 
 ![DXdao Gov 1-x-schemes](assets/DXdao%20Gov%201-x.png)
 
-On this image we have a scheme called Master Wallet and one called Quick Wallet, both of them uses the DXD Voting Machine and Permisson Registry.
-The Master Wallet will have access to all funds in the dao and will be able to create/remove other schemes, set the permissions to them and do mostly anything, we can expect this scheme to be slower and have strong security requirements.
-The Quick Wallet scheme will have access only to the funds held by the scheme itself, with less funds at risk it can be configured to make decisions faster.
+On this image we have a scheme called Master Wallet and one called Quick Wallet, all schemes use the same DXD Voting Machine and Permission Registry.
+The Master Wallet will have access to funds held in the DXdao avatar and will be able to create/remove other schemes, set the permissions to them and do mostly anything. We can expect this scheme to be slower and have strong security requirements.
+The Quick Wallet scheme will have access to funds held by the scheme itself, with less funds at risk it can be configured to make decisions faster.
+
+### Schemes Configuration
+
+- Scheme Parameters:
+  - **name**: The name of the scheme, this will be used to identify the scheme by name in DXvote dapp.
+
+  - **callToController**: If the scheme make calls to the controller or not. A Scheme that makes calls to a controller will make calls from the dxdao avatar (which gives access to the dxdao funds) and a scheme that do not call the controller will make call directly from itself, which means that it will have access only to the funds held in the scheme address.
+
+  - **maxSecondsForExecution**: This is the amount of time that a proposal has to be executed in the scheme, this is useful to "clean" proposals that weren't successful or weren't able to be executed for some reason. This means that if a proposal passes in 3 days in the voting machine and the `maxSecondsForExecution` are 6 days it will have 3 days to be executed, after that it will be marked in `ExecutionTimeout` state and wont be able to be executed again, reaching a state of termination.
+
+  - **maxRepPercentageToMint**: This is the maximum amount of rep in percentage allowed to be minted by proposal, the value can be between 0-100, if a proposal execution mints 5% of REP and the `maxRepPercentageToMint` equals 3, it will fail.
+
+- **Controller Permissions**: This are four values that determine what the scheme can do in the dxdao controller contract, the most powerful contract in the stack, the only two values that we use from it are `canRegisterSchemes` and `canGenericCall`. `canRegisterSchemes` allows the addition/removal of schemes and the `canGenericCall` allows the execution of calls in the avatar contract. 
+
+- **Permission Registry Permissions**: This permissions are checked before a proposal execution to check that the total value transferred by asset and the functions to be called are allowed. If a scheme make calls to the controller the permissions are checked from the avatar address.
+The permissions are set by asset, specifying the sender and receiver addresses, the signature of the function to be used and the value to be transferred.
+It allows the use of "wildcard" permissions by using `0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa` for any address and `0xaaaaaaaa` for any signature.
+It also allows the use of global transfer limits, by setting the limit by asset using the scheme as receiver address, any value recorded here will be used as global transfer limit in the proposal check.
+
+- **Voting Machine Params**:
+  - **queuedVoteRequiredPercentage**: The percentage of votes required to execute a proposal in queued state.
+  - **boostedVoteRequiredPercentage**: The percentage of votes required to execute a proposal in boosted state.
+  - **queuedVotePeriodLimit**: The amount of time that a proposal will be in queue state (not boosted), once the time limit is reached and the proposal was not executed it finish.
+  - **boostedVotePeriodLimit**: The amount of time that a proposal will be in boost state (after pre-boosted), once the time limit is reached and the proposal was not executed it finisf.
+  - **preBoostedVotePeriodLimit**: The amount of time that a proposal will be in pre-boosted state. A proposal gets into pre-boosted state when it has enough
+  - **thresholdConst**: The constant used to calculate the needed upstakes in a proposal to reach boosted state, where the upstakes needed equal to `downStakes * (thresholdConst ** (numberOfBoostedProposals))` taking in count the number of boosted proposals at the moment of the pre-boost to boosted state change.
+  - **quietEndingPeriod**: The amount of time a proposal has to have the same winning option before it finish, if the winning option change during that time the proposal finish time will be extended till the winning option doesn't change during that time.
+  - **proposingRepReward**: The fixed amount of REP that will be minted to the address who created the proposal.
+  - **votersReputationLossRatio**: The percentage of REP a voter will loose if the voter voted a proposal in queue state for the loosing option.
+  - **minimumDaoBounty**: The minimum amount to be set as downstake when a proposal is created.
+  - **daoBountyConst**: The downstake for proposal is calculated when the proposal is created, by using the formula: `(daoBountyConst * averageBoostDownstakes) / 100`. If the value calculated is higher than `minimumDaoBounty` then this value will be used, if not the start downstake of the proposal will be `minimumDaoBounty`.
+
 
 #### DXD Voting Machine
 

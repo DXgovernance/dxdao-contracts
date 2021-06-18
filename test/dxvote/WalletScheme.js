@@ -14,6 +14,7 @@ contract("WalletScheme", function(accounts) {
   
   let standardTokenMock,
   permissionRegistry,
+  registrarWalletScheme,
   masterWalletScheme,
   quickWalletScheme,
   daoCreator,
@@ -40,7 +41,7 @@ contract("WalletScheme", function(accounts) {
   beforeEach( async function(){
     actionMock = await ActionMock.new();
     testToken = await ERC20Mock.new(accounts[1], 1000);
-    const standardTokenMock = await ERC20Mock.new(accounts[1], 1000);
+    standardTokenMock = await ERC20Mock.new(accounts[1], 1000);
     const controllerCreator = await DxControllerCreator.new({gas: constants.GAS_LIMIT});
     daoCreator = await DaoCreator.new(
       controllerCreator.address, {gas: constants.GAS_LIMIT}
@@ -51,11 +52,21 @@ contract("WalletScheme", function(accounts) {
       [1000, 1000, 1000],
       [20000, 10000, 70000]
     );
-    votingMachine = await helpers.setupGenesisProtocol(
-      accounts, standardTokenMock.address, 'dxd'
-    );
+    votingMachine = await helpers.setupGenesisProtocol(accounts, standardTokenMock.address, 'dxd');
     
     permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
+    
+    registrarWalletScheme = await WalletScheme.new();
+    await registrarWalletScheme.initialize(
+      org.avatar.address,
+      votingMachine.address,
+      votingMachine.params,
+      org.controller.address,
+      permissionRegistry.address,
+      "Wallet Scheme Registrar",
+      executionTimeout,
+      0
+    );
     
     masterWalletScheme = await WalletScheme.new();
     await masterWalletScheme.initialize(
@@ -99,17 +110,47 @@ contract("WalletScheme", function(accounts) {
       true
     );
     
+    // Only allow genericCall, mintReputation, burnReputation, registerScheme and removeScheme 
+    // functions to be called in the controller by Wallet Schemes
+    await Promise.all([
+      org.controller.contract._jsonInterface.find(method => method.name == 'mintTokens').signature,
+      org.controller.contract._jsonInterface.find(method => method.name == 'unregisterSelf').signature,
+      org.controller.contract._jsonInterface.find(method => method.name == 'addGlobalConstraint').signature,
+      org.controller.contract._jsonInterface.find(method => method.name == 'removeGlobalConstraint').signature,
+      org.controller.contract._jsonInterface.find(method => method.name == 'upgradeController').signature,
+      org.controller.contract._jsonInterface.find(method => method.name == 'sendEther').signature,
+      org.controller.contract._jsonInterface.find(method => method.name == 'externalTokenTransfer').signature,
+      org.controller.contract._jsonInterface.find(method => method.name == 'externalTokenTransferFrom').signature,
+      org.controller.contract._jsonInterface.find(method => method.name == 'externalTokenApproval').signature,
+      org.controller.contract._jsonInterface.find(method => method.name == 'metaData').signature
+    ].map(async (funcSignature) => {
+      await permissionRegistry.setAdminPermission(
+        constants.NULL_ADDRESS, 
+        org.avatar.address, 
+        org.controller.address, 
+        funcSignature,
+        constants.MAX_UINT_256, 
+        false
+      );
+    }));
+    
     await time.increase(30);
     
     await daoCreator.setSchemes(
       org.avatar.address,
-      [masterWalletScheme.address, quickWalletScheme.address],
-      [votingMachine.params, votingMachine.params],
+      [registrarWalletScheme.address, masterWalletScheme.address, quickWalletScheme.address],
+      [votingMachine.params, votingMachine.params, votingMachine.params],
       [helpers.encodePermission({
-        canGenericCall: true,
-        canUpgrade: true,
-        canChangeConstraints: true,
+        canGenericCall: false,
+        canUpgrade: false,
+        canChangeConstraints: false,
         canRegisterSchemes: true
+      }),
+      helpers.encodePermission({
+        canGenericCall: true,
+        canUpgrade: false,
+        canChangeConstraints: false,
+        canRegisterSchemes: false
       }),
       helpers.encodePermission({
         canGenericCall: false,
@@ -119,6 +160,141 @@ contract("WalletScheme", function(accounts) {
       })
      ],
       "metaData"
+    );
+  });
+  
+  it("Registrar Wallet Scheme", async function() {
+    
+    await web3.eth.sendTransaction({ from: accounts[0], to: org.avatar.address, value: 1000 });
+    
+    const newWalletScheme = await WalletScheme.new();
+    await newWalletScheme.initialize(
+      org.avatar.address,
+      votingMachine.address,
+      votingMachine.params,
+      constants.NULL_ADDRESS,
+      permissionRegistry.address,
+      "New Wallet",
+      executionTimeout,
+      0
+    );
+    
+    // Check that calls to controller that were set as not allowed are not executable in schemes that calls the
+    // controller
+    const callsToController = [
+      await org.controller.contract.methods.mintTokens(1, accounts[5], org.avatar.address).encodeABI(),
+      await org.controller.contract.methods.unregisterSelf(org.avatar.address).encodeABI(),
+      await org.controller.contract.methods.addGlobalConstraint(accounts[5], constants.SOME_HASH, org.avatar.address).encodeABI(),
+      await org.controller.contract.methods.removeGlobalConstraint (accounts[5], org.avatar.address).encodeABI(),
+      await org.controller.contract.methods.upgradeController(accounts[5], org.avatar.address).encodeABI(),
+      await org.controller.contract.methods.sendEther(1, accounts[5], org.avatar.address).encodeABI(),
+      await org.controller.contract.methods.externalTokenTransfer(standardTokenMock.address, accounts[5], 1, org.avatar.address).encodeABI(),
+      await org.controller.contract.methods.externalTokenTransferFrom(standardTokenMock.address, org.avatar.address, accounts[5], 1, org.avatar.address).encodeABI(),
+      await org.controller.contract.methods.externalTokenApproval(standardTokenMock.address, accounts[5], 1, org.avatar.address).encodeABI(),
+      await org.controller.contract.methods.metaData("test", org.avatar.address).encodeABI()
+    ];
+    await Promise.all(callsToController.map(async (callToControllerData) => {
+      const callToControllerProposal = await helpers.getValueFromLogs(await registrarWalletScheme.proposeCalls(
+        [org.controller.address], [callToControllerData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      ), "_proposalId");
+      await expectRevert(
+        votingMachine.contract.vote( callToControllerProposal, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+        "call not allowed"
+      );
+    }));
+    await Promise.all(callsToController.map(async (callToControllerData) => {
+      const callToControllerProposal = await helpers.getValueFromLogs(await masterWalletScheme.proposeCalls(
+        [org.controller.address], [callToControllerData], [0], constants.TEST_TITLE, constants.SOME_HASH
+      ), "_proposalId");
+      await expectRevert(
+        votingMachine.contract.vote( callToControllerProposal, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+        "call not allowed"
+      );
+    }));
+    
+    const registerSchemeData = await org.controller.contract.methods.registerScheme(
+      newWalletScheme.address,
+      votingMachine.params,
+      helpers.encodePermission({
+        canGenericCall: false,
+        canUpgrade: false,
+        canChangeConstraints: false,
+        canRegisterSchemes: false
+      }),
+      org.avatar.address
+    ).encodeABI();
+    
+    const unregisterSchemeData = await org.controller.contract.methods.unregisterScheme(
+      quickWalletScheme.address,
+      org.avatar.address
+    ).encodeABI();
+    
+    const proposalId1 = await helpers.getValueFromLogs(await masterWalletScheme.proposeCalls(
+      [org.controller.address], [registerSchemeData], [0], constants.TEST_TITLE, constants.SOME_HASH
+    ), "_proposalId");
+    await expectRevert(
+      votingMachine.contract.vote( proposalId1, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "call execution failed"
+    );
+    
+    const proposalId2 = await helpers.getValueFromLogs(await masterWalletScheme.proposeCalls(
+      [org.controller.address], [unregisterSchemeData], [0], constants.TEST_TITLE, constants.SOME_HASH
+    ), "_proposalId");
+    await expectRevert(
+      votingMachine.contract.vote( proposalId2, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} ),
+      "call execution failed"
+    );
+    
+    const proposalId3 = await helpers.getValueFromLogs(await registrarWalletScheme.proposeCalls(
+      [org.controller.address], [registerSchemeData], [0], constants.TEST_TITLE, constants.SOME_HASH
+    ), "_proposalId");
+    await votingMachine.contract.vote( proposalId3, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} );
+    
+    const proposalId4 = await helpers.getValueFromLogs(await registrarWalletScheme.proposeCalls(
+      [org.controller.address], [unregisterSchemeData], [0], constants.TEST_TITLE, constants.SOME_HASH
+    ), "_proposalId");
+    await votingMachine.contract.vote( proposalId4, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} );
+    
+    const organizationProposal1 = await registrarWalletScheme.getOrganizationProposal(proposalId3);
+    assert.equal(organizationProposal1.state, constants.WalletSchemeProposalState.executionSuccedd);
+    assert.equal(organizationProposal1.callData[0], registerSchemeData);
+    assert.equal(organizationProposal1.to[0], org.controller.address);
+    assert.equal(organizationProposal1.value[0], 0);
+    
+    const organizationProposal2 = await registrarWalletScheme.getOrganizationProposal(proposalId4);
+    assert.equal(organizationProposal2.state, constants.WalletSchemeProposalState.executionSuccedd);
+    assert.equal(organizationProposal2.callData[0], unregisterSchemeData);
+    assert.equal(organizationProposal2.to[0], org.controller.address);
+    assert.equal(organizationProposal2.value[0], 0);
+    
+    assert.equal(
+      await org.controller.isSchemeRegistered(newWalletScheme.address, org.avatar.address),
+      true
+    );
+    assert.equal(
+      await org.controller.getSchemeParameters(newWalletScheme.address, org.avatar.address),
+      votingMachine.params
+    );
+    assert.equal(
+      await org.controller.getSchemePermissions(newWalletScheme.address, org.avatar.address),
+      helpers.encodePermission({
+        canGenericCall: false,
+        canUpgrade: false,
+        canChangeConstraints: false,
+        canRegisterSchemes: false
+      })
+    );
+    assert.equal(
+      await org.controller.isSchemeRegistered(quickWalletScheme.address, org.avatar.address),
+      false
+    );
+    assert.equal(
+      await org.controller.getSchemeParameters(quickWalletScheme.address, org.avatar.address),
+      "0x0000000000000000000000000000000000000000000000000000000000000000"
+    );
+    assert.equal(
+      await org.controller.getSchemePermissions(quickWalletScheme.address, org.avatar.address),
+      "0x00000000"
     );
   });
   
@@ -902,7 +1078,7 @@ contract("WalletScheme", function(accounts) {
     
   });
   
-  it("MasterWalletScheme - proposals adding/removing schemes - execute registerScheme & removeScheme", async function() {
+  it("MasterWalletScheme - proposals adding/removing schemes - execute registerScheme & removeScheme fails", async function() {
     const callDataRegisterScheme = await org.controller.contract.methods.registerScheme(
       constants.SOME_ADDRESS,
       constants.SOME_HASH,
@@ -910,7 +1086,7 @@ contract("WalletScheme", function(accounts) {
       org.avatar.address
     ).encodeABI();
     const callDataRemoveScheme = await org.controller.contract.methods.unregisterScheme(
-      constants.SOME_ADDRESS,
+      quickWalletScheme.address,
       org.avatar.address
     ).encodeABI();
     var tx = await masterWalletScheme.proposeCalls(
@@ -923,22 +1099,26 @@ contract("WalletScheme", function(accounts) {
     const proposalIdRemoveScheme = await helpers.getValueFromLogs(tx, "_proposalId");
 
     // Add Scheme
-    await votingMachine.contract.vote(
-      proposalIdAddScheme, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+    await expectRevert( votingMachine.contract.vote(
+        proposalIdAddScheme, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
+      ),
+      "call execution failed"
     );
     
     const addedScheme = await org.controller.schemes(constants.SOME_ADDRESS);
-    assert.equal(addedScheme.paramsHash, constants.SOME_HASH);
-    assert.equal(addedScheme.permissions, "0x0000000f");
+    assert.equal(addedScheme.paramsHash, "0x0000000000000000000000000000000000000000000000000000000000000000");
+    assert.equal(addedScheme.permissions, "0x00000000");
     
     // Remove Scheme
-    await votingMachine.contract.vote(
+    await expectRevert( votingMachine.contract.vote(
       proposalIdRemoveScheme, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}
-    );
+    ),
+    "call execution failed"
+  );
     
-    const removedScheme = await org.controller.schemes(constants.SOME_ADDRESS);
-    assert.equal(removedScheme.paramsHash, constants.NULL_HASH);
-    assert.equal(removedScheme.permissions, "0x00000000");
+    const removedScheme = await org.controller.schemes(quickWalletScheme.address);
+    assert.equal(removedScheme.paramsHash, votingMachine.params);
+    assert.equal(removedScheme.permissions, "0x00000001");
   });
 
   it("MasterWalletScheme - execute should fail if not passed/executed from votingMachine", async function() {
@@ -1263,7 +1443,7 @@ contract("WalletScheme", function(accounts) {
     
     const removedScheme = await org.controller.schemes(masterWalletScheme.address);
     assert.equal(removedScheme.paramsHash, votingMachine.params);
-    assert.equal(removedScheme.permissions, "0x0000001f");
+    assert.equal(removedScheme.permissions, "0x00000011");
     
     await time.increase(executionTimeout);
     await votingMachine.contract.vote(
