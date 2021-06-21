@@ -52,7 +52,20 @@ contract("WalletScheme", function(accounts) {
       [1000, 1000, 1000],
       [20000, 10000, 70000]
     );
-    votingMachine = await helpers.setupGenesisProtocol(accounts, standardTokenMock.address, 'dxd');
+    votingMachine = await helpers.setupGenesisProtocol(accounts, standardTokenMock.address, 'dxd',
+      constants.NULL_ADDRESS, // voteOnBehalf
+      50, // queuedVoteRequiredPercentage
+      172800, // queuedVotePeriodLimit
+      86400, // boostedVotePeriodLimit
+      3600, // preBoostedVotePeriodLimit
+      2000, // thresholdConst
+      0, // quietEndingPeriod
+      0, // proposingRepReward
+      0, // votersReputationLossRatio
+      15, // minimumDaoBounty
+      10, // daoBountyConst
+      0 // activationTime
+    );
     
     permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
     
@@ -89,7 +102,7 @@ contract("WalletScheme", function(accounts) {
       permissionRegistry.address,
       "Quick Wallet",
       executionTimeout,
-      0
+      1
     );
     
     await permissionRegistry.setAdminPermission(
@@ -133,6 +146,15 @@ contract("WalletScheme", function(accounts) {
         false
       );
     }));
+    
+    await permissionRegistry.setAdminPermission(
+      constants.NULL_ADDRESS,
+      org.avatar.address,
+      org.controller.address,
+      constants.ANY_FUNC_SIGNATURE,
+      0,
+      true
+    );
     
     await time.increase(30);
     
@@ -1033,19 +1055,18 @@ contract("WalletScheme", function(accounts) {
     assert.equal(burnRepProposal.value[0], 0);
   });
   
-  it("MasterWalletScheme - proposal to mint more REP than allow reverts", async function() {
+  it("MasterWalletScheme - proposal to mint more REP than the % allowed reverts", async function() {
     const totalSupplyWhenExecuting = await org.reputation.totalSupply();
-    const maxToMint = ((totalSupplyWhenExecuting * 105) / 100) - totalSupplyWhenExecuting;
-    const repLockedInExecutionBlock = 70000 / 10;
+    const maxRepAmountToChange = ((totalSupplyWhenExecuting * 105) / 100) - totalSupplyWhenExecuting;
 
     const data0 = await org.controller.contract.methods.mintReputation(
-      maxToMint + repLockedInExecutionBlock,
+      maxRepAmountToChange + 1,
       accounts[4],
       org.avatar.address
     ).encodeABI();
     
     const data1 = await org.controller.contract.methods.mintReputation(
-        maxToMint + repLockedInExecutionBlock - 1,
+        maxRepAmountToChange,
         accounts[4],
         org.avatar.address
       ).encodeABI();
@@ -1061,11 +1082,62 @@ contract("WalletScheme", function(accounts) {
     
     await expectRevert(
       votingMachine.contract.vote(proposalIdMintRepToFail, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}),
-      "maxRepPercentageToMint passed"
+      "WalletScheme: maxRepPercentageChange passed"
+    );
+
+    await votingMachine.contract.vote(proposalIdMintRep, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]})
+
+    assert.equal(await org.reputation.balanceOf(accounts[4]), maxRepAmountToChange);
+
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalIdMintRepToFail)).state,
+      constants.WalletSchemeProposalState.submitted
+    );
+    assert.equal(
+      (await masterWalletScheme.getOrganizationProposal(proposalIdMintRep)).state,
+      constants.WalletSchemeProposalState.executionSuccedd
+    );
+    
+  });
+  
+  it("MasterWalletScheme - proposal to burn more REP than the % allowed reverts", async function() {
+    const voterRep = await org.reputation.balanceOf(accounts[2]);
+    const totalSupplyWhenExecuting = await org.reputation.totalSupply();
+    const maxRepAmountToChange = -(((totalSupplyWhenExecuting * 95) / 100) - totalSupplyWhenExecuting);
+    
+    const data0 = await org.controller.contract.methods.burnReputation(
+      maxRepAmountToChange + 1,
+      accounts[2],
+      org.avatar.address
+    ).encodeABI();
+    
+    const data1 = await org.controller.contract.methods.burnReputation(
+        maxRepAmountToChange,
+        accounts[2],
+        org.avatar.address
+      ).encodeABI();
+    var tx = await masterWalletScheme.proposeCalls(
+      [org.controller.address], [ data0 ], [0], constants.TEST_TITLE, constants.NULL_HASH
+    );
+    const proposalIdMintRepToFail = await helpers.getValueFromLogs(tx, "_proposalId");
+    
+    var tx = await masterWalletScheme.proposeCalls(
+      [org.controller.address], [data1], [0], constants.TEST_TITLE, constants.NULL_HASH
+    );
+    const proposalIdMintRep = await helpers.getValueFromLogs(tx, "_proposalId");
+    
+    await expectRevert(
+      votingMachine.contract.vote(proposalIdMintRepToFail, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]}),
+      "maxRepPercentageChange passed"
     );
     await votingMachine.contract.vote(proposalIdMintRep, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]})
 
-    assert.equal(await org.reputation.balanceOf(accounts[4]), maxToMint + repLockedInExecutionBlock - 1);
+    // Here we use approximately because we loose a bit of precition on calculating to a lower percentage of 100%
+    assert.approximately(
+      (await org.reputation.balanceOf(accounts[2])).toNumber(),
+      voterRep - maxRepAmountToChange, 
+      2
+    );
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalIdMintRepToFail)).state,

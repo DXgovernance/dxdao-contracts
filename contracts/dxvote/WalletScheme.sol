@@ -52,7 +52,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     PermissionRegistry public permissionRegistry;
     string public schemeName;
     uint256 public maxSecondsForExecution;
-    uint256 public maxRepPercentageToMint;
+    uint256 public maxRepPercentageChange;
     
     // This mapping is used as "memory storage" in executeProposal function, to keep track of the total value
     // transfered of by asset and address, it saves both aseet and address as keccak256(asset, recipient)
@@ -78,6 +78,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      * @param _permissionRegistry The address of the permission registry contract
      * @param _maxSecondsForExecution The maximum amount of time in seconds  for a proposal without executed since
      * submitted time
+     * @param _maxRepPercentageChange The maximum percentage allowed to be changed in REP total supply after proposal
+     * execution
      */
     function initialize(
         Avatar _avatar,
@@ -87,7 +89,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         address _permissionRegistry,
         string calldata _schemeName,
         uint256 _maxSecondsForExecution,
-        uint256 _maxRepPercentageToMint
+        uint256 _maxRepPercentageChange
     ) external {
         require(avatar == Avatar(0), "WalletScheme: cannot init twice");
         require(_avatar != Avatar(0), "WalletScheme: avatar cannot be zero");
@@ -101,7 +103,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
         maxSecondsForExecution = _maxSecondsForExecution;
-        maxRepPercentageToMint = _maxRepPercentageToMint;
+        maxRepPercentageChange = _maxRepPercentageChange;
     }
 
     /**
@@ -150,6 +152,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         // If decision is 1, it means the proposal was approved by the voting machine
         } else if (_decision == 1) {
           
+            uint256 oldRepSupply = avatar.nativeReputation().totalSupply();
+            
             // Get the total amount transfered by asset and recipients
             // Keep track of the permissionsIds that are loaded into storage to remove them later
             bytes4 callDataFuncSignature;
@@ -289,14 +293,18 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                 require(callsSucessResult[i], "WalletScheme: call execution failed");
             
             }
-            // Cant mint more REP than the allowed percentaje set in the wallet scheme initialization
+            // Cant mint or burn more REP than the allowed percentaje set in the wallet scheme initialization
             require(
-              avatar.nativeReputation().totalSupplyAt(block.number - 1)
-                .mul(uint256(100).add(maxRepPercentageToMint))
-                .div(100)
-              >
-              avatar.nativeReputation().totalSupply(),
-              "WalletScheme: maxRepPercentageToMint passed"
+              (
+                oldRepSupply.mul(uint256(100).add(maxRepPercentageChange)).div(100)
+                >=
+                avatar.nativeReputation().totalSupply()
+              ) && (
+                oldRepSupply.mul(uint256(100).sub(maxRepPercentageChange)).div(100)
+                <=
+                avatar.nativeReputation().totalSupply()
+              ),
+              "WalletScheme: maxRepPercentageChange passed"
             );
             
             // Delete all valueTransferedByAssetAndRecipient values saved in storage
