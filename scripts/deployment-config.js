@@ -15,6 +15,14 @@ const networksConfig = {
       address: "0x417A288152A5a13b843135Db5Dc72Ea007a9EB8d",
       fromBlock: 8569799
     },
+    arbitrumTestnet: {
+      address: "0x5d47100B0854525685907D5D773b92c22c0c745e",
+      fromBlock: 87284
+    },
+    arbitrum: {
+      address: "0xC3Ae0333F0F34aa734D5493276223d95B8F9Cb37",
+      fromBlock: 100
+    },
     xdai: {
       address: "0xb90D6bec20993Be5d72A5ab353343f7a0281f158",
       fromBlock: 15040609 
@@ -27,8 +35,10 @@ const networksConfig = {
   permissionRegistryDelay: {
     hardhat: moment.duration(1, 'hours').asSeconds(),
     rinkeby: moment.duration(1, 'days').asSeconds(),
-    xdai: moment.duration(2, 'days').asSeconds(),
-    mainnet: moment.duration(3, 'days').asSeconds()
+    arbitrumTestnet: moment.duration(1, 'days').asSeconds(),
+    arbitrum: moment.duration(3, 'days').asSeconds(),
+    xdai: moment.duration(3, 'days').asSeconds(),
+    mainnet: moment.duration(7, 'days').asSeconds()
   }
 };
 
@@ -117,6 +127,89 @@ const schemesConfig = {
   }],
   
   rinkeby: [{
+    name: "RegistrarWalletScheme",
+    callToController: true,
+    maxSecondsForExecution: moment.duration(2, 'days').asSeconds(),
+    maxRepPercentageToMint: 0,
+    controllerPermissions: {
+      canGenericCall: false,
+      canUpgrade: false,
+      canChangeConstraints: false,
+      canRegisterSchemes: true
+    },
+    permissions: [],
+    queuedVoteRequiredPercentage: 75,
+    boostedVoteRequiredPercentage: 2500,
+    queuedVotePeriodLimit: moment.duration(1, 'days').asSeconds(),
+    boostedVotePeriodLimit: moment.duration(12, 'hours').asSeconds(),
+    preBoostedVotePeriodLimit: moment.duration(2, 'hours').asSeconds(),
+    thresholdConst: 2000,
+    quietEndingPeriod: moment.duration(30, 'minuets').asSeconds(),
+    proposingRepReward: 0,
+    votersReputationLossRatio: 100,
+    minimumDaoBounty: web3.utils.toWei("100"),
+    daoBountyConst: 50,
+  },{
+    name: "MasterWalletScheme",
+    callToController: true,
+    maxSecondsForExecution: moment.duration(24, 'hours').asSeconds(),
+    maxRepPercentageToMint: 5,
+    controllerPermissions: {
+      canGenericCall: true,
+      canUpgrade: false,
+      canChangeConstraints: false,
+      canRegisterSchemes: false
+    },
+    permissions: [{
+      asset: NULL_ADDRESS,
+      to: "SCHEME",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: web3.utils.toWei("10"),
+      allowed: true
+    }],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 5,
+    queuedVotePeriodLimit: moment.duration(12, 'hours').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(4, 'hours').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(1, 'hours').asSeconds(), 
+    thresholdConst: 1500, 
+    quietEndingPeriod: moment.duration(15, 'minutes').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 10, 
+    minimumDaoBounty: web3.utils.toWei("10"),
+    daoBountyConst: 10
+  },{
+    name: "QuickWalletScheme",
+    callToController: false,
+    maxSecondsForExecution: moment.duration(6, 'hours').asSeconds(),
+    maxRepPercentageToMint: 1,
+    controllerPermissions: {
+      canGenericCall: false,
+      canUpgrade: false,
+      canChangeConstraints: false,
+      canRegisterSchemes: false
+    },
+    permissions: [{
+      asset: NULL_ADDRESS,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    }],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 1,
+    queuedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(1, 'hours').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(30, 'minutes').asSeconds(), 
+    thresholdConst: 1100, 
+    quietEndingPeriod: moment.duration(10, 'minutes').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 1, 
+    minimumDaoBounty: web3.utils.toWei("1"),
+    daoBountyConst: 10
+  }],
+  
+  arbitrumTestnet: [{
     name: "RegistrarWalletScheme",
     callToController: true,
     maxSecondsForExecution: moment.duration(2, 'days').asSeconds(),

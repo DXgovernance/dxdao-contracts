@@ -1744,7 +1744,7 @@ contract("WalletScheme", function(accounts) {
       const erc20TransferPermission = await permissionRegistry.getPermission(
         testToken.address, org.avatar.address, actionMock.address, constants.ANY_FUNC_SIGNATURE
       )
-      assert.equal(erc20TransferPermission.fromTime.toString(), setPermissionTime + 30);
+      assert.approximately(erc20TransferPermission.fromTime.toNumber(), setPermissionTime + 30, 1);
       assert.equal(erc20TransferPermission.valueAllowed.toString(), 100);
       
       await time.increase(30);

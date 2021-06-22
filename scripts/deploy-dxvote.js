@@ -14,7 +14,6 @@ const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
 // Import Contracts
-const DxToken = artifacts.require("DxToken");
 const DxAvatar = artifacts.require("DxAvatar");
 const DxReputation = artifacts.require("DxReputation");
 const DxController = artifacts.require("DxController");
@@ -32,9 +31,16 @@ async function main() {
   const networkName = hre.network.name;
   
   function sleep(ms) {
-    if (networkName != "hardhat")
-      return new Promise(resolve => setTimeout(resolve, ms));
-    else return;
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  
+  async function waitBlocks(blocks) {
+    const toBlock = (await web3.eth.getBlock('latest')).number + blocks;
+    while ((await web3.eth.getBlock('latest')).number < toBlock){
+      console.log("Waiting to block", toBlock, "...")
+      await sleep(3000);
+    }
+    return;
   }
   
   function saveContractsFile(contractsFile) {
@@ -54,7 +60,19 @@ async function main() {
   }
   
   if (!contractsFile[networkName] || networkName == 'hardhat') 
-    contractsFile[networkName] = { schemes: {} };
+    contractsFile[networkName] = { 
+      fromBlock: 0,
+      avatar: null,
+      reputation: null,
+      token: null,
+      controller: null,
+      permissionRegistry: null,
+      schemes: {},
+      utils: {},
+      votingMachines: {
+        dxd: {}
+      }
+    };
     
   if ((networkName == "arbitrumTestnet") || (networkName == "arbitrum")) {
     hre.network.provider = wrapProvider(new HDWalletProvider(hre.network.config.accounts.mnemonic, hre.network.config.url))
@@ -72,10 +90,12 @@ async function main() {
     console.log('Deploying Multicall...');
     multicall = await Multicall.new();
     console.log("Multicall deployed to:", multicall.address);
-    contractsFile[networkName].multicall = multicall.address;
-    saveContractsFile(contractsFile);
   }
+  contractsFile[networkName].utils.multicall = multicall.address;
+  saveContractsFile(contractsFile);
   
+  await waitBlocks(1);
+
   // Deploy and mint reputation
   let dxReputation;
   if (contractsFile[networkName].reputation) {
@@ -85,7 +105,7 @@ async function main() {
     console.log('Deploying DxReputation...');
     dxReputation = await DxReputation.new();
     console.log("DX Reputation deployed to:", dxReputation.address);
-    await sleep(30000);
+    await waitBlocks(1);
 
     let addressesMints = [], amountMints = []; 
     if (networkName == "arbitrumTestnet" || networkName == "arbitrum" ) {
@@ -99,41 +119,46 @@ async function main() {
       for (let i = 0; i < addressesMints.length; i++){
         console.log('Doing mint '+i+' of '+(addressesMints.length-1)+' of initial REP minting...')
         await dxReputation.mintMultiple(addressesMints[i], amountMints[i]);
-        await sleep(30000);
+        await waitBlocks(1);
       }
     }
     contractsFile[networkName].fromBlock = fromBlock;
     contractsFile[networkName].reputation = dxReputation.address;
     saveContractsFile(contractsFile);
   }
-    
-  // Deploy DXtoken
-  let dxToken;
-  if (contractsFile[networkName].token) {
-    console.log('Using DXToken already deployed on', contractsFile[networkName].token);
-    dxToken = await DxToken.at(contractsFile[networkName].token);
-  } else {
-    console.log('Deploying DXtoken...');
-    dxToken = await DxToken.new("", "", 0);
-    console.log("DXToken (useless token just used for deployment) deployed to:", dxToken.address);
-    contractsFile[networkName].token = dxToken.address;
-    saveContractsFile(contractsFile);
-  }
-  await sleep(30000);
   
+  // Deploy DXD
+  let votingMachineToken;
+  if (!deploymentConfig.votingMachineToken) {
+      console.log("Creating new voting machine token...");
+      votingMachineToken = await ERC20Mock.new(accounts[0], web3.utils.toWei('101000000'));
+      console.log("Voting machine token deployed to:", votingMachineToken.address);
+  } else {
+    votingMachineToken = await ERC20Mock.at(deploymentConfig.votingMachineToken.address);
+    contractsFile[networkName].fromBlock = Math.min(fromBlock, deploymentConfig.votingMachineToken.fromBlock);
+    console.log("Using pre configured voting machine token:", votingMachineToken.address);
+  }
+  contractsFile[networkName].votingMachines.dxd.token = votingMachineToken.address;
+  saveContractsFile(contractsFile);
+  
+  await waitBlocks(1);
+
   // Deploy DXAvatar
   let dxAvatar;
   if (contractsFile[networkName].avatar) {
     console.log('Using DxAvatar already deployed on', contractsFile[networkName].avatar);
     dxAvatar = await DxAvatar.at(contractsFile[networkName].avatar);
   } else {
-    console.log('Deploying DxAvatar...',dxToken.address, dxReputation.address);
-    dxAvatar = await DxAvatar.new("DXdao", dxToken.address, dxReputation.address);
+    console.log('Deploying DxAvatar...',votingMachineToken.address, dxReputation.address);
+    dxAvatar = await DxAvatar.new("DXdao", votingMachineToken.address, dxReputation.address);
+    if (await votingMachineToken.balanceOf(accounts[0]) > web3.utils.toWei('100000000'))
+      await votingMachineToken.transfer(dxAvatar.address, web3.utils.toWei('100000000'));
     console.log("DXdao Avatar deployed to:", dxAvatar.address);
     contractsFile[networkName].avatar = dxAvatar.address;
+    contractsFile[networkName].token = votingMachineToken.address;
     saveContractsFile(contractsFile);
   }
-  await sleep(30000);
+  await waitBlocks(1);
   
   // Deploy DXcontroller and transfer avatar to controller
   let dxController;
@@ -149,37 +174,22 @@ async function main() {
     contractsFile[networkName].controller = dxController.address;
     saveContractsFile(contractsFile);
   }
-  await sleep(30000);
+  await waitBlocks(1);
   
   // Deploy DXDVotingMachine
   let votingMachine;
-  if (contractsFile[networkName].votingMachine) {
-    console.log('Using DXDVotingMachine already deployed on', contractsFile[networkName].votingMachine);
-    votingMachine = await DXDVotingMachine.at(contractsFile[networkName].votingMachine);
+  if (contractsFile[networkName].votingMachines.dxd.address) {
+    console.log('Using DXDVotingMachine already deployed on', contractsFile[networkName].votingMachines.dxd.address);
+    votingMachine = await DXDVotingMachine.at(contractsFile[networkName].votingMachines.dxd.address);
   } else {
-    
-    let votingMachineTokenAddress;
-    if (!deploymentConfig.votingMachineToken) {
-        console.log("Creating new voting machine token...");
-        const newVotingMachineToken = await ERC20Mock.new(accounts[0], web3.utils.toWei('101000000'));
-        await newVotingMachineToken.transfer(dxAvatar.address, web3.utils.toWei('100000000'));
-        votingMachineTokenAddress = newVotingMachineToken.address;
-        console.log("Voting machine token deployed to:", votingMachineTokenAddress);
-    } else {
-      votingMachineTokenAddress = deploymentConfig.votingMachineToken.address;
-      contractsFile[networkName].fromBlock = Math.min(fromBlock, deploymentConfig.votingMachineToken.fromBlock);
-      console.log("Using pre configured voting machine token:", votingMachineTokenAddress);
-    }
-    
     console.log('Deploying DXDVotingMachine...');
-    votingMachine = await DXDVotingMachine.new(votingMachineTokenAddress);
+    votingMachine = await DXDVotingMachine.new(votingMachineToken.address);
     console.log("DXDVotingMachine deployed to:", votingMachine.address);
-    contractsFile[networkName].votingMachine = votingMachine.address;
-    contractsFile[networkName].votingMachineToken = votingMachineTokenAddress;
+    contractsFile[networkName].votingMachines.dxd.address = votingMachine.address;
+    contractsFile[networkName].votingMachines.dxd.token = await votingMachine.stakingToken();
     saveContractsFile(contractsFile);
-  
   }
-  await sleep(30000);
+  await waitBlocks(1);
   
   // Deploy PermissionRegistry
   let permissionRegistry;
@@ -216,14 +226,20 @@ async function main() {
       );
     }
     
-    // Set the permission delay in the permission registry
-    await permissionRegistry.setTimeDelay(deploymentConfig.permissionRegistryDelay);
+    await permissionRegistry.setAdminPermission(
+      NULL_ADDRESS,
+      dxAvatar.address,
+      dxController.address,
+      ANY_FUNC_SIGNATURE,
+      0,
+      true
+    );
     
     console.log("Permission Registry deployed to:", permissionRegistry.address);
     contractsFile[networkName].permissionRegistry = permissionRegistry.address;
     saveContractsFile(contractsFile);
   }
-  await sleep(30000);
+  await waitBlocks(1);
   
   // Deploy Schemes
   for (var i = 0; i < deploymentConfig.schemes.length; i++) {
@@ -238,7 +254,7 @@ async function main() {
       const newScheme = await WalletScheme.new();
       console.log(`${schemeConfiguration.name} deployed to: ${newScheme.address}`);
       
-      await sleep(30000);
+      await waitBlocks(1);
       
       const timeNow = moment().unix();
       let schemeParamsHash = await votingMachine.getParametersHash(
@@ -321,27 +337,31 @@ async function main() {
   if (!deploymentConfig.dxdaoNFT) {
     console.log("Deploying DXdaoNFT...");
     dxDaoNFT = await DXdaoNFT.new();
-    contractsFile[networkName].dxDaoNFT = dxDaoNFT.address;
+    contractsFile[networkName].utils.dxDaoNFT = dxDaoNFT.address;
   } else {
     console.log("Using DXdaoNFT deployed on", deploymentConfig.dxDaoNFT);
-    contractsFile[networkName].dxDaoNFT = deploymentConfig.dxDaoNFT;
+    contractsFile[networkName].utils.dxDaoNFT = deploymentConfig.dxDaoNFT;
   }
-  
+  saveContractsFile(contractsFile);
+
   // Deploy DXDVestingFactory if it is not set
   let dxdVestingFactory;
   if (!deploymentConfig.dxdVestingFactory) {
     console.log("Deploying DXDVestingFactory...");
-    dxdVestingFactory = await DXDVestingFactory.new(contractsFile[networkName].votingMachineToken);
-    contractsFile[networkName].vestingFactory = dxdVestingFactory.address;
+    dxdVestingFactory = await DXDVestingFactory.new(contractsFile[networkName].votingMachines.dxd.token);
+    contractsFile[networkName].utils.vestingFactory = dxdVestingFactory.address;
   } else {
     console.log("Using DXDVestingFactory deployed on", deploymentConfig.dxdVestingFactory);
-    contractsFile[networkName].vestingFactory = deploymentConfig.dxdVestingFactory;
+    contractsFile[networkName].utils.dxdVestingFactory = deploymentConfig.dxdVestingFactory;
   }
+  saveContractsFile(contractsFile);
   
-  
+
   // Transfer all ownership and power to the dao
   console.log("Transfering ownership...");
   try {
+    // Set the permission delay in the permission registry
+    await permissionRegistry.setTimeDelay(deploymentConfig.permissionRegistryDelay);
     await permissionRegistry.transferOwnership(dxAvatar.address);
     await dxDaoNFT.transferOwnership(dxAvatar.address);
     await dxController.unregisterScheme(accounts[0], dxAvatar.address);
@@ -368,13 +388,13 @@ async function main() {
   }
   try {
     await hre.run("verify:verify", {
-      address: dxToken.address,
-      contract: `${DxToken._hArtifact.sourceName}:${DxToken._hArtifact.contractName}`,
-      constructorArguments: ["", "", 0],
+      address: votingMachineToken.address,
+      contract: `${ERC20Mock._hArtifact.sourceName}:${ERC20Mock._hArtifact.contractName}`,
+      constructorArguments: ["DXD", "DXdao", 18],
     });
-    console.error("DxToken verified", dxToken.address);
+    console.error("DxToken verified", votingMachineToken.address);
   } catch(e) {
-    console.error("Couldnt verify DxToken", dxToken.address);
+    console.error("Couldnt verify DxToken", votingMachineToken.address);
   }
   try {
     await hre.run("verify:verify", {
@@ -400,7 +420,7 @@ async function main() {
     await hre.run("verify:verify", {
       address: votingMachine.address,
       contract: `${DXDVotingMachine._hArtifact.sourceName}:${DXDVotingMachine._hArtifact.contractName}`,
-      constructorArguments: [DXD_TOKEN],
+      constructorArguments: [contractsFile[networkName].votingMachines.dxd.token],
     });
     console.error("DXDVotingMachine verified", votingMachine.address);
   } catch(e) {
