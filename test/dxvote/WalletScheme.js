@@ -163,9 +163,9 @@ contract("WalletScheme", function(accounts) {
       [registrarWalletScheme.address, masterWalletScheme.address, quickWalletScheme.address],
       [votingMachine.params, votingMachine.params, votingMachine.params],
       [helpers.encodePermission({
-        canGenericCall: false,
-        canUpgrade: false,
-        canChangeConstraints: false,
+        canGenericCall: true,
+        canUpgrade: true,
+        canChangeConstraints: true,
         canRegisterSchemes: true
       }),
       helpers.encodePermission({
@@ -246,6 +246,25 @@ contract("WalletScheme", function(accounts) {
       org.avatar.address
     ).encodeABI();
     
+    await votingMachine.contract.setParameters(
+      [ 60, 86400, 3600, 1800, 1050, 0, 60, 10, 15, 10, 0 ], constants.NULL_ADDRESS
+    );
+    const newVotingParamsHash = await votingMachine.contract.getParametersHash(
+      [ 60, 86400, 3600, 1800, 1050, 0, 60, 10, 15, 10, 0 ], constants.NULL_ADDRESS
+    );
+    
+    const updateSchemeParamsData = await org.controller.contract.methods.registerScheme(
+      masterWalletScheme.address,
+      newVotingParamsHash,
+      helpers.encodePermission({
+        canGenericCall: true,
+        canUpgrade: false,
+        canChangeConstraints: false,
+        canRegisterSchemes: false
+      }),
+      org.avatar.address
+    ).encodeABI();
+    
     const unregisterSchemeData = await org.controller.contract.methods.unregisterScheme(
       quickWalletScheme.address,
       org.avatar.address
@@ -277,6 +296,11 @@ contract("WalletScheme", function(accounts) {
     ), "_proposalId");
     await votingMachine.contract.vote( proposalId4, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} );
     
+    const proposalId5 = await helpers.getValueFromLogs(await registrarWalletScheme.proposeCalls(
+      [org.controller.address], [updateSchemeParamsData], [0], constants.TEST_TITLE, constants.SOME_HASH
+    ), "_proposalId");
+    await votingMachine.contract.vote( proposalId5, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]} );
+    
     const organizationProposal1 = await registrarWalletScheme.getOrganizationProposal(proposalId3);
     assert.equal(organizationProposal1.state, constants.WalletSchemeProposalState.executionSuccedd);
     assert.equal(organizationProposal1.callData[0], registerSchemeData);
@@ -288,6 +312,12 @@ contract("WalletScheme", function(accounts) {
     assert.equal(organizationProposal2.callData[0], unregisterSchemeData);
     assert.equal(organizationProposal2.to[0], org.controller.address);
     assert.equal(organizationProposal2.value[0], 0);
+    
+    const organizationProposal3 = await registrarWalletScheme.getOrganizationProposal(proposalId5);
+    assert.equal(organizationProposal3.state, constants.WalletSchemeProposalState.executionSuccedd);
+    assert.equal(organizationProposal3.callData[0], updateSchemeParamsData);
+    assert.equal(organizationProposal3.to[0], org.controller.address);
+    assert.equal(organizationProposal3.value[0], 0);
     
     assert.equal(
       await org.controller.isSchemeRegistered(newWalletScheme.address, org.avatar.address),
@@ -317,6 +347,23 @@ contract("WalletScheme", function(accounts) {
     assert.equal(
       await org.controller.getSchemePermissions(quickWalletScheme.address, org.avatar.address),
       "0x00000000"
+    );
+    assert.equal(
+      await org.controller.getSchemePermissions(masterWalletScheme.address, org.avatar.address),
+      helpers.encodePermission({
+        canGenericCall: true,
+        canUpgrade: false,
+        canChangeConstraints: false,
+        canRegisterSchemes: false
+      })
+    );
+    assert.equal(
+      await org.controller.isSchemeRegistered(masterWalletScheme.address, org.avatar.address),
+      true
+    );
+    assert.equal(
+      await org.controller.getSchemeParameters(masterWalletScheme.address, org.avatar.address),
+      newVotingParamsHash
     );
   });
   
