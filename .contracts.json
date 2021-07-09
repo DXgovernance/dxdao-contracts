@@ -1,63 +1,26 @@
 {
-  "xdai": {
-    "schemes": {
-      "masterWallet": "0xc906B8670252326F852D94297C1198F7B39E5522",
-      "quickWallet": "0x742092b501B7B36CbBA3E0516f352925D8c1D4c4"
-    },
-    "multicall": "0xDD032cd0dfCB54050E1FA30Be59056403e292700",
-    "fromBlock": 16274928,
-    "reputation": "0x4f318109dE7Fea673Bff5A628074E839F35658aB",
-    "token": "0x5F709dd0a83Dfb1dd8e43D327Ac035Ad84988F66",
-    "avatar": "0x872e588EcDdfcE41233D9Ca96cd4D18f0B64B1D8",
-    "controller": "0xACDa60EAcD04F8930A174b90801798B8b41C2446",
-    "votingMachine": "0x1aE69bAe9c6c4e78c3Af7c966aeaD7935F0C5939",
-    "votingMachineToken": "0x1a34b416e8A744aFBc66E96414C6A7705e780Fc1",
-    "permissionRegistry": "0x5c34F404aA92997f7342Ec0F89568c71f4f9FaB1"
-  },
-  "arbitrum-testnet-v5": {
-    "schemes": {
-      "masterWallet": "0x1FD1C4d820432C154bD1b48b6cC669b1675F6153",
-      "quickWallet": "0x96f33354CAac9C096AbDD631db25A4a0E22b58bB"
-    },
-    "multicall": "0x18Ebdf0E8542F07Ea1d869Df38Fd1173be2C6142",
-    "fromBlock": 185395,
-    "reputation": "0xf8560B8474C48b187D972ccA565c10F691223262",
-    "token": "0x5AAFf6fDfcfce823E02C53be04Ec60230a57001c",
-    "avatar": "0x4876F67D6aE09a78d722532744955c004d1DDCbE",
-    "controller": "0x4E66A51e4a41E2683f5245cF31207f10c6658Ea5",
-    "votingMachine": "0x0d4035bD16DE204116af1075D8E7603D26EBabF5",
-    "votingMachineToken": "0xbDa121C4bf517FfeA4eac10A59067973D4004a5a",
-    "permissionRegistry": "0xDDb50f60B189a37918d2616e59A231F6a1a4A4ff"
-  },
-  "arbitrum": {
-    "schemes": {
-      "masterWallet": "0x8a5a7B614D663607E2E8075B407f45B21A13759A",
-      "quickWallet": "0x01eBe7A8160F13407963862985917D500cDB2D1C"
-    },
-    "multicall": "0x64E15dFA18DDE38F4D4e27EFc00F4BCFCCe8144a",
-    "fromBlock": 303,
-    "reputation": "0x70cC43912fAD6842E9dE9dfb1e8AaF92EDbBc40C",
-    "token": "0x1C469EDDcd7d058be7195B2b321675bd1521AECf",
-    "avatar": "0xD98034E78C052C9B975E3D1C3d274e4ab54A8092",
-    "controller": "0xa607Dc6D35C96f0783b324fC34D5ED1D14b45d45",
-    "votingMachine": "0x0AcdEe54e26d9195654cE409071e4db30436B033",
-    "votingMachineToken": "0xb5577DD27eF3690f1fE0f5e3a46125f73aCe8Afa",
-    "permissionRegistry": "0x115f6DF1Bdf77578Fd0E74231D1f31F84bA78be9"
-  },
   "rinkeby": {
-    "schemes": {
-      "RegistrarWalletScheme": "0x3a4f4a63705FB66dF0954fb35edb3A32f878B15E",
-      "MasterWalletScheme": "0x1142365C960eE8D95f8B5De23A409bdA349a91c5",
-      "QuickWalletScheme": "0x6d5df6815D945DA64Eb779460BdFC0daD938c570"
-    },
-    "multicall": "0x2d860d42331C6412BE5ff05AF24f38af1d1979cB",
     "fromBlock": 8569799,
-    "reputation": "0x4C5704Bc29b212a51D60025529b78e2cA585730C",
-    "token": "0xB592b367564336d11d882A669211208F9fB2322f",
-    "avatar": "0xf4495Ff8a22C2311028d25aE0dA6803C287bB86b",
-    "controller": "0x54C520D507fD17BeA34248ae09f66Ab43f017037",
-    "votingMachine": "0x685B8BF933863aaAF5C3200083Fc082485ef4Dab",
-    "votingMachineToken": "0x417A288152A5a13b843135Db5Dc72Ea007a9EB8d",
-    "permissionRegistry": "0x218CB793aCAB37Ba3d518d6577978E9b7e9D2e0B"
+    "avatar": "0xdDC7c74810c91909d6207f3f1759B0ffDAD4DF1D",
+    "reputation": "0xB936C38441233CeC0722636e6D3091cE293A8481",
+    "token": "0x417A288152A5a13b843135Db5Dc72Ea007a9EB8d",
+    "controller": "0x3E8D2B27a5aB8e0afa2c42991f7B13da45D5491d",
+    "permissionRegistry": "0x5a9C2FAF55D368498810e4Fc7db54f1c783DA24E",
+    "schemes": {
+      "RegistrarWalletScheme": "0x8d188F9dC62Ba5858b185Ac2110fC6554aA6D32d",
+      "MasterWalletScheme": "0x1AB34Db58B20008aA61E66115eFb8E010A9e3956",
+      "QuickWalletScheme": "0x6CD4EAE24EbFBa832b44b66eDD209ED8f7Ea8EE4"
+    },
+    "utils": {
+      "multicall": "0x81cB87FE0d97467eA894f7f5DdDC87DDc92359ac",
+      "dxDaoNFT": "0x1A445901Ab9f3fCBAA974Dc37E7b02CD23178Cdc",
+      "dxdVestingFactory": "0x637ED52F7f63aadf6402e1154f9651CdbB4817D5"
+    },
+    "votingMachines": {
+      "dxd": {
+        "token": "0x417A288152A5a13b843135Db5Dc72Ea007a9EB8d",
+        "address": "0x0E8F08DaC2eEfF205d6a76bB2380912229409538"
+      }
+    }
   }
 }

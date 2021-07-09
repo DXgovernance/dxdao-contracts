@@ -298,7 +298,7 @@ async function main() {
         permissionRegistry.address,
         schemeConfiguration.name,
         Math.max(86400, schemeConfiguration.maxSecondsForExecution),
-        schemeConfiguration.maxRepPercentageToMint
+        schemeConfiguration.maxRepPercentageChange
       );
       
       console.log("Setting scheme permissions...");
@@ -334,25 +334,23 @@ async function main() {
   
   // Deploy dxDaoNFT if it is not set
   let dxDaoNFT;
-  if (!deploymentConfig.dxdaoNFT) {
+  if (!contractsFile[networkName].utils.dxdaoNFT) {
     console.log("Deploying DXdaoNFT...");
     dxDaoNFT = await DXdaoNFT.new();
     contractsFile[networkName].utils.dxDaoNFT = dxDaoNFT.address;
   } else {
-    console.log("Using DXdaoNFT deployed on", deploymentConfig.dxDaoNFT);
-    contractsFile[networkName].utils.dxDaoNFT = deploymentConfig.dxDaoNFT;
+    console.log("Using DXdaoNFT deployed on", contractsFile[networkName].utils.dxDaoNFT);
   }
   saveContractsFile(contractsFile);
 
   // Deploy DXDVestingFactory if it is not set
   let dxdVestingFactory;
-  if (!deploymentConfig.dxdVestingFactory) {
+  if (!contractsFile[networkName].utils.dxdVestingFactory) {
     console.log("Deploying DXDVestingFactory...");
     dxdVestingFactory = await DXDVestingFactory.new(contractsFile[networkName].votingMachines.dxd.token);
-    contractsFile[networkName].utils.vestingFactory = dxdVestingFactory.address;
+    contractsFile[networkName].utils.dxdVestingFactory = dxdVestingFactory.address;
   } else {
-    console.log("Using DXDVestingFactory deployed on", deploymentConfig.dxdVestingFactory);
-    contractsFile[networkName].utils.dxdVestingFactory = deploymentConfig.dxdVestingFactory;
+    console.log("Using DXDVestingFactory deployed on", contractsFile[networkName].utils.dxdVestingFactory);
   }
   saveContractsFile(contractsFile);
   
@@ -400,7 +398,7 @@ async function main() {
     await hre.run("verify:verify", {
       address: dxAvatar.address,
       contract: `${DxAvatar._hArtifact.sourceName}:${DxAvatar._hArtifact.contractName}`,
-      constructorArguments: ["DXdao", dxReputation.address, dxToken.address],
+      constructorArguments: ["DXdao", dxReputation.address, votingMachineToken.address],
     });
     console.error("DxAvatar verified", dxAvatar.address);
   } catch(e) {
@@ -436,6 +434,7 @@ async function main() {
   } catch(e) {
     console.error("Couldnt verify PermissionRegistry", permissionRegistry.address);
   }
+  
   await Promise.all(Object.keys(contractsFile[networkName].schemes).map(async (schemeAddress) => {
     try {
       await hre.run("verify:verify", {
@@ -448,6 +447,28 @@ async function main() {
       console.error("Couldnt verify WalletScheme", schemeAddress);
     }
   }));
+  
+  try {
+    await hre.run("verify:verify", {
+      address: contractsFile[networkName].utils.dxDaoNFT,
+      contract: `${DXdaoNFT._hArtifact.sourceName}:${DXdaoNFT._hArtifact.contractName}`,
+      constructorArguments: [],
+    });
+    console.error("DXdaoNFT verified", contractsFile[networkName].utils.dxDaoNFT);
+  } catch(e) {
+    console.error("Couldnt verify DXdaoNFT", contractsFile[networkName].utils.dxDaoNFT);
+  }
+  
+  try {
+    await hre.run("verify:verify", {
+      address: contractsFile[networkName].utils.dxdVestingFactory,
+      contract: `${DXDVestingFactory._hArtifact.sourceName}:${DXDVestingFactory._hArtifact.contractName}`,
+      constructorArguments: [contractsFile[networkName].votingMachines.dxd.token],
+    });
+    console.error("DXDVestingFactory verified", contractsFile[networkName].utils.dxdVestingFactory);
+  } catch(e) {
+    console.error("Couldnt verify DXDVestingFactory", contractsFile[networkName].utils.dxdVestingFactory);
+  }
 }
 
 main()
