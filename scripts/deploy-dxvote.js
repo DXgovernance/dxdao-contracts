@@ -83,18 +83,18 @@ async function main() {
 
   // Deploy Multicall
   let multicall;
-  if (contractsFile[networkName].multicall) {
-    console.log('Using Multicall already deployed on', contractsFile[networkName].multicall);
-    multicall = await Multicall.at(contractsFile[networkName].multicall);
+  if (contractsFile[networkName].utils.multicall) {
+    console.log('Using Multicall already deployed on', contractsFile[networkName].utils.multicall);
+    multicall = await Multicall.at(contractsFile[networkName].utils.multicall);
   } else {
     console.log('Deploying Multicall...');
     multicall = await Multicall.new();
     console.log("Multicall deployed to:", multicall.address);
+    await waitBlocks(1);
   }
   contractsFile[networkName].utils.multicall = multicall.address;
   saveContractsFile(contractsFile);
   
-  await waitBlocks(1);
 
   // Deploy and mint reputation
   let dxReputation;
@@ -141,8 +141,6 @@ async function main() {
   contractsFile[networkName].votingMachines.dxd.token = votingMachineToken.address;
   saveContractsFile(contractsFile);
   
-  await waitBlocks(1);
-
   // Deploy DXAvatar
   let dxAvatar;
   if (contractsFile[networkName].avatar) {
@@ -157,8 +155,8 @@ async function main() {
     contractsFile[networkName].avatar = dxAvatar.address;
     contractsFile[networkName].token = votingMachineToken.address;
     saveContractsFile(contractsFile);
+    await waitBlocks(1);
   }
-  await waitBlocks(1);
   
   // Deploy DXcontroller and transfer avatar to controller
   let dxController;
@@ -173,8 +171,8 @@ async function main() {
     await dxReputation.transferOwnership(dxController.address);
     contractsFile[networkName].controller = dxController.address;
     saveContractsFile(contractsFile);
+    await waitBlocks(1);
   }
-  await waitBlocks(1);
   
   // Deploy DXDVotingMachine
   let votingMachine;
@@ -186,7 +184,7 @@ async function main() {
     votingMachine = await DXDVotingMachine.new(votingMachineToken.address);
     console.log("DXDVotingMachine deployed to:", votingMachine.address);
     contractsFile[networkName].votingMachines.dxd.address = votingMachine.address;
-    contractsFile[networkName].votingMachines.dxd.token = await votingMachine.stakingToken();
+    contractsFile[networkName].votingMachines.dxd.token = votingMachineToken.address;
     saveContractsFile(contractsFile);
   }
   await waitBlocks(1);
