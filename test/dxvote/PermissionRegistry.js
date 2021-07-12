@@ -53,7 +53,19 @@ contract("PermissionRegistry", function(accounts) {
       [20000, 10000, 70000]
     );
     votingMachine = await helpers.setupGenesisProtocol(
-      accounts, standardTokenMock.address, 'dxd'
+      accounts, standardTokenMock.address, 'dxd',
+      constants.NULL_ADDRESS, // voteOnBehalf
+      50, // queuedVoteRequiredPercentage
+      172800, // queuedVotePeriodLimit
+      86400, // boostedVotePeriodLimit
+      3600, // preBoostedVotePeriodLimit
+      2000, // thresholdConst
+      0, // quietEndingPeriod
+      0, // proposingRepReward
+      0, // votersReputationLossRatio
+      15, // minimumDaoBounty
+      10, // daoBountyConst
+      0 // activationTime
     );
     
     permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
