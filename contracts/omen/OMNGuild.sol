@@ -217,11 +217,7 @@ contract OMNGuild is ERC20Guild {
     
     /// @dev Ends a guild proposal by executing the proposal if it passed
     /// @param guildProposalId the id of the voting machine
-    function endGuildProposal(uint guildProposalId) override public {
-        require(
-            proposalsForMarketValidation[proposalId] == bytes32(0),
-            "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
-        );
+    function endGuildProposal(uint guildProposalId) public {
         Proposal storage guildValidProposal = proposals[guildProposals[guildProposalId].Valid];
         Proposal storage guildInvalidProposal = proposals[guildProposals[guildProposalId].Invalid];
         
@@ -237,12 +233,12 @@ contract OMNGuild is ERC20Guild {
         require(guildInvalidProposal.endTime < block.timestamp, "OMNGuild: guild invalid proposal hasnt ended yet");
         
         if (guildValidProposal.totalVotes > guildInvalidProposal.totalVotes) {
-            _endProposal(guildValidationProposals[questionId].guildValid);
+            _endProposal(guildProposals[guildProposalId].Valid);
             guildInvalidProposal.state = ProposalState.Rejected;
-            emit ProposalRejected(guildValidationProposals[questionId].guildInvalid);
+            emit ProposalRejected(guildProposals[guildProposalId].Invalid);
         } else {
             guildValidProposal.state = ProposalState.Rejected;
-            emit ProposalRejected(guildValidationProposals[questionId].guildValid);
+            emit ProposalRejected(guildProposals[guildProposalId].Valid);
         }
     }
     
@@ -386,13 +382,13 @@ contract OMNGuild is ERC20Guild {
     /// @param value The ETH value to be sent on each call to be executed
     /// @param description A short description of the proposal
     /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
-    function createProposal (
+    function createGuildProposal (
         address[] memory to,
         bytes[] memory data,
         uint256[] memory value,
         string memory description,
         bytes memory contentHash
-    ) override public virtual isInitialized returns(uint) {
+    ) public virtual isInitialized returns(uint) {
         
         uint256  proposalTime_      =  proposalTime;
         uint256  votesForCreation_  =  votesForCreation;
@@ -406,9 +402,9 @@ contract OMNGuild is ERC20Guild {
         guildProposalCnt+=1;
             
         guildProposals[guildProposalCnt].Valid = super.createProposal(to, data, value, description, contentHash);
-        guildProposals[guildProposalCnt].InValid = super.createProposal(to, data, value, description, contentHash);
+        guildProposals[guildProposalCnt].Invalid = super.createProposal(to, data, value, description, contentHash);
         proposalsForGuild[guildProposals[guildProposalCnt].Valid] = guildProposalCnt;
-        proposalsForGuild[guildProposals[guildProposalCnt].InValid] = guildProposalCnt;
+        proposalsForGuild[guildProposals[guildProposalCnt].Invalid] = guildProposalCnt;
 
         // revert overrides
         proposalTime      =  proposalTime_;
