@@ -18,6 +18,7 @@ contract OMNGuild is ERC20Guild {
 
     // The max amount of votes that can de used in a proposal
     uint256 public maxAmountVotes;
+    uint256 public guildProposalCnt;
     
     // The address of the realit.io smart contract
     IRealitio public realitIO;
@@ -30,6 +31,14 @@ contract OMNGuild is ERC20Guild {
     uint256 public unsuccessfulVoteReward;
     
     // realit.io Question IDs => Market validation proposals
+    struct GuildProposal {
+      bytes32 Valid;
+      bytes32 Invalid;
+    }
+
+    mapping(bytes32 => uint256) public proposalsForGuild;
+    mapping(uint256 => GuildProposal) public guildProposals;
+
     struct MarketValidationProposal {
       bytes32 marketValid;
       bytes32 marketInvalid;
@@ -194,12 +203,47 @@ contract OMNGuild is ERC20Guild {
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) override public {
         require(
+            proposalsForGuild[proposalId] == 0,
+            "OMNGuild: Use endGuildProposal to end proposals to validate market"
+        );
+        require(
             proposalsForMarketValidation[proposalId] == bytes32(0),
             "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
         );
         require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
         require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasnt ended yet");
         _endProposal(proposalId);
+    }
+    
+    /// @dev Ends a guild proposal by executing the proposal if it passed
+    /// @param guildProposalId the id of the voting machine
+    function endGuildProposal(uint guildProposalId) override public {
+        require(
+            proposalsForMarketValidation[proposalId] == bytes32(0),
+            "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
+        );
+        Proposal storage guildValidProposal = proposals[guildProposals[guildProposalId].Valid];
+        Proposal storage guildInvalidProposal = proposals[guildProposals[guildProposalId].Invalid];
+        
+        require(
+            guildValidProposal.state == ProposalState.Submitted,
+            "OMNGuild: guild valid proposal already executed"
+        );
+        require(
+            guildInvalidProposal.state == ProposalState.Submitted,
+            "OMNGuild: guild invalid proposal already executed"
+        );
+        require(guildValidProposal.endTime < block.timestamp, "OMNGuild: guild valid proposal hasnt ended yet");
+        require(guildInvalidProposal.endTime < block.timestamp, "OMNGuild: guild invalid proposal hasnt ended yet");
+        
+        if (guildValidProposal.totalVotes > guildInvalidProposal.totalVotes) {
+            _endProposal(guildValidationProposals[questionId].guildValid);
+            guildInvalidProposal.state = ProposalState.Rejected;
+            emit ProposalRejected(guildValidationProposals[questionId].guildInvalid);
+        } else {
+            guildValidProposal.state = ProposalState.Rejected;
+            emit ProposalRejected(guildValidationProposals[questionId].guildValid);
+        }
     }
     
     /// @dev Claim the vote rewards of multiple proposals at once
@@ -348,7 +392,7 @@ contract OMNGuild is ERC20Guild {
         uint256[] memory value,
         string memory description,
         bytes memory contentHash
-    ) override public virtual isInitialized returns(bytes32) {
+    ) override public virtual isInitialized returns(uint) {
         
         uint256  proposalTime_      =  proposalTime;
         uint256  votesForCreation_  =  votesForCreation;
@@ -358,13 +402,18 @@ contract OMNGuild is ERC20Guild {
             proposalTime       =  specialProposerPermissions[msg.sender].proposalTime;
             votesForCreation   =  specialProposerPermissions[msg.sender].votesForCreation;
         }
+        
+        guildProposalCnt+=1;
             
-        bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
+        guildProposals[guildProposalCnt].Valid = super.createProposal(to, data, value, description, contentHash);
+        guildProposals[guildProposalCnt].InValid = super.createProposal(to, data, value, description, contentHash);
+        proposalsForGuild[guildProposals[guildProposalCnt].Valid] = guildProposalCnt;
+        proposalsForGuild[guildProposals[guildProposalCnt].InValid] = guildProposalCnt;
 
         // revert overrides
         proposalTime      =  proposalTime_;
         votesForCreation  =  votesForCreation_;
 
-        return proposalId;
+        return guildProposalCnt-1;
     }
 }
