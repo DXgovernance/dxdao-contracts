@@ -38,6 +38,10 @@ contract OMNGuild is ERC20Guild {
 
     mapping(bytes32 => uint256) public proposalsForGuild;
     mapping(uint256 => GuildProposal) public guildProposals;
+    event GuildProposalCreated(uint indexed guildProposalId);
+    event GuildProposalRejected(uint indexed guildProposalId);
+    event GuildProposalExecuted(uint indexed guildProposalId);
+    event GuildProposalEnded(uint indexed guildProposalId);
 
     struct MarketValidationProposal {
       bytes32 marketValid;
@@ -235,10 +239,10 @@ contract OMNGuild is ERC20Guild {
         if (guildValidProposal.totalVotes > guildInvalidProposal.totalVotes) {
             _endProposal(guildProposals[guildProposalId].Valid);
             guildInvalidProposal.state = ProposalState.Rejected;
-            emit ProposalRejected(guildProposals[guildProposalId].Invalid);
+            emit GuildProposalExecuted(guildProposalId);
         } else {
             guildValidProposal.state = ProposalState.Rejected;
-            emit ProposalRejected(guildProposals[guildProposalId].Valid);
+            emit GuildProposalRejected(guildProposalId);
         }
     }
     
@@ -376,6 +380,17 @@ contract OMNGuild is ERC20Guild {
         emit SetSpecialProposerPermission(_proposer, _proposalTime, _votesForCreation);
     }
 
+    function createProposal (
+        address[] memory to,
+        bytes[] memory data,
+        uint256[] memory value,
+        string memory description,
+        bytes memory contentHash
+    ) override public virtual isInitialized returns(bytes32) {
+        require(false, "OMNGuild: use createGuildProposal");
+        return bytes32(0); // to stop a warning
+        
+    }
     /// @dev Create a proposal with a static call data
     /// @param to The receiver addresses of each call to be executed
     /// @param data The data to be executed on each call to be executed
@@ -410,6 +425,7 @@ contract OMNGuild is ERC20Guild {
         proposalTime      =  proposalTime_;
         votesForCreation  =  votesForCreation_;
 
-        return guildProposalCnt-1;
+        emit GuildProposalCreated(guildProposalCnt);
+        return guildProposalCnt;
     }
 }

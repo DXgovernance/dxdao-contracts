@@ -17,7 +17,7 @@ const {
 } = require("@openzeppelin/test-helpers");
 const {
     createAndSetupGuildToken,
-    createProposal,
+    createGuildProposal,
 } = require("./helpers/guild");
 
 require("chai").should();
@@ -85,7 +85,7 @@ contract("OMNGuild", function(accounts) {
                 2*OMN_REWARD, /// _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a successful  vote
                 OMN_REWARD /// _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccessful vote
               ).encodeABI()
-        guildProposalId = await createProposal({
+        guildProposalId = await createGuildProposal({
           guild: omnGuild,
           to: [omnGuild.address],
           data: [ data ],
@@ -97,9 +97,9 @@ contract("OMNGuild", function(accounts) {
 
         await time.increase(time.duration.seconds(60*60*24*7+1000));
 
-        const receipt = await omnGuild.endProposal(guildProposalId);
-        expectEvent(receipt, "ProposalExecuted", {
-            proposalId: guildProposalId
+        const receipt = await omnGuild.endGuildProposal(guildProposalId);
+        expectEvent(receipt, "GuildProposalExecuted", {
+            guildProposalId: guildProposalId
         });
 
         const latest = (await time.latest()).toNumber();
@@ -398,21 +398,21 @@ contract("OMNGuild", function(accounts) {
                 "OMNGuild: Already voted");
         });
 
-        it("test createProposal", async function() {
+        it("test createGuildProposal", async function() {
             await expectRevert(omnGuild.setSpecialProposerPermission(accounts[2],3,4), "Only callable by the guild");
 
             const testCall = web3.eth.abi.encodeFunctionSignature("getVotesForExecution()");
             const testData = await new web3.eth.Contract(
                   OMNGuild.abi
                 ).methods.getVotesForExecution().encodeABI();
-            const tx = await omnGuild.createProposal(
+            const tx = await omnGuild.createGuildProposal(
                 [ accounts[0] ],  //  to:
                 [ testData ],  //  data:
                 [ 0 ],  //  value:
                 "allow functions to anywhere",  //  description:
                 constants.NULL_ADDRESS,  //  contentHash:
             );
-            const testProposal = helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
+            const testProposal = helpers.getValueFromLogs(tx, "guildProposalId", "ProposalCreated");
             const setAllowanceData = await new web3.eth.Contract(
                   OMNGuild.abi
                 ).methods.setAllowance(
@@ -420,7 +420,7 @@ contract("OMNGuild", function(accounts) {
                     [ testCall ],  
                     [ true ], 
                   ).encodeABI()
-            const setAllowanceProposalId = await createProposal({
+            const setAllowanceProposalId = await createGuildProposal({
               guild: omnGuild,
               to: [ omnGuild.address ],
               data: [ setAllowanceData ],
@@ -451,7 +451,7 @@ contract("OMNGuild", function(accounts) {
                     12000000,  // proposalTime
                     0, // votesForCreation
                   ).encodeABI()
-            const setSpecialProposerPermissionProposalId = await createProposal({
+            const setSpecialProposerPermissionProposalId = await createGuildProposal({
               guild: omnGuild,
               to: [ omnGuild.address ],
               data: [ data ],
@@ -482,7 +482,7 @@ contract("OMNGuild", function(accounts) {
                 voter: accounts[0]
             });
 
-            const tx2 = await omnGuild.createProposal(
+            const tx2 = await omnGuild.createGuildProposal(
                 [ accounts[0] ],  //  to:
                 [ testData ],  //  data:
                 [ 0 ],  //  value:
@@ -498,7 +498,7 @@ contract("OMNGuild", function(accounts) {
             await time.increase(time.duration.seconds(11999998));
             await expectRevert(
                omnGuild.endProposal(testProposal2),
-               "Proposal hasnt ended yet");
+               "OMNGuild: guild valid proposal hasnt ended yet");
             await time.increase(time.duration.seconds(4));
             const receiptForTestPropsal2 = await omnGuild.endProposal(testProposal2);
             expectEvent(receiptForTestPropsal2,
@@ -583,7 +583,7 @@ contract("OMNGuild", function(accounts) {
                     2*OMN_REWARD, /// _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a successful  vote
                     OMN_REWARD /// _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccessful vote
                   ).encodeABI()
-            const guildProposalId = await createProposal({
+            const guildProposalId = await createGuildProposal({
               guild: omnGuild,
               to: [omnGuild.address],
               data: [ data ],
@@ -594,13 +594,13 @@ contract("OMNGuild", function(accounts) {
             });
 
             await expectRevert(
-                omnGuild.endProposal(guildProposalId),
-                "Proposal hasnt ended yet"
+                omnGuild.endGuildProposal(guildProposalId),
+                "OMNGuild: guild valid proposal hasnt ended yet"
             );
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
 
-            const receipt = await omnGuild.endProposal(guildProposalId);
+            const receipt = await omnGuild.endGuildProposal(guildProposalId);
             expectEvent(receipt, "ProposalExecuted", {
                 proposalId: guildProposalId
             });
@@ -628,7 +628,7 @@ contract("OMNGuild", function(accounts) {
                     2*OMN_REWARD, /// _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a successful  vote
                     OMN_REWARD /// _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccessful vote
                   ).encodeABI()
-            const guildProposalId = await createProposal({
+            const guildProposalId = await createGuildProposal({
               guild: omnGuild,
               to: [omnGuild.address],
               data: [ data ],
@@ -640,9 +640,9 @@ contract("OMNGuild", function(accounts) {
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
 
-            const receipt = await omnGuild.endProposal(guildProposalId);
-            expectEvent(receipt, "ProposalExecuted", {
-                proposalId: guildProposalId
+            const receipt = await omnGuild.endGuildProposal(guildProposalId);
+            expectEvent(receipt, "GuildProposalExecuted", {
+                guildProposalId: guildProposalId
             });
 
             const latest=(await time.latest()).toNumber();
