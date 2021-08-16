@@ -197,8 +197,7 @@ contract OMNGuild is ERC20Guild {
     
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
     /// This function cant end market validation proposals
-    /// @param proposalId The id of the proposal to be executed
-    function endProposal(bytes32 proposalId) override public {
+    function endProposal(bytes32 ) override public pure {
         revert("OMNGuild: use endGuildProposal or endMarketValidationProposal");
     }
     
@@ -351,11 +350,11 @@ contract OMNGuild is ERC20Guild {
     }
 
     function createProposal (
-        address[] memory to,
-        bytes[] memory data,
-        uint256[] memory value,
-        string memory description,
-        bytes memory contentHash
+        address[] memory ,
+        bytes[] memory ,
+        uint256[] memory ,
+        string memory ,
+        bytes memory 
     ) override public virtual isInitialized returns(bytes32) {
         require(false, "OMNGuild: use createGuildProposal");
         return bytes32(0); // to stop a warning
