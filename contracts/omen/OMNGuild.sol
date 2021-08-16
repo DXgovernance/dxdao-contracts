@@ -39,9 +39,7 @@ contract OMNGuild is ERC20Guild {
     mapping(bytes32 => uint256) public proposalsForGuild;
     mapping(uint256 => GuildProposal) public guildProposals;
     event GuildProposalCreated(uint indexed guildProposalId);
-    event GuildProposalRejected(uint indexed guildProposalId);
     event GuildProposalExecuted(uint indexed guildProposalId);
-    event GuildProposalEnded(uint indexed guildProposalId);
 
     struct MarketValidationProposal {
       bytes32 marketValid;
@@ -177,28 +175,32 @@ contract OMNGuild is ERC20Guild {
     /// @dev Ends the market validation by executing the proposal with higher votes and rejecting the other
     /// @param questionId the proposalId of the voting machine
     function endMarketValidationProposal( bytes32 questionId ) public {
-        Proposal storage marketValidProposal = proposals[marketValidationProposals[questionId].marketValid];
-        Proposal storage marketInvalidProposal = proposals[marketValidationProposals[questionId].marketInvalid];
+        bytes32 marketValidProposalId = marketValidationProposals[questionId].marketValid;
+        bytes32 marketInvalidProposalId = marketValidationProposals[questionId].marketInvalid;
+        _endValidationProposal(marketValidProposalId, marketInvalidProposalId);
+        }
         
+    function _endValidationProposal(bytes32 validId, bytes32 invalidId) private {
+        Proposal storage validProposal = proposals[validId];
+        Proposal storage invalidProposal = proposals[invalidId];
         require(
-            marketValidProposal.state == ProposalState.Submitted,
-            "OMNGuild: Market valid proposal already executed"
+            validProposal.state == ProposalState.Submitted &&
+            invalidProposal.state == ProposalState.Submitted,
+            "OMNGuild: proposal already executed"
         );
         require(
-            marketInvalidProposal.state == ProposalState.Submitted,
-            "OMNGuild: Market invalid proposal already executed"
-        );
-        require(marketValidProposal.endTime < block.timestamp, "OMNGuild: Market valid proposal hasnt ended yet");
-        require(marketInvalidProposal.endTime < block.timestamp, "OMNGuild: Market invalid proposal hasnt ended yet");
+            validProposal.endTime < block.timestamp &&
+            invalidProposal.endTime < block.timestamp, 
+            "OMNGuild: proposal hasnt ended yet");
         
-        if (marketValidProposal.totalVotes > marketInvalidProposal.totalVotes) {
-            _endProposal(marketValidationProposals[questionId].marketValid);
-            marketInvalidProposal.state = ProposalState.Rejected;
-            emit ProposalRejected(marketValidationProposals[questionId].marketInvalid);
+        if (validProposal.totalVotes >= invalidProposal.totalVotes) {
+            _endProposal(validId);
+            invalidProposal.state = ProposalState.Rejected;
+            emit ProposalRejected(invalidId);
         } else {
-            _endProposal(marketValidationProposals[questionId].marketInvalid);
-            marketValidProposal.state = ProposalState.Rejected;
-            emit ProposalRejected(marketValidationProposals[questionId].marketValid);
+            _endProposal(invalidId);
+            validProposal.state = ProposalState.Rejected;
+            emit ProposalRejected(validId);
         }
     }
     
@@ -206,44 +208,17 @@ contract OMNGuild is ERC20Guild {
     /// This function cant end market validation proposals
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) override public {
-        require(
-            proposalsForGuild[proposalId] == 0,
-            "OMNGuild: Use endGuildProposal to end proposals to validate market"
-        );
-        require(
-            proposalsForMarketValidation[proposalId] == bytes32(0),
-            "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
-        );
-        require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
-        require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasnt ended yet");
-        _endProposal(proposalId);
+        revert("OMNGuild: use endGuildProposal or endMarketValidationProposal");
     }
     
     /// @dev Ends a guild proposal by executing the proposal if it passed
     /// @param guildProposalId the id of the voting machine
     function endGuildProposal(uint guildProposalId) public {
-        Proposal storage guildValidProposal = proposals[guildProposals[guildProposalId].Valid];
-        Proposal storage guildInvalidProposal = proposals[guildProposals[guildProposalId].Invalid];
+        bytes32 guildValidProposalId = guildProposals[guildProposalId].Valid;
+        bytes32 guildInvalidProposalId = guildProposals[guildProposalId].Invalid;
         
-        require(
-            guildValidProposal.state == ProposalState.Submitted,
-            "OMNGuild: guild valid proposal already executed"
-        );
-        require(
-            guildInvalidProposal.state == ProposalState.Submitted,
-            "OMNGuild: guild invalid proposal already executed"
-        );
-        require(guildValidProposal.endTime < block.timestamp, "OMNGuild: guild valid proposal hasnt ended yet");
-        require(guildInvalidProposal.endTime < block.timestamp, "OMNGuild: guild invalid proposal hasnt ended yet");
-        
-        if (guildValidProposal.totalVotes > guildInvalidProposal.totalVotes) {
-            _endProposal(guildProposals[guildProposalId].Valid);
-            guildInvalidProposal.state = ProposalState.Rejected;
-            emit GuildProposalExecuted(guildProposalId);
-        } else {
-            guildValidProposal.state = ProposalState.Rejected;
-            emit GuildProposalRejected(guildProposalId);
-        }
+        _endValidationProposal(guildValidProposalId, guildInvalidProposalId);
+        emit GuildProposalExecuted(guildProposalId);
     }
     
     /// @dev Claim the vote rewards of multiple proposals at once
@@ -389,7 +364,6 @@ contract OMNGuild is ERC20Guild {
     ) override public virtual isInitialized returns(bytes32) {
         require(false, "OMNGuild: use createGuildProposal");
         return bytes32(0); // to stop a warning
-        
     }
     /// @dev Create a proposal with a static call data
     /// @param to The receiver addresses of each call to be executed
@@ -417,7 +391,8 @@ contract OMNGuild is ERC20Guild {
         guildProposalCnt+=1;
             
         guildProposals[guildProposalCnt].Valid = super.createProposal(to, data, value, description, contentHash);
-        guildProposals[guildProposalCnt].Invalid = super.createProposal(to, data, value, description, contentHash);
+        bytes[] memory noop = new bytes[](1);
+        guildProposals[guildProposalCnt].Invalid = super.createProposal(to, noop, value, description, contentHash);
         proposalsForGuild[guildProposals[guildProposalCnt].Valid] = guildProposalCnt;
         proposalsForGuild[guildProposals[guildProposalCnt].Invalid] = guildProposalCnt;
 

@@ -98,6 +98,7 @@ contract("OMNGuild", function(accounts) {
         await time.increase(time.duration.seconds(60*60*24*7+1000));
 
         const receipt = await omnGuild.endGuildProposal(guildProposalId);
+            console.log(receipt);
         expectEvent(receipt, "GuildProposalExecuted", {
             guildProposalId: guildProposalId
         });
@@ -121,11 +122,11 @@ contract("OMNGuild", function(accounts) {
         it("vote on and execute a market validation proposal from the omn-guild", async function() {
             await expectRevert(
                 omnGuild.endProposal(marketValidationProposalValid),
-                "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
+                "OMNGuild: use endGuildProposal or endMarketValidationProposal"
             );
             await expectRevert(
                 omnGuild.endMarketValidationProposal(questionId),
-                "OMNGuild: Market valid proposal hasnt ended yet"
+                "OMNGuild: proposal hasnt ended yet"
             );
             await expectRevert(omnGuild.setVote(
                 marketValidationProposalValid,
@@ -156,7 +157,7 @@ contract("OMNGuild", function(accounts) {
 
             await expectRevert(
                 omnGuild.endProposal(marketValidationProposalValid),
-                "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
+                "OMNGuild: use endGuildProposal or endMarketValidationProposal"
             );
             const receipt = await omnGuild.endMarketValidationProposal(questionId);
             expectEvent(receipt, "ProposalExecuted", {
@@ -164,7 +165,7 @@ contract("OMNGuild", function(accounts) {
             });
             await expectRevert(
                 omnGuild.endMarketValidationProposal(questionId),
-                "OMNGuild: Market valid proposal already executed"
+                "OMNGuild: proposal already executed"
             );
             const proposalInfo = await omnGuild.getProposal(marketValidationProposalValid);
             assert.equal(proposalInfo.state, constants.GuildProposalState.Executed);
@@ -412,7 +413,7 @@ contract("OMNGuild", function(accounts) {
                 "allow functions to anywhere",  //  description:
                 constants.NULL_ADDRESS,  //  contentHash:
             );
-            const testProposal = helpers.getValueFromLogs(tx, "guildProposalId", "ProposalCreated");
+            const testProposal = helpers.getValueFromLogs(tx, "guildProposalId", "GuildProposalCreated");
             const setAllowanceData = await new web3.eth.Contract(
                   OMNGuild.abi
                 ).methods.setAllowance(
@@ -438,8 +439,8 @@ contract("OMNGuild", function(accounts) {
             await time.increase(time.duration.seconds(60*60*24*7+1000));
             await expectRevert(omnGuild.endProposal(testProposal), "Not allowed call");
             const setAllowanceReceipt = await omnGuild.endProposal(setAllowanceProposalId);
-            expectEvent(setAllowanceReceipt, "ProposalExecuted", {
-                proposalId: setAllowanceProposalId
+            expectEvent(setAllowanceReceipt, "GuildProposalExecuted", {
+                guildProposalId: setAllowanceProposalId
             });
 
 
@@ -473,8 +474,8 @@ contract("OMNGuild", function(accounts) {
                 _proposalTime: "12000000",
                 _votesForCreation: "0"
             });
-            expectEvent(receipt, "ProposalExecuted", {
-                proposalId: setSpecialProposerPermissionProposalId
+            expectEvent(receipt, "GuildProposalExecuted", {
+                guildProposalId: setSpecialProposerPermissionProposalId
             });
 
             const releaseReceipt = await omnGuild.releaseTokens(60); 
@@ -489,7 +490,7 @@ contract("OMNGuild", function(accounts) {
                 "allow functions to anywhere",  //  description:
                 constants.NULL_ADDRESS,  //  contentHash:
             );
-            const testProposal2 = helpers.getValueFromLogs(tx2, "proposalId", "ProposalCreated");
+            const testProposal2 = helpers.getValueFromLogs(tx2, "guildProposalId", "GuildProposalCreated");
             await omnGuild.setVote(
                 testProposal2,
                 40, {
@@ -498,12 +499,12 @@ contract("OMNGuild", function(accounts) {
             await time.increase(time.duration.seconds(11999998));
             await expectRevert(
                omnGuild.endProposal(testProposal2),
-               "OMNGuild: guild valid proposal hasnt ended yet");
+               "OMNGuild: proposal hasnt ended yet");
             await time.increase(time.duration.seconds(4));
             const receiptForTestPropsal2 = await omnGuild.endProposal(testProposal2);
             expectEvent(receiptForTestPropsal2,
-                "ProposalExecuted", {
-                proposalId: testProposal2
+                "GuildProposalExecuted", {
+                guildProposalId: testProposal2
             });
         });
     });
@@ -595,14 +596,14 @@ contract("OMNGuild", function(accounts) {
 
             await expectRevert(
                 omnGuild.endGuildProposal(guildProposalId),
-                "OMNGuild: guild valid proposal hasnt ended yet"
+                "OMNGuild: proposal hasnt ended yet"
             );
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
 
             const receipt = await omnGuild.endGuildProposal(guildProposalId);
-            expectEvent(receipt, "ProposalExecuted", {
-                proposalId: guildProposalId
+            expectEvent(receipt, "GuildProposalExecuted", {
+                guildProposalId: guildProposalId
             });
 
             const latest=(await time.latest()).toNumber();
