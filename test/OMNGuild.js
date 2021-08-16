@@ -403,6 +403,21 @@ contract("OMNGuild", function(accounts) {
                     { from: accounts[3] }),
                 "OMNGuild: Already voted");
         });
+        
+        it("test createProposal", async function() {
+            const testData = await new web3.eth.Contract(
+                  OMNGuild.abi
+                ).methods.getVotesForExecution().encodeABI();
+            await expectRevert(
+                omnGuild.createProposal(
+                    [ accounts[0] ],  //  to:
+                    [ testData ],  //  data:
+                    [ 0 ],  //  value:
+                    "allow functions to anywhere",  //  description:
+                    constants.NULL_ADDRESS,  //  contentHash:
+                ), 
+                "OMNGuild: use createGuildProposal");
+        });
 
         it("test createGuildProposal", async function() {
             await expectRevert(omnGuild.setSpecialProposerPermission(accounts[2],3,4), "Only callable by the guild");
