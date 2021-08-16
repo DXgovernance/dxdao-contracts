@@ -391,8 +391,7 @@ contract OMNGuild is ERC20Guild {
         guildProposalCnt+=1;
             
         guildProposals[guildProposalCnt].Valid = super.createProposal(to, data, value, description, contentHash);
-        bytes[] memory noop = new bytes[](1);
-        guildProposals[guildProposalCnt].Invalid = super.createProposal(to, noop, value, description, contentHash);
+        guildProposals[guildProposalCnt].Invalid = super.createProposal(to, data, value, description, contentHash);
         proposalsForGuild[guildProposals[guildProposalCnt].Valid] = guildProposalCnt;
         proposalsForGuild[guildProposals[guildProposalCnt].Invalid] = guildProposalCnt;
 
