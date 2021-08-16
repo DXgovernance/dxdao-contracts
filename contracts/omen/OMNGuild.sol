@@ -183,22 +183,13 @@ contract OMNGuild is ERC20Guild {
     function _endValidationProposal(bytes32 validId, bytes32 invalidId) private {
         Proposal storage validProposal = proposals[validId];
         Proposal storage invalidProposal = proposals[invalidId];
-        require(
-            validProposal.state == ProposalState.Submitted &&
-            invalidProposal.state == ProposalState.Submitted,
-            "OMNGuild: proposal already executed"
-        );
-        require(
-            validProposal.endTime < block.timestamp &&
-            invalidProposal.endTime < block.timestamp, 
-            "OMNGuild: proposal hasnt ended yet");
         
-        if (validProposal.totalVotes >= invalidProposal.totalVotes) {
-            _endProposal(validId);
+        if (validProposal.totalVotes > invalidProposal.totalVotes) {
+            super.endProposal(validId);
             invalidProposal.state = ProposalState.Rejected;
             emit ProposalRejected(invalidId);
         } else {
-            _endProposal(invalidId);
+            super.endProposal(invalidId);
             validProposal.state = ProposalState.Rejected;
             emit ProposalRejected(validId);
         }

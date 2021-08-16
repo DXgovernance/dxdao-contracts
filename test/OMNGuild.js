@@ -96,6 +96,12 @@ contract("OMNGuild", function(accounts) {
         });
 
         await time.increase(time.duration.seconds(60*60*24*7+1000));
+        
+        await omnGuild.setPositiveVote(
+            guildProposalId,
+            40, {
+                from: accounts[4]
+            });
 
         const receipt = await omnGuild.endGuildProposal(guildProposalId);
         expectEvent(receipt, "GuildProposalExecuted", {
@@ -125,7 +131,7 @@ contract("OMNGuild", function(accounts) {
             );
             await expectRevert(
                 omnGuild.endMarketValidationProposal(questionId),
-                "OMNGuild: proposal hasnt ended yet"
+                "ERC20Guild: Proposal hasnt ended yet"
             );
             await expectRevert(omnGuild.setVote(
                 marketValidationProposalValid,
@@ -164,7 +170,7 @@ contract("OMNGuild", function(accounts) {
             });
             await expectRevert(
                 omnGuild.endMarketValidationProposal(questionId),
-                "OMNGuild: proposal already executed"
+                "ERC20Guild: Proposal already executed"
             );
             const proposalInfo = await omnGuild.getProposal(marketValidationProposalValid);
             assert.equal(proposalInfo.state, constants.GuildProposalState.Executed);
@@ -174,7 +180,7 @@ contract("OMNGuild", function(accounts) {
             assert.equal(await realitio.getFinalAnswer(questionId), soliditySha3((true)));
         });
 
-        const msgD = "OMNGuild: proposal already executed";
+        const msgD = "ERC20Guild: Proposal already executed";
         it(msgD, async function() {
             await expectRevert(
                 omnGuild.endGuildProposal(guildProposalId),
@@ -498,7 +504,7 @@ contract("OMNGuild", function(accounts) {
             await time.increase(time.duration.seconds(11999998));
             await expectRevert(
                omnGuild.endGuildProposal(testProposal2),
-               "OMNGuild: proposal hasnt ended yet");
+               "ERC20Guild: Proposal hasnt ended yet");
             await time.increase(time.duration.seconds(4));
             const receiptForTestPropsal2 = await omnGuild.endGuildProposal(testProposal2);
             expectEvent(receiptForTestPropsal2,
@@ -595,10 +601,16 @@ contract("OMNGuild", function(accounts) {
 
             await expectRevert(
                 omnGuild.endGuildProposal(guildProposalId),
-                "OMNGuild: proposal hasnt ended yet"
+                "ERC20Guild: Proposal hasnt ended yet"
             );
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
+            
+            await omnGuild.setPositiveVote(
+                guildProposalId,
+                40, {
+                    from: accounts[4]
+                });
 
             const receipt = await omnGuild.endGuildProposal(guildProposalId);
             expectEvent(receipt, "GuildProposalExecuted", {
@@ -639,6 +651,12 @@ contract("OMNGuild", function(accounts) {
             });
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
+            
+            await omnGuild.setPositiveVote(
+                guildProposalId,
+                40, {
+                    from: accounts[4]
+                });
 
             const receipt = await omnGuild.endGuildProposal(guildProposalId);
             expectEvent(receipt, "GuildProposalExecuted", {
