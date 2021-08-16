@@ -258,6 +258,10 @@ contract OMNGuild is ERC20Guild {
       // Send the total reward
       _sendTokenReward(voter, reward);
     }
+
+    function setPositiveVote(uint guildProposalId, uint256 amount) public {
+        setVote(guildProposals[guildProposalId].Valid, amount);
+    }
     
     /// @dev Set the amount of tokens to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote
@@ -391,7 +395,8 @@ contract OMNGuild is ERC20Guild {
         guildProposalCnt+=1;
             
         guildProposals[guildProposalCnt].Valid = super.createProposal(to, data, value, description, contentHash);
-        guildProposals[guildProposalCnt].Invalid = super.createProposal(to, data, value, description, contentHash);
+        bytes[] memory noop = new bytes[](1);
+        guildProposals[guildProposalCnt].Invalid = super.createProposal(to, noop, value, description, contentHash);
         proposalsForGuild[guildProposals[guildProposalCnt].Valid] = guildProposalCnt;
         proposalsForGuild[guildProposals[guildProposalCnt].Invalid] = guildProposalCnt;
 
