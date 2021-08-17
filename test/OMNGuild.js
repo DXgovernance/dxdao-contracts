@@ -456,6 +456,11 @@ contract("OMNGuild", function(accounts) {
                 });
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
+            await omnGuild.setPositiveVote(
+                testProposal,
+                40, {
+                    from: accounts[4]
+                });
             await expectRevert(omnGuild.endGuildProposal(testProposal), "Not allowed call");
             const setAllowanceReceipt = await omnGuild.endGuildProposal(setAllowanceProposalId);
             expectEvent(setAllowanceReceipt, "GuildProposalExecuted", {
