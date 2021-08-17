@@ -418,7 +418,7 @@ contract("OMNGuild", function(accounts) {
                 "OMNGuild: use createGuildProposal");
         });
 
-        it("test createGuildProposal", async function() {
+        it("test createGuildProposal passing proposal", async function() {
             await expectRevert(omnGuild.setSpecialProposerPermission(accounts[2],3,4), "Only callable by the guild");
 
             const testCall = web3.eth.abi.encodeFunctionSignature("getVotesForExecution()");
@@ -524,6 +524,48 @@ contract("OMNGuild", function(accounts) {
             expectEvent(receiptForTestPropsal2,
                 "GuildProposalExecuted", {
                 guildProposalId: testProposal2
+            });
+        });
+
+        it("test createGuildProposal failing proposal", async function() {
+
+            const testCall = web3.eth.abi.encodeFunctionSignature("getVotesForExecution()");
+            const testData = await new web3.eth.Contract(
+                  OMNGuild.abi
+                ).methods.getVotesForExecution().encodeABI();
+            const tx = await omnGuild.createGuildProposal(
+                [ accounts[0] ],  //  to:
+                [ testData ],  //  data:
+                [ 0 ],  //  value:
+                "allow functions to anywhere",  //  description:
+                constants.NULL_ADDRESS,  //  contentHash:
+            );
+            const testProposal = helpers.getValueFromLogs(tx, "guildProposalId", "GuildProposalCreated");
+            const setAllowanceData = await new web3.eth.Contract(
+                  OMNGuild.abi
+                ).methods.setAllowance(
+                    [ accounts[0] ],
+                    [ testCall ],  
+                    [ true ], 
+                  ).encodeABI()
+            const setAllowanceProposalId = await createGuildProposal({
+              guild: omnGuild,
+              to: [ omnGuild.address ],
+              data: [ setAllowanceData ],
+              value: [0],
+              description: "setAllowance",
+              contentHash: constants.NULL_ADDRESS,
+              account: accounts[1],
+            });
+
+            await time.increase(time.duration.seconds(60*60*24*7+1000));
+            await expectRevert(omnGuild.endGuildProposal(testProposal), "Not allowed call");
+            const setAllowanceReceipt = await omnGuild.endGuildProposal(setAllowanceProposalId);
+            expectEvent(setAllowanceReceipt, "GuildProposalExecuted", {
+                guildProposalId: setAllowanceProposalId
+            });
+            expectEvent(setAllowanceReceipt, "GuildProposalRejected", {
+                guildProposalId: setAllowanceProposalId
             });
         });
     });

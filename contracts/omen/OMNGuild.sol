@@ -40,6 +40,7 @@ contract OMNGuild is ERC20Guild {
     mapping(uint256 => GuildProposal) public guildProposals;
     event GuildProposalCreated(uint indexed guildProposalId);
     event GuildProposalExecuted(uint indexed guildProposalId);
+    event GuildProposalRejected(uint indexed guildProposalId);
 
     struct MarketValidationProposal {
       bytes32 marketValid;
@@ -113,7 +114,7 @@ contract OMNGuild is ERC20Guild {
             = true;
         callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,uint256,uint256)"))]
             = true;
-        callPermissions[address(this)][bytes4(keccak256("doNothing()"))]
+        callPermissions[address(this)][bytes4(keccak256("doNothing(uint)"))]
             = true;
     }
     
@@ -362,7 +363,8 @@ contract OMNGuild is ERC20Guild {
         return bytes32(0); // to stop a warning
     }
 
-    function doNothing() private pure {
+    function doNothing(uint guildProposalId) private {
+        emit GuildProposalRejected(guildProposalId);
     }
     /// @dev Create a proposal with a static call data
     /// @param to The receiver addresses of each call to be executed
@@ -391,7 +393,7 @@ contract OMNGuild is ERC20Guild {
             
         guildProposals[guildProposalCnt].Valid = super.createProposal(to, data, value, description, contentHash);
         bytes[] memory noop = new bytes[](1); // need a do nothing call here
-        noop[0] = abi.encodeWithSelector(bytes4(keccak256("doNothing()")));
+        noop[0] = abi.encodeWithSelector(bytes4(keccak256("doNothing(uint)")),guildProposalCnt);
         guildProposals[guildProposalCnt].Invalid = super.createProposal(to, noop, value, description, contentHash);
         proposalsForGuild[guildProposals[guildProposalCnt].Valid] = guildProposalCnt;
         proposalsForGuild[guildProposals[guildProposalCnt].Invalid] = guildProposalCnt;
