@@ -264,22 +264,21 @@ contract("OMNGuild", function(accounts) {
                 "OMNGuild: Already voted"
             );
         });
-//         incopatible type, i would have to get a guildproposal proposal id somehow to fix this
-//        const msgE = "OMNGuild: Cant claim from proposal that isnt for market validation";
-//        it(msgE, async function() {
-//            const txVote = await omnGuild.setVote(
-//                marketValidationProposalValid,
-//                10, {
-//                    from: accounts[4]
-//                });
-//            expectEvent(txVote, "VoteAdded", {
-//                proposalId: marketValidationProposalValid
-//            });
-//            await expectRevert(
-//                omnGuild.claimMarketValidationVoteRewards([guildProposalId],accounts[4]),
-//                msgE
-//            );
-//        });
+        const msgE = "OMNGuild: Cant claim from proposal that isnt for market validation";
+        it(msgE, async function() {
+            const txVote = await omnGuild.setVote(
+                marketValidationProposalValid,
+                10, {
+                    from: accounts[4]
+                });
+            expectEvent(txVote, "VoteAdded", {
+                proposalId: marketValidationProposalValid
+            });
+            await expectRevert(
+                omnGuild.claimMarketValidationVoteRewards(["0x123456789"],accounts[4]),
+                msgE
+            );
+        });
 
         it("claim rewards for successful vote", async function() {
             const txVote = await omnGuild.setVote(
