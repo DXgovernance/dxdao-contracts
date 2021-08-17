@@ -113,6 +113,8 @@ contract OMNGuild is ERC20Guild {
             = true;
         callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,uint256,uint256)"))]
             = true;
+        callPermissions[address(this)][bytes4(keccak256("doNothing()"))]
+            = true;
     }
     
     /// @dev Set OMNGuild specific parameters
@@ -359,6 +361,9 @@ contract OMNGuild is ERC20Guild {
         require(false, "OMNGuild: use createGuildProposal");
         return bytes32(0); // to stop a warning
     }
+
+    function doNothing() private pure {
+    }
     /// @dev Create a proposal with a static call data
     /// @param to The receiver addresses of each call to be executed
     /// @param data The data to be executed on each call to be executed
@@ -385,7 +390,8 @@ contract OMNGuild is ERC20Guild {
         guildProposalCnt+=1;
             
         guildProposals[guildProposalCnt].Valid = super.createProposal(to, data, value, description, contentHash);
-        bytes[] memory noop = new bytes[](1);
+        bytes[] memory noop = new bytes[](1); // need a do nothing call here
+        noop[0] = abi.encodeWithSelector(bytes4(keccak256("doNothing()")));
         guildProposals[guildProposalCnt].Invalid = super.createProposal(to, noop, value, description, contentHash);
         proposalsForGuild[guildProposals[guildProposalCnt].Valid] = guildProposalCnt;
         proposalsForGuild[guildProposals[guildProposalCnt].Invalid] = guildProposalCnt;
