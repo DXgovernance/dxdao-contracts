@@ -114,7 +114,7 @@ contract OMNGuild is ERC20Guild {
             = true;
         callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,uint256,uint256)"))]
             = true;
-        callPermissions[address(this)][bytes4(keccak256("doNothing(uint)"))]
+        callPermissions[address(this)][bytes4(keccak256("doNothing(uint256)"))]
             = true;
     }
     
@@ -259,7 +259,7 @@ contract OMNGuild is ERC20Guild {
     /// @dev Set the amount of tokens to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote
     /// @param amount The amount of votes to be set in the proposal
-    function setVote(bytes32 proposalId, uint256 amount) override public virtual {
+    function setVote(bytes32 proposalId, uint256 amount) override public {
         require(
             votesOfAt(msg.sender, proposals[proposalId].snapshotId) >=  amount,
             "OMNGuild: Invalid amount"
@@ -287,7 +287,7 @@ contract OMNGuild is ERC20Guild {
     /// @dev Set the amount of tokens to vote in multiple proposals
     /// @param proposalIds The ids of the proposals to set the votes
     /// @param amounts The amount of votes to be set in each proposal
-    function setVotes(bytes32[] memory proposalIds, uint256[] memory amounts) override public virtual {
+    function setVotes(bytes32[] memory proposalIds, uint256[] memory amounts) override public {
         require(
             proposalIds.length == amounts.length,
             "OMNGuild: Wrong length of proposalIds or amounts"
@@ -344,7 +344,7 @@ contract OMNGuild is ERC20Guild {
         address _proposer,
         uint256 _proposalTime, 
         uint256 _votesForCreation
-    ) public virtual isInitialized {
+    ) public isInitialized {
         require(msg.sender == address(this), "OMNGuild: Only callable by the guild itself");
         specialProposerPermissions[_proposer].exists = true;
         specialProposerPermissions[_proposer].proposalTime = _proposalTime;
@@ -358,12 +358,12 @@ contract OMNGuild is ERC20Guild {
         uint256[] memory ,
         string memory ,
         bytes memory 
-    ) override public virtual isInitialized returns(bytes32) {
+    ) override public isInitialized returns(bytes32) {
         require(false, "OMNGuild: use createGuildProposal");
         return bytes32(0); // to stop a warning
     }
 
-    function doNothing(uint guildProposalId) private {
+    function doNothing(uint256 guildProposalId) public {
         emit GuildProposalRejected(guildProposalId);
     }
     /// @dev Create a proposal with a static call data
@@ -378,7 +378,7 @@ contract OMNGuild is ERC20Guild {
         uint256[] memory value,
         string memory description,
         bytes memory contentHash
-    ) public virtual isInitialized returns(uint) {
+    ) public isInitialized returns(uint) {
         
         uint256  proposalTime_      =  proposalTime;
         uint256  votesForCreation_  =  votesForCreation;
@@ -393,8 +393,10 @@ contract OMNGuild is ERC20Guild {
             
         guildProposals[guildProposalCnt].Valid = super.createProposal(to, data, value, description, contentHash);
         bytes[] memory noop = new bytes[](1); // need a do nothing call here
-        noop[0] = abi.encodeWithSelector(bytes4(keccak256("doNothing(uint)")),guildProposalCnt);
-        guildProposals[guildProposalCnt].Invalid = super.createProposal(to, noop, value, description, contentHash);
+        noop[0] = abi.encodeWithSelector(bytes4(keccak256("doNothing(uint256)")),guildProposalCnt);
+        address[] memory tothis = new address[](1);
+        tothis[0] = address(this);
+        guildProposals[guildProposalCnt].Invalid = super.createProposal(tothis, noop, value, description, contentHash);
         proposalsForGuild[guildProposals[guildProposalCnt].Valid] = guildProposalCnt;
         proposalsForGuild[guildProposals[guildProposalCnt].Invalid] = guildProposalCnt;
 
