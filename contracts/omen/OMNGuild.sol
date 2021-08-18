@@ -25,12 +25,12 @@ contract OMNGuild is ERC20Guild {
     
     // The function signature of function to be exeucted by the guild to resolve a question in realit.io
     bytes4 public submitAnswerByArbitratorSignature;
+    bytes4 public doNothingSignature;
     
     // This amount of OMN tokens to be distributed among voters depending on their vote decision and amount
     uint256 public successfulVoteReward;
     uint256 public unsuccessfulVoteReward;
     
-    // realit.io Question IDs => Market validation proposals
     struct GuildProposal {
       bytes32 Valid;
       bytes32 Invalid;
@@ -42,6 +42,7 @@ contract OMNGuild is ERC20Guild {
     event GuildProposalExecuted(uint indexed guildProposalId);
     event GuildProposalRejected(uint indexed guildProposalId);
 
+    // realit.io Question IDs => Market validation proposals
     struct MarketValidationProposal {
       bytes32 marketValid;
       bytes32 marketInvalid;
@@ -109,12 +110,13 @@ contract OMNGuild is ERC20Guild {
         submitAnswerByArbitratorSignature = bytes4(
           keccak256("submitAnswerByArbitrator(bytes32,bytes32,address)")
         );
+        doNothingSignature = bytes4(keccak256("doNothing(uint256)"));
         callPermissions[address(realitIO)][submitAnswerByArbitratorSignature] = true;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256)"))]
             = true;
         callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,uint256,uint256)"))]
             = true;
-        callPermissions[address(this)][bytes4(keccak256("doNothing(uint256)"))]
+        callPermissions[address(this)][doNothingSignature]
             = true;
     }
     
@@ -393,7 +395,7 @@ contract OMNGuild is ERC20Guild {
             
         guildProposals[guildProposalCnt].Valid = super.createProposal(to, data, value, description, contentHash);
         bytes[] memory noop = new bytes[](1); // need a do nothing call here
-        noop[0] = abi.encodeWithSelector(bytes4(keccak256("doNothing(uint256)")),guildProposalCnt);
+        noop[0] = abi.encodeWithSelector(doNothingSignature,guildProposalCnt);
         address[] memory tothis = new address[](1);
         tothis[0] = address(this);
         guildProposals[guildProposalCnt].Invalid = super.createProposal(tothis, noop, value, description, contentHash);
