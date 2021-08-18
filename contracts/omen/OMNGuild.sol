@@ -31,21 +31,16 @@ contract OMNGuild is ERC20Guild {
     uint256 public successfulVoteReward;
     uint256 public unsuccessfulVoteReward;
     
-    struct GuildProposal {
-      bytes32 Valid;
-      bytes32 Invalid;
-    }
-
     mapping(bytes32 => uint256) public proposalsForGuild;
-    mapping(uint256 => GuildProposal) public guildProposals;
+    mapping(uint256 => MarketValidationProposal) public guildProposals;
     event GuildProposalCreated(uint indexed guildProposalId);
     event GuildProposalExecuted(uint indexed guildProposalId);
     event GuildProposalRejected(uint indexed guildProposalId);
 
     // realit.io Question IDs => Market validation proposals
     struct MarketValidationProposal {
-      bytes32 marketValid;
-      bytes32 marketInvalid;
+      bytes32 YES;
+      bytes32 NO;
     }
     mapping(bytes32 => MarketValidationProposal) public marketValidationProposals;
     
@@ -162,17 +157,17 @@ contract OMNGuild is ERC20Guild {
         _data[0] = abi.encodeWithSelector(
             submitAnswerByArbitratorSignature, questionId, keccak256(abi.encodePacked(true)), address(this)
         );
-        marketValidationProposals[questionId].marketValid = 
+        marketValidationProposals[questionId].YES = 
             _createProposal( _to, _data, _value, string("Market valid"), _contentHash );
         
-        proposalsForMarketValidation[marketValidationProposals[questionId].marketValid] = questionId;
+        proposalsForMarketValidation[marketValidationProposals[questionId].YES] = questionId;
         // Create market invalid proposal
         _data[0] = abi.encodeWithSelector(
             submitAnswerByArbitratorSignature, questionId, keccak256(abi.encodePacked(false)), address(this)
         );
-        marketValidationProposals[questionId].marketInvalid = 
+        marketValidationProposals[questionId].NO = 
             _createProposal( _to, _data, _value, string("Market invalid"), _contentHash );
-        proposalsForMarketValidation[marketValidationProposals[questionId].marketInvalid] = questionId;
+        proposalsForMarketValidation[marketValidationProposals[questionId].NO] = questionId;
 
         realitIO.notifyOfArbitrationRequest(questionId, msg.sender, 0);
     }
@@ -180,8 +175,8 @@ contract OMNGuild is ERC20Guild {
     /// @dev Ends the market validation by executing the proposal with higher votes and rejecting the other
     /// @param questionId the proposalId of the voting machine
     function endMarketValidationProposal( bytes32 questionId ) public {
-        bytes32 marketValidProposalId = marketValidationProposals[questionId].marketValid;
-        bytes32 marketInvalidProposalId = marketValidationProposals[questionId].marketInvalid;
+        bytes32 marketValidProposalId = marketValidationProposals[questionId].YES;
+        bytes32 marketInvalidProposalId = marketValidationProposals[questionId].NO;
         _endValidationProposal(marketValidProposalId, marketInvalidProposalId);
         }
         
@@ -209,8 +204,8 @@ contract OMNGuild is ERC20Guild {
     /// @dev Ends a guild proposal by executing the proposal if it passed
     /// @param guildProposalId the id of the voting machine
     function endGuildProposal(uint guildProposalId) public {
-        bytes32 guildValidProposalId = guildProposals[guildProposalId].Valid;
-        bytes32 guildInvalidProposalId = guildProposals[guildProposalId].Invalid;
+        bytes32 guildValidProposalId = guildProposals[guildProposalId].YES;
+        bytes32 guildInvalidProposalId = guildProposals[guildProposalId].NO;
         
         _endValidationProposal(guildValidProposalId, guildInvalidProposalId);
         emit GuildProposalExecuted(guildProposalId);
@@ -255,7 +250,7 @@ contract OMNGuild is ERC20Guild {
     }
 
     function setPositiveVote(uint guildProposalId, uint256 amount) public {
-        setVote(guildProposals[guildProposalId].Valid, amount);
+        setVote(guildProposals[guildProposalId].YES, amount);
     }
     
     /// @dev Set the amount of tokens to vote in a proposal
@@ -269,12 +264,12 @@ contract OMNGuild is ERC20Guild {
 
         require(proposals[proposalId].votes[msg.sender] == 0, "OMNGuild: Already voted on proposal");
         require(
-            proposals[marketValidationProposals[proposalsForMarketValidation[proposalId]].marketValid]
+            proposals[marketValidationProposals[proposalsForMarketValidation[proposalId]].YES]
                 .votes[msg.sender] == 0,
             "OMNGuild: Already voted on market valid proprosal"
         );
         require(
-            proposals[marketValidationProposals[proposalsForMarketValidation[proposalId]].marketInvalid]
+            proposals[marketValidationProposals[proposalsForMarketValidation[proposalId]].NO]
                 .votes[msg.sender]  == 0,
             "OMNGuild: Already voted on market invalid proposal"
         );
@@ -301,12 +296,12 @@ contract OMNGuild is ERC20Guild {
             );
             require(proposals[proposalIds[i]].votes[msg.sender] == 0, "OMNGuild: Already voted on this proprosal");
             require(
-                proposals[marketValidationProposals[proposalsForMarketValidation[proposalIds[i]]].marketValid]
+                proposals[marketValidationProposals[proposalsForMarketValidation[proposalIds[i]]].YES]
                     .votes[msg.sender] == 0,
                 "OMNGuild: Already voted on this market valid proposal"
             );
             require(
-                proposals[marketValidationProposals[proposalsForMarketValidation[proposalIds[i]]].marketInvalid]
+                proposals[marketValidationProposals[proposalsForMarketValidation[proposalIds[i]]].NO]
                     .votes[msg.sender]  == 0,
                 "OMNGuild: Already voted on this market invalid proposal"
             );
@@ -393,14 +388,14 @@ contract OMNGuild is ERC20Guild {
         
         guildProposalCnt+=1;
             
-        guildProposals[guildProposalCnt].Valid = super.createProposal(to, data, value, description, contentHash);
+        guildProposals[guildProposalCnt].YES = super.createProposal(to, data, value, description, contentHash);
         bytes[] memory noop = new bytes[](1); // need a do nothing call here
         noop[0] = abi.encodeWithSelector(doNothingSignature,guildProposalCnt);
         address[] memory tothis = new address[](1);
         tothis[0] = address(this);
-        guildProposals[guildProposalCnt].Invalid = super.createProposal(tothis, noop, value, description, contentHash);
-        proposalsForGuild[guildProposals[guildProposalCnt].Valid] = guildProposalCnt;
-        proposalsForGuild[guildProposals[guildProposalCnt].Invalid] = guildProposalCnt;
+        guildProposals[guildProposalCnt].NO = super.createProposal(tothis, noop, value, description, contentHash);
+        proposalsForGuild[guildProposals[guildProposalCnt].YES] = guildProposalCnt;
+        proposalsForGuild[guildProposals[guildProposalCnt].NO] = guildProposalCnt;
 
         // revert overrides
         proposalTime      =  proposalTime_;
