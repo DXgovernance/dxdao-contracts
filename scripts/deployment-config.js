@@ -36,7 +36,7 @@ const networksConfig = {
     hardhat: moment.duration(1, 'hours').asSeconds(),
     rinkeby: moment.duration(1, 'days').asSeconds(),
     arbitrumTestnet: moment.duration(1, 'days').asSeconds(),
-    arbitrum: moment.duration(3, 'days').asSeconds(),
+    arbitrum: moment.duration(1, 'days').asSeconds(),
     xdai: moment.duration(3, 'days').asSeconds(),
     mainnet: moment.duration(7, 'days').asSeconds()
   }
@@ -207,6 +207,112 @@ const schemesConfig = {
     votersReputationLossRatio: 1, 
     minimumDaoBounty: web3.utils.toWei("1"),
     daoBountyConst: 25
+  }],
+  
+  arbitrum: [{
+    name: "RegistrarWalletScheme",
+    callToController: true,
+    maxSecondsForExecution: moment.duration(24, 'hours').asSeconds(),
+    maxRepPercentageChange: 0,
+    controllerPermissions: {
+      canGenericCall: true,
+      canUpgrade: true,
+      canChangeConstraints: true,
+      canRegisterSchemes: true
+    },
+    permissions: [],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 500,
+    queuedVotePeriodLimit: moment.duration(14, 'days').asSeconds(),
+    boostedVotePeriodLimit: moment.duration(5, 'days').asSeconds(),
+    preBoostedVotePeriodLimit: moment.duration(2, 'days').asSeconds(),
+    thresholdConst: 2000,
+    quietEndingPeriod: moment.duration(1, 'days').asSeconds(),
+    proposingRepReward: 0,
+    votersReputationLossRatio: 50,
+    minimumDaoBounty: web3.utils.toWei("5"),
+    daoBountyConst: 10,
+  },{
+    name: "MasterWalletScheme",
+    callToController: true,
+    maxSecondsForExecution: moment.duration(24, 'hours').asSeconds(),
+    maxRepPercentageChange: 5,
+    controllerPermissions: {
+      canGenericCall: true,
+      canUpgrade: false,
+      canChangeConstraints: false,
+      canRegisterSchemes: false
+    },
+    permissions: [],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 100,
+    queuedVotePeriodLimit: moment.duration(14, 'days').asSeconds(),
+    boostedVotePeriodLimit: moment.duration(5, 'days').asSeconds(),
+    preBoostedVotePeriodLimit: moment.duration(2, 'days').asSeconds(), 
+    thresholdConst: 1500, 
+    quietEndingPeriod: moment.duration(1, 'days').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 25, 
+    minimumDaoBounty: web3.utils.toWei("1"),
+    daoBountyConst: 10
+  },{
+    name: "QuickWalletScheme",
+    callToController: false,
+    maxSecondsForExecution: moment.duration(24, 'hours').asSeconds(),
+    maxRepPercentageChange: 0,
+    controllerPermissions: {
+      canGenericCall: false,
+      canUpgrade: false,
+      canChangeConstraints: false,
+      canRegisterSchemes: false
+    },
+    permissions: [{
+      asset: NULL_ADDRESS,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    }],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 10,
+    queuedVotePeriodLimit: moment.duration(7, 'days').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(3, 'days').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(1, 'days').asSeconds(), 
+    thresholdConst: 1100, 
+    quietEndingPeriod: moment.duration(12, 'hours').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 10, 
+    minimumDaoBounty: web3.utils.toWei("0.1"),
+    daoBountyConst: 10
+  },{
+    name: "SWPRWalletScheme",
+    callToController: false,
+    maxSecondsForExecution: moment.duration(24, 'hours').asSeconds(),
+    maxRepPercentageChange: 0,
+    controllerPermissions: {
+      canGenericCall: false,
+      canUpgrade: false,
+      canChangeConstraints: false,
+      canRegisterSchemes: false
+    },
+    permissions: [{
+      asset: NULL_ADDRESS,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    }],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 700,
+    queuedVotePeriodLimit: moment.duration(7, 'days').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(1, 'days').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(12, 'hours').asSeconds(), 
+    thresholdConst: 1300, 
+    quietEndingPeriod: moment.duration(12, 'hours').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 10, 
+    minimumDaoBounty: web3.utils.toWei("1"),
+    daoBountyConst: 10
   }],
   
   arbitrumTestnet: [{
