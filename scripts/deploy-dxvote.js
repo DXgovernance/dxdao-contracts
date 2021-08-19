@@ -149,7 +149,7 @@ async function main() {
   } else {
     console.log('Deploying DxAvatar...',votingMachineToken.address, dxReputation.address);
     dxAvatar = await DxAvatar.new("DXdao", votingMachineToken.address, dxReputation.address);
-    if (await votingMachineToken.balanceOf(accounts[0]) > web3.utils.toWei('100000000'))
+    if (await votingMachineToken.balanceOf(accounts[0], {from: accounts[0], gasPrice: 0}) > web3.utils.toWei('100000000'))
       await votingMachineToken.transfer(dxAvatar.address, web3.utils.toWei('100000000'));
     console.log("DXdao Avatar deployed to:", dxAvatar.address);
     contractsFile[networkName].avatar = dxAvatar.address;
@@ -186,8 +186,8 @@ async function main() {
     contractsFile[networkName].votingMachines.dxd.address = votingMachine.address;
     contractsFile[networkName].votingMachines.dxd.token = votingMachineToken.address;
     saveContractsFile(contractsFile);
+    await waitBlocks(1);
   }
-  await waitBlocks(1);
   
   // Deploy PermissionRegistry
   let permissionRegistry;
@@ -236,23 +236,20 @@ async function main() {
     console.log("Permission Registry deployed to:", permissionRegistry.address);
     contractsFile[networkName].permissionRegistry = permissionRegistry.address;
     saveContractsFile(contractsFile);
+    await waitBlocks(1);
   }
-  await waitBlocks(1);
   
   // Deploy Schemes
   for (var i = 0; i < deploymentConfig.schemes.length; i++) {
     const schemeConfiguration = deploymentConfig.schemes[i];
     
     if (contractsFile[networkName].schemes[schemeConfiguration.name]) {
-      console.log(`Using ${schemeConfiguration.name} already deployed on ${contractsFile[networkName].schemes[schemeConfiguration.name].address}`);
-      masterWalletScheme = await WalletScheme.at(contractsFile[networkName].schemes[schemeConfiguration.name].address);
+      console.log(`Scheme ${schemeConfiguration.name} already deployed on ${contractsFile[networkName].schemes[schemeConfiguration.name]}`);
     } else {
       
       console.log(`Deploying ${schemeConfiguration.name}...`);
       const newScheme = await WalletScheme.new();
       console.log(`${schemeConfiguration.name} deployed to: ${newScheme.address}`);
-      
-      await waitBlocks(1);
       
       const timeNow = moment().unix();
       let schemeParamsHash = await votingMachine.getParametersHash(
@@ -268,7 +265,7 @@ async function main() {
           schemeConfiguration.minimumDaoBounty,
           schemeConfiguration.daoBountyConst,
           timeNow,
-        ], NULL_ADDRESS
+        ], NULL_ADDRESS, {from: accounts[0], gasPrice: 0}
       );
 
       await votingMachine.setParameters(

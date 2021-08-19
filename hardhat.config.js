@@ -63,7 +63,7 @@ const hardharNetworks = process.env.CI
     arbitrum: {
       url: `https://arb1.arbitrum.io/rpc`,
       accounts: { mnemonic: MNEMONIC },
-      gasPrice: 100000000, // 0.1 gwei
+      gasPrice: 1000000000, // 1 gwei
       chainId: 42161,
       timeout: 600000 // 10 minutes
     },
