@@ -303,7 +303,7 @@ async function main() {
       await Promise.all(schemeConfiguration.permissions.map(async (permission) => {
         await permissionRegistry.setAdminPermission(
           permission.asset, 
-          schemeConfiguration.callToController ? dxController.address : newScheme.address,
+          schemeConfiguration.callToController ? dxAvatar.address : newScheme.address,
           permission.to == "SCHEME" ? newScheme.address : permission.to,
           permission.functionSignature,
           permission.value,
