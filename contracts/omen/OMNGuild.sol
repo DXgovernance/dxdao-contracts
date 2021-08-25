@@ -24,8 +24,8 @@ contract OMNGuild is ERC20Guild {
     IRealitio public realitIO;
     
     // The function signature of function to be exeucted by the guild to resolve a question in realit.io
-    bytes4 public submitAnswerByArbitratorSignature;
-    bytes4 public doNothingSignature;
+    bytes4 public constant submitAnswerByArbitratorSignature = bytes4( keccak256("submitAnswerByArbitrator(bytes32,bytes32,address)"));
+    bytes4 public constant proposalRejectionSignature = bytes4(keccak256("proposalRejection(uint256)"));
     
     // This amount of OMN tokens to be distributed among voters depending on their vote decision and amount
     uint256 public successfulVoteReward;
@@ -102,16 +102,12 @@ contract OMNGuild is ERC20Guild {
         );
         realitIO = _realitIO;
         maxAmountVotes = _maxAmountVotes;
-        submitAnswerByArbitratorSignature = bytes4(
-          keccak256("submitAnswerByArbitrator(bytes32,bytes32,address)")
-        );
-        doNothingSignature = bytes4(keccak256("doNothing(uint256)"));
         callPermissions[address(realitIO)][submitAnswerByArbitratorSignature] = true;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256)"))]
             = true;
         callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,uint256,uint256)"))]
             = true;
-        callPermissions[address(this)][doNothingSignature]
+        callPermissions[address(this)][proposalRejectionSignature]
             = true;
     }
     
@@ -360,7 +356,7 @@ contract OMNGuild is ERC20Guild {
         return bytes32(0); // to stop a warning
     }
 
-    function doNothing(uint256 guildProposalId) public {
+    function proposalRejection(uint256 guildProposalId) public {
         emit GuildProposalRejected(guildProposalId);
     }
     /// @dev Create a proposal with a static call data
@@ -389,8 +385,8 @@ contract OMNGuild is ERC20Guild {
         guildProposalCnt+=1;
             
         guildProposals[guildProposalCnt].YES = super.createProposal(to, data, value, description, contentHash);
-        bytes[] memory noop = new bytes[](1); // need a do nothing call here
-        noop[0] = abi.encodeWithSelector(doNothingSignature,guildProposalCnt);
+        bytes[] memory noop = new bytes[](1);
+        noop[0] = abi.encodeWithSelector(proposalRejectionSignature,guildProposalCnt);
         address[] memory tothis = new address[](1);
         tothis[0] = address(this);
         guildProposals[guildProposalCnt].NO = super.createProposal(tothis, noop, value, description, contentHash);
