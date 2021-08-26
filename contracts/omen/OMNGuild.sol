@@ -377,10 +377,9 @@ contract OMNGuild is ERC20Guild {
             votesForCreation   =  specialProposerPermissions[msg.sender].votesForCreation;
         }
         
-        guildProposalCnt+=1;
 
-        bytes32 guildProposalId = bytes32(guildProposalCnt);
-            
+        bytes32 guildProposalId = keccak256(abi.encodePacked(msg.sender, block.timestamp, proposalNonce));
+        proposalNonce = proposalNonce.add(1);
         yesNoProposals[guildProposalId].YES = super.createProposal(to, data, value, description, contentHash);
         bytes[] memory noop = new bytes[](1);
         noop[0] = abi.encodeWithSelector(proposalRejectionSignature,guildProposalId);
