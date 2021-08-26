@@ -18,6 +18,7 @@ const {
 const {
     createAndSetupGuildToken,
     createGuildProposal,
+    createGuildProposal2,
 } = require("./helpers/guild");
 
 require("chai").should();
@@ -38,6 +39,8 @@ contract("OMNGuild", function(accounts) {
         genericCallData,
         questionId,
         guildProposalId,
+        guildProposalYes,
+        guildProposalNo,
         genericProposal,
         tx,
         marketValidationProposalValid,
@@ -84,8 +87,8 @@ contract("OMNGuild", function(accounts) {
                 realitio.address, 
                 2*OMN_REWARD, /// _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a successful  vote
                 OMN_REWARD /// _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccessful vote
-              ).encodeABI()
-        guildProposalId = await createGuildProposal({
+              ).encodeABI();
+        [ guildProposalId, guildProposalYes, guildProposalNo ] = await createGuildProposal2({
           guild: omnGuild,
           to: [omnGuild.address],
           data: [ data ],
@@ -97,8 +100,8 @@ contract("OMNGuild", function(accounts) {
 
         await time.increase(time.duration.seconds(60*60*24*7+1000));
         
-        await omnGuild.setPositiveVote(
-            guildProposalId,
+        await omnGuild.setVote(
+            guildProposalYes,
             40, {
                 from: accounts[4]
             });
@@ -433,6 +436,7 @@ contract("OMNGuild", function(accounts) {
                 constants.NULL_ADDRESS,  //  contentHash:
             );
             const testProposal = helpers.getValueFromLogs(tx, "guildProposalId", "GuildProposalCreated");
+            const testProposalYes = tx.logs[0].args.proposalId;
             const setAllowanceData = await new web3.eth.Contract(
                   OMNGuild.abi
                 ).methods.setAllowance(
@@ -440,7 +444,7 @@ contract("OMNGuild", function(accounts) {
                     [ testCall ],  
                     [ true ], 
                   ).encodeABI()
-            const setAllowanceProposalId = await createGuildProposal({
+            const [ setAllowanceProposalId, setAllowanceProposalIdYes, setAllowanceProposalIdNo ] = await createGuildProposal2({
               guild: omnGuild,
               to: [ omnGuild.address ],
               data: [ setAllowanceData ],
@@ -449,15 +453,15 @@ contract("OMNGuild", function(accounts) {
               contentHash: constants.NULL_ADDRESS,
               account: accounts[1],
             });
-            await omnGuild.setPositiveVote(
-                setAllowanceProposalId,
+            await omnGuild.setVote(
+                setAllowanceProposalIdYes,
                 40, {
                     from: accounts[4]
                 });
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
-            await omnGuild.setPositiveVote(
-                testProposal,
+            await omnGuild.setVote(
+                testProposalYes,
                 40, {
                     from: accounts[4]
                 });
@@ -476,7 +480,11 @@ contract("OMNGuild", function(accounts) {
                     12000000,  // proposalTime
                     0, // votesForCreation
                   ).encodeABI()
-            const setSpecialProposerPermissionProposalId = await createGuildProposal({
+            const  [
+                setSpecialProposerPermissionProposalId,
+                setSpecialProposerPermissionProposalIdYes,
+                setSpecialProposerPermissionProposalIdNo ]
+                = await createGuildProposal2({
               guild: omnGuild,
               to: [ omnGuild.address ],
               data: [ data ],
@@ -485,8 +493,8 @@ contract("OMNGuild", function(accounts) {
               contentHash: constants.NULL_ADDRESS,
               account: accounts[1],
             });
-            await omnGuild.setPositiveVote(
-                setSpecialProposerPermissionProposalId,
+            await omnGuild.setVote(
+                setSpecialProposerPermissionProposalIdYes,
                 40, {
                     from: accounts[4]
                 });
@@ -515,8 +523,9 @@ contract("OMNGuild", function(accounts) {
                 constants.NULL_ADDRESS,  //  contentHash:
             );
             const testProposal2 = helpers.getValueFromLogs(tx2, "guildProposalId", "GuildProposalCreated");
-            await omnGuild.setPositiveVote(
-                testProposal2,
+            const testProposal2Yes = tx2.logs[0].args.proposalId;
+            await omnGuild.setVote(
+                testProposal2Yes,
                 40, {
                     from: accounts[4]
                 });
@@ -635,7 +644,7 @@ contract("OMNGuild", function(accounts) {
                     2*OMN_REWARD, /// _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a successful  vote
                     OMN_REWARD /// _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccessful vote
                   ).encodeABI()
-            const guildProposalId = await createGuildProposal({
+            const [ guildProposalId, guildProposalYes, guildProposalNo ] = await createGuildProposal2({
               guild: omnGuild,
               to: [omnGuild.address],
               data: [ data ],
@@ -652,8 +661,8 @@ contract("OMNGuild", function(accounts) {
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
             
-            await omnGuild.setPositiveVote(
-                guildProposalId,
+            await omnGuild.setVote(
+                guildProposalYes,
                 40, {
                     from: accounts[4]
                 });
@@ -686,7 +695,7 @@ contract("OMNGuild", function(accounts) {
                     2*OMN_REWARD, /// _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a successful  vote
                     OMN_REWARD /// _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccessful vote
                   ).encodeABI()
-            const guildProposalId = await createGuildProposal({
+            const [ guildProposalId, guildProposalYes, guildProposalNo ] = await createGuildProposal2({
               guild: omnGuild,
               to: [omnGuild.address],
               data: [ data ],
@@ -698,8 +707,8 @@ contract("OMNGuild", function(accounts) {
 
             await time.increase(time.duration.seconds(60*60*24*7+1000));
             
-            await omnGuild.setPositiveVote(
-                guildProposalId,
+            await omnGuild.setVote(
+                guildProposalYes,
                 40, {
                     from: accounts[4]
                 });

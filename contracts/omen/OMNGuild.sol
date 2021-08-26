@@ -242,13 +242,6 @@ contract OMNGuild is ERC20Guild {
       // Send the total reward
       _sendTokenReward(voter, reward);
     }
-
-    /// @dev Set a positive vote on a guild proposal
-    /// @param guildProposalId The id of the proposal to set the vote
-    /// @param amount The amount of votes to be set
-    function setPositiveVote(bytes32 guildProposalId, uint256 amount) public {
-        setVote(yesNoProposals[guildProposalId].YES, amount);
-    }
     
     /// @dev Set the amount of tokens to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote

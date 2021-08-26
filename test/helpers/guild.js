@@ -84,6 +84,24 @@ export async function createDAO(guild, accounts, founderToken=  [ 0, 0, 0, 0 ], 
   };
 }
 
+export async function createGuildProposal2({guild, to, data, value, description, contentHash, account}) {
+  const tx = await guild.createGuildProposal(
+    to,
+    data,
+    value,
+    description,
+    contentHash,
+    {from: account}
+  );
+
+  // Return proposal IDs
+  return [
+      helpers.getValueFromLogs(tx, "guildProposalId", "GuildProposalCreated"),
+      tx.logs[0].args.proposalId,
+      tx.logs[2].args.proposalId
+  ];
+}
+
 export async function createGuildProposal({guild, to, data, value, description, contentHash, account}) {
   const tx = await guild.createGuildProposal(
     to,
