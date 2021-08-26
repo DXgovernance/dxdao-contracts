@@ -348,6 +348,7 @@ contract OMNGuild is ERC20Guild {
         return bytes32(0); // to stop a warning
     }
 
+    // For a winning proposal meant to do nothing other than win against competing proposals.
     function proposalRejection(bytes32 guildProposalId) public {
         emit GuildProposalRejected(guildProposalId);
     }
