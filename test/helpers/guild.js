@@ -96,8 +96,8 @@ export async function createGuildProposal({guild, to, data, value, description, 
 
   // Return proposal IDs
   const proposalId =   helpers.getValueFromLogs(tx, "guildProposalId", "GuildProposalCreated");
-  const proposalYes = (await guild.yesNoProposals.call(proposalId)).YES;
-  const proposalNo = (await guild.yesNoProposals.call(proposalId)).NO;
+  const proposalYes = (await guild.omenGuildProposal.call(proposalId)).YES;
+  const proposalNo = (await guild.omenGuildProposal.call(proposalId)).NO;
   return [
       proposalId,
       proposalYes,

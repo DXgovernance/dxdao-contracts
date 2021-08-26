@@ -120,8 +120,8 @@ contract("OMNGuild", function(accounts) {
             value: 2
         });
         await omnGuild.createMarketValidationProposal(questionId);
-        marketValidationProposalValid = (await omnGuild.yesNoProposals.call(questionId)).YES;
-        marketValidationProposalInvalid = (await omnGuild.yesNoProposals.call(questionId)).NO
+        marketValidationProposalValid = (await omnGuild.omenGuildProposal.call(questionId)).YES;
+        marketValidationProposalInvalid = (await omnGuild.omenGuildProposal.call(questionId)).NO
     });
 
     describe("OMNGuild use tests", function() {
