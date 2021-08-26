@@ -18,7 +18,6 @@ const {
 const {
     createAndSetupGuildToken,
     createGuildProposal,
-    createGuildProposal2,
 } = require("./helpers/guild");
 
 require("chai").should();
@@ -88,7 +87,7 @@ contract("OMNGuild", function(accounts) {
                 2*OMN_REWARD, /// _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a successful  vote
                 OMN_REWARD /// _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccessful vote
               ).encodeABI();
-        [ guildProposalId, guildProposalYes, guildProposalNo ] = await createGuildProposal2({
+        [ guildProposalId, guildProposalYes, guildProposalNo ] = await createGuildProposal({
           guild: omnGuild,
           to: [omnGuild.address],
           data: [ data ],
@@ -120,9 +119,9 @@ contract("OMNGuild", function(accounts) {
         await realitio.submitAnswer(questionId, soliditySha3((false)), 0, {
             value: 2
         });
-        tx = await omnGuild.createMarketValidationProposal(questionId);
-        marketValidationProposalValid = tx.logs[0].args.proposalId;
-        marketValidationProposalInvalid = tx.logs[2].args.proposalId;
+        await omnGuild.createMarketValidationProposal(questionId);
+        marketValidationProposalValid = (await omnGuild.yesNoProposals.call(questionId)).YES;
+        marketValidationProposalInvalid = (await omnGuild.yesNoProposals.call(questionId)).NO
     });
 
     describe("OMNGuild use tests", function() {
@@ -428,15 +427,15 @@ contract("OMNGuild", function(accounts) {
             const testData = await new web3.eth.Contract(
                   OMNGuild.abi
                 ).methods.getVotesForExecution().encodeABI();
-            const tx = await omnGuild.createGuildProposal(
-                [ accounts[0] ],  //  to:
-                [ testData ],  //  data:
-                [ 0 ],  //  value:
-                "allow functions to anywhere",  //  description:
-                constants.NULL_ADDRESS,  //  contentHash:
-            );
-            const testProposal = helpers.getValueFromLogs(tx, "guildProposalId", "GuildProposalCreated");
-            const testProposalYes = tx.logs[0].args.proposalId;
+            const [ testProposal, testProposalYes ]  = await createGuildProposal({ 
+                    guild: omnGuild,
+                    to: [ accounts[0] ],  //  to:
+                    data: [ testData ],  //  data:
+                    value: [ 0 ],  //  value:
+                    description: "allow functions to anywhere",  //  description:
+                    contentHash: constants.NULL_ADDRESS,  //  contentHash:
+                    account: accounts[0],
+            });
             const setAllowanceData = await new web3.eth.Contract(
                   OMNGuild.abi
                 ).methods.setAllowance(
@@ -444,7 +443,7 @@ contract("OMNGuild", function(accounts) {
                     [ testCall ],  
                     [ true ], 
                   ).encodeABI()
-            const [ setAllowanceProposalId, setAllowanceProposalIdYes, setAllowanceProposalIdNo ] = await createGuildProposal2({
+            const [ setAllowanceProposalId, setAllowanceProposalIdYes, setAllowanceProposalIdNo ] = await createGuildProposal({
               guild: omnGuild,
               to: [ omnGuild.address ],
               data: [ setAllowanceData ],
@@ -484,7 +483,7 @@ contract("OMNGuild", function(accounts) {
                 setSpecialProposerPermissionProposalId,
                 setSpecialProposerPermissionProposalIdYes,
                 setSpecialProposerPermissionProposalIdNo ]
-                = await createGuildProposal2({
+                = await createGuildProposal({
               guild: omnGuild,
               to: [ omnGuild.address ],
               data: [ data ],
@@ -515,15 +514,15 @@ contract("OMNGuild", function(accounts) {
                 voter: accounts[0]
             });
 
-            const tx2 = await omnGuild.createGuildProposal(
-                [ accounts[0] ],  //  to:
-                [ testData ],  //  data:
-                [ 0 ],  //  value:
-                "allow functions to anywhere",  //  description:
-                constants.NULL_ADDRESS,  //  contentHash:
-            );
-            const testProposal2 = helpers.getValueFromLogs(tx2, "guildProposalId", "GuildProposalCreated");
-            const testProposal2Yes = tx2.logs[0].args.proposalId;
+            const [ testProposal2, testProposal2Yes ] = await createGuildProposal({
+                guild: omnGuild,
+                to: [ accounts[0] ],  //  to:
+                data: [ testData ],  //  data:
+                value: [ 0 ],  //  value:
+                description: "allow functions to anywhere",  //  description:
+                contentHash: constants.NULL_ADDRESS,  //  contentHash:
+                account: accounts[0]
+            });
             await omnGuild.setVote(
                 testProposal2Yes,
                 40, {
@@ -551,7 +550,7 @@ contract("OMNGuild", function(accounts) {
                     [ testCall ],  
                     [ true ], 
                   ).encodeABI()
-            const setAllowanceProposalId = await createGuildProposal({
+            const [ setAllowanceProposalId ] = await createGuildProposal({
               guild: omnGuild,
               to: [ omnGuild.address ],
               data: [ setAllowanceData ],
@@ -644,7 +643,7 @@ contract("OMNGuild", function(accounts) {
                     2*OMN_REWARD, /// _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a successful  vote
                     OMN_REWARD /// _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccessful vote
                   ).encodeABI()
-            const [ guildProposalId, guildProposalYes, guildProposalNo ] = await createGuildProposal2({
+            const [ guildProposalId, guildProposalYes, guildProposalNo ] = await createGuildProposal({
               guild: omnGuild,
               to: [omnGuild.address],
               data: [ data ],
@@ -695,7 +694,7 @@ contract("OMNGuild", function(accounts) {
                     2*OMN_REWARD, /// _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a successful  vote
                     OMN_REWARD /// _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccessful vote
                   ).encodeABI()
-            const [ guildProposalId, guildProposalYes, guildProposalNo ] = await createGuildProposal2({
+            const [ guildProposalId, guildProposalYes, guildProposalNo ] = await createGuildProposal({
               guild: omnGuild,
               to: [omnGuild.address],
               data: [ data ],
