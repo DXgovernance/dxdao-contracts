@@ -53,14 +53,14 @@ contract OMNGuild is ERC20Guild {
     // Save how much accounts voted in a proposal
     mapping(bytes32 => uint256) public positiveVotesCount;
 
-    // 
+    // Custom permissions for special proposers
     struct SpecialProposerPermission {
         bool exists;
         uint256 votesForCreation;
         uint256 proposalTime;
     }
 
-    // set per proposer settings
+    // Associate custom permissions to a sender
     mapping(address => SpecialProposerPermission) public specialProposerPermissions;
     event SetSpecialProposerPermission(address _proposer, uint256 _proposalTime, uint256 _votesForCreation);
 
@@ -196,8 +196,7 @@ contract OMNGuild is ERC20Guild {
         emit GuildProposalExecuted(guildProposalId);
     }
     
-    /// @dev Execute a proposal that has already passed the votation time and has enough votes
-    /// This function cant end market validation proposals
+    /// @dev Do not use - override so base function can't be called
     function endProposal(bytes32 ) override public pure {
         revert("OMNGuild: use endGuildProposal or endMarketValidationProposal");
     }
@@ -337,14 +336,15 @@ contract OMNGuild is ERC20Guild {
         emit SetSpecialProposerPermission(_proposer, _proposalTime, _votesForCreation);
     }
 
+    /// @dev Do not use - override so base function can't be called
     function createProposal (
         address[] memory ,
         bytes[] memory ,
         uint256[] memory ,
         string memory ,
         bytes memory 
-    ) override public isInitialized returns(bytes32) {
-        require(false, "OMNGuild: use createGuildProposal");
+    ) override public view isInitialized returns(bytes32) {
+        revert("OMNGuild: use createGuildProposal");
         return bytes32(0); // to stop a warning
     }
 
