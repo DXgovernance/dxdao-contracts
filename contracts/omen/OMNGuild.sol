@@ -43,7 +43,7 @@ contract OMNGuild is ERC20Guild {
     // OmenGuildProposal Ids to ERC20GuildProposal IDs via OmenGuildProposal struct
     mapping(bytes32 => OmenGuildProposal) public omenGuildProposal;
     
-    // Market validation proposal ids => realit.io Question IDs
+    // Map ERC20Guild proposal ids to realit.io question ids in createMarketProposal() 
     mapping(bytes32 => bytes32) public proposalsForMarketValidation;
 
     // Saves which accounts claimed their market validation vote rewards
