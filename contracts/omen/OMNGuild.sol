@@ -18,7 +18,6 @@ contract OMNGuild is ERC20Guild {
 
     // The max amount of votes that can de used in a proposal
     uint256 public maxAmountVotes;
-    uint256 public guildProposalCnt;
     
     // The address of the realit.io smart contract
     IRealitio public realitIO;
