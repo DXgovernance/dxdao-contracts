@@ -69,22 +69,29 @@ async function main() {
     }
   }
 
-  // Get Total REP and parsed BN to strings
-  let totalRep = new BN(0);
-  for (var address in addresses) {
-    totalRep = totalRep.add(addresses[address])
-    addresses[address] = addresses[address].toString();
-  }
-  
-  const repHolders = {
-    addresses: addresses,
-    network: hre.network.name,
-    repToken: repTokenAddress[hre.network.name],
+  let repHolders = {
     fromBlock: fromBlock,
     toBlock: toBlock,
-    totalRep: totalRep.toString()
+    totalRep: new BN(0),
+    network: hre.network.name,
+    repToken: repTokenAddress[hre.network.name],
+    validAddresses: [],
+    invalidAddresses: [],
+  };
+  for (var address in addresses) {
+    if (await web3.eth.getCode(address) == "0x") {
+      repHolders.totalRep = repHolders.totalRep.add(addresses[address]);
+      repHolders.validAddresses.push({ address, amount: addresses[address].toString() })
+    } else {
+      repHolders.invalidAddresses.push({ address, amount: addresses[address].toString() })
+    }
   }
-  console.log('REP Holders:', repHolders);
+  
+  repHolders.validAddresses = repHolders.validAddresses.sort((a, b) => b.amount - a.amount );
+  console.log('REP Holders: (address, amount)');
+  repHolders.validAddresses.map((a)=> console.log(a.address, a.amount));
+  repHolders.totalRep = repHolders.totalRep.toString();
+  console.log('REP Holders .json file:', repHolders);
   fs.writeFileSync('.repHolders.json', JSON.stringify(repHolders, null, 2));
 } 
 
