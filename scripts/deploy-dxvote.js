@@ -53,11 +53,11 @@ async function main() {
   
   // Get initial REP holders
   let founders = [], initialRep = [], initialTokens = [];
-  for (let address in deploymentConfig.reputation.addresses) {
-    founders.push(address);
-    initialRep.push(deploymentConfig.reputation.addresses[address]);
+  deploymentConfig.reputation.validAddresses.map((initialRepHolderAddress) => {
+    founders.push(initialRepHolderAddress.address);
+    initialRep.push(initialRepHolderAddress.amount);
     initialTokens.push(0);
-  }
+  })
   
   if (!contractsFile[networkName] || networkName == 'hardhat') 
     contractsFile[networkName] = { 
@@ -298,10 +298,18 @@ async function main() {
       
       console.log("Setting scheme permissions...");
       await Promise.all(schemeConfiguration.permissions.map(async (permission) => {
+      
+        if (contractsFile[networkName].schemes && contractsFile[networkName].schemes[permission.to])
+          permission.to = contractsFile[networkName].schemes[permission.to];
+        else if (permission.to == "ITSELF")
+          permission.to = newScheme.address;
+        else if (permission.to == "DXDVotingMachine")
+          permission.to = contractsFile[networkName].votingMachines.dxd.address;
+          
         await permissionRegistry.setAdminPermission(
           permission.asset, 
           schemeConfiguration.callToController ? dxAvatar.address : newScheme.address,
-          permission.to == "SCHEME" ? newScheme.address : permission.to,
+          permission.to,
           permission.functionSignature,
           permission.value,
           permission.allowed
