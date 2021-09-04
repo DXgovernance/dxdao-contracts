@@ -7,6 +7,7 @@ const repHolders = require('../.repHolders.json');
 const wrapProvider = require('arb-ethers-web3-bridge').wrapProvider;
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 const { getDeploymentConfig } = require("./deployment-config.js")
+const BN = web3.utils.BN;
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 const MAX_UINT_256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
@@ -53,11 +54,23 @@ async function main() {
   
   // Get initial REP holders
   let founders = [], initialRep = [], initialTokens = [];
-  deploymentConfig.reputation.validAddresses.map((initialRepHolderAddress) => {
-    founders.push(initialRepHolderAddress.address);
-    initialRep.push(initialRepHolderAddress.amount);
+  deploymentConfig.reputation.validAddresses.map((initialRepHolder) => {
+    founders.push(initialRepHolder.address);
+    initialRep.push(initialRepHolder.amount);
     initialTokens.push(0);
   })
+  
+  deploymentConfig.extraRep.map((extraRepHolder) => {
+    const extraRepHolderIndex = founders.indexOf(extraRepHolder.address)
+    if (extraRepHolderIndex < 0) {
+      founders.push(extraRepHolder.address);
+      initialRep.push(extraRepHolder.amount);
+      initialTokens.push(0);
+    } else {
+      initialRep[extraRepHolderIndex] = new BN(initialRep[extraRepHolderIndex]).add(new BN(extraRepHolder.amount)).toString();
+    }
+  });
+
   
   if (!contractsFile[networkName] || networkName == 'hardhat') 
     contractsFile[networkName] = { 
