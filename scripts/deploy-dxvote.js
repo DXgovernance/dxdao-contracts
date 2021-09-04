@@ -148,7 +148,6 @@ async function main() {
       console.log("Voting machine token deployed to:", votingMachineToken.address);
   } else {
     votingMachineToken = await ERC20Mock.at(deploymentConfig.votingMachineToken.address);
-    contractsFile[networkName].fromBlock = Math.min(fromBlock, deploymentConfig.votingMachineToken.fromBlock);
     console.log("Using pre configured voting machine token:", votingMachineToken.address);
   }
   contractsFile[networkName].votingMachines.dxd.token = votingMachineToken.address;
@@ -310,8 +309,8 @@ async function main() {
       );
       
       console.log("Setting scheme permissions...");
-      await Promise.all(schemeConfiguration.permissions.map(async (permission) => {
-      
+      for (var p = 0; p < schemeConfiguration.permissions.length; p++) {
+        const permission = schemeConfiguration.permissions[p];
         if (contractsFile[networkName].schemes && contractsFile[networkName].schemes[permission.to])
           permission.to = contractsFile[networkName].schemes[permission.to];
         else if (permission.to == "ITSELF")
@@ -327,7 +326,7 @@ async function main() {
           permission.value,
           permission.allowed
         );
-      }))
+      }
       
       if (schemeConfiguration.boostedVoteRequiredPercentage > 0){
         console.log('Setting boosted vote required percentage in voting machine...');
@@ -368,7 +367,7 @@ async function main() {
   
   // Deploy dxDaoNFT if it is not set
   let dxDaoNFT;
-  if (!contractsFile[networkName].utils.dxdaoNFT) {
+  if (!contractsFile[networkName].utils.dxDaoNFT) {
     console.log("Deploying DXdaoNFT...");
     dxDaoNFT = await DXdaoNFT.new();
     contractsFile[networkName].utils.dxDaoNFT = dxDaoNFT.address;
@@ -399,8 +398,8 @@ async function main() {
     await dxController.unregisterScheme(accounts[0], dxAvatar.address);
   } catch (e) {
     console.error("Error transfering ownership", e);
-    contractsFile[networkName] = {}
-    saveContractsFile(contractsFile);
+    // contractsFile[networkName] = {}
+    // saveContractsFile(contractsFile);
   }
   
   // Deployment Finished
