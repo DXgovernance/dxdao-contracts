@@ -34,9 +34,9 @@ const networksConfig = {
   },
   permissionRegistryDelay: {
     hardhat: moment.duration(1, 'hours').asSeconds(),
-    rinkeby: moment.duration(1, 'days').asSeconds(),
-    arbitrumTestnet: moment.duration(1, 'days').asSeconds(),
-    arbitrum: moment.duration(1, 'days').asSeconds(),
+    rinkeby: moment.duration(30, 'minutes').asSeconds(),
+    arbitrumTestnet: moment.duration(30, 'minutes').asSeconds(),
+    arbitrum: moment.duration(30, 'minutes').asSeconds(),
     xdai: moment.duration(3, 'days').asSeconds(),
     mainnet: moment.duration(7, 'days').asSeconds()
   }
