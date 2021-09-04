@@ -329,6 +329,30 @@ async function main() {
         );
       }))
       
+      if (schemeConfiguration.boostedVoteRequiredPercentage > 0){
+        console.log('Setting boosted vote required percentage in voting machine...');
+        await dxController.genericCall(
+          votingMachine.address,
+          web3.eth.abi.encodeFunctionCall({
+              name: 'setBoostedVoteRequiredPercentage',
+              type: 'function',
+              inputs: [{
+                  type: 'address',
+                  name: '_scheme'
+              },{
+                  type: 'bytes32',
+                  name: '_paramsHash'
+              },{
+                  type: 'uint256',
+                  name: '_boostedVotePeriodLimit'
+              }]
+          }, [newScheme.address, schemeParamsHash, schemeConfiguration.boostedVoteRequiredPercentage]),
+          dxAvatar.address,
+          0
+        );
+        ;
+      }
+      
       console.log('Registering scheme in controller...');
       await dxController.registerScheme(
         newScheme.address,
@@ -337,12 +361,6 @@ async function main() {
         dxAvatar.address
       );
       
-      if (schemeConfiguration.boostedVoteRequiredPercentage > 0){
-        console.log('Setting boosted vote required percentage in voting machine...');
-        await votingMachine.setBoostedVoteRequiredPercentage(
-          newScheme.address, schemeParamsHash, schemeConfiguration.boostedVoteRequiredPercentage
-        );
-      }
       contractsFile[networkName].schemes[schemeConfiguration.name] = newScheme.address;
       saveContractsFile(contractsFile);
     }
