@@ -42,6 +42,14 @@ const networksConfig = {
   }
 };
 
+const TOKENS = {
+  arbitrumTestnet : {
+    DXD: "0x5d47100B0854525685907D5D773b92c22c0c745e",
+    SWPR: "0xFe45504a21EA46C194000403B43f6DDBA2DCcC80",
+    WETH: "0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681"
+  }
+}
+
 const schemesConfig = {
   hardhat: [{
     name: "RegistrarWalletScheme",
@@ -318,7 +326,7 @@ const schemesConfig = {
   arbitrumTestnet: [{
     name: "RegistrarWalletScheme",
     callToController: true,
-    maxSecondsForExecution: moment.duration(24, 'hours').asSeconds(),
+    maxSecondsForExecution: moment.duration(1, 'days').asSeconds(),
     maxRepPercentageChange: 0,
     controllerPermissions: {
       canGenericCall: true,
@@ -327,51 +335,22 @@ const schemesConfig = {
       canRegisterSchemes: true
     },
     permissions: [],
-    queuedVoteRequiredPercentage: 75,
-    boostedVoteRequiredPercentage: 500,
-    queuedVotePeriodLimit: moment.duration(2, 'hours').asSeconds(),
-    boostedVotePeriodLimit: moment.duration(45, 'minutes').asSeconds(),
-    preBoostedVotePeriodLimit: moment.duration(15, 'minutes').asSeconds(),
-    thresholdConst: 2000,
-    quietEndingPeriod: moment.duration(15, 'minutes').asSeconds(),
-    proposingRepReward: 0,
-    votersReputationLossRatio: 100,
-    minimumDaoBounty: web3.utils.toWei("100"),
-    daoBountyConst: 100,
-  },{
-    name: "MasterWalletScheme",
-    callToController: true,
-    maxSecondsForExecution: moment.duration(12, 'hours').asSeconds(),
-    maxRepPercentageChange: 5,
-    controllerPermissions: {
-      canGenericCall: true,
-      canUpgrade: false,
-      canChangeConstraints: false,
-      canRegisterSchemes: false
-    },
-    permissions: [{
-      asset: NULL_ADDRESS,
-      to: "SCHEME",
-      functionSignature: ANY_FUNC_SIGNATURE,
-      value: web3.utils.toWei("100"),
-      allowed: true
-    }],
     queuedVoteRequiredPercentage: 50,
-    boostedVoteRequiredPercentage: 100,
-    queuedVotePeriodLimit: moment.duration(1, 'hours').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(20, 'minutes').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(10, 'minutes').asSeconds(), 
-    thresholdConst: 1500, 
-    quietEndingPeriod: moment.duration(10, 'minutes').asSeconds(), 
-    proposingRepReward: 0, 
-    votersReputationLossRatio: 10, 
-    minimumDaoBounty: web3.utils.toWei("10"),
-    daoBountyConst: 50
+    boostedVoteRequiredPercentage: 10*100,
+    queuedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(),
+    boostedVotePeriodLimit: moment.duration(2, 'hours').asSeconds(),
+    preBoostedVotePeriodLimit: moment.duration(30, 'minutes').asSeconds(),
+    thresholdConst: 2000,
+    quietEndingPeriod: moment.duration(30, 'minutes').asSeconds(),
+    proposingRepReward: 0,
+    votersReputationLossRatio: 10,
+    minimumDaoBounty: web3.utils.toWei("1"),
+    daoBountyConst: 10,
   },{
     name: "QuickWalletScheme",
     callToController: false,
-    maxSecondsForExecution: moment.duration(12, 'hours').asSeconds(),
-    maxRepPercentageChange: 1,
+    maxSecondsForExecution: moment.duration(1, 'days').asSeconds(),
+    maxRepPercentageChange: 0,
     controllerPermissions: {
       canGenericCall: false,
       canUpgrade: false,
@@ -384,18 +363,166 @@ const schemesConfig = {
       functionSignature: ANY_FUNC_SIGNATURE,
       value: MAX_UINT_256,
       allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.DXD,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.WETH,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.SWPR,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
     }],
     queuedVoteRequiredPercentage: 50,
-    boostedVoteRequiredPercentage: 10,
-    queuedVotePeriodLimit: moment.duration(1, 'hours').asSeconds(), 
-    boostedVotePeriodLimit: moment.duration(20, 'minutes').asSeconds(), 
-    preBoostedVotePeriodLimit: moment.duration(10, 'minutes').asSeconds(), 
+    boostedVoteRequiredPercentage: 100,
+    queuedVotePeriodLimit: moment.duration(2, 'hours').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(1, 'hours').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(30, 'minutes').asSeconds(), 
     thresholdConst: 1100, 
-    quietEndingPeriod: moment.duration(10, 'minutes').asSeconds(), 
+    quietEndingPeriod: moment.duration(30, 'minutes').asSeconds(), 
     proposingRepReward: 0, 
-    votersReputationLossRatio: 1, 
-    minimumDaoBounty: web3.utils.toWei("1"),
-    daoBountyConst: 25
+    votersReputationLossRatio: 10, 
+    minimumDaoBounty: web3.utils.toWei("0.05"),
+    daoBountyConst: 10
+  },{
+    name: "SWPRWalletScheme",
+    callToController: false,
+    maxSecondsForExecution: moment.duration(1, 'days').asSeconds(),
+    maxRepPercentageChange: 0,
+    controllerPermissions: {
+      canGenericCall: false,
+      canUpgrade: false,
+      canChangeConstraints: false,
+      canRegisterSchemes: false
+    },
+    permissions: [{
+      asset: NULL_ADDRESS,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.DXD,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.WETH,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.SWPR,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    }],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 1000,
+    queuedVotePeriodLimit: moment.duration(2, 'hours').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(30, 'hours').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(30, 'minutes').asSeconds(), 
+    thresholdConst: 1300, 
+    quietEndingPeriod: moment.duration(30, 'minutes').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 10, 
+    minimumDaoBounty: web3.utils.toWei("0.1"),
+    daoBountyConst: 10
+  },{
+    name: "MasterWalletScheme",
+    callToController: true,
+    maxSecondsForExecution: moment.duration(1, 'days').asSeconds(),
+    maxRepPercentageChange: 40,
+    controllerPermissions: {
+      canGenericCall: true,
+      canUpgrade: false,
+      canChangeConstraints: false,
+      canRegisterSchemes: false
+    },
+    permissions: [{
+      asset: NULL_ADDRESS,
+      to: "DXDVotingMachine",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: NULL_ADDRESS,
+      to: "RegistrarWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: NULL_ADDRESS,
+      to: "QuickWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: NULL_ADDRESS,
+      to: "SWPRWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.DXD,
+      to: "QuickWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.DXD,
+      to: "SWPRWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.WETH,
+      to: "QuickWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.WETH,
+      to: "SWPRWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.SWPR,
+      to: "QuickWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.SWPR,
+      to: "SWPRWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    }],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 200,
+    queuedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(),
+    boostedVotePeriodLimit: moment.duration(2, 'hours').asSeconds(),
+    preBoostedVotePeriodLimit: moment.duration(30, 'minutes').asSeconds(),
+    thresholdConst: 1500,
+    quietEndingPeriod: moment.duration(30, 'minutes').asSeconds(),
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 5, 
+    minimumDaoBounty: web3.utils.toWei("0.1"),
+    daoBountyConst: 10
   }]
 };
 
