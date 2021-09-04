@@ -51,7 +51,7 @@ async function main() {
   }
   
   const deploymentConfig = getDeploymentConfig(networkName);
-  
+
   // Get initial REP holders
   let founders = [], initialRep = [], initialTokens = [];
   deploymentConfig.reputation.validAddresses.map((initialRepHolder) => {
