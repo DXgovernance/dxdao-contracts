@@ -185,6 +185,12 @@ const schemesConfig = {
       allowed: true
     },{
       asset: NULL_ADDRESS,
+      to: "ITSELF",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: NULL_ADDRESS,
       to: "QuickWalletScheme",
       functionSignature: ANY_FUNC_SIGNATURE,
       value: MAX_UINT_256,
@@ -382,6 +388,12 @@ const schemesConfig = {
     },{
       asset: NULL_ADDRESS,
       to: "RegistrarWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: NULL_ADDRESS,
+      to: "ITSELF",
       functionSignature: ANY_FUNC_SIGNATURE,
       value: MAX_UINT_256,
       allowed: true
@@ -589,6 +601,12 @@ const schemesConfig = {
       allowed: true
     },{
       asset: NULL_ADDRESS,
+      to: "ITSELF",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: NULL_ADDRESS,
       to: "QuickWalletScheme",
       functionSignature: ANY_FUNC_SIGNATURE,
       value: MAX_UINT_256,
@@ -786,6 +804,12 @@ const schemesConfig = {
     },{
       asset: NULL_ADDRESS,
       to: "RegistrarWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: NULL_ADDRESS,
+      to: "ITSELF",
       functionSignature: ANY_FUNC_SIGNATURE,
       value: MAX_UINT_256,
       allowed: true
