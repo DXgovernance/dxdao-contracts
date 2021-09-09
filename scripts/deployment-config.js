@@ -788,7 +788,7 @@ const schemesConfig = {
     name: "MasterWalletScheme",
     callToController: true,
     maxSecondsForExecution: moment.duration(31, 'days').asSeconds(),
-    maxRepPercentageChange: 40,
+    maxRepPercentageChange: 20,
     controllerPermissions: {
       canGenericCall: true,
       canUpgrade: false,
@@ -863,7 +863,7 @@ const schemesConfig = {
       allowed: true
     }],
     queuedVoteRequiredPercentage: 50,
-    boostedVoteRequiredPercentage: 2*100,
+    boostedVoteRequiredPercentage: 5*100,
     queuedVotePeriodLimit: moment.duration(14, 'days').asSeconds(),
     boostedVotePeriodLimit: moment.duration(5, 'days').asSeconds(),
     preBoostedVotePeriodLimit: moment.duration(2, 'days').asSeconds(), 
@@ -872,6 +872,29 @@ const schemesConfig = {
     proposingRepReward: 0, 
     votersReputationLossRatio: 5, 
     minimumDaoBounty: web3.utils.toWei("0.1"),
+    daoBountyConst: 10
+  },{
+    name: "TestWalletScheme",
+    callToController: false,
+    maxSecondsForExecution: moment.duration(1, 'days').asSeconds(),
+    maxRepPercentageChange: 0,
+    controllerPermissions: {
+      canGenericCall: false,
+      canUpgrade: false,
+      canChangeConstraints: false,
+      canRegisterSchemes: false
+    },
+    permissions: [],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 1*100,
+    queuedVotePeriodLimit: moment.duration(7, 'hours').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(1, 'hours').asSeconds(), 
+    thresholdConst: 1100, 
+    quietEndingPeriod: moment.duration(30, 'minutes').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 5, 
+    minimumDaoBounty: web3.utils.toWei("0.05"),
     daoBountyConst: 10
   }],
   
@@ -916,25 +939,22 @@ const extraRep = {
   ],
   arbitrum: [
     {
-      "address": "0x91628ddc3A6ff9B48A2f34fC315D243eB07a9501",
-      "amount": "500000000000000000000000"
-    },{
       "address": "0xe16d3664b313bd5FB8D911b467047e3CB4Ed853D",
-      "amount": "500000000000000000000000"
-    },{
-      "address": "0x1861974f32eaCDCceD0F81b0f8eCcFeD58153a9D",
-      "amount": "500000000000000000000000"
+      "amount": "1500000000000000000000000"
     },{
       "address": "0x08EEc580AD41e9994599BaD7d2a74A9874A2852c",
-      "amount": "500000000000000000000000"
+      "amount": "1500000000000000000000000"
     },{
       "address": "0xE1D2210A967eE144aAD31EcD08565E894B88FFaf",
-      "amount": "500000000000000000000000"
+      "amount": "1500000000000000000000000"
     },{
       "address": "0x0b17cf48420400e1D71F8231d4a8e43B3566BB5B",
-      "amount": "500000000000000000000000"
+      "amount": "1500000000000000000000000"
+    },{
+      "address": "0x617512FA7d3fd26bdA51b9Ac8c23b04a48D625f1",
+      "amount": "1500000000000000000000000"
     }
-  ], 
+  ]
 };
 
 export const getDeploymentConfig = function(network) {
