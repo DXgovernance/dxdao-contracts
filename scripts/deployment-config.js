@@ -878,39 +878,6 @@ const schemesConfig = {
 };
 
 const extraRep = {
-  arbitrum: [
-    {
-      "address": "0x81A94868572EA6E430F9a72ED6C4afB8b5003fDF",
-      "amount": "200000000000000000000000"
-    },{
-      "address": "0x91628ddc3A6ff9B48A2f34fC315D243eB07a9501",
-      "amount": "200000000000000000000000"
-    },{
-      "address": "0xe16d3664b313bd5FB8D911b467047e3CB4Ed853D",
-      "amount": "200000000000000000000000"
-    },{
-      "address": "0x1861974f32eaCDCceD0F81b0f8eCcFeD58153a9D",
-      "amount": "200000000000000000000000"
-    },{
-      "address": "0x08EEc580AD41e9994599BaD7d2a74A9874A2852c",
-      "amount": "200000000000000000000000"
-    },{
-      "address": "0xE1D2210A967eE144aAD31EcD08565E894B88FFaf",
-      "amount": "200000000000000000000000"
-    },{
-      "address": "0xa5A29f81EEE450eC189b2F8B4562af1785595D69",
-      "amount": "200000000000000000000000"
-    },{
-      "address": "0x26358E62C2eDEd350e311bfde51588b8383A9315",
-      "amount": "200000000000000000000000"
-    },{
-      "address": "0x0b17cf48420400e1D71F8231d4a8e43B3566BB5B",
-      "amount": "200000000000000000000000"
-    },{
-      "address": "0x617512FA7d3fd26bdA51b9Ac8c23b04a48D625f1",
-      "amount": "200000000000000000000000"
-    }
-  ],
   rinkeby: [
     {
       "address": "0xe16d3664b313bd5FB8D911b467047e3CB4Ed853D",
@@ -946,7 +913,28 @@ const extraRep = {
       "address": "0x617512FA7d3fd26bdA51b9Ac8c23b04a48D625f1",
       "amount": "1500000000000000000000000"
     }
-  ]
+  ],
+  arbitrum: [
+    {
+      "address": "0x91628ddc3A6ff9B48A2f34fC315D243eB07a9501",
+      "amount": "500000000000000000000000"
+    },{
+      "address": "0xe16d3664b313bd5FB8D911b467047e3CB4Ed853D",
+      "amount": "500000000000000000000000"
+    },{
+      "address": "0x1861974f32eaCDCceD0F81b0f8eCcFeD58153a9D",
+      "amount": "500000000000000000000000"
+    },{
+      "address": "0x08EEc580AD41e9994599BaD7d2a74A9874A2852c",
+      "amount": "500000000000000000000000"
+    },{
+      "address": "0xE1D2210A967eE144aAD31EcD08565E894B88FFaf",
+      "amount": "500000000000000000000000"
+    },{
+      "address": "0x0b17cf48420400e1D71F8231d4a8e43B3566BB5B",
+      "amount": "500000000000000000000000"
+    }
+  ], 
 };
 
 export const getDeploymentConfig = function(network) {
