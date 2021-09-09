@@ -19,6 +19,10 @@ const networksConfig = {
       address: "0xC3Ae0333F0F34aa734D5493276223d95B8F9Cb37",
       fromBlock: 100
     },
+    arbitrumTestnet: {
+      address: "0x5d47100B0854525685907D5D773b92c22c0c745e",
+      fromBlock: 87284
+    },
     xdai: {
       address: "0xb90D6bec20993Be5d72A5ab353343f7a0281f158",
       fromBlock: 15040609 
@@ -32,6 +36,7 @@ const networksConfig = {
     hardhat: moment.duration(1, 'hours').asSeconds(),
     rinkeby: moment.duration(30, 'minutes').asSeconds(),
     arbitrum: moment.duration(30, 'minutes').asSeconds(),
+    arbitrumTestnet: moment.duration(30, 'minutes').asSeconds(),
     xdai: moment.duration(3, 'days').asSeconds(),
     mainnet: moment.duration(7, 'days').asSeconds()
   }
@@ -47,6 +52,11 @@ const TOKENS = {
     DXD: "0xC3Ae0333F0F34aa734D5493276223d95B8F9Cb37",
     SWPR: "0xdE903E2712288A1dA82942DDdF2c20529565aC30",
     WETH: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+  },
+  arbitrumTestnet : {
+    DXD: "0x5d47100B0854525685907D5D773b92c22c0c745e",
+    SWPR: "0x8f2072c2142D9fFDc785955E0Ce71561753D44Fb",
+    WETH: "0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681"
   }
 }
 
@@ -437,6 +447,208 @@ const schemesConfig = {
     daoBountyConst: 10
   }],
   
+  arbitrumTestnet: [{
+    name: "RegistrarWalletScheme",
+    callToController: true,
+    maxSecondsForExecution: moment.duration(1, 'days').asSeconds(),
+    maxRepPercentageChange: 0,
+    controllerPermissions: {
+      canGenericCall: true,
+      canUpgrade: true,
+      canChangeConstraints: true,
+      canRegisterSchemes: true
+    },
+    permissions: [],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 10*100,
+    queuedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(),
+    boostedVotePeriodLimit: moment.duration(2, 'hours').asSeconds(),
+    preBoostedVotePeriodLimit: moment.duration(30, 'minutes').asSeconds(),
+    thresholdConst: 2000,
+    quietEndingPeriod: moment.duration(30, 'minutes').asSeconds(),
+    proposingRepReward: 0,
+    votersReputationLossRatio: 10,
+    minimumDaoBounty: web3.utils.toWei("1"),
+    daoBountyConst: 10,
+  },{
+    name: "QuickWalletScheme",
+    callToController: false,
+    maxSecondsForExecution: moment.duration(1, 'days').asSeconds(),
+    maxRepPercentageChange: 0,
+    controllerPermissions: {
+      canGenericCall: false,
+      canUpgrade: false,
+      canChangeConstraints: false,
+      canRegisterSchemes: false
+    },
+    permissions: [{
+      asset: NULL_ADDRESS,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.DXD,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.WETH,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.SWPR,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    }],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 1*100,
+    queuedVotePeriodLimit: moment.duration(2, 'hours').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(1, 'hours').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(30, 'minutes').asSeconds(), 
+    thresholdConst: 1100, 
+    quietEndingPeriod: moment.duration(30, 'minutes').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 10, 
+    minimumDaoBounty: web3.utils.toWei("0.05"),
+    daoBountyConst: 10
+  },{
+    name: "SWPRWalletScheme",
+    callToController: false,
+    maxSecondsForExecution: moment.duration(1, 'days').asSeconds(),
+    maxRepPercentageChange: 0,
+    controllerPermissions: {
+      canGenericCall: false,
+      canUpgrade: false,
+      canChangeConstraints: false,
+      canRegisterSchemes: false
+    },
+    permissions: [{
+      asset: NULL_ADDRESS,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.DXD,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.WETH,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.SWPR,
+      to: ANY_ADDRESS,
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    }],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 10*100,
+    queuedVotePeriodLimit: moment.duration(2, 'hours').asSeconds(), 
+    boostedVotePeriodLimit: moment.duration(30, 'hours').asSeconds(), 
+    preBoostedVotePeriodLimit: moment.duration(30, 'minutes').asSeconds(), 
+    thresholdConst: 1300, 
+    quietEndingPeriod: moment.duration(30, 'minutes').asSeconds(), 
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 10, 
+    minimumDaoBounty: web3.utils.toWei("0.1"),
+    daoBountyConst: 10
+  },{
+    name: "MasterWalletScheme",
+    callToController: true,
+    maxSecondsForExecution: moment.duration(1, 'days').asSeconds(),
+    maxRepPercentageChange: 40,
+    controllerPermissions: {
+      canGenericCall: true,
+      canUpgrade: false,
+      canChangeConstraints: false,
+      canRegisterSchemes: false
+    },
+    permissions: [{
+      asset: NULL_ADDRESS,
+      to: "DXDVotingMachine",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: NULL_ADDRESS,
+      to: "RegistrarWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: NULL_ADDRESS,
+      to: "QuickWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: NULL_ADDRESS,
+      to: "SWPRWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.DXD,
+      to: "QuickWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.DXD,
+      to: "SWPRWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.WETH,
+      to: "QuickWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.WETH,
+      to: "SWPRWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.SWPR,
+      to: "QuickWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    },{
+      asset: TOKENS.arbitrumTestnet.SWPR,
+      to: "SWPRWalletScheme",
+      functionSignature: ANY_FUNC_SIGNATURE,
+      value: MAX_UINT_256,
+      allowed: true
+    }],
+    queuedVoteRequiredPercentage: 50,
+    boostedVoteRequiredPercentage: 2*100,
+    queuedVotePeriodLimit: moment.duration(3, 'hours').asSeconds(),
+    boostedVotePeriodLimit: moment.duration(2, 'hours').asSeconds(),
+    preBoostedVotePeriodLimit: moment.duration(30, 'minutes').asSeconds(),
+    thresholdConst: 1500,
+    quietEndingPeriod: moment.duration(30, 'minutes').asSeconds(),
+    proposingRepReward: 0, 
+    votersReputationLossRatio: 5, 
+    minimumDaoBounty: web3.utils.toWei("0.1"),
+    daoBountyConst: 10
+  }],
+  
   arbitrum: [{
     name: "RegistrarWalletScheme",
     callToController: true,
@@ -676,6 +888,24 @@ const extraRep = {
     }
   ],
   rinkeby: [
+    {
+      "address": "0xe16d3664b313bd5FB8D911b467047e3CB4Ed853D",
+      "amount": "1500000000000000000000000"
+    },{
+      "address": "0x08EEc580AD41e9994599BaD7d2a74A9874A2852c",
+      "amount": "1500000000000000000000000"
+    },{
+      "address": "0xE1D2210A967eE144aAD31EcD08565E894B88FFaf",
+      "amount": "1500000000000000000000000"
+    },{
+      "address": "0x0b17cf48420400e1D71F8231d4a8e43B3566BB5B",
+      "amount": "1500000000000000000000000"
+    },{
+      "address": "0x617512FA7d3fd26bdA51b9Ac8c23b04a48D625f1",
+      "amount": "1500000000000000000000000"
+    }
+  ],
+  arbitrumTestnet: [
     {
       "address": "0xe16d3664b313bd5FB8D911b467047e3CB4Ed853D",
       "amount": "1500000000000000000000000"

@@ -48,5 +48,30 @@
         "address": "0xBa51391385A6bD5ECA0217d7e843B29227E72508"
       }
     }
+  },
+  "arbitrumTestnet": {
+    "fromBlock": 3995726,
+    "avatar": "0x6370B3Ba7D9bAd94b35dC9073540E562bDe5Fdc3",
+    "reputation": "0x12cCaa029F525fB4262e40D1a6dDdf2817af3fE9",
+    "token": "0x5d47100B0854525685907D5D773b92c22c0c745e",
+    "controller": "0x91509d26D0218D15C19eB341a25B57f302792765",
+    "permissionRegistry": "0x13f3A639f4c83723675672B2C7084413eea01D48",
+    "schemes": {
+      "RegistrarWalletScheme": "0x3d432D43805AF80733CF492b6C42DB0ff3eB185e",
+      "QuickWalletScheme": "0x8a6428Ccb48FFEb8619cbc18a479feCA22d784d3",
+      "SWPRWalletScheme": "0xA28A7e5D8E4BE7175aCB817D5b89ED88bD1e30B5",
+      "MasterWalletScheme": "0x39405F3f7F2c3E72c1B21544F2539fAD83F7dD4c"
+    },
+    "utils": {
+      "multicall": "0xac380E8434Db942B5902956E8Dc7cD9d6A66bc74",
+      "dxDaoNFT": "0xDC50FE5862D5541C6D0b9B07f15Fe016Cdacb431",
+      "dxdVestingFactory": "0xA5431A66874627948d4Ab68E033177f8982C3A2C"
+    },
+    "votingMachines": {
+      "dxd": {
+        "token": "0x5d47100B0854525685907D5D773b92c22c0c745e",
+        "address": "0x5786e7a0A1aB6a4040a77fcbcD144E649A6d4939"
+      }
+    }
   }
 }
