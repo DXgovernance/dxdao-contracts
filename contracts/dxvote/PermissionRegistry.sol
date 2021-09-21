@@ -30,6 +30,7 @@ contract PermissionRegistry {
   struct Permission {
     uint256 valueAllowed;
     uint256 fromTime;
+    bool isSet;
   }
   
   // asset address => from address => to address => function call signature allowed => Permission
@@ -54,6 +55,7 @@ contract PermissionRegistry {
     owner = _owner;
     timeDelay = _timeDelay;
     permissions[address(0)][_owner][address(this)][ANY_SIGNATURE].fromTime = now;
+    permissions[address(0)][_owner][address(this)][ANY_SIGNATURE].isSet = true;
   }
   
   /**
@@ -64,6 +66,7 @@ contract PermissionRegistry {
     require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
     permissions[address(0)][owner][address(this)][ANY_SIGNATURE].fromTime = 0;
     permissions[address(0)][newOwner][address(this)][ANY_SIGNATURE].fromTime = now;
+    permissions[address(0)][newOwner][address(this)][ANY_SIGNATURE].isSet = true;
     owner = newOwner;
   }
   
@@ -95,6 +98,8 @@ contract PermissionRegistry {
     bool allowed
   ) public {
     require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
+    require(from != address(0), "PermissionRegistry: Cant use address(0) as from");
+    require(from != owner || to != address(this), "PermissionRegistry: Cant set owner permissions");
     if (allowed){
       permissions[asset][from][to][functionSignature].fromTime = now.add(timeDelay);
       permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
@@ -102,6 +107,7 @@ contract PermissionRegistry {
       permissions[asset][from][to][functionSignature].fromTime = 0;
       permissions[asset][from][to][functionSignature].valueAllowed = 0;
     }
+    permissions[asset][from][to][functionSignature].isSet = true;
     emit PermissionSet(
       asset,
       from,
@@ -127,7 +133,8 @@ contract PermissionRegistry {
     uint256 valueAllowed, 
     bool allowed
   ) public {
-    require(to != address(this), "PermissionRegistry: Cant change permissions to PermissionRegistry");
+    require(to != address(this), "PermissionRegistry: Cant set permissions to PermissionRegistry");
+    require(msg.sender != owner && to != address(this), "PermissionRegistry: Cant set owner permissions");
     if (allowed) {
       permissions[asset][msg.sender][to][functionSignature].fromTime = now.add(timeDelay);
       permissions[asset][msg.sender][to][functionSignature].valueAllowed = valueAllowed;
@@ -135,6 +142,7 @@ contract PermissionRegistry {
       permissions[asset][msg.sender][to][functionSignature].fromTime = 0;
       permissions[asset][msg.sender][to][functionSignature].valueAllowed = 0;
     }
+    permissions[asset][msg.sender][to][functionSignature].isSet = true;
     emit PermissionSet(
       asset,
       msg.sender,
@@ -166,12 +174,12 @@ contract PermissionRegistry {
     if (asset != address(0)) {
 
       // Check if there is a value allowed specifically to the `to` address
-      if (permissions[asset][from][to][ANY_SIGNATURE].fromTime > 0) {
+      if (permissions[asset][from][to][ANY_SIGNATURE].isSet) {
         permission = permissions[asset][from][to][ANY_SIGNATURE];
       }
       
       // Check if there is a value allowed to any address
-      else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].fromTime > 0) {
+      else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
         permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
       }
     
@@ -179,22 +187,22 @@ contract PermissionRegistry {
     } else {
         
       // Check is there an allowance to the implementation address with the function signature
-      if (permissions[asset][from][to][functionSignature].fromTime > 0) {
+      if (permissions[asset][from][to][functionSignature].isSet) {
         permission = permissions[asset][from][to][functionSignature];
       }
       
       // Check is there an allowance to the implementation address for any function signature
-      else if (permissions[asset][from][to][ANY_SIGNATURE].fromTime > 0) {
+      else if (permissions[asset][from][to][ANY_SIGNATURE].isSet) {
         permission = permissions[asset][from][to][ANY_SIGNATURE];
       }
       
       // Check if there is there is an allowance to any address with the function signature
-      else if (permissions[asset][from][ANY_ADDRESS][functionSignature].fromTime > 0) {
+      else if (permissions[asset][from][ANY_ADDRESS][functionSignature].isSet) {
         permission = permissions[asset][from][ANY_ADDRESS][functionSignature];
       }
       
       // Check if there is there is an allowance to any address and any function
-      else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].fromTime > 0) {
+      else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
         permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
       }
     }

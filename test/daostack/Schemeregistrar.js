@@ -2,8 +2,8 @@
 // Copied from https://github.com/daostack/arc/blob/master/test/schemeregistrar.js
 //
 
-import * as helpers from './helpers';
-const constants = require('./helpers/constants');
+import * as helpers from '../helpers';
+const constants = require('../helpers/constants');
 const SchemeRegistrar = artifacts.require("./SchemeRegistrar.sol");
 const ERC20Mock = artifacts.require('./test/ERC20Mock.sol');
 const DaoCreator = artifacts.require("./DaoCreator.sol");

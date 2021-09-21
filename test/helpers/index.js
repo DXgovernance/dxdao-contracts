@@ -1,6 +1,8 @@
-/**
-    helpers for tests
-*/
+const constants = require("./constants");
+const { encodePermission, decodePermission } = require("./permissions");
+const { encodeGenericCallData, getWalletSchemeEvent } = require("./walletScheme");
+
+const EthDecoder = require("@maticnetwork/eth-decoder");
 
 const Avatar = artifacts.require("./Avatar.sol");
 const Controller = artifacts.require("./Controller.sol");
@@ -12,10 +14,8 @@ const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
-const constants = require("./constants");
-const { encodePermission, decodePermission } = require("./permissions");
-const { encodeGenericCallData, getWalletSchemeExecutionEvent } = require("./walletScheme");
-const EthDecoder = require("@maticnetwork/eth-decoder");
+const DXDVestingFactory = artifacts.require("./DXDVestingFactory.sol");
+const DXdaoNFT = artifacts.require("./DXdaoNFT.sol");
 
 export const logDecoder = new EthDecoder.default.LogDecoder(
   [
@@ -27,7 +27,9 @@ export const logDecoder = new EthDecoder.default.LogDecoder(
     GenesisProtocol.abi,
     DXDVotingMachine.abi,
     WalletScheme.abi,
-    PermissionRegistry.abi
+    PermissionRegistry.abi,
+    DXDVestingFactory.abi,
+    DXdaoNFT.abi
   ]
 );
 
@@ -306,4 +308,32 @@ export function testCallWithoutReturnValueFrom(address) {
   return new web3.eth.Contract(ActionMock.abi).methods.testWithoutReturnValue(address).encodeABI();
 }
 
-export { encodePermission, decodePermission, encodeGenericCallData, getWalletSchemeExecutionEvent, constants };
+export function encodeERC20Transfer(to, value) {
+  return web3.eth.abi.encodeFunctionCall({
+    name: 'transfer',
+    type: 'function',
+    inputs: [{
+      type: 'address',
+      name: 'to'
+    },{
+      type: 'uint256',
+      name: 'value'
+    }]
+  }, [to, value]);
+}
+
+export function encodeERC20Approve(to, value) {
+  return web3.eth.abi.encodeFunctionCall({
+    name: 'approve',
+    type: 'function',
+    inputs: [{
+      type: 'address',
+      name: 'to'
+    },{
+      type: 'uint256',
+      name: 'value'
+    }]
+  }, [to, value]);
+}
+
+export { encodePermission, decodePermission, encodeGenericCallData, getWalletSchemeEvent, constants };

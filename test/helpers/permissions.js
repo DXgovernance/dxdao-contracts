@@ -84,10 +84,10 @@ const encodePermission = function(permissions) {
 const decodePermission = function(permission) {
   permission = hexToBinary(permission);
   return {
-    canGenericCall: permission[ 3 ] == "1",
-    canUpgrade: permission[ 4 ] == "1",
-    canChangeConstraints: permission[ 5 ] == "1",
-    canRegisterSchemes: permission[ 6 ] == "1"
+    canGenericCall: permission.length > 3 && permission[ 4 ] == "1",
+    canUpgrade: permission.length > 3 && permission[ 5 ] == "1",
+    canChangeConstraints: permission.length > 3 && permission[ 6 ] == "1",
+    canRegisterSchemes: permission.length > 3 && permission[ 7 ] == "1"
   };
 }
 

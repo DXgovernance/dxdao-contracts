@@ -1,11 +1,13 @@
-import * as helpers from "./helpers";
-const constants = require("./helpers/constants");
-const OMNGuild = artifacts.require("OMNGuild");
-const Realitio = artifacts.require("Realitio");
-const { soliditySha3 } = require("web3-utils");
+import * as helpers from "../helpers";
 const {
     fixSignature
-} = require("./helpers/sign");
+} = require("../helpers/sign");
+const {
+  createAndSetupGuildToken,
+  createProposal,
+} = require("../helpers/guild");
+
+const { soliditySha3 } = require("web3-utils");
 const {
     BN,
     expectEvent,
@@ -15,15 +17,15 @@ const {
     ether,
     time
 } = require("@openzeppelin/test-helpers");
-const {
-    createAndSetupGuildToken,
-    createProposal,
-} = require("./helpers/guild");
+
+const OMNGuild = artifacts.require("OMNGuild");
+const Realitio = artifacts.require("Realitio");
 
 require("chai").should();
 
 contract("OMNGuild", function(accounts) {
 
+    const constants = helpers.constants;
     const ZERO = new BN("0");
     const TIMELOCK = new BN("60");
     const VOTE_GAS = new BN("50000"); // 50k
@@ -511,6 +513,7 @@ contract("OMNGuild", function(accounts) {
 
 contract("OMNGuild", function(accounts) {
 
+    const constants = helpers.constants;
     const ZERO = new BN("0");
     const TIMELOCK = new BN("60");
     const VOTE_GAS = new BN("50000"); // 50k
