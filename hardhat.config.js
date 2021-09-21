@@ -49,7 +49,7 @@ const hardharNetworks = process.env.CI
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
       accounts: { mnemonic: MNEMONIC },
-      gasLimit: 9000000,
+      gasLimit: 10000000,
       gasPrice: 1000000000, // 1 gwei
       timeout: 60000
     },
@@ -65,7 +65,7 @@ const hardharNetworks = process.env.CI
       accounts: { mnemonic: MNEMONIC },
       gasPrice: 1000000000, // 1 gwei
       chainId: 42161,
-      timeout: 60000
+      timeout: 600000 // 10 minutes
     },
     arbitrumTestnet: {
       url: 'https://rinkeby.arbitrum.io/rpc',

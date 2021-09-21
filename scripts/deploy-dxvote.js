@@ -7,6 +7,7 @@ const repHolders = require('../.repHolders.json');
 const wrapProvider = require('arb-ethers-web3-bridge').wrapProvider;
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 const { getDeploymentConfig } = require("./deployment-config.js")
+const BN = web3.utils.BN;
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 const MAX_UINT_256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
@@ -50,14 +51,26 @@ async function main() {
   }
   
   const deploymentConfig = getDeploymentConfig(networkName);
-  
+
   // Get initial REP holders
   let founders = [], initialRep = [], initialTokens = [];
-  for (let address in deploymentConfig.reputation.addresses) {
-    founders.push(address);
-    initialRep.push(deploymentConfig.reputation.addresses[address]);
+  deploymentConfig.reputation.validAddresses.map((initialRepHolder) => {
+    founders.push(initialRepHolder.address);
+    initialRep.push(initialRepHolder.amount);
     initialTokens.push(0);
-  }
+  })
+  
+  deploymentConfig.extraRep.map((extraRepHolder) => {
+    const extraRepHolderIndex = founders.indexOf(extraRepHolder.address)
+    if (extraRepHolderIndex < 0) {
+      founders.push(extraRepHolder.address);
+      initialRep.push(extraRepHolder.amount);
+      initialTokens.push(0);
+    } else {
+      initialRep[extraRepHolderIndex] = new BN(initialRep[extraRepHolderIndex]).add(new BN(extraRepHolder.amount)).toString();
+    }
+  });
+
   
   if (!contractsFile[networkName] || networkName == 'hardhat') 
     contractsFile[networkName] = { 
@@ -135,7 +148,6 @@ async function main() {
       console.log("Voting machine token deployed to:", votingMachineToken.address);
   } else {
     votingMachineToken = await ERC20Mock.at(deploymentConfig.votingMachineToken.address);
-    contractsFile[networkName].fromBlock = Math.min(fromBlock, deploymentConfig.votingMachineToken.fromBlock);
     console.log("Using pre configured voting machine token:", votingMachineToken.address);
   }
   contractsFile[networkName].votingMachines.dxd.token = votingMachineToken.address;
@@ -149,7 +161,7 @@ async function main() {
   } else {
     console.log('Deploying DxAvatar...',votingMachineToken.address, dxReputation.address);
     dxAvatar = await DxAvatar.new("DXdao", votingMachineToken.address, dxReputation.address);
-    if (await votingMachineToken.balanceOf(accounts[0]) > web3.utils.toWei('100000000'))
+    if (await votingMachineToken.balanceOf(accounts[0], {from: accounts[0], gasPrice: 0}) > web3.utils.toWei('100000000'))
       await votingMachineToken.transfer(dxAvatar.address, web3.utils.toWei('100000000'));
     console.log("DXdao Avatar deployed to:", dxAvatar.address);
     contractsFile[networkName].avatar = dxAvatar.address;
@@ -186,8 +198,8 @@ async function main() {
     contractsFile[networkName].votingMachines.dxd.address = votingMachine.address;
     contractsFile[networkName].votingMachines.dxd.token = votingMachineToken.address;
     saveContractsFile(contractsFile);
+    await waitBlocks(1);
   }
-  await waitBlocks(1);
   
   // Deploy PermissionRegistry
   let permissionRegistry;
@@ -236,23 +248,20 @@ async function main() {
     console.log("Permission Registry deployed to:", permissionRegistry.address);
     contractsFile[networkName].permissionRegistry = permissionRegistry.address;
     saveContractsFile(contractsFile);
+    await waitBlocks(1);
   }
-  await waitBlocks(1);
   
   // Deploy Schemes
   for (var i = 0; i < deploymentConfig.schemes.length; i++) {
     const schemeConfiguration = deploymentConfig.schemes[i];
     
     if (contractsFile[networkName].schemes[schemeConfiguration.name]) {
-      console.log(`Using ${schemeConfiguration.name} already deployed on ${contractsFile[networkName].schemes[schemeConfiguration.name].address}`);
-      masterWalletScheme = await WalletScheme.at(contractsFile[networkName].schemes[schemeConfiguration.name].address);
+      console.log(`Scheme ${schemeConfiguration.name} already deployed on ${contractsFile[networkName].schemes[schemeConfiguration.name]}`);
     } else {
       
       console.log(`Deploying ${schemeConfiguration.name}...`);
       const newScheme = await WalletScheme.new();
       console.log(`${schemeConfiguration.name} deployed to: ${newScheme.address}`);
-      
-      await waitBlocks(1);
       
       const timeNow = moment().unix();
       let schemeParamsHash = await votingMachine.getParametersHash(
@@ -268,7 +277,7 @@ async function main() {
           schemeConfiguration.minimumDaoBounty,
           schemeConfiguration.daoBountyConst,
           timeNow,
-        ], NULL_ADDRESS
+        ], NULL_ADDRESS, {from: accounts[0], gasPrice: 0}
       );
 
       await votingMachine.setParameters(
@@ -300,16 +309,48 @@ async function main() {
       );
       
       console.log("Setting scheme permissions...");
-      await Promise.all(schemeConfiguration.permissions.map(async (permission) => {
+      for (var p = 0; p < schemeConfiguration.permissions.length; p++) {
+        const permission = schemeConfiguration.permissions[p];
+        if (contractsFile[networkName].schemes && contractsFile[networkName].schemes[permission.to])
+          permission.to = contractsFile[networkName].schemes[permission.to];
+        else if (permission.to == "ITSELF")
+          permission.to = newScheme.address;
+        else if (permission.to == "DXDVotingMachine")
+          permission.to = contractsFile[networkName].votingMachines.dxd.address;
+          
         await permissionRegistry.setAdminPermission(
           permission.asset, 
-          schemeConfiguration.callToController ? dxController.address : newScheme.address,
-          permission.to == "SCHEME" ? newScheme.address : permission.to,
+          schemeConfiguration.callToController ? dxAvatar.address : newScheme.address,
+          permission.to,
           permission.functionSignature,
           permission.value,
           permission.allowed
         );
-      }))
+      }
+      
+      if (schemeConfiguration.boostedVoteRequiredPercentage > 0){
+        console.log('Setting boosted vote required percentage in voting machine...');
+        await dxController.genericCall(
+          votingMachine.address,
+          web3.eth.abi.encodeFunctionCall({
+              name: 'setBoostedVoteRequiredPercentage',
+              type: 'function',
+              inputs: [{
+                  type: 'address',
+                  name: '_scheme'
+              },{
+                  type: 'bytes32',
+                  name: '_paramsHash'
+              },{
+                  type: 'uint256',
+                  name: '_boostedVotePeriodLimit'
+              }]
+          }, [newScheme.address, schemeParamsHash, schemeConfiguration.boostedVoteRequiredPercentage]),
+          dxAvatar.address,
+          0
+        );
+        ;
+      }
       
       console.log('Registering scheme in controller...');
       await dxController.registerScheme(
@@ -319,12 +360,6 @@ async function main() {
         dxAvatar.address
       );
       
-      if (schemeConfiguration.boostedVoteRequiredPercentage > 0){
-        console.log('Setting boosted vote required percentage in voting machine...');
-        await votingMachine.setBoostedVoteRequiredPercentage(
-          newScheme.address, schemeParamsHash, schemeConfiguration.boostedVoteRequiredPercentage
-        );
-      }
       contractsFile[networkName].schemes[schemeConfiguration.name] = newScheme.address;
       saveContractsFile(contractsFile);
     }
@@ -332,7 +367,7 @@ async function main() {
   
   // Deploy dxDaoNFT if it is not set
   let dxDaoNFT;
-  if (!contractsFile[networkName].utils.dxdaoNFT) {
+  if (!contractsFile[networkName].utils.dxDaoNFT) {
     console.log("Deploying DXdaoNFT...");
     dxDaoNFT = await DXdaoNFT.new();
     contractsFile[networkName].utils.dxDaoNFT = dxDaoNFT.address;
@@ -363,8 +398,8 @@ async function main() {
     await dxController.unregisterScheme(accounts[0], dxAvatar.address);
   } catch (e) {
     console.error("Error transfering ownership", e);
-    contractsFile[networkName] = {}
-    saveContractsFile(contractsFile);
+    // contractsFile[networkName] = {}
+    // saveContractsFile(contractsFile);
   }
   
   // Deployment Finished

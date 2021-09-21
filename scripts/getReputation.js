@@ -10,6 +10,8 @@ const repTokenAddress = {
   xdai: "0xED77eaA9590cfCE0a126Bab3D8A6ada9A393d4f6"
 };
 
+const mainnetRepMapping = "0x458c390a29c6bed4aec37499b525b95eb0de217d";
+
 const fromBlock = process.env.REP_FROM_BLOCK;
 const toBlock = process.env.REP_TO_BLOCK;
 
@@ -21,10 +23,12 @@ async function main() {
   const DXRep = await DxReputation.at(repTokenAddress[hre.network.name]);
   const allEvents = await DXRep.getPastEvents("allEvents", {fromBlock, toBlock});
   let addresses = {};
+  
+  // Get all REP form mints and burns
   for (var i = 0; i < allEvents.length; i++) {
     if (allEvents[i].event == 'Mint') {
       const mintedRep = new BN(allEvents[i].returnValues._amount.toString());
-      const toAddress = allEvents[i].returnValues._to;
+      const toAddress = web3.utils.toChecksumAddress(allEvents[i].returnValues._to);
       if (addresses[toAddress]) {
         addresses[toAddress] = addresses[toAddress].add(mintedRep);
       } else {
@@ -35,24 +39,59 @@ async function main() {
   for (var i = 0; i < allEvents.length; i++) {
     if (allEvents[i].event == 'Burn') {
       const burnedRep = new BN(allEvents[i].returnValues._amount.toString());
-      const fromAddress = allEvents[i].returnValues._from;
+      const fromAddress = web3.utils.toChecksumAddress(allEvents[i].returnValues._from);
       addresses[fromAddress] = addresses[fromAddress].sub(burnedRep)
     }
   }
-  let totalRep = new BN(0);
-  for (var address in addresses) {
-    totalRep = totalRep.add(addresses[address])
-    addresses[address] = addresses[address].toString();
+
+  // Get REP from mapping if script runs on mainnet
+  if (hre.network.name == "mainnet") {
+    const mappingLogs = await web3.eth.getPastLogs({
+      fromBlock: 10911798, address: mainnetRepMapping
+    });
+    for (var i = 0; i < mappingLogs.length; i++) {
+      if (mappingLogs[i].topics[2] == "0xac3e2276e49f2e2937cb1feecb361dd733fd0de8711789aadbd4013a2e0dac14"){
+        const fromAddress = web3.eth.abi.decodeParameter('address', mappingLogs[i].topics[1]);
+        const toAddress = web3.eth.abi.decodeLog([{
+            type: 'string',
+            name: 'value',
+            indexed: false
+        }], mappingLogs[i].data).value;
+        if (web3.utils.isAddress(toAddress) && addresses[fromAddress] && addresses[fromAddress] > 0 && fromAddress != toAddress) {
+          console.log("REP mapping from", addresses[fromAddress].toString(), fromAddress,"to", toAddress);
+          if (addresses[toAddress])
+            addresses[toAddress] = addresses[toAddress].add(addresses[fromAddress]);
+          else
+            addresses[toAddress] = addresses[fromAddress];
+          delete addresses[fromAddress];
+        }
+      }
+    }
   }
-  const repHolders = {
-    addresses: addresses,
-    network: hre.network.name,
-    repToken: repTokenAddress[hre.network.name],
+
+  let repHolders = {
     fromBlock: fromBlock,
     toBlock: toBlock,
-    totalRep: totalRep.toString()
+    totalRep: new BN(0),
+    network: hre.network.name,
+    repToken: repTokenAddress[hre.network.name],
+    validAddresses: [],
+    invalidAddresses: [],
+  };
+  for (var address in addresses) {
+    if (await web3.eth.getCode(address) == "0x") {
+      repHolders.totalRep = repHolders.totalRep.add(addresses[address]);
+      repHolders.validAddresses.push({ address, amount: addresses[address].toString() })
+    } else {
+      repHolders.invalidAddresses.push({ address, amount: addresses[address].toString() })
+    }
   }
-  console.log('REP Holders:', repHolders)
+  
+  repHolders.validAddresses = repHolders.validAddresses.sort((a, b) => b.amount - a.amount );
+  console.log('REP Holders: (address, amount)');
+  repHolders.validAddresses.map((a)=> console.log(a.address, a.amount));
+  repHolders.totalRep = repHolders.totalRep.toString();
+  console.log('REP Holders .json file:', repHolders);
   fs.writeFileSync('.repHolders.json', JSON.stringify(repHolders, null, 2));
 } 
 
