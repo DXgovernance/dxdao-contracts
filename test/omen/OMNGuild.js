@@ -56,8 +56,8 @@ contract("OMNGuild", function(accounts) {
             guildToken.address,  //  _token:
             60*60*24*7,  //  _proposalTime:
             130000,  //  _timeForExecution:
-            40,  //  _votesForExecution:
-            10,  //  _votesForCreation:
+            40,  //  _votingPowerForProposalExecution:
+            10,  //  _votingPowerForProposalCreation:
             VOTE_GAS,  //  _voteGas:
             MAX_GAS_PRICE,  //  _maxGasPrice:
             TIMELOCK,  //  _lockTime:
@@ -403,10 +403,10 @@ contract("OMNGuild", function(accounts) {
         it("test createProposal", async function() {
             await expectRevert(omnGuild.setSpecialProposerPermission(accounts[2],3,4), "Only callable by the guild");
 
-            const testCall = web3.eth.abi.encodeFunctionSignature("getVotesForExecution()");
+            const testCall = web3.eth.abi.encodeFunctionSignature("getVotingPowerForProposalExecution()");
             const testData = await new web3.eth.Contract(
                   OMNGuild.abi
-                ).methods.getVotesForExecution().encodeABI();
+                ).methods.getVotingPowerForProposalExecution().encodeABI();
             const tx = await omnGuild.createProposal(
                 [ accounts[0] ],  //  to:
                 [ testData ],  //  data:
@@ -451,7 +451,7 @@ contract("OMNGuild", function(accounts) {
                 ).methods.setSpecialProposerPermission(
                     accounts[0], // proposer
                     12000000,  // proposalTime
-                    0, // votesForCreation
+                    0, // votingPowerForProposalCreation
                   ).encodeABI()
             const setSpecialProposerPermissionProposalId = await createProposal({
               guild: omnGuild,
@@ -473,7 +473,7 @@ contract("OMNGuild", function(accounts) {
             expectEvent(receipt, "SetSpecialProposerPermission", {
                 _proposer: accounts[0],
                 _proposalTime: "12000000",
-                _votesForCreation: "0"
+                _votingPowerForProposalCreation: "0"
             });
             expectEvent(receipt, "ProposalExecuted", {
                 proposalId: setSpecialProposerPermissionProposalId
@@ -544,8 +544,8 @@ contract("OMNGuild", function(accounts) {
             guildToken.address,  //  _token:
             60*60*24*7,  //  _proposalTime:
             130000,  //  _timeForExecution:
-            40,  //  _votesForExecution:
-            10,  //  _votesForCreation:
+            40,  //  _votingPowerForProposalExecution:
+            10,  //  _votingPowerForProposalCreation:
             VOTE_GAS,  //  _voteGas:
             MAX_GAS_PRICE,  //  _maxGasPrice:
             TIMELOCK,  //  _lockTime:

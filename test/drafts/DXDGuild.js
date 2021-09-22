@@ -116,24 +116,24 @@ contract("DXDGuild", function (accounts) {
 
     it("execute a positive vote on the voting machine from the dxd-guild", async function () {
       await expectRevert(
-        dxdGuild.createVotingMachineProposal(walletSchemeProposalId, {from: accounts[1]} ),
+        dxdGuild.createVotingMachineVoteProposal(walletSchemeProposalId, {from: accounts[1]} ),
         "DXDGuild: Not enough tokens to create proposal"
       );
-      const tx = await dxdGuild.createVotingMachineProposal(walletSchemeProposalId, {from: accounts[2]} );
+      const tx = await dxdGuild.createVotingMachineVoteProposal(walletSchemeProposalId, {from: accounts[2]} );
 
       const positiveVoteProposalId = tx.logs[0].args.proposalId;
       const negativeVoteProposalId = tx.logs[2].args.proposalId;
       
       await expectRevert(
         dxdGuild.endProposal(positiveVoteProposalId),
-        "DXDGuild: Use endVotingMachineProposal to end proposals to voting machine"
+        "DXDGuild: Use endVotingMachineVoteProposal to end proposals to voting machine"
       );
       await expectRevert(
         dxdGuild.endProposal(positiveVoteProposalId),
-        "DXDGuild: Use endVotingMachineProposal to end proposals to voting machine"
+        "DXDGuild: Use endVotingMachineVoteProposal to end proposals to voting machine"
       );
       await expectRevert(
-        dxdGuild.endVotingMachineProposal(walletSchemeProposalId),
+        dxdGuild.endVotingMachineVoteProposal(walletSchemeProposalId),
         "DXDGuild: Positive proposal hasnt ended yet"
       );
       
@@ -150,16 +150,16 @@ contract("DXDGuild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await expectRevert(
         dxdGuild.endProposal(positiveVoteProposalId),
-        "DXDGuild: Use endVotingMachineProposal to end proposals to voting machine"
+        "DXDGuild: Use endVotingMachineVoteProposal to end proposals to voting machine"
       );
       await expectRevert(
         dxdGuild.endProposal(negativeVoteProposalId),
-        "DXDGuild: Use endVotingMachineProposal to end proposals to voting machine"
+        "DXDGuild: Use endVotingMachineVoteProposal to end proposals to voting machine"
       );
-      const receipt = await dxdGuild.endVotingMachineProposal(walletSchemeProposalId);
+      const receipt = await dxdGuild.endVotingMachineVoteProposal(walletSchemeProposalId);
       expectEvent(receipt, "ProposalExecuted", { proposalId: positiveVoteProposalId });
       await expectRevert(
-        dxdGuild.endVotingMachineProposal(walletSchemeProposalId),
+        dxdGuild.endVotingMachineVoteProposal(walletSchemeProposalId),
         "DXDGuild: Positive proposal already executed"
       );
       await time.increase(time.duration.seconds(31));

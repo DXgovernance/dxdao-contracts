@@ -102,10 +102,10 @@ export async function createProposal({guild, to, data, value, description, conte
 export async function setAllVotesOnProposal({guild, proposalId, account}) {
   const tokenAddress = await guild.token();
   const token = await ERC20Mock.at(tokenAddress);
-  const votes = await guild.votesOf([account]);
+  const votingPower = await guild.votingPowerOf(account);
   return guild.setVote(
     proposalId,
-    votes[0],
+    votingPower,
     {from: account}
   );
 }

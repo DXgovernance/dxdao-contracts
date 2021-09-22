@@ -177,8 +177,8 @@ contract("ERC20Guild", function (accounts) {
       )
 
       assert.equal(await erc20Guild.proposalTime(), 30);
-      assert.equal(await erc20Guild.votesForCreation(), 100);
-      assert.equal(await erc20Guild.votesForExecution(), 200);
+      assert.equal(await erc20Guild.votingPowerForProposalCreation(), 100);
+      assert.equal(await erc20Guild.votingPowerForProposalExecution(), 200);
       assert.equal(await erc20Guild.lockTime(), 60);
     });
     
@@ -201,8 +201,8 @@ contract("ERC20Guild", function (accounts) {
       await erc20Guild.endProposal(guildProposalId);
 
       assert.equal(await erc20Guild.proposalTime(), 30);
-      assert.equal(await erc20Guild.votesForCreation(), 100);
-      assert.equal(await erc20Guild.votesForExecution(), 200);
+      assert.equal(await erc20Guild.votingPowerForProposalCreation(), 100);
+      assert.equal(await erc20Guild.votingPowerForProposalExecution(), 200);
       assert.equal(await erc20Guild.lockTime(), 60);
     });
     
@@ -237,8 +237,8 @@ contract("ERC20Guild", function (accounts) {
       expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
 
       assert.equal(await erc20Guild.proposalTime(), 15);
-      assert.equal(await erc20Guild.votesForCreation(), 50);
-      assert.equal(await erc20Guild.votesForExecution(), 100);
+      assert.equal(await erc20Guild.votingPowerForProposalCreation(), 50);
+      assert.equal(await erc20Guild.votingPowerForProposalExecution(), 100);
       assert.equal(await erc20Guild.lockTime(), 10);
     });
     
@@ -462,7 +462,7 @@ contract("ERC20Guild", function (accounts) {
         [10],
         { from: accounts[5] }
       ),
-      "ERC20Guild: Wrong length of proposalIds or amounts"
+      "ERC20Guild: Wrong length of proposalIds or votingPowers"
     );
   });
 
@@ -527,7 +527,7 @@ contract("ERC20Guild", function (accounts) {
       const guildProposalId = await createProposal(genericProposal);
       await expectRevert(
         erc20Guild.setVote(guildProposalId, 10000, { from: accounts[5] }),
-        "ERC20Guild: Invalid amount"
+        "ERC20Guild: Invalid votingPower amount"
       );
     });
 
@@ -542,9 +542,9 @@ contract("ERC20Guild", function (accounts) {
       expectEvent(txVoteAdd, "VoteAdded", {
         proposalId: guildProposalId,
         voter: accounts[5],
-        amount: "200",
+        votingPower: "200",
       });
-      let totalVotes = await erc20Guild.getProposalVotes(
+      let totalVotes = await erc20Guild.getProposalVotesOfVoter(
         guildProposalId,
         accounts[5]
       );
@@ -558,9 +558,9 @@ contract("ERC20Guild", function (accounts) {
       expectEvent(txVoteRemove, "VoteRemoved", {
         proposalId: guildProposalId,
         voter: accounts[5],
-        amount: "100",
+        votingPower: "100",
       });
-      totalVotes = await erc20Guild.getProposalVotes(guildProposalId, accounts[5]);
+      totalVotes = await erc20Guild.getProposalVotesOfVoter(guildProposalId, accounts[5]);
       totalVotes.should.be.bignumber.equal("100");
     });
     
@@ -763,13 +763,13 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(state, constants.WalletSchemeProposalState.submitted);
     });
 
-    it("can read votesOf single accounts", async function () {
-      const votes = await erc20Guild.methods["votesOf(address)"](accounts[2]);
+    it("can read votingPowerOf single accounts", async function () {
+      const votes = await erc20Guild.votingPowerOf(accounts[2]);
       votes.should.be.bignumber.equal("100");
     });
 
-    it("can read votesOf multiple accounts", async function () {
-      const res = await erc20Guild.methods["votesOf(address[])"]([ accounts[2], accounts[5] ]);
+    it("can read votingPowerOf multiple accounts", async function () {
+      const res = await erc20Guild.votingPowerOfMultiple([ accounts[2], accounts[5] ]);
       res[0].should.be.bignumber.equal("100");
       res[1].should.be.bignumber.equal("200");
     });
@@ -790,7 +790,7 @@ contract("ERC20Guild", function (accounts) {
       amount.should.be.bignumber.equal("50");
       timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
 
-      const votes = await erc20Guild.methods["votesOf(address)"](accounts[1]);
+      const votes = await erc20Guild.votingPowerOf(accounts[1]);
       votes.should.be.bignumber.equal("50");
 
       const totalLocked = await erc20Guild.totalLocked();
@@ -804,7 +804,7 @@ contract("ERC20Guild", function (accounts) {
       const txLock = await erc20Guild.lockTokens(50, { from: accounts[1] });
       expectEvent(txLock, "TokensLocked", { voter: accounts[1], value: "50" });
 
-      let votes = await erc20Guild.methods["votesOf(address)"](accounts[1]);
+      let votes = await erc20Guild.votingPowerOf(accounts[1]);
       votes.should.be.bignumber.equal("50");
 
       let totalLocked = await erc20Guild.totalLocked();
@@ -820,7 +820,7 @@ contract("ERC20Guild", function (accounts) {
         value: "50",
       });
 
-      votes = await erc20Guild.methods["votesOf(address)"](accounts[1]);
+      votes = await erc20Guild.votingPowerOf(accounts[1]);
       votes.should.be.bignumber.equal("0");
 
       totalLocked = await erc20Guild.totalLocked();
@@ -893,7 +893,7 @@ contract("ERC20Guild", function (accounts) {
       amount.should.be.bignumber.equal(new BN("50"));
       timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
 
-      const votes = await erc20Guild.methods["votesOf(address)"](
+      const votes = await erc20Guild.votingPowerOf(
         accounts[1]
       );
       votes.should.be.bignumber.equal(new BN("50"));
@@ -921,7 +921,7 @@ contract("ERC20Guild", function (accounts) {
         contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
-      const res = await erc20Guild.votesOfAt([accounts[2], accounts[3]], [1, 2]);
+      const res = await erc20Guild.votingPowerOfMultipleAt([accounts[2], accounts[3]], [1, 2]);
       res[0].should.be.bignumber.equal(new BN("100"));
       res[1].should.be.bignumber.equal(new BN("100"));
     });
@@ -938,7 +938,7 @@ contract("ERC20Guild", function (accounts) {
       amount.should.be.bignumber.equal(new BN("50"));
       timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
 
-      const votes = await erc20Guild.methods["votesOf(address)"](accounts[1]);
+      const votes = await erc20Guild.votingPowerOf(accounts[1]);
       votes.should.be.bignumber.equal(new BN("50"));
 
       (await erc20Guild.totalLocked()).should.be.bignumber.equal(new BN("550"));
@@ -957,7 +957,7 @@ contract("ERC20Guild", function (accounts) {
       amount.should.be.bignumber.equal(new BN("100"));
       // timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
 
-      const votes = await erc20Guild.methods["votesOf(address)"](accounts[2]);
+      const votes = await erc20Guild.votingPowerOf(accounts[2]);
       votes.should.be.bignumber.equal(new BN("100"));
 
       await erc20Guild.createProposal(
@@ -972,10 +972,10 @@ contract("ERC20Guild", function (accounts) {
       const totalLockedAt = await erc20Guild.totalLockedAt(1);
       totalLockedAt.should.be.bignumber.equal(new BN("500"));
 
-      const votesOfAt = await erc20Guild.methods[
-        "votesOfAt(address,uint256)"
+      const votingPowerOfAt = await erc20Guild.methods[
+        "votingPowerOfAt(address,uint256)"
       ](accounts[2], 1);
-      votesOfAt.should.be.bignumber.equal(new BN("100"));
+      votingPowerOfAt.should.be.bignumber.equal(new BN("100"));
     });
 
     it("can not lock tokens, create proposal and setVote", async function () {
@@ -983,7 +983,7 @@ contract("ERC20Guild", function (accounts) {
       amount.should.be.bignumber.equal(new BN("100"));
       // timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
 
-      const votes = await erc20Guild.methods["votesOf(address)"](accounts[2]);
+      const votes = await erc20Guild.votingPowerOf(accounts[2]);
       votes.should.be.bignumber.equal(new BN("100"));
 
       const txGuild = await erc20Guild.createProposal(
@@ -998,10 +998,10 @@ contract("ERC20Guild", function (accounts) {
       const totalLockedAt = await erc20Guild.totalLockedAt(1);
       totalLockedAt.should.be.bignumber.equal(new BN("500"));
 
-      const votesOfAt = await erc20Guild.methods[
-        "votesOfAt(address,uint256)"
+      const votingPowerOfAt = await erc20Guild.methods[
+        "votingPowerOfAt(address,uint256)"
       ](accounts[2], 1);
-      votesOfAt.should.be.bignumber.equal(new BN("100"));
+      votingPowerOfAt.should.be.bignumber.equal(new BN("100"));
 
       const guildProposalId = await helpers.getValueFromLogs(
         txGuild,
@@ -1013,7 +1013,7 @@ contract("ERC20Guild", function (accounts) {
       expectEvent(txVote, "VoteRemoved", { proposalId: guildProposalId });
     });
 
-    it("can not check votesOfAt for invalid nonexistent ID", async function () {    
+    it("can not check votingPowerOfAt for invalid nonexistent ID", async function () {    
       await erc20Guild.createProposal(
         [votingMachine.address],
         [genericCallData],
@@ -1024,14 +1024,14 @@ contract("ERC20Guild", function (accounts) {
       );
 
       await expectRevert(
-        erc20Guild.methods["votesOfAt(address,uint256)"](accounts[2], 3),
+        erc20Guild.methods["votingPowerOfAt(address,uint256)"](accounts[2], 3),
         "ERC20Guild: nonexistent id"
       );
     });
 
-    it("can check votesOfAt for invalid ID", async function () {
+    it("can check votingPowerOfAt for invalid ID", async function () {
       await expectRevert(
-        erc20Guild.methods["votesOfAt(address,uint256)"](accounts[2], 0),
+        erc20Guild.methods["votingPowerOfAt(address,uint256)"](accounts[2], 0),
         "ERC20Guild: id is 0"
       );
     });
