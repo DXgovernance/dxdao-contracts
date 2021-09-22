@@ -47,13 +47,13 @@ contract OMNGuild is ERC20Guild {
 
     struct SpecialProposerPermission {
         bool exists;
-        uint256 votesForCreation;
+        uint256 votingPowerForProposalCreation;
         uint256 proposalTime;
     }
 
     // set per proposer settings
     mapping(address => SpecialProposerPermission) public specialProposerPermissions;
-    event SetSpecialProposerPermission(address _proposer, uint256 _proposalTime, uint256 _votesForCreation);
+    event SetSpecialProposerPermission(address _proposer, uint256 _proposalTime, uint256 _votingPowerForProposalCreation);
 
     /// @dev Initilizer
     /// Sets the call permission to arbitrate markets allowed by default and create the market question tempate in 
@@ -61,9 +61,9 @@ contract OMNGuild is ERC20Guild {
     /// @param _token The address of the token to be used
     /// @param _proposalTime The minimum time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that a proposal has to be executed before being ended
-    /// @param _votesForExecution The % of votes needed for a proposal to be executed based on the token total supply.
-    /// 10000 == 100%, 5000 == 50% and 2500 == 25%
-    /// @param _votesForCreation The amount of votes (in wei unit) needed for a proposal to be created
+    /// @param _votingPowerForProposalExecution The % of total voting power needed for a proposal to be executed based
+    /// on the token total supply. 10000 == 100%, 5000 == 50% and 2500 == 25%
+    /// @param _votingPowerForProposalCreation The amount of votes (in wei unit) needed for a proposal to be created
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
@@ -73,8 +73,8 @@ contract OMNGuild is ERC20Guild {
         address _token,
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votesForExecution,
-        uint256 _votesForCreation,
+        uint256 _votingPowerForProposalExecution,
+        uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _lockTime,
@@ -85,8 +85,8 @@ contract OMNGuild is ERC20Guild {
           _token,
           _proposalTime,
           _timeForExecution,
-          _votesForExecution,
-          _votesForCreation,
+          _votingPowerForProposalExecution,
+          _votingPowerForProposalCreation,
           "OMNGuild", 
           _voteGas,
           _maxGasPrice,
@@ -128,7 +128,7 @@ contract OMNGuild is ERC20Guild {
     /// @dev Create two proposals one to vote for the validation fo a market in realitIO
     /// @param questionId the id of the question to be validated in realitiyIo
     function createMarketValidationProposal(bytes32 questionId) public isInitialized {
-        require(votesOf(msg.sender) >= getVotesForCreation(), "OMNGuild: Not enough tokens to create proposal");
+        require(votingPowerOf(msg.sender) >= getVotingPowerForProposalCreation(), "OMNGuild: Not enough tokens to create proposal");
         require(
             realitIO.getOpeningTS(questionId) + 60*60*24*2 > block.timestamp,
             "OMNGuild: Realit.io question is over 2 days old"
@@ -245,7 +245,7 @@ contract OMNGuild is ERC20Guild {
     /// @param amount The amount of votes to be set in the proposal
     function setVote(bytes32 proposalId, uint256 amount) override public virtual {
         require(
-            votesOfAt(msg.sender, proposals[proposalId].snapshotId) >=  amount,
+            votingPowerOfAt(msg.sender, proposals[proposalId].snapshotId) >=  amount,
             "OMNGuild: Invalid amount"
         );
 
@@ -278,7 +278,7 @@ contract OMNGuild is ERC20Guild {
         );
         for(uint i = 0; i < proposalIds.length; i ++){
             require(
-                votesOfAt(msg.sender, proposals[proposalIds[i]].snapshotId) >=  amounts[i],
+                votingPowerOfAt(msg.sender, proposals[proposalIds[i]].snapshotId) >=  amounts[i],
                 "OMNGuild: Invalid amount"
             );
             require(proposals[proposalIds[i]].votes[msg.sender] == 0, "OMNGuild: Already voted on this proprosal");
@@ -312,28 +312,29 @@ contract OMNGuild is ERC20Guild {
     }
     
     /// @dev Get minimum amount of votes needed for creation
-    function getVotesForCreation() override public view returns (uint256) {
-        return votesForCreation;
+    function getVotingPowerForProposalCreation() override public view returns (uint256) {
+        return votingPowerForProposalCreation;
     }
     
     /// @dev Get minimum amount of votes needed for proposal execution
-    function getVotesForExecution() override public view returns (uint256) {
-        return totalLocked.mul(votesForExecution).div(10000);
+    function getVotingPowerForProposalExecution() override public view returns (uint256) {
+        return totalLocked.mul(votingPowerForProposalExecution).div(10000);
     }
+    
     /// @dev set special proposer permissions
     /// @param _proposer The address to allow
     /// @param _proposalTime The minimum time for a proposal to be under votation
-    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _votingPowerForProposalCreation The minimum balance of tokens needed to create a proposal
     function setSpecialProposerPermission(
         address _proposer,
         uint256 _proposalTime, 
-        uint256 _votesForCreation
+        uint256 _votingPowerForProposalCreation
     ) public virtual isInitialized {
         require(msg.sender == address(this), "OMNGuild: Only callable by the guild itself");
         specialProposerPermissions[_proposer].exists = true;
         specialProposerPermissions[_proposer].proposalTime = _proposalTime;
-        specialProposerPermissions[_proposer].votesForCreation = _votesForCreation;
-        emit SetSpecialProposerPermission(_proposer, _proposalTime, _votesForCreation);
+        specialProposerPermissions[_proposer].votingPowerForProposalCreation = _votingPowerForProposalCreation;
+        emit SetSpecialProposerPermission(_proposer, _proposalTime, _votingPowerForProposalCreation);
     }
 
     /// @dev Create a proposal with a static call data
@@ -351,19 +352,19 @@ contract OMNGuild is ERC20Guild {
     ) override public virtual isInitialized returns(bytes32) {
         
         uint256  proposalTime_      =  proposalTime;
-        uint256  votesForCreation_  =  votesForCreation;
+        uint256  votingPowerForProposalCreation_  =  votingPowerForProposalCreation;
 
         if ( specialProposerPermissions[msg.sender].exists ) {
             // override defaults
             proposalTime       =  specialProposerPermissions[msg.sender].proposalTime;
-            votesForCreation   =  specialProposerPermissions[msg.sender].votesForCreation;
+            votingPowerForProposalCreation   =  specialProposerPermissions[msg.sender].votingPowerForProposalCreation;
         }
             
         bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
 
         // revert overrides
         proposalTime      =  proposalTime_;
-        votesForCreation  =  votesForCreation_;
+        votingPowerForProposalCreation  =  votingPowerForProposalCreation_;
 
         return proposalId;
     }

@@ -13,8 +13,8 @@ interface IERC20Guild {
     event ProposalRejected(bytes32 indexed proposalId);
     event ProposalExecuted(bytes32 indexed proposalId);
     event ProposalEnded(bytes32 indexed proposalId);
-    event VoteAdded(bytes32 indexed proposalId, address voter, uint256 amount);
-    event VoteRemoved(bytes32 indexed proposalId, address voter, uint256 amount);
+    event VoteAdded(bytes32 indexed proposalId, address voter, uint256 votingPower);
+    event VoteRemoved(bytes32 indexed proposalId, address voter, uint256 votingPower);
     event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
     event TokensLocked(address voter, uint256 value);
     event TokensReleased(address voter, uint256 value);
@@ -22,8 +22,8 @@ interface IERC20Guild {
     function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votesForExecution,
-        uint256 _votesForCreation,
+        uint256 _votingPowerForProposalExecution,
+        uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _lockTime
@@ -41,16 +41,16 @@ interface IERC20Guild {
         bytes calldata contentHash
     ) external;
     function endProposal(bytes32 proposalId) external;
-    function setVote(bytes32 proposalId, uint256 amount) external;
-    function setVotes(bytes32[] calldata proposalIds, uint256[] calldata amounts) external;
+    function setVote(bytes32 proposalId, uint256 votingPower) external;
+    function setVotes(bytes32[] calldata proposalIds, uint256[] calldata votingPowers) external;
     function setSignedVote(
-        bytes32 proposalId, uint256 amount, address voter, bytes calldata signature
+        bytes32 proposalId, uint256 votingPower, address voter, bytes calldata signature
     ) external;
     function setSignedVotes(
-        bytes32[] calldata proposalIds, uint256[] calldata amounts, address[] calldata voters, bytes[] calldata signatures
+        bytes32[] calldata proposalIds, uint256[] calldata votingPowers, address[] calldata voters, bytes[] calldata signatures
     ) external;
-    function lockTokens(uint256 amount) external;
-    function releaseTokens(uint256 amount) external;
+    function lockTokens(uint256 tokenAmount) external;
+    function releaseTokens(uint256 tokenAmount) external;
     
     function token() external view returns (address);
     function name() external view returns (string memory);
@@ -58,8 +58,8 @@ interface IERC20Guild {
     function initialized() external view returns (bool);
     function proposalTime() external view returns (uint256);
     function timeForExecution() external view returns (uint256);
-    function votesForExecution() external view returns (uint256);
-    function votesForCreation() external view returns (uint256);
+    function votingPowerForProposalExecution() external view returns (uint256);
+    function votingPowerForProposalCreation() external view returns (uint256);
     function lockTime() external view returns (uint256);
     function totalLocked() external view returns (uint256);
     function totalLockedAt(uint256) external view returns(uint256);
@@ -79,16 +79,16 @@ interface IERC20Guild {
         uint256 state,
         uint256 snapshotId
     );
-    function getProposalVotes(bytes32 proposalId, address voter) external view returns(uint256);
-    function getVotesForCreation() external view returns (uint256);
-    function getVotesForExecution() external view returns (uint256);
+    function getProposalVotesOfVoter(bytes32 proposalId, address voter) external view returns(uint256);
+    function getVotingPowerForProposalCreation() external view returns (uint256);
+    function getVotingPowerForProposalExecution() external view returns (uint256);
     function getFuncSignature(bytes calldata data) external view returns (bytes4);
     function getCallPermission(address to, bytes4 functionSignature) external view returns (bool);
-    function votesOf(address[] calldata accounts) external view returns(uint256[] memory);
-    function votesOf(address account) external view returns(uint256);
-    function votesOfAt(address account, uint256 snapshotId) external view returns (uint256);
-    function votesOfAt(address[] calldata accounts, uint256[] calldata snapshotIds) external view returns(uint256[] memory);
+    function votingPowerOf(address account) external view returns(uint256);
+    function votingPowerOfMultiple(address[] calldata accounts) external view returns(uint256[] memory);
+    function votingPowerOfAt(address account, uint256 snapshotId) external view returns (uint256);
+    function votingPowerOfMultipleAt(address[] calldata accounts, uint256[] calldata snapshotIds) external view returns(uint256[] memory);
     function signedVotes(bytes32) external view returns(bool);
-    function hashVote(address voter, bytes32 proposalId, uint256 amount) external pure returns(bytes32);
+    function hashVote(address voter, bytes32 proposalId, uint256 votingPower) external pure returns(bytes32);
 
 }
