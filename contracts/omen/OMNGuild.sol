@@ -90,18 +90,19 @@ contract OMNGuild is ERC20Guild {
           "OMNGuild", 
           _voteGas,
           _maxGasPrice,
-          _lockTime
+          _lockTime,
+          1
         );
         realitIO = _realitIO;
         maxAmountVotes = _maxAmountVotes;
         submitAnswerByArbitratorSignature = bytes4(
           keccak256("submitAnswerByArbitrator(bytes32,bytes32,address)")
         );
-        callPermissions[address(realitIO)][submitAnswerByArbitratorSignature] = true;
+        callPermissions[address(realitIO)][submitAnswerByArbitratorSignature] = block.timestamp;
         callPermissions[address(this)][bytes4(keccak256("setOMNGuildConfig(uint256,address,uint256,uint256)"))]
-            = true;
+            = block.timestamp;
         callPermissions[address(this)][bytes4(keccak256("setSpecialProposerPermission(address,uint256,uint256)"))]
-            = true;
+            = block.timestamp;
     }
     
     /// @dev Set OMNGuild specific parameters

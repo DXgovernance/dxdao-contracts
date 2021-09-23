@@ -59,10 +59,11 @@ contract DXDGuild is ERC20Guild, OwnableUpgradeable {
           "DXDGuild", 
           _voteGas,
           _maxGasPrice,
-          _lockTime
+          _lockTime,
+          1
         );
         votingMachine = _votingMachine;
-        callPermissions[votingMachine][voteFuncSignature] = true;
+        callPermissions[votingMachine][voteFuncSignature] = block.timestamp;
     }
     
     /// @dev Create a proposal with an static call data and extra information

@@ -48,7 +48,10 @@ contract ERC20Guild is Initializable {
     mapping(bytes32 => bool) public signedVotes;
     
     // The signatures of the functions allowed, indexed first by address and then by function signature
-    mapping(address => mapping(bytes4 => bool)) public callPermissions;
+    mapping(address => mapping(bytes4 => uint256)) public callPermissions;
+    
+    // The amount of seconds that are going to be added over the timestamp of the block when a permission is allowed
+    uint256 public permissionDelay;
     
     // The tokens locked indexed by token holder address.
     struct TokenLock {
@@ -120,6 +123,8 @@ contract ERC20Guild is Initializable {
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
+    /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
+    /// a permission is allowed
     function initialize(
         address _token,
         uint256 _proposalTime,
@@ -129,7 +134,8 @@ contract ERC20Guild is Initializable {
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
-        uint256 _lockTime
+        uint256 _lockTime,
+        uint256 _permissionDelay
     ) public virtual initializer {
         require(address(_token) != address(0), "ERC20Guild: token is the zero address");
         name = _name;
@@ -147,8 +153,9 @@ contract ERC20Guild is Initializable {
         );
         callPermissions[address(this)][
           bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
-        ] = true;
-        callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = true;
+        ] = block.timestamp;
+        callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = block.timestamp;
+        permissionDelay= _permissionDelay;
         initialized = true;
     }
     
@@ -197,17 +204,20 @@ contract ERC20Guild is Initializable {
         );
         for (uint256 i = 0; i < to.length; i++) {
             require(functionSignature[i] != bytes4(0), "ERC20Guild: Empty sigantures not allowed");
-            callPermissions[to[i]][functionSignature[i]] = allowance[i];
+            if (allowance[i])
+              callPermissions[to[i]][functionSignature[i]] = uint256(block.timestamp).add(permissionDelay);
+            else
+              callPermissions[to[i]][functionSignature[i]] = 0;
             emit SetAllowance(to[i], functionSignature[i], allowance[i]);
         }
         require(
           callPermissions[address(this)][
             bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
-          ],
+          ] > 0,
           "ERC20Guild: setConfig function allowance cant be turned off"
         );
         require(
-          callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))],
+          callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] > 0,
           "ERC20Guild: setAllowance function allowance cant be turned off"
         );
     }
@@ -424,8 +434,9 @@ contract ERC20Guild is Initializable {
           proposals[proposalId].state = ProposalState.Executed;
           for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
             bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
+            uint256 permissionTimestamp = getCallPermission(proposals[proposalId].to[i], proposalSignature);
             require(
-              getCallPermission(proposals[proposalId].to[i], proposalSignature),
+              (0 < permissionTimestamp) && (permissionTimestamp < block.timestamp),
               "ERC20Guild: Not allowed call"
               );
               (bool success,) = proposals[proposalId].to[i]
@@ -625,7 +636,7 @@ contract ERC20Guild is Initializable {
     }
 
     /// @dev Get call signature permission
-    function getCallPermission(address to, bytes4 functionSignature) public view virtual returns (bool) {
+    function getCallPermission(address to, bytes4 functionSignature) public view virtual returns (uint256) {
         return callPermissions[to][functionSignature];
     }
     
