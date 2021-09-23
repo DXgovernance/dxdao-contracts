@@ -56,7 +56,7 @@ contract("DXDGuild", function (accounts) {
     votingMachine = createDaoResult.votingMachine;
     org = createDaoResult.org;
     actionMock = await ActionMock.new();
-    await dxdGuild.methods['initialize(address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,address)'](
+    await dxdGuild.initialize(
       guildToken.address, 30, 30, 40, 20, VOTE_GAS, MAX_GAS_PRICE, TIMELOCK, votingMachine.address
     );
     tokenVault = await dxdGuild.tokenVault();
@@ -73,29 +73,6 @@ contract("DXDGuild", function (accounts) {
     
     tokenVault = await dxdGuild.tokenVault();
 
-    const allowVotingMachineProposalId = await createProposal({
-      guild: dxdGuild,
-      to: [dxdGuild.address],
-      data: [await new web3.eth.Contract(
-        DXDGuild.abi
-      ).methods.setAllowance(
-        [votingMachine.address],
-        ["0x359afa49"],
-        [true]
-      ).encodeABI()],
-      value: [0],
-      description: "Allow vote in voting machine",
-      contentHash: constants.NULL_ADDRESS,
-      account: accounts[4],
-    });
-    await setAllVotesOnProposal({
-      guild: dxdGuild,
-      proposalId: allowVotingMachineProposalId,
-      account: accounts[4],
-    });
-    await time.increase(time.duration.seconds(31));
-    await dxdGuild.endProposal(allowVotingMachineProposalId);
-    
     walletSchemeProposalData = helpers.encodeGenericCallData(
       org.avatar.address, actionMock.address, helpers.testCallFrom(org.avatar.address), 0
     )

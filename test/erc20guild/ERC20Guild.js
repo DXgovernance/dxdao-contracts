@@ -52,7 +52,7 @@ contract("ERC20Guild", function (accounts) {
     );
     
     erc20Guild = await ERC20Guild.new();
-    await erc20Guild.initialize(guildToken.address, 30, 30, 200, 100, "TestGuild", 0, 0, TIMELOCK);
+    await erc20Guild.initialize(guildToken.address, 30, 30, 200, 100, "TestGuild", 0, 0, TIMELOCK, 1);
     erc20Guild = await IERC20Guild.at(erc20Guild.address);
     tokenVault = await erc20Guild.tokenVault();
 
@@ -127,7 +127,7 @@ contract("ERC20Guild", function (accounts) {
     it("cannot initialize with zero locktime", async function () {
       erc20Guild = await ERC20Guild.new();
       await expectRevert(
-        erc20Guild.initialize(guildToken.address, 30, 30, 200, 100, "TestGuild", 0, 0, 0),
+        erc20Guild.initialize(guildToken.address, 30, 30, 200, 100, "TestGuild", 0, 0, 0, 1),
         "ERC20Guild: lockTime should be higher than zero"
       );
     });
@@ -135,7 +135,7 @@ contract("ERC20Guild", function (accounts) {
     it("cannot initialize twice", async function () {
       erc20Guild = await ERC20Guild.at(erc20Guild.address);
       await expectRevert(
-        erc20Guild.initialize(guildToken.address, 30, 30, 200, 100, "TestGuild", 0, 0, 1),
+        erc20Guild.initialize(guildToken.address, 30, 30, 200, 100, "TestGuild", 0, 0, 1, 1),
         "Initializable: contract is already initialized"
       );
     });
