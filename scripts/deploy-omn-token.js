@@ -15,7 +15,7 @@ async function main() {
 
   console.log("Proxy Admin:", proxyAdmin.address);
   console.log("OMNToken Proxy deployed to:", omnToken.address);
-  console.log("You can get the implementation address to validate from https://NETWORK.etherscan.io/proxyContractChecker?a=PROXY_ADDRESS")
+  console.log("You can get the implementation address to validate from https://NETWORK.etherscan.io/proxyContractChecker?a=PROXY_ADDRESS");
 }
 
 main()
