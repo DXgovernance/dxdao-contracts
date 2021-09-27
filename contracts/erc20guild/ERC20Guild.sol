@@ -410,7 +410,6 @@ contract ERC20Guild is Initializable {
         newProposal.snapshotId = _currentSnapshotId;
         
         emit ProposalCreated(proposalId);
-        _setVote(msg.sender, proposalId, votingPowerOf(msg.sender));
         proposalsIds.push(proposalId);
         return proposalId;
     }
