@@ -148,7 +148,7 @@ export const setupAbsoluteVote = async function(voteOnBehalf = constants.NULL_AD
 export const setupGenesisProtocol = async function(
   accounts,
   token,
-  votingMachineType = 'gen',
+  votingMachineType = "gen",
   voteOnBehalf = constants.NULL_ADDRESS,
   _queuedVoteRequiredPercentage = 50,
   _queuedVotePeriodLimit = 172800,
@@ -163,8 +163,8 @@ export const setupGenesisProtocol = async function(
   _activationTime = 0
 ) {
   const votingMachine =
-    (votingMachineType == 'dxd') ? await DXDVotingMachine.new(token, {gas: constants.GAS_LIMIT})
-    : await GenesisProtocol.new(token, {gas: constants.GAS_LIMIT});
+    (votingMachineType == "dxd") ? await DXDVotingMachine.new(token, {gas: constants.GAS_LIMIT})
+      : await GenesisProtocol.new(token, {gas: constants.GAS_LIMIT});
 
   // register some parameters
   await votingMachine.setParameters(
@@ -310,30 +310,30 @@ export function testCallWithoutReturnValueFrom(address) {
 
 export function encodeERC20Transfer(to, value) {
   return web3.eth.abi.encodeFunctionCall({
-    name: 'transfer',
-    type: 'function',
-    inputs: [{
-      type: 'address',
-      name: 'to'
-    },{
-      type: 'uint256',
-      name: 'value'
-    }]
-  }, [to, value]);
+    name: "transfer",
+    type: "function",
+    inputs: [ {
+      type: "address",
+      name: "to"
+    }, {
+      type: "uint256",
+      name: "value"
+    } ]
+  }, [ to, value ]);
 }
 
 export function encodeERC20Approve(to, value) {
   return web3.eth.abi.encodeFunctionCall({
-    name: 'approve',
-    type: 'function',
-    inputs: [{
-      type: 'address',
-      name: 'to'
-    },{
-      type: 'uint256',
-      name: 'value'
-    }]
-  }, [to, value]);
+    name: "approve",
+    type: "function",
+    inputs: [ {
+      type: "address",
+      name: "to"
+    }, {
+      type: "uint256",
+      name: "value"
+    } ]
+  }, [ to, value ]);
 }
 
 export { encodePermission, decodePermission, encodeGenericCallData, getWalletSchemeEvent, constants };

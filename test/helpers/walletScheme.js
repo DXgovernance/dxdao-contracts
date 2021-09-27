@@ -9,7 +9,7 @@ export function encodeGenericCallData(avatar, to, data, value) {
 }
 
 export function getWalletSchemeEvent(tx, eventName) {
- const logDecoder = new EthDecoder.default.LogDecoder( [WalletScheme.abi] );
+  const logDecoder = new EthDecoder.default.LogDecoder( [ WalletScheme.abi ] );
   const logs = logDecoder.decodeLogs(tx.receipt.rawLogs);
   return logs.find((event) => event.name == eventName);
 }

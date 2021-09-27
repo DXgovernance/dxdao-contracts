@@ -182,7 +182,7 @@ contract("Controller", accounts =>  {
     assert.equal(tx.logs.length, 0);
   });
 
-  it("unregister schemes - check permissions unregister scheme", async () => {
+  it("unregister schemes - check permissions unregister scheme", async() => {
     // Check scheme has at least the permissions it is changing, and at least the current permissions.
     //1. setup
     controller = await setup(accounts);

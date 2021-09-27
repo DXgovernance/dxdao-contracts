@@ -33,7 +33,7 @@ const binaryToHex = function(binaryString) {
 };
 
 const hexToBinary = function(hexString) {
-  hexString = hexString.replace(/^0x+/, '');
+  hexString = hexString.replace(/^0x+/, "");
   const lookup = {
     "0": "0000",
     "1": "0001",
@@ -80,7 +80,7 @@ const encodePermission = function(permissions) {
   const canRegisterSchemes = permissions.canRegisterSchemes || false;
   const permissionBytes = `000${canGenericCall ? 1 : 0} ${canUpgrade ? 1 : 0}${canChangeConstraints ? 1 : 0}${canRegisterSchemes ? 1 : 0}1`;
   return "0x000000" + binaryToHex(permissionBytes);
-}
+};
 const decodePermission = function(permission) {
   permission = hexToBinary(permission);
   return {
@@ -89,6 +89,6 @@ const decodePermission = function(permission) {
     canChangeConstraints: permission.length > 3 && permission[ 6 ] == "1",
     canRegisterSchemes: permission.length > 3 && permission[ 7 ] == "1"
   };
-}
+};
 
-module.exports = { encodePermission, decodePermission }
+module.exports = { encodePermission, decodePermission };
