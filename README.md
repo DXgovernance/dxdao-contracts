@@ -128,7 +128,7 @@ The guild **executes previously authorized functions** to smart contracts after 
 
 - The guild can execute only allowed functions, this means that if you want to call function X to smart contract P you will need to first submit a proposal to add the function X to smart contract P to be added to the allowed functions.
 
-- The votes of the guild are based on the ERC20 token balance **locked by the voter**, that means that the tokens need to be locked for a minimum period of time in order to be used as voting power.
+- The voting power in the guild is based on the ERC20 token balance **locked by the voter**, that means that the tokens need to be locked for a minimum period of time in order to be used as voting power.
 
 - The voter only votes on a proposal with the voting power that had the moment in the proposal was created.
 
