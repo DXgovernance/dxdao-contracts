@@ -162,7 +162,7 @@ contract DXDGuild is ERC20Guild, OwnableUpgradeable {
         require(proposals[proposalId].state == ProposalState.Submitted, "DXDGuild: Proposal already executed");
         require(votingPowerOf(voter) >=  votingPower, "DXDGuild: Invalid votingPower amount");
         
-        // Check that no vote was done in a VotingMachineVote proposal
+        // Check that no vote was done in the VotingMachineVote proposal
         bytes32 votingMachineVoteProposalId = proposalsForVotingMachineVote[proposalId];
         if (votingMachineVoteProposalId != bytes32(0)) {
           require(getProposalVotesOfVoter(
