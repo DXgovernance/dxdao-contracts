@@ -18,7 +18,9 @@
     "deploy": "node scripts/deploy.js",
     "solidity-linter": "./scripts/solhint.sh",
     "lint": "eslint .",
-    "lint --fix": "eslint --fix ."
+    "lint --fix": "eslint --fix .",
+    "format": "prettier --write \"test/**/*.{js,jsx,ts,tsx,json,md}\"",
+    "format-check": "prettier --check \"test/**/*.{js,jsx,ts,tsx,json,md}\""
   },
   "devDependencies": {
     "@babel/cli": "^7.10.1",
