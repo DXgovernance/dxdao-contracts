@@ -1,12 +1,12 @@
-const web3 = require('web3');
+const web3 = require("web3");
 
-function toEthSignedMessageHash (messageHex) {
-  const messageBuffer = Buffer.from(messageHex.substring(2), 'hex');
+function toEthSignedMessageHash(messageHex) {
+  const messageBuffer = Buffer.from(messageHex.substring(2), "hex");
   const prefix = Buffer.from(`\u0019Ethereum Signed Message:\n${messageBuffer.length}`);
-  return web3.utils.sha3(Buffer.concat([prefix, messageBuffer]));
+  return web3.utils.sha3(Buffer.concat([ prefix, messageBuffer ]));
 }
 
-function fixSignature (signature) {
+function fixSignature(signature) {
   // in geth its always 27/28, in ganache its 0/1. Change to 27/28 to prevent
   // signature malleability if version is 0/1
   // see https://github.com/ethereum/go-ethereum/blob/v1.8.23/internal/ethapi/api.go#L465

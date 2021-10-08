@@ -10,7 +10,7 @@ const { BN, time } = require("@openzeppelin/test-helpers");
 export async function createAndSetupGuildToken(accounts, balances) {
   const [ firstAccount, ...restOfAccounts ] = accounts;
   const [ firstBalance, ...restOfBalances ] = balances;
-  const totalSupply = balances.reduce((a,b) => a + b, 0);
+  const totalSupply = balances.reduce((a, b) => a + b, 0);
   const guildToken = await ERC20Mock.new(firstAccount, totalSupply);
 
   await Promise.all(restOfAccounts.map((account, idx) => {
@@ -20,8 +20,8 @@ export async function createAndSetupGuildToken(accounts, balances) {
   return guildToken;
 }
 
-export async function createDAO(guild, accounts, founderToken=  [ 0, 0, 0, 0 ], founderReputation= [10, 10, 10, 10]) {
-  const orgToken = await ERC20Mock.new(accounts[0], new BN('0'));
+export async function createDAO(guild, accounts, founderToken =  [ 0, 0, 0, 0 ], founderReputation = [ 10, 10, 10, 10 ]) {
+  const orgToken = await ERC20Mock.new(accounts[ 0 ], new BN("0"));
   const controllerCreator = await DxControllerCreator.new();
 
   const daoCreator = await DaoCreator.new(
@@ -41,7 +41,7 @@ export async function createDAO(guild, accounts, founderToken=  [ 0, 0, 0, 0 ], 
     founderReputation
   );
   
-  const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
+  const permissionRegistry = await PermissionRegistry.new(accounts[ 0 ], 10);
 
   await walletScheme.initialize(
     org.avatar.address,
@@ -66,8 +66,8 @@ export async function createDAO(guild, accounts, founderToken=  [ 0, 0, 0, 0 ], 
 
   await daoCreator.setSchemes(
     org.avatar.address,
-    [ walletScheme.address],
-    [ votingMachine.params],
+    [ walletScheme.address ],
+    [ votingMachine.params ],
     [ helpers.encodePermission({
       canGenericCall: true,
       canUpgrade: true,
@@ -102,10 +102,10 @@ export async function createProposal({guild, to, data, value, description, conte
 export async function setAllVotesOnProposal({guild, proposalId, account}) {
   const tokenAddress = await guild.token();
   const token = await ERC20Mock.at(tokenAddress);
-  const votes = await guild.votesOf([account]);
+  const votingPower = await guild.votingPowerOf(account);
   return guild.setVote(
     proposalId,
-    votes[0],
+    votingPower,
     {from: account}
   );
 }

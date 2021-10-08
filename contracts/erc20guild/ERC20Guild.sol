@@ -15,7 +15,7 @@ import "../utils/Arrays.sol";
 /// @dev Extends an ERC20 functionality into a Guild, adding a simple governance system over an ERC20 token.
 /// An ERC20Guild is a simple organization that execute actions if a minimun amount of positive votes are reached in 
 /// a certain amount of time.
-/// In order to vote a token hodler need to lock tokens in the guild.
+/// In order to vote a token holder need to lock tokens in the guild.
 /// The tokens are locked for a minimum amount of time.
 /// The voting power equals the amount of tokens locked in the guild.
 /// A proposal is executed only when the mimimum amount of votes are reached before it finishes.
@@ -35,8 +35,8 @@ contract ERC20Guild is Initializable {
     string public name;
     uint256 public proposalTime;
     uint256 public timeForExecution;
-    uint256 public votesForExecution;
-    uint256 public votesForCreation;
+    uint256 public votingPowerForProposalExecution;
+    uint256 public votingPowerForProposalCreation;
     uint256 public voteGas;
     uint256 public maxGasPrice;
     uint256 public lockTime;
@@ -48,7 +48,10 @@ contract ERC20Guild is Initializable {
     mapping(bytes32 => bool) public signedVotes;
     
     // The signatures of the functions allowed, indexed first by address and then by function signature
-    mapping(address => mapping(bytes4 => bool)) public callPermissions;
+    mapping(address => mapping(bytes4 => uint256)) public callPermissions;
+    
+    // The amount of seconds that are going to be added over the timestamp of the block when a permission is allowed
+    uint256 public permissionDelay;
     
     // The tokens locked indexed by token holder address.
     struct TokenLock {
@@ -95,8 +98,8 @@ contract ERC20Guild is Initializable {
     event ProposalRejected(bytes32 indexed proposalId);
     event ProposalExecuted(bytes32 indexed proposalId);
     event ProposalEnded(bytes32 indexed proposalId);
-    event VoteAdded(bytes32 indexed proposalId, address voter, uint256 amount);
-    event VoteRemoved(bytes32 indexed proposalId, address voter, uint256 amount);
+    event VoteAdded(bytes32 indexed proposalId, address voter, uint256 votingPower);
+    event VoteRemoved(bytes32 indexed proposalId, address voter, uint256 votingPower);
     event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
     event TokensLocked(address voter, uint256 value);
     event TokensReleased(address voter, uint256 value);
@@ -115,21 +118,24 @@ contract ERC20Guild is Initializable {
     /// @param _token The address of the token to be used
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votesForExecution The token votes needed for a proposal to be executed
-    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be executed
+    /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
+    /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
+    /// a permission is allowed
     function initialize(
         address _token,
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votesForExecution,
-        uint256 _votesForCreation,
+        uint256 _votingPowerForProposalExecution,
+        uint256 _votingPowerForProposalCreation,
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
-        uint256 _lockTime
+        uint256 _lockTime,
+        uint256 _permissionDelay
     ) public virtual initializer {
         require(address(_token) != address(0), "ERC20Guild: token is the zero address");
         name = _name;
@@ -139,16 +145,17 @@ contract ERC20Guild is Initializable {
         _setConfig(
           _proposalTime,
           _timeForExecution,
-          _votesForExecution,
-          _votesForCreation,
+          _votingPowerForProposalExecution,
+          _votingPowerForProposalCreation,
           _voteGas,
           _maxGasPrice,
           _lockTime
         );
         callPermissions[address(this)][
           bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
-        ] = true;
-        callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = true;
+        ] = block.timestamp;
+        callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] = block.timestamp;
+        permissionDelay= _permissionDelay;
         initialized = true;
     }
     
@@ -156,16 +163,16 @@ contract ERC20Guild is Initializable {
     /// or when it is initilized
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votesForExecution The token votes needed for a proposal to be executed
-    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be executed
+    /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votesForExecution,
-        uint256 _votesForCreation,
+        uint256 _votingPowerForProposalExecution,
+        uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _lockTime
@@ -173,8 +180,8 @@ contract ERC20Guild is Initializable {
         _setConfig(
           _proposalTime,
           _timeForExecution,
-          _votesForExecution,
-          _votesForCreation,
+          _votingPowerForProposalExecution,
+          _votingPowerForProposalCreation,
           _voteGas,
           _maxGasPrice,
           _lockTime
@@ -197,17 +204,20 @@ contract ERC20Guild is Initializable {
         );
         for (uint256 i = 0; i < to.length; i++) {
             require(functionSignature[i] != bytes4(0), "ERC20Guild: Empty sigantures not allowed");
-            callPermissions[to[i]][functionSignature[i]] = allowance[i];
+            if (allowance[i])
+              callPermissions[to[i]][functionSignature[i]] = uint256(block.timestamp).add(permissionDelay);
+            else
+              callPermissions[to[i]][functionSignature[i]] = 0;
             emit SetAllowance(to[i], functionSignature[i], allowance[i]);
         }
         require(
           callPermissions[address(this)][
             bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
-          ],
+          ] > 0,
           "ERC20Guild: setConfig function allowance cant be turned off"
         );
         require(
-          callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))],
+          callPermissions[address(this)][bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))] > 0,
           "ERC20Guild: setAllowance function allowance cant be turned off"
         );
     }
@@ -225,7 +235,7 @@ contract ERC20Guild is Initializable {
         string memory description,
         bytes memory contentHash
     ) public virtual isInitialized returns(bytes32) {
-        require(votesOf(msg.sender) >= getVotesForCreation(), "ERC20Guild: Not enough tokens to create proposal");
+        require(votingPowerOf(msg.sender) >= getVotingPowerForProposalCreation(), "ERC20Guild: Not enough tokens to create proposal");
         require(
             (to.length == data.length) && (to.length == value.length),
             "ERC20Guild: Wrong length of to, data or value arrays"
@@ -247,7 +257,7 @@ contract ERC20Guild is Initializable {
         string[] memory description,
         bytes[] memory contentHash
     ) public isInitialized returns(bytes32[] memory) {
-        require(votesOf(msg.sender) >= getVotesForCreation(), "ERC20Guild: Not enough tokens to create proposal");
+        require(votingPowerOf(msg.sender) >= getVotingPowerForProposalCreation(), "ERC20Guild: Not enough votingPower to create proposal");
         require(
             (to.length == data.length) && (to.length == value.length),
             "ERC20Guild: Wrong length of to, data or value arrays"
@@ -290,84 +300,84 @@ contract ERC20Guild is Initializable {
       _endProposal(proposalId);
     }
     
-    /// @dev Set the amount of tokens to vote in a proposal
+    /// @dev Set the voting power to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote
-    /// @param amount The amount of votes to be set in the proposal
-    function setVote(bytes32 proposalId, uint256 amount) public virtual {
+    /// @param votingPower The votingPower to use in the proposal
+    function setVote(bytes32 proposalId, uint256 votingPower) public virtual {
         require(
-            votesOfAt(msg.sender, proposals[proposalId].snapshotId) >=  amount,
-            "ERC20Guild: Invalid amount"
+            votingPowerOfAt(msg.sender, proposals[proposalId].snapshotId) >=  votingPower,
+            "ERC20Guild: Invalid votingPower amount"
         );
-        _setVote(msg.sender, proposalId, amount);
+        _setVote(msg.sender, proposalId, votingPower);
         _refundVote(msg.sender);
     }
 
-    /// @dev Set the amount of tokens to vote in multiple proposals
+    /// @dev Set the voting power to vote in multiple proposals
     /// @param proposalIds The ids of the proposals to set the votes
-    /// @param amounts The amount of votes to be set in each proposal
-    function setVotes(bytes32[] memory proposalIds, uint256[] memory amounts) public virtual {
+    /// @param votingPowers The votingPower to use as voting for each proposals
+    function setVotes(bytes32[] memory proposalIds, uint256[] memory votingPowers) public virtual {
         require(
-            proposalIds.length == amounts.length,
-            "ERC20Guild: Wrong length of proposalIds or amounts"
+            proposalIds.length == votingPowers.length,
+            "ERC20Guild: Wrong length of proposalIds or votingPowers"
         );
         for(uint i = 0; i < proposalIds.length; i ++)
-            _setVote(msg.sender, proposalIds[i], amounts[i]);
+            _setVote(msg.sender, proposalIds[i], votingPowers[i]);
     }
     
-    /// @dev Set the amount of tokens to vote in a proposal using a signed vote
+    /// @dev Set the voting power to vote in a proposal using a signed vote
     /// @param proposalId The id of the proposal to set the vote
-    /// @param amount The amount of tokens to use as voting for the proposal
+    /// @param votingPower The votingPower to use in the proposal
     /// @param voter The address of the voter
     /// @param signature The signature of the hashed vote
     function setSignedVote(
-        bytes32 proposalId, uint256 amount, address voter, bytes memory signature
+        bytes32 proposalId, uint256 votingPower, address voter, bytes memory signature
     ) public virtual isInitialized {
-        bytes32 hashedVote = hashVote(voter, proposalId, amount);
+        bytes32 hashedVote = hashVote(voter, proposalId, votingPower);
         require(!signedVotes[hashedVote], 'ERC20Guild: Already voted');
         require(
           voter == hashedVote.toEthSignedMessageHash().recover(signature),
           "ERC20Guild: Wrong signer"
         );
-        _setVote(voter, proposalId, amount);
+        _setVote(voter, proposalId, votingPower);
         signedVotes[hashedVote] = true;
     }
     
-    /// @dev Set the amount of tokens to vote in multiple proposals using signed votes
+    /// @dev Set the voting power to vote in multiple proposals using signed votes
     /// @param proposalIds The ids of the proposals to set the votes
-    /// @param amounts The amounts of tokens to use as voting for each proposals
+    /// @param votingPowers The votingPower to use as voting for each proposals
     /// @param voters The accounts that signed the votes
     /// @param signatures The vote signatures
     function setSignedVotes(
-        bytes32[] memory proposalIds, uint256[] memory amounts, address[] memory voters, bytes[] memory signatures
+        bytes32[] memory proposalIds, uint256[] memory votingPowers, address[] memory voters, bytes[] memory signatures
     ) public virtual {
         for (uint i = 0; i < proposalIds.length; i ++) {
-            setSignedVote(proposalIds[i], amounts[i], voters[i], signatures[i]);
+            setSignedVote(proposalIds[i], votingPowers[i], voters[i], signatures[i]);
         }
     }
     
     /// @dev Lock tokens in the guild to be used as voting power
-    /// @param amount The amount of tokens to be locked
-    function lockTokens(uint256 amount) public virtual {
+    /// @param tokenAmount The amount of tokens to be locked
+    function lockTokens(uint256 tokenAmount) public virtual {
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
-        tokenVault.deposit(msg.sender, amount);
-        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(amount);
+        tokenVault.deposit(msg.sender, tokenAmount);
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(tokenAmount);
         tokensLocked[msg.sender].timestamp = block.timestamp.add(lockTime);
-        totalLocked = totalLocked.add(amount);
-        emit TokensLocked(msg.sender, amount);
+        totalLocked = totalLocked.add(tokenAmount);
+        emit TokensLocked(msg.sender, tokenAmount);
     }
 
     /// @dev Release tokens locked in the guild, this will decrease the voting power
-    /// @param amount The amount of tokens to be released
-    function releaseTokens(uint256 amount) public virtual {
-        require(votesOf(msg.sender) >= amount, "ERC20Guild: Unable to release more tokens than locked");
+    /// @param tokenAmount The amount of tokens to be released
+    function releaseTokens(uint256 tokenAmount) public virtual {
+        require(votingPowerOf(msg.sender) >= tokenAmount, "ERC20Guild: Unable to release more tokens than locked");
         require(tokensLocked[msg.sender].timestamp < block.timestamp, "ERC20Guild: Tokens still locked");
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
-        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(amount);
-        totalLocked = totalLocked.sub(amount);
-        tokenVault.withdraw(msg.sender, amount);
-        emit TokensReleased(msg.sender, amount);
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(tokenAmount);
+        totalLocked = totalLocked.sub(tokenAmount);
+        tokenVault.withdraw(msg.sender, tokenAmount);
+        emit TokensReleased(msg.sender, tokenAmount);
     }
     
     /// @dev Create a proposal with an static call data and extra information
@@ -400,7 +410,6 @@ contract ERC20Guild is Initializable {
         newProposal.snapshotId = _currentSnapshotId;
         
         emit ProposalCreated(proposalId);
-        _setVote(msg.sender, proposalId, votesOf(msg.sender));
         proposalsIds.push(proposalId);
         return proposalId;
     }
@@ -409,7 +418,7 @@ contract ERC20Guild is Initializable {
     /// @param proposalId The id of the proposal to be executed
     function _endProposal(bytes32 proposalId) internal {
         if (
-          proposals[proposalId].totalVotes < getVotesForExecution()
+          proposals[proposalId].totalVotes < getVotingPowerForProposalExecution()
           && proposals[proposalId].state == ProposalState.Submitted
         ){
           proposals[proposalId].state = ProposalState.Rejected;
@@ -424,8 +433,9 @@ contract ERC20Guild is Initializable {
           proposals[proposalId].state = ProposalState.Executed;
           for (uint i = 0; i < proposals[proposalId].to.length; i ++) {
             bytes4 proposalSignature = getFuncSignature(proposals[proposalId].data[i]);
+            uint256 permissionTimestamp = getCallPermission(proposals[proposalId].to[i], proposalSignature);
             require(
-              getCallPermission(proposals[proposalId].to[i], proposalSignature),
+              (0 < permissionTimestamp) && (permissionTimestamp < block.timestamp),
               "ERC20Guild: Not allowed call"
               );
               (bool success,) = proposals[proposalId].to[i]
@@ -439,16 +449,16 @@ contract ERC20Guild is Initializable {
     /// @dev Internal function to set the configuration of the guild
     /// @param _proposalTime The minimum time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votesForExecution The token votes needed for a proposal to be executed
-    /// @param _votesForCreation The minimum balance of tokens needed to create a proposal
+    /// @param _votingPowerForProposalExecution The token votes needed for a proposal to be executed
+    /// @param _votingPowerForProposalCreation The minimum balance of voting power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function _setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votesForExecution,
-        uint256 _votesForCreation,
+        uint256 _votingPowerForProposalExecution,
+        uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _lockTime
@@ -458,40 +468,40 @@ contract ERC20Guild is Initializable {
           "ERC20Guild: Only callable by ERC20guild itself when initialized"
       );
       require(_proposalTime >= 0, "ERC20Guild: proposal time has to be more tha 0");
-      require(_votesForExecution > 0, "ERC20Guild: votes for execution has to be more than 0");
+      require(_votingPowerForProposalExecution > 0, "ERC20Guild: votes for execution has to be more than 0");
       require(_lockTime > 0, "ERC20Guild: lockTime should be higher than zero");
       proposalTime = _proposalTime;
       timeForExecution = _timeForExecution;
-      votesForExecution = _votesForExecution;
-      votesForCreation = _votesForCreation;
+      votingPowerForProposalExecution = _votingPowerForProposalExecution;
+      votingPowerForProposalCreation = _votingPowerForProposalCreation;
       voteGas = _voteGas;
       maxGasPrice = _maxGasPrice;
       lockTime = _lockTime;
     }
 
-    /// @dev Internal function to set the amount of tokens to vote in a proposal
+    /// @dev Internal function to set the amount of votingPower to vote in a proposal
     /// @param voter The address of the voter
     /// @param proposalId The id of the proposal to set the vote
-    /// @param amount The amount of tokens to use as voting for the proposal
-    function _setVote(address voter, bytes32 proposalId, uint256 amount) internal isInitialized {
+    /// @param votingPower The amount of votingPower to use as voting for the proposal
+    function _setVote(address voter, bytes32 proposalId, uint256 votingPower) internal virtual isInitialized {
         require(proposals[proposalId].state == ProposalState.Submitted, "ERC20Guild: Proposal already executed");
-        require(votesOf(voter) >=  amount, "ERC20Guild: Invalid amount");
-        if (amount > proposals[proposalId].votes[voter]) {
+        require(votingPowerOf(voter) >=  votingPower, "ERC20Guild: Invalid votingPower amount");
+        if (votingPower > proposals[proposalId].votes[voter]) {
             proposals[proposalId].totalVotes = proposals[proposalId].totalVotes.add(
-                amount.sub(proposals[proposalId].votes[voter])
+                votingPower.sub(proposals[proposalId].votes[voter])
             );
             emit VoteAdded(
-                proposalId, voter, amount.sub(proposals[proposalId].votes[voter])
+                proposalId, voter, votingPower.sub(proposals[proposalId].votes[voter])
             );
         } else {
             proposals[proposalId].totalVotes = proposals[proposalId].totalVotes.sub(
-                proposals[proposalId].votes[voter].sub(amount)
+                proposals[proposalId].votes[voter].sub(votingPower)
             );
             emit VoteRemoved(
-                proposalId, voter, proposals[proposalId].votes[voter].sub(amount)
+                proposalId, voter, proposals[proposalId].votes[voter].sub(votingPower)
             );
         }
-        proposals[proposalId].votes[voter] = amount;
+        proposals[proposalId].votes[voter] = votingPower;
     }
     
     /// @dev Internal function to refund a vote cost to a sender
@@ -506,18 +516,18 @@ contract ERC20Guild is Initializable {
       }
     }
 
-    /// @dev Get the voting power of an address
+    /// @dev Get the voting power of an accont
     /// @param account The address of the account
-    function votesOf(address account) public view returns(uint256) {
+    function votingPowerOf(address account) public view returns(uint256) {
       return tokensLocked[account].amount;
     }
     
     /// @dev Get the voting power of multiple addresses
     /// @param accounts The addresses of the accounts
-    function votesOf(address[] memory accounts) public view virtual returns(uint256[] memory) {
+    function votingPowerOfMultiple(address[] memory accounts) public view virtual returns(uint256[] memory) {
       uint256[] memory votes = new uint256[](accounts.length);
       for (uint i = 0; i < accounts.length; i ++) {
-        votes[i] = votesOf(accounts[i]);
+        votes[i] = votingPowerOf(accounts[i]);
       }
       return votes;
     }
@@ -525,21 +535,21 @@ contract ERC20Guild is Initializable {
     /// @dev Get the voting power of an address at a certain snapshotId
     /// @param account The address of the account
     /// @param snapshotId The snapshotId to be used
-    function votesOfAt(address account, uint256 snapshotId) public view virtual returns (uint256) {
+    function votingPowerOfAt(address account, uint256 snapshotId) public view virtual returns (uint256) {
         (bool snapshotted, uint256 value) = _valueAt(snapshotId, _votesSnapshots[account]);
         if (snapshotted)
             return value;
         else 
-            return votesOf(account);
+            return votingPowerOf(account);
     }
     
     /// @dev Get the voting power of multiple addresses at a certain snapshotId
     /// @param accounts The addresses of the accounts
     /// @param snapshotIds The snapshotIds to be used
-    function votesOfAt(address[] memory accounts, uint256[] memory snapshotIds) public view virtual returns(uint256[] memory) {
+    function votingPowerOfMultipleAt(address[] memory accounts, uint256[] memory snapshotIds) public view virtual returns(uint256[] memory) {
         uint256[] memory votes = new uint256[](accounts.length);
         for(uint i = 0; i < accounts.length; i ++)
-            votes[i] = votesOfAt(accounts[i], snapshotIds[i]);
+            votes[i] = votingPowerOfAt(accounts[i], snapshotIds[i]);
         return votes;
     }
 
@@ -599,18 +609,20 @@ contract ERC20Guild is Initializable {
     /// @param proposalId The id of the proposal to get the information
     /// @param voter The address of the voter to get the votes
     /// @return the votes of the voter for the requested proposal
-    function getProposalVotes(bytes32 proposalId, address voter) public view virtual returns(uint256) {
+    function getProposalVotesOfVoter(
+      bytes32 proposalId, address voter
+    ) public view virtual returns(uint256) {
         return(proposals[proposalId].votes[voter]);
     }
     
-    /// @dev Get minimum amount of votes needed for creation
-    function getVotesForCreation() public view virtual returns (uint256) {
-        return votesForCreation;
+    /// @dev Get minimum amount of votingPower needed for creation
+    function getVotingPowerForProposalCreation() public view virtual returns (uint256) {
+        return votingPowerForProposalCreation;
     }
     
-    /// @dev Get minimum amount of votes needed for proposal execution
-    function getVotesForExecution() public view virtual returns (uint256) {
-        return votesForExecution;
+    /// @dev Get minimum amount of votingPower needed for proposal execution
+    function getVotingPowerForProposalExecution() public view virtual returns (uint256) {
+        return votingPowerForProposalExecution;
     }
     
     /// @dev Get the first four bytes (function signature) of a bytes variable
@@ -623,7 +635,7 @@ contract ERC20Guild is Initializable {
     }
 
     /// @dev Get call signature permission
-    function getCallPermission(address to, bytes4 functionSignature) public view virtual returns (bool) {
+    function getCallPermission(address to, bytes4 functionSignature) public view virtual returns (uint256) {
         return callPermissions[to][functionSignature];
     }
     
@@ -632,12 +644,12 @@ contract ERC20Guild is Initializable {
         return proposalsIds.length;
     }
     
-    /// @dev Get teh hash of the vote, this hash is later signed by the voter.
+    /// @dev Get the hash of the vote, this hash is later signed by the voter.
     /// @param voter The address that will be used to sign the vote
     /// @param proposalId The id fo the proposal to be voted
-    function hashVote(address voter, bytes32 proposalId, uint256 amount) public pure returns(bytes32) {
-    /// @param amount The amount of votes to be used
-        return keccak256(abi.encodePacked(voter, proposalId, amount));
+    /// @param votingPower The amount of voting power to be used
+    function hashVote(address voter, bytes32 proposalId, uint256 votingPower) public pure returns(bytes32) {
+        return keccak256(abi.encodePacked(voter, proposalId, votingPower));
     }
     
     ///
@@ -675,7 +687,7 @@ contract ERC20Guild is Initializable {
     }
 
     function _updateAccountSnapshot(address account) private {
-        _updateSnapshot(_votesSnapshots[account], votesOf(account));
+        _updateSnapshot(_votesSnapshots[account], votingPowerOf(account));
     }
 
     function _updateTotalSupplySnapshot() private {

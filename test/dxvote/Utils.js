@@ -1,5 +1,5 @@
 import * as helpers from "../helpers";
-const { fixSignature } = require('../helpers/sign');
+const { fixSignature } = require("../helpers/sign");
 
 const { time, expectRevert } = require("@openzeppelin/test-helpers");
 const moment = require("moment");
@@ -18,39 +18,39 @@ const TokenVesting = artifacts.require("./TokenVesting.sol");
 contract("Dxvote Utils", function(accounts) {
   
   let standardTokenMock,
-  permissionRegistry,
-  masterWalletScheme,
-  quickWalletScheme,
-  daoCreator,
-  org,
-  actionMock,
-  votingMachine,
-  testToken,
-  nftMinter,
-  vestingFactory
+    permissionRegistry,
+    masterWalletScheme,
+    quickWalletScheme,
+    daoCreator,
+    org,
+    actionMock,
+    votingMachine,
+    testToken,
+    nftMinter,
+    vestingFactory;
   
   const constants = helpers.constants;
   const executionTimeout = 172800 + 86400; // _queuedVotePeriodLimit + _boostedVotePeriodLimit
   
   beforeEach( async function(){
     actionMock = await ActionMock.new();
-    testToken = await ERC20Mock.new(accounts[1], 1000);
-    standardTokenMock = await ERC20Mock.new(accounts[1], web3.utils.toWei("100"));
+    testToken = await ERC20Mock.new(accounts[ 1 ], 1000);
+    standardTokenMock = await ERC20Mock.new(accounts[ 1 ], web3.utils.toWei("100"));
     const controllerCreator = await DxControllerCreator.new({gas: constants.GAS_LIMIT});
     daoCreator = await DaoCreator.new(
       controllerCreator.address, {gas: constants.GAS_LIMIT}
     );
     org = await helpers.setupOrganizationWithArrays(
       daoCreator,
-      [accounts[0], accounts[1], accounts[2]],
-      [1000, 1000, 1000],
-      [20000, 10000, 70000]
+      [ accounts[ 0 ], accounts[ 1 ], accounts[ 2 ] ],
+      [ 1000, 1000, 1000 ],
+      [ 20000, 10000, 70000 ]
     );
     votingMachine = await helpers.setupGenesisProtocol(
-      accounts, standardTokenMock.address, 'dxd'
+      accounts, standardTokenMock.address, "dxd"
     );
-    await standardTokenMock.transfer(org.avatar.address, web3.utils.toWei("50"), {from: accounts[1]});
-    permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
+    await standardTokenMock.transfer(org.avatar.address, web3.utils.toWei("50"), {from: accounts[ 1 ]});
+    permissionRegistry = await PermissionRegistry.new(accounts[ 0 ], 30);
     
     masterWalletScheme = await WalletScheme.new();
     await masterWalletScheme.initialize(
@@ -111,9 +111,9 @@ contract("Dxvote Utils", function(accounts) {
     
     await daoCreator.setSchemes(
       org.avatar.address,
-      [masterWalletScheme.address, quickWalletScheme.address],
-      [votingMachine.params, votingMachine.params],
-      [helpers.encodePermission({
+      [ masterWalletScheme.address, quickWalletScheme.address ],
+      [ votingMachine.params, votingMachine.params ],
+      [ helpers.encodePermission({
         canGenericCall: true,
         canUpgrade: true,
         canChangeConstraints: true,
@@ -125,7 +125,7 @@ contract("Dxvote Utils", function(accounts) {
         canChangeConstraints: false,
         canRegisterSchemes: false
       })
-     ],
+      ],
       "metaData"
     );
   });
@@ -138,25 +138,25 @@ contract("Dxvote Utils", function(accounts) {
     ).encodeABI();
     const vestingStart = moment().unix();
     const createVestingData = vestingFactory.contract.methods.create(
-      accounts[3],
+      accounts[ 3 ],
       vestingStart,
-      moment.duration(1, 'years').asSeconds(),
-      moment.duration(2, 'years').asSeconds(),
+      moment.duration(1, "years").asSeconds(),
+      moment.duration(2, "years").asSeconds(),
       web3.utils.toWei("10")
     ).encodeABI();
-    const mintNFTData = nftMinter.contract.methods.mint(accounts[3], "tokenURIHere").encodeABI();
+    const mintNFTData = nftMinter.contract.methods.mint(accounts[ 3 ], "tokenURIHere").encodeABI();
     
     const tx = await masterWalletScheme.proposeCalls(
-      [standardTokenMock.address, vestingFactory.address, nftMinter.address],
-      [approveToVestingFactoryData, createVestingData, mintNFTData],
-      [0, 0, 0],
+      [ standardTokenMock.address, vestingFactory.address, nftMinter.address ],
+      [ approveToVestingFactoryData, createVestingData, mintNFTData ],
+      [ 0, 0, 0 ],
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
 
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
   
-    const executionProposalTx = await votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[2]});
+    const executionProposalTx = await votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {from: accounts[ 2 ]});
     const executionTxEvents = helpers.logDecoder.decodeLogs(executionProposalTx.receipt.rawLogs);
     const vestingCreatedEvent = executionTxEvents.find(
       event => (event.name == "VestingCreated" && web3.utils.toChecksumAddress(event.address) == vestingFactory.address)
@@ -165,13 +165,13 @@ contract("Dxvote Utils", function(accounts) {
       event => (event.name == "Transfer" && web3.utils.toChecksumAddress(event.address) == nftMinter.address)
     );
     const vestingContract = await TokenVesting.at(vestingCreatedEvent.values.vestingContractAddress);
-    assert.equal(await nftMinter.ownerOf(nftMintedEvent.values.tokenId), accounts[3]);
+    assert.equal(await nftMinter.ownerOf(nftMintedEvent.values.tokenId), accounts[ 3 ]);
     assert.equal(await nftMinter.tokenURI(nftMintedEvent.values.tokenId), "tokenURIHere");
     assert.equal(await vestingContract.start(), vestingStart);
-    assert.equal((await vestingContract.cliff()).toNumber(), vestingStart + moment.duration(1, 'years').asSeconds());
-    assert.equal((await vestingContract.duration()).toNumber(), moment.duration(2, 'years').asSeconds());
+    assert.equal((await vestingContract.cliff()).toNumber(), vestingStart + moment.duration(1, "years").asSeconds());
+    assert.equal((await vestingContract.duration()).toNumber(), moment.duration(2, "years").asSeconds());
     assert.equal(await vestingContract.revocable(), true);
-    assert.equal(await vestingContract.beneficiary(), accounts[3]);
+    assert.equal(await vestingContract.beneficiary(), accounts[ 3 ]);
     assert.equal(await standardTokenMock.balanceOf(vestingContract.address), web3.utils.toWei("10"));
   
   });

@@ -46,7 +46,7 @@ contract("DXdao", function(accounts) {
     const controller = await DxController.at(await avatar.owner());
     
     const votingMachine = await helpers.setupGenesisProtocol(
-      accounts, votingMachineToken.address, 'dxd', constants.NULL_ADDRESS
+      accounts, votingMachineToken.address, "dxd", constants.NULL_ADDRESS
     );
     
     const genesisProtocol = await DXDVotingMachine.new(token.address, {gas: constants.GAS_LIMIT});
@@ -92,7 +92,7 @@ contract("DXdao", function(accounts) {
       _activationTime
     ], voteOnBehalf);
     
-    const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
+    const permissionRegistry = await PermissionRegistry.new(accounts[ 0 ], 10);
 
     await masterWalletScheme.initialize(
       avatar.address,
