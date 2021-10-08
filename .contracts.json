@@ -13,10 +13,6 @@
       "dxdVestingFactory": "0x0000000000000000000000000000000000000000"
     },
     "votingMachines": {
-      "dxd": {
-        "address": "0x0000000000000000000000000000000000000000",
-        "token": "0xa1d65E8fB6e87b60FECCBc582F7f97804B725521"
-      },
       "gen": {
         "address": "0x332B8C9734b4097dE50f302F7D9F273FFdB45B84",
         "token": "0x543Ff227F64Aa17eA132Bf9886cAb5DB55DCAddf"
@@ -33,23 +29,23 @@
     "reputation": "0xED77eaA9590cfCE0a126Bab3D8A6ada9A393d4f6",
     "token": "0xf255B9d83db924820ee23A7dCC30b7542e201Bb1",
     "controller": "0xfBEcdD3360E2A9040383980AB3863BE9d57256fd",
-    "permissionRegistry": "0x0000000000000000000000000000000000000000",
-    "schemes": {},
+    "schemes": {
+      "QuickWalletScheme": "0x0A08ECa47C56C305F4FeB4fa062AEcd5807BeBb8"
+    },
     "utils": {
-      "multicall": "0xDD032cd0dfCB54050E1FA30Be59056403e292700",
-      "dxDaoNFT": "0x0000000000000000000000000000000000000000",
-      "dxdVestingFactory": "0x0000000000000000000000000000000000000000"
+      "multicall": "0xDD032cd0dfCB54050E1FA30Be59056403e292700"
     },
     "votingMachines": {
       "dxd": {
-        "address": "0x0000000000000000000000000000000000000000",
-        "token": "0xb90D6bec20993Be5d72A5ab353343f7a0281f158"
+        "token": "0xb90D6bec20993Be5d72A5ab353343f7a0281f158",
+        "address": "0x053f406aD40c9Eb8eB43aFf28DA0D0EC17dF8e44"
       },
       "gen": {
         "address": "0xDA309aDF1c84242Bb446F7CDBa96B570E901D4CF",
         "token": "0x543ff227f64aa17ea132bf9886cab5db55dcaddf"
       }
-    }
+    },
+    "permissionRegistry": "0x757bbdC3dF870202f28e5cF92a0005158D5e0786"
   },
   "rinkeby": {
     "fromBlock": 9234792,
