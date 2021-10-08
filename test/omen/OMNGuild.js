@@ -1,44 +1,36 @@
-import * as helpers from '../helpers';
-const { fixSignature } = require('../helpers/sign');
+import * as helpers from "../helpers";
 const {
   createAndSetupGuildToken,
   createProposal,
   setAllVotesOnProposal,
-} = require('../helpers/guild');
+} = require("../helpers/guild");
 
-const { soliditySha3 } = require('web3-utils');
+const { soliditySha3 } = require("web3-utils");
 const {
   BN,
   expectEvent,
   expectRevert,
-  balance,
-  send,
-  ether,
   time,
-} = require('@openzeppelin/test-helpers');
+} = require("@openzeppelin/test-helpers");
 
-const OMNGuild = artifacts.require('OMNGuild');
-const Realitio = artifacts.require('Realitio');
+const OMNGuild = artifacts.require("OMNGuild");
+const Realitio = artifacts.require("Realitio");
 
-require('chai').should();
+require("chai").should();
 
-contract('OMNGuild', function (accounts) {
+contract("OMNGuild", function (accounts) {
   const constants = helpers.constants;
-  const ZERO = new BN('0');
-  const TIMELOCK = new BN('60');
-  const VOTE_GAS = new BN('50000'); // 50k
-  const MAX_GAS_PRICE = new BN('8000000000'); // 8 gwei
+  const TIMELOCK = new BN("60");
+  const VOTE_GAS = new BN("50000"); // 50k
+  const MAX_GAS_PRICE = new BN("8000000000"); // 8 gwei
   const OMN_REWARD = 6;
 
   let guildToken,
     omnGuild,
     realitio,
     tokenVault,
-    callData,
-    genericCallData,
     questionId,
     guildProposalId,
-    genericProposal,
     tx,
     marketValidationProposalValid,
     marketValidationProposalInvalid;
@@ -85,8 +77,12 @@ contract('OMNGuild', function (accounts) {
       .setOMNGuildConfig(
         99, /// _maxAmountVotes The max amount of votes allowed ot have
         realitio.address,
-        2 * OMN_REWARD, /// _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a successful  vote
-        OMN_REWARD /// _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccessful vote
+        /// _successfulVoteReward The amount of OMN tokens in wei unit
+        /// to be reward to a voter after a successful  vote
+        2 * OMN_REWARD,
+        /// _unsuccessfulVoteReward The amount of OMN tokens in
+        ///wei unit to be reward to a voter after a unsuccessful vote
+        OMN_REWARD
       )
       .encodeABI();
     guildProposalId = await createProposal({
@@ -94,7 +90,7 @@ contract('OMNGuild', function (accounts) {
       to: [omnGuild.address],
       data: [data],
       value: [0],
-      description: 'setOMNGuildConfig',
+      description: "setOMNGuildConfig",
       contentHash: constants.NULL_ADDRESS,
       account: accounts[0],
     });
@@ -106,7 +102,7 @@ contract('OMNGuild', function (accounts) {
     await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
 
     const receipt = await omnGuild.endProposal(guildProposalId);
-    expectEvent(receipt, 'ProposalExecuted', {
+    expectEvent(receipt, "ProposalExecuted", {
       proposalId: guildProposalId,
     });
 
@@ -114,7 +110,7 @@ contract('OMNGuild', function (accounts) {
     questionId = (
       await realitio.askQuestion(
         0 /* template_id */,
-        'Is market with [questionID] valid?',
+        "Is market with [questionID] valid?",
         omnGuild.address,
         60 * 60 * 24 * 2 /* timeout, */,
         latest /* opening_ts */,
@@ -133,33 +129,33 @@ contract('OMNGuild', function (accounts) {
     marketValidationProposalInvalid = tx.logs[1].args.proposalId;
   });
 
-  describe('OMNGuild use tests', function () {
-    it('vote on and execute a market validation proposal from the omn-guild', async function () {
+  describe("OMNGuild use tests", function () {
+    it("vote on and execute a market validation proposal from the omn-guild", async function () {
       await expectRevert(
         omnGuild.endProposal(marketValidationProposalValid),
-        'OMNGuild: Use endMarketValidationProposal to end proposals to validate market'
+        "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
       );
       await expectRevert(
         omnGuild.endMarketValidationProposal(questionId),
-        'OMNGuild: Market valid proposal hasnt ended yet'
+        "OMNGuild: Market valid proposal hasnt ended yet"
       );
       await expectRevert(
         omnGuild.setVote(marketValidationProposalValid, 999999, {
           from: accounts[4],
         }),
-        'RC20Guild: Invalid votingPower amount'
+        "RC20Guild: Invalid votingPower amount"
       );
       await expectRevert(
         omnGuild.setVote(marketValidationProposalValid, 100, {
           from: accounts[4],
         }),
-        'OMNGuild: Cant vote with more votes than max amount of votes'
+        "OMNGuild: Cant vote with more votes than max amount of votes"
       );
       const txVote = await omnGuild.setVote(marketValidationProposalValid, 20, {
         from: accounts[4],
       });
 
-      expectEvent(txVote, 'VoteAdded', {
+      expectEvent(txVote, "VoteAdded", {
         proposalId: marketValidationProposalValid,
       });
 
@@ -170,15 +166,15 @@ contract('OMNGuild', function (accounts) {
 
       await expectRevert(
         omnGuild.endProposal(marketValidationProposalValid),
-        'OMNGuild: Use endMarketValidationProposal to end proposals to validate market'
+        "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
       );
       const receipt = await omnGuild.endMarketValidationProposal(questionId);
-      expectEvent(receipt, 'ProposalExecuted', {
+      expectEvent(receipt, "ProposalExecuted", {
         proposalId: marketValidationProposalValid,
       });
       await expectRevert(
         omnGuild.endMarketValidationProposal(questionId),
-        'OMNGuild: Market valid proposal already executed'
+        "OMNGuild: Market valid proposal already executed"
       );
       const proposalInfo = await omnGuild.getProposal(
         marketValidationProposalValid
@@ -193,18 +189,18 @@ contract('OMNGuild', function (accounts) {
       );
     });
 
-    const msgD = 'Proposal already executed';
+    const msgD = "Proposal already executed";
     it(msgD, async function () {
       await expectRevert(omnGuild.endProposal(guildProposalId), msgD);
     });
 
-    it('test proposal failed/ended', async function () {
-      const txVote = await omnGuild.setVote(marketValidationProposalValid, 20, {
+    it("test proposal failed/ended", async function () {
+      await omnGuild.setVote(marketValidationProposalValid, 20, {
         from: accounts[4],
       });
       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 200000));
       const receipt = await omnGuild.endMarketValidationProposal(questionId);
-      expectEvent(receipt, 'ProposalEnded', {
+      expectEvent(receipt, "ProposalEnded", {
         proposalId: marketValidationProposalValid,
       });
       const proposalInfo = await omnGuild.getProposal(
@@ -212,10 +208,10 @@ contract('OMNGuild', function (accounts) {
       );
       assert.equal(proposalInfo.state, constants.GuildProposalState.Failed);
     });
-    it('test proposal rejected', async function () {
+    it("test proposal rejected", async function () {
       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 100000));
       const receipt = await omnGuild.endMarketValidationProposal(questionId);
-      expectEvent(receipt, 'ProposalRejected', {
+      expectEvent(receipt, "ProposalRejected", {
         proposalId: marketValidationProposalValid,
       });
       const proposalInfo = await omnGuild.getProposal(
@@ -225,30 +221,26 @@ contract('OMNGuild', function (accounts) {
     });
 
     it("test changing vote I.B.3.c: Voters CANNOT change vote once they've voted", async function () {
-      const txVote = await omnGuild.setVote(
-        marketValidationProposalInvalid,
-        1,
-        {
-          from: accounts[4],
-        }
-      );
+      await omnGuild.setVote(marketValidationProposalInvalid, 1, {
+        from: accounts[4],
+      });
 
       await expectRevert(
         omnGuild.setVote(marketValidationProposalInvalid, 1, {
           from: accounts[4],
         }),
-        'OMNGuild: Already voted'
+        "OMNGuild: Already voted"
       );
       await expectRevert(
         omnGuild.setVote(marketValidationProposalValid, 1, {
           from: accounts[4],
         }),
-        'OMNGuild: Already voted'
+        "OMNGuild: Already voted"
       );
     });
 
     it("test changing vote I.B.3.c: Voters CANNOT change vote once they've voted", async function () {
-      const txVote = await omnGuild.setVote(marketValidationProposalValid, 1, {
+      await omnGuild.setVote(marketValidationProposalValid, 1, {
         from: accounts[4],
       });
 
@@ -256,23 +248,23 @@ contract('OMNGuild', function (accounts) {
         omnGuild.setVote(marketValidationProposalInvalid, 1, {
           from: accounts[4],
         }),
-        'OMNGuild: Already voted'
+        "OMNGuild: Already voted"
       );
       await expectRevert(
         omnGuild.setVote(marketValidationProposalValid, 1, {
           from: accounts[4],
         }),
-        'OMNGuild: Already voted'
+        "OMNGuild: Already voted"
       );
     });
 
     const msgE =
-      'OMNGuild: Cant claim from proposal that isnt for market validation';
+      "OMNGuild: Cant claim from proposal that isnt for market validation";
     it(msgE, async function () {
       const txVote = await omnGuild.setVote(marketValidationProposalValid, 10, {
         from: accounts[4],
       });
-      expectEvent(txVote, 'VoteAdded', {
+      expectEvent(txVote, "VoteAdded", {
         proposalId: marketValidationProposalValid,
       });
       await expectRevert(
@@ -284,11 +276,11 @@ contract('OMNGuild', function (accounts) {
       );
     });
 
-    it('claim rewards for successful vote', async function () {
+    it("claim rewards for successful vote", async function () {
       const txVote = await omnGuild.setVote(marketValidationProposalValid, 10, {
         from: accounts[4],
       });
-      expectEvent(txVote, 'VoteAdded', {
+      expectEvent(txVote, "VoteAdded", {
         proposalId: marketValidationProposalValid,
       });
       await expectRevert(
@@ -296,18 +288,15 @@ contract('OMNGuild', function (accounts) {
           [marketValidationProposalValid],
           accounts[4]
         ),
-        'OMNGuild: Proposal to claim should be executed or rejected'
+        "OMNGuild: Proposal to claim should be executed or rejected"
       );
 
       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
 
       const receipt = await omnGuild.endMarketValidationProposal(questionId);
-      expectEvent(receipt, 'ProposalExecuted', {
+      expectEvent(receipt, "ProposalExecuted", {
         proposalId: marketValidationProposalValid,
       });
-      const proposalInfo = await omnGuild.getProposal(
-        marketValidationProposalValid
-      );
       assert.equal(await realitio.isFinalized(questionId), true);
       assert.equal(
         await realitio.getFinalAnswer(questionId),
@@ -326,15 +315,15 @@ contract('OMNGuild', function (accounts) {
           [marketValidationProposalValid],
           accounts[4]
         ),
-        'OMNGuild: Vote reward already claimed'
+        "OMNGuild: Vote reward already claimed"
       );
     });
 
-    it('claim rewards for unsuccessful vote', async function () {
+    it("claim rewards for unsuccessful vote", async function () {
       const txVote = await omnGuild.setVote(marketValidationProposalValid, 10, {
         from: accounts[3],
       });
-      expectEvent(txVote, 'VoteAdded', {
+      expectEvent(txVote, "VoteAdded", {
         proposalId: marketValidationProposalValid,
       });
       const txVote_ = await omnGuild.setVote(
@@ -344,7 +333,7 @@ contract('OMNGuild', function (accounts) {
           from: accounts[4],
         }
       );
-      expectEvent(txVote_, 'VoteAdded', {
+      expectEvent(txVote_, "VoteAdded", {
         proposalId: marketValidationProposalInvalid,
       });
       await expectRevert(
@@ -352,13 +341,13 @@ contract('OMNGuild', function (accounts) {
           [marketValidationProposalInvalid],
           accounts[4]
         ),
-        'OMNGuild: Proposal to claim should be executed or rejected'
+        "OMNGuild: Proposal to claim should be executed or rejected"
       );
 
       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
 
       const receipt = await omnGuild.endMarketValidationProposal(questionId);
-      expectEvent(receipt, 'ProposalExecuted', {
+      expectEvent(receipt, "ProposalExecuted", {
         proposalId: marketValidationProposalValid,
       });
       assert.equal(await realitio.isFinalized(questionId), true);
@@ -372,7 +361,7 @@ contract('OMNGuild', function (accounts) {
           [marketValidationProposalInvalid],
           accounts[4]
         ),
-        'OMNGuild: Rewards are temporarily unavailable. Please try again later.'
+        "OMNGuild: Rewards are temporarily unavailable. Please try again later."
       );
       await guildToken.transfer(omnGuild.address, 50, { from: accounts[2] });
       await omnGuild.claimMarketValidationVoteRewards(
@@ -385,17 +374,17 @@ contract('OMNGuild', function (accounts) {
           [marketValidationProposalInvalid],
           accounts[4]
         ),
-        'OMNGuild: Vote reward already claimed'
+        "OMNGuild: Vote reward already claimed"
       );
     });
-    it('test setVotes prevents voting twice', async function () {
+    it("test setVotes prevents voting twice", async function () {
       await expectRevert(
         omnGuild.setVotes(
           [marketValidationProposalInvalid, marketValidationProposalInvalid],
           [10000, 999, 888],
           { from: accounts[4] }
         ),
-        'ERC20Guild: Wrong length of proposalIds or votingPowers'
+        "ERC20Guild: Wrong length of proposalIds or votingPowers"
       );
       await expectRevert(
         omnGuild.setVotes(
@@ -403,7 +392,7 @@ contract('OMNGuild', function (accounts) {
           [10000, 999],
           { from: accounts[4] }
         ),
-        'OMNGuild: Invalid votingPower amount'
+        "OMNGuild: Invalid votingPower amount"
       );
       await expectRevert(
         omnGuild.setVotes(
@@ -411,7 +400,7 @@ contract('OMNGuild', function (accounts) {
           [100, 100],
           { from: accounts[4] }
         ),
-        'OMNGuild: Cant vote with more votes than max amount of votes'
+        "OMNGuild: Cant vote with more votes than max amount of votes"
       );
       await expectRevert(
         omnGuild.setVotes(
@@ -419,7 +408,7 @@ contract('OMNGuild', function (accounts) {
           [10, 9],
           { from: accounts[4] }
         ),
-        'OMNGuild: Already voted'
+        "OMNGuild: Already voted"
       );
       await expectRevert(
         omnGuild.setVotes(
@@ -427,7 +416,7 @@ contract('OMNGuild', function (accounts) {
           [10, 9],
           { from: accounts[3] }
         ),
-        'OMNGuild: Already voted'
+        "OMNGuild: Already voted"
       );
       await expectRevert(
         omnGuild.setVotes(
@@ -435,28 +424,28 @@ contract('OMNGuild', function (accounts) {
           [10, 9],
           { from: accounts[3] }
         ),
-        'OMNGuild: Already voted'
+        "OMNGuild: Already voted"
       );
     });
-    it('test setVotes prevents changing vote', async function () {
+    it("test setVotes prevents changing vote", async function () {
       await expectRevert(
         omnGuild.setVotes(
           [marketValidationProposalValid, marketValidationProposalInvalid],
           [10, 9],
           { from: accounts[3] }
         ),
-        'OMNGuild: Already voted'
+        "OMNGuild: Already voted"
       );
     });
 
-    it('test createProposal', async function () {
+    it("test createProposal", async function () {
       await expectRevert(
         omnGuild.setSpecialProposerPermission(accounts[2], 3, 4),
-        'Only callable by the guild'
+        "Only callable by the guild"
       );
 
       const testCall = web3.eth.abi.encodeFunctionSignature(
-        'getVotingPowerForProposalExecution()'
+        "getVotingPowerForProposalExecution()"
       );
       const testData = await new web3.eth.Contract(OMNGuild.abi).methods
         .getVotingPowerForProposalExecution()
@@ -465,13 +454,13 @@ contract('OMNGuild', function (accounts) {
         [accounts[0]], //  to:
         [testData], //  data:
         [0], //  value:
-        'allow functions to anywhere', //  description:
+        "allow functions to anywhere", //  description:
         constants.NULL_ADDRESS //  contentHash:
       );
       const testProposalId = helpers.getValueFromLogs(
         tx,
-        'proposalId',
-        'ProposalCreated'
+        "proposalId",
+        "ProposalCreated"
       );
       await setAllVotesOnProposal({
         guild: omnGuild,
@@ -487,7 +476,7 @@ contract('OMNGuild', function (accounts) {
         to: [omnGuild.address],
         data: [setAllowanceData],
         value: [0],
-        description: 'setAllowance',
+        description: "setAllowance",
         contentHash: constants.NULL_ADDRESS,
         account: accounts[1],
       });
@@ -504,12 +493,12 @@ contract('OMNGuild', function (accounts) {
       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
       await expectRevert(
         omnGuild.endProposal(testProposalId),
-        'Not allowed call'
+        "Not allowed call"
       );
       const setAllowanceReceipt = await omnGuild.endProposal(
         setAllowanceProposalId
       );
-      expectEvent(setAllowanceReceipt, 'ProposalExecuted', {
+      expectEvent(setAllowanceReceipt, "ProposalExecuted", {
         proposalId: setAllowanceProposalId,
       });
 
@@ -525,7 +514,7 @@ contract('OMNGuild', function (accounts) {
         to: [omnGuild.address],
         data: [data],
         value: [0],
-        description: 'setSpecialProposerPermission',
+        description: "setSpecialProposerPermission",
         contentHash: constants.NULL_ADDRESS,
         account: accounts[1],
       });
@@ -542,17 +531,17 @@ contract('OMNGuild', function (accounts) {
       const receipt = await omnGuild.endProposal(
         setSpecialProposerPermissionProposalId
       );
-      expectEvent(receipt, 'SetSpecialProposerPermission', {
+      expectEvent(receipt, "SetSpecialProposerPermission", {
         _proposer: accounts[0],
-        _proposalTime: '12000000',
-        _votingPowerForProposalCreation: '0',
+        _proposalTime: "12000000",
+        _votingPowerForProposalCreation: "0",
       });
-      expectEvent(receipt, 'ProposalExecuted', {
+      expectEvent(receipt, "ProposalExecuted", {
         proposalId: setSpecialProposerPermissionProposalId,
       });
 
       const releaseReceipt = await omnGuild.releaseTokens(60);
-      expectEvent(releaseReceipt, 'TokensReleased', {
+      expectEvent(releaseReceipt, "TokensReleased", {
         voter: accounts[0],
       });
 
@@ -560,13 +549,13 @@ contract('OMNGuild', function (accounts) {
         [accounts[0]], //  to:
         [testData], //  data:
         [0], //  value:
-        'allow functions to anywhere', //  description:
+        "allow functions to anywhere", //  description:
         constants.NULL_ADDRESS //  contentHash:
       );
       const testProposal2 = helpers.getValueFromLogs(
         tx2,
-        'proposalId',
-        'ProposalCreated'
+        "proposalId",
+        "ProposalCreated"
       );
       await setAllVotesOnProposal({
         guild: omnGuild,
@@ -579,36 +568,25 @@ contract('OMNGuild', function (accounts) {
       await time.increase(time.duration.seconds(11999997));
       await expectRevert(
         omnGuild.endProposal(testProposal2),
-        'Proposal hasnt ended yet'
+        "Proposal hasnt ended yet"
       );
       await time.increase(time.duration.seconds(4));
       const receiptForTestPropsal2 = await omnGuild.endProposal(testProposal2);
-      expectEvent(receiptForTestPropsal2, 'ProposalExecuted', {
+      expectEvent(receiptForTestPropsal2, "ProposalExecuted", {
         proposalId: testProposal2,
       });
     });
   });
 });
 
-contract('OMNGuild', function (accounts) {
+contract("OMNGuild", function (accounts) {
   const constants = helpers.constants;
-  const ZERO = new BN('0');
-  const TIMELOCK = new BN('60');
-  const VOTE_GAS = new BN('50000'); // 50k
-  const MAX_GAS_PRICE = new BN('8000000000'); // 8 gwei
+  const TIMELOCK = new BN("60");
+  const VOTE_GAS = new BN("50000"); // 50k
+  const MAX_GAS_PRICE = new BN("8000000000"); // 8 gwei
   const OMN_REWARD = 6;
 
-  let guildToken,
-    omnGuild,
-    realitio,
-    tokenVault,
-    callData,
-    genericCallData,
-    questionId,
-    genericProposal,
-    tx,
-    marketValidationProposalValid,
-    marketValidationProposalInvalid;
+  let guildToken, omnGuild, realitio, tokenVault, questionId;
 
   beforeEach(async function () {
     guildToken = await createAndSetupGuildToken(accounts.slice(0, 5), [
@@ -648,8 +626,8 @@ contract('OMNGuild', function (accounts) {
     await omnGuild.lockTokens(200, { from: accounts[4] });
   });
 
-  describe('OMNGuild set up tests', function () {
-    const msgA = 'OMNGuild: Only the Guild can configure the guild';
+  describe("OMNGuild set up tests", function () {
+    const msgA = "OMNGuild: Only the Guild can configure the guild";
     it(msgA, async function () {
       await expectRevert(
         omnGuild.setOMNGuildConfig(
@@ -661,14 +639,18 @@ contract('OMNGuild', function (accounts) {
         msgA
       );
     });
-    const msgB = 'OMNGuild: Not enough tokens to create proposal';
+    const msgB = "OMNGuild: Not enough tokens to create proposal";
     it(msgB, async function () {
       const data = await new web3.eth.Contract(OMNGuild.abi).methods
         .setOMNGuildConfig(
           1100, /// _maxAmountVotes The max amount of votes allowed ot have
           realitio.address,
-          2 * OMN_REWARD, /// _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a successful  vote
-          OMN_REWARD /// _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccessful vote
+          /// _successfulVoteReward The amount of OMN tokens in wei unit
+          /// to be reward to a voter after a successful  vote
+          2 * OMN_REWARD,
+          /// _unsuccessfulVoteReward The amount of OMN tokens in
+          ///wei unit to be reward to a voter after a unsuccessful vote
+          OMN_REWARD
         )
         .encodeABI();
       const guildProposalId = await createProposal({
@@ -676,7 +658,7 @@ contract('OMNGuild', function (accounts) {
         to: [omnGuild.address],
         data: [data],
         value: [0],
-        description: 'setOMNGuildConfig',
+        description: "setOMNGuildConfig",
         contentHash: constants.NULL_ADDRESS,
         account: accounts[1],
       });
@@ -688,13 +670,13 @@ contract('OMNGuild', function (accounts) {
 
       await expectRevert(
         omnGuild.endProposal(guildProposalId),
-        'Proposal hasnt ended yet'
+        "Proposal hasnt ended yet"
       );
 
       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
 
       const receipt = await omnGuild.endProposal(guildProposalId);
-      expectEvent(receipt, 'ProposalExecuted', {
+      expectEvent(receipt, "ProposalExecuted", {
         proposalId: guildProposalId,
       });
 
@@ -702,7 +684,7 @@ contract('OMNGuild', function (accounts) {
       questionId = (
         await realitio.askQuestion(
           0 /* template_id */,
-          'Is market with [questionID] valid?',
+          "Is market with [questionID] valid?",
           omnGuild.address,
           60 * 60 * 24 * 2 /* timeout, */,
           latest /* opening_ts */,
@@ -720,14 +702,18 @@ contract('OMNGuild', function (accounts) {
         msgB
       );
     });
-    const msgC = 'Realit.io question is over 2 days old';
+    const msgC = "Realit.io question is over 2 days old";
     it(msgC, async function () {
       const data = await new web3.eth.Contract(OMNGuild.abi).methods
         .setOMNGuildConfig(
           1100, /// _maxAmountVotes The max amount of votes allowed ot have
           realitio.address,
-          2 * OMN_REWARD, /// _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a successful  vote
-          OMN_REWARD /// _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccessful vote
+          /// _successfulVoteReward The amount of OMN tokens in wei unit
+          /// to be reward to a voter after a successful  vote
+          2 * OMN_REWARD,
+          /// _unsuccessfulVoteReward The amount of OMN tokens in
+          ///wei unit to be reward to a voter after a unsuccessful vote
+          OMN_REWARD
         )
         .encodeABI();
       const guildProposalId = await createProposal({
@@ -735,7 +721,7 @@ contract('OMNGuild', function (accounts) {
         to: [omnGuild.address],
         data: [data],
         value: [0],
-        description: 'setOMNGuildConfig',
+        description: "setOMNGuildConfig",
         contentHash: constants.NULL_ADDRESS,
         account: accounts[1],
       });
@@ -748,7 +734,7 @@ contract('OMNGuild', function (accounts) {
       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
 
       const receipt = await omnGuild.endProposal(guildProposalId);
-      expectEvent(receipt, 'ProposalExecuted', {
+      expectEvent(receipt, "ProposalExecuted", {
         proposalId: guildProposalId,
       });
 
@@ -756,7 +742,7 @@ contract('OMNGuild', function (accounts) {
       questionId = (
         await realitio.askQuestion(
           0 /* template_id */,
-          'Is market with [questionID] valid?',
+          "Is market with [questionID] valid?",
           omnGuild.address,
           60 * 60 * 24 * 2 /* timeout, */,
           latest /* opening_ts */,

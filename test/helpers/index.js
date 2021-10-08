@@ -1,6 +1,9 @@
 const constants = require("./constants");
 const { encodePermission, decodePermission } = require("./permissions");
-const { encodeGenericCallData, getWalletSchemeEvent } = require("./walletScheme");
+const {
+  encodeGenericCallData,
+  getWalletSchemeEvent,
+} = require("./walletScheme");
 
 const EthDecoder = require("@maticnetwork/eth-decoder");
 
@@ -17,41 +20,37 @@ const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const DXDVestingFactory = artifacts.require("./DXDVestingFactory.sol");
 const DXdaoNFT = artifacts.require("./DXdaoNFT.sol");
 
-export const logDecoder = new EthDecoder.default.LogDecoder(
-  [
-    Avatar.abi,
-    Controller.abi,
-    DAOToken.abi,
-    Reputation.abi,
-    AbsoluteVote.abi,
-    GenesisProtocol.abi,
-    DXDVotingMachine.abi,
-    WalletScheme.abi,
-    PermissionRegistry.abi,
-    DXDVestingFactory.abi,
-    DXdaoNFT.abi
-  ]
-);
+export const logDecoder = new EthDecoder.default.LogDecoder([
+  Avatar.abi,
+  Controller.abi,
+  DAOToken.abi,
+  Reputation.abi,
+  AbsoluteVote.abi,
+  GenesisProtocol.abi,
+  DXDVotingMachine.abi,
+  WalletScheme.abi,
+  PermissionRegistry.abi,
+  DXDVestingFactory.abi,
+  DXdaoNFT.abi,
+]);
 
-export const txDecoder = new EthDecoder.default.TxDecoder(
-  [
-    Avatar.abi,
-    Controller.abi,
-    DAOToken.abi,
-    Reputation.abi,
-    AbsoluteVote.abi,
-    GenesisProtocol.abi,
-    DXDVotingMachine.abi,
-    WalletScheme.abi,
-    PermissionRegistry.abi
-  ]
-);
+export const txDecoder = new EthDecoder.default.TxDecoder([
+  Avatar.abi,
+  Controller.abi,
+  DAOToken.abi,
+  Reputation.abi,
+  AbsoluteVote.abi,
+  GenesisProtocol.abi,
+  DXDVotingMachine.abi,
+  WalletScheme.abi,
+  PermissionRegistry.abi,
+]);
 
 export function getProposalAddress(tx) {
   // helper function that returns a proposal object from the ProposalCreated event
   // in the logs of tx
-  assert.equal(tx.logs[ 0 ].event, "ProposalCreated");
-  const proposalAddress = tx.logs[ 0 ].args.proposaladdress;
+  assert.equal(tx.logs[0].event, "ProposalCreated");
+  const proposalAddress = tx.logs[0].args.proposaladdress;
   return proposalAddress;
 }
 
@@ -76,7 +75,7 @@ export function getValueFromLogs(tx, arg, eventName, index = 0) {
 
   if (eventName !== undefined) {
     for (let i = 0; i < tx.logs.length; i++) {
-      if (tx.logs[ i ].event  === eventName) {
+      if (tx.logs[i].event === eventName) {
         index = i;
         break;
       }
@@ -90,9 +89,9 @@ export function getValueFromLogs(tx, arg, eventName, index = 0) {
       index = tx.logs.length - 1;
     }
   }
-  let result = tx.logs[ index ].args[ arg ];
+  let result = tx.logs[index].args[arg];
   if (!result) {
-    let msg = `getValueFromLogs: This log does not seem to have a field "${arg}": ${tx.logs[ index ].args}`;
+    let msg = `getValueFromLogs: This log does not seem to have a field "${arg}": ${tx.logs[index].args}`;
     throw new Error(msg);
   }
   return result;
@@ -105,47 +104,66 @@ export async function getProposal(tx) {
 export async function etherForEveryone(accounts) {
   // give all web3.eth.accounts some ether
   for (let i = 0; i < 10; i++) {
-    await web3.eth.sendTransaction({to: accounts[ i ], from: accounts[ 0 ], value: web3.utils.toWei("0.1", "ether")});
+    await web3.eth.sendTransaction({
+      to: accounts[i],
+      from: accounts[0],
+      value: web3.utils.toWei("0.1", "ether"),
+    });
   }
 }
 
-export const outOfGasMessage = "VM Exception while processing transaction: out of gas";
+export const outOfGasMessage =
+  "VM Exception while processing transaction: out of gas";
 
 export function assertJumpOrOutOfGas(error) {
-  let condition = (
+  let condition =
     error.message === outOfGasMessage ||
-        error.message.search("invalid JUMP") > -1
+    error.message.search("invalid JUMP") > -1;
+  assert.isTrue(
+    condition,
+    "Expected an out-of-gas error or an invalid JUMP error, got this instead: " +
+      error.message
   );
-  assert.isTrue(condition, "Expected an out-of-gas error or an invalid JUMP error, got this instead: " + error.message);
 }
 
 export function assertVMException(error) {
-  let condition = (
-    error.message.search("VM Exception") > -1 || error.message.search("Transaction reverted") > -1
+  let condition =
+    error.message.search("VM Exception") > -1 ||
+    error.message.search("Transaction reverted") > -1;
+  assert.isTrue(
+    condition,
+    "Expected a VM Exception, got this instead:" + error.message
   );
-  assert.isTrue(condition, "Expected a VM Exception, got this instead:" + error.message);
 }
 
 export function assertInternalFunctionException(error) {
-  let condition = (
-    error.message.search("is not a function") > -1
+  let condition = error.message.search("is not a function") > -1;
+  assert.isTrue(
+    condition,
+    "Expected a function not found Exception, got this instead:" + error.message
   );
-  assert.isTrue(condition, "Expected a function not found Exception, got this instead:" + error.message);
 }
 
 export function assertJump(error) {
-  assert.isAbove(error.message.search("invalid JUMP"), -1, "Invalid JUMP error must be returned" + error.message);
+  assert.isAbove(
+    error.message.search("invalid JUMP"),
+    -1,
+    "Invalid JUMP error must be returned" + error.message
+  );
 }
 
-export const setupAbsoluteVote = async function(voteOnBehalf = constants.NULL_ADDRESS, precReq = 50 ) {
+export const setupAbsoluteVote = async function (
+  voteOnBehalf = constants.NULL_ADDRESS,
+  precReq = 50
+) {
   const absoluteVote = await AbsoluteVote.new();
   // register some parameters
-  absoluteVote.setParameters( precReq, voteOnBehalf);
-  const params = await absoluteVote.getParametersHash( precReq, voteOnBehalf);
+  absoluteVote.setParameters(precReq, voteOnBehalf);
+  const params = await absoluteVote.getParametersHash(precReq, voteOnBehalf);
   return { address: absoluteVote.address, contract: absoluteVote, params };
 };
 
-export const setupGenesisProtocol = async function(
+export const setupGenesisProtocol = async function (
   accounts,
   token,
   votingMachineType = "gen",
@@ -163,12 +181,14 @@ export const setupGenesisProtocol = async function(
   _activationTime = 0
 ) {
   const votingMachine =
-    (votingMachineType == "dxd") ? await DXDVotingMachine.new(token, {gas: constants.GAS_LIMIT})
-      : await GenesisProtocol.new(token, {gas: constants.GAS_LIMIT});
+    votingMachineType === "dxd"
+      ? await DXDVotingMachine.new(token, { gas: constants.GAS_LIMIT })
+      : await GenesisProtocol.new(token, { gas: constants.GAS_LIMIT });
 
   // register some parameters
   await votingMachine.setParameters(
-    [ _queuedVoteRequiredPercentage,
+    [
+      _queuedVoteRequiredPercentage,
       _queuedVotePeriodLimit,
       _boostedVotePeriodLimit,
       _preBoostedVotePeriodLimit,
@@ -178,11 +198,13 @@ export const setupGenesisProtocol = async function(
       _votersReputationLossRatio,
       _minimumDaoBounty,
       _daoBountyConst,
-      _activationTime
-    ], voteOnBehalf
+      _activationTime,
+    ],
+    voteOnBehalf
   );
   const params = await votingMachine.getParametersHash(
-    [ _queuedVoteRequiredPercentage,
+    [
+      _queuedVoteRequiredPercentage,
       _queuedVotePeriodLimit,
       _boostedVotePeriodLimit,
       _preBoostedVotePeriodLimit,
@@ -192,15 +214,20 @@ export const setupGenesisProtocol = async function(
       _votersReputationLossRatio,
       _minimumDaoBounty,
       _daoBountyConst,
-      _activationTime
-    ], voteOnBehalf
+      _activationTime,
+    ],
+    voteOnBehalf
   );
 
-  return {address: votingMachine.address, contract: votingMachine, params};
+  return { address: votingMachine.address, contract: votingMachine, params };
 };
 
-export const setupOrganizationWithArrays = async function(
-  daoCreator, daoCreatorOwner, founderToken, founderReputation, cap = 0
+export const setupOrganizationWithArrays = async function (
+  daoCreator,
+  daoCreatorOwner,
+  founderToken,
+  founderReputation,
+  cap = 0
 ) {
   var tx = await daoCreator.forgeOrg(
     "testOrg",
@@ -209,131 +236,171 @@ export const setupOrganizationWithArrays = async function(
     daoCreatorOwner,
     founderToken,
     founderReputation,
-    cap,
-
+    cap
   );
   assert.equal(tx.logs.length, 1);
-  assert.equal(tx.logs[ 0 ].event, "NewOrg");
-  const avatar = await Avatar.at(tx.logs[ 0 ].args._avatar);
+  assert.equal(tx.logs[0].event, "NewOrg");
+  const avatar = await Avatar.at(tx.logs[0].args._avatar);
   const token = await DAOToken.at(await avatar.nativeToken());
   const reputation = await Reputation.at(await avatar.nativeReputation());
   const controller = await Controller.at(await avatar.owner());
-  return {avatar, token, reputation, controller};
+  return { avatar, token, reputation, controller };
 };
 
-export const setupOrganization = async function(
-  daoCreator, daoCreatorOwner, founderToken, founderReputation, cap = 0
+export const setupOrganization = async function (
+  daoCreator,
+  daoCreatorOwner,
+  founderToken,
+  founderReputation,
+  cap = 0
 ) {
   var tx = await daoCreator.forgeOrg(
     "testOrg",
     "TEST",
     "TST",
-    [ daoCreatorOwner ],
-    [ founderToken ],
-    [ founderReputation ],
+    [daoCreatorOwner],
+    [founderToken],
+    [founderReputation],
     cap,
-    {gas: constants.GAS_LIMIT}
+    { gas: constants.GAS_LIMIT }
   );
   assert.equal(tx.logs.length, 1);
-  assert.equal(tx.logs[ 0 ].event, "NewOrg");
-  const avatar = await Avatar.at(tx.logs[ 0 ].args._avatar);
+  assert.equal(tx.logs[0].event, "NewOrg");
+  const avatar = await Avatar.at(tx.logs[0].args._avatar);
   const token = await DAOToken.at(await avatar.nativeToken());
   const reputation = await Reputation.at(await avatar.nativeReputation());
   const controller = await Controller.at(await avatar.owner());
-  return { avatar, token, reputation, controller};
+  return { avatar, token, reputation, controller };
 };
 
-
-export const checkVoteInfo = async function(absoluteVote, proposalId, voterAddress, _voteInfo) {
+export const checkVoteInfo = async function (
+  absoluteVote,
+  proposalId,
+  voterAddress,
+  _voteInfo
+) {
   let voteInfo;
   voteInfo = await absoluteVote.voteInfo(proposalId, voterAddress);
   // voteInfo has the following structure
   // int256 vote;
-  assert.equal(voteInfo[ 0 ].toNumber(), _voteInfo[ 0 ]);
+  assert.equal(voteInfo[0].toNumber(), _voteInfo[0]);
   // uint256 reputation;
-  assert.equal(voteInfo[ 1 ].toNumber(), _voteInfo[ 1 ]);
+  assert.equal(voteInfo[1].toNumber(), _voteInfo[1]);
 };
 
-export const checkVotesStatus = async function(proposalId, _votesStatus, votingMachine){
-
+export const checkVotesStatus = async function (
+  proposalId,
+  _votesStatus,
+  votingMachine
+) {
   let voteStatus;
   for (var i = 0; i < _votesStatus.length; i++) {
     voteStatus = await votingMachine.voteStatus(proposalId, i);
-    assert.equal(voteStatus, _votesStatus[ i ]);
+    assert.equal(voteStatus, _votesStatus[i]);
   }
 };
 
 export async function getProposalId(tx, contract, eventName) {
   var proposalId;
-  await contract.getPastEvents(eventName, {
-    fromBlock: tx.blockNumber,
-    toBlock: "latest"
-  })
-    .then(function(events){
-      proposalId = events[ 0 ].args._proposalId;
+  await contract
+    .getPastEvents(eventName, {
+      fromBlock: tx.blockNumber,
+      toBlock: "latest",
+    })
+    .then(function (events) {
+      proposalId = events[0].args._proposalId;
     });
   return proposalId;
 }
 
 // Increases testrpc time by the passed duration in seconds
-export const increaseTime = async function(duration) {
+export const increaseTime = async function (duration) {
   const id = await Date.now();
 
-  web3.providers.HttpProvider.prototype.sendAsync = web3.providers.HttpProvider.prototype.send;
+  web3.providers.HttpProvider.prototype.sendAsync =
+    web3.providers.HttpProvider.prototype.send;
 
   return new Promise((resolve, reject) => {
-    web3.currentProvider.sendAsync({
-      jsonrpc: "2.0",
-      method: "evm_increaseTime",
-      params: [ duration ],
-      id: id,
-    }, err1 => {
-      if (err1) return reject(err1);
-
-      web3.currentProvider.sendAsync({
+    web3.currentProvider.sendAsync(
+      {
         jsonrpc: "2.0",
-        method: "evm_mine",
-        id: id + 1,
-      }, (err2, res) => {
-        return err2 ? reject(err2) : resolve(res);
-      });
-    });
+        method: "evm_increaseTime",
+        params: [duration],
+        id: id,
+      },
+      err1 => {
+        if (err1) return reject(err1);
+
+        web3.currentProvider.sendAsync(
+          {
+            jsonrpc: "2.0",
+            method: "evm_mine",
+            id: id + 1,
+          },
+          (err2, res) => {
+            return err2 ? reject(err2) : resolve(res);
+          }
+        );
+      }
+    );
   });
 };
 
 export function testCallFrom(address) {
-  return new web3.eth.Contract(ActionMock.abi).methods.test(address).encodeABI();
+  return new web3.eth.Contract(ActionMock.abi).methods
+    .test(address)
+    .encodeABI();
 }
 export function testCallWithoutReturnValueFrom(address) {
-  return new web3.eth.Contract(ActionMock.abi).methods.testWithoutReturnValue(address).encodeABI();
+  return new web3.eth.Contract(ActionMock.abi).methods
+    .testWithoutReturnValue(address)
+    .encodeABI();
 }
 
 export function encodeERC20Transfer(to, value) {
-  return web3.eth.abi.encodeFunctionCall({
-    name: "transfer",
-    type: "function",
-    inputs: [ {
-      type: "address",
-      name: "to"
-    }, {
-      type: "uint256",
-      name: "value"
-    } ]
-  }, [ to, value ]);
+  return web3.eth.abi.encodeFunctionCall(
+    {
+      name: "transfer",
+      type: "function",
+      inputs: [
+        {
+          type: "address",
+          name: "to",
+        },
+        {
+          type: "uint256",
+          name: "value",
+        },
+      ],
+    },
+    [to, value]
+  );
 }
 
 export function encodeERC20Approve(to, value) {
-  return web3.eth.abi.encodeFunctionCall({
-    name: "approve",
-    type: "function",
-    inputs: [ {
-      type: "address",
-      name: "to"
-    }, {
-      type: "uint256",
-      name: "value"
-    } ]
-  }, [ to, value ]);
+  return web3.eth.abi.encodeFunctionCall(
+    {
+      name: "approve",
+      type: "function",
+      inputs: [
+        {
+          type: "address",
+          name: "to",
+        },
+        {
+          type: "uint256",
+          name: "value",
+        },
+      ],
+    },
+    [to, value]
+  );
 }
 
-export { encodePermission, decodePermission, encodeGenericCallData, getWalletSchemeEvent, constants };
+export {
+  encodePermission,
+  decodePermission,
+  encodeGenericCallData,
+  getWalletSchemeEvent,
+  constants,
+};
