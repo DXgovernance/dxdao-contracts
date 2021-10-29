@@ -1,5 +1,5 @@
 import * as helpers from "../helpers";
-const { fixSignature } = require("../helpers/sign");
+const { fixSignature, toEthSignedMessageHash } = require("../helpers/sign");
 const {
   createDAO,
   createAndSetupGuildToken,
@@ -140,6 +140,61 @@ contract("ERC20Guild", function (accounts) {
       contentHash: constants.NULL_ADDRESS,
       account: accounts[3],
     };
+  });
+  
+  describe("EIP1271", function () {
+    it("Can validate an EIP1271 Signature", async function () {
+      
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        to: [erc20Guild.address],
+        data: [
+          await new web3.eth.Contract(ERC20Guild.abi).methods
+            .setEIP1271SignedHash(toEthSignedMessageHash(constants.SOME_HASH), true)
+            .encodeABI(),
+        ],
+        value: [0],
+        description: "Test description",
+        contentHash: constants.NULL_ADDRESS,
+        account: accounts[3],
+      });
+      await setAllVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        account: accounts[3],
+      });
+      
+      const txVote = await setAllVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        account: accounts[5],
+      });
+      
+      if (constants.GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(80000);
+      
+      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
+      
+      await time.increase(time.duration.seconds(31));
+      const receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
+      assert.equal(await erc20Guild.getEIP1271SignedHash(toEthSignedMessageHash(constants.SOME_HASH)), true);
+      
+      const validSignature = await web3.eth.sign(constants.SOME_HASH, accounts[5]);
+      const invalidSignature = await web3.eth.sign(constants.SOME_HASH, accounts[10]);
+
+      assert.equal(
+        await erc20Guild.isValidSignature(toEthSignedMessageHash(constants.SOME_HASH), validSignature),
+        web3.eth.abi.encodeFunctionSignature("isValidSignature(bytes32,bytes)")
+      );
+      
+      assert.equal(
+        await erc20Guild.isValidSignature(toEthSignedMessageHash(constants.SOME_HASH), invalidSignature),
+        "0x00000000"
+      );
+      
+    });
+
   });
 
   describe("Initialization", function () {

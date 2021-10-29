@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.8;
+
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
@@ -45,6 +46,8 @@ interface IERC20Guild {
         bytes4[] calldata functionSignature,
         bool[] calldata allowance
     ) external;
+    
+    function setEIP1271SignedHash(bytes32 _hash, bool isValid) external;
 
     function createProposal(
         address[] calldata to,
@@ -153,6 +156,15 @@ interface IERC20Guild {
         external
         view
         returns (bool);
+        
+    function getProposalsIdsLength() external view returns (uint256);
+
+    function getEIP1271SignedHash(bytes32 _hash) external view returns (bool);
+    
+    function isValidSignature(bytes32 hash, bytes memory signature)
+        external
+        view
+        returns (bytes4 magicValue);
 
     function votingPowerOf(address account) external view returns (uint256);
 
