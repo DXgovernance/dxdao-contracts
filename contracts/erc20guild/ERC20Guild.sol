@@ -637,7 +637,7 @@ contract ERC20Guild is Initializable {
         if (voteGas > 0) {
             uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
             if (address(this).balance >= gasRefund) {
-                toAddress.transfer(gasRefund);
+                toAddress.call{value: gasRefund}("");
             }
         }
     }
