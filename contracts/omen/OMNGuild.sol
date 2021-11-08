@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.8;
+
 pragma experimental ABIEncoderV2;
 
 import "../erc20guild/ERC20Guild.sol";
-import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "../realitio/IRealitio.sol";
 
 /// @title OMNGuild - OMEN Token ERC20Guild

@@ -79,6 +79,15 @@ module.exports = {
   solidity: {
     compilers: [
       {
+        version: '0.4.25',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
         version: '0.5.17',
         settings: {
           optimizer: {
@@ -97,7 +106,7 @@ module.exports = {
         },
       },
       {
-        version: '0.4.25',
+        version: '0.7.6',
         settings: {
           optimizer: {
             enabled: true,
@@ -106,32 +115,32 @@ module.exports = {
         },
       },
       {
-        version: '0.7.6',
+        version: '0.8.8',
         settings: {
           optimizer: {
             enabled: true,
-            runs: 200,
-          },
-        },
-      },
+            runs: 200
+          }
+        }
+      }
     ],
     overrides: {
       'contracts/utils/GnosisSafe/GnosisProxy.sol': { version: '0.5.14' },
       'contracts/utils/GnosisSafe/GnosisSafe.sol': { version: '0.5.14' },
-      'contracts/omen/OMNToken.sol': { version: '0.7.6' },
+      'contracts/omen/OMNToken.sol': { version: '0.8.8' },
       'contracts/omen/OMNGuild.sol': {
-        version: '0.7.6',
+        version: '0.8.8',
         settings: { optimizer: { enabled: true, runs: 100 } },
       },
       'contracts/dxdao/DXDGuild.sol': {
-        version: '0.7.6',
+        version: '0.8.8',
         settings: { optimizer: { enabled: true, runs: 100 } },
       },
       'contracts/erc20guild/ERC20Guild.sol': {
-        version: '0.7.6',
+        version: '0.8.8',
         settings: { optimizer: { enabled: true, runs: 100 } },
       },
-      'contracts/erc20guild/IERC20Guild.sol': { version: '0.7.6' },
+      'contracts/erc20guild/IERC20Guild.sol': { version: '0.8.8' },
     },
   },
   gasReporter: {

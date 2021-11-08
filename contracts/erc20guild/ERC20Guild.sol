@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.8;
+
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/math/MathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/cryptography/ECDSAUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import '@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol';
 import "../utils/TokenVault.sol";
 import "../utils/Arrays.sol";
 
@@ -18,11 +20,12 @@ import "../utils/Arrays.sol";
 /// In order to vote a token holder need to lock tokens in the guild.
 /// The tokens are locked for a minimum amount of time.
 /// The voting power equals the amount of tokens locked in the guild.
-/// A proposal is executed only when the mimimum amount of votes are reached before it finishes.
-/// The guild can execute only allowed functions, if a function is not allowed it first will need to set the allowance
+/// A proposal is executed only when the mimimum amount of total voting power are reached before the proposal finish.
+/// The guild can execute only allowed functions, if a function is not allowed it will need to set the allowance
 /// for it and then after being succesfully added to allowed functions a proposal for it execution can be created.
-/// Once a proposal is approved it can execute only once during a certain period of time.
-contract ERC20Guild is Initializable {
+/// Once a proposal is approved it can be executed succesfully only once during a certain period of time called
+/// timeForExecution.
+contract ERC20Guild is Initializable, IERC1271Upgradeable {
     using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
@@ -59,6 +62,10 @@ contract ERC20Guild is Initializable {
         uint256 timestamp;
     }
     mapping(address => TokenLock) public tokensLocked;
+    
+    // The EIP1271 hashes that were signed by the ERC20Guild
+    // Once a hash is signed by the guild it can be verified with a signature from any voter with balance
+    mapping(bytes32 => bool) public EIP1271SignedHashes;
 
     // Proposals indexed by proposal id.
     struct Proposal {
@@ -177,6 +184,9 @@ contract ERC20Guild is Initializable {
         callPermissions[address(this)][
             bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))
         ] = block.timestamp;
+        callPermissions[address(this)][
+            bytes4(keccak256("setEIP1271SignedHash(bytes32,bool)"))
+        ] = block.timestamp;
         permissionDelay = _permissionDelay;
         initialized = true;
     }
@@ -287,6 +297,17 @@ contract ERC20Guild is Initializable {
         );
         return _createProposal(to, data, value, description, contentHash);
     }
+    
+    /// @dev Set a hash of an call to be validated using EIP1271
+    /// @param _hash The EIP1271 hash to be added or removed
+    /// @param isValid If the hash is valid or not
+    function setEIP1271SignedHash(bytes32 _hash, bool isValid) public virtual {
+        require(
+            msg.sender == address(this),
+            'ERC20Guild: Only callable by the guild'
+        );
+        EIP1271SignedHashes[_hash] = isValid;
+    }
 
     /// @dev Create proposals with an static call data and extra information
     /// @param to The receiver addresses of each call to be executed
@@ -375,7 +396,7 @@ contract ERC20Guild is Initializable {
             "ERC20Guild: Invalid votingPower amount"
         );
         _setVote(msg.sender, proposalId, votingPower);
-        _refundVote(msg.sender);
+        _refundVote(payable(msg.sender));
     }
 
     /// @dev Set the voting power to vote in multiple proposals
@@ -812,6 +833,25 @@ contract ERC20Guild is Initializable {
     /// @dev Get the length of the proposalIds array
     function getProposalsIdsLength() public view virtual returns (uint256) {
         return proposalsIds.length;
+    }
+    
+    /// @dev Gets the validity of a EIP1271 hash
+    /// @param _hash The EIP1271 hash
+    function getEIP1271SignedHash(bytes32 _hash) public view virtual returns (bool) {
+        return EIP1271SignedHashes[_hash];
+    }
+    
+    /// @dev Get if the hash and signature are valid EIP1271 signatures
+    function isValidSignature(bytes32 hash, bytes memory signature)
+        external
+        view
+        returns (bytes4 magicValue)
+    {
+        return
+            ((votingPowerOf(hash.recover(signature)) > 0) &&
+                EIP1271SignedHashes[hash])
+                ? this.isValidSignature.selector
+                : bytes4(0);
     }
 
     /// @dev Get the hash of the vote, this hash is later signed by the voter.
