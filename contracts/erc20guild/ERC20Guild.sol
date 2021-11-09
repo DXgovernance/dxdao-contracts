@@ -565,7 +565,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             "ERC20Guild: Only callable by ERC20guild itself when initialized"
         );
         require(
-            _proposalTime >= 0,
+            _proposalTime > 0,
             "ERC20Guild: proposal time has to be more tha 0"
         );
         require(
