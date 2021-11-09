@@ -1130,9 +1130,8 @@ contract("ERC20Guild", function (accounts) {
         account: accounts[3],
       });
 
-      const res = await erc20Guild.votingPowerOfMultipleAt(
-        [accounts[2], accounts[3]],
-        [1, 2]
+      const res = await erc20Guild.votingPowerOfMultiple(
+        [accounts[2], accounts[3]]
       );
       res[0].should.be.bignumber.equal(new BN("100"));
       res[1].should.be.bignumber.equal(new BN("100"));
@@ -1179,13 +1178,11 @@ contract("ERC20Guild", function (accounts) {
         { from: accounts[2] }
       );
 
-      const totalLockedAt = await erc20Guild.totalLockedAt(1);
-      totalLockedAt.should.be.bignumber.equal(new BN("500"));
+      const totalLocked = await erc20Guild.totalLocked();
+      totalLocked.should.be.bignumber.equal(new BN("500"));
 
-      const votingPowerOfAt = await erc20Guild.methods[
-        "votingPowerOfAt(address,uint256)"
-      ](accounts[2], 1);
-      votingPowerOfAt.should.be.bignumber.equal(new BN("100"));
+      const votingPowerOf = await erc20Guild.votingPowerOf(accounts[2]);
+      votingPowerOf.should.be.bignumber.equal(new BN("100"));
     });
 
     it("can not lock tokens, create proposal and setVote", async function () {
@@ -1215,11 +1212,11 @@ contract("ERC20Guild", function (accounts) {
         account: accounts[2],
       });
 
-      const totalLockedAt = await erc20Guild.totalLockedAt(1);
-      totalLockedAt.should.be.bignumber.equal(new BN("500"));
+      const totalLocked = await erc20Guild.totalLocked();
+      totalLocked.should.be.bignumber.equal(new BN("500"));
 
-      const votingPowerOfAt = await erc20Guild.votingPowerOfAt(accounts[2], 1);
-      votingPowerOfAt.should.be.bignumber.equal(new BN("100"));
+      const votingPowerOf = await erc20Guild.votingPowerOf(accounts[2]);
+      votingPowerOf.should.be.bignumber.equal(new BN("100"));
 
       const txVote = await erc20Guild.setVote(guildProposalId, 10, {
         from: accounts[2],
@@ -1227,28 +1224,6 @@ contract("ERC20Guild", function (accounts) {
       expectEvent(txVote, "VoteRemoved", { proposalId: guildProposalId });
     });
 
-    it("can not check votingPowerOfAt for invalid nonexistent ID", async function () {
-      await erc20Guild.createProposal(
-        [votingMachine.address],
-        [genericCallData],
-        [0],
-        "Guild Test Proposal",
-        constants.NULL_ADDRESS,
-        { from: accounts[2] }
-      );
-
-      await expectRevert(
-        erc20Guild.methods["votingPowerOfAt(address,uint256)"](accounts[2], 3),
-        "ERC20Guild: nonexistent id"
-      );
-    });
-
-    it("can check votingPowerOfAt for invalid ID", async function () {
-      await expectRevert(
-        erc20Guild.methods["votingPowerOfAt(address,uint256)"](accounts[2], 0),
-        "ERC20Guild: id is 0"
-      );
-    });
   });
   describe("refund votes", function () {
     beforeEach(async function () {

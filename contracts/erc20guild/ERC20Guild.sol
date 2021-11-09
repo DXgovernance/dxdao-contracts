@@ -10,7 +10,6 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import '@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol';
 import "../utils/TokenVault.sol";
-import "../utils/Arrays.sol";
 
 /// @title ERC20Guild
 /// @author github:AugustoL
@@ -29,7 +28,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
-    using Arrays for uint256[];
 
     enum ProposalState {None, Submitted, Rejected, Executed, Failed}
 
@@ -79,27 +77,12 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bytes contentHash;
         uint256 totalVotes;
         ProposalState state;
-        uint256 snapshotId;
         mapping(address => uint256) votes;
     }
     mapping(bytes32 => Proposal) public proposals;
 
     // Array to keep track of the proposalsIds in contract storage
     bytes32[] public proposalsIds;
-
-    // Snapshotted values have arrays of ids and the value corresponding to that id. These could be an array of a
-    // Snapshot struct, but that would impede usage of functions that work on an array.
-    struct Snapshots {
-        uint256[] ids;
-        uint256[] values;
-    }
-
-    // The snapshots used for votes and total tokens locked.
-    mapping(address => Snapshots) private _votesSnapshots;
-    Snapshots private _totalLockedSnapshots;
-
-    // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
-    uint256 private _currentSnapshotId;
 
     event ProposalCreated(bytes32 indexed proposalId);
     event ProposalRejected(bytes32 indexed proposalId);
@@ -390,11 +373,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param proposalId The id of the proposal to set the vote
     /// @param votingPower The votingPower to use in the proposal
     function setVote(bytes32 proposalId, uint256 votingPower) public virtual {
-        require(
-            votingPowerOfAt(msg.sender, proposals[proposalId].snapshotId) >=
-                votingPower,
-            "ERC20Guild: Invalid votingPower amount"
-        );
+        require(votingPowerOf(msg.sender) >= votingPower, "ERC20Guild: Invalid votingPower amount");
         _setVote(msg.sender, proposalId, votingPower);
         _refundVote(payable(msg.sender));
     }
@@ -459,8 +438,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @dev Lock tokens in the guild to be used as voting power
     /// @param tokenAmount The amount of tokens to be locked
     function lockTokens(uint256 tokenAmount) public virtual {
-        _updateAccountSnapshot(msg.sender);
-        _updateTotalSupplySnapshot();
         tokenVault.deposit(msg.sender, tokenAmount);
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(
             tokenAmount
@@ -481,8 +458,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             tokensLocked[msg.sender].timestamp < block.timestamp,
             "ERC20Guild: Tokens still locked"
         );
-        _updateAccountSnapshot(msg.sender);
-        _updateTotalSupplySnapshot();
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(
             tokenAmount
         );
@@ -509,7 +484,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 abi.encodePacked(msg.sender, block.timestamp, proposalNonce)
             );
         proposalNonce = proposalNonce.add(1);
-        _currentSnapshotId = _currentSnapshotId.add(1);
         Proposal storage newProposal = proposals[proposalId];
         newProposal.creator = msg.sender;
         newProposal.startTime = block.timestamp;
@@ -521,7 +495,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         newProposal.contentHash = contentHash;
         newProposal.totalVotes = 0;
         newProposal.state = ProposalState.Submitted;
-        newProposal.snapshotId = _currentSnapshotId;
 
         emit ProposalCreated(proposalId);
         proposalsIds.push(proposalId);
@@ -684,48 +657,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         return votes;
     }
 
-    /// @dev Get the voting power of an address at a certain snapshotId
-    /// @param account The address of the account
-    /// @param snapshotId The snapshotId to be used
-    function votingPowerOfAt(address account, uint256 snapshotId)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
-        (bool snapshotted, uint256 value) =
-            _valueAt(snapshotId, _votesSnapshots[account]);
-        if (snapshotted) return value;
-        else return votingPowerOf(account);
-    }
-
-    /// @dev Get the voting power of multiple addresses at a certain snapshotId
-    /// @param accounts The addresses of the accounts
-    /// @param snapshotIds The snapshotIds to be used
-    function votingPowerOfMultipleAt(
-        address[] memory accounts,
-        uint256[] memory snapshotIds
-    ) public view virtual returns (uint256[] memory) {
-        uint256[] memory votes = new uint256[](accounts.length);
-        for (uint256 i = 0; i < accounts.length; i++)
-            votes[i] = votingPowerOfAt(accounts[i], snapshotIds[i]);
-        return votes;
-    }
-
-    /// @dev Get the total amount of tokes locked at a certain snapshotId
-    /// @param snapshotId The snapshotId to be used
-    function totalLockedAt(uint256 snapshotId)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
-        (bool snapshotted, uint256 value) =
-            _valueAt(snapshotId, _totalLockedSnapshots);
-        if (snapshotted) return value;
-        else return totalLocked;
-    }
-
     /// @dev Get the information of a proposal
     /// @param proposalId The id of the proposal to get the information
     /// @return creator The address that created the proposal
@@ -738,7 +669,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @return contentHash The content hash of the content reference of the proposal
     /// @return totalVotes The total votes of the proposal
     /// @return state If the proposal state
-    /// @return snapshotId The snapshotId used for the proposal
     function getProposal(bytes32 proposalId)
         public
         view
@@ -753,8 +683,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             string memory description,
             bytes memory contentHash,
             uint256 totalVotes,
-            ProposalState state,
-            uint256 snapshotId
+            ProposalState state
         )
     {
         Proposal storage proposal = proposals[proposalId];
@@ -768,8 +697,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             proposal.description,
             proposal.contentHash,
             proposal.totalVotes,
-            proposal.state,
-            proposal.snapshotId
+            proposal.state
         );
     }
 
@@ -864,71 +792,5 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 votingPower
     ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(voter, proposalId, votingPower));
-    }
-
-    ///
-    /// Private functions used to take track of snapshots in contract storage
-    ///
-
-    function _valueAt(uint256 snapshotId, Snapshots storage snapshots)
-        private
-        view
-        returns (bool, uint256)
-    {
-        require(snapshotId > 0, "ERC20Guild: id is 0");
-        // solhint-disable-next-line max-line-length
-        require(snapshotId <= _currentSnapshotId, "ERC20Guild: nonexistent id");
-
-        // When a valid snapshot is queried, there are three possibilities:
-        //  a) The queried value was not modified after the snapshot was taken. Therefore, a snapshot entry was never
-        //  created for this id, and all stored snapshot ids are smaller than the requested one. The value that corresponds
-        //  to this id is the current one.
-        //  b) The queried value was modified after the snapshot was taken. Therefore, there will be an entry with the
-        //  requested id, and its value is the one to return.
-        //  c) More snapshots were created after the requested one, and the queried value was later modified. There will be
-        //  no entry for the requested id: the value that corresponds to it is that of the smallest snapshot id that is
-        //  larger than the requested one.
-        //
-        // In summary, we need to find an element in an array, returning the index of the smallest value that is larger if
-        // it is not found, unless said value doesn't exist (e.g. when all values are smaller). Arrays.findUpperBound does
-        // exactly this.
-
-        uint256 index = snapshots.ids.findUpperBound(snapshotId);
-
-        if (index == snapshots.ids.length) {
-            return (false, 0);
-        } else {
-            return (true, snapshots.values[index]);
-        }
-    }
-
-    function _updateAccountSnapshot(address account) private {
-        _updateSnapshot(_votesSnapshots[account], votingPowerOf(account));
-    }
-
-    function _updateTotalSupplySnapshot() private {
-        _updateSnapshot(_totalLockedSnapshots, totalLocked);
-    }
-
-    function _updateSnapshot(Snapshots storage snapshots, uint256 currentValue)
-        private
-    {
-        uint256 currentId = _currentSnapshotId;
-        if (_lastSnapshotId(snapshots.ids) < currentId) {
-            snapshots.ids.push(currentId);
-            snapshots.values.push(currentValue);
-        }
-    }
-
-    function _lastSnapshotId(uint256[] storage ids)
-        private
-        view
-        returns (uint256)
-    {
-        if (ids.length == 0) {
-            return 0;
-        } else {
-            return ids[ids.length - 1];
-        }
     }
 }
