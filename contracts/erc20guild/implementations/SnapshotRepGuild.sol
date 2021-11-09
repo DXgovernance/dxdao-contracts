@@ -57,19 +57,6 @@ contract SnapshotRepGuild is ERC20Guild, OwnableUpgradeable {
         signedVotes[hashedVote] = true;
     }
 
-
-    /// @dev Lock tokens in the guild to be used as voting power
-    /// @param tokenAmount The amount of tokens to be locked
-    function lockTokens(uint256 tokenAmount) public override virtual {
-        revert("SnapshotERC20Guild: Lock of tokens for voting power disabled");
-    }
-
-    /// @dev Release tokens locked in the guild, this will decrease the voting power
-    /// @param tokenAmount The amount of tokens to be released
-    function releaseTokens(uint256 tokenAmount) public override virtual {
-      revert("SnapshotERC20Guild: Lock of tokens for voting power disabled");
-    }
-
     /// @dev Create a proposal with an static call data and extra information
     /// @param to The receiver addresses of each call to be executed
     /// @param data The data to be executed on each call to be executed
@@ -112,17 +99,6 @@ contract SnapshotRepGuild is ERC20Guild, OwnableUpgradeable {
         returns (uint256)
     {
         return ERC20SnapshotRep(address(token)).balanceOfAt(account, snapshotId);
-    }
-    
-    /// @dev Get the total amount of tokes locked at a certain snapshotId
-    /// @param snapshotId The snapshotId to be used
-    function totalLockedAt(uint256 snapshotId)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
-        return ERC20SnapshotRep(address(token)).totalSupplyAt(snapshotId);
     }
 
     /// @dev Get minimum amount of votes needed for creation

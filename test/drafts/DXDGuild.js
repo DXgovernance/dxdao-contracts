@@ -55,6 +55,7 @@ contract("DXDGuild", function (accounts) {
       20,
       VOTE_GAS,
       MAX_GAS_PRICE,
+      0,
       TIMELOCK,
       votingMachine.address
     );

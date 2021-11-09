@@ -9,7 +9,6 @@ import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import '@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol';
-import "../utils/TokenVault.sol";
 
 /// @title ERC20Guild
 /// @author github:AugustoL
@@ -40,9 +39,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     uint256 public votingPowerForProposalCreation;
     uint256 public voteGas;
     uint256 public maxGasPrice;
-    uint256 public lockTime;
-    uint256 public totalLocked;
-    TokenVault public tokenVault;
     uint256 public proposalNonce;
 
     // All the signed votes that were executed, to avoid double signed vote execution.
@@ -53,13 +49,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     // The amount of seconds that are going to be added over the timestamp of the block when a permission is allowed
     uint256 public permissionDelay;
-
-    // The tokens locked indexed by token holder address.
-    struct TokenLock {
-        uint256 amount;
-        uint256 timestamp;
-    }
-    mapping(address => TokenLock) public tokensLocked;
     
     // The EIP1271 hashes that were signed by the ERC20Guild
     // Once a hash is signed by the guild it can be verified with a signature from any voter with balance
@@ -103,8 +92,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bytes4 functionSignature,
         bool allowance
     );
-    event TokensLocked(address voter, uint256 value);
-    event TokensReleased(address voter, uint256 value);
 
     /// @dev Allows the voting machine to receive ether to be used to refund voting costs
     fallback() external payable {}
@@ -123,9 +110,9 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
     /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be executed
     /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
+    /// @param _name The the guild name
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
-    /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
     /// a permission is allowed
     function initialize(
@@ -137,40 +124,23 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
-        uint256 _lockTime,
         uint256 _permissionDelay
     ) public virtual initializer {
         require(
             address(_token) != address(0),
             "ERC20Guild: token is the zero address"
         );
-        name = _name;
-        token = IERC20Upgradeable(_token);
-        tokenVault = new TokenVault();
-        tokenVault.initialize(address(token), address(this));
-        _setConfig(
+        _initialize(
+            _token,
             _proposalTime,
             _timeForExecution,
             _votingPowerForProposalExecution,
             _votingPowerForProposalCreation,
+            _name,
             _voteGas,
             _maxGasPrice,
-            _lockTime
+            _permissionDelay
         );
-        callPermissions[address(this)][
-            bytes4(
-                keccak256(
-                    "setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"
-                )
-            )
-        ] = block.timestamp;
-        callPermissions[address(this)][
-            bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))
-        ] = block.timestamp;
-        callPermissions[address(this)][
-            bytes4(keccak256("setEIP1271SignedHash(bytes32,bool)"))
-        ] = block.timestamp;
-        permissionDelay = _permissionDelay;
         initialized = true;
     }
 
@@ -182,15 +152,13 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
-    /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
         uint256 _votingPowerForProposalExecution,
         uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
-        uint256 _maxGasPrice,
-        uint256 _lockTime
+        uint256 _maxGasPrice
     ) public virtual {
         _setConfig(
             _proposalTime,
@@ -198,8 +166,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _votingPowerForProposalExecution,
             _votingPowerForProposalCreation,
             _voteGas,
-            _maxGasPrice,
-            _lockTime
+            _maxGasPrice
         );
     }
 
@@ -435,37 +402,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         }
     }
 
-    /// @dev Lock tokens in the guild to be used as voting power
-    /// @param tokenAmount The amount of tokens to be locked
-    function lockTokens(uint256 tokenAmount) public virtual {
-        tokenVault.deposit(msg.sender, tokenAmount);
-        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(
-            tokenAmount
-        );
-        tokensLocked[msg.sender].timestamp = block.timestamp.add(lockTime);
-        totalLocked = totalLocked.add(tokenAmount);
-        emit TokensLocked(msg.sender, tokenAmount);
-    }
-
-    /// @dev Release tokens locked in the guild, this will decrease the voting power
-    /// @param tokenAmount The amount of tokens to be released
-    function releaseTokens(uint256 tokenAmount) public virtual {
-        require(
-            votingPowerOf(msg.sender) >= tokenAmount,
-            "ERC20Guild: Unable to release more tokens than locked"
-        );
-        require(
-            tokensLocked[msg.sender].timestamp < block.timestamp,
-            "ERC20Guild: Tokens still locked"
-        );
-        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(
-            tokenAmount
-        );
-        totalLocked = totalLocked.sub(tokenAmount);
-        tokenVault.withdraw(msg.sender, tokenAmount);
-        emit TokensReleased(msg.sender, tokenAmount);
-    }
-
     /// @dev Create a proposal with an static call data and extra information
     /// @param to The receiver addresses of each call to be executed
     /// @param data The data to be executed on each call to be executed
@@ -542,6 +478,53 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             emit ProposalExecuted(proposalId);
         }
     }
+    
+    /// @dev Internal initializer
+    /// @param _token The address of the token to be used
+    /// @param _proposalTime The minimun time for a proposal to be under votation
+    /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
+    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be executed
+    /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
+    /// @param _voteGas The gas to be used to calculate the vote gas refund
+    /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
+    /// a permission is allowed
+    function _initialize(
+        address _token,
+        uint256 _proposalTime,
+        uint256 _timeForExecution,
+        uint256 _votingPowerForProposalExecution,
+        uint256 _votingPowerForProposalCreation,
+        string memory _name,
+        uint256 _voteGas,
+        uint256 _maxGasPrice,
+        uint256 _permissionDelay
+    ) internal {
+        name = _name;
+        token = IERC20Upgradeable(_token);
+        _setConfig(
+            _proposalTime,
+            _timeForExecution,
+            _votingPowerForProposalExecution,
+            _votingPowerForProposalCreation,
+            _voteGas,
+            _maxGasPrice
+        );
+        callPermissions[address(this)][
+            bytes4(
+                keccak256(
+                    "setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"
+                )
+            )
+        ] = block.timestamp;
+        callPermissions[address(this)][
+            bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))
+        ] = block.timestamp;
+        callPermissions[address(this)][
+            bytes4(keccak256("setEIP1271SignedHash(bytes32,bool)"))
+        ] = block.timestamp;
+        permissionDelay = _permissionDelay;
+    }
 
     /// @dev Internal function to set the configuration of the guild
     /// @param _proposalTime The minimum time for a proposal to be under votation
@@ -550,15 +533,13 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _votingPowerForProposalCreation The minimum balance of voting power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
-    /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     function _setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
         uint256 _votingPowerForProposalExecution,
         uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
-        uint256 _maxGasPrice,
-        uint256 _lockTime
+        uint256 _maxGasPrice
     ) internal {
         require(
             !initialized || (msg.sender == address(this)),
@@ -572,17 +553,12 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _votingPowerForProposalExecution > 0,
             "ERC20Guild: votes for execution has to be more than 0"
         );
-        require(
-            _lockTime > 0,
-            "ERC20Guild: lockTime should be higher than zero"
-        );
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerForProposalExecution = _votingPowerForProposalExecution;
         votingPowerForProposalCreation = _votingPowerForProposalCreation;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
-        lockTime = _lockTime;
     }
 
     /// @dev Internal function to set the amount of votingPower to vote in a proposal
@@ -638,8 +614,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     /// @dev Get the voting power of an accont
     /// @param account The address of the account
-    function votingPowerOf(address account) public view returns (uint256) {
-        return tokensLocked[account].amount;
+    function votingPowerOf(address account) public view virtual returns (uint256) {
+        return token.balanceOf(account);
     }
 
     /// @dev Get the voting power of multiple addresses

@@ -3,14 +3,14 @@ pragma solidity ^0.8.8;
 
 pragma experimental ABIEncoderV2;
 
-import "../erc20guild/ERC20Guild.sol";
+import "../erc20guild/implementations/LockableERC20Guild.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 /// @title DXDGuild
 /// @author github:AugustoL
 /// An ERC20Guild for the DXD token designed to execute votes on Genesis Protocol Voting Machine.
-contract DXDGuild is ERC20Guild, OwnableUpgradeable {
+contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
     address public votingMachine;
@@ -40,6 +40,8 @@ contract DXDGuild is ERC20Guild, OwnableUpgradeable {
     /// token total supply. 10000 == 100%, 5000 == 50% and 2500 == 25%
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
+    /// a permission is allowed
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     /// @param _votingMachine The voting machine where the guild will vote
     function initialize(
@@ -50,10 +52,15 @@ contract DXDGuild is ERC20Guild, OwnableUpgradeable {
         uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
+        uint256 _permissionDelay,
         uint256 _lockTime,
         address _votingMachine
     ) public initializer {
-        super.initialize(
+        require(
+            address(_token) != address(0),
+            "ERC20Guild: token is the zero address"
+        );
+        _initialize(
             _token,
             _proposalTime,
             _timeForExecution,
@@ -62,11 +69,21 @@ contract DXDGuild is ERC20Guild, OwnableUpgradeable {
             "DXDGuild",
             _voteGas,
             _maxGasPrice,
-            _lockTime,
-            1
+            _permissionDelay
         );
+        tokenVault = new TokenVault();
+        tokenVault.initialize(address(token), address(this));
+        lockTime = _lockTime;
+        callPermissions[address(this)][
+            bytes4(
+                keccak256(
+                    "setLockTime(uint256)"
+                )
+            )
+        ] = block.timestamp;
         votingMachine = _votingMachine;
         callPermissions[votingMachine][voteFuncSignature] = block.timestamp;
+        initialized = true;
     }
 
     /// @dev Create a proposal with an static call data and extra information

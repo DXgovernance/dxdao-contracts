@@ -54,6 +54,7 @@ contract("OMNGuild", function (accounts) {
       10, //  _votingPowerForProposalCreation:
       VOTE_GAS, //  _voteGas:
       MAX_GAS_PRICE, //  _maxGasPrice:
+      0, //Permission delay
       TIMELOCK, //  _lockTime:
       99, //  _maxAmountVotes:
       realitio.address //  _realitIO:
@@ -608,6 +609,7 @@ contract("OMNGuild", function (accounts) {
       10, //  _votingPowerForProposalCreation:
       VOTE_GAS, //  _voteGas:
       MAX_GAS_PRICE, //  _maxGasPrice:
+      0, // Permission delay
       TIMELOCK, //  _lockTime:
       99999, //  _maxAmountVotes:
       realitio.address //  _realitIO:

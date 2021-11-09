@@ -17,8 +17,7 @@ const {
   time,
 } = require("@openzeppelin/test-helpers");
 
-const ERC20Guild = artifacts.require("ERC20Guild.sol");
-const IERC20Guild = artifacts.require("IERC20Guild.sol");
+const ERC20Guild = artifacts.require("LockableERC20Guild.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
 
 require("chai").should();
@@ -63,10 +62,9 @@ contract("ERC20Guild", function (accounts) {
       "TestGuild",
       0,
       0,
-      TIMELOCK,
-      1
+      1,
+      TIMELOCK
     );
-    erc20Guild = await IERC20Guild.at(erc20Guild.address);
     tokenVault = await erc20Guild.tokenVault();
 
     await guildToken.approve(tokenVault, 100, { from: accounts[2] });
@@ -210,10 +208,10 @@ contract("ERC20Guild", function (accounts) {
           "TestGuild",
           0,
           0,
-          0,
-          1
+          1,
+          0
         ),
-        "ERC20Guild: lockTime should be higher than zero"
+        "LockableERC20Guild: lockTime should be higher than zero"
       );
     });
 
@@ -238,13 +236,13 @@ contract("ERC20Guild", function (accounts) {
   });
 
   describe("setConfig", function () {
-    it("cannot setConfig with zero locktime", async function () {
+    it("cannot set zero locktime", async function () {
       const guildProposalId = await createProposal({
         guild: erc20Guild,
         to: [erc20Guild.address],
         data: [
           await new web3.eth.Contract(ERC20Guild.abi).methods
-            .setConfig(15, 15, 100, 50, 0, 0, 0)
+            .setLockTime(0)
             .encodeABI(),
         ],
         value: [0],
@@ -287,7 +285,7 @@ contract("ERC20Guild", function (accounts) {
         to: [erc20Guild.address],
         data: [
           await new web3.eth.Contract(ERC20Guild.abi).methods
-            .setConfig(15, 15, 100, 50, 0, 0, 10)
+            .setConfig(15, 15, 100, 50, 0, 0)
             .encodeABI(),
         ],
         value: [0],
@@ -307,7 +305,6 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(await erc20Guild.proposalTime(), 30);
       assert.equal(await erc20Guild.votingPowerForProposalCreation(), 100);
       assert.equal(await erc20Guild.votingPowerForProposalExecution(), 200);
-      assert.equal(await erc20Guild.lockTime(), 60);
     });
 
     it("execute an ERC20Guild setConfig proposal on the guild", async function () {
@@ -316,7 +313,7 @@ contract("ERC20Guild", function (accounts) {
         to: [erc20Guild.address],
         data: [
           await new web3.eth.Contract(ERC20Guild.abi).methods
-            .setConfig(15, 15, 100, 50, 0, 0, 10)
+            .setConfig(15, 15, 100, 50, 0, 0)
             .encodeABI(),
         ],
         value: [0],
@@ -348,7 +345,6 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(await erc20Guild.proposalTime(), 15);
       assert.equal(await erc20Guild.votingPowerForProposalCreation(), 50);
       assert.equal(await erc20Guild.votingPowerForProposalExecution(), 100);
-      assert.equal(await erc20Guild.lockTime(), 10);
     });
   });
 
@@ -362,7 +358,7 @@ contract("ERC20Guild", function (accounts) {
 
     it("Reverts when proposal exec calls setAllowance with invalid params", async function () {
       const setConfigSignature = web3.eth.abi.encodeFunctionSignature(
-        "setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"
+        "setConfig(uint256,uint256,uint256,uint256,uint256,uint256)"
       );
 
       const setAllowanceEncoded = await new web3.eth.Contract(
@@ -1232,7 +1228,7 @@ contract("ERC20Guild", function (accounts) {
         to: [erc20Guild.address],
         data: [
           await new web3.eth.Contract(ERC20Guild.abi).methods
-            .setConfig(30, 30, 200, 100, VOTE_GAS, MAX_GAS_PRICE, 1)
+            .setConfig(30, 30, 200, 100, VOTE_GAS, MAX_GAS_PRICE)
             .encodeABI(),
         ],
         value: [0],

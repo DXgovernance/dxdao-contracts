@@ -3,7 +3,7 @@ pragma solidity ^0.8.8;
 
 pragma experimental ABIEncoderV2;
 
-import "../erc20guild/ERC20Guild.sol";
+import "../erc20guild/implementations/LockableERC20Guild.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "../realitio/IRealitio.sol";
 
@@ -14,7 +14,7 @@ import "../realitio/IRealitio.sol";
 /// boolean question markets "Is market MARKET_ID valid?".
 /// The guild will be summoned to arbitrate a market validation if required.
 /// The voters who vote in market validation proposals will recieve a vote reward.
-contract OMNGuild is ERC20Guild {
+contract OMNGuild is LockableERC20Guild {
     using SafeMathUpgradeable for uint256;
 
     // The max amount of votes that can de used in a proposal
@@ -73,6 +73,8 @@ contract OMNGuild is ERC20Guild {
     /// @param _votingPowerForProposalCreation The amount of votes (in wei unit) needed for a proposal to be created
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
+    /// a permission is allowed
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     /// @param _maxAmountVotes The max amount of votes allowed ot have
     /// @param _realitIO The address of the realitIO contract
@@ -84,22 +86,36 @@ contract OMNGuild is ERC20Guild {
         uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
+        uint256 _permissionDelay,
         uint256 _lockTime,
         uint256 _maxAmountVotes,
         IRealitio _realitIO
     ) public initializer {
-        super.initialize(
+        require(
+            address(_token) != address(0),
+            "ERC20Guild: token is the zero address"
+        );
+        _initialize(
             _token,
             _proposalTime,
             _timeForExecution,
             _votingPowerForProposalExecution,
             _votingPowerForProposalCreation,
-            "OMNGuild",
+            "LockableERC20Guild",
             _voteGas,
             _maxGasPrice,
-            _lockTime,
-            1
+            _permissionDelay
         );
+        tokenVault = new TokenVault();
+        tokenVault.initialize(address(token), address(this));
+        lockTime = _lockTime;
+        callPermissions[address(this)][
+            bytes4(
+                keccak256(
+                    "setLockTime(uint256)"
+                )
+            )
+        ] = block.timestamp;
         realitIO = _realitIO;
         maxAmountVotes = _maxAmountVotes;
         submitAnswerByArbitratorSignature = bytes4(
@@ -120,6 +136,7 @@ contract OMNGuild is ERC20Guild {
                 )
             )
         ] = block.timestamp;
+        initialized = true;
     }
 
     /// @dev Set OMNGuild specific parameters
