@@ -20,29 +20,32 @@ contract SnapshotRepGuild is ERC20Guild, OwnableUpgradeable {
 
     /// @dev Set the voting power to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote
+    /// @param action The proposal action to be voted
     /// @param votingPower The votingPower to use in the proposal
-    function setVote(bytes32 proposalId, uint256 votingPower) public override virtual {
+    function setVote(bytes32 proposalId, uint256 action, uint256 votingPower) public override virtual {
         require(
             votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >=
                 votingPower,
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
-        _setVote(msg.sender, proposalId, votingPower);
+        _setVote(msg.sender, proposalId, action, votingPower);
         _refundVote(payable(msg.sender));
     }
 
     /// @dev Set the voting power to vote in a proposal using a signed vote
     /// @param proposalId The id of the proposal to set the vote
+    /// @param action The proposal action to be voted
     /// @param votingPower The votingPower to use in the proposal
     /// @param voter The address of the voter
     /// @param signature The signature of the hashed vote
     function setSignedVote(
         bytes32 proposalId,
+        uint256 action,
         uint256 votingPower,
         address voter,
         bytes memory signature
     ) public override virtual isInitialized {
-        bytes32 hashedVote = hashVote(voter, proposalId, votingPower);
+        bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "SnapshotERC20Guild: Already voted");
         require(
             voter == hashedVote.toEthSignedMessageHash().recover(signature),
@@ -53,7 +56,7 @@ contract SnapshotRepGuild is ERC20Guild, OwnableUpgradeable {
                 votingPower,
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
-        _setVote(voter, proposalId, votingPower);
+        _setVote(voter, proposalId, action, votingPower);
         signedVotes[hashedVote] = true;
     }
 
@@ -61,16 +64,18 @@ contract SnapshotRepGuild is ERC20Guild, OwnableUpgradeable {
     /// @param to The receiver addresses of each call to be executed
     /// @param data The data to be executed on each call to be executed
     /// @param value The ETH value to be sent on each call to be executed
+    /// @param totalActions The amount of actions that would be offered to the voters
     /// @param description A short description of the proposal
     /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
         address[] memory to,
         bytes[] memory data,
         uint256[] memory value,
+        uint256 totalActions,
         string memory description,
         bytes memory contentHash
     ) public override virtual isInitialized returns (bytes32) {
-        bytes32 proposalId = super.createProposal(to, data, value, description, contentHash);
+        bytes32 proposalId = super.createProposal(to, data, value, totalActions, description, contentHash);
         proposalsSnapshots[proposalId] = ERC20SnapshotRep(address(token)).getCurrentSnapshotId();
         return proposalId;
     }
