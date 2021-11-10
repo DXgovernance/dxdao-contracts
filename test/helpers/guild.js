@@ -117,9 +117,9 @@ export async function createProposal({
   return helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
 }
 
-export async function setAllVotesOnProposal({ guild, proposalId, account }) {
+export async function setAllVotesOnProposal({ guild, proposalId, action, account }) {
   const votingPower = await guild.votingPowerOf(account);
-  return guild.setVote(proposalId, votingPower, { from: account });
+  return guild.setVote(proposalId, action, votingPower, { from: account });
 }
 
 export async function setXVotesOnProposal({

@@ -94,70 +94,77 @@ contract("DXDGuild", function (accounts) {
 
   describe("DXDGuild", function () {
     it("execute a positive vote on the voting machine from the dxd-guild", async function () {
+      
+      const DXDVotingMachineContract = await new web3.eth.Contract(votingMachine.contract.abi);
+      const positiveVoteData = DXDVotingMachineContract
+        .methods.vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS)
+        .encodeABI();
+      const negativeVoteData = DXDVotingMachineContract
+        .methods.vote(walletSchemeProposalId, 2, 0, constants.NULL_ADDRESS)
+        .encodeABI();
+
       await expectRevert(
-        dxdGuild.createVotingMachineVoteProposal(walletSchemeProposalId, {
-          from: accounts[1],
-        }),
-        "DXDGuild: Not enough tokens to create proposal"
+        dxdGuild.createProposal(
+          [votingMachine.address, votingMachine.address],
+          [positiveVoteData, negativeVoteData],
+          [0, 0],
+          2,
+          `vote on ${walletSchemeProposalId}`,
+          constants.SOME_HASH,
+          { from: accounts[1]}
+        ),
+        "ERC20Guild: Not enough tokens to create proposal"
       );
-      const tx = await dxdGuild.createVotingMachineVoteProposal(
-        walletSchemeProposalId,
+      const tx = await dxdGuild.createProposal(
+        [votingMachine.address, votingMachine.address],
+        [positiveVoteData, negativeVoteData],
+        [0, 0],
+        2,
+        `vote on ${walletSchemeProposalId}`,
+        constants.SOME_HASH,
         { from: accounts[2] }
       );
 
-      const positiveVoteProposalId = tx.logs[0].args.proposalId;
-      const negativeVoteProposalId = tx.logs[1].args.proposalId;
+      const proposalId = tx.logs[0].args.proposalId;
 
       await setAllVotesOnProposal({
         guild: dxdGuild,
-        proposalId: positiveVoteProposalId,
+        proposalId: proposalId,
+        action: 1,
         account: accounts[2],
       });
 
       await expectRevert(
-        dxdGuild.endProposal(positiveVoteProposalId),
-        "DXDGuild: Use endVotingMachineVoteProposal to end proposals to voting machine"
-      );
-      await expectRevert(
-        dxdGuild.endProposal(positiveVoteProposalId),
-        "DXDGuild: Use endVotingMachineVoteProposal to end proposals to voting machine"
-      );
-      await expectRevert(
-        dxdGuild.endVotingMachineVoteProposal(walletSchemeProposalId),
-        "DXDGuild: Positive proposal hasnt ended yet"
+        dxdGuild.endProposal(proposalId),
+        "ERC20Guild: Proposal hasnt ended yet"
       );
 
       const txVote = await setAllVotesOnProposal({
         guild: dxdGuild,
-        proposalId: positiveVoteProposalId,
+        proposalId: proposalId,
+        action: 1,
         account: accounts[4],
       });
 
       if (constants.ARC_GAS_PRICE > 1)
         expect(txVote.receipt.gasUsed).to.be.below(80000);
 
-      expectEvent(txVote, "VoteAdded", { proposalId: positiveVoteProposalId });
+      expectEvent(txVote, "VoteAdded", { proposalId: proposalId });
       await time.increase(time.duration.seconds(31));
-      await expectRevert(
-        dxdGuild.endProposal(positiveVoteProposalId),
-        "DXDGuild: Use endVotingMachineVoteProposal to end proposals to voting machine"
-      );
-      await expectRevert(
-        dxdGuild.endProposal(negativeVoteProposalId),
-        "DXDGuild: Use endVotingMachineVoteProposal to end proposals to voting machine"
-      );
-      const receipt = await dxdGuild.endVotingMachineVoteProposal(
-        walletSchemeProposalId
+      const receipt = await dxdGuild.endProposal(
+        proposalId
       );
       expectEvent(receipt, "ProposalExecuted", {
-        proposalId: positiveVoteProposalId,
+        proposalId: proposalId,
       });
       await expectRevert(
-        dxdGuild.endVotingMachineVoteProposal(walletSchemeProposalId),
-        "DXDGuild: Positive proposal already executed"
+        dxdGuild.endProposal(proposalId),
+        "ERC20Guild: Proposal already executed"
       );
-      await time.increase(time.duration.seconds(31));
-      const proposalInfo = await dxdGuild.getProposal(positiveVoteProposalId);
+
+      //TO DO: Check more conditions of REP vote done on voting machine and dao
+
+      const proposalInfo = await dxdGuild.getProposal(proposalId);
       assert.equal(
         proposalInfo.state,
         constants.WalletSchemeProposalState.executionSuccedd
