@@ -47,18 +47,20 @@ contract("DXDGuild", function (accounts) {
     votingMachine = createDaoResult.votingMachine;
     org = createDaoResult.org;
     actionMock = await ActionMock.new();
-    await dxdGuild.initialize(
-      guildToken.address,
-      30,
-      30,
-      40,
-      20,
-      VOTE_GAS,
-      MAX_GAS_PRICE,
-      0,
-      TIMELOCK,
-      votingMachine.address
-    );
+    await dxdGuild
+      .methods['initialize(address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,address)'](
+        guildToken.address,
+        30,
+        30,
+        40,
+        20,
+        VOTE_GAS,
+        MAX_GAS_PRICE,
+        10,
+        0,
+        TIMELOCK,
+        votingMachine.address
+      );
     tokenVault = await dxdGuild.tokenVault();
 
     await guildToken.approve(tokenVault, 50, { from: accounts[1] });

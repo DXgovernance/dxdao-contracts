@@ -41,8 +41,11 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     uint256 public votingPowerForProposalCreation;
     uint256 public voteGas;
     uint256 public maxGasPrice;
-    uint256 public proposalNonce;
+    uint256 public maxActiveProposals;
 
+    uint256 public proposalNonce;
+    uint256 public totalActiveProposals;
+    
     // All the signed votes that were executed, to avoid double signed vote execution.
     mapping(bytes32 => bool) public signedVotes;
 
@@ -116,6 +119,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _name The the guild name
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
     /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
     /// a permission is allowed
     function initialize(
@@ -127,6 +131,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
+        uint256 _maxActiveProposals,
         uint256 _permissionDelay
     ) public virtual initializer {
         _initialize(
@@ -138,6 +143,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _name,
             _voteGas,
             _maxGasPrice,
+            _maxActiveProposals,
             _permissionDelay
         );
         initialized = true;
@@ -152,13 +158,15 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
     function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
         uint256 _votingPowerForProposalExecution,
         uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
-        uint256 _maxGasPrice
+        uint256 _maxGasPrice,
+        uint256 _maxActiveProposals
     ) public virtual {
         _setConfig(
             _proposalTime,
@@ -166,7 +174,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _votingPowerForProposalExecution,
             _votingPowerForProposalCreation,
             _voteGas,
-            _maxGasPrice
+            _maxGasPrice,
+            _maxActiveProposals
         );
     }
 
@@ -371,7 +380,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         newProposal.contentHash = contentHash;
         newProposal.totalVotes = new uint256[](totalActions.add(1));
         newProposal.state = ProposalState.Submitted;
-
+        
+        totalActiveProposals ++;
         emit ProposalCreated(proposalId);
         proposalsIds.push(proposalId);
         return proposalId;
@@ -433,6 +443,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             }
             emit ProposalExecuted(proposalId);
         }
+        totalActiveProposals --;
     }
     
     /// @dev Internal initializer
@@ -444,6 +455,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
     /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
     /// a permission is allowed
     function _initialize(
@@ -455,6 +467,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
+        uint256 _maxActiveProposals,
         uint256 _permissionDelay
     ) internal {
         require(
@@ -469,7 +482,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _votingPowerForProposalExecution,
             _votingPowerForProposalCreation,
             _voteGas,
-            _maxGasPrice
+            _maxGasPrice,
+            _maxActiveProposals
         );
         callPermissions[address(this)][
             bytes4(
@@ -494,13 +508,15 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _votingPowerForProposalCreation The minimum balance of voting power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
     function _setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
         uint256 _votingPowerForProposalExecution,
         uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
-        uint256 _maxGasPrice
+        uint256 _maxGasPrice,
+        uint256 _maxActiveProposals
     ) internal {
         require(
             !initialized || (msg.sender == address(this)),
@@ -520,6 +536,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         votingPowerForProposalCreation = _votingPowerForProposalCreation;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
+        maxActiveProposals = _maxActiveProposals;
     }
 
     /// @dev Internal function to set the amount of votingPower to vote in a proposal

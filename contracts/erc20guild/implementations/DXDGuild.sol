@@ -21,6 +21,7 @@ contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
     /// token total supply. 10000 == 100%, 5000 == 50% and 2500 == 25%
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
     /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
     /// a permission is allowed
     /// @param _lockTime The minimum amount of seconds that the tokens would be locked
@@ -33,6 +34,7 @@ contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
         uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
+        uint256 _maxActiveProposals,
         uint256 _permissionDelay,
         uint256 _lockTime,
         address _votingMachine
@@ -50,6 +52,7 @@ contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
             "DXDGuild",
             _voteGas,
             _maxGasPrice,
+            _maxActiveProposals,
             _permissionDelay
         );
         tokenVault = new TokenVault();

@@ -22,6 +22,7 @@ contract GuardedGuild is ERC20Guild, OwnableUpgradeable {
     /// @param _name The the guild name
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
+    /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
     /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
     /// a permission is allowed
     /// @param _guildGuardian The address of the guild guardian
@@ -35,6 +36,7 @@ contract GuardedGuild is ERC20Guild, OwnableUpgradeable {
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
+        uint256 _maxActiveProposals,
         uint256 _permissionDelay,
         address _guildGuardian,
         uint256 _extraTimeForGuardian
@@ -52,6 +54,7 @@ contract GuardedGuild is ERC20Guild, OwnableUpgradeable {
             _name,
             _voteGas,
             _maxGasPrice,
+            _maxActiveProposals,
             _permissionDelay
         );
         guildGuardian = _guildGuardian;
