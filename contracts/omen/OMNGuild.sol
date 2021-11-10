@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0
+/* // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
 pragma experimental ABIEncoderV2;
@@ -495,4 +495,4 @@ contract OMNGuild is LockableERC20Guild {
 
         return proposalId;
     }
-}
+} */
