@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-pragma experimental ABIEncoderV2;
-
-import "../erc20guild/implementations/LockableERC20Guild.sol";
+import "./LockableERC20Guild.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
@@ -12,20 +10,6 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 /// An ERC20Guild for the DXD token designed to execute votes on Genesis Protocol Voting Machine.
 contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
-
-    uint256 private _currentSnapshotId;
-
-    struct VotingMachineVoteProposal {
-        bytes32 positiveVote;
-        bytes32 negativeVote;
-    }
-
-    // VotingMachineProposalId => VotingMachineVoteProposal => ERC20Guild Proposal (Positive & Negative)
-    mapping(bytes32 => VotingMachineVoteProposal)
-        public votingMachineVoteProposals;
-
-    // ERC20Guild Proposal => VotingMachineProposalId
-    mapping(bytes32 => bytes32) public proposalsForVotingMachineVote;
 
     /// @dev Initilizer
     /// @param _token The address of the token to be used
@@ -99,7 +83,6 @@ contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
         override
         returns (uint256)
     {
-        return
-            token.totalSupply().mul(votingPowerForProposalExecution).div(100);
+        return token.totalSupply().mul(votingPowerForProposalExecution).div(100);
     }
 }

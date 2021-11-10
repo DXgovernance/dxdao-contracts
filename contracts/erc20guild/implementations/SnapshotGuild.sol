@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-pragma experimental ABIEncoderV2;
-
 import "./LockableERC20Guild.sol";
 import "../../utils/Arrays.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
@@ -115,17 +113,17 @@ contract SnapshotGuild is LockableERC20Guild {
     /// @param data The data to be executed on each call to be executed
     /// @param value The ETH value to be sent on each call to be executed
     /// @param totalActions The amount of actions that would be offered to the voters
-    /// @param description A short description of the proposal
+    /// @param title The title of the proposal
     /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
         address[] memory to,
         bytes[] memory data,
         uint256[] memory value,
         uint256 totalActions,
-        string memory description,
+        string memory title,
         bytes memory contentHash
     ) public override virtual isInitialized returns (bytes32) {
-        bytes32 proposalId = super.createProposal(to, data, value, totalActions, description, contentHash);
+        bytes32 proposalId = _createProposal(to, data, value, totalActions, title, contentHash);
         proposalsSnapshots[proposalId] = _currentSnapshotId;
         return proposalId;
     }

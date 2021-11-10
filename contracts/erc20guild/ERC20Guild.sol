@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-pragma experimental ABIEncoderV2;
-
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
@@ -10,19 +8,23 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import '@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol';
 
-/// @title ERC20Guild
-/// @author github:AugustoL
-/// @dev Extends an ERC20 functionality into a Guild, adding a simple governance system over an ERC20 token.
-/// An ERC20Guild is a simple organization that execute arbitrary calls if a minimun amount of votes is reached in a 
-/// proposal action duting the proposalTime.
-/// Each proposal has actions, the voter can vote only once per proposal and cant change the action choosen, only
-/// increase the voting power used in his vote.
-/// A proposal ends when the mimimum amount of total voting power is reached on a proposal before the proposal finish.
-/// When a proposal ends succesfully it executes the calls of the winning action.
-/// The winning action has a certain amount of time to be executed succesfully if that time passes and the action didnt
-/// exected succesfully till then, it is marked as failded.
-/// The guild can execute only allowed functions, if a function is not allowed it will need to set the allowance
-/// for it and then after being succesfully added to allowed functions a proposal for it execution can be created.
+/*
+  @title ERC20Guild
+  @author github:AugustoL
+  @dev Extends an ERC20 functionality into a Guild, adding a simple governance system over an ERC20 token.
+  An ERC20Guild is a simple organization that execute arbitrary calls if a minimun amount of votes is reached in a 
+  proposal action while the proposal is active.
+  Each proposal has actions, the voter can vote only once per proposal and cant change the choosen action, only
+  increase the voting power of his vote.
+  A proposal ends when the mimimum amount of total voting power is reached on a proposal action before the proposal
+  finish.
+  When a proposal ends succesfully it executes the calls of the winning action.
+  The winning action has a certain amount of time to be executed succesfully if that time passes and the action didnt
+  executed succesfully, it is marked as failded.
+  The guild can execute only allowed functions, if a function is not allowed it will need to set the allowance
+  for it.
+  The allowed functions have a timestamp that marks from what time the function can be executed.
+*/
 contract ERC20Guild is Initializable, IERC1271Upgradeable {
     using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
@@ -67,7 +69,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         address[] to;
         bytes[] data;
         uint256[] value;
-        string description;
+        string title;
         bytes contentHash;
         ProposalState state;
         uint256[] totalVotes;
@@ -108,7 +110,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _token The address of the token to be used
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be executed
+    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be
+    /// executed
     /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
     /// @param _name The the guild name
     /// @param _voteGas The gas to be used to calculate the vote gas refund
@@ -126,10 +129,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _maxGasPrice,
         uint256 _permissionDelay
     ) public virtual initializer {
-        require(
-            address(_token) != address(0),
-            "ERC20Guild: token is the zero address"
-        );
         _initialize(
             _token,
             _proposalTime,
@@ -148,7 +147,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// or when it is initilized
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be executed
+    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be
+    /// executed
     /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
@@ -225,29 +225,17 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param data The data to be executed on each call to be executed
     /// @param value The ETH value to be sent on each call to be executed
     /// @param totalActions The amount of actions that would be offered to the voters
-    /// @param description A short description of the proposal
+    /// @param title The title of the proposal
     /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
         address[] memory to,
         bytes[] memory data,
         uint256[] memory value,
         uint256 totalActions,
-        string memory description,
+        string memory title,
         bytes memory contentHash
     ) public virtual isInitialized returns (bytes32) {
-        require(
-            votingPowerOf(msg.sender) >= getVotingPowerForProposalCreation(),
-            "ERC20Guild: Not enough tokens to create proposal"
-        );
-        require(
-            (to.length == data.length) && (to.length == value.length),
-            "ERC20Guild: Wrong length of to, data or value arrays"
-        );
-        require(
-            to.length > 0,
-            "ERC20Guild: to, data value arrays cannot be empty"
-        );
-        return _createProposal(to, data, value, totalActions, description, contentHash);
+        return _createProposal(to, data, value, totalActions, title, contentHash);
     }
     
     /// @dev Set a hash of an call to be validated using EIP1271
@@ -264,14 +252,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public virtual {
-        require(
-            proposals[proposalId].state == ProposalState.Submitted,
-            "ERC20Guild: Proposal already executed"
-        );
-        require(
-            proposals[proposalId].endTime < block.timestamp,
-            "ERC20Guild: Proposal hasnt ended yet"
-        );
         _endProposal(proposalId);
     }
 
@@ -280,7 +260,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param action The proposal action to be voted
     /// @param votingPower The votingPower to use in the proposal
     function setVote(bytes32 proposalId, uint256 action, uint256 votingPower) public virtual {
-        require(votingPowerOf(msg.sender) >= votingPower, "ERC20Guild: Invalid votingPower amount");
         _setVote(msg.sender, proposalId, action, votingPower);
         _refundVote(payable(msg.sender));
     }
@@ -298,7 +277,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             (proposalIds.length == votingPowers.length) && (proposalIds.length == actions.length),
             "ERC20Guild: Wrong length of proposalIds, actions or votingPowers"
         );
-        
         for (uint256 i = 0; i < proposalIds.length; i++)
             _setVote(msg.sender, proposalIds[i], actions[i], votingPowers[i]);
     }
@@ -355,16 +333,28 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param data The data to be executed on each call to be executed
     /// @param value The ETH value to be sent on each call to be executed
     /// @param totalActions The amount of actions that would be offered to the voters
-    /// @param description A short description of the proposal
+    /// @param title The title of the proposal
     /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function _createProposal(
         address[] memory to,
         bytes[] memory data,
         uint256[] memory value,
         uint256 totalActions,
-        string memory description,
+        string memory title,
         bytes memory contentHash
     ) internal returns (bytes32) {
+        require(
+            votingPowerOf(msg.sender) >= getVotingPowerForProposalCreation(),
+            "ERC20Guild: Not enough votes to create proposal"
+        );
+        require(
+            (to.length == data.length) && (to.length == value.length),
+            "ERC20Guild: Wrong length of to, data or value arrays"
+        );
+        require(
+            to.length > 0,
+            "ERC20Guild: to, data value arrays cannot be empty"
+        );
         bytes32 proposalId =
             keccak256(
                 abi.encodePacked(msg.sender, block.timestamp, proposalNonce)
@@ -377,7 +367,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         newProposal.to = to;
         newProposal.data = data;
         newProposal.value = value;
-        newProposal.description = description;
+        newProposal.title = title;
         newProposal.contentHash = contentHash;
         newProposal.totalVotes = new uint256[](totalActions.add(1));
         newProposal.state = ProposalState.Submitted;
@@ -390,6 +380,14 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @dev Execute a proposal that has already passed the votation time and has enough votes
     /// @param proposalId The id of the proposal to be executed
     function _endProposal(bytes32 proposalId) internal {
+        require(
+            proposals[proposalId].state == ProposalState.Submitted,
+            "ERC20Guild: Proposal already executed"
+        );
+        require(
+            proposals[proposalId].endTime < block.timestamp,
+            "ERC20Guild: Proposal hasnt ended yet"
+        );
       
         uint256 winningAction = 0;
         uint256 i = 1;
@@ -400,21 +398,13 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             winningAction = i;
         }
         
-        if (
-            proposals[proposalId].endTime < block.timestamp
-            && winningAction == 0
-            && proposals[proposalId].state == ProposalState.Submitted
-        ) {
+        if (winningAction == 0) {
             proposals[proposalId].state = ProposalState.Rejected;
             emit ProposalRejected(proposalId);
-        } else if (
-            proposals[proposalId].endTime.add(timeForExecution) <
-            block.timestamp &&
-            proposals[proposalId].state == ProposalState.Submitted
-        ) {
+        } else if (proposals[proposalId].endTime.add(timeForExecution) < block.timestamp) {
             proposals[proposalId].state = ProposalState.Failed;
             emit ProposalEnded(proposalId);
-        } else if (proposals[proposalId].state == ProposalState.Submitted) {
+        } else {
             proposals[proposalId].state = ProposalState.Executed;
             
             uint256 callsPerAction = proposals[proposalId].to.length
@@ -449,7 +439,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _token The address of the token to be used
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be executed
+    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be
+    /// executed
     /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
@@ -466,6 +457,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _maxGasPrice,
         uint256 _permissionDelay
     ) internal {
+        require(
+            address(_token) != address(0),
+            "ERC20Guild: token is the zero address"
+        );
         name = _name;
         token = IERC20Upgradeable(_token);
         _setConfig(
@@ -539,8 +534,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 votingPower
     ) internal virtual isInitialized {
         require(
-            proposals[proposalId].state == ProposalState.Submitted,
-            "ERC20Guild: Proposal already executed"
+            proposals[proposalId].endTime > block.timestamp,
+            "ERC20Guild: Proposal ended, cant be voted"
         );
         require(
             votingPowerOf(voter) >= votingPower,
@@ -606,7 +601,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @return data The data to be executed on each call to be executed
     /// @return value The ETH value to be sent on each call to be executed
     /// @return totalActions The amount of actions that can be voted on
-    /// @return description A short description of the proposal
+    /// @return title The title of the proposal
     /// @return contentHash The content hash of the content reference of the proposal
     /// @return state If the proposal state
     /// @return totalVotes The total votes of the proposal
@@ -622,7 +617,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             bytes[] memory data,
             uint256[] memory value,
             uint256 totalActions,
-            string memory description,
+            string memory title,
             bytes memory contentHash,
             ProposalState state,
             uint256[] memory totalVotes
@@ -637,7 +632,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             proposal.data,
             proposal.value,
             proposal.totalVotes.length.sub(1),
-            proposal.description,
+            proposal.title,
             proposal.contentHash,
             proposal.state,
             proposal.totalVotes
