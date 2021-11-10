@@ -17,8 +17,8 @@ contract GuardedGuild is ERC20Guild, OwnableUpgradeable {
     /// @param _token The address of the token to be used
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be executed
-    /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
+    /// @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
+    /// @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
     /// @param _name The the guild name
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
@@ -96,25 +96,5 @@ contract GuardedGuild is ERC20Guild, OwnableUpgradeable {
         );
         guildGuardian = _guildGuardian;
         extraTimeForGuardian = _extraTimeForGuardian;
-    }
-
-    /// @dev Get minimum amount of votes needed for creation
-    function getVotingPowerForProposalCreation()
-        public
-        view
-        override
-        returns (uint256)
-    {
-        return token.totalSupply().mul(votingPowerForProposalCreation).div(100);
-    }
-
-    /// @dev Get minimum amount of votes needed for proposal execution
-    function getVotingPowerForProposalExecution()
-        public
-        view
-        override
-        returns (uint256)
-    {
-        return token.totalSupply().mul(votingPowerForProposalExecution).div(100);
     }
 }

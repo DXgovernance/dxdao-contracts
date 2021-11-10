@@ -37,8 +37,8 @@ contract("DXDGuild", function (accounts) {
       0,
       50,
       100,
-      150,
-      200,
+      100,
+      250,
     ]);
     dxdGuild = await DXDGuild.new();
 
@@ -52,8 +52,8 @@ contract("DXDGuild", function (accounts) {
         guildToken.address,
         30,
         30,
-        40,
-        20,
+        5000,
+        1100,
         VOTE_GAS,
         MAX_GAS_PRICE,
         10,
@@ -65,13 +65,13 @@ contract("DXDGuild", function (accounts) {
 
     await guildToken.approve(tokenVault, 50, { from: accounts[1] });
     await guildToken.approve(tokenVault, 100, { from: accounts[2] });
-    await guildToken.approve(tokenVault, 150, { from: accounts[3] });
-    await guildToken.approve(tokenVault, 200, { from: accounts[4] });
+    await guildToken.approve(tokenVault, 100, { from: accounts[3] });
+    await guildToken.approve(tokenVault, 250, { from: accounts[4] });
 
     await dxdGuild.lockTokens(50, { from: accounts[1] });
     await dxdGuild.lockTokens(100, { from: accounts[2] });
-    await dxdGuild.lockTokens(150, { from: accounts[3] });
-    await dxdGuild.lockTokens(200, { from: accounts[4] });
+    await dxdGuild.lockTokens(100, { from: accounts[3] });
+    await dxdGuild.lockTokens(250, { from: accounts[4] });
 
     tokenVault = await dxdGuild.tokenVault();
 
@@ -133,19 +133,26 @@ contract("DXDGuild", function (accounts) {
         guild: dxdGuild,
         proposalId: proposalId,
         action: 1,
-        account: accounts[2],
+        account: accounts[1],
       });
 
       await expectRevert(
         dxdGuild.endProposal(proposalId),
         "ERC20Guild: Proposal hasnt ended yet"
       );
+      
+      await setAllVotesOnProposal({
+        guild: dxdGuild,
+        proposalId: proposalId,
+        action: 1,
+        account: accounts[2],
+      });
 
       const txVote = await setAllVotesOnProposal({
         guild: dxdGuild,
         proposalId: proposalId,
         action: 1,
-        account: accounts[4],
+        account: accounts[3],
       });
 
       if (constants.ARC_GAS_PRICE > 1)

@@ -103,24 +103,4 @@ contract SnapshotRepGuild is ERC20Guild, OwnableUpgradeable {
     {
         return ERC20SnapshotRep(address(token)).balanceOfAt(account, snapshotId);
     }
-
-    /// @dev Get minimum amount of votes needed for creation
-    function getVotingPowerForProposalCreation()
-        public
-        view
-        override
-        returns (uint256)
-    {
-        return token.totalSupply().mul(votingPowerForProposalCreation).div(100);
-    }
-
-    /// @dev Get minimum amount of votes needed for proposal execution
-    function getVotingPowerForProposalExecution()
-        public
-        view
-        override
-        returns (uint256)
-    {
-        return token.totalSupply().mul(votingPowerForProposalExecution).div(100);
-    }
 }

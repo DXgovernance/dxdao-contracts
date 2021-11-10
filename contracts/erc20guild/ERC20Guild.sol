@@ -37,8 +37,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     string public name;
     uint256 public proposalTime;
     uint256 public timeForExecution;
-    uint256 public votingPowerForProposalExecution;
-    uint256 public votingPowerForProposalCreation;
+    uint256 public votingPowerForProposalExecution; // 100 == 1% 2500 == 25%
+    uint256 public votingPowerForProposalCreation; // 100 == 1% 2500 == 25%
     uint256 public voteGas;
     uint256 public maxGasPrice;
     uint256 public maxActiveProposals;
@@ -113,9 +113,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _token The address of the token to be used
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be
-    /// executed
-    /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
+    /// @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
+    /// @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
     /// @param _name The the guild name
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
@@ -153,9 +152,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// or when it is initilized
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be
-    /// executed
-    /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
+    /// @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
+    /// @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
@@ -402,7 +400,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 winningAction = 0;
         uint256 i = 1;
         for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
-            if (proposals[proposalId].totalVotes[i] > getVotingPowerForProposalExecution()
+            if (proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution()
                 && proposals[proposalId].totalVotes[i] > proposals[proposalId].totalVotes[winningAction]
             )
             winningAction = i;
@@ -450,9 +448,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _token The address of the token to be used
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be
-    /// executed
-    /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
+    /// @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
+    /// @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
@@ -504,8 +501,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @dev Internal function to set the configuration of the guild
     /// @param _proposalTime The minimum time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The token votes needed for a proposal to be executed
-    /// @param _votingPowerForProposalCreation The minimum balance of voting power needed to create a proposal
+    /// @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
+    /// @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
@@ -680,7 +677,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         virtual
         returns (uint256)
     {
-        return votingPowerForProposalCreation;
+        return token.totalSupply().mul(votingPowerForProposalCreation).div(10000);
     }
 
     /// @dev Get minimum amount of votingPower needed for proposal execution
@@ -690,7 +687,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         virtual
         returns (uint256)
     {
-        return votingPowerForProposalExecution;
+      return token.totalSupply().mul(votingPowerForProposalExecution).div(10000);
     }
 
     /// @dev Get the first four bytes (function signature) of a bytes variable

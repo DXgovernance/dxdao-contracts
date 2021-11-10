@@ -15,10 +15,8 @@ contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
     /// @param _token The address of the token to be used
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The % of total voting power needed for a proposal to be executed based
-    /// on the token total supply. 10000 == 100%, 5000 == 50% and 2500 == 25%
-    /// @param _votingPowerForProposalExecution The % of total voting power needed to create a proposal based on the
-    /// token total supply. 10000 == 100%, 5000 == 50% and 2500 == 25%
+    /// @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
+    /// @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
@@ -67,25 +65,5 @@ contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
         ] = block.timestamp;
         callPermissions[_votingMachine][bytes4(keccak256("vote(bytes32,uint256,uint256,address)"))] = block.timestamp;
         initialized = true;
-    }
-
-    /// @dev Get minimum amount of votes needed for creation
-    function getVotingPowerForProposalCreation()
-        public
-        view
-        override
-        returns (uint256)
-    {
-        return token.totalSupply().mul(votingPowerForProposalCreation).div(100);
-    }
-
-    /// @dev Get minimum amount of votes needed for proposal execution
-    function getVotingPowerForProposalExecution()
-        public
-        view
-        override
-        returns (uint256)
-    {
-        return token.totalSupply().mul(votingPowerForProposalExecution).div(100);
     }
 }

@@ -28,8 +28,8 @@ contract LockableERC20Guild is ERC20Guild {
     /// @param _token The address of the token to be used
     /// @param _proposalTime The minimun time for a proposal to be under votation
     /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The minimum amount of total voitng power needed in a proposal to be executed
-    /// @param _votingPowerForProposalCreation The minimum amount of voitng power needed to create a proposal
+    /// @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
+    /// @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
     /// @param _name The the guild name
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
@@ -129,5 +129,27 @@ contract LockableERC20Guild is ERC20Guild {
     /// @param account The address of the account
     function votingPowerOf(address account) public override view returns (uint256) {
         return tokensLocked[account].amount;
+    }
+    
+    /// @dev Get minimum amount of votingPower needed for creation
+    function getVotingPowerForProposalCreation()
+        public
+        override
+        view
+        virtual
+        returns (uint256)
+    {
+        return totalLocked.mul(votingPowerForProposalCreation).div(10000);
+    }
+
+    /// @dev Get minimum amount of votingPower needed for proposal execution
+    function getVotingPowerForProposalExecution()
+        public
+        override
+        view
+        virtual
+        returns (uint256)
+    {
+      return totalLocked.mul(votingPowerForProposalExecution).div(10000);
     }
 }
