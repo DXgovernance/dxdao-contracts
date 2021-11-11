@@ -41,25 +41,27 @@ contract ERC20TokenVesting is Ownable {
      * @dev Creates a vesting contract that vests its balance of any ERC20 token to the
      * beneficiary, gradually in a linear fashion until start + duration. By then all
      * of the balance will have vested.
-     * @param beneficiary address of the beneficiary to whom vested tokens are transferred
-     * @param cliffDuration duration in seconds of the cliff in which tokens will begin to vest
-     * @param start the time (as Unix time) at which point vesting starts
-     * @param duration duration in seconds of the period in which the tokens will vest
-     * @param revocable whether the vesting is revocable or not
+     * @param _beneficiary address of the beneficiary to whom vested tokens are transferred
+     * @param _cliffDuration duration in seconds of the cliff in which tokens will begin to vest
+     * @param _start the time (as Unix time) at which point vesting starts
+     * @param _duration duration in seconds of the period in which the tokens will vest
+     * @param _revocable whether the vesting is revocable or not
      */
-    constructor (address beneficiary, uint256 start, uint256 cliffDuration, uint256 duration, bool revocable) public {
-        require(beneficiary != address(0), "TokenVesting: beneficiary is the zero address");
+    constructor(
+        address _beneficiary, uint256 _start, uint256 _cliffDuration, uint256 _duration, bool _revocable
+    ) {
+        require(_beneficiary != address(0), "TokenVesting: beneficiary is the zero address");
         // solhint-disable-next-line max-line-length
-        require(cliffDuration <= duration, "TokenVesting: cliff is longer than duration");
-        require(duration > 0, "TokenVesting: duration is 0");
+        require(_cliffDuration <= _duration, "TokenVesting: cliff is longer than duration");
+        require(_duration > 0, "TokenVesting: duration is 0");
         // solhint-disable-next-line max-line-length
-        require(start.add(duration) > block.timestamp, "TokenVesting: final time is before current time");
+        require(_start.add(_duration) > block.timestamp, "TokenVesting: final time is before current time");
 
-        _beneficiary = beneficiary;
-        _revocable = revocable;
-        _duration = duration;
-        _cliff = start.add(cliffDuration);
-        _start = start;
+        _beneficiary = _beneficiary;
+        _revocable = _revocable;
+        _duration = _duration;
+        _cliff = _start.add(_cliffDuration);
+        _start = _start;
     }
 
     /**
