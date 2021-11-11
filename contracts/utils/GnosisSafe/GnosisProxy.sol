@@ -4,17 +4,17 @@
 
 pragma solidity ^0.5.3;
 
-/// @title GnosisProxy - Generic proxy contract allows to execute all transactions applying the code of a master contract.
-/// @author Stefan George - <stefan@gnosis.io>
-/// @author Richard Meissner - <richard@gnosis.io>
+// @title GnosisProxy - Generic proxy contract allows to execute all transactions applying the code of a master contract.
+// @author Stefan George - <stefan@gnosis.io>
+// @author Richard Meissner - <richard@gnosis.io>
 contract GnosisProxy {
 
     // masterCopy always needs to be first declared variable, to ensure that it is at the same location in the contracts to which calls are delegated.
     // To reduce deployment costs this variable is internal and needs to be retrieved via `getStorageAt`
     address internal masterCopy;
 
-    /// @dev Constructor function sets address of master copy contract.
-    /// @param _masterCopy Master copy address.
+    // @dev Constructor function sets address of master copy contract.
+    // @param _masterCopy Master copy address.
     constructor(address _masterCopy)
         public
     {
@@ -22,7 +22,7 @@ contract GnosisProxy {
         masterCopy = _masterCopy;
     }
 
-    /// @dev Fallback function forwards all transactions and returns all received return data.
+    // @dev Fallback function forwards all transactions and returns all received return data.
     function ()
         external
         payable

@@ -98,29 +98,29 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bool allowance
     );
 
-    /// @dev Allows the voting machine to receive ether to be used to refund voting costs
+    // @dev Allows the voting machine to receive ether to be used to refund voting costs
     fallback() external payable {}
 
     receive() external payable {}
 
-    /// @dev Initialized modifier to require the contract to be initialized
+    // @dev Initialized modifier to require the contract to be initialized
     modifier isInitialized() {
         require(initialized, "ERC20Guild: Not initilized");
         _;
     }
 
-    /// @dev Initilizer
-    /// @param _token The address of the token to be used
-    /// @param _proposalTime The minimun time for a proposal to be under votation
-    /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
-    /// @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
-    /// @param _name The the guild name
-    /// @param _voteGas The gas to be used to calculate the vote gas refund
-    /// @param _maxGasPrice The maximum gas price to be refunded
-    /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
-    /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
-    /// a permission is allowed
+    // @dev Initilizer
+    // @param _token The address of the token to be used
+    // @param _proposalTime The minimun time for a proposal to be under votation
+    // @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
+    // @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
+    // @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
+    // @param _name The the guild name
+    // @param _voteGas The gas to be used to calculate the vote gas refund
+    // @param _maxGasPrice The maximum gas price to be refunded
+    // @param _maxActiveProposals The maximum number of proposals to be in submitted state
+    // @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
+    // a permission is allowed
     function initialize(
         address _token,
         uint256 _proposalTime,
@@ -148,17 +148,17 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         initialized = true;
     }
 
-    /// @dev Set the ERC20Guild configuration, can be called only executing a proposal
-    /// or when it is initilized
-    /// @param _proposalTime The minimun time for a proposal to be under votation
-    /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
-    /// @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
-    /// @param _voteGas The gas to be used to calculate the vote gas refund
-    /// @param _maxGasPrice The maximum gas price to be refunded
-    /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
-    /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
-    /// a permission is allowed
+    // @dev Set the ERC20Guild configuration, can be called only executing a proposal
+    // or when it is initilized
+    // @param _proposalTime The minimun time for a proposal to be under votation
+    // @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
+    // @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
+    // @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
+    // @param _voteGas The gas to be used to calculate the vote gas refund
+    // @param _maxGasPrice The maximum gas price to be refunded
+    // @param _maxActiveProposals The maximum number of proposals to be in submitted state
+    // @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
+    // a permission is allowed
     function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
@@ -181,10 +181,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         );
     }
 
-    /// @dev Set the allowance of a call to be executed by the guild
-    /// @param to The address to be called
-    /// @param functionSignature The signature of the function
-    /// @param allowance If the function is allowed to be called or not
+    // @dev Set the allowance of a call to be executed by the guild
+    // @param to The address to be called
+    // @param functionSignature The signature of the function
+    // @param allowance If the function is allowed to be called or not
     function setAllowance(
         address[] memory to,
         bytes4[] memory functionSignature,
@@ -229,13 +229,13 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         );
     }
 
-    /// @dev Create a proposal with an static call data and extra information
-    /// @param to The receiver addresses of each call to be executed
-    /// @param data The data to be executed on each call to be executed
-    /// @param value The ETH value to be sent on each call to be executed
-    /// @param totalActions The amount of actions that would be offered to the voters
-    /// @param title The title of the proposal
-    /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
+    // @dev Create a proposal with an static call data and extra information
+    // @param to The receiver addresses of each call to be executed
+    // @param data The data to be executed on each call to be executed
+    // @param value The ETH value to be sent on each call to be executed
+    // @param totalActions The amount of actions that would be offered to the voters
+    // @param title The title of the proposal
+    // @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
         address[] memory to,
         bytes[] memory data,
@@ -247,9 +247,9 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         return _createProposal(to, data, value, totalActions, title, contentHash);
     }
     
-    /// @dev Set a hash of an call to be validated using EIP1271
-    /// @param _hash The EIP1271 hash to be added or removed
-    /// @param isValid If the hash is valid or not
+    // @dev Set a hash of an call to be validated using EIP1271
+    // @param _hash The EIP1271 hash to be added or removed
+    // @param isValid If the hash is valid or not
     function setEIP1271SignedHash(bytes32 _hash, bool isValid) public virtual {
         require(
             msg.sender == address(this),
@@ -258,25 +258,25 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         EIP1271SignedHashes[_hash] = isValid;
     }
 
-    /// @dev Execute a proposal that has already passed the votation time and has enough votes
-    /// @param proposalId The id of the proposal to be executed
+    // @dev Execute a proposal that has already passed the votation time and has enough votes
+    // @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public virtual {
         _endProposal(proposalId);
     }
 
-    /// @dev Set the voting power to vote in a proposal
-    /// @param proposalId The id of the proposal to set the vote
-    /// @param action The proposal action to be voted
-    /// @param votingPower The votingPower to use in the proposal
+    // @dev Set the voting power to vote in a proposal
+    // @param proposalId The id of the proposal to set the vote
+    // @param action The proposal action to be voted
+    // @param votingPower The votingPower to use in the proposal
     function setVote(bytes32 proposalId, uint256 action, uint256 votingPower) public virtual {
         _setVote(msg.sender, proposalId, action, votingPower);
         _refundVote(payable(msg.sender));
     }
 
-    /// @dev Set the voting power to vote in multiple proposals
-    /// @param proposalIds The ids of the proposals to set the vote
-    /// @param actions The proposal actions to be voted
-    /// @param votingPowers The votingPower to use as voting for each proposals
+    // @dev Set the voting power to vote in multiple proposals
+    // @param proposalIds The ids of the proposals to set the vote
+    // @param actions The proposal actions to be voted
+    // @param votingPowers The votingPower to use as voting for each proposals
     function setVotes(
         bytes32[] memory proposalIds,
         uint256[] memory actions,
@@ -290,12 +290,12 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _setVote(msg.sender, proposalIds[i], actions[i], votingPowers[i]);
     }
 
-    /// @dev Set the voting power to vote in a proposal using a signed vote
-    /// @param proposalId The id of the proposal to set the vote
-    /// @param action The proposal action to be voted
-    /// @param votingPower The votingPower to use in the proposal
-    /// @param voter The address of the voter
-    /// @param signature The signature of the hashed vote
+    // @dev Set the voting power to vote in a proposal using a signed vote
+    // @param proposalId The id of the proposal to set the vote
+    // @param action The proposal action to be voted
+    // @param votingPower The votingPower to use in the proposal
+    // @param voter The address of the voter
+    // @param signature The signature of the hashed vote
     function setSignedVote(
         bytes32 proposalId,
         uint256 action,
@@ -313,12 +313,12 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         signedVotes[hashedVote] = true;
     }
 
-    /// @dev Set the voting power to vote in multiple proposals using signed votes
-    /// @param proposalIds The ids of the proposals to set the votes
-    /// @param actions The proposal actions to be voted
-    /// @param votingPowers The votingPower to use as voting for each proposals
-    /// @param voters The accounts that signed the votes
-    /// @param signatures The vote signatures
+    // @dev Set the voting power to vote in multiple proposals using signed votes
+    // @param proposalIds The ids of the proposals to set the votes
+    // @param actions The proposal actions to be voted
+    // @param votingPowers The votingPower to use as voting for each proposals
+    // @param voters The accounts that signed the votes
+    // @param signatures The vote signatures
     function setSignedVotes(
         bytes32[] memory proposalIds,
         uint256[] memory actions,
@@ -337,13 +337,13 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         }
     }
 
-    /// @dev Create a proposal with an static call data and extra information
-    /// @param to The receiver addresses of each call to be executed
-    /// @param data The data to be executed on each call to be executed
-    /// @param value The ETH value to be sent on each call to be executed
-    /// @param totalActions The amount of actions that would be offered to the voters
-    /// @param title The title of the proposal
-    /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
+    // @dev Create a proposal with an static call data and extra information
+    // @param to The receiver addresses of each call to be executed
+    // @param data The data to be executed on each call to be executed
+    // @param value The ETH value to be sent on each call to be executed
+    // @param totalActions The amount of actions that would be offered to the voters
+    // @param title The title of the proposal
+    // @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function _createProposal(
         address[] memory to,
         bytes[] memory data,
@@ -387,8 +387,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         return proposalId;
     }
 
-    /// @dev Execute a proposal that has already passed the votation time and has enough votes
-    /// @param proposalId The id of the proposal to be executed
+    // @dev Execute a proposal that has already passed the votation time and has enough votes
+    // @param proposalId The id of the proposal to be executed
     function _endProposal(bytes32 proposalId) internal {
         require(
             proposals[proposalId].state == ProposalState.Submitted,
@@ -446,17 +446,17 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         totalActiveProposals --;
     }
     
-    /// @dev Internal initializer
-    /// @param _token The address of the token to be used
-    /// @param _proposalTime The minimun time for a proposal to be under votation
-    /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
-    /// @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
-    /// @param _voteGas The gas to be used to calculate the vote gas refund
-    /// @param _maxGasPrice The maximum gas price to be refunded
-    /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
-    /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
-    /// a permission is allowed
+    // @dev Internal initializer
+    // @param _token The address of the token to be used
+    // @param _proposalTime The minimun time for a proposal to be under votation
+    // @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
+    // @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
+    // @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
+    // @param _voteGas The gas to be used to calculate the vote gas refund
+    // @param _maxGasPrice The maximum gas price to be refunded
+    // @param _maxActiveProposals The maximum number of proposals to be in submitted state
+    // @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
+    // a permission is allowed
     function _initialize(
         address _token,
         uint256 _proposalTime,
@@ -500,16 +500,16 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         ] = block.timestamp;
     }
 
-    /// @dev Internal function to set the configuration of the guild
-    /// @param _proposalTime The minimum time for a proposal to be under votation
-    /// @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
-    /// @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
-    /// @param _voteGas The gas to be used to calculate the vote gas refund
-    /// @param _maxGasPrice The maximum gas price to be refunded
-    /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
-    /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
-    /// a permission is allowed
+    // @dev Internal function to set the configuration of the guild
+    // @param _proposalTime The minimum time for a proposal to be under votation
+    // @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
+    // @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
+    // @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
+    // @param _voteGas The gas to be used to calculate the vote gas refund
+    // @param _maxGasPrice The maximum gas price to be refunded
+    // @param _maxActiveProposals The maximum number of proposals to be in submitted state
+    // @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
+    // a permission is allowed
     function _setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
@@ -542,11 +542,11 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         permissionDelay = _permissionDelay;
     }
 
-    /// @dev Internal function to set the amount of votingPower to vote in a proposal
-    /// @param voter The address of the voter
-    /// @param proposalId The id of the proposal to set the vote
-    /// @param action The proposal action to be voted
-    /// @param votingPower The amount of votingPower to use as voting for the proposal
+    // @dev Internal function to set the amount of votingPower to vote in a proposal
+    // @param voter The address of the voter
+    // @param proposalId The id of the proposal to set the vote
+    // @param action The proposal action to be voted
+    // @param votingPower The amount of votingPower to use as voting for the proposal
     function _setVote(
         address voter,
         bytes32 proposalId,
@@ -579,9 +579,9 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         proposals[proposalId].votes[voter] = Vote(action, votingPower);
     }
 
-    /// @dev Internal function to refund a vote cost to a sender
-    /// The refund will be exeuted only if the voteGas is higher than zero and there is enough ETH balance in the guild.
-    /// @param toAddress The address where the refund should be sent
+    // @dev Internal function to refund a vote cost to a sender
+    // The refund will be exeuted only if the voteGas is higher than zero and there is enough ETH balance in the guild.
+    // @param toAddress The address where the refund should be sent
     function _refundVote(address payable toAddress) internal isInitialized {
         if (voteGas > 0) {
             uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
@@ -591,14 +591,14 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         }
     }
 
-    /// @dev Get the voting power of an accont
-    /// @param account The address of the account
+    // @dev Get the voting power of an accont
+    // @param account The address of the account
     function votingPowerOf(address account) public view virtual returns (uint256) {
         return token.balanceOf(account);
     }
 
-    /// @dev Get the voting power of multiple addresses
-    /// @param accounts The addresses of the accounts
+    // @dev Get the voting power of multiple addresses
+    // @param accounts The addresses of the accounts
     function votingPowerOfMultiple(address[] memory accounts)
         public
         view
@@ -612,19 +612,19 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         return votes;
     }
 
-    /// @dev Get the information of a proposal
-    /// @param proposalId The id of the proposal to get the information
-    /// @return creator The address that created the proposal
-    /// @return startTime The time at the proposal was created
-    /// @return endTime The time at the proposal will end
-    /// @return to The receiver addresses of each call to be executed
-    /// @return data The data to be executed on each call to be executed
-    /// @return value The ETH value to be sent on each call to be executed
-    /// @return totalActions The amount of actions that can be voted on
-    /// @return title The title of the proposal
-    /// @return contentHash The content hash of the content reference of the proposal
-    /// @return state If the proposal state
-    /// @return totalVotes The total votes of the proposal
+    // @dev Get the information of a proposal
+    // @param proposalId The id of the proposal to get the information
+    // @return creator The address that created the proposal
+    // @return startTime The time at the proposal was created
+    // @return endTime The time at the proposal will end
+    // @return to The receiver addresses of each call to be executed
+    // @return data The data to be executed on each call to be executed
+    // @return value The ETH value to be sent on each call to be executed
+    // @return totalActions The amount of actions that can be voted on
+    // @return title The title of the proposal
+    // @return contentHash The content hash of the content reference of the proposal
+    // @return state If the proposal state
+    // @return totalVotes The total votes of the proposal
     function getProposal(bytes32 proposalId)
         public
         view
@@ -659,11 +659,11 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         );
     }
 
-    /// @dev Get the votes of a voter in a proposal
-    /// @param proposalId The id of the proposal to get the information
-    /// @param voter The address of the voter to get the votes
-    /// @return action The selected action of teh voter
-    /// @return votingPower The amount of voting power used in the vote
+    // @dev Get the votes of a voter in a proposal
+    // @param proposalId The id of the proposal to get the information
+    // @param voter The address of the voter to get the votes
+    // @return action The selected action of teh voter
+    // @return votingPower The amount of voting power used in the vote
     function getProposalVotesOfVoter(bytes32 proposalId, address voter)
         public
         view
@@ -676,7 +676,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         );
     }
 
-    /// @dev Get minimum amount of votingPower needed for creation
+    // @dev Get minimum amount of votingPower needed for creation
     function getVotingPowerForProposalCreation()
         public
         view
@@ -686,7 +686,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         return token.totalSupply().mul(votingPowerForProposalCreation).div(10000);
     }
 
-    /// @dev Get minimum amount of votingPower needed for proposal execution
+    // @dev Get minimum amount of votingPower needed for proposal execution
     function getVotingPowerForProposalExecution()
         public
         view
@@ -696,7 +696,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
       return token.totalSupply().mul(votingPowerForProposalExecution).div(10000);
     }
 
-    /// @dev Get the first four bytes (function signature) of a bytes variable
+    // @dev Get the first four bytes (function signature) of a bytes variable
     function getFuncSignature(bytes memory data)
         public
         view
@@ -710,7 +710,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         return bytes4(functionSignature);
     }
 
-    /// @dev Get call signature permission
+    // @dev Get call signature permission
     function getCallPermission(address to, bytes4 functionSignature)
         public
         view
@@ -720,18 +720,18 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         return callPermissions[to][functionSignature];
     }
 
-    /// @dev Get the length of the proposalIds array
+    // @dev Get the length of the proposalIds array
     function getProposalsIdsLength() public view virtual returns (uint256) {
         return proposalsIds.length;
     }
     
-    /// @dev Gets the validity of a EIP1271 hash
-    /// @param _hash The EIP1271 hash
+    // @dev Gets the validity of a EIP1271 hash
+    // @param _hash The EIP1271 hash
     function getEIP1271SignedHash(bytes32 _hash) public view virtual returns (bool) {
         return EIP1271SignedHashes[_hash];
     }
     
-    /// @dev Get if the hash and signature are valid EIP1271 signatures
+    // @dev Get if the hash and signature are valid EIP1271 signatures
     function isValidSignature(bytes32 hash, bytes memory signature)
         external
         view
@@ -744,11 +744,11 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 : bytes4(0);
     }
 
-    /// @dev Get the hash of the vote, this hash is later signed by the voter.
-    /// @param voter The address that will be used to sign the vote
-    /// @param proposalId The id fo the proposal to be voted
-    /// @param action The proposal action to be voted
-    /// @param votingPower The amount of voting power to be used
+    // @dev Get the hash of the vote, this hash is later signed by the voter.
+    // @param voter The address that will be used to sign the vote
+    // @param proposalId The id fo the proposal to be voted
+    // @param action The proposal action to be voted
+    // @param votingPower The amount of voting power to be used
     function hashVote(
         address voter,
         bytes32 proposalId,

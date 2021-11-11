@@ -20,15 +20,15 @@ contract TokenVault is Initializable{
     bool public initialized = false;
     mapping(address => uint256) public balances;
 
-  /// @dev Initialized modifier to require the contract to be initialized
+  // @dev Initialized modifier to require the contract to be initialized
     modifier isInitialized() {
         require(initialized, "TokenVault: Not initilized");
         _;
     }
 
-    /// @dev Initializer
-    /// @param _token The address of the token to be used
-    /// @param _admin The address of the contract that will execute deposits and withdrawals 
+    // @dev Initializer
+    // @param _token The address of the token to be used
+    // @param _admin The address of the contract that will execute deposits and withdrawals 
     function initialize(address _token, address _admin) initializer public {
         token = IERC20Upgradeable(_token);
         admin = _admin;

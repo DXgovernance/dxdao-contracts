@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-/// @title IERC20Guild
-/// @author github:AugustoL
-/// @dev ERC20Guild Interface
+// @title IERC20Guild
+// @author github:AugustoL
+// @dev ERC20Guild Interface
 interface IERC20Guild {
     event ProposalCreated(bytes32 indexed proposalId);
     event ProposalRejected(bytes32 indexed proposalId);

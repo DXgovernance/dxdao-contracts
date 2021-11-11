@@ -6,8 +6,8 @@ import "../../utils/Arrays.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
-/// @title SnapshotGuild
-/// @author github:AugustoL
+// @title SnapshotGuild
+// @author github:AugustoL
 contract SnapshotGuild is LockableERC20Guild {
     using SafeMathUpgradeable for uint256;
     using Arrays for uint256[];
@@ -30,10 +30,10 @@ contract SnapshotGuild is LockableERC20Guild {
     // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
     uint256 private _currentSnapshotId;
 
-    /// @dev Set the voting power to vote in a proposal
-    /// @param proposalId The id of the proposal to set the vote
-    /// @param action The proposal action to be voted
-    /// @param votingPower The votingPower to use in the proposal
+    // @dev Set the voting power to vote in a proposal
+    // @param proposalId The id of the proposal to set the vote
+    // @param action The proposal action to be voted
+    // @param votingPower The votingPower to use in the proposal
     function setVote(bytes32 proposalId, uint256 action, uint256 votingPower) public override virtual {
         require(
             votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >=
@@ -44,12 +44,12 @@ contract SnapshotGuild is LockableERC20Guild {
         _refundVote(payable(msg.sender));
     }
 
-    /// @dev Set the voting power to vote in a proposal using a signed vote
-    /// @param proposalId The id of the proposal to set the vote
-    /// @param action The proposal action to be voted
-    /// @param votingPower The votingPower to use in the proposal
-    /// @param voter The address of the voter
-    /// @param signature The signature of the hashed vote
+    // @dev Set the voting power to vote in a proposal using a signed vote
+    // @param proposalId The id of the proposal to set the vote
+    // @param action The proposal action to be voted
+    // @param votingPower The votingPower to use in the proposal
+    // @param voter The address of the voter
+    // @param signature The signature of the hashed vote
     function setSignedVote(
         bytes32 proposalId,
         uint256 action,
@@ -73,8 +73,8 @@ contract SnapshotGuild is LockableERC20Guild {
     }
 
 
-    /// @dev Lock tokens in the guild to be used as voting power
-    /// @param tokenAmount The amount of tokens to be locked
+    // @dev Lock tokens in the guild to be used as voting power
+    // @param tokenAmount The amount of tokens to be locked
     function lockTokens(uint256 tokenAmount) public override virtual {
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
@@ -87,8 +87,8 @@ contract SnapshotGuild is LockableERC20Guild {
         emit TokensLocked(msg.sender, tokenAmount);
     }
 
-    /// @dev Release tokens locked in the guild, this will decrease the voting power
-    /// @param tokenAmount The amount of tokens to be released
+    // @dev Release tokens locked in the guild, this will decrease the voting power
+    // @param tokenAmount The amount of tokens to be released
     function releaseTokens(uint256 tokenAmount) public override virtual {
         require(
             votingPowerOf(msg.sender) >= tokenAmount,
@@ -108,13 +108,13 @@ contract SnapshotGuild is LockableERC20Guild {
         emit TokensReleased(msg.sender, tokenAmount);
     }
 
-    /// @dev Create a proposal with an static call data and extra information
-    /// @param to The receiver addresses of each call to be executed
-    /// @param data The data to be executed on each call to be executed
-    /// @param value The ETH value to be sent on each call to be executed
-    /// @param totalActions The amount of actions that would be offered to the voters
-    /// @param title The title of the proposal
-    /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
+    // @dev Create a proposal with an static call data and extra information
+    // @param to The receiver addresses of each call to be executed
+    // @param data The data to be executed on each call to be executed
+    // @param value The ETH value to be sent on each call to be executed
+    // @param totalActions The amount of actions that would be offered to the voters
+    // @param title The title of the proposal
+    // @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
         address[] memory to,
         bytes[] memory data,
@@ -128,9 +128,9 @@ contract SnapshotGuild is LockableERC20Guild {
         return proposalId;
     }
 
-    /// @dev Get the voting power of an address at a certain snapshotId
-    /// @param account The address of the account
-    /// @param snapshotId The snapshotId to be used
+    // @dev Get the voting power of an address at a certain snapshotId
+    // @param account The address of the account
+    // @param snapshotId The snapshotId to be used
     function votingPowerOfAt(address account, uint256 snapshotId)
         public
         view
@@ -143,9 +143,9 @@ contract SnapshotGuild is LockableERC20Guild {
         else return votingPowerOf(account);
     }
 
-    /// @dev Get the voting power of multiple addresses at a certain snapshotId
-    /// @param accounts The addresses of the accounts
-    /// @param snapshotIds The snapshotIds to be used
+    // @dev Get the voting power of multiple addresses at a certain snapshotId
+    // @param accounts The addresses of the accounts
+    // @param snapshotIds The snapshotIds to be used
     function votingPowerOfMultipleAt(
         address[] memory accounts,
         uint256[] memory snapshotIds
@@ -156,8 +156,8 @@ contract SnapshotGuild is LockableERC20Guild {
         return votes;
     }
 
-    /// @dev Get the total amount of tokes locked at a certain snapshotId
-    /// @param snapshotId The snapshotId to be used
+    // @dev Get the total amount of tokes locked at a certain snapshotId
+    // @param snapshotId The snapshotId to be used
     function totalLockedAt(uint256 snapshotId)
         public
         view
@@ -171,7 +171,7 @@ contract SnapshotGuild is LockableERC20Guild {
     }
 
     ///
-    /// Private functions used to take track of snapshots in contract storage
+    // Private functions used to take track of snapshots in contract storage
     ///
 
     function _valueAt(uint256 snapshotId, Snapshots storage snapshots)
