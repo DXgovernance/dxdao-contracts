@@ -20,7 +20,7 @@ contract ERC20SnapshotRep is ERC20Snapshot, Ownable {
   }
 
   function getCurrentSnapshotId() public view virtual returns (uint256) {
-    return _getCurrentSnapshotId();
+      return _getCurrentSnapshotId();
   }
   
   function mint(address to, uint256 amount) onlyOwner public virtual {

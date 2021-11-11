@@ -157,6 +157,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
+    /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
+    /// a permission is allowed
     function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
@@ -164,7 +166,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
-        uint256 _maxActiveProposals
+        uint256 _maxActiveProposals,
+        uint256 _permissionDelay
     ) public virtual {
         _setConfig(
             _proposalTime,
@@ -173,7 +176,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _votingPowerForProposalCreation,
             _voteGas,
             _maxGasPrice,
-            _maxActiveProposals
+            _maxActiveProposals,
+            _permissionDelay
         );
     }
 
@@ -202,10 +206,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             );
             if (allowance[i])
                 callPermissions[to[i]][functionSignature[i]] = uint256(
-                    block
-                        .timestamp
-                )
-                    .add(permissionDelay);
+                    block.timestamp
+                ).add(permissionDelay);
             else callPermissions[to[i]][functionSignature[i]] = 0;
             emit SetAllowance(to[i], functionSignature[i], allowance[i]);
         }
@@ -480,7 +482,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _votingPowerForProposalCreation,
             _voteGas,
             _maxGasPrice,
-            _maxActiveProposals
+            _maxActiveProposals,
+            _permissionDelay
         );
         callPermissions[address(this)][
             bytes4(
@@ -495,7 +498,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         callPermissions[address(this)][
             bytes4(keccak256("setEIP1271SignedHash(bytes32,bool)"))
         ] = block.timestamp;
-        permissionDelay = _permissionDelay;
     }
 
     /// @dev Internal function to set the configuration of the guild
@@ -506,6 +508,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     /// @param _voteGas The gas to be used to calculate the vote gas refund
     /// @param _maxGasPrice The maximum gas price to be refunded
     /// @param _maxActiveProposals The maximum number of proposals to be in submitted state
+    /// @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
+    /// a permission is allowed
     function _setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
@@ -513,7 +517,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
-        uint256 _maxActiveProposals
+        uint256 _maxActiveProposals,
+        uint256 _permissionDelay
     ) internal {
         require(
             !initialized || (msg.sender == address(this)),
@@ -534,6 +539,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
+        permissionDelay = _permissionDelay;
     }
 
     /// @dev Internal function to set the amount of votingPower to vote in a proposal
