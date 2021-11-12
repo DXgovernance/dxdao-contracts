@@ -7,9 +7,9 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "../../utils/ERC20/ERC20SnapshotRep.sol";
 
-// @title SnapshotRepGuild
+// @title SnapshotRepERC20Guild
 // @author github:AugustoL
-contract SnapshotRepGuild is ERC20Guild, OwnableUpgradeable {
+contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
 

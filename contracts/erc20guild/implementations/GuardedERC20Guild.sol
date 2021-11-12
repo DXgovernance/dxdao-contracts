@@ -5,9 +5,9 @@ import "../ERC20Guild.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
-// @title GuardedGuild
+// @title GuardedERC20Guild
 // @author github:AugustoL
-contract GuardedGuild is ERC20Guild, OwnableUpgradeable {
+contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
     
     address public guildGuardian;
@@ -70,20 +70,20 @@ contract GuardedGuild is ERC20Guild, OwnableUpgradeable {
     function endProposal(bytes32 proposalId) public override {
         require(
             proposals[proposalId].state == ProposalState.Submitted,
-            "GuardedGuild: Proposal already executed"
+            "GuardedERC20Guild: Proposal already executed"
         );
         require(
             (msg.sender == guildGuardian) && (proposals[proposalId].endTime < block.timestamp),
-            "GuardedGuild: Proposal hasn't ended yet for guardian"
+            "GuardedERC20Guild: Proposal hasn't ended yet for guardian"
         );
         require(
             proposals[proposalId].endTime.add(extraTimeForGuardian) < block.timestamp,
-            "GuardedGuild: Proposal hasn't ended yet for guild"
+            "GuardedERC20Guild: Proposal hasn't ended yet for guild"
         );
         _endProposal(proposalId);
     }
     
-    // @dev Set GuardedGuild guardian configuration
+    // @dev Set GuardedERC20Guild guardian configuration
     // @param _guildGuardian The address of the guild guardian
     // @param _extraTimeForGuardian The extra time the proposals would be locked for guardian verification
     function setGuardianConfig(
@@ -92,7 +92,7 @@ contract GuardedGuild is ERC20Guild, OwnableUpgradeable {
     ) public isInitialized {
         require(
             msg.sender == address(this),
-            "GuardedGuild: Only the guild can set the guardian config"
+            "GuardedERC20Guild: Only the guild can set the guardian config"
         );
         guildGuardian = _guildGuardian;
         extraTimeForGuardian = _extraTimeForGuardian;

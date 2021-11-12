@@ -6,9 +6,9 @@ import "../../utils/Arrays.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
-// @title SnapshotGuild
+// @title SnapshotERC20Guild
 // @author github:AugustoL
-contract SnapshotGuild is LockableERC20Guild {
+contract SnapshotERC20Guild is LockableERC20Guild {
     using SafeMathUpgradeable for uint256;
     using Arrays for uint256[];
     using ECDSAUpgradeable for bytes32;
@@ -38,7 +38,7 @@ contract SnapshotGuild is LockableERC20Guild {
         require(
             votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >=
                 votingPower,
-            "SnapshotGuild: Invalid votingPower amount"
+            "SnapshotERC20Guild: Invalid votingPower amount"
         );
         _setVote(msg.sender, proposalId, action, votingPower);
         _refundVote(payable(msg.sender));
@@ -58,15 +58,15 @@ contract SnapshotGuild is LockableERC20Guild {
         bytes memory signature
     ) public override virtual isInitialized {
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
-        require(!signedVotes[hashedVote], "SnapshotGuild: Already voted");
+        require(!signedVotes[hashedVote], "SnapshotERC20Guild: Already voted");
         require(
             voter == hashedVote.toEthSignedMessageHash().recover(signature),
-            "SnapshotGuild: Wrong signer"
+            "SnapshotERC20Guild: Wrong signer"
         );
         require(
             votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >=
                 votingPower,
-            "SnapshotGuild: Invalid votingPower amount"
+            "SnapshotERC20Guild: Invalid votingPower amount"
         );
         _setVote(voter, proposalId, action, votingPower);
         signedVotes[hashedVote] = true;
@@ -92,11 +92,11 @@ contract SnapshotGuild is LockableERC20Guild {
     function releaseTokens(uint256 tokenAmount) public override virtual {
         require(
             votingPowerOf(msg.sender) >= tokenAmount,
-            "SnapshotGuild: Unable to release more tokens than locked"
+            "SnapshotERC20Guild: Unable to release more tokens than locked"
         );
         require(
             tokensLocked[msg.sender].timestamp < block.timestamp,
-            "SnapshotGuild: Tokens still locked"
+            "SnapshotERC20Guild: Tokens still locked"
         );
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
@@ -179,9 +179,9 @@ contract SnapshotGuild is LockableERC20Guild {
         view
         returns (bool, uint256)
     {
-        require(snapshotId > 0, "SnapshotGuild: id is 0");
+        require(snapshotId > 0, "SnapshotERC20Guild: id is 0");
         // solhint-disable-next-line max-line-length
-        require(snapshotId <= _currentSnapshotId, "SnapshotGuild: nonexistent id");
+        require(snapshotId <= _currentSnapshotId, "SnapshotERC20Guild: nonexistent id");
 
         // When a valid snapshot is queried, there are three possibilities:
         //  a) The queried value was not modified after the snapshot was taken. Therefore, a snapshot entry was never
