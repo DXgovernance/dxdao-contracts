@@ -12,6 +12,7 @@ const {
 } = require("@openzeppelin/test-helpers");
 
 const DXDGuild = artifacts.require("DXDGuild.sol");
+const GlobalPermissionRegistry = artifacts.require("GlobalPermissionRegistry.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
 
 require("chai").should();
@@ -41,6 +42,7 @@ contract("DXDGuild", function (accounts) {
       250,
     ]);
     dxdGuild = await DXDGuild.new();
+    const globalPermissionRegistry = await GlobalPermissionRegistry.new();
 
     const createDaoResult = await createDAO(dxdGuild, accounts);
     walletScheme = createDaoResult.walletScheme;
@@ -48,7 +50,7 @@ contract("DXDGuild", function (accounts) {
     org = createDaoResult.org;
     actionMock = await ActionMock.new();
     await dxdGuild
-      .methods['initialize(address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,address)'](
+      .methods['initialize(address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,address,uint256,address)'](
         guildToken.address,
         30,
         30,
@@ -57,10 +59,13 @@ contract("DXDGuild", function (accounts) {
         VOTE_GAS,
         MAX_GAS_PRICE,
         10,
-        0,
+        globalPermissionRegistry.address,
         TIMELOCK,
         votingMachine.address
       );
+    
+    await time.increase(time.duration.seconds(1));
+
     tokenVault = await dxdGuild.tokenVault();
 
     await guildToken.approve(tokenVault, 50, { from: accounts[1] });
@@ -138,7 +143,7 @@ contract("DXDGuild", function (accounts) {
 
       await expectRevert(
         dxdGuild.endProposal(proposalId),
-        "ERC20Guild: Proposal hasnt ended yet"
+        "ERC20Guild: Proposal hasn't ended yet"
       );
       
       await setAllVotesOnProposal({
@@ -163,8 +168,9 @@ contract("DXDGuild", function (accounts) {
       const receipt = await dxdGuild.endProposal(
         proposalId
       );
-      expectEvent(receipt, "ProposalExecuted", {
+      expectEvent(receipt, "ProposalStateChanged", {
         proposalId: proposalId,
+        newState: "3"
       });
       await expectRevert(
         dxdGuild.endProposal(proposalId),

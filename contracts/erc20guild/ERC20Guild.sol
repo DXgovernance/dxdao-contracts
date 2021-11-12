@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
+import "../utils/GlobalPermissionRegistry.sol";
 
 /*
   @title ERC20Guild
@@ -21,8 +22,7 @@ import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
   When a proposal ends successfully it executes the calls of the winning action.
   The winning action has a certain amount of time to be executed successfully if that time passes and the action didn't
   executed successfully, it is marked as failed.
-  The guild can execute only allowed functions, if a function is not allowed it will need to set the allowance
-  for it.
+  The guild can execute only allowed functions, if a function is not allowed it will need to set the allowance for it.
   The allowed functions have a timestamp that marks from what time the function can be executed.
   A limit to a maximum amount of active proposals can be set, an active proposal is a proposal that is in Submitted state.
   Gas can be refunded to the account executing the vote, for this to happen the voteGas and maxGasPrice values need to be
@@ -51,6 +51,9 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     // If the smart contract is initialized or not
     bool public initialized;
+
+    // The address of the GlobalPermissionRegistry to be used
+    GlobalPermissionRegistry public permissionRegistry;
 
     // The name of the ERC20Guild
     string public name;
@@ -87,13 +90,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // All the signed votes that were executed, to avoid double signed vote execution.
     mapping(bytes32 => bool) public signedVotes;
 
-    // The signatures of the functions allowed, indexed first by address and then by function signature
-    // Keeping track of the timestamp on which the function is allowed to be executed
-    mapping(address => mapping(bytes4 => uint256)) public callPermissions;
-
-    // The amount of seconds that are going to be added over the timestamp of the block when a permission is allowed
-    uint256 public permissionDelay;
-
     // The EIP1271 hashes that were signed by the ERC20Guild
     // Once a hash is signed by the guild it can be verified with a signature from any voter with balance
     mapping(bytes32 => bool) public EIP1271SignedHashes;
@@ -123,11 +119,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // Array to keep track of the proposals ids in contract storage
     bytes32[] public proposalsIds;
 
-    event ProposalCreated(bytes32 indexed proposalId);
-    event ProposalRejected(bytes32 indexed proposalId);
-    event ProposalExecuted(bytes32 indexed proposalId);
-    event ProposalEnded(bytes32 indexed proposalId);
-
+    event ProposalStateChanged(
+        bytes32 indexed proposalId,
+        uint256 newState
+    );
     event VoteAdded(
         bytes32 indexed proposalId,
         address voter,
@@ -161,8 +156,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
-    // @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when a
-    // permission is allowed
+    // @param _permissionRegistry The address of the permission registry contract to be used
     function initialize(
         address _token,
         uint256 _proposalTime,
@@ -173,7 +167,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
-        uint256 _permissionDelay
+        address _permissionRegistry
     ) public virtual initializer {
         _initialize(
             _token,
@@ -185,7 +179,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _voteGas,
             _maxGasPrice,
             _maxActiveProposals,
-            _permissionDelay
+            _permissionRegistry
         );
         initialized = true;
     }
@@ -199,8 +193,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
-    // @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when a
-    // permission is allowed
+    // @param _permissionRegistry The address of the permission registry contract to be used
     function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
@@ -209,7 +202,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
-        uint256 _permissionDelay
+        address _permissionRegistry
     ) public virtual {
         _setConfig(
             _proposalTime,
@@ -219,17 +212,19 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _voteGas,
             _maxGasPrice,
             _maxActiveProposals,
-            _permissionDelay
+            _permissionRegistry
         );
     }
 
     // @dev Set the allowance of a call to be executed by the guild
     // @param to The address to be called
     // @param functionSignature The signature of the function
+    // @param valueAllowed The ETH value in wei allowed to be transferred
     // @param allowance If the function is allowed to be called or not
-    function setAllowance(
+    function setPermission(
         address[] memory to,
         bytes4[] memory functionSignature,
+        uint256[] memory valueAllowed,
         bool[] memory allowance
     ) public virtual isInitialized {
         require(
@@ -246,29 +241,38 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 functionSignature[i] != bytes4(0),
                 "ERC20Guild: Empty signatures not allowed"
             );
-            if (allowance[i])
-                callPermissions[to[i]][functionSignature[i]] = uint256(
-                    block.timestamp
-                ).add(permissionDelay);
-            else callPermissions[to[i]][functionSignature[i]] = 0;
-            emit SetAllowance(to[i], functionSignature[i], allowance[i]);
+            permissionRegistry.setPermission(address(0), to[i], functionSignature[i], valueAllowed[i], allowance[i]);
         }
         require(
-            callPermissions[address(this)][
-                bytes4(
-                    keccak256(
-                        "setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"
-                    )
-                )
-            ] > 0,
+            permissionRegistry.getPermissionTime(
+                address(0),
+                address(this),
+                address(this),
+                bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
+            ) > 0,
             "ERC20Guild: setConfig function allowance cant be turned off"
         );
         require(
-            callPermissions[address(this)][
-                bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))
-            ] > 0,
-            "ERC20Guild: setAllowance function allowance cant be turned off"
+            permissionRegistry.getPermissionTime(
+                address(0),
+                address(this),
+                address(this),
+                bytes4(keccak256("setPermission(address[],bytes4[],bool[])"))
+            ) > 0,
+            "ERC20Guild: setPermission function allowance cant be turned off"
         );
+    }
+
+    // @dev Set the permission delay in the permission registry
+    // @param allowance If the function is allowed to be called or not
+    function setPermissionDelay(
+        uint256 permissionDelay
+    ) public virtual isInitialized {
+        require(
+            msg.sender == address(this),
+            "ERC20Guild: Only callable by ERC20guild itself"
+        );
+        permissionRegistry.setPermissionDelay(permissionDelay);
     }
 
     // @dev Create a proposal with an static call data and extra information
@@ -411,6 +415,9 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             to.length > 0,
             "ERC20Guild: to, data value arrays cannot be empty"
         );
+        for (uint256 i = 0; i < to.length; i++) {
+            require(to[i] != address(permissionRegistry), "ERC20Guild: Cant call permission registry directly");
+        }
         bytes32 proposalId = keccak256(
             abi.encodePacked(msg.sender, block.timestamp, totalProposals)
         );
@@ -428,7 +435,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         newProposal.state = ProposalState.Submitted;
 
         activeProposalsNow++;
-        emit ProposalCreated(proposalId);
+        emit ProposalStateChanged(proposalId, uint256(ProposalState.Submitted));
         proposalsIds.push(proposalId);
         return proposalId;
     }
@@ -444,7 +451,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             proposals[proposalId].endTime < block.timestamp,
             "ERC20Guild: Proposal hasn't ended yet"
         );
-
         uint256 winningAction = 0;
         uint256 i = 1;
         for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
@@ -458,13 +464,13 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
         if (winningAction == 0) {
             proposals[proposalId].state = ProposalState.Rejected;
-            emit ProposalRejected(proposalId);
+            emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
         } else if (
             proposals[proposalId].endTime.add(timeForExecution) <
             block.timestamp
         ) {
             proposals[proposalId].state = ProposalState.Failed;
-            emit ProposalEnded(proposalId);
+            emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
         } else {
             proposals[proposalId].state = ProposalState.Executed;
 
@@ -478,21 +484,23 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 bytes4 proposalSignature = getFuncSignature(
                     proposals[proposalId].data[i]
                 );
-                uint256 permissionTimestamp = getCallPermission(
+                (uint256 valueAllowed, uint256 fromTime) = permissionRegistry.getPermission(
+                    address(0),
+                    address(this),
                     proposals[proposalId].to[i],
                     proposalSignature
                 );
                 require(
-                    (0 < permissionTimestamp) &&
-                        (permissionTimestamp < block.timestamp),
+                    (0 < fromTime) && (fromTime < block.timestamp),
                     "ERC20Guild: Not allowed call"
                 );
+                require((valueAllowed >= proposals[proposalId].value[i]), "ERC20Guild: Not allowed value");
                 (bool success, ) = proposals[proposalId].to[i].call{
                     value: proposals[proposalId].value[i]
                 }(proposals[proposalId].data[i]);
                 require(success, "ERC20Guild: Proposal call failed");
             }
-            emit ProposalExecuted(proposalId);
+            emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
         activeProposalsNow--;
     }
@@ -508,8 +516,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
-    // @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when a
-    // permission is allowed
+    // @param _permissionRegistry The address of the permission registry contract to be used
     function _initialize(
         address _token,
         uint256 _proposalTime,
@@ -520,7 +527,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
-        uint256 _permissionDelay
+        address _permissionRegistry
     ) internal {
         require(
             address(_token) != address(0),
@@ -536,21 +543,29 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _voteGas,
             _maxGasPrice,
             _maxActiveProposals,
-            _permissionDelay
+            _permissionRegistry
         );
-        callPermissions[address(this)][
-            bytes4(
-                keccak256(
-                    "setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"
-                )
-            )
-        ] = block.timestamp;
-        callPermissions[address(this)][
-            bytes4(keccak256("setAllowance(address[],bytes4[],bool[])"))
-        ] = block.timestamp;
-        callPermissions[address(this)][
-            bytes4(keccak256("setEIP1271SignedHash(bytes32,bool)"))
-        ] = block.timestamp;
+        permissionRegistry.setPermission(
+            address(0),
+            address(this),
+            bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)")),
+            0,
+            true
+        );
+        permissionRegistry.setPermission(
+            address(0),
+            address(this),
+            bytes4(keccak256("setPermission(address[],bytes4[],bool[])")),
+            0,
+            true
+        );
+        permissionRegistry.setPermission(
+            address(0),
+            address(this),
+            bytes4(keccak256("setEIP1271SignedHash(bytes32,bool)")),
+            0,
+            true
+        );
     }
 
     // @dev Internal function to set the configuration of the guild
@@ -562,8 +577,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
-    // @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when a
-    // permission is allowed
+    // @param _permissionRegistry The address of the permission registry contract to be used
     function _setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
@@ -572,7 +586,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
-        uint256 _permissionDelay
+        address _permissionRegistry
     ) internal {
         require(
             !initialized || (msg.sender == address(this)),
@@ -593,7 +607,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
-        permissionDelay = _permissionDelay;
+        permissionRegistry = GlobalPermissionRegistry(_permissionRegistry);
     }
 
     // @dev Internal function to set the amount of votingPower to vote in a proposal
@@ -623,9 +637,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         if (votingPower > proposals[proposalId].votes[voter].votingPower) {
             proposals[proposalId].totalVotes[action] = proposals[proposalId]
             .totalVotes[action]
-            .add(
-                votingPower.sub(proposals[proposalId].votes[voter].votingPower)
-            );
+            .add(votingPower.sub(proposals[proposalId].votes[voter].votingPower));
             emit VoteAdded(proposalId, voter, votingPower);
         }
         proposals[proposalId].votes[voter] = Vote(action, votingPower);
@@ -767,16 +779,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         return bytes4(functionSignature);
     }
 
-    // @dev Get call signature permission
-    function getCallPermission(address to, bytes4 functionSignature)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
-        return callPermissions[to][functionSignature];
-    }
-
     // @dev Get the length of the proposalIds array
     function getProposalsIdsLength() public view virtual returns (uint256) {
         return proposalsIds.length;
@@ -799,8 +801,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         view
         returns (bytes4 magicValue)
     {
-        return
-            ((votingPowerOf(hash.recover(signature)) > 0) &&
+        return ((votingPowerOf(hash.recover(signature)) > 0) &&
                 EIP1271SignedHashes[hash])
                 ? this.isValidSignature.selector
                 : bytes4(0);

@@ -25,17 +25,17 @@ contract LockableERC20Guild is ERC20Guild {
     event TokensReleased(address voter, uint256 value);
     
     // @dev Initilizer
-    // @param _token The address of the token to be used
-    // @param _proposalTime The minimun time for a proposal to be under votation
-    // @param _timeForExecution The amount of time that has a proposal has to be executed before being ended
-    // @param _votingPowerForProposalExecution The percentage of voting power needed in a proposal to be executed
-    // @param _votingPowerForProposalCreation The percentage of voting power needed to create a proposal
-    // @param _name The the guild name
-    // @param _voteGas The gas to be used to calculate the vote gas refund
-    // @param _maxGasPrice The maximum gas price to be refunded
-    // @param _maxActiveProposals The maximum number of proposals to be in submitted state
-    // @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
-    // a permission is allowed
+    // @param _token The ERC20 token that will be used as source of voting power
+    // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
+    // @param _timeForExecution The amount of time in seconds that a proposal action will have to execute successfully
+    // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
+    // action
+    // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // @param _name The name of the ERC20Guild
+    // @param _voteGas The amount of gas in wei unit used for vote refunds
+    // @param _maxGasPrice The maximum gas price used for vote refunds
+    // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
+    // @param _permissionRegistry The address of the permission registry contract to be used
     // @param _lockTime The minimum amount of seconds that the tokens would be locked
     function initialize(
         address _token,
@@ -47,7 +47,7 @@ contract LockableERC20Guild is ERC20Guild {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
-        uint256 _permissionDelay,
+        address _permissionRegistry,
         uint256 _lockTime
     ) public initializer {
         require(
@@ -68,18 +68,18 @@ contract LockableERC20Guild is ERC20Guild {
             _voteGas,
             _maxGasPrice,
             _maxActiveProposals,
-            _permissionDelay
+            _permissionRegistry
         );
         tokenVault = new TokenVault();
         tokenVault.initialize(address(token), address(this));
         lockTime = _lockTime;
-        callPermissions[address(this)][
-            bytes4(
-                keccak256(
-                    "setLockTime(uint256)"
-                )
-            )
-        ] = block.timestamp;
+        permissionRegistry.setPermission(
+            address(0),
+            address(this),
+            bytes4(keccak256("setLockTime(uint256)")),
+            0,
+            true
+        );
         initialized = true;
     }
     
@@ -125,7 +125,7 @@ contract LockableERC20Guild is ERC20Guild {
         emit TokensReleased(msg.sender, tokenAmount);
     }
 
-    // @dev Get the voting power of an accont
+    // @dev Get the voting power of an account
     // @param account The address of the account
     function votingPowerOf(address account) public override view returns (uint256) {
         return tokensLocked[account].amount;
