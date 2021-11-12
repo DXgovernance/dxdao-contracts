@@ -19,7 +19,7 @@ contract LockableSnapshotERC20Guild is LockableERC20Guild {
     using ECDSAUpgradeable for bytes32;
 
     // Proposal id => Snapshot id
-    mapping(bytes32 => uint256) public proposalsSnapshots;
+    mapping(bytes32 => uint256) proposalsSnapshots;
 
     // Snapshotted values have arrays of ids and the value corresponding to that id. These could be an array of a
     // Snapshot struct, but that would impede usage of functions that work on an array.
@@ -173,6 +173,11 @@ contract LockableSnapshotERC20Guild is LockableERC20Guild {
             _valueAt(snapshotId, _totalLockedSnapshots);
         if (snapshotted) return value;
         else return totalLocked;
+    }
+
+    // @dev Get the proposal snapshot id
+    function getProposalSnapshotId(bytes32 proposalId) public view returns(uint256) {
+        return proposalsSnapshots[proposalId];
     }
 
     ///

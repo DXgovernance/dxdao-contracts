@@ -1,20 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-// @title IERC20Guild
-// @author github:AugustoL
-// @dev ERC20Guild Interface
-interface IERC20Guild {
-    event ProposalCreated(bytes32 indexed proposalId);
-    event ProposalRejected(bytes32 indexed proposalId);
-    event ProposalExecuted(bytes32 indexed proposalId);
-    event ProposalEnded(bytes32 indexed proposalId);
-    event VoteAdded(
+
+interface ERC20Guild {
+
+    event ProposalStateChanged(
         bytes32 indexed proposalId,
-        address voter,
-        uint256 votingPower
+        uint256 newState
     );
-    event VoteRemoved(
+    event VoteAdded(
         bytes32 indexed proposalId,
         address voter,
         uint256 votingPower
@@ -24,8 +18,23 @@ interface IERC20Guild {
         bytes4 functionSignature,
         bool allowance
     );
-    event TokensLocked(address voter, uint256 value);
-    event TokensReleased(address voter, uint256 value);
+
+    fallback() external payable;
+
+    receive() external payable;
+
+    function initialize(
+        address _token,
+        uint256 _proposalTime,
+        uint256 _timeForExecution,
+        uint256 _votingPowerForProposalExecution,
+        uint256 _votingPowerForProposalCreation,
+        string memory _name,
+        uint256 _voteGas,
+        uint256 _maxGasPrice,
+        uint256 _maxActiveProposals,
+        address _permissionRegistry
+    ) external;
 
     function setConfig(
         uint256 _proposalTime,
@@ -34,156 +43,115 @@ interface IERC20Guild {
         uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
-        uint256 _lockTime
+        uint256 _maxActiveProposals,
+        address _permissionRegistry
     ) external;
 
-    function setAllowance(
-        address[] calldata to,
-        bytes4[] calldata functionSignature,
-        bool[] calldata allowance
+    function setPermission(
+        address[] memory to,
+        bytes4[] memory functionSignature,
+        uint256[] memory valueAllowed,
+        bool[] memory allowance
     ) external;
-    
-    function setEIP1271SignedHash(bytes32 _hash, bool isValid) external;
+
+    function setPermissionDelay(
+        uint256 permissionDelay
+    ) external;
 
     function createProposal(
-        address[] calldata to,
-        bytes[] calldata data,
-        uint256[] calldata value,
-        string calldata description,
-        bytes calldata contentHash
-    ) external;
+        address[] memory to,
+        bytes[] memory data,
+        uint256[] memory value,
+        uint256 totalActions,
+        string memory title,
+        bytes memory contentHash
+    ) external returns (bytes32);
 
     function endProposal(bytes32 proposalId) external;
+    
+    function setVote(bytes32 proposalId, uint256 action, uint256 votingPower) external;
 
-    function setVote(bytes32 proposalId, uint256 votingPower) external;
-
-    function setVotes(
-        bytes32[] calldata proposalIds,
-        uint256[] calldata votingPowers
-    ) external;
+    function setVotes(bytes32[] memory proposalIds, uint256[] memory actions, uint256[] memory votingPowers) external;
 
     function setSignedVote(
         bytes32 proposalId,
+        uint256 action,
         uint256 votingPower,
         address voter,
-        bytes calldata signature
+        bytes memory signature
     ) external;
 
     function setSignedVotes(
-        bytes32[] calldata proposalIds,
-        uint256[] calldata votingPowers,
-        address[] calldata voters,
-        bytes[] calldata signatures
+        bytes32[] memory proposalIds,
+        uint256[] memory actions,
+        uint256[] memory votingPowers,
+        address[] memory voters,
+        bytes[] memory signatures
     ) external;
-
-    function lockTokens(uint256 tokenAmount) external;
-
-    function releaseTokens(uint256 tokenAmount) external;
-
-    function token() external view returns (address);
-
-    function name() external view returns (string memory);
-
-    function tokenVault() external view returns (address);
-
-    function initialized() external view returns (bool);
-
-    function proposalTime() external view returns (uint256);
-
-    function timeForExecution() external view returns (uint256);
-
-    function votingPowerForProposalExecution() external view returns (uint256);
-
-    function votingPowerForProposalCreation() external view returns (uint256);
-
-    function lockTime() external view returns (uint256);
-
-    function totalLocked() external view returns (uint256);
-
-    function totalLockedAt(uint256) external view returns (uint256);
-
-    function voteGas() external view returns (uint256);
-
-    function maxGasPrice() external view returns (uint256);
-
-    function tokensLocked(address)
-        external
-        view
-        returns (uint256 amount, uint256 timestamp);
-
-    function getProposal(bytes32 proposalId)
-        external
-        view
-        returns (
-            address creator,
-            uint256 startTime,
-            uint256 endTime,
-            address[] memory to,
-            bytes[] memory data,
-            uint256[] memory value,
-            string memory description,
-            bytes memory contentHash,
-            uint256 totalVotes,
-            uint256 state,
-            uint256 snapshotId
-        );
-
-    function getProposalVotesOfVoter(bytes32 proposalId, address voter)
-        external
-        view
-        returns (uint256);
-
-    function getVotingPowerForProposalCreation()
-        external
-        view
-        returns (uint256);
-
-    function getVotingPowerForProposalExecution()
-        external
-        view
-        returns (uint256);
-
-    function getFuncSignature(bytes calldata data)
-        external
-        view
-        returns (bytes4);
-
-    function getCallPermission(address to, bytes4 functionSignature)
-        external
-        view
-        returns (bool);
-        
-    function getProposalsIdsLength() external view returns (uint256);
-
-    function getEIP1271SignedHash(bytes32 _hash) external view returns (bool);
-    
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        view
-        returns (bytes4 magicValue);
 
     function votingPowerOf(address account) external view returns (uint256);
 
-    function votingPowerOfMultiple(address[] calldata accounts)
-        external
-        view
-        returns (uint256[] memory);
+    function votingPowerOfMultiple(address[] memory accounts) external view returns (uint256[] memory);
 
-    function votingPowerOfAt(address account, uint256 snapshotId)
-        external
-        view
-        returns (uint256);
+    function getToken() external view returns(address);
 
-    function votingPowerOfMultipleAt(
-        address[] calldata accounts,
-        uint256[] calldata snapshotIds
-    ) external view returns (uint256[] memory);
+    function getPermissionRegistry() external view returns(address);
 
-    function signedVotes(bytes32) external view returns (bool);
+    function getName() external view returns(string memory);
+
+    function getProposalTime() external view returns(uint256);
+
+    function getTimeForExecution() external view returns(uint256);
+
+    function getVoteGas() external view returns(uint256);
+
+    function getMaxGasPrice() external view returns(uint256);
+
+    function getMaxActiveProposals() external view returns(uint256);
+
+    function getTotalProposals() external view returns(uint256);
+
+    function getActiveProposalsNow() external view returns(uint256);
+
+    function getSignedVote(bytes32 signedVoteHash) external view returns(bool);
+
+    function getProposalsIds() external view returns(bytes32[] memory);
+
+    function getProposal(bytes32 proposalId) external view returns (
+        address creator,
+        uint256 startTime,
+        uint256 endTime,
+        address[] memory to,
+        bytes[] memory data,
+        uint256[] memory value,
+        uint256 totalActions,
+        string memory title,
+        bytes memory contentHash,
+        uint256 state,
+        uint256[] memory totalVotes
+    );
+
+    function getProposalVotesOfVoter(bytes32 proposalId, address voter) external view returns (
+        uint256 action, uint256 votingPower
+    );
+
+    function getVotingPowerForProposalCreation() external view returns (uint256);
+
+    function getVotingPowerForProposalExecution() external view returns (uint256);
+
+    function getFuncSignature(bytes memory data) external view returns (bytes4);
+
+    function getProposalsIdsLength() external view returns (uint256);
+
+    function getEIP1271SignedHash(bytes32 _hash) external view returns (bool);
+
+    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue);
 
     function hashVote(
         address voter,
         bytes32 proposalId,
+        uint256 action,
         uint256 votingPower
     ) external pure returns (bytes32);
+
 }

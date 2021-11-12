@@ -16,16 +16,16 @@ import "../../utils/TokenVault.sol";
 contract LockableERC20Guild is ERC20Guild {
     using SafeMathUpgradeable for uint256;
     
-    uint256 public lockTime;
-    uint256 public totalLocked;
-    TokenVault public tokenVault;
+    uint256 lockTime;
+    uint256 totalLocked;
+    TokenVault tokenVault;
     
     // The tokens locked indexed by token holder address.
     struct TokenLock {
         uint256 amount;
         uint256 timestamp;
     }
-    mapping(address => TokenLock) public tokensLocked;
+    mapping(address => TokenLock) tokensLocked;
     
     event TokensLocked(address voter, uint256 value);
     event TokensWithdrawn(address voter, uint256 value);
@@ -157,5 +157,25 @@ contract LockableERC20Guild is ERC20Guild {
         returns (uint256)
     {
       return totalLocked.mul(votingPowerForProposalExecution).div(10000);
+    }
+
+    // @dev Get the tokenVault address
+    function getTokenVault() public view returns(address) {
+        return address(tokenVault);
+    }
+
+    // @dev Get the lockTime
+    function getLockTime() public view returns(uint256) {
+        return lockTime;
+    }
+
+    // @dev Get the totalLocked
+    function getTotalLocked() public view returns(uint256) {
+        return totalLocked;
+    }
+
+    // @dev Get the locked timestamp of a voter tokens
+    function getVoterLockTimestamp(address voter) public view returns(uint256) {
+        return tokensLocked[voter].timestamp;
     }
 }

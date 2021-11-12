@@ -47,52 +47,52 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // The ERC20 token that will be used as source of voting power
-    IERC20Upgradeable public token;
+    IERC20Upgradeable token;
 
     // If the smart contract is initialized or not
-    bool public initialized;
+    bool initialized;
 
     // The address of the GlobalPermissionRegistry to be used
-    GlobalPermissionRegistry public permissionRegistry;
+    GlobalPermissionRegistry permissionRegistry;
 
     // The name of the ERC20Guild
-    string public name;
+    string name;
 
     // The amount of time in seconds that a proposal will be active for voting
-    uint256 public proposalTime;
+    uint256 proposalTime;
 
     // The amount of time in seconds that a proposal action will have to execute successfully
-    uint256 public timeForExecution;
+    uint256 timeForExecution;
 
     // The percentage of voting power in base 10000 needed to execute a proposal action
     // 100 == 1% 2500 == 25%
-    uint256 public votingPowerForProposalExecution;
+    uint256 votingPowerForProposalExecution;
 
     // The percentage of voting power in base 10000 needed to create a proposal
     // 100 == 1% 2500 == 25%
-    uint256 public votingPowerForProposalCreation;
+    uint256 votingPowerForProposalCreation;
 
     // The amount of gas in wei unit used for vote refunds
-    uint256 public voteGas;
+    uint256 voteGas;
 
     // The maximum gas price used for vote refunds
-    uint256 public maxGasPrice;
+    uint256 maxGasPrice;
 
     // The maximum amount of proposals to be active at the same time
-    uint256 public maxActiveProposals;
+    uint256 maxActiveProposals;
 
     // The total amount of proposals created, used as nonce for proposals creation
-    uint256 public totalProposals;
+    uint256 totalProposals;
 
     // The amount of active proposals
-    uint256 public activeProposalsNow;
+    uint256 activeProposalsNow;
 
     // All the signed votes that were executed, to avoid double signed vote execution.
-    mapping(bytes32 => bool) public signedVotes;
+    mapping(bytes32 => bool) signedVotes;
 
     // The EIP1271 hashes that were signed by the ERC20Guild
     // Once a hash is signed by the guild it can be verified with a signature from any voter with balance
-    mapping(bytes32 => bool) public EIP1271SignedHashes;
+    mapping(bytes32 => bool) EIP1271SignedHashes;
 
     // Vote and Proposal structs used in the proposals mapping
     struct Vote {
@@ -114,10 +114,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // Mapping of all proposals created indexed by proposal id
-    mapping(bytes32 => Proposal) public proposals;
+    mapping(bytes32 => Proposal) proposals;
 
     // Array to keep track of the proposals ids in contract storage
-    bytes32[] public proposalsIds;
+    bytes32[] proposalsIds;
 
     event ProposalStateChanged(
         bytes32 indexed proposalId,
@@ -684,6 +684,66 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             votes[i] = votingPowerOf(accounts[i]);
         }
         return votes;
+    }
+
+    // @dev Get the address of the ERC20Token used for voting
+    function getToken() public view returns(address) {
+        return address(token);
+    }
+
+    // @dev Get the address of the permission registry contract
+    function getPermissionRegistry() public view returns(address) {
+        return address(permissionRegistry);
+    }
+
+    // @dev Get the name of the ERC20Guild
+    function getName() public view returns(string memory) {
+        return name;
+    }
+
+    // @dev Get the proposalTime
+    function getProposalTime() public view returns(uint256) {
+        return proposalTime;
+    }
+
+    // @dev Get the timeForExecution
+    function getTimeForExecution() public view returns(uint256) {
+        return timeForExecution;
+    }
+
+    // @dev Get the voteGas
+    function getVoteGas() public view returns(uint256) {
+        return voteGas;
+    }
+
+    // @dev Get the maxGasPrice
+    function getMaxGasPrice() public view returns(uint256) {
+        return maxGasPrice;
+    }
+
+    // @dev Get the maxActiveProposals
+    function getMaxActiveProposals() public view returns(uint256) {
+        return maxActiveProposals;
+    }
+
+    // @dev Get the totalProposals
+    function getTotalProposals() public view returns(uint256) {
+        return totalProposals;
+    }
+
+    // @dev Get the activeProposalsNow
+    function getActiveProposalsNow() public view returns(uint256) {
+        return activeProposalsNow;
+    }
+
+    // @dev Get if a signed vote has been executed or not
+    function getSignedVote(bytes32 signedVoteHash) public view returns(bool) {
+        return signedVotes[signedVoteHash];
+    }
+
+    // @dev Get the proposalsIds array
+    function getProposalsIds() public view returns(bytes32[] memory) {
+        return proposalsIds;
     }
 
     // @dev Get the information of a proposal

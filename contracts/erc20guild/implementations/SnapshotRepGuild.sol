@@ -19,7 +19,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     using ECDSAUpgradeable for bytes32;
 
     // Proposal id => Snapshot id
-    mapping(bytes32 => uint256) public proposalsSnapshots;
+    mapping(bytes32 => uint256) proposalsSnapshots;
 
     // @dev Set the voting power to vote in a proposal
     // @param proposalId The id of the proposal to set the vote
@@ -107,5 +107,10 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         returns (uint256)
     {
         return ERC20SnapshotRep(address(token)).balanceOfAt(account, snapshotId);
+    }
+
+    // @dev Get the proposal snapshot id
+    function getProposalSnapshotId(bytes32 proposalId) public view returns(uint256) {
+        return proposalsSnapshots[proposalId];
     }
 }

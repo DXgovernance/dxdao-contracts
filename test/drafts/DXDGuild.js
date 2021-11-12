@@ -66,7 +66,7 @@ contract("DXDGuild", function (accounts) {
     
     await time.increase(time.duration.seconds(1));
 
-    tokenVault = await dxdGuild.tokenVault();
+    tokenVault = await dxdGuild.getTokenVault();
 
     await guildToken.approve(tokenVault, 50, { from: accounts[1] });
     await guildToken.approve(tokenVault, 100, { from: accounts[2] });
@@ -77,8 +77,6 @@ contract("DXDGuild", function (accounts) {
     await dxdGuild.lockTokens(100, { from: accounts[2] });
     await dxdGuild.lockTokens(100, { from: accounts[3] });
     await dxdGuild.lockTokens(250, { from: accounts[4] });
-
-    tokenVault = await dxdGuild.tokenVault();
 
     walletSchemeProposalData = helpers.encodeGenericCallData(
       org.avatar.address,
