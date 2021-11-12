@@ -134,6 +134,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bool allowance
     );
 
+    bool private isExecutingProposal;
+
     // @dev Allows the voting machine to receive ether to be used to refund voting costs
     fallback() external payable {}
 
@@ -443,6 +445,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @dev Executes a proposal that is not votable anymore and can be finished
     // @param proposalId The id of the proposal to be executed
     function _endProposal(bytes32 proposalId) internal isInitialized {
+        require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
         require(
             proposals[proposalId].state == ProposalState.Submitted,
             "ERC20Guild: Proposal already executed"
@@ -495,10 +498,12 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                     "ERC20Guild: Not allowed call"
                 );
                 require((valueAllowed >= proposals[proposalId].value[i]), "ERC20Guild: Not allowed value");
+                isExecutingProposal = true;
                 (bool success, ) = proposals[proposalId].to[i].call{
                     value: proposals[proposalId].value[i]
                 }(proposals[proposalId].data[i]);
                 require(success, "ERC20Guild: Proposal call failed");
+                isExecutingProposal = false;
             }
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
