@@ -5,8 +5,12 @@ import "../ERC20Guild.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
-// @title GuardedERC20Guild
-// @author github:AugustoL
+/*
+  @title GuardedERC20Guild
+  @author github:AugustoL
+  @dev An ERC20Guild with a guardian, the proposal time can be extended an extra time for the guardian to end the
+  proposal like it would happen normally from a base ERC20Guild or reject it directly.
+*/
 contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
     
@@ -72,15 +76,32 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
             proposals[proposalId].state == ProposalState.Submitted,
             "GuardedERC20Guild: Proposal already executed"
         );
-        require(
-            (msg.sender == guildGuardian) && (proposals[proposalId].endTime < block.timestamp),
-            "GuardedERC20Guild: Proposal hasn't ended yet for guardian"
-        );
-        require(
-            proposals[proposalId].endTime.add(extraTimeForGuardian) < block.timestamp,
-            "GuardedERC20Guild: Proposal hasn't ended yet for guild"
-        );
+        if (msg.sender == guildGuardian)
+            require(
+                (proposals[proposalId].endTime < block.timestamp),
+                "GuardedERC20Guild: Proposal hasn't ended yet for guardian"
+            );
+        else
+            require(
+                proposals[proposalId].endTime.add(extraTimeForGuardian) < block.timestamp,
+                "GuardedERC20Guild: Proposal hasn't ended yet for guild"
+            );
         _endProposal(proposalId);
+    }
+
+    // @dev Rejects a proposal directly without execution, only callable by the guardian
+    // @param proposalId The id of the proposal to be executed
+    function rejectProposal(bytes32 proposalId) public {
+        require(
+            proposals[proposalId].state == ProposalState.Submitted,
+            "GuardedERC20Guild: Proposal already executed"
+        );
+        require(
+            (msg.sender == guildGuardian),
+            "GuardedERC20Guild: Proposal can be rejected only by guardian"
+        );
+        proposals[proposalId].state = ProposalState.Rejected;
+        emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
     }
     
     // @dev Set GuardedERC20Guild guardian configuration

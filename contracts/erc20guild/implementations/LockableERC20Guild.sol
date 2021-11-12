@@ -5,8 +5,14 @@ import "../ERC20Guild.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "../../utils/TokenVault.sol";
 
-// @title LockableERC20Guild
-// @author github:AugustoL
+/*
+  @title LockableERC20Guild
+  @author github:AugustoL
+  @dev An ERC20Guild where the token used for voting needs to be locked for a minimum period of time in order to be used
+  as voting power.
+  Every time tokens are locked the timestamp of the lock is updated and increased the lock time seconds.
+  Once the lock time passed the voter can withdraw his tokens.
+*/
 contract LockableERC20Guild is ERC20Guild {
     using SafeMathUpgradeable for uint256;
     
@@ -22,7 +28,7 @@ contract LockableERC20Guild is ERC20Guild {
     mapping(address => TokenLock) public tokensLocked;
     
     event TokensLocked(address voter, uint256 value);
-    event TokensReleased(address voter, uint256 value);
+    event TokensWithdrawn(address voter, uint256 value);
     
     // @dev Initilizer
     // @param _token The ERC20 token that will be used as source of voting power
@@ -106,12 +112,12 @@ contract LockableERC20Guild is ERC20Guild {
         emit TokensLocked(msg.sender, tokenAmount);
     }
 
-    // @dev Release tokens locked in the guild, this will decrease the voting power
-    // @param tokenAmount The amount of tokens to be released
-    function releaseTokens(uint256 tokenAmount) public virtual {
+    // @dev Withdraw tokens locked in the guild, this will decrease the voting power
+    // @param tokenAmount The amount of tokens to be withdrawn
+    function withdrawTokens(uint256 tokenAmount) public virtual {
         require(
             votingPowerOf(msg.sender) >= tokenAmount,
-            "ERC20Guild: Unable to release more tokens than locked"
+            "ERC20Guild: Unable to withdraw more tokens than locked"
         );
         require(
             tokensLocked[msg.sender].timestamp < block.timestamp,
@@ -122,7 +128,7 @@ contract LockableERC20Guild is ERC20Guild {
         );
         totalLocked = totalLocked.sub(tokenAmount);
         tokenVault.withdraw(msg.sender, tokenAmount);
-        emit TokensReleased(msg.sender, tokenAmount);
+        emit TokensWithdrawn(msg.sender, tokenAmount);
     }
 
     // @dev Get the voting power of an account

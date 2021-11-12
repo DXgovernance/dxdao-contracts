@@ -6,9 +6,14 @@ import "../../utils/Arrays.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
-// @title SnapshotERC20Guild
-// @author github:AugustoL
-contract SnapshotERC20Guild is LockableERC20Guild {
+/*
+  @title LockableSnapshotERC20Guild
+  @author github:AugustoL
+  @dev An ERC20Guild designed to work with a snapshotted locked tokens.
+  It is an extension over the LockableER20Guild where the voters can vote with the voting power used at the moment of the 
+  proposal creation.
+*/
+contract LockableSnapshotERC20Guild is LockableERC20Guild {
     using SafeMathUpgradeable for uint256;
     using Arrays for uint256[];
     using ECDSAUpgradeable for bytes32;
@@ -88,11 +93,11 @@ contract SnapshotERC20Guild is LockableERC20Guild {
     }
 
     // @dev Release tokens locked in the guild, this will decrease the voting power
-    // @param tokenAmount The amount of tokens to be released
-    function releaseTokens(uint256 tokenAmount) public override virtual {
+    // @param tokenAmount The amount of tokens to be withdrawn
+    function withdrawTokens(uint256 tokenAmount) public override virtual {
         require(
             votingPowerOf(msg.sender) >= tokenAmount,
-            "SnapshotERC20Guild: Unable to release more tokens than locked"
+            "SnapshotERC20Guild: Unable to withdraw more tokens than locked"
         );
         require(
             tokensLocked[msg.sender].timestamp < block.timestamp,
@@ -105,7 +110,7 @@ contract SnapshotERC20Guild is LockableERC20Guild {
         );
         totalLocked = totalLocked.sub(tokenAmount);
         tokenVault.withdraw(msg.sender, tokenAmount);
-        emit TokensReleased(msg.sender, tokenAmount);
+        emit TokensWithdrawn(msg.sender, tokenAmount);
     }
 
     // @dev Create a proposal with an static call data and extra information

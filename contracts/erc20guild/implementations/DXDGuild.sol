@@ -5,9 +5,11 @@ import "./LockableERC20Guild.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
-// @title DXDGuild
-// @author github:AugustoL
-// An ERC20Guild for the DXD token designed to execute votes on Genesis Protocol Voting Machine.
+/*
+  @title DXDGuild
+  @author github:AugustoL
+  @dev An ERC20Guild for the DXD token designed to execute votes on Genesis Protocol Voting Machine.
+*/
 contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
