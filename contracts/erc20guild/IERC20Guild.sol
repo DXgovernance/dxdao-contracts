@@ -2,7 +2,7 @@
 pragma solidity ^0.8.8;
 
 
-interface ERC20Guild {
+interface IERC20Guild {
 
     event ProposalStateChanged(
         bytes32 indexed proposalId,
@@ -33,6 +33,7 @@ interface ERC20Guild {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
+        uint256 _lockTime,
         address _permissionRegistry
     ) external;
 
@@ -44,6 +45,7 @@ interface ERC20Guild {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
+        uint256 _lockTime,
         address _permissionRegistry
     ) external;
 
@@ -89,6 +91,10 @@ interface ERC20Guild {
         bytes[] memory signatures
     ) external;
 
+    function lockTokens(uint256 tokenAmount) external;
+    
+    function withdrawTokens(uint256 tokenAmount) external;
+
     function votingPowerOf(address account) external view returns (uint256);
 
     function votingPowerOfMultiple(address[] memory accounts) external view returns (uint256[] memory);
@@ -116,6 +122,14 @@ interface ERC20Guild {
     function getSignedVote(bytes32 signedVoteHash) external view returns(bool);
 
     function getProposalsIds() external view returns(bytes32[] memory);
+
+    function getTokenVault() external view returns(address);
+
+    function getLockTime() external view returns(uint256);
+
+    function getTotalLocked() external view returns(uint256);
+
+    function getVoterLockTimestamp(address voter) external view returns(uint256);
 
     function getProposal(bytes32 proposalId) external view returns (
         address creator,
