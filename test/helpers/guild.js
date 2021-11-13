@@ -97,24 +97,21 @@ export async function createDAO(
 
 export async function createProposal({
   guild,
-  to,
-  data,
-  value,
-  description,
-  contentHash,
-  account,
+  actions,
+  title = constants.TEST_TITLE,
+  contentHash = constants.SOME_HASH,
+  account
 }) {
   const tx = await guild.createProposal(
-    to,
-    data,
-    value,
-    description,
+    actions.map(action => action.to),
+    actions.map(action => action.data),
+    actions.map(action => action.value),
+    actions.length,
+    title,
     contentHash,
     { from: account }
   );
-
-  // Return proposal ID
-  return helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
+  return helpers.getValueFromLogs(tx, "proposalId", "ProposalStateChanged");
 }
 
 export async function setAllVotesOnProposal({ guild, proposalId, action, account }) {

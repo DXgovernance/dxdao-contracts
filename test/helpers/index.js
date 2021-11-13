@@ -348,12 +348,12 @@ export const increaseTime = async function (duration) {
 
 export function testCallFrom(address) {
   return new web3.eth.Contract(ActionMock.abi).methods
-    .test(address)
+    .test(address, 1)
     .encodeABI();
 }
 export function testCallWithoutReturnValueFrom(address) {
   return new web3.eth.Contract(ActionMock.abi).methods
-    .testWithoutReturnValue(address)
+    .testWithoutReturnValue(address, 1)
     .encodeABI();
 }
 

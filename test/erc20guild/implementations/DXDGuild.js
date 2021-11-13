@@ -1,9 +1,9 @@
-import * as helpers from "../helpers";
+import * as helpers from "../../helpers";
 const {
   createDAO,
   createAndSetupGuildToken,
   setAllVotesOnProposal,
-} = require("../helpers/guild");
+} = require("../../helpers/guild");
 const {
   BN,
   expectEvent,
@@ -50,7 +50,7 @@ contract("DXDGuild", function (accounts) {
     org = createDaoResult.org;
     actionMock = await ActionMock.new();
     await dxdGuild
-      .methods['initialize(address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,address,uint256,address)'](
+      .methods['initialize(address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,address,address)'](
         guildToken.address,
         30,
         30,
@@ -59,8 +59,8 @@ contract("DXDGuild", function (accounts) {
         VOTE_GAS,
         MAX_GAS_PRICE,
         10,
-        globalPermissionRegistry.address,
         TIMELOCK,
+        globalPermissionRegistry.address,
         votingMachine.address
       );
     
