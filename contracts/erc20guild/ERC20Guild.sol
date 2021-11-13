@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
 import "../utils/GlobalPermissionRegistry.sol";
+import "../utils/TokenVault.sol";
 
 /*
   @title ERC20Guild
@@ -15,6 +16,9 @@ import "../utils/GlobalPermissionRegistry.sol";
   @dev Extends an ERC20 functionality into a Guild, adding a simple governance system over an ERC20 token.
   An ERC20Guild is a simple organization that execute arbitrary calls if a minimum amount of votes is reached in a 
   proposal action while the proposal is active.
+  The token used for voting needs to be locked for a minimum period of time in order to be used as voting power.
+  Every time tokens are locked the timestamp of the lock is updated and increased the lock time seconds.
+  Once the lock time passed the voter can withdraw his tokens.
   Each proposal has actions, the voter can vote only once per proposal and cant change the chosen action, only
   increase the voting power of his vote.
   A proposal ends when the minimum amount of total voting power is reached on a proposal action before the proposal
@@ -87,6 +91,22 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // The amount of active proposals
     uint256 activeProposalsNow;
 
+    // The amount of time in seconds that the voting tokens would be locked
+    uint256 lockTime;
+
+    // The total amount of tokens locked
+    uint256 totalLocked;
+
+    // The address of the Token Vault contract, where tokens are being held for the users
+    TokenVault tokenVault;
+
+    // The tokens locked indexed by token holder address.
+    struct TokenLock {
+        uint256 amount;
+        uint256 timestamp;
+    }
+    mapping(address => TokenLock) tokensLocked;
+
     // All the signed votes that were executed, to avoid double signed vote execution.
     mapping(bytes32 => bool) signedVotes;
 
@@ -119,20 +139,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // Array to keep track of the proposals ids in contract storage
     bytes32[] proposalsIds;
 
-    event ProposalStateChanged(
-        bytes32 indexed proposalId,
-        uint256 newState
-    );
-    event VoteAdded(
-        bytes32 indexed proposalId,
-        address voter,
-        uint256 votingPower
-    );
-    event SetAllowance(
-        address indexed to,
-        bytes4 functionSignature,
-        bool allowance
-    );
+    event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
+    event VoteAdded(bytes32 indexed proposalId, address voter, uint256 votingPower);
+    event TokensLocked(address voter, uint256 value);
+    event TokensWithdrawn(address voter, uint256 value);
 
     bool private isExecutingProposal;
 
@@ -158,6 +168,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
+    // @param _lockTime The minimum amount of seconds that the tokens would be locked
     // @param _permissionRegistry The address of the permission registry contract to be used
     function initialize(
         address _token,
@@ -169,6 +180,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
+        uint256 _lockTime,
         address _permissionRegistry
     ) public virtual initializer {
         _initialize(
@@ -181,6 +193,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _voteGas,
             _maxGasPrice,
             _maxActiveProposals,
+            _lockTime,
             _permissionRegistry
         );
         initialized = true;
@@ -195,6 +208,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
+    // @param _lockTime The minimum amount of seconds that the tokens would be locked
     // @param _permissionRegistry The address of the permission registry contract to be used
     function setConfig(
         uint256 _proposalTime,
@@ -204,6 +218,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
+        uint256 _lockTime,
         address _permissionRegistry
     ) public virtual {
         _setConfig(
@@ -214,6 +229,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _voteGas,
             _maxGasPrice,
             _maxActiveProposals,
+            _lockTime,
             _permissionRegistry
         );
     }
@@ -228,7 +244,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bytes4[] memory functionSignature,
         uint256[] memory valueAllowed,
         bool[] memory allowance
-    ) public virtual isInitialized {
+    ) public virtual {
         require(
             msg.sender == address(this),
             "ERC20Guild: Only callable by ERC20guild itself"
@@ -269,7 +285,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param allowance If the function is allowed to be called or not
     function setPermissionDelay(
         uint256 permissionDelay
-    ) public virtual isInitialized {
+    ) public virtual {
         require(
             msg.sender == address(this),
             "ERC20Guild: Only callable by ERC20guild itself"
@@ -291,7 +307,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 totalActions,
         string memory title,
         bytes memory contentHash
-    ) public virtual isInitialized returns (bytes32) {
+    ) public virtual returns (bytes32) {
         return _createProposal(to, data, value, totalActions, title, contentHash);
     }
 
@@ -322,7 +338,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 votingPower
     ) public virtual {
         _setVote(msg.sender, proposalId, action, votingPower);
-        _refundVote(payable(msg.sender));
     }
 
     // @dev Set the voting power to vote in multiple proposals
@@ -388,6 +403,37 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 signatures[i]
             );
         }
+    }
+
+    // @dev Lock tokens in the guild to be used as voting power
+    // @param tokenAmount The amount of tokens to be locked
+    function lockTokens(uint256 tokenAmount) public virtual isInitialized {
+        tokenVault.deposit(msg.sender, tokenAmount);
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(
+            tokenAmount
+        );
+        tokensLocked[msg.sender].timestamp = block.timestamp.add(lockTime);
+        totalLocked = totalLocked.add(tokenAmount);
+        emit TokensLocked(msg.sender, tokenAmount);
+    }
+
+    // @dev Withdraw tokens locked in the guild, this will decrease the voting power
+    // @param tokenAmount The amount of tokens to be withdrawn
+    function withdrawTokens(uint256 tokenAmount) public virtual isInitialized {
+        require(
+            votingPowerOf(msg.sender) >= tokenAmount,
+            "ERC20Guild: Unable to withdraw more tokens than locked"
+        );
+        require(
+            tokensLocked[msg.sender].timestamp < block.timestamp,
+            "ERC20Guild: Tokens still locked"
+        );
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(
+            tokenAmount
+        );
+        totalLocked = totalLocked.sub(tokenAmount);
+        tokenVault.withdraw(msg.sender, tokenAmount);
+        emit TokensWithdrawn(msg.sender, tokenAmount);
     }
 
     // @dev Create a proposal with an static call data and extra information
@@ -521,6 +567,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
+    // @param _lockTime The minimum amount of seconds that the tokens would be locked
     // @param _permissionRegistry The address of the permission registry contract to be used
     function _initialize(
         address _token,
@@ -532,6 +579,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
+        uint256 _lockTime,
         address _permissionRegistry
     ) internal {
         require(
@@ -540,6 +588,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         );
         name = _name;
         token = IERC20Upgradeable(_token);
+        tokenVault = new TokenVault();
+        tokenVault.initialize(address(token), address(this));
         _setConfig(
             _proposalTime,
             _timeForExecution,
@@ -548,6 +598,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _voteGas,
             _maxGasPrice,
             _maxActiveProposals,
+            _lockTime,
             _permissionRegistry
         );
         permissionRegistry.setPermission(
@@ -582,6 +633,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
+    // @param _lockTime The minimum amount of seconds that the tokens would be locked
     // @param _permissionRegistry The address of the permission registry contract to be used
     function _setConfig(
         uint256 _proposalTime,
@@ -591,6 +643,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
+        uint256 _lockTime,
         address _permissionRegistry
     ) internal {
         require(
@@ -600,6 +653,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         require(
             _proposalTime > 0,
             "ERC20Guild: proposal time has to be more tha 0"
+        );
+        require(
+            _lockTime >= _proposalTime,
+            "ERC20Guild: lockTime has to be higher or equal to proposalTime"
         );
         require(
             _votingPowerForProposalExecution > 0,
@@ -612,6 +669,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
+        lockTime = _lockTime;
         permissionRegistry = GlobalPermissionRegistry(_permissionRegistry);
     }
 
@@ -625,7 +683,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bytes32 proposalId,
         uint256 action,
         uint256 votingPower
-    ) internal virtual isInitialized {
+    ) internal isInitialized {
         require(
             proposals[proposalId].endTime > block.timestamp,
             "ERC20Guild: Proposal ended, cant be voted"
@@ -645,17 +703,12 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             .add(votingPower.sub(proposals[proposalId].votes[voter].votingPower));
             emit VoteAdded(proposalId, voter, votingPower);
         }
-        proposals[proposalId].votes[voter] = Vote(action, votingPower);
-    }
-
-    // @dev Internal function to refund a vote cost to a sender
-    // The refund will be executed only if the voteGas is higher than zero and there is enough ETH balance in the guild.
-    // @param toAddress The address where the refund should be sent
-    function _refundVote(address payable toAddress) internal isInitialized {
+        proposals[proposalId].votes[voter].action = action;
+        proposals[proposalId].votes[voter].votingPower = votingPower;
         if (voteGas > 0) {
             uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
             if (address(this).balance >= gasRefund) {
-                toAddress.call{value: gasRefund}("");
+                payable(msg.sender).call{value: gasRefund}("");
             }
         }
     }
@@ -668,7 +721,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         virtual
         returns (uint256)
     {
-        return token.balanceOf(account);
+        return tokensLocked[account].amount;
     }
 
     // @dev Get the voting power of multiple addresses
@@ -817,7 +870,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         virtual
         returns (uint256)
     {
-        return token.totalSupply().mul(votingPowerForProposalCreation).div(10000);
+        return totalLocked.mul(votingPowerForProposalCreation).div(10000);
     }
 
     // @dev Get minimum amount of votingPower needed for proposal execution
@@ -827,7 +880,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         virtual
         returns (uint256)
     {
-        return token.totalSupply().mul(votingPowerForProposalExecution).div(10000);
+        return totalLocked.mul(votingPowerForProposalExecution).div(10000);
     }
 
     // @dev Get the first four bytes (function signature) of a bytes variable
@@ -847,6 +900,26 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @dev Get the length of the proposalIds array
     function getProposalsIdsLength() public view virtual returns (uint256) {
         return proposalsIds.length;
+    }
+
+    // @dev Get the tokenVault address
+    function getTokenVault() public view returns(address) {
+        return address(tokenVault);
+    }
+
+    // @dev Get the lockTime
+    function getLockTime() public view returns(uint256) {
+        return lockTime;
+    }
+
+    // @dev Get the totalLocked
+    function getTotalLocked() public view returns(uint256) {
+        return totalLocked;
+    }
+
+    // @dev Get the locked timestamp of a voter tokens
+    function getVoterLockTimestamp(address voter) public view returns(uint256) {
+        return tokensLocked[voter].timestamp;
     }
 
     // @dev Gets the validity of a EIP1271 hash
