@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "./LockableERC20Guild.sol";
+import "../ERC20Guild.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
@@ -10,7 +10,7 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
   @author github:AugustoL
   @dev An ERC20Guild for the DXD token designed to execute votes on Genesis Protocol Voting Machine.
 */
-contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
+contract DXDGuild is ERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
     // @dev Initilizer
@@ -20,12 +20,11 @@ contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
     // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // action
     // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
-    // @param _name The name of the ERC20Guild
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
-    // @param _permissionRegistry The address of the permission registry contract to be used
     // @param _lockTime The minimum amount of seconds that the tokens would be locked
+    // @param _permissionRegistry The address of the permission registry contract to be used
     // @param _votingMachine The voting machine where the guild will vote
     function initialize(
         address _token,
@@ -36,8 +35,8 @@ contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
-        address _permissionRegistry,
         uint256 _lockTime,
+        address _permissionRegistry,
         address _votingMachine
     ) public initializer {
         require(
@@ -54,17 +53,8 @@ contract DXDGuild is LockableERC20Guild, OwnableUpgradeable {
             _voteGas,
             _maxGasPrice,
             _maxActiveProposals,
+            _lockTime,
             _permissionRegistry
-        );
-        tokenVault = new TokenVault();
-        tokenVault.initialize(address(token), address(this));
-        lockTime = _lockTime;
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            bytes4(keccak256("setLockTime(uint256)")),
-            0,
-            true
         );
         permissionRegistry.setPermission(
             address(0),

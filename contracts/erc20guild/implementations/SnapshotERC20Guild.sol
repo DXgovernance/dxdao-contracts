@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "./LockableERC20Guild.sol";
+import "../ERC20Guild.sol";
 import "../../utils/Arrays.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
 /*
-  @title LockableSnapshotERC20Guild
+  @title SnapshotERC20Guild
   @author github:AugustoL
   @dev An ERC20Guild designed to work with a snapshotted locked tokens.
-  It is an extension over the LockableER20Guild where the voters can vote with the voting power used at the moment of the 
+  It is an extension over the ERC20Guild where the voters can vote with the voting power used at the moment of the 
   proposal creation.
 */
-contract LockableSnapshotERC20Guild is LockableERC20Guild {
+contract SnapshotERC20Guild is ERC20Guild {
     using SafeMathUpgradeable for uint256;
     using Arrays for uint256[];
     using ECDSAUpgradeable for bytes32;
@@ -46,7 +46,6 @@ contract LockableSnapshotERC20Guild is LockableERC20Guild {
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
         _setVote(msg.sender, proposalId, action, votingPower);
-        _refundVote(payable(msg.sender));
     }
 
     // @dev Set the voting power to vote in a proposal using a signed vote

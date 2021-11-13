@@ -28,9 +28,8 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
+    // @param _lockTime The minimum amount of seconds that the tokens would be locked
     // @param _permissionRegistry The address of the permission registry contract to be used
-    // @param _guildGuardian The address of the guild guardian
-    // @param _extraTimeForGuardian The extra time the proposals would be locked for guardian verification
     function initialize(
         address _token,
         uint256 _proposalTime,
@@ -41,10 +40,9 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
-        address _permissionRegistry,
-        address _guildGuardian,
-        uint256 _extraTimeForGuardian
-    ) public initializer {
+        uint256 _lockTime,
+        address _permissionRegistry
+    ) public override initializer {
         require(
             address(_token) != address(0),
             "ERC20Guild: token is the zero address"
@@ -59,11 +57,16 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
             _voteGas,
             _maxGasPrice,
             _maxActiveProposals,
+            _lockTime,
             _permissionRegistry
         );
-        guildGuardian = _guildGuardian;
-        extraTimeForGuardian = _extraTimeForGuardian;
-        initialized = true;
+        permissionRegistry.setPermission(
+            address(0),
+            address(this),
+            bytes4(keccak256("setGuardianConfig(address,uint256)")),
+            0,
+            true
+        );
     }
     
     // @dev Executes a proposal that is not votable anymore and can be finished
@@ -110,13 +113,14 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     function setGuardianConfig(
         address _guildGuardian,
         uint256 _extraTimeForGuardian
-    ) public isInitialized {
+    ) public {
         require(
-            msg.sender == address(this),
-            "GuardedERC20Guild: Only the guild can set the guardian config"
+            !initialized || (msg.sender == address(this)),
+            "GuardedERC20Guild: Only callable by the guild itself when initialized"
         );
         guildGuardian = _guildGuardian;
         extraTimeForGuardian = _extraTimeForGuardian;
+        initialized = true;
     }
 
     // @dev Get the guildGuardian address

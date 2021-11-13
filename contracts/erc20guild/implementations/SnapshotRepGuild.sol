@@ -10,29 +10,84 @@ import "../../utils/ERC20/ERC20SnapshotRep.sol";
 /*
   @title SnapshotRepERC20Guild
   @author github:AugustoL
-  @dev An ERC20Guild designed to work with a snapshotted voting token.
+  @dev An ERC20Guild designed to work with a snapshotted voting token, no locking needed.
   When a proposal is created it saves the snapshot if at the moment of creation, the voters can vote only with the voting
   power they had at that time.
 */
 contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
+    using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
 
     // Proposal id => Snapshot id
     mapping(bytes32 => uint256) proposalsSnapshots;
+
+    // @dev Initilizer
+    // @param _token The ERC20 token that will be used as source of voting power
+    // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
+    // @param _timeForExecution The amount of time in seconds that a proposal action will have to execute successfully
+    // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
+    // action
+    // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // @param _name The name of the ERC20Guild
+    // @param _voteGas The amount of gas in wei unit used for vote refunds
+    // @param _maxGasPrice The maximum gas price used for vote refunds
+    // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
+    // @param _lockTime The minimum amount of seconds that the tokens would be locked
+    // @param _permissionRegistry The address of the permission registry contract to be used
+    function initialize(
+        address _token,
+        uint256 _proposalTime,
+        uint256 _timeForExecution,
+        uint256 _votingPowerForProposalExecution,
+        uint256 _votingPowerForProposalCreation,
+        string memory _name,
+        uint256 _voteGas,
+        uint256 _maxGasPrice,
+        uint256 _maxActiveProposals,
+        uint256 _lockTime,
+        address _permissionRegistry
+    ) public override initializer {
+        require(
+            address(_token) != address(0),
+            "SnapshotRepERC20Guild: token is the zero address"
+        );
+        _initialize(
+            _token,
+            _proposalTime,
+            _timeForExecution,
+            _votingPowerForProposalExecution,
+            _votingPowerForProposalCreation,
+            _name,
+            _voteGas,
+            _maxGasPrice,
+            _maxActiveProposals,
+            _lockTime,
+            _permissionRegistry
+        );
+        permissionRegistry.setPermission(
+            address(0),
+            _token,
+            bytes4(keccak256("mint(address,uint256)")),
+            0,
+            true
+        );
+        permissionRegistry.setPermission(
+            address(0),
+            _token,
+            bytes4(keccak256("burn(address,uint256)")),
+            0,
+            true
+        );
+        initialized = true;
+    }
 
     // @dev Set the voting power to vote in a proposal
     // @param proposalId The id of the proposal to set the vote
     // @param action The proposal action to be voted
     // @param votingPower The votingPower to use in the proposal
     function setVote(bytes32 proposalId, uint256 action, uint256 votingPower) public override virtual {
-        require(
-            votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >=
-                votingPower,
-            "SnapshotERC20Guild: Invalid votingPower amount"
-        );
-        _setVote(msg.sender, proposalId, action, votingPower);
-        _refundVote(payable(msg.sender));
+        _setSnapshottedVote(msg.sender, proposalId, action, votingPower);
     }
 
     // @dev Set the voting power to vote in a proposal using a signed vote
@@ -54,13 +109,18 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
             voter == hashedVote.toEthSignedMessageHash().recover(signature),
             "SnapshotERC20Guild: Wrong signer"
         );
-        require(
-            votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >=
-                votingPower,
-            "SnapshotERC20Guild: Invalid votingPower amount"
-        );
-        _setVote(voter, proposalId, action, votingPower);
+        _setSnapshottedVote(voter, proposalId, action, votingPower);
         signedVotes[hashedVote] = true;
+    }
+
+    // @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild 
+    function lockTokens(uint256 tokenAmount) public override virtual isInitialized {
+        revert("ERC20Guild: token vault disabled" );
+    }
+
+    // @dev Override and disable withdraw of tokens, not needed in SnapshotRepERC20Guild 
+    function withdrawTokens(uint256 tokenAmount) public override virtual isInitialized {
+        revert("ERC20Guild: token vault disabled" );
     }
 
     // @dev Create a proposal with an static call data and extra information
@@ -83,6 +143,46 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         return proposalId;
     }
 
+    // @dev Internal function to set the amount of votingPower to vote in a proposal based on the proposal snapshot
+    // @param voter The address of the voter
+    // @param proposalId The id of the proposal to set the vote
+    // @param action The proposal action to be voted
+    // @param votingPower The amount of votingPower to use as voting for the proposal
+    function _setSnapshottedVote(
+        address voter,
+        bytes32 proposalId,
+        uint256 action,
+        uint256 votingPower
+    ) internal isInitialized {
+        require(
+            proposals[proposalId].endTime > block.timestamp,
+            "SnapshotERC20Guild: Proposal ended, cant be voted"
+        );
+        require(
+            votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >= votingPower,
+            "SnapshotERC20Guild: Invalid votingPower amount"
+        );
+        require(
+            proposals[proposalId].votes[voter].action == 0 ||
+                proposals[proposalId].votes[voter].action == action,
+            "SnapshotERC20Guild: Cant change action voted, only increase votingPower"
+        );
+        if (votingPower > proposals[proposalId].votes[voter].votingPower) {
+            proposals[proposalId].totalVotes[action] = proposals[proposalId]
+            .totalVotes[action]
+            .add(votingPower.sub(proposals[proposalId].votes[voter].votingPower));
+            emit VoteAdded(proposalId, voter, votingPower);
+        }
+        proposals[proposalId].votes[voter].action = action;
+        proposals[proposalId].votes[voter].votingPower = votingPower;
+        if (voteGas > 0) {
+            uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
+            if (address(this).balance >= gasRefund) {
+                payable(msg.sender).call{value: gasRefund}("");
+            }
+        }
+    }
+
     // @dev Get the voting power of multiple addresses at a certain snapshotId
     // @param accounts The addresses of the accounts
     // @param snapshotIds The snapshotIds to be used
@@ -95,7 +195,6 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
             votes[i] = votingPowerOfAt(accounts[i], snapshotIds[i]);
         return votes;
     }
-
     
     // @dev Get the voting power of an address at a certain snapshotId
     // @param account The address of the account
