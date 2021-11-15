@@ -209,7 +209,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
     // @param _lockTime The minimum amount of seconds that the tokens would be locked
-    // @param _permissionRegistry The address of the permission registry contract to be used
     function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
@@ -218,8 +217,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
-        uint256 _lockTime,
-        address _permissionRegistry
+        uint256 _lockTime
     ) public virtual {
         _setConfig(
             _proposalTime,
@@ -229,8 +227,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _voteGas,
             _maxGasPrice,
             _maxActiveProposals,
-            _lockTime,
-            _permissionRegistry
+            _lockTime
         );
     }
 
@@ -266,7 +263,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 address(0),
                 address(this),
                 address(this),
-                bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
+                bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
             ) > 0,
             "ERC20Guild: setConfig function allowance cant be turned off"
         );
@@ -634,7 +631,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
     // @param _lockTime The minimum amount of seconds that the tokens would be locked
-    // @param _permissionRegistry The address of the permission registry contract to be used
     function _setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
@@ -643,8 +639,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
-        uint256 _lockTime,
-        address _permissionRegistry
+        uint256 _lockTime
     ) internal {
         require(
             !initialized || (msg.sender == address(this)),
@@ -670,7 +665,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
         lockTime = _lockTime;
-        permissionRegistry = GlobalPermissionRegistry(_permissionRegistry);
     }
 
     // @dev Internal function to set the amount of votingPower to vote in a proposal
