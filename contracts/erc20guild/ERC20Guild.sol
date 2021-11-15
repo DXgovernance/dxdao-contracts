@@ -140,7 +140,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     bytes32[] proposalsIds;
 
     event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
-    event VoteAdded(bytes32 indexed proposalId, address voter, uint256 votingPower);
+    event VoteAdded(bytes32 indexed proposalId, uint256 indexed action, address voter, uint256 votingPower);
     event TokensLocked(address voter, uint256 value);
     event TokensWithdrawn(address voter, uint256 value);
 
@@ -689,7 +689,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             "ERC20Guild: Proposal ended, cant be voted"
         );
         require(
-            votingPowerOf(voter) >= votingPower,
+            (votingPowerOf(voter) >= votingPower)
+            && (votingPower > proposals[proposalId].votes[voter].votingPower),
             "ERC20Guild: Invalid votingPower amount"
         );
         require(
@@ -697,14 +698,17 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 proposals[proposalId].votes[voter].action == action,
             "ERC20Guild: Cant change action voted, only increase votingPower"
         );
-        if (votingPower > proposals[proposalId].votes[voter].votingPower) {
-            proposals[proposalId].totalVotes[action] = proposals[proposalId]
-            .totalVotes[action]
-            .add(votingPower.sub(proposals[proposalId].votes[voter].votingPower));
-            emit VoteAdded(proposalId, voter, votingPower);
-        }
+
+        proposals[proposalId].totalVotes[action] = proposals[proposalId]
+        .totalVotes[action]
+        .sub(proposals[proposalId].votes[voter].votingPower)
+        .add(votingPower);
+
         proposals[proposalId].votes[voter].action = action;
         proposals[proposalId].votes[voter].votingPower = votingPower;
+        
+        emit VoteAdded(proposalId, action, voter, votingPower);
+        
         if (voteGas > 0) {
             uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
             if (address(this).balance >= gasRefund) {
