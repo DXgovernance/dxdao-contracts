@@ -248,6 +248,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         );
         require(
             (to.length == functionSignature.length) &&
+                (to.length == valueAllowed.length) &&
                 (to.length == allowance.length),
             "ERC20Guild: Wrong length of to, functionSignature or allowance arrays"
         );
