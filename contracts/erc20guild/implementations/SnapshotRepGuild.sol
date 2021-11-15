@@ -115,12 +115,12 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
 
     // @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild 
     function lockTokens(uint256 tokenAmount) public override virtual isInitialized {
-        revert("ERC20Guild: token vault disabled" );
+        revert("SnapshotERC20Guild: token vault disabled" );
     }
 
     // @dev Override and disable withdraw of tokens, not needed in SnapshotRepERC20Guild 
     function withdrawTokens(uint256 tokenAmount) public override virtual isInitialized {
-        revert("ERC20Guild: token vault disabled" );
+        revert("SnapshotERC20Guild: token vault disabled" );
     }
 
     // @dev Create a proposal with an static call data and extra information

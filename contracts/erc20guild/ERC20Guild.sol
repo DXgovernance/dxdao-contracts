@@ -582,7 +582,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     ) internal {
         require(
             address(_token) != address(0),
-            "ERC20Guild: token is the zero address"
+            "ERC20Guild: token cant be zero address"
         );
         name = _name;
         token = IERC20Upgradeable(_token);
@@ -656,7 +656,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         );
         require(
             _votingPowerForProposalExecution > 0,
-            "ERC20Guild: votes for execution has to be more than 0"
+            "ERC20Guild: voting power for execution has to be more than 0"
         );
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
