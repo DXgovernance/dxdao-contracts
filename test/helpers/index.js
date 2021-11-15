@@ -5,7 +5,7 @@ const {
   getWalletSchemeEvent,
 } = require("./walletScheme");
 
-const EthDecoder = require("@maticnetwork/eth-decoder");
+const { LogDecoder } = require("@maticnetwork/eth-decoder");
 
 const Avatar = artifacts.require("./Avatar.sol");
 const Controller = artifacts.require("./Controller.sol");
@@ -19,8 +19,9 @@ const ActionMock = artifacts.require("./ActionMock.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const DXDVestingFactory = artifacts.require("./DXDVestingFactory.sol");
 const DXdaoNFT = artifacts.require("./DXdaoNFT.sol");
+const ERC20Guild = artifacts.require("./ERC20Guild.sol");
 
-export const logDecoder = new EthDecoder.default.LogDecoder([
+export const logDecoder = new LogDecoder([
   Avatar.abi,
   Controller.abi,
   DAOToken.abi,
@@ -32,18 +33,7 @@ export const logDecoder = new EthDecoder.default.LogDecoder([
   PermissionRegistry.abi,
   DXDVestingFactory.abi,
   DXdaoNFT.abi,
-]);
-
-export const txDecoder = new EthDecoder.default.TxDecoder([
-  Avatar.abi,
-  Controller.abi,
-  DAOToken.abi,
-  Reputation.abi,
-  AbsoluteVote.abi,
-  GenesisProtocol.abi,
-  DXDVotingMachine.abi,
-  WalletScheme.abi,
-  PermissionRegistry.abi,
+  ERC20Guild.abi
 ]);
 
 export function getProposalAddress(tx) {
@@ -346,9 +336,9 @@ export const increaseTime = async function (duration) {
   });
 };
 
-export function testCallFrom(address) {
+export function testCallFrom(address, number = 1) {
   return new web3.eth.Contract(ActionMock.abi).methods
-    .test(address, 1)
+    .test(address, number)
     .encodeABI();
 }
 export function testCallWithoutReturnValueFrom(address) {

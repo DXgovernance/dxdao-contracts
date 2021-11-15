@@ -853,7 +853,7 @@ contract("WalletScheme", function (accounts) {
       tx,
       "ProposalStateChange"
     );
-    assert.equal(stateChangeEvent.values._state, 2);
+    assert.equal(stateChangeEvent.args._state, 2);
 
     const organizationProposal = await masterWalletScheme.getOrganizationProposal(
       proposalId
@@ -1654,7 +1654,7 @@ contract("WalletScheme", function (accounts) {
     const executionEvent = helpers.getWalletSchemeEvent(tx, "ExecutionResults");
     const returnValue = web3.eth.abi.decodeParameters(
       ["bool", "bytes"],
-      executionEvent.values._callsDataResult[0]
+      executionEvent.args._callsDataResult[0]
     );
     assert.equal(returnValue["0"], true);
     assert.equal(returnValue["1"], null);
@@ -2139,7 +2139,7 @@ contract("WalletScheme", function (accounts) {
       tx,
       "ProposalStateChange"
     );
-    assert.equal(stateChangeEvent.values._state, 2);
+    assert.equal(stateChangeEvent.args._state, 2);
 
     const organizationProposal = await quickWalletScheme.getOrganizationProposal(
       proposalId
@@ -2303,7 +2303,7 @@ contract("WalletScheme", function (accounts) {
     );
     const executionEvent = helpers.getWalletSchemeEvent(tx, "ExecutionResults");
 
-    const returnValues = executionEvent.values._callsDataResult[0];
+    const returnValues = executionEvent.args._callsDataResult[0];
     assert.equal(returnValues, "0x");
 
     const organizationProposal = await quickWalletScheme.getOrganizationProposal(
@@ -2680,13 +2680,13 @@ contract("WalletScheme", function (accounts) {
       { from: accounts[2] }
     );
     const executionEvent = helpers.getWalletSchemeEvent(tx, "ExecutionResults");
-    assert.equal(executionEvent.values._callsSucessResult[0], true);
-    assert.equal(executionEvent.values._callsSucessResult[1], true);
-    assert.equal(executionEvent.values._callsSucessResult[2], true);
-    assert.equal(executionEvent.values._callsDataResult[0], "0x");
-    assert.equal(executionEvent.values._callsDataResult[1], "0x");
+    assert.equal(executionEvent.args._callsSucessResult[0], true);
+    assert.equal(executionEvent.args._callsSucessResult[1], true);
+    assert.equal(executionEvent.args._callsSucessResult[2], true);
+    assert.equal(executionEvent.args._callsDataResult[0], "0x");
+    assert.equal(executionEvent.args._callsDataResult[1], "0x");
     assert.equal(
-      executionEvent.values._callsDataResult[2],
+      executionEvent.args._callsDataResult[2],
       "0x0000000000000000000000000000000000000000000000000000000000000001"
     );
 
