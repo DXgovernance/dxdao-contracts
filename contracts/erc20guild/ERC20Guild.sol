@@ -273,7 +273,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 address(0),
                 address(this),
                 address(this),
-                bytes4(keccak256("setPermission(address[],bytes4[],bool[])"))
+                bytes4(keccak256("setPermission(address[],bytes4[],uint256[],bool[])"))
             ) > 0,
             "ERC20Guild: setPermission function allowance cant be turned off"
         );
@@ -596,20 +596,20 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _voteGas,
             _maxGasPrice,
             _maxActiveProposals,
-            _lockTime,
-            _permissionRegistry
+            _lockTime
         );
+        permissionRegistry = GlobalPermissionRegistry(_permissionRegistry);
         permissionRegistry.setPermission(
             address(0),
             address(this),
-            bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)")),
+            bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")),
             0,
             true
         );
         permissionRegistry.setPermission(
             address(0),
             address(this),
-            bytes4(keccak256("setPermission(address[],bytes4[],bool[])")),
+            bytes4(keccak256("setPermission(address[],bytes4[],uint256[],bool[])")),
             0,
             true
         );
