@@ -711,11 +711,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 proposals[proposalId].votes[voter].action == action,
             "ERC20Guild: Cant change action voted, only increase votingPower"
         );
-
-        proposals[proposalId].totalVotes[action] = proposals[proposalId]
-        .totalVotes[action]
-        .sub(proposals[proposalId].votes[voter].votingPower)
-        .add(votingPower);
+    
+        proposals[proposalId].totalVotes[action] = proposals[proposalId].totalVotes[action]
+            .sub(proposals[proposalId].votes[voter].votingPower)
+            .add(votingPower);
 
         proposals[proposalId].votes[voter].action = action;
         proposals[proposalId].votes[voter].votingPower = votingPower;
