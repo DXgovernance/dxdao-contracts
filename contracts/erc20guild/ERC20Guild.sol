@@ -277,6 +277,15 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             ) > 0,
             "ERC20Guild: setPermission function allowance cant be turned off"
         );
+        require(
+            permissionRegistry.getPermissionTime(
+                address(0),
+                address(this),
+                address(this),
+                bytes4(keccak256("setPermissionDelay(uint256)"))
+            ) > 0,
+            "ERC20Guild: setPermissionDelay function allowance cant be turned off"
+        );
     }
 
     // @dev Set the permission delay in the permission registry
@@ -610,6 +619,13 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             address(0),
             address(this),
             bytes4(keccak256("setPermission(address[],bytes4[],uint256[],bool[])")),
+            0,
+            true
+        );
+        permissionRegistry.setPermission(
+            address(0),
+            address(this),
+            bytes4(keccak256("setPermissionDelay(uint256)")),
             0,
             true
         );
