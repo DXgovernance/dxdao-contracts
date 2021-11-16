@@ -537,26 +537,28 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             uint256 endCall = i.add(callsPerAction);
 
             for (i; i < endCall; i++) {
-                bytes4 proposalSignature = getFuncSignature(
-                    proposals[proposalId].data[i]
-                );
-                (uint256 valueAllowed, uint256 fromTime) = permissionRegistry.getPermission(
-                    address(0),
-                    address(this),
-                    proposals[proposalId].to[i],
-                    proposalSignature
-                );
-                require(
-                    (0 < fromTime) && (fromTime < block.timestamp),
-                    "ERC20Guild: Not allowed call"
-                );
-                require((valueAllowed >= proposals[proposalId].value[i]), "ERC20Guild: Not allowed value");
-                isExecutingProposal = true;
-                (bool success, ) = proposals[proposalId].to[i].call{
-                    value: proposals[proposalId].value[i]
-                }(proposals[proposalId].data[i]);
-                require(success, "ERC20Guild: Proposal call failed");
-                isExecutingProposal = false;
+                if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
+                    bytes4 proposalSignature = getFuncSignature(
+                        proposals[proposalId].data[i]
+                    );
+                    (uint256 valueAllowed, uint256 fromTime) = permissionRegistry.getPermission(
+                        address(0),
+                        address(this),
+                        proposals[proposalId].to[i],
+                        proposalSignature
+                    );
+                    require(
+                        (0 < fromTime) && (fromTime < block.timestamp),
+                        "ERC20Guild: Not allowed call"
+                    );
+                    require((valueAllowed >= proposals[proposalId].value[i]), "ERC20Guild: Not allowed value");
+                    isExecutingProposal = true;
+                    (bool success, ) = proposals[proposalId].to[i].call{
+                        value: proposals[proposalId].value[i]
+                    }(proposals[proposalId].data[i]);
+                    require(success, "ERC20Guild: Proposal call failed");
+                    isExecutingProposal = false;
+                }
             }
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
