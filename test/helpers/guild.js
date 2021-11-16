@@ -102,10 +102,18 @@ export async function createProposal({
   contentHash = constants.SOME_HASH,
   account
 }) {
+  const callsTo = [], callsData = [], callsValue = [];
+  
+  actions.map(action => {
+    action.to.map(to => callsTo.push(to));
+    action.data.map(data => callsData.push(data));
+    action.value.map(value => callsValue.push(value));
+  });
+ 
   const tx = await guild.createProposal(
-    actions.map(action => action.to),
-    actions.map(action => action.data),
-    actions.map(action => action.value),
+    callsTo,
+    callsData,
+    callsValue,
     actions.length,
     title,
     contentHash,
