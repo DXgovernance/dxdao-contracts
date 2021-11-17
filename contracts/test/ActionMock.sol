@@ -1,8 +1,13 @@
 pragma solidity 0.5.17;
 
 contract ActionMock {
+
     event ReceivedEther(address indexed _sender, uint256 _value);
     event LogNumber(uint256 number);
+
+    function() external payable {
+        emit ReceivedEther(msg.sender, msg.value);
+    }
 
     function test(address _addr, uint256 number) public payable returns (uint256) {
         require(msg.sender == _addr, "ActionMock: the caller must be equal to _addr");

@@ -103,13 +103,20 @@ contract("ERC20Guild", function (accounts) {
   }
 
   const allowActionMockA = async function() {
+
     const setPermissionToActionMockA = await createProposal({
       guild: erc20Guild,
       actions: [{
         to: [erc20Guild.address],
-        data: [await new web3.eth.Contract(ERC20Guild.abi).methods
-        .setPermission([actionMockA.address], [constants.ANY_FUNC_SIGNATURE], [100], [true])
-        .encodeABI()],
+        data: [
+          await new web3.eth.Contract(ERC20Guild.abi).methods
+            .setPermission(
+              [constants.ANY_ADDRESS, actionMockA.address, actionMockA.address],
+              [constants.ANY_FUNC_SIGNATURE, constants.ANY_FUNC_SIGNATURE, helpers.testCallFrom(erc20Guild.address).substring(0, 10)],
+              [200, 100, 50],
+              [true, true, true]
+            ).encodeABI()
+        ],
         value: [0],
       }],
       account: accounts[1],
@@ -199,7 +206,7 @@ contract("ERC20Guild", function (accounts) {
 
   });
 
-  describe("Initialization", function () {
+  describe("initialization", function () {
 
     it("initial values are correct", async function () {
       assert.equal(await erc20Guild.getToken(), guildToken.address);
@@ -682,7 +689,7 @@ contract("ERC20Guild", function (accounts) {
 
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "ERC20Guild: Not allowed call"
+        "GlobalPermissionRegistry: Call not allowed"
       );
     });
 
@@ -705,7 +712,7 @@ contract("ERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(30));
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "ERC20Guild: Not allowed call"
+        "GlobalPermissionRegistry: Call not allowed"
       );
 
       await time.increase(time.duration.seconds(30));
@@ -858,11 +865,183 @@ contract("ERC20Guild", function (accounts) {
       );
     });
   });
+  describe("permission registry checks", function () {
+
+    beforeEach(async function() {
+      await lockTokens();
+      await allowActionMockA();
+
+      const setPermissionToActionMockB = await createProposal({
+        guild: erc20Guild,
+        actions: [{
+          to: [erc20Guild.address],
+          data: [
+            await new web3.eth.Contract(ERC20Guild.abi).methods
+              .setPermission(
+                [actionMockB.address],
+                [constants.ANY_FUNC_SIGNATURE],
+                [0],
+                [false]
+              ).encodeABI()
+          ],
+          value: [0],
+        }],
+        account: accounts[1],
+      });
+      await setAllVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: setPermissionToActionMockB,
+        action: 1,
+        account: accounts[4],
+      });
+      await setAllVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: setPermissionToActionMockB,
+        action: 1,
+        account: accounts[5],
+      });
+      await time.increase(30);
+      await erc20Guild.endProposal(setPermissionToActionMockB);
+
+    });
+
+    it("fail to execute a not allowed proposal to a contract from the guild", async function () {
+      await web3.eth.sendTransaction({to: erc20Guild.address, value: 300, from: accounts[0]});
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [{
+          to: [actionMockB.address],
+          data: [helpers.testCallFrom(erc20Guild.address)],
+          value: [0],
+        }],
+        account: accounts[3],
+      });
+      await setAllVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[3],
+      });
+
+      await setAllVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "GlobalPermissionRegistry: Call not allowed"
+      );
+    });
+
+    it("fail to execute a transfer over global transfer limits", async function () {
+      await web3.eth.sendTransaction({to: erc20Guild.address, value: 300, from: accounts[0]});
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [{
+          to: [accounts[8], accounts[7], actionMockA.address],
+          data: ["0x00", "0x00", helpers.testCallFrom(erc20Guild.address)],
+          value: [100, 51, 50],
+        }],
+        account: accounts[3],
+      });
+      await setAllVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[3],
+      });
+
+      await setAllVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "GlobalPermissionRegistry: Value limit reached"
+      );
+    });
+
+    it("fail to execute a transfer exceeding the allowed on a call", async function () {
+      await web3.eth.sendTransaction({to: erc20Guild.address, value: 300, from: accounts[0]});
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [{
+          to: [actionMockA.address, actionMockA.address],
+          data: [helpers.testCallFrom(erc20Guild.address), helpers.testCallFrom(erc20Guild.address)],
+          value: [25, 26],
+        }],
+        account: accounts[3],
+      });
+      await setAllVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[3],
+      });
+
+      await setAllVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "GlobalPermissionRegistry: Value limit reached"
+      );
+    });
+
+    it("fail to execute a transfer exceeding the allowed on a wildcard permission call", async function () {
+      await web3.eth.sendTransaction({to: erc20Guild.address, value: 300, from: accounts[0]});
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [{
+          to: [actionMockA.address, actionMockA.address],
+          data: ["0x00", "0x00"],
+          value: [50, 51],
+        }],
+        account: accounts[3],
+      });
+      await setAllVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[3],
+      });
+
+      await setAllVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "GlobalPermissionRegistry: Value limit reached'"
+      );
+    });
+
+  });
 
   describe("complete proposal process", function () {
 
     beforeEach(async function() {
       await lockTokens();
+      await allowActionMockA();
     });
 
     it("execute a proposal to a contract from the guild", async function () {
@@ -925,36 +1104,6 @@ contract("ERC20Guild", function (accounts) {
       expectEvent.inTransaction(receipt.tx, actionMockB, "LogNumber", { number: "666"});
     });
 
-    it("fail to execute a not allowed proposal to a contract from the guild", async function () {
-      const guildProposalId = await createProposal({
-        guild: erc20Guild,
-        actions: [{
-          to: [actionMockA.address],
-          data: [helpers.testCallFrom(erc20Guild.address)],
-          value: [0],
-        }],
-        account: accounts[3],
-      });
-      await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        action: 1,
-        account: accounts[3],
-      });
-
-      await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        action: 1,
-        account: accounts[5],
-      });
-
-      await time.increase(time.duration.seconds(31));
-      await expectRevert(
-        erc20Guild.endProposal(guildProposalId),
-        "ERC20Guild: Not allowed call"
-      );
-    });
 
     it("can read proposal details of proposal", async function () {
       const guildProposalId = await createProposal(genericProposal);
