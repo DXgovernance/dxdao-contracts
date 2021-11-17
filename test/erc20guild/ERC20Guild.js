@@ -62,7 +62,7 @@ contract("ERC20Guild", function (accounts) {
       "TestGuild",
       0,
       0,
-      3,
+      10,
       60,
       globalPermissionRegistry.address
     );
@@ -334,7 +334,7 @@ contract("ERC20Guild", function (accounts) {
       );
       assert.equal(await erc20Guild.getVoteGas(), 0);
       assert.equal(await erc20Guild.getMaxGasPrice(), 0);
-      assert.equal(await erc20Guild.getMaxActiveProposals(), 3);
+      assert.equal(await erc20Guild.getMaxActiveProposals(), 10);
       assert.equal(await erc20Guild.getLockTime(), 60);
       
       const guildProposalId = await createProposal({
@@ -576,6 +576,31 @@ contract("ERC20Guild", function (accounts) {
         ),
         "ERC20Guild: to, data value arrays cannot be empty"
       );
+    });
+
+    it("cannot create a proposal if the max amount of active proposals is reached", async function () {
+      const firstProposalId = await createProposal(genericProposal);
+      assert.equal(await erc20Guild.getActiveProposalsNow(), "1");
+      await time.increase(10);
+
+      // Create 9 more proposals and have 10 active proposals
+      for (let i = 0; i < 9; i++)
+        await createProposal(genericProposal);        
+
+      assert.equal(await erc20Guild.getActiveProposalsNow(), "10");
+
+      // Cant create because maxActiveProposals limit reached
+      await expectRevert(
+        createProposal(genericProposal),
+        "ERC20Guild: Maximum amount of active proposals reached"
+      );
+
+      // Finish one proposal and can create another
+      await time.increase(20);
+      await erc20Guild.endProposal(firstProposalId);
+      assert.equal(await erc20Guild.getActiveProposalsNow(), "9");
+
+      await createProposal(genericProposal);
     });
 
   });

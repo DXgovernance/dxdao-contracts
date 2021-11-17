@@ -459,6 +459,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bytes memory contentHash
     ) internal isInitialized returns (bytes32) {
         require(
+            activeProposalsNow < getMaxActiveProposals(),
+            "ERC20Guild: Maximum amount of active proposals reached"
+        );
+        require(
             votingPowerOf(msg.sender) >= getVotingPowerForProposalCreation(),
             "ERC20Guild: Not enough votes to create proposal"
         );
@@ -489,7 +493,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         newProposal.totalVotes = new uint256[](totalActions.add(1));
         newProposal.state = ProposalState.Submitted;
 
-        activeProposalsNow++;
+        activeProposalsNow = activeProposalsNow.add(1);
         emit ProposalStateChanged(proposalId, uint256(ProposalState.Submitted));
         proposalsIds.push(proposalId);
         return proposalId;
@@ -562,7 +566,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             }
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
-        activeProposalsNow--;
+        activeProposalsNow = activeProposalsNow.sub(1);
     }
 
     // @dev Internal initializer
