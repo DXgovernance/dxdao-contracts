@@ -42,6 +42,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
 
+    bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
+    bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
+    bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
+
     enum ProposalState {
         None,
         Submitted,
@@ -539,23 +543,37 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             );
             i = callsPerAction.mul(winningAction.sub(1));
             uint256 endCall = i.add(callsPerAction);
-
+            
             for (i; i < endCall; i++) {
                 if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
-                    bytes4 proposalSignature = getFuncSignature(
-                        proposals[proposalId].data[i]
-                    );
-                    (uint256 valueAllowed, uint256 fromTime) = permissionRegistry.getPermission(
-                        address(0),
+                  
+                    bytes4 callDataFuncSignature = getFuncSignature(proposals[proposalId].data[i]);
+                    address asset = address(0);
+                    address _to = proposals[proposalId].to[i];
+                    uint256 _value = proposals[proposalId].value[i];
+
+                    // If the call is an ERC20 transfer or approve the asset is the address called
+                    // and the to and value are the decoded ERC20 receiver and value transfered
+                    if (
+                        ERC20_TRANSFER_SIGNATURE == callDataFuncSignature ||
+                        ERC20_APPROVE_SIGNATURE == callDataFuncSignature
+                    ) {
+                        asset = proposals[proposalId].to[i];
+                        callDataFuncSignature = ANY_SIGNATURE;
+                        (_to, _value) = erc20TransferOrApproveDecode(proposals[proposalId].data[i]);
+                    }
+
+                    // The permission registry keeps track of all value transferred and checks call permission
+                    try permissionRegistry.setPermissionUsed(
+                        asset,
                         address(this),
-                        proposals[proposalId].to[i],
-                        proposalSignature
-                    );
-                    require(
-                        (0 < fromTime) && (fromTime < block.timestamp),
-                        "ERC20Guild: Not allowed call"
-                    );
-                    require((valueAllowed >= proposals[proposalId].value[i]), "ERC20Guild: Not allowed value");
+                        _to,
+                        callDataFuncSignature,
+                        _value
+                    ) { } catch Error(string memory reason) {
+                        revert(reason);
+                    }
+
                     isExecutingProposal = true;
                     (bool success, ) = proposals[proposalId].to[i].call{
                         value: proposals[proposalId].value[i]
@@ -901,6 +919,21 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         returns (uint256)
     {
         return totalLocked.mul(votingPowerForProposalExecution).div(10000);
+    }
+
+    //@dev Decodes abi encoded data with selector for "transfer(address,uint256)".
+    //@param _data ERC20 address and value encoded data.
+    //@return to The account to receive the tokens
+    //@return value The value of tokens to be transfered/approved
+    function erc20TransferOrApproveDecode(bytes memory _data)
+        public
+        pure
+        returns (address to, uint256 value)
+    {
+        assembly {
+            to := mload(add(_data, 36))
+            value := mload(add(_data, 68))
+        }
     }
 
     // @dev Get the first four bytes (function signature) of a bytes variable

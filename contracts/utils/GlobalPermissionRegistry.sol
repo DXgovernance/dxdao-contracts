@@ -15,6 +15,9 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
  *   `value` uint256 and `fromTime` uint256, if `fromTime` is zero it means the function is not allowed.
  * The ERC20 transfer permissions are stored using the asset of the ERC20 and stores the `from` address, `to` address,
  *   `value` uint256 and `fromTime` uint256, if `fromTime` is zero it means the function is not allowed.
+ * The registry also allows the contracts to keep track on how much value was transferred for every asset in the actual
+ * block, it adds the value transferred in all permissions used, this means that if a wildcard value limit is set and
+ * a function limit is set it will add the value transferred in both of them.
  */
 
 contract GlobalPermissionRegistry {
@@ -35,6 +38,8 @@ contract GlobalPermissionRegistry {
     );
 
     struct Permission {
+        uint256 valueTransferred;
+        uint256 valueTransferedOnBlock;
         uint256 valueAllowed;
         uint256 fromTime;
         bool isSet;
@@ -44,6 +49,7 @@ contract GlobalPermissionRegistry {
     mapping(address => mapping(address => mapping(address => mapping(bytes4 => Permission))))
         public permissions;
 
+    Permission emptyPermission = Permission(0,0,0,0,false);
 
     /**
      * @dev Set the time delay for a call to show as allowed
@@ -124,12 +130,8 @@ contract GlobalPermissionRegistry {
                 permission = permissions[asset][from][to][ANY_SIGNATURE];
             }
             // Check if there is a value allowed to any address
-            else if (
-                permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet
-            ) {
-                permission = permissions[asset][from][ANY_ADDRESS][
-                    ANY_SIGNATURE
-                ];
+            else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
+                permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
             }
 
             // If the asset is ETH check if there is an allowance to any address and function signature
@@ -143,23 +145,93 @@ contract GlobalPermissionRegistry {
                 permission = permissions[asset][from][to][ANY_SIGNATURE];
             }
             // Check if there is there is an allowance to any address with the function signature
-            else if (
-                permissions[asset][from][ANY_ADDRESS][functionSignature].isSet
-            ) {
-                permission = permissions[asset][from][ANY_ADDRESS][
-                    functionSignature
-                ];
+            else if (permissions[asset][from][ANY_ADDRESS][functionSignature].isSet) {
+                permission = permissions[asset][from][ANY_ADDRESS][functionSignature];
             }
             // Check if there is there is an allowance to any address and any function
-            else if (
-                permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet
-            ) {
-                permission = permissions[asset][from][ANY_ADDRESS][
-                    ANY_SIGNATURE
-                ];
+            else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
+                permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
             }
         }
         return (permission.valueAllowed, permission.fromTime);
+    }
+
+    /**
+     * @dev Sets the value transferred in a a permission on the actual block and checks the allowed timestamp.
+     *      It also checks that the value does not go over the permission other global limits.
+     * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
+     * @param from The address from which the call will be executed
+     * @param to The address that will be called
+     * @param functionSignature The signature of the function to be executed
+     * @param valueTransferred The value to be transfered
+     */
+    function setPermissionUsed(
+        address asset,
+        address from,
+        address to,
+        bytes4 functionSignature,
+        uint256 valueTransferred
+    ) public {
+        uint256 fromTime = 0;
+
+        // If the asset is an ERC20 token check the value allowed to be transferred, no signature used
+        if (asset != address(0)) {
+            // Check if there is a value allowed to any address
+            if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
+                fromTime = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].fromTime;
+                _setValueTransferred(permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE], valueTransferred);
+            }
+            // Check if there is a value allowed specifically to the `to` address
+            if (permissions[asset][from][to][ANY_SIGNATURE].isSet) {
+                fromTime = permissions[asset][from][to][ANY_SIGNATURE].fromTime;
+                _setValueTransferred(permissions[asset][from][to][ANY_SIGNATURE], valueTransferred);
+            }
+
+            // If the asset is ETH check if there is an allowance to any address and function signature
+        } else {
+            // Check if there is there is an allowance to any address and any function
+            if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
+                fromTime = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].fromTime;
+                _setValueTransferred(permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE], valueTransferred);
+            }
+            // Check if there is there is an allowance to any address with the function signature
+            if (permissions[asset][from][ANY_ADDRESS][functionSignature].isSet) {
+                fromTime = permissions[asset][from][ANY_ADDRESS][functionSignature].fromTime;
+                _setValueTransferred(permissions[asset][from][ANY_ADDRESS][functionSignature], valueTransferred);
+            }
+            // Check is there an allowance to the implementation address for any function signature
+            if (permissions[asset][from][to][ANY_SIGNATURE].isSet) {
+                fromTime = permissions[asset][from][to][ANY_SIGNATURE].fromTime;
+                _setValueTransferred(permissions[asset][from][to][ANY_SIGNATURE], valueTransferred);
+            }
+            // Check is there an allowance to the implementation address with the function signature
+            if (permissions[asset][from][to][functionSignature].isSet) {
+                fromTime = permissions[asset][from][to][functionSignature].fromTime;
+                _setValueTransferred(permissions[asset][from][to][functionSignature], valueTransferred);
+            }
+        }
+        require(
+            fromTime > 0 && fromTime < block.timestamp,
+            "GlobalPermissionRegistry: Call not allowed"
+        );
+    }
+
+    /**
+     * @dev Sets the value transferred in a a permission on the actual block.
+     * @param permission The permission to add the value transferred
+     * @param valueTransferred The value to be transfered
+     */
+    function _setValueTransferred(Permission storage permission, uint256 valueTransferred) internal {
+        if (permission.valueTransferedOnBlock < block.number) {
+            permission.valueTransferedOnBlock = block.number;
+            permission.valueTransferred = valueTransferred;
+        } else {
+            permission.valueTransferred = permission.valueTransferred.add(valueTransferred);
+        }
+        require(
+            permission.valueTransferred <= permission.valueAllowed,
+            "GlobalPermissionRegistry: Value limit reached"
+        );
     }
 
     /**
