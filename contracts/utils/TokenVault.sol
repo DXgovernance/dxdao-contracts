@@ -48,4 +48,12 @@ contract TokenVault is Initializable{
       token.transfer(user, amount);
       balances[user] = balances[user].sub(amount);
     }
+
+    function getToken() public view returns(address) {
+      return address(token);
+    }
+
+    function getAdmin() public view returns(address) {
+      return admin;
+    }
 }
