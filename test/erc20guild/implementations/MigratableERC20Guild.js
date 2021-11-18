@@ -26,7 +26,7 @@ const TokenVault = artifacts.require("TokenVault.sol");
 
 require("chai").should();
 
-contract("ERC20Guild", function (accounts) {
+contract("MigratableERC20Guild", function (accounts) {
   const constants = helpers.constants;
   const ZERO = new BN("0");
   const VOTE_GAS = new BN(90000) // 90k
