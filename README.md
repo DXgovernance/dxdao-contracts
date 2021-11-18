@@ -127,35 +127,51 @@ The DXD Voting Machine is a fork of the the Genesis Protocol (GEN token voting m
 
 The smart contracts to add a very basic, efficient and flexible governance layer over an ERC20 token.
 
-The guild **executes previously authorized functions** to smart contracts after a proposal to execute that function reaches the **minimum amount of votes** using **locked tokens as voting power** after a **period of time**.
+The guild **executes previously authorized functions** to smart contracts after a proposal action to execute that function reaches the **minimum amount of votes** using **locked tokens as voting power** after a **period of time**.
 
-- The guild can execute only allowed functions, this means that if you want to call function X to smart contract P you will need to first submit a proposal to add the function X to smart contract P to be added to the allowed functions.
+- The guild can execute only allowed functions, this means that if you want to call function X to smart contract P you will need to first submit a proposal to allow the execution of function X to smart contract P.
+
+- A guild proposal can have none or multiple actions, each proposal action is a list of ethereum calls, that can execute functions and transfer value.
+
+- The voter can set his vote on a decision only once, the action voted cant be changed, only the voting power can be increased.
 
 - The voting power in the guild is based on the ERC20 token balance **locked by the voter**, that means that the tokens need to be locked for a minimum period of time in order to be used as voting power.
 
-- The voter only votes on a proposal with the voting power that had the moment in the proposal was created.
+- The tokens locked are held in a token vault, a smart contract owned and controlled by the guild.
 
 - A minimum amount of voting power can be required to create a proposal.
-
-- A proposal has only "positive" votes and the votes can be changed during the proposal voting period, this means that if the voter is against the proposal it does not need to vote.
 
 - The voter can vote on multiple proposals at the same time using different amount of voting power for each of them.
 
 - The voter can sign a vote that can be executed by other account on his behalf.
 
-- When a proposal is created it enters the voting period. Once the voting period passes if the proposal dont have enough votes to execute, it will be rejected. If it has enough votes to execute and executes successfully during a the execution period of time, it will be finished successfully. If during that execution period of time the approved proposal cant be executed it will be set as failed and wont be able to be executed again.
+- When a proposal is created it enters the voting period. Once the voting period passes if the is no proposal action with enough votes to execute, it will be rejected. If it has enough votes to execute and executes successfully during a the execution period of time, it will be finished successfully. If during that execution period of time the proposal action cant be executed it will be set as failed and wont be able to be executed again once the execution time ends.
 
 - The guild can be configured to automatically pay the voting costs back to the voter, for this the vote gas a max gas price to be use for vote refund needs to be set.
 
-- Each proposal has a description and a content hash that can be used to refer off-chain information.
+- Each proposal has a title and a content hash that can be used to refer off-chain information.
 
-### Drafts
-
-This folder holds smart contracts in dafts status, a place for dxdao worker to show smart contract ideas in code.
+### Implementations
 
 #### DXDGuild
 
-The DXDGuild is an ERC20Guild with minimal modifications designed to be used to vote on the Genesis Protocol Voting Machine. The DXDGuild will have an amount of REP that will be used to vote in favor or against DXdao proposals. The DXDGuild will create two proposals per DXdao proposal that wants to participate. One proposal will be to execute a positive vote on the Genesis Protocol and the other to execute a negative vote on the Genesis Protocol. The proposals are created at the same time and therefore they resolve at the same time.
+The DXDGuild is an ERC20Guild with minimal modifications designed to be used to vote on the Genesis Protocol Voting Machine. The DXDGuild will have an amount of REP that will be used to vote in favor or against DXdao proposals. The DXDGuild will create two proposals per DXdao proposal that wants to participate. Each proposal will have to actions, one to execute a positive vote on the voting machine and the other to execute a negative vote on the voting machine.
+
+#### GuardedERC20Guild
+
+And ERC20Guild with a time delay in the proposal execution, the guild has a guardian address, this guardian can end a proposal as soon as it reached end time,and the guild can only end the proposal after the end time plus the extra time added for the guardian check. The guardian can also reject proposals at any time.
+
+#### MigratableGuild
+
+An ERC20Guild with the functionality to migrate the ERC20 voting token used, the voters can lock their new tokens in the guild on a new token vault and after that a proposal can be executed by the guild to change the voting token and token vault used to a new one. The change will be immediate, the old tokens can still be withdrawn from the guild.
+
+#### SnapshotERC20Guild
+
+An ERC20Guild that keeps track of the voting power by saving a snapshot of the voting power each time a lock/withdraw of tokens happens. The voting power to be used on a proposal would be the one that the guild had at the moment of the proposal creation.
+
+#### SnapshotERC20REPGuild
+
+An ERC20Guild designed to with with a ERC20 Reputation Token, a token that is not transferable only can be minted and burned by the guild itself. Very similar to the REP token used by dxdao, this allows the guild to be used as a "mini" dxdao, a stepping stone to later growth to a governance 2.0 stack.
 
 ### Utils
 
