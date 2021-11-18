@@ -144,8 +144,7 @@ module.exports = {
     },
   },
   gasReporter: {
-    currency: 'USD',
-    enabled: process.env.ENABLE_GAS_REPORTER === 'true',
+    enabled: process.env.GAS_REPORTER === 'true',
   },
   networks: hardharNetworks,
   etherscan: { apiKey: ETHERSCAN_API_KEY },
