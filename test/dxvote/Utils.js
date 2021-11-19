@@ -183,14 +183,14 @@ contract("Dxvote Utils", function (accounts) {
         web3.utils.toChecksumAddress(event.address) === nftMinter.address
     );
     const vestingContract = await TokenVesting.at(
-      vestingCreatedEvent.values.vestingContractAddress
+      vestingCreatedEvent.args.vestingContractAddress
     );
     assert.equal(
-      await nftMinter.ownerOf(nftMintedEvent.values.tokenId),
+      await nftMinter.ownerOf(nftMintedEvent.args.tokenId),
       accounts[3]
     );
     assert.equal(
-      await nftMinter.tokenURI(nftMintedEvent.values.tokenId),
+      await nftMinter.tokenURI(nftMintedEvent.args.tokenId),
       "tokenURIHere"
     );
     assert.equal(await vestingContract.start(), vestingStart);

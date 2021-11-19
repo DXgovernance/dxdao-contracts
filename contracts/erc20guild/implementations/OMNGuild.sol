@@ -1,20 +1,20 @@
-// SPDX-License-Identifier: AGPL-3.0
+/* // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
 pragma experimental ABIEncoderV2;
 
-import "../erc20guild/ERC20Guild.sol";
+import "../erc20guild/implementations/LockableERC20Guild.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "../realitio/IRealitio.sol";
 
-/// @title OMNGuild - OMEN Token ERC20Guild
-/// The OMN guild will use the OMN token for governance, having to lock the tokens, and needing a minimum amount of
-/// tokens locked to create proposals.
-/// The guild will be used for OMN token governance and to arbitrate markets validation in omen, using realit.io
-/// boolean question markets "Is market MARKET_ID valid?".
-/// The guild will be summoned to arbitrate a market validation if required.
-/// The voters who vote in market validation proposals will recieve a vote reward.
-contract OMNGuild is ERC20Guild {
+// @title OMNGuild - OMEN Token ERC20Guild
+// The OMN guild will use the OMN token for governance, having to lock the tokens, and needing a minimum amount of
+// tokens locked to create proposals.
+// The guild will be used for OMN token governance and to arbitrate markets validation in omen, using realit.io
+// boolean question markets "Is market MARKET_ID valid?".
+// The guild will be summoned to arbitrate a market validation if required.
+// The voters who vote in market validation proposals will recieve a vote reward.
+contract OMNGuild is LockableERC20Guild {
     using SafeMathUpgradeable for uint256;
 
     // The max amount of votes that can de used in a proposal
@@ -62,20 +62,22 @@ contract OMNGuild is ERC20Guild {
         uint256 _votingPowerForProposalCreation
     );
 
-    /// @dev Initilizer
-    /// Sets the call permission to arbitrate markets allowed by default and create the market question tempate in
-    /// realit.io to be used on markets created with the guild
-    /// @param _token The address of the token to be used
-    /// @param _proposalTime The minimum time for a proposal to be under votation
-    /// @param _timeForExecution The amount of time that a proposal has to be executed before being ended
-    /// @param _votingPowerForProposalExecution The % of total voting power needed for a proposal to be executed based
-    /// on the token total supply. 10000 == 100%, 5000 == 50% and 2500 == 25%
-    /// @param _votingPowerForProposalCreation The amount of votes (in wei unit) needed for a proposal to be created
-    /// @param _voteGas The gas to be used to calculate the vote gas refund
-    /// @param _maxGasPrice The maximum gas price to be refunded
-    /// @param _lockTime The minimum amount of seconds that the tokens would be locked
-    /// @param _maxAmountVotes The max amount of votes allowed ot have
-    /// @param _realitIO The address of the realitIO contract
+    // @dev Initilizer
+    // Sets the call permission to arbitrate markets allowed by default and create the market question tempate in
+    // realit.io to be used on markets created with the guild
+    // @param _token The address of the token to be used
+    // @param _proposalTime The minimum time for a proposal to be under votation
+    // @param _timeForExecution The amount of time that a proposal has to be executed before being ended
+    // @param _votingPowerForProposalExecution The % of total voting power needed for a proposal to be executed based
+    // on the token total supply. 10000 == 100%, 5000 == 50% and 2500 == 25%
+    // @param _votingPowerForProposalCreation The amount of votes (in wei unit) needed for a proposal to be created
+    // @param _voteGas The gas to be used to calculate the vote gas refund
+    // @param _maxGasPrice The maximum gas price to be refunded
+    // @param _permissionDelay The amount of seconds that are going to be added over the timestamp of the block when
+    // a permission is allowed
+    // @param _lockTime The minimum amount of seconds that the tokens would be locked
+    // @param _maxAmountVotes The max amount of votes allowed ot have
+    // @param _realitIO The address of the realitIO contract
     function initialize(
         address _token,
         uint256 _proposalTime,
@@ -84,22 +86,36 @@ contract OMNGuild is ERC20Guild {
         uint256 _votingPowerForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
+        uint256 _permissionDelay,
         uint256 _lockTime,
         uint256 _maxAmountVotes,
         IRealitio _realitIO
     ) public initializer {
-        super.initialize(
+        require(
+            address(_token) != address(0),
+            "ERC20Guild: token is the zero address"
+        );
+        _initialize(
             _token,
             _proposalTime,
             _timeForExecution,
             _votingPowerForProposalExecution,
             _votingPowerForProposalCreation,
-            "OMNGuild",
+            "LockableERC20Guild",
             _voteGas,
             _maxGasPrice,
-            _lockTime,
-            1
+            _permissionDelay
         );
+        tokenVault = new TokenVault();
+        tokenVault.initialize(address(token), address(this));
+        lockTime = _lockTime;
+        callPermissions[address(this)][
+            bytes4(
+                keccak256(
+                    "setLockTime(uint256)"
+                )
+            )
+        ] = block.timestamp;
         realitIO = _realitIO;
         maxAmountVotes = _maxAmountVotes;
         submitAnswerByArbitratorSignature = bytes4(
@@ -120,15 +136,16 @@ contract OMNGuild is ERC20Guild {
                 )
             )
         ] = block.timestamp;
+        initialized = true;
     }
 
-    /// @dev Set OMNGuild specific parameters
-    /// @param _maxAmountVotes The max amount of votes allowed ot have
-    /// @param _realitIO The address of the realitIO contract
-    /// @param _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a succesful
-    ///  vote
-    /// @param _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccesful
-    ///  vote
+    // @dev Set OMNGuild specific parameters
+    // @param _maxAmountVotes The max amount of votes allowed ot have
+    // @param _realitIO The address of the realitIO contract
+    // @param _successfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a succesful
+    //  vote
+    // @param _unsuccessfulVoteReward The amount of OMN tokens in wei unit to be reward to a voter after a unsuccesful
+    //  vote
     function setOMNGuildConfig(
         uint256 _maxAmountVotes,
         IRealitio _realitIO,
@@ -145,8 +162,8 @@ contract OMNGuild is ERC20Guild {
         unsuccessfulVoteReward = _unsuccessfulVoteReward;
     }
 
-    /// @dev Create two proposals one to vote for the validation fo a market in realitIO
-    /// @param questionId the id of the question to be validated in realitiyIo
+    // @dev Create two proposals one to vote for the validation fo a market in realitIO
+    // @param questionId the id of the question to be validated in realitiyIo
     function createMarketValidationProposal(bytes32 questionId)
         public
         isInitialized
@@ -208,8 +225,8 @@ contract OMNGuild is ERC20Guild {
         realitIO.notifyOfArbitrationRequest(questionId, msg.sender, 0);
     }
 
-    /// @dev Ends the market validation by executing the proposal with higher votes and rejecting the other
-    /// @param questionId the proposalId of the voting machine
+    // @dev Ends the market validation by executing the proposal with higher votes and rejecting the other
+    // @param questionId the proposalId of the voting machine
     function endMarketValidationProposal(bytes32 questionId) public {
         Proposal storage marketValidProposal =
             proposals[marketValidationProposals[questionId].marketValid];
@@ -248,9 +265,9 @@ contract OMNGuild is ERC20Guild {
         }
     }
 
-    /// @dev Execute a proposal that has already passed the votation time and has enough votes
-    /// This function cant end market validation proposals
-    /// @param proposalId The id of the proposal to be executed
+    // @dev Execute a proposal that has already passed the votation time and has enough votes
+    // This function cant end market validation proposals
+    // @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public override {
         require(
             proposalsForMarketValidation[proposalId] == bytes32(0),
@@ -267,9 +284,9 @@ contract OMNGuild is ERC20Guild {
         _endProposal(proposalId);
     }
 
-    /// @dev Claim the vote rewards of multiple proposals at once
-    /// @param proposalIds The ids of the proposal already finished were a vote was set and vote reward not claimed
-    /// @param voter The address of the voter to receiver the rewards
+    // @dev Claim the vote rewards of multiple proposals at once
+    // @param proposalIds The ids of the proposal already finished were a vote was set and vote reward not claimed
+    // @param voter The address of the voter to receiver the rewards
     function claimMarketValidationVoteRewards(
         bytes32[] memory proposalIds,
         address voter
@@ -317,11 +334,11 @@ contract OMNGuild is ERC20Guild {
         _sendTokenReward(voter, reward);
     }
 
-    /// @dev Internal function to set the amount of votingPower to vote in a proposal
-    /// It also checks that the vote is done only once in marketValidationProposals proposal
-    /// @param voter The address of the voter
-    /// @param proposalId The id of the proposal to set the vote
-    /// @param votingPower The amount of votingPower to use as voting for the proposal
+    // @dev Internal function to set the amount of votingPower to vote in a proposal
+    // It also checks that the vote is done only once in marketValidationProposals proposal
+    // @param voter The address of the voter
+    // @param proposalId The id of the proposal to set the vote
+    // @param votingPower The amount of votingPower to use as voting for the proposal
     function _setVote(
         address voter,
         bytes32 proposalId,
@@ -388,9 +405,9 @@ contract OMNGuild is ERC20Guild {
         proposals[proposalId].votes[voter] = votingPower;
     }
 
-    /// @dev Internal function to send a reward of OMN tokens (if the balance is enough) to an address
-    /// @param to The address to recieve the token
-    /// @param amount The amount of OMN tokens to be sent in wei units
+    // @dev Internal function to send a reward of OMN tokens (if the balance is enough) to an address
+    // @param to The address to recieve the token
+    // @param amount The amount of OMN tokens to be sent in wei units
     function _sendTokenReward(address to, uint256 amount) internal {
         require(
             token.balanceOf(address(this)) > amount,
@@ -399,7 +416,7 @@ contract OMNGuild is ERC20Guild {
         token.transfer(to, amount);
     }
 
-    /// @dev Get minimum amount of votes needed for creation
+    // @dev Get minimum amount of votes needed for creation
     function getVotingPowerForProposalCreation()
         public
         view
@@ -409,7 +426,7 @@ contract OMNGuild is ERC20Guild {
         return votingPowerForProposalCreation;
     }
 
-    /// @dev Get minimum amount of votes needed for proposal execution
+    // @dev Get minimum amount of votes needed for proposal execution
     function getVotingPowerForProposalExecution()
         public
         view
@@ -419,10 +436,10 @@ contract OMNGuild is ERC20Guild {
         return totalLocked.mul(votingPowerForProposalExecution).div(10000);
     }
 
-    /// @dev set special proposer permissions
-    /// @param _proposer The address to allow
-    /// @param _proposalTime The minimum time for a proposal to be under votation
-    /// @param _votingPowerForProposalCreation The minimum balance of tokens needed to create a proposal
+    // @dev set special proposer permissions
+    // @param _proposer The address to allow
+    // @param _proposalTime The minimum time for a proposal to be under votation
+    // @param _votingPowerForProposalCreation The minimum balance of tokens needed to create a proposal
     function setSpecialProposerPermission(
         address _proposer,
         uint256 _proposalTime,
@@ -443,12 +460,12 @@ contract OMNGuild is ERC20Guild {
         );
     }
 
-    /// @dev Create a proposal with a static call data
-    /// @param to The receiver addresses of each call to be executed
-    /// @param data The data to be executed on each call to be executed
-    /// @param value The ETH value to be sent on each call to be executed
-    /// @param description A short description of the proposal
-    /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
+    // @dev Create a proposal with a static call data
+    // @param to The receiver addresses of each call to be executed
+    // @param data The data to be executed on each call to be executed
+    // @param value The ETH value to be sent on each call to be executed
+    // @param description A short description of the proposal
+    // @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
         address[] memory to,
         bytes[] memory data,
@@ -478,4 +495,4 @@ contract OMNGuild is ERC20Guild {
 
         return proposalId;
     }
-}
+} */

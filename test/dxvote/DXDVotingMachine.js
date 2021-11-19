@@ -28,7 +28,7 @@ contract("DXDVotingMachine", function (accounts) {
 
   function testCallFrom(address) {
     return new web3.eth.Contract(ActionMock.abi).methods
-      .test(address)
+      .test(address, 1)
       .encodeABI();
   }
 

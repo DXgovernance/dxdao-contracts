@@ -97,29 +97,34 @@ export async function createDAO(
 
 export async function createProposal({
   guild,
-  to,
-  data,
-  value,
-  description,
-  contentHash,
-  account,
+  actions,
+  title = constants.TEST_TITLE,
+  contentHash = constants.SOME_HASH,
+  account
 }) {
+  const callsTo = [], callsData = [], callsValue = [];
+  
+  actions.map(action => {
+    action.to.map(to => callsTo.push(to));
+    action.data.map(data => callsData.push(data));
+    action.value.map(value => callsValue.push(value));
+  });
+ 
   const tx = await guild.createProposal(
-    to,
-    data,
-    value,
-    description,
+    callsTo,
+    callsData,
+    callsValue,
+    actions.length,
+    title,
     contentHash,
     { from: account }
   );
-
-  // Return proposal ID
-  return helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
+  return helpers.getValueFromLogs(tx, "proposalId", "ProposalStateChanged");
 }
 
-export async function setAllVotesOnProposal({ guild, proposalId, account }) {
+export async function setAllVotesOnProposal({ guild, proposalId, action, account }) {
   const votingPower = await guild.votingPowerOf(account);
-  return guild.setVote(proposalId, votingPower, { from: account });
+  return guild.setVote(proposalId, action, votingPower, { from: account });
 }
 
 export async function setXVotesOnProposal({

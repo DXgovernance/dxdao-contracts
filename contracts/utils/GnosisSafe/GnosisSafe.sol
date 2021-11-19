@@ -4,8 +4,8 @@
 
 pragma solidity >=0.5.0 <0.7.0;
 
-/// @title SelfAuthorized - authorizes current contract to perform actions
-/// @author Richard Meissner - <richard@gnosis.pm>
+// @title SelfAuthorized - authorizes current contract to perform actions
+// @author Richard Meissner - <richard@gnosis.pm>
 contract SelfAuthorized {
     modifier authorized() {
         require(msg.sender == address(this), "Method can only be called from this contract");
@@ -15,9 +15,9 @@ contract SelfAuthorized {
 
 
 
-/// @title MasterCopy - Base for master copy contracts (should always be first super contract)
-///         This contract is tightly coupled to our proxy contract (see `proxies/Proxy.sol`)
-/// @author Richard Meissner - <richard@gnosis.io>
+// @title MasterCopy - Base for master copy contracts (should always be first super contract)
+//         This contract is tightly coupled to our proxy contract (see `proxies/Proxy.sol`)
+// @author Richard Meissner - <richard@gnosis.io>
 contract MasterCopy is SelfAuthorized {
 
     event ChangedMasterCopy(address masterCopy);
@@ -26,8 +26,8 @@ contract MasterCopy is SelfAuthorized {
     // It should also always be ensured that the address is stored alone (uses a full word)
     address private masterCopy;
 
-    /// @dev Allows to upgrade the contract. This can only be done via a Safe transaction.
-    /// @param _masterCopy New contract address.
+    // @dev Allows to upgrade the contract. This can only be done via a Safe transaction.
+    // @param _masterCopy New contract address.
     function changeMasterCopy(address _masterCopy)
         public
         authorized
@@ -40,9 +40,9 @@ contract MasterCopy is SelfAuthorized {
 }
 
 
-/// @title Module - Base class for modules.
-/// @author Stefan George - <stefan@gnosis.pm>
-/// @author Richard Meissner - <richard@gnosis.pm>
+// @title Module - Base class for modules.
+// @author Stefan George - <stefan@gnosis.pm>
+// @author Richard Meissner - <richard@gnosis.pm>
 contract Module is MasterCopy {
 
     ModuleManager public manager;
@@ -66,8 +66,8 @@ contract Module is MasterCopy {
 
 
 
-/// @title Enum - Collection of enums
-/// @author Richard Meissner - <richard@gnosis.pm>
+// @title Enum - Collection of enums
+// @author Richard Meissner - <richard@gnosis.pm>
 contract Enum {
     enum Operation {
         Call,
@@ -79,8 +79,8 @@ contract Enum {
 
 
 
-/// @title Executor - A contract that can execute transactions
-/// @author Richard Meissner - <richard@gnosis.pm>
+// @title Executor - A contract that can execute transactions
+// @author Richard Meissner - <richard@gnosis.pm>
 contract Executor {
 
     function execute(address to, uint256 value, bytes memory data, Enum.Operation operation, uint256 txGas)
@@ -118,14 +118,14 @@ contract Executor {
 
 
 
-/// @title SecuredTokenTransfer - Secure token transfer
-/// @author Richard Meissner - <richard@gnosis.pm>
+// @title SecuredTokenTransfer - Secure token transfer
+// @author Richard Meissner - <richard@gnosis.pm>
 contract SecuredTokenTransfer {
 
-    /// @dev Transfers a token and returns if it was a success
-    /// @param token Token that should be transferred
-    /// @param receiver Receiver to whom the token should be transferred
-    /// @param amount The amount of tokens that should be transferred
+    // @dev Transfers a token and returns if it was a success
+    // @param token Token that should be transferred
+    // @param receiver Receiver to whom the token should be transferred
+    // @param amount The amount of tokens that should be transferred
     function transferToken (
         address token,
         address receiver,
@@ -158,9 +158,9 @@ contract SecuredTokenTransfer {
 
 
 
-/// @title Module Manager - A contract that manages modules that can execute transactions via this contract
-/// @author Stefan George - <stefan@gnosis.pm>
-/// @author Richard Meissner - <richard@gnosis.pm>
+// @title Module Manager - A contract that manages modules that can execute transactions via this contract
+// @author Stefan George - <stefan@gnosis.pm>
+// @author Richard Meissner - <richard@gnosis.pm>
 contract ModuleManager is SelfAuthorized, Executor {
 
     event EnabledModule(Module module);
@@ -182,9 +182,9 @@ contract ModuleManager is SelfAuthorized, Executor {
             require(executeDelegateCall(to, data, gasleft()), "Could not finish initialization");
     }
 
-    /// @dev Allows to add a module to the whitelist.
-    ///      This can only be done via a Safe transaction.
-    /// @param module Module to be whitelisted.
+    // @dev Allows to add a module to the whitelist.
+    //      This can only be done via a Safe transaction.
+    // @param module Module to be whitelisted.
     function enableModule(Module module)
         public
         authorized
@@ -198,10 +198,10 @@ contract ModuleManager is SelfAuthorized, Executor {
         emit EnabledModule(module);
     }
 
-    /// @dev Allows to remove a module from the whitelist.
-    ///      This can only be done via a Safe transaction.
-    /// @param prevModule Module that pointed to the module to be removed in the linked list
-    /// @param module Module to be removed.
+    // @dev Allows to remove a module from the whitelist.
+    //      This can only be done via a Safe transaction.
+    // @param prevModule Module that pointed to the module to be removed in the linked list
+    // @param module Module to be removed.
     function disableModule(Module prevModule, Module module)
         public
         authorized
@@ -214,11 +214,11 @@ contract ModuleManager is SelfAuthorized, Executor {
         emit DisabledModule(module);
     }
 
-    /// @dev Allows a Module to execute a Safe transaction without any further confirmations.
-    /// @param to Destination address of module transaction.
-    /// @param value Ether value of module transaction.
-    /// @param data Data payload of module transaction.
-    /// @param operation Operation type of module transaction.
+    // @dev Allows a Module to execute a Safe transaction without any further confirmations.
+    // @param to Destination address of module transaction.
+    // @param value Ether value of module transaction.
+    // @param data Data payload of module transaction.
+    // @param operation Operation type of module transaction.
     function execTransactionFromModule(address to, uint256 value, bytes memory data, Enum.Operation operation)
         public
         returns (bool success)
@@ -231,11 +231,11 @@ contract ModuleManager is SelfAuthorized, Executor {
         else emit ExecutionFromModuleFailure(msg.sender);
     }
 
-    /// @dev Allows a Module to execute a Safe transaction without any further confirmations and return data
-    /// @param to Destination address of module transaction.
-    /// @param value Ether value of module transaction.
-    /// @param data Data payload of module transaction.
-    /// @param operation Operation type of module transaction.
+    // @dev Allows a Module to execute a Safe transaction without any further confirmations and return data
+    // @param to Destination address of module transaction.
+    // @param value Ether value of module transaction.
+    // @param data Data payload of module transaction.
+    // @param operation Operation type of module transaction.
     function execTransactionFromModuleReturnData(address to, uint256 value, bytes memory data, Enum.Operation operation)
         public
         returns (bool success, bytes memory returnData)
@@ -257,8 +257,8 @@ contract ModuleManager is SelfAuthorized, Executor {
         }
     }
 
-    /// @dev Returns array of first 10 modules.
-    /// @return Array of modules.
+    // @dev Returns array of first 10 modules.
+    // @return Array of modules.
     function getModules()
         public
         view
@@ -268,10 +268,10 @@ contract ModuleManager is SelfAuthorized, Executor {
         return array;
     }
 
-    /// @dev Returns array of modules.
-    /// @param start Start of the page.
-    /// @param pageSize Maximum number of modules that should be returned.
-    /// @return Array of modules.
+    // @dev Returns array of modules.
+    // @param start Start of the page.
+    // @param pageSize Maximum number of modules that should be returned.
+    // @return Array of modules.
     function getModulesPaginated(address start, uint256 pageSize)
         public
         view
@@ -300,9 +300,9 @@ contract ModuleManager is SelfAuthorized, Executor {
 
 
 
-/// @title OwnerManager - Manages a set of owners and a threshold to perform actions.
-/// @author Stefan George - <stefan@gnosis.pm>
-/// @author Richard Meissner - <richard@gnosis.pm>
+// @title OwnerManager - Manages a set of owners and a threshold to perform actions.
+// @author Stefan George - <stefan@gnosis.pm>
+// @author Richard Meissner - <richard@gnosis.pm>
 contract OwnerManager is SelfAuthorized {
 
     event AddedOwner(address owner);
@@ -315,9 +315,9 @@ contract OwnerManager is SelfAuthorized {
     uint256 ownerCount;
     uint256 internal threshold;
 
-    /// @dev Setup function sets initial storage of contract.
-    /// @param _owners List of Safe owners.
-    /// @param _threshold Number of required confirmations for a Safe transaction.
+    // @dev Setup function sets initial storage of contract.
+    // @param _owners List of Safe owners.
+    // @param _threshold Number of required confirmations for a Safe transaction.
     function setupOwners(address[] memory _owners, uint256 _threshold)
         internal
     {
@@ -344,10 +344,10 @@ contract OwnerManager is SelfAuthorized {
         threshold = _threshold;
     }
 
-    /// @dev Allows to add a new owner to the Safe and update the threshold at the same time.
-    ///      This can only be done via a Safe transaction.
-    /// @param owner New owner address.
-    /// @param _threshold New threshold.
+    // @dev Allows to add a new owner to the Safe and update the threshold at the same time.
+    //      This can only be done via a Safe transaction.
+    // @param owner New owner address.
+    // @param _threshold New threshold.
     function addOwnerWithThreshold(address owner, uint256 _threshold)
         public
         authorized
@@ -365,11 +365,11 @@ contract OwnerManager is SelfAuthorized {
             changeThreshold(_threshold);
     }
 
-    /// @dev Allows to remove an owner from the Safe and update the threshold at the same time.
-    ///      This can only be done via a Safe transaction.
-    /// @param prevOwner Owner that pointed to the owner to be removed in the linked list
-    /// @param owner Owner address to be removed.
-    /// @param _threshold New threshold.
+    // @dev Allows to remove an owner from the Safe and update the threshold at the same time.
+    //      This can only be done via a Safe transaction.
+    // @param prevOwner Owner that pointed to the owner to be removed in the linked list
+    // @param owner Owner address to be removed.
+    // @param _threshold New threshold.
     function removeOwner(address prevOwner, address owner, uint256 _threshold)
         public
         authorized
@@ -388,11 +388,11 @@ contract OwnerManager is SelfAuthorized {
             changeThreshold(_threshold);
     }
 
-    /// @dev Allows to swap/replace an owner from the Safe with another address.
-    ///      This can only be done via a Safe transaction.
-    /// @param prevOwner Owner that pointed to the owner to be replaced in the linked list
-    /// @param oldOwner Owner address to be replaced.
-    /// @param newOwner New owner address.
+    // @dev Allows to swap/replace an owner from the Safe with another address.
+    //      This can only be done via a Safe transaction.
+    // @param prevOwner Owner that pointed to the owner to be replaced in the linked list
+    // @param oldOwner Owner address to be replaced.
+    // @param newOwner New owner address.
     function swapOwner(address prevOwner, address oldOwner, address newOwner)
         public
         authorized
@@ -411,9 +411,9 @@ contract OwnerManager is SelfAuthorized {
         emit AddedOwner(newOwner);
     }
 
-    /// @dev Allows to update the number of required confirmations by Safe owners.
-    ///      This can only be done via a Safe transaction.
-    /// @param _threshold New threshold.
+    // @dev Allows to update the number of required confirmations by Safe owners.
+    //      This can only be done via a Safe transaction.
+    // @param _threshold New threshold.
     function changeThreshold(uint256 _threshold)
         public
         authorized
@@ -442,8 +442,8 @@ contract OwnerManager is SelfAuthorized {
         return owner != SENTINEL_OWNERS && owners[owner] != address(0);
     }
 
-    /// @dev Returns array of owners.
-    /// @return Array of Safe owners.
+    // @dev Returns array of owners.
+    // @return Array of Safe owners.
     function getOwners()
         public
         view
@@ -467,8 +467,8 @@ contract OwnerManager is SelfAuthorized {
 
 
 
-/// @title Fallback Manager - A contract that manages fallback calls made to this contract
-/// @author Richard Meissner - <richard@gnosis.pm>
+// @title Fallback Manager - A contract that manages fallback calls made to this contract
+// @author Richard Meissner - <richard@gnosis.pm>
 contract FallbackManager is SelfAuthorized {
 
     // keccak256("fallback_manager.handler.address")
@@ -482,10 +482,10 @@ contract FallbackManager is SelfAuthorized {
         }
     }
 
-    /// @dev Allows to add a contract to handle fallback calls.
-    ///      Only fallback calls without value and with data will be forwarded.
-    ///      This can only be done via a Safe transaction.
-    /// @param handler contract to handle fallbacks calls.
+    // @dev Allows to add a contract to handle fallback calls.
+    //      Only fallback calls without value and with data will be forwarded.
+    //      This can only be done via a Safe transaction.
+    // @param handler contract to handle fallbacks calls.
     function setFallbackHandler(address handler)
         public
         authorized
@@ -527,15 +527,15 @@ contract FallbackManager is SelfAuthorized {
 
 
 
-/// @title SignatureDecoder - Decodes signatures that a encoded as bytes
-/// @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
-/// @author Richard Meissner - <richard@gnosis.pm>
+// @title SignatureDecoder - Decodes signatures that a encoded as bytes
+// @author Ricardo Guilherme Schmidt (Status Research & Development GmbH)
+// @author Richard Meissner - <richard@gnosis.pm>
 contract SignatureDecoder {
     
-    /// @dev Recovers address who signed the message
-    /// @param messageHash operation ethereum signed message hash
-    /// @param messageSignature message `txHash` signature
-    /// @param pos which signature to read
+    // @dev Recovers address who signed the message
+    // @param messageHash operation ethereum signed message hash
+    // @param messageSignature message `txHash` signature
+    // @param pos which signature to read
     function recoverKey (
         bytes32 messageHash,
         bytes memory messageSignature,
@@ -552,10 +552,10 @@ contract SignatureDecoder {
         return ecrecover(messageHash, v, r, s);
     }
 
-    /// @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s`.
-    /// @notice Make sure to peform a bounds check for @param pos, to avoid out of bounds access on @param signatures
-    /// @param pos which signature to read. A prior bounds check of this parameter should be performed, to avoid out of bounds access
-    /// @param signatures concatenated rsv signatures
+    // @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s`.
+    // @notice Make sure to peform a bounds check for @param pos, to avoid out of bounds access on @param signatures
+    // @param pos which signature to read. A prior bounds check of this parameter should be performed, to avoid out of bounds access
+    // @param signatures concatenated rsv signatures
     function signatureSplit(bytes memory signatures, uint256 pos)
         internal
         pure
@@ -672,10 +672,10 @@ library SafeMath {
   }
 }
 
-/// @title Gnosis Safe - A multisignature wallet with support for confirmations using signed messages based on ERC191.
-/// @author Stefan George - <stefan@gnosis.io>
-/// @author Richard Meissner - <richard@gnosis.io>
-/// @author Ricardo Guilherme Schmidt - (Status Research & Development GmbH) - Gas Token Payment
+// @title Gnosis Safe - A multisignature wallet with support for confirmations using signed messages based on ERC191.
+// @author Stefan George - <stefan@gnosis.io>
+// @author Richard Meissner - <richard@gnosis.io>
+// @author Ricardo Guilherme Schmidt - (Status Research & Development GmbH) - Gas Token Payment
 contract GnosisSafe
     is MasterCopy, ModuleManager, OwnerManager, SignatureDecoder, SecuredTokenTransfer, ISignatureValidatorConstants, FallbackManager {
 
@@ -728,15 +728,15 @@ contract GnosisSafe
         threshold = 1;
     }
 
-    /// @dev Setup function sets initial storage of contract.
-    /// @param _owners List of Safe owners.
-    /// @param _threshold Number of required confirmations for a Safe transaction.
-    /// @param to Contract address for optional delegate call.
-    /// @param data Data payload for optional delegate call.
-    /// @param fallbackHandler Handler for fallback calls to this contract
-    /// @param paymentToken Token that should be used for the payment (0 is ETH)
-    /// @param payment Value that should be paid
-    /// @param paymentReceiver Adddress that should receive the payment (or 0 if tx.origin)
+    // @dev Setup function sets initial storage of contract.
+    // @param _owners List of Safe owners.
+    // @param _threshold Number of required confirmations for a Safe transaction.
+    // @param to Contract address for optional delegate call.
+    // @param data Data payload for optional delegate call.
+    // @param fallbackHandler Handler for fallback calls to this contract
+    // @param paymentToken Token that should be used for the payment (0 is ETH)
+    // @param payment Value that should be paid
+    // @param paymentReceiver Adddress that should receive the payment (or 0 if tx.origin)
     function setup(
         address[] calldata _owners,
         uint256 _threshold,
@@ -763,18 +763,18 @@ contract GnosisSafe
         }
     }
 
-    /// @dev Allows to execute a Safe transaction confirmed by required number of owners and then pays the account that submitted the transaction.
-    ///      Note: The fees are always transfered, even if the user transaction fails.
-    /// @param to Destination address of Safe transaction.
-    /// @param value Ether value of Safe transaction.
-    /// @param data Data payload of Safe transaction.
-    /// @param operation Operation type of Safe transaction.
-    /// @param safeTxGas Gas that should be used for the Safe transaction.
-    /// @param baseGas Gas costs for that are indipendent of the transaction execution(e.g. base transaction fee, signature check, payment of the refund)
-    /// @param gasPrice Gas price that should be used for the payment calculation.
-    /// @param gasToken Token address (or 0 if ETH) that is used for the payment.
-    /// @param refundReceiver Address of receiver of gas payment (or 0 if tx.origin).
-    /// @param signatures Packed signature data ({bytes32 r}{bytes32 s}{uint8 v})
+    // @dev Allows to execute a Safe transaction confirmed by required number of owners and then pays the account that submitted the transaction.
+    //      Note: The fees are always transfered, even if the user transaction fails.
+    // @param to Destination address of Safe transaction.
+    // @param value Ether value of Safe transaction.
+    // @param data Data payload of Safe transaction.
+    // @param operation Operation type of Safe transaction.
+    // @param safeTxGas Gas that should be used for the Safe transaction.
+    // @param baseGas Gas costs for that are indipendent of the transaction execution(e.g. base transaction fee, signature check, payment of the refund)
+    // @param gasPrice Gas price that should be used for the payment calculation.
+    // @param gasToken Token address (or 0 if ETH) that is used for the payment.
+    // @param refundReceiver Address of receiver of gas payment (or 0 if tx.origin).
+    // @param signatures Packed signature data ({bytes32 r}{bytes32 s}{uint8 v})
     function execTransaction(
         address to,
         uint256 value,
@@ -922,17 +922,17 @@ contract GnosisSafe
         }
     }
 
-    /// @dev Allows to estimate a Safe transaction.
-    ///      This method is only meant for estimation purpose, therefore two different protection mechanism against execution in a transaction have been made:
-    ///      1.) The method can only be called from the safe itself
-    ///      2.) The response is returned with a revert
-    ///      When estimating set `from` to the address of the safe.
-    ///      Since the `estimateGas` function includes refunds, call this method to get an estimated of the costs that are deducted from the safe with `execTransaction`
-    /// @param to Destination address of Safe transaction.
-    /// @param value Ether value of Safe transaction.
-    /// @param data Data payload of Safe transaction.
-    /// @param operation Operation type of Safe transaction.
-    /// @return Estimate without refunds and overhead fees (base transaction and payload data gas costs).
+    // @dev Allows to estimate a Safe transaction.
+    //      This method is only meant for estimation purpose, therefore two different protection mechanism against execution in a transaction have been made:
+    //      1.) The method can only be called from the safe itself
+    //      2.) The response is returned with a revert
+    //      When estimating set `from` to the address of the safe.
+    //      Since the `estimateGas` function includes refunds, call this method to get an estimated of the costs that are deducted from the safe with `execTransaction`
+    // @param to Destination address of Safe transaction.
+    // @param value Ether value of Safe transaction.
+    // @param data Data payload of Safe transaction.
+    // @param operation Operation type of Safe transaction.
+    // @return Estimate without refunds and overhead fees (base transaction and payload data gas costs).
     function requiredTxGas(address to, uint256 value, bytes calldata data, Enum.Operation operation)
         external
         authorized
@@ -995,9 +995,9 @@ contract GnosisSafe
         return EIP1271_MAGIC_VALUE;
     }
 
-    /// @dev Returns hash of a message that can be signed by owners.
-    /// @param message Message that should be hashed
-    /// @return Message hash.
+    // @dev Returns hash of a message that can be signed by owners.
+    // @param message Message that should be hashed
+    // @return Message hash.
     function getMessageHash(
         bytes memory message
     )
@@ -1013,18 +1013,18 @@ contract GnosisSafe
         );
     }
 
-    /// @dev Returns the bytes that are hashed to be signed by owners.
-    /// @param to Destination address.
-    /// @param value Ether value.
-    /// @param data Data payload.
-    /// @param operation Operation type.
-    /// @param safeTxGas Fas that should be used for the safe transaction.
-    /// @param baseGas Gas costs for data used to trigger the safe transaction.
-    /// @param gasPrice Maximum gas price that should be used for this transaction.
-    /// @param gasToken Token address (or 0 if ETH) that is used for the payment.
-    /// @param refundReceiver Address of receiver of gas payment (or 0 if tx.origin).
-    /// @param _nonce Transaction nonce.
-    /// @return Transaction hash bytes.
+    // @dev Returns the bytes that are hashed to be signed by owners.
+    // @param to Destination address.
+    // @param value Ether value.
+    // @param data Data payload.
+    // @param operation Operation type.
+    // @param safeTxGas Fas that should be used for the safe transaction.
+    // @param baseGas Gas costs for data used to trigger the safe transaction.
+    // @param gasPrice Maximum gas price that should be used for this transaction.
+    // @param gasToken Token address (or 0 if ETH) that is used for the payment.
+    // @param refundReceiver Address of receiver of gas payment (or 0 if tx.origin).
+    // @param _nonce Transaction nonce.
+    // @return Transaction hash bytes.
     function encodeTransactionData(
         address to,
         uint256 value,
@@ -1047,18 +1047,18 @@ contract GnosisSafe
         return abi.encodePacked(byte(0x19), byte(0x01), domainSeparator, safeTxHash);
     }
 
-    /// @dev Returns hash to be signed by owners.
-    /// @param to Destination address.
-    /// @param value Ether value.
-    /// @param data Data payload.
-    /// @param operation Operation type.
-    /// @param safeTxGas Fas that should be used for the safe transaction.
-    /// @param baseGas Gas costs for data used to trigger the safe transaction.
-    /// @param gasPrice Maximum gas price that should be used for this transaction.
-    /// @param gasToken Token address (or 0 if ETH) that is used for the payment.
-    /// @param refundReceiver Address of receiver of gas payment (or 0 if tx.origin).
-    /// @param _nonce Transaction nonce.
-    /// @return Transaction hash.
+    // @dev Returns hash to be signed by owners.
+    // @param to Destination address.
+    // @param value Ether value.
+    // @param data Data payload.
+    // @param operation Operation type.
+    // @param safeTxGas Fas that should be used for the safe transaction.
+    // @param baseGas Gas costs for data used to trigger the safe transaction.
+    // @param gasPrice Maximum gas price that should be used for this transaction.
+    // @param gasToken Token address (or 0 if ETH) that is used for the payment.
+    // @param refundReceiver Address of receiver of gas payment (or 0 if tx.origin).
+    // @param _nonce Transaction nonce.
+    // @return Transaction hash.
     function getTransactionHash(
         address to,
         uint256 value,

@@ -6,8 +6,8 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-/// @title OMNToken
-/// @author github:AugustoL
+// @title OMNToken
+// @author github:AugustoL
 
 contract OMNToken is ERC20Upgradeable, OwnableUpgradeable {
     function initialize() public initializer {
