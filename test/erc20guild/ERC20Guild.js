@@ -782,7 +782,7 @@ contract("ERC20Guild", function (accounts) {
         "ERC20Guild: Wrong length of proposalIds, actions or votingPowers"
       );
 
-      // Using setVotes for a two votes is not almost the same cost as two setVote
+      // Using setVotes for a two votes is almost the same cost as two setVote
       const txVote0 = await erc20Guild.setVotes(
         [guildProposalId1, guildProposalId2],
         [1, 2],
