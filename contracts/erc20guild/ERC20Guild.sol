@@ -148,7 +148,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     event TokensLocked(address voter, uint256 value);
     event TokensWithdrawn(address voter, uint256 value);
 
-    bool private isExecutingProposal;
+    bool internal isExecutingProposal;
 
     // @dev Allows the voting machine to receive ether to be used to refund voting costs
     fallback() external payable {}

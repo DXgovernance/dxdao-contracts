@@ -48,11 +48,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 _lockTime,
         address _permissionRegistry
     ) public override initializer {
-        require(
-            address(_token) != address(0),
-            "SnapshotRepERC20Guild: token is the zero address"
-        );
-        _initialize(
+        super.initialize(
             _token,
             _proposalTime,
             _timeForExecution,
@@ -79,7 +75,6 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
             0,
             true
         );
-        initialized = true;
     }
 
     // @dev Set the voting power to vote in a proposal
@@ -138,7 +133,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         string memory title,
         bytes memory contentHash
     ) public override virtual isInitialized returns (bytes32) {
-        bytes32 proposalId = _createProposal(to, data, value, totalActions, title, contentHash);
+        bytes32 proposalId = super.createProposal(to, data, value, totalActions, title, contentHash);
         proposalsSnapshots[proposalId] = ERC20SnapshotRep(address(token)).getCurrentSnapshotId();
         return proposalId;
     }
@@ -213,6 +208,14 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         returns (uint256)
     {
         return ERC20SnapshotRep(address(token)).balanceOfAt(account, snapshotId);
+    }
+
+    // @dev Get the voting power of an account
+    // @param account The address of the account
+    function votingPowerOf(address account)
+        public view override virtual returns (uint256)
+    {
+        return ERC20SnapshotRep(address(token)).balanceOf(account);
     }
 
     // @dev Get the proposal snapshot id

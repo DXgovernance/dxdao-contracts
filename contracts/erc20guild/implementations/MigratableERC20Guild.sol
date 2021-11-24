@@ -17,17 +17,17 @@ contract MigratableERC20Guild is ERC20Guild {
     // The total amount of tokens locked
     mapping(address => uint256) totalLockedByVault;
 
+    uint256 public lastMigrationTimestamp;
+
     // @dev Change the token vault used, this will change the voting token too.
     // The token vault admin has to be the guild.
     // @param newTokenVault The address of the new token vault
     function changeTokenVault(address newTokenVault) public virtual isInitialized {
-
-        // Extra checks can be added here
-
         require(msg.sender == address(this), "MigratableERC2Guild: The vault can be changed only by the guild");
         tokenVault = TokenVault(newTokenVault);
         require(tokenVault.getAdmin() == address(this), "MigratableERC2Guild: The vault admin has to be the guild");
         token = IERC20Upgradeable(tokenVault.getToken());
+        lastMigrationTimestamp = block.timestamp;
     }
     
     // @dev Lock tokens in the guild to be used as voting power in the official vault
@@ -93,6 +93,20 @@ contract MigratableERC20Guild is ERC20Guild {
         TokenVault(_tokenVault).withdraw(msg.sender, tokenAmount);
         emit TokensWithdrawn(msg.sender, tokenAmount);
     }
+
+    // @dev Executes a proposal that is not votable anymore and can be finished
+    // If this function is called by the guild guardian the proposal can end sooner after proposal endTime
+    // If this function is not called by the guild guardian the proposal can end sooner after proposal endTime plus
+    // the extraTimeForGuardian
+    // @param proposalId The id of the proposal to be executed
+    function endProposal(bytes32 proposalId) public override virtual {
+        if (proposals[proposalId].startTime < lastMigrationTimestamp) {
+            proposals[proposalId].state = ProposalState.Failed;
+            emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
+        } else {
+            super.endProposal(proposalId);
+        }
+    }
     
     // @dev Get the voting power of an account
     // @param account The address of the account
@@ -101,12 +115,12 @@ contract MigratableERC20Guild is ERC20Guild {
     }
 
         // @dev Get the locked timestamp of a voter tokens
-    function getVoterLockTimestamp(address voter) public override view returns(uint256) {
+    function getVoterLockTimestamp(address voter) public override virtual view returns(uint256) {
         return tokensLockedByVault[address(tokenVault)][voter].timestamp;
     }
 
     // @dev Get the totalLocked
-    function getTotalLocked() public override view returns(uint256) {
+    function getTotalLocked() public override virtual view returns(uint256) {
         return totalLockedByVault[address(tokenVault)];
     }
 }

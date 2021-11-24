@@ -33,7 +33,7 @@ contract SnapshotERC20Guild is ERC20Guild {
     Snapshots private _totalLockedSnapshots;
 
     // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
-    uint256 private _currentSnapshotId;
+    uint256 private _currentSnapshotId = 1;
 
     // @dev Set the voting power to vote in a proposal
     // @param proposalId The id of the proposal to set the vote
@@ -45,7 +45,7 @@ contract SnapshotERC20Guild is ERC20Guild {
                 votingPower,
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
-        _setVote(msg.sender, proposalId, action, votingPower);
+        super.setVote(proposalId, action, votingPower);
     }
 
     // @dev Set the voting power to vote in a proposal using a signed vote
@@ -72,7 +72,7 @@ contract SnapshotERC20Guild is ERC20Guild {
                 votingPower,
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
-        _setVote(voter, proposalId, action, votingPower);
+        super.setSignedVote(proposalId, action,votingPower, voter, signature);
         signedVotes[hashedVote] = true;
     }
 
@@ -127,9 +127,94 @@ contract SnapshotERC20Guild is ERC20Guild {
         string memory title,
         bytes memory contentHash
     ) public override virtual isInitialized returns (bytes32) {
-        bytes32 proposalId = _createProposal(to, data, value, totalActions, title, contentHash);
+        bytes32 proposalId = super.createProposal(to, data, value, totalActions, title, contentHash);
+        _currentSnapshotId = _currentSnapshotId.add(1);
         proposalsSnapshots[proposalId] = _currentSnapshotId;
         return proposalId;
+    }
+
+    // @dev Executes a proposal that is not votable anymore and can be finished
+    // @param proposalId The id of the proposal to be executed
+    function endProposal(bytes32 proposalId) public override virtual {
+        require(!isExecutingProposal, "SnapshotERC20Guild: Proposal under execution");
+        require(
+            proposals[proposalId].state == ProposalState.Submitted,
+            "SnapshotERC20Guild: Proposal already executed"
+        );
+        require(
+            proposals[proposalId].endTime < block.timestamp,
+            "SnapshotERC20Guild: Proposal hasn't ended yet"
+        );
+        uint256 winningAction = 0;
+        uint256 i = 1;
+        for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
+            if (
+                proposals[proposalId].totalVotes[i] >=
+                getVotingPowerForProposalExecution(proposalsSnapshots[proposalId]) &&
+                proposals[proposalId].totalVotes[i] >
+                proposals[proposalId].totalVotes[winningAction]
+            ) winningAction = i;
+        }
+
+        if (winningAction == 0) {
+            proposals[proposalId].state = ProposalState.Rejected;
+            emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
+        } else if (
+            proposals[proposalId].endTime.add(timeForExecution) <
+            block.timestamp
+        ) {
+            proposals[proposalId].state = ProposalState.Failed;
+            emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
+        } else {
+            proposals[proposalId].state = ProposalState.Executed;
+
+            uint256 callsPerAction = proposals[proposalId].to.length.div(
+                proposals[proposalId].totalVotes.length.sub(1)
+            );
+            i = callsPerAction.mul(winningAction.sub(1));
+            uint256 endCall = i.add(callsPerAction);
+            
+            for (i; i < endCall; i++) {
+                if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
+                  
+                    bytes4 callDataFuncSignature = getFuncSignature(proposals[proposalId].data[i]);
+                    address asset = address(0);
+                    address _to = proposals[proposalId].to[i];
+                    uint256 _value = proposals[proposalId].value[i];
+
+                    // If the call is an ERC20 transfer or approve the asset is the address called
+                    // and the to and value are the decoded ERC20 receiver and value transfered
+                    if (
+                        ERC20_TRANSFER_SIGNATURE == callDataFuncSignature ||
+                        ERC20_APPROVE_SIGNATURE == callDataFuncSignature
+                    ) {
+                        asset = proposals[proposalId].to[i];
+                        callDataFuncSignature = ANY_SIGNATURE;
+                        (_to, _value) = erc20TransferOrApproveDecode(proposals[proposalId].data[i]);
+                    }
+
+                    // The permission registry keeps track of all value transferred and checks call permission
+                    try permissionRegistry.setPermissionUsed(
+                        asset,
+                        address(this),
+                        _to,
+                        callDataFuncSignature,
+                        _value
+                    ) { } catch Error(string memory reason) {
+                        revert(reason);
+                    }
+
+                    isExecutingProposal = true;
+                    (bool success, ) = proposals[proposalId].to[i].call{
+                        value: proposals[proposalId].value[i]
+                    }(proposals[proposalId].data[i]);
+                    require(success, "SnapshotERC20Guild: Proposal call failed");
+                    isExecutingProposal = false;
+                }
+            }
+            emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
+        }
+        activeProposalsNow = activeProposalsNow.sub(1);
     }
 
     // @dev Get the voting power of an address at a certain snapshotId
@@ -174,9 +259,21 @@ contract SnapshotERC20Guild is ERC20Guild {
         else return totalLocked;
     }
 
+    // @dev Get minimum amount of votingPower needed for proposal execution
+    function getVotingPowerForProposalExecution(uint256 proposalId)
+        public view virtual returns (uint256)
+    {
+        return totalLockedAt(proposalId).mul(votingPowerForProposalExecution).div(10000);
+    }
+
     // @dev Get the proposal snapshot id
     function getProposalSnapshotId(bytes32 proposalId) public view returns(uint256) {
         return proposalsSnapshots[proposalId];
+    }
+
+    // @dev Get the current snapshot id
+    function getCurrentSnapshotId() public view returns(uint256) {
+        return _currentSnapshotId;
     }
 
     ///
