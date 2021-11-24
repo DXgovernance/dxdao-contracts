@@ -50,6 +50,7 @@ interface IERC20Guild {
     ) external;
 
     function setPermission(
+        address[] memory asset,
         address[] memory to,
         bytes4[] memory functionSignature,
         uint256[] memory valueAllowed,

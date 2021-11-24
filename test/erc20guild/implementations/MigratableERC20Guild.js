@@ -90,6 +90,7 @@ contract("MigratableERC20Guild", function (accounts) {
         data: [
           await new web3.eth.Contract(MigratableERC20Guild.abi).methods
             .setPermission(
+              [constants.NULL_ADDRESS],
               [erc20Guild.address],
               [web3.eth.abi.encodeFunctionSignature("changeTokenVault(address)")],
               [0],

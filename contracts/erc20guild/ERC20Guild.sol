@@ -236,11 +236,13 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // @dev Set the allowance of a call to be executed by the guild
+    // @param asset The asset to be used for the permission, 0x0 is ETH
     // @param to The address to be called
     // @param functionSignature The signature of the function
     // @param valueAllowed The ETH value in wei allowed to be transferred
     // @param allowance If the function is allowed to be called or not
     function setPermission(
+        address[] memory asset,
         address[] memory to,
         bytes4[] memory functionSignature,
         uint256[] memory valueAllowed,
@@ -253,15 +255,16 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         require(
             (to.length == functionSignature.length) &&
                 (to.length == valueAllowed.length) &&
-                (to.length == allowance.length),
-            "ERC20Guild: Wrong length of to, functionSignature or allowance arrays"
+                (to.length == allowance.length) &&
+                (to.length == asset.length),
+            "ERC20Guild: Wrong length of asset, to, functionSignature or allowance arrays"
         );
         for (uint256 i = 0; i < to.length; i++) {
             require(
                 functionSignature[i] != bytes4(0),
                 "ERC20Guild: Empty signatures not allowed"
             );
-            permissionRegistry.setPermission(address(0), to[i], functionSignature[i], valueAllowed[i], allowance[i]);
+            permissionRegistry.setPermission(asset[i], to[i], functionSignature[i], valueAllowed[i], allowance[i]);
         }
         require(
             permissionRegistry.getPermissionTime(
@@ -277,7 +280,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 address(0),
                 address(this),
                 address(this),
-                bytes4(keccak256("setPermission(address[],bytes4[],uint256[],bool[])"))
+                bytes4(keccak256("setPermission(address[],address[],bytes4[],uint256[],bool[])"))
             ) > 0,
             "ERC20Guild: setPermission function allowance cant be turned off"
         );
@@ -642,7 +645,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         permissionRegistry.setPermission(
             address(0),
             address(this),
-            bytes4(keccak256("setPermission(address[],bytes4[],uint256[],bool[])")),
+            bytes4(keccak256("setPermission(address[],address[],bytes4[],uint256[],bool[])")),
             0,
             true
         );

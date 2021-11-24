@@ -111,6 +111,7 @@ contract("ERC20Guild", function (accounts) {
         data: [
           await new web3.eth.Contract(ERC20Guild.abi).methods
             .setPermission(
+              [constants.NULL_ADDRESS, constants.NULL_ADDRESS, constants.NULL_ADDRESS],
               [constants.ANY_ADDRESS, actionMockA.address, actionMockA.address],
               [constants.ANY_FUNC_SIGNATURE, constants.ANY_FUNC_SIGNATURE, helpers.testCallFrom(erc20Guild.address).substring(0, 10)],
               [200, 100, 50],
@@ -399,7 +400,7 @@ contract("ERC20Guild", function (accounts) {
 
     it("Reverts when not called by guild", async function () {
       await expectRevert(
-        erc20Guild.setPermission([actionMockA.address], ["0x0"], [1], [true]),
+        erc20Guild.setPermission([constants.NULL_ADDRESS], [actionMockA.address], ["0x0"], [1], [true]),
         "ERC20Guild: Only callable by ERC20guild itself"
       );
     });
@@ -408,7 +409,7 @@ contract("ERC20Guild", function (accounts) {
       const setPermissionEncoded = await new web3.eth.Contract(
         ERC20Guild.abi
       ).methods
-        .setPermission([actionMockB.address], [helpers.testCallFrom(erc20Guild.address).substring(0, 10)], [], [true])
+        .setPermission([constants.NULL_ADDRESS], [actionMockB.address], [helpers.testCallFrom(erc20Guild.address).substring(0, 10)], [], [true])
         .encodeABI();
 
       const guildProposalId = await createProposal({
@@ -446,7 +447,7 @@ contract("ERC20Guild", function (accounts) {
       const setPermissionEncoded = await new web3.eth.Contract(
         ERC20Guild.abi
       ).methods
-        .setPermission([actionMockB.address], ["0x0"], [0], [true])
+        .setPermission([constants.NULL_ADDRESS], [actionMockB.address], ["0x0"], [0], [true])
         .encodeABI();
 
       const guildProposalId = await createProposal({
@@ -878,6 +879,7 @@ contract("ERC20Guild", function (accounts) {
           data: [
             await new web3.eth.Contract(ERC20Guild.abi).methods
               .setPermission(
+                [constants.NULL_ADDRESS],
                 [actionMockB.address],
                 [constants.ANY_FUNC_SIGNATURE],
                 [0],
@@ -1054,6 +1056,7 @@ contract("ERC20Guild", function (accounts) {
           to: [erc20Guild.address],
           data: [await new web3.eth.Contract(ERC20Guild.abi).methods
             .setPermission(
+              [constants.NULL_ADDRESS],
               [actionMockB.address],
               [helpers.testCallFrom(erc20Guild.address).substring(0, 10)],
               [10],
