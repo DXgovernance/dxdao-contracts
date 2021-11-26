@@ -433,7 +433,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     // @dev Withdraw tokens locked in the guild, this will decrease the voting power
     // @param tokenAmount The amount of tokens to be withdrawn
-    function withdrawTokens(uint256 tokenAmount) public virtual isInitialized {
+    function withdrawTokens(uint256 tokenAmount) public virtual {
         require(
             votingPowerOf(msg.sender) >= tokenAmount,
             "ERC20Guild: Unable to withdraw more tokens than locked"
@@ -508,7 +508,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     // @dev Executes a proposal that is not votable anymore and can be finished
     // @param proposalId The id of the proposal to be executed
-    function _endProposal(bytes32 proposalId) internal isInitialized {
+    function _endProposal(bytes32 proposalId) internal {
         require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
         require(
             proposals[proposalId].state == ProposalState.Active,
@@ -721,7 +721,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bytes32 proposalId,
         uint256 action,
         uint256 votingPower
-    ) internal isInitialized {
+    ) internal {
         require(
             proposals[proposalId].endTime > block.timestamp,
             "ERC20Guild: Proposal ended, cant be voted"
