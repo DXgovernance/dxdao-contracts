@@ -563,6 +563,20 @@ contract("WalletScheme", function (accounts) {
       ),
       newVotingParamsHash
     );
+
+    // Test that the masterWalletScheme now will submit proposals with new voting configuration
+    const submitProposalTx = await masterWalletScheme.proposeCalls(
+      [accounts[1]],
+      ["0x00"],
+      [1],
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    assert.equal(
+      helpers.logDecoder.decodeLogs(submitProposalTx.receipt.rawLogs)[0].args._paramsHash,
+      newVotingParamsHash
+    );
+
   });
 
   it("MasterWalletScheme - setMaxSecondsForExecution is callable only form the avatar", async function () {
