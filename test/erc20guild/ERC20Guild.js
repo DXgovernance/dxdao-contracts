@@ -20,6 +20,9 @@ const {
   time,
 } = require("@openzeppelin/test-helpers");
 
+const ProxyAdmin = artifacts.require("ProxyAdmin.sol");
+const TransparentUpgradeableProxy = artifacts.require("TransparentUpgradeableProxy.sol");
+const Create2Deployer = artifacts.require("Create2Deployer.sol");
 const ERC20Guild = artifacts.require("ERC20Guild.sol");
 const GlobalPermissionRegistry = artifacts.require("GlobalPermissionRegistry.sol");
 const IERC20Guild = artifacts.require("IERC20Guild.sol");
@@ -31,18 +34,28 @@ require("chai").should();
 contract("ERC20Guild", function (accounts) {
   const constants = helpers.constants;
   const ZERO = new BN("0");
-  const VOTE_GAS = new BN(90000) // 90k
+  const VOTE_GAS = new BN(91100) // ~90k gwei
   const MAX_GAS_PRICE = new BN(8000000000); // 8 gwei
   const REAL_GAS_PRICE = new BN(constants.GAS_PRICE); // 10 gwei (check config)
 
   let guildToken,
-    actionMockA,
-    actionMockB,
-    erc20Guild,
-    globalPermissionRegistry,
-    genericProposal;
-
+  actionMockA,
+  actionMockB,
+  erc20Guild,
+  globalPermissionRegistry,
+  genericProposal;
+  
   beforeEach(async function () {
+    const proxyAdmin = await ProxyAdmin.new({from: accounts[0]});
+
+    const erc20GuildDeployer = await Create2Deployer.new();
+    const erc20GuildAddress = helpers.create2Address(
+      erc20GuildDeployer.address,
+      ERC20Guild.bytecode,
+      constants.SOME_HASH
+    );
+    await erc20GuildDeployer.deploy(ERC20Guild.bytecode, constants.SOME_HASH);
+
     guildToken = await createAndSetupGuildToken(accounts.slice(0, 6), [
       0,
       50000,
@@ -53,20 +66,26 @@ contract("ERC20Guild", function (accounts) {
     ]);
     globalPermissionRegistry = await GlobalPermissionRegistry.new();
 
-    erc20Guild = await IERC20Guild.at((await ERC20Guild.new()).address);
-    await erc20Guild.initialize(
-      guildToken.address,
-      30,
-      30,
-      5000,
-      100,
-      "TestGuild",
-      0,
-      0,
-      10,
-      60,
-      globalPermissionRegistry.address
+    const erc20GuildInitializeData = await new web3.eth.Contract(ERC20Guild.abi).methods
+      .initialize(
+        guildToken.address,
+        30,
+        30,
+        5000,
+        100,
+        "TestGuild",
+        0,
+        0,
+        10,
+        60,
+        globalPermissionRegistry.address
+      ).encodeABI();
+    
+    const erc20GuildProxy = await TransparentUpgradeableProxy.new(
+      erc20GuildAddress, proxyAdmin.address, erc20GuildInitializeData
     );
+
+    erc20Guild = await IERC20Guild.at(erc20GuildProxy.address);
 
     actionMockA = await ActionMock.new();
     actionMockB = await ActionMock.new();
@@ -174,7 +193,7 @@ contract("ERC20Guild", function (accounts) {
       });
       
       if (constants.GAS_PRICE > 1)
-        expect(txVote.receipt.gasUsed).to.be.below(90000);
+        expect(txVote.receipt.gasUsed).to.be.below(VOTE_GAS.toNumber());
       
       const voteEvent = helpers.logDecoder.decodeLogs(txVote.receipt.rawLogs)[0];
       assert.equal(voteEvent.name, "VoteAdded")
@@ -776,9 +795,9 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(votesOfVoter.votingPower, 40);
  
       if (constants.GAS_PRICE > 1)
-        expect(txVote0.receipt.gasUsed/(VOTE_GAS*2)).to.be.below(1.011);
+        expect(txVote0.receipt.gasUsed/(VOTE_GAS*2)).to.be.below(1.03);
 
-      // Using setVotes for three votes is 17% more efficient than three setVote
+      // Using setVotes for three votes is 16% more efficient than three setVote
       const txVote1 = await erc20Guild.setVotes(
         [guildProposalId1, guildProposalId2, guildProposalId3],
         [1, 2, 3],
@@ -787,7 +806,7 @@ contract("ERC20Guild", function (accounts) {
       );
 
       if (constants.GAS_PRICE > 1)
-        expect(txVote1.receipt.gasUsed/(VOTE_GAS*3)).to.be.below(0.83);
+        expect(txVote1.receipt.gasUsed/(VOTE_GAS*3)).to.be.below(0.84);
 
       // Using setVotes for five votes is 20% more efficient than five setVote
       const txVote2 = await erc20Guild.setVotes(

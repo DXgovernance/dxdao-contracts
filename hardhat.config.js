@@ -127,6 +127,7 @@ module.exports = {
     overrides: {
       'contracts/utils/GnosisSafe/GnosisProxy.sol': { version: '0.5.14' },
       'contracts/utils/GnosisSafe/GnosisSafe.sol': { version: '0.5.14' },
+      'contracts/utils/Create2Deployer.sol': { version: '0.5.17', evmVersion: "istanbul", optimizer: { enabled: false, runs: 200 } },
       'contracts/omen/OMNToken.sol': { version: '0.8.8' },
       'contracts/omen/OMNGuild.sol': {
         version: '0.8.8',
@@ -149,6 +150,10 @@ module.exports = {
   networks: hardharNetworks,
   etherscan: { apiKey: ETHERSCAN_API_KEY },
   dependencyCompiler: {
-    paths: ['@realitio/realitio-contracts/truffle/contracts/Realitio.sol'],
+    paths: [
+      '@realitio/realitio-contracts/truffle/contracts/Realitio.sol',
+      '@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol',
+      '@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol'
+    ]
   },
 };

@@ -387,6 +387,19 @@ export function encodeERC20Approve(to, value) {
   );
 }
 
+export function create2Address(creatorAddress, bytecode, saltHex) {
+
+    const parts = [
+      'ff',
+      creatorAddress.slice(2),
+      saltHex.slice(2),
+      web3.utils.sha3(bytecode).slice(2),
+    ];
+  
+    const partsHash = web3.utils.sha3(`0x${parts.join('')}`);
+    return `0x${partsHash.slice(-40)}`.toLowerCase();
+}
+
 export {
   encodePermission,
   decodePermission,
