@@ -59,7 +59,7 @@ contract("Dxvote Utils", function (accounts) {
     await masterWalletScheme.initialize(
       org.avatar.address,
       votingMachine.address,
-      votingMachine.params,
+      true,
       org.controller.address,
       permissionRegistry.address,
       "Master Wallet",
@@ -71,8 +71,8 @@ contract("Dxvote Utils", function (accounts) {
     await quickWalletScheme.initialize(
       org.avatar.address,
       votingMachine.address,
-      votingMachine.params,
-      constants.NULL_ADDRESS,
+      false,
+      org.controller.address,
       permissionRegistry.address,
       "Quick Wallet",
       executionTimeout,
