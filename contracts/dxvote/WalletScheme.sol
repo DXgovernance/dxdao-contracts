@@ -38,7 +38,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
         None,
         Submitted,
         Rejected,
-        ExecutionSucceded,
+        ExecutionSucceeded,
         ExecutionTimeout
     }
 
@@ -65,7 +65,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     uint256 public maxRepPercentageChange;
 
     // This mapping is used as "memory storage" in executeProposal function, to keep track of the total value
-    // transfered of by asset and address, it saves both aseet and address as keccak256(asset, recipient)
+    // transfered of by asset and address, it saves both asset and address as keccak256(asset, recipient)
     mapping(bytes32 => uint256) internal valueTransferedByAssetAndRecipient;
 
     // This mapping is used as "memory storage" in executeProposal function, to keep track of the total value
@@ -372,7 +372,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                     "WalletScheme: call execution failed"
                 );
             }
-            // Cant mint or burn more REP than the allowed percentaje set in the wallet scheme initialization
+            // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
             require(
                 (oldRepSupply.mul(uint256(100).add(maxRepPercentageChange)).div(
                     100
@@ -389,10 +389,10 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                     permissionHashUsed[i]
                 ];
             }
-            proposal.state = ProposalState.ExecutionSucceded;
+            proposal.state = ProposalState.ExecutionSucceeded;
             emit ProposalStateChange(
                 _proposalId,
-                uint256(ProposalState.ExecutionSucceded)
+                uint256(ProposalState.ExecutionSucceeded)
             );
             emit ExecutionResults(
                 _proposalId,
@@ -543,7 +543,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
 
     /**
      * @dev Decodes abi encoded data with selector for "transfer(address,uint256)".
-     * @param _data ERC20 addres and value encoded data.
+     * @param _data ERC20 address and value encoded data.
      * @return to The account to receive the tokens
      * @return value The value of tokens to be transfered/approved
      */
