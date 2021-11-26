@@ -2,15 +2,19 @@
 pragma solidity ^0.8.8;
 
 
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
  * @title ERC20SnapshotRep
 */
-contract ERC20SnapshotRep is ERC20Snapshot, Ownable {
+contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpgradeable {
   
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
+    function initialize(string memory name, string memory symbol) public initializer {
+        __ERC20_init(name, symbol);
+        __Ownable_init();
+    }
 
     function snapshot() public {
         _snapshot();
