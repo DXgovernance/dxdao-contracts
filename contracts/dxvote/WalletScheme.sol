@@ -5,6 +5,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "@daostack/infra/contracts/votingMachines/IntVoteInterface.sol";
 import "@daostack/infra/contracts/votingMachines/ProposalExecuteInterface.sol";
 import "../daostack/votingMachines/VotingMachineCallbacks.sol";
+import "../daostack/controller/ControllerInterface.sol";
 import "./PermissionRegistry.sol";
 
 /**
@@ -22,7 +23,7 @@ import "./PermissionRegistry.sol";
 contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     using SafeMath for uint256;
 
-    string public SCHEME_TYPE = "Wallet Scheme v1";
+    string public SCHEME_TYPE = "Wallet Scheme v1.1";
     bytes4 public constant ERC20_TRANSFER_SIGNATURE =
         bytes4(keccak256("transfer(address,uint256)"));
     bytes4 public constant ERC20_APPROVE_SIGNATURE =
@@ -55,9 +56,9 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     bytes32[] public proposalsList;
 
     IntVoteInterface public votingMachine;
-    bytes32 public voteParams;
+    bool public doAvatarGenericCalls;
     Avatar public avatar;
-    address public controllerAddress;
+    ControllerInterface public controller;
     PermissionRegistry public permissionRegistry;
     string public schemeName;
     uint256 public maxSecondsForExecution;
@@ -88,9 +89,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      * @dev initialize
      * @param _avatar the avatar address
      * @param _votingMachine the voting machines address to
-     * @param _voteParams voting machine parameters.
-     * @param _controllerAddress The address to receive the calls, if address 0x0 is used it wont make generic calls
-     * to the avatar
+     * @param _doAvatarGenericCalls is the scheme will do generic calls form the avatar
+     * @param _controller The controller address
      * @param _permissionRegistry The address of the permission registry contract
      * @param _maxSecondsForExecution The maximum amount of time in seconds  for a proposal without executed since
      * submitted time
@@ -100,8 +100,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     function initialize(
         Avatar _avatar,
         IntVoteInterface _votingMachine,
-        bytes32 _voteParams,
-        address _controllerAddress,
+        bool _doAvatarGenericCalls,
+        address _controller,
         address _permissionRegistry,
         string calldata _schemeName,
         uint256 _maxSecondsForExecution,
@@ -109,14 +109,15 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     ) external {
         require(avatar == Avatar(0), "WalletScheme: cannot init twice");
         require(_avatar != Avatar(0), "WalletScheme: avatar cannot be zero");
+        require(_controller != address(0), "WalletScheme: controller cannot be zero");
         require(
             _maxSecondsForExecution >= 86400,
             "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
         );
         avatar = _avatar;
         votingMachine = _votingMachine;
-        voteParams = _voteParams;
-        controllerAddress = _controllerAddress;
+        doAvatarGenericCalls = _doAvatarGenericCalls;
+        controller = ControllerInterface(_controller);
         permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
         maxSecondsForExecution = _maxSecondsForExecution;
@@ -128,7 +129,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      */
     function() external payable {
         require(
-            controllerAddress == address(0),
+            !doAvatarGenericCalls,
             "WalletScheme: Cant receive if it will make generic calls to avatar"
         );
     }
@@ -260,7 +261,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             for (uint256 i = 0; i < assetsUsed.length; i++) {
                 (_valueAllowed, _fromTime) = permissionRegistry.getPermission(
                     assetsUsed[i],
-                    controllerAddress != address(0)
+                    doAvatarGenericCalls
                         ? address(avatar)
                         : address(this),
                     address(this),
@@ -291,7 +292,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                     (_valueAllowed, _fromTime) = permissionRegistry
                         .getPermission(
                         proposal.to[i],
-                        controllerAddress != address(0)
+                        doAvatarGenericCalls
                             ? address(avatar)
                             : address(this),
                         _to,
@@ -308,7 +309,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                     (_valueAllowed, _fromTime) = permissionRegistry
                         .getPermission(
                         address(0),
-                        controllerAddress != address(0)
+                        doAvatarGenericCalls
                             ? address(avatar)
                             : address(this),
                         proposal.to[i],
@@ -334,8 +335,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
 
                 // If controller address is set the code needs to be encoded to generiCall function
                 if (
-                    controllerAddress != address(0) &&
-                    proposal.to[i] != controllerAddress
+                    doAvatarGenericCalls &&
+                    proposal.to[i] != address(controller)
                 ) {
                     bytes memory genericCallData =
                         abi.encodeWithSignature(
@@ -346,7 +347,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
                             proposal.value[i]
                         );
                     (callsSucessResult[i], callsDataResult[i]) = address(
-                        controllerAddress
+                        controller
                     )
                         .call
                         .value(0)(genericCallData);
@@ -466,6 +467,8 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             _to.length == _value.length,
             "WalletScheme: invalid _value length"
         );
+
+        bytes32 voteParams = controller.getSchemeParameters(address(this), address(avatar));
 
         // Get the proposal id that will be used from the voting machine
         bytes32 proposalId =
