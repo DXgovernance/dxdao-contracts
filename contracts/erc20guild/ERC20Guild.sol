@@ -28,7 +28,7 @@ import "../utils/TokenVault.sol";
   executed successfully, it is marked as failed.
   The guild can execute only allowed functions, if a function is not allowed it will need to set the allowance for it.
   The allowed functions have a timestamp that marks from what time the function can be executed.
-  A limit to a maximum amount of active proposals can be set, an active proposal is a proposal that is in Submitted state.
+  A limit to a maximum amount of active proposals can be set, an active proposal is a proposal that is in Active state.
   Gas can be refunded to the account executing the vote, for this to happen the voteGas and maxGasPrice values need to be
   set.
   Signed votes can be executed in behalf of other users, to sign a vote the voter needs to hash it with the function
@@ -48,7 +48,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     enum ProposalState {
         None,
-        Submitted,
+        Active,
         Rejected,
         Executed,
         Failed
@@ -498,10 +498,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         newProposal.title = title;
         newProposal.contentHash = contentHash;
         newProposal.totalVotes = new uint256[](totalActions.add(1));
-        newProposal.state = ProposalState.Submitted;
+        newProposal.state = ProposalState.Active;
 
         activeProposalsNow = activeProposalsNow.add(1);
-        emit ProposalStateChanged(proposalId, uint256(ProposalState.Submitted));
+        emit ProposalStateChanged(proposalId, uint256(ProposalState.Active));
         proposalsIds.push(proposalId);
         return proposalId;
     }
@@ -511,7 +511,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     function _endProposal(bytes32 proposalId) internal isInitialized {
         require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
         require(
-            proposals[proposalId].state == ProposalState.Submitted,
+            proposals[proposalId].state == ProposalState.Active,
             "ERC20Guild: Proposal already executed"
         );
         require(

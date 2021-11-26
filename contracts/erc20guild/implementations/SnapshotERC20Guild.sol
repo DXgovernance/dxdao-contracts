@@ -138,7 +138,7 @@ contract SnapshotERC20Guild is ERC20Guild {
     function endProposal(bytes32 proposalId) public override virtual {
         require(!isExecutingProposal, "SnapshotERC20Guild: Proposal under execution");
         require(
-            proposals[proposalId].state == ProposalState.Submitted,
+            proposals[proposalId].state == ProposalState.Active,
             "SnapshotERC20Guild: Proposal already executed"
         );
         require(

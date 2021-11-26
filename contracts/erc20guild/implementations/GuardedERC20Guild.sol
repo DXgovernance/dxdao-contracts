@@ -72,7 +72,7 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     // @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public override virtual {
         require(
-            proposals[proposalId].state == ProposalState.Submitted,
+            proposals[proposalId].state == ProposalState.Active,
             "GuardedERC20Guild: Proposal already executed"
         );
         if (msg.sender == guildGuardian)
@@ -92,7 +92,7 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     // @param proposalId The id of the proposal to be executed
     function rejectProposal(bytes32 proposalId) public {
         require(
-            proposals[proposalId].state == ProposalState.Submitted,
+            proposals[proposalId].state == ProposalState.Active,
             "GuardedERC20Guild: Proposal already executed"
         );
         require(
