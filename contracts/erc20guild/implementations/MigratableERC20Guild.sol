@@ -22,7 +22,7 @@ contract MigratableERC20Guild is ERC20Guild {
     // @dev Change the token vault used, this will change the voting token too.
     // The token vault admin has to be the guild.
     // @param newTokenVault The address of the new token vault
-    function changeTokenVault(address newTokenVault) public virtual isInitialized {
+    function changeTokenVault(address newTokenVault) public virtual {
         require(msg.sender == address(this), "MigratableERC2Guild: The vault can be changed only by the guild");
         tokenVault = TokenVault(newTokenVault);
         require(tokenVault.getAdmin() == address(this), "MigratableERC2Guild: The vault admin has to be the guild");
@@ -32,7 +32,7 @@ contract MigratableERC20Guild is ERC20Guild {
     
     // @dev Lock tokens in the guild to be used as voting power in the official vault
     // @param tokenAmount The amount of tokens to be locked
-    function lockTokens(uint256 tokenAmount) public override virtual isInitialized {
+    function lockTokens(uint256 tokenAmount) public override virtual {
         tokenVault.deposit(msg.sender, tokenAmount);
         tokensLockedByVault[address(tokenVault)][msg.sender].amount = tokensLockedByVault[address(tokenVault)][msg.sender].amount
             .add(tokenAmount);
@@ -43,7 +43,7 @@ contract MigratableERC20Guild is ERC20Guild {
 
     // @dev Withdraw tokens locked in the guild form the official vault, this will decrease the voting power
     // @param tokenAmount The amount of tokens to be withdrawn
-    function withdrawTokens(uint256 tokenAmount) public override virtual isInitialized {
+    function withdrawTokens(uint256 tokenAmount) public override virtual {
         require(
             votingPowerOf(msg.sender) >= tokenAmount,
             "MigratableERC2Guild: Unable to withdraw more tokens than locked"
@@ -62,7 +62,7 @@ contract MigratableERC20Guild is ERC20Guild {
     // @dev Lock tokens in the guild to be used as voting power in an external vault
     // @param tokenAmount The amount of tokens to be locked
     // @param _tokenVault The token vault to be used
-    function lockExternalTokens(uint256 tokenAmount, address _tokenVault) public virtual isInitialized {
+    function lockExternalTokens(uint256 tokenAmount, address _tokenVault) public virtual {
         require(
             address(tokenVault) != _tokenVault,
             "MigratableERC2Guild: Use default lockTokens(uint256) function to lock in official vault"
@@ -78,7 +78,7 @@ contract MigratableERC20Guild is ERC20Guild {
     // @dev Withdraw tokens locked in the guild from an external vault
     // @param tokenAmount The amount of tokens to be withdrawn
     // @param _tokenVault The token vault to be used
-    function withdrawExternalTokens(uint256 tokenAmount, address _tokenVault) public virtual isInitialized {
+    function withdrawExternalTokens(uint256 tokenAmount, address _tokenVault) public virtual {
         require(
             address(tokenVault) != _tokenVault,
             "MigratableERC2Guild: Use default withdrawTokens(uint256) function to withdraw from official vault"

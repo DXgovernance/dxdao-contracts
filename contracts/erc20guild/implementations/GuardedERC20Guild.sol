@@ -111,12 +111,15 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 _extraTimeForGuardian
     ) public {
         require(
-            !initialized || (msg.sender == address(this)),
-            "GuardedERC20Guild: Only callable by the guild itself when initialized"
+            (guildGuardian == address(0)) || (msg.sender == address(this)),
+            "GuardedERC20Guild: Only callable by the guild itself when guildGuardian is set"
+        );
+        require(
+            _guildGuardian != address(0),
+            "GuardedERC20Guild: guildGuardian cant be address 0"
         );
         guildGuardian = _guildGuardian;
         extraTimeForGuardian = _extraTimeForGuardian;
-        initialized = true;
     }
 
     // @dev Get the guildGuardian address

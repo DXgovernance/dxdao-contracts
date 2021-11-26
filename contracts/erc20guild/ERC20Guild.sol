@@ -57,9 +57,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // The ERC20 token that will be used as source of voting power
     IERC20Upgradeable token;
 
-    // If the smart contract is initialized or not
-    bool initialized;
-
     // The address of the GlobalPermissionRegistry to be used
     GlobalPermissionRegistry permissionRegistry;
 
@@ -155,12 +152,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     receive() external payable {}
 
-    // @dev Initialized modifier to require the contract to be initialized
-    modifier isInitialized() {
-        require(initialized, "ERC20Guild: Not initilized");
-        _;
-    }
-
     // @dev Initilizer
     // @param _token The ERC20 token that will be used as source of voting power
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
@@ -200,7 +191,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             _lockTime,
             _permissionRegistry
         );
-        initialized = true;
     }
 
     // @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initilized
@@ -421,7 +411,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     // @dev Lock tokens in the guild to be used as voting power
     // @param tokenAmount The amount of tokens to be locked
-    function lockTokens(uint256 tokenAmount) public virtual isInitialized {
+    function lockTokens(uint256 tokenAmount) public virtual {
         tokenVault.deposit(msg.sender, tokenAmount);
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(
             tokenAmount
@@ -464,7 +454,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 totalActions,
         string memory title,
         bytes memory contentHash
-    ) internal isInitialized returns (bytes32) {
+    ) internal returns (bytes32) {
         require(
             activeProposalsNow < getMaxActiveProposals(),
             "ERC20Guild: Maximum amount of active proposals reached"
@@ -620,20 +610,30 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             address(_token) != address(0),
             "ERC20Guild: token cant be zero address"
         );
+        require(
+            _proposalTime > 0,
+            "ERC20Guild: proposal time has to be more tha 0"
+        );
+        require(
+            _lockTime >= _proposalTime,
+            "ERC20Guild: lockTime has to be higher or equal to proposalTime"
+        );
+        require(
+            _votingPowerForProposalExecution > 0,
+            "ERC20Guild: voting power for execution has to be more than 0"
+        );
         name = _name;
         token = IERC20Upgradeable(_token);
         tokenVault = new TokenVault();
         tokenVault.initialize(address(token), address(this));
-        _setConfig(
-            _proposalTime,
-            _timeForExecution,
-            _votingPowerForProposalExecution,
-            _votingPowerForProposalCreation,
-            _voteGas,
-            _maxGasPrice,
-            _maxActiveProposals,
-            _lockTime
-        );
+        proposalTime = _proposalTime;
+        timeForExecution = _timeForExecution;
+        votingPowerForProposalExecution = _votingPowerForProposalExecution;
+        votingPowerForProposalCreation = _votingPowerForProposalCreation;
+        voteGas = _voteGas;
+        maxGasPrice = _maxGasPrice;
+        maxActiveProposals = _maxActiveProposals;
+        lockTime = _lockTime;
         permissionRegistry = GlobalPermissionRegistry(_permissionRegistry);
         permissionRegistry.setPermission(
             address(0),
@@ -686,7 +686,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _lockTime
     ) internal {
         require(
-            !initialized || (msg.sender == address(this)),
+            msg.sender == address(this),
             "ERC20Guild: Only callable by ERC20guild itself when initialized"
         );
         require(

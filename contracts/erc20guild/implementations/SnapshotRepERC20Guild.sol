@@ -97,7 +97,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 votingPower,
         address voter,
         bytes memory signature
-    ) public override virtual isInitialized {
+    ) public override virtual {
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "SnapshotERC20Guild: Already voted");
         require(
@@ -109,12 +109,12 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     }
 
     // @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild 
-    function lockTokens(uint256 tokenAmount) public override virtual isInitialized {
+    function lockTokens(uint256 tokenAmount) public override virtual {
         revert("SnapshotERC20Guild: token vault disabled" );
     }
 
     // @dev Override and disable withdraw of tokens, not needed in SnapshotRepERC20Guild 
-    function withdrawTokens(uint256 tokenAmount) public override virtual isInitialized {
+    function withdrawTokens(uint256 tokenAmount) public override virtual {
         revert("SnapshotERC20Guild: token vault disabled" );
     }
 
@@ -132,7 +132,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 totalActions,
         string memory title,
         bytes memory contentHash
-    ) public override virtual isInitialized returns (bytes32) {
+    ) public override virtual returns (bytes32) {
         bytes32 proposalId = super.createProposal(to, data, value, totalActions, title, contentHash);
         proposalsSnapshots[proposalId] = ERC20SnapshotRep(address(token)).getCurrentSnapshotId();
         return proposalId;
@@ -148,7 +148,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         bytes32 proposalId,
         uint256 action,
         uint256 votingPower
-    ) internal isInitialized {
+    ) internal {
         require(
             proposals[proposalId].endTime > block.timestamp,
             "SnapshotERC20Guild: Proposal ended, cant be voted"

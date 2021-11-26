@@ -60,7 +60,7 @@ contract SnapshotERC20Guild is ERC20Guild {
         uint256 votingPower,
         address voter,
         bytes memory signature
-    ) public override virtual isInitialized {
+    ) public override virtual {
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "SnapshotERC20Guild: Already voted");
         require(
@@ -126,7 +126,7 @@ contract SnapshotERC20Guild is ERC20Guild {
         uint256 totalActions,
         string memory title,
         bytes memory contentHash
-    ) public override virtual isInitialized returns (bytes32) {
+    ) public override virtual returns (bytes32) {
         bytes32 proposalId = super.createProposal(to, data, value, totalActions, title, contentHash);
         _currentSnapshotId = _currentSnapshotId.add(1);
         proposalsSnapshots[proposalId] = _currentSnapshotId;

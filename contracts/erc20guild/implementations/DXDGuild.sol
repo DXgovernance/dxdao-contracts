@@ -39,6 +39,7 @@ contract DXDGuild is ERC20Guild, OwnableUpgradeable {
         address _permissionRegistry,
         address _votingMachine
     ) public initializer {
+        __Ownable_init();
         super.initialize(
             _token,
             _proposalTime,
