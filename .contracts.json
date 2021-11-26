@@ -10,7 +10,8 @@
     "utils": {
       "multicall": "0x742121cD0BB9784c1f17f25B8da1bF3445b93ED4",
       "dxDaoNFT": "0x0000000000000000000000000000000000000000",
-      "dxdVestingFactory": "0x0000000000000000000000000000000000000000"
+      "dxdVestingFactory": "0x0000000000000000000000000000000000000000",
+      "create2Deployer": "0xfa76e1d4aedf01901d6683c7bd01909187d5805e"
     },
     "votingMachines": {
       "gen": {
@@ -29,11 +30,13 @@
     "reputation": "0xED77eaA9590cfCE0a126Bab3D8A6ada9A393d4f6",
     "token": "0xf255B9d83db924820ee23A7dCC30b7542e201Bb1",
     "controller": "0xfBEcdD3360E2A9040383980AB3863BE9d57256fd",
+    "permissionRegistry": "0x757bbdC3dF870202f28e5cF92a0005158D5e0786",
     "schemes": {
       "QuickWalletScheme": "0x0A08ECa47C56C305F4FeB4fa062AEcd5807BeBb8"
     },
     "utils": {
-      "multicall": "0xDD032cd0dfCB54050E1FA30Be59056403e292700"
+      "multicall": "0xDD032cd0dfCB54050E1FA30Be59056403e292700",
+      "create2Deployer": "0x6f00801B56e564b4f9D711840BbB042fA3290A1e"
     },
     "votingMachines": {
       "dxd": {
@@ -44,8 +47,7 @@
         "address": "0xDA309aDF1c84242Bb446F7CDBa96B570E901D4CF",
         "token": "0x543ff227f64aa17ea132bf9886cab5db55dcaddf"
       }
-    },
-    "permissionRegistry": "0x757bbdC3dF870202f28e5cF92a0005158D5e0786"
+    }
   },
   "rinkeby": {
     "fromBlock": 9234792,
@@ -63,7 +65,8 @@
     "utils": {
       "multicall": "0x1FDD273e0B7E0d921Bda044Ebf64811428A79f15",
       "dxDaoNFT": "0xF7A2f72E8f6aeb884905a1fE515c1BB5752D342f",
-      "dxdVestingFactory": "0xB5D42c8cA3B04479200E3782C41D99b46Cf8A6E1"
+      "dxdVestingFactory": "0xB5D42c8cA3B04479200E3782C41D99b46Cf8A6E1",
+      "create2Deployer": "0xac43793459918a0553c9e2d2495d1894cb0747ed"
     },
     "votingMachines": {
       "dxd": {
@@ -88,7 +91,8 @@
     "utils": {
       "multicall": "0xac380E8434Db942B5902956E8Dc7cD9d6A66bc74",
       "dxDaoNFT": "0xDC50FE5862D5541C6D0b9B07f15Fe016Cdacb431",
-      "dxdVestingFactory": "0xA5431A66874627948d4Ab68E033177f8982C3A2C"
+      "dxdVestingFactory": "0xA5431A66874627948d4Ab68E033177f8982C3A2C",
+      "create2Deployer": "0xbdd0b696b219d8d9284cb689a20862a0ff241409"
     },
     "votingMachines": {
       "dxd": {
@@ -112,7 +116,8 @@
       "TestWalletScheme": "0xcab5367De13B5409Ee85689465B4553C375FB20d"
     },
     "utils": {
-      "multicall": "0x9645D0CEC58F0D28Be9660b9a4D464AB193817B3"
+      "multicall": "0x9645D0CEC58F0D28Be9660b9a4D464AB193817B3",
+      "create2Deployer": "0xcdaf122f137569fed097d1210b4800c3d995f299"
     },
     "votingMachines": {
       "dxd": {
