@@ -45,6 +45,13 @@ This script will get the DXdao Rep from mainnet or xdai DXdao rep token and REP 
 
 `yarn coverage`
 
+## Sourcify
+
+A shell script to be used with https://github.com/crytic/solc-select to flatten and get the metadata files for https://sourcify.dev/ verification. The files are saved in the .temp folder.
+
+Example:
+`SOLC_VERSION=0.8.8 ./scripts/sourcify.sh contracts/utils/ERC20/ERC20SnapshotRep.sol`
+
 ### DXvote contracts Deployment
 
 This script will get deploy DXvote with the configuration set in the scripts/deployment-config.js file.
