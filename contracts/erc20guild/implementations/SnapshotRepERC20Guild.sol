@@ -48,11 +48,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 _lockTime,
         address _permissionRegistry
     ) public override initializer {
-        require(
-            address(_token) != address(0),
-            "SnapshotRepERC20Guild: token is the zero address"
-        );
-        _initialize(
+        super.initialize(
             _token,
             _proposalTime,
             _timeForExecution,
@@ -79,7 +75,6 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
             0,
             true
         );
-        initialized = true;
     }
 
     // @dev Set the voting power to vote in a proposal
@@ -102,7 +97,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 votingPower,
         address voter,
         bytes memory signature
-    ) public override virtual isInitialized {
+    ) public override virtual {
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "SnapshotERC20Guild: Already voted");
         require(
@@ -114,12 +109,12 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     }
 
     // @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild 
-    function lockTokens(uint256 tokenAmount) public override virtual isInitialized {
+    function lockTokens(uint256 tokenAmount) public override virtual {
         revert("SnapshotERC20Guild: token vault disabled" );
     }
 
     // @dev Override and disable withdraw of tokens, not needed in SnapshotRepERC20Guild 
-    function withdrawTokens(uint256 tokenAmount) public override virtual isInitialized {
+    function withdrawTokens(uint256 tokenAmount) public override virtual {
         revert("SnapshotERC20Guild: token vault disabled" );
     }
 
@@ -137,8 +132,8 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 totalActions,
         string memory title,
         bytes memory contentHash
-    ) public override virtual isInitialized returns (bytes32) {
-        bytes32 proposalId = _createProposal(to, data, value, totalActions, title, contentHash);
+    ) public override virtual returns (bytes32) {
+        bytes32 proposalId = super.createProposal(to, data, value, totalActions, title, contentHash);
         proposalsSnapshots[proposalId] = ERC20SnapshotRep(address(token)).getCurrentSnapshotId();
         return proposalId;
     }
@@ -153,7 +148,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         bytes32 proposalId,
         uint256 action,
         uint256 votingPower
-    ) internal isInitialized {
+    ) internal {
         require(
             proposals[proposalId].endTime > block.timestamp,
             "SnapshotERC20Guild: Proposal ended, cant be voted"
@@ -213,6 +208,14 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         returns (uint256)
     {
         return ERC20SnapshotRep(address(token)).balanceOfAt(account, snapshotId);
+    }
+
+    // @dev Get the voting power of an account
+    // @param account The address of the account
+    function votingPowerOf(address account)
+        public view override virtual returns (uint256)
+    {
+        return ERC20SnapshotRep(address(token)).balanceOf(account);
     }
 
     // @dev Get the proposal snapshot id

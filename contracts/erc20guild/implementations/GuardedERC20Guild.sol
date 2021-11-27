@@ -42,12 +42,8 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 _maxActiveProposals,
         uint256 _lockTime,
         address _permissionRegistry
-    ) public override initializer {
-        require(
-            address(_token) != address(0),
-            "ERC20Guild: token is the zero address"
-        );
-        _initialize(
+    ) public override virtual initializer {
+        super.initialize(
             _token,
             _proposalTime,
             _timeForExecution,
@@ -74,9 +70,9 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     // If this function is not called by the guild guardian the proposal can end sooner after proposal endTime plus
     // the extraTimeForGuardian
     // @param proposalId The id of the proposal to be executed
-    function endProposal(bytes32 proposalId) public override {
+    function endProposal(bytes32 proposalId) public override virtual {
         require(
-            proposals[proposalId].state == ProposalState.Submitted,
+            proposals[proposalId].state == ProposalState.Active,
             "GuardedERC20Guild: Proposal already executed"
         );
         if (msg.sender == guildGuardian)
@@ -89,14 +85,14 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
                 proposals[proposalId].endTime.add(extraTimeForGuardian) < block.timestamp,
                 "GuardedERC20Guild: Proposal hasn't ended yet for guild"
             );
-        _endProposal(proposalId);
+        super.endProposal(proposalId);
     }
 
     // @dev Rejects a proposal directly without execution, only callable by the guardian
     // @param proposalId The id of the proposal to be executed
     function rejectProposal(bytes32 proposalId) public {
         require(
-            proposals[proposalId].state == ProposalState.Submitted,
+            proposals[proposalId].state == ProposalState.Active,
             "GuardedERC20Guild: Proposal already executed"
         );
         require(
@@ -115,12 +111,15 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 _extraTimeForGuardian
     ) public {
         require(
-            !initialized || (msg.sender == address(this)),
-            "GuardedERC20Guild: Only callable by the guild itself when initialized"
+            (guildGuardian == address(0)) || (msg.sender == address(this)),
+            "GuardedERC20Guild: Only callable by the guild itself when guildGuardian is set"
+        );
+        require(
+            _guildGuardian != address(0),
+            "GuardedERC20Guild: guildGuardian cant be address 0"
         );
         guildGuardian = _guildGuardian;
         extraTimeForGuardian = _extraTimeForGuardian;
-        initialized = true;
     }
 
     // @dev Get the guildGuardian address

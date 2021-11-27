@@ -3,15 +3,16 @@ pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 /**
  * @title ERC20TokenVesting
  * @dev A token holder contract that can release its token balance gradually like a
  * typical vesting scheme, with a cliff and vesting period. Optionally revocable by the
  * owner.
  */
-contract ERC20TokenVesting is Ownable {
+contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
     // The vesting schedule is time-based (i.e. using block timestamps as opposed to e.g. block numbers), and is
     // therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree). Therefore,
     // it is recommended to avoid using short time durations (less than a minute). Typical vesting schemes, with a
@@ -41,27 +42,28 @@ contract ERC20TokenVesting is Ownable {
      * @dev Creates a vesting contract that vests its balance of any ERC20 token to the
      * beneficiary, gradually in a linear fashion until start + duration. By then all
      * of the balance will have vested.
-     * @param _beneficiary address of the beneficiary to whom vested tokens are transferred
-     * @param _cliffDuration duration in seconds of the cliff in which tokens will begin to vest
-     * @param _start the time (as Unix time) at which point vesting starts
-     * @param _duration duration in seconds of the period in which the tokens will vest
-     * @param _revocable whether the vesting is revocable or not
+     * @param __beneficiary address of the beneficiary to whom vested tokens are transferred
+     * @param __start the time (as Unix time) at which point vesting starts
+     * @param __cliffDuration duration in seconds of the cliff in which tokens will begin to vest
+     * @param __duration duration in seconds of the period in which the tokens will vest
+     * @param __revocable whether the vesting is revocable or not
      */
-    constructor(
-        address _beneficiary, uint256 _start, uint256 _cliffDuration, uint256 _duration, bool _revocable
-    ) {
-        require(_beneficiary != address(0), "TokenVesting: beneficiary is the zero address");
+    function initialize(
+        address __beneficiary, uint256 __start, uint256 __cliffDuration, uint256 __duration, bool __revocable
+    ) public initializer{
+        require(__beneficiary != address(0), "TokenVesting: beneficiary is the zero address");
         // solhint-disable-next-line max-line-length
-        require(_cliffDuration <= _duration, "TokenVesting: cliff is longer than duration");
-        require(_duration > 0, "TokenVesting: duration is 0");
+        require(__cliffDuration <= __duration, "TokenVesting: cliff is longer than duration");
+        require(__duration > 0, "TokenVesting: duration is 0");
         // solhint-disable-next-line max-line-length
-        require(_start.add(_duration) > block.timestamp, "TokenVesting: final time is before current time");
+        require(__start.add(__duration) > block.timestamp, "TokenVesting: final time is before current time");
 
-        _beneficiary = _beneficiary;
-        _revocable = _revocable;
-        _duration = _duration;
-        _cliff = _start.add(_cliffDuration);
-        _start = _start;
+        __Ownable_init();
+        _beneficiary = __beneficiary;
+        _revocable = __revocable;
+        _duration = __duration;
+        _cliff = __start.add(__cliffDuration);
+        _start = __start;
     }
 
     /**

@@ -39,11 +39,8 @@ contract DXDGuild is ERC20Guild, OwnableUpgradeable {
         address _permissionRegistry,
         address _votingMachine
     ) public initializer {
-        require(
-            address(_token) != address(0),
-            "ERC20Guild: token is the zero address"
-        );
-        _initialize(
+        __Ownable_init();
+        super.initialize(
             _token,
             _proposalTime,
             _timeForExecution,
@@ -63,6 +60,5 @@ contract DXDGuild is ERC20Guild, OwnableUpgradeable {
             0,
             true
         );
-        initialized = true;
     }
 }

@@ -2,41 +2,43 @@
 pragma solidity ^0.8.8;
 
 
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
  * @title ERC20SnapshotRep
 */
-contract ERC20SnapshotRep is ERC20Snapshot, Ownable {
+contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpgradeable {
   
-  constructor(
-      string memory name,
-      string memory symbol
-  ) ERC20(name, symbol) {}
+    function initialize(string memory name, string memory symbol) public initializer {
+        __ERC20_init(name, symbol);
+        __Ownable_init();
+    }
 
-  function snapshot() public {
-      _snapshot();
-  }
+    function snapshot() public {
+        _snapshot();
+    }
 
-  function getCurrentSnapshotId() public view virtual returns (uint256) {
-      return _getCurrentSnapshotId();
-  }
-  
-  function mint(address to, uint256 amount) onlyOwner public virtual {
-      _mint(to, amount);
-  }
-  
-  function burn(address to, uint256 amount) onlyOwner public virtual {
-      _burn(to, amount);
-  }
-  
-  function _beforeTokenTransfer(
-      address from,
-      address to,
-      uint256 amount
-  ) internal virtual override {
-      revert("ERC20SnapshotRep: token transfers disabled");
-  }
+    function getCurrentSnapshotId() public view virtual returns (uint256) {
+        return _getCurrentSnapshotId();
+    }
+
+    function mint(address to, uint256 amount) onlyOwner public virtual {
+        _snapshot();
+        _mint(to, amount);
+    }
+
+    function burn(address to, uint256 amount) onlyOwner public virtual {
+        _snapshot();
+        _burn(to, amount);
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) onlyOwner internal virtual override {
+    }
   
 }
