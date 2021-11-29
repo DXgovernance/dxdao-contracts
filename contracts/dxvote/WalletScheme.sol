@@ -2,10 +2,8 @@ pragma solidity 0.5.17;
 pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "@daostack/infra/contracts/votingMachines/IntVoteInterface.sol";
 import "@daostack/infra/contracts/votingMachines/ProposalExecuteInterface.sol";
-import "../daostack/votingMachines/VotingMachineCallbacks.sol";
-import "../daostack/controller/ControllerInterface.sol";
+import "../daostack/votingMachines/DXDVotingMachineCallbacks.sol";
 import "./PermissionRegistry.sol";
 
 /**
@@ -20,7 +18,7 @@ import "./PermissionRegistry.sol";
  * The permissions for [asset][SCHEME_ADDRESS][ANY_SIGNATURE] are used for global transfer limit, if it is set,
  * it wont allowed a higher total value transfered in the proposal higher to the one set there.
  */
-contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
+contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
     using SafeMath for uint256;
 
     string public SCHEME_TYPE = "Wallet Scheme v1.1";
@@ -55,9 +53,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
     mapping(bytes32 => Proposal) public proposals;
     bytes32[] public proposalsList;
 
-    IntVoteInterface public votingMachine;
     bool public doAvatarGenericCalls;
-    Avatar public avatar;
     ControllerInterface public controller;
     PermissionRegistry public permissionRegistry;
     string public schemeName;
@@ -161,7 +157,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
      */
     function executeProposal(bytes32 _proposalId, int256 _decision)
         external
-        onlyVotingMachine(_proposalId)
+        onlyVotingMachine()
         returns (bool)
     {
         require(
@@ -485,10 +481,7 @@ contract WalletScheme is VotingMachineCallbacks, ProposalExecuteInterface {
             submittedTime: now
         });
         proposalsList.push(proposalId);
-        proposalsInfo[address(votingMachine)][proposalId] = ProposalInfo({
-            blockNumber: block.number,
-            avatar: avatar
-        });
+        proposalsBlockNumber[proposalId] = block.number;
         emit ProposalStateChange(proposalId, uint256(ProposalState.Submitted));
         return proposalId;
     }
