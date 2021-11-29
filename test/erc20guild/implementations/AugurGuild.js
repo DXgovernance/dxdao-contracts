@@ -50,7 +50,8 @@ contract("AugurGuild", function (accounts) {
   beforeEach(async function () {
     globalPermissionRegistry = await GlobalPermissionRegistry.new();
 
-    guardianREPToken = await ERC20SnapshotRep.new("AugurGuildGuardianToken", "AGGT", {from: accounts[0]});
+    guardianREPToken = await ERC20SnapshotRep.new();
+    await guardianREPToken.initialize("AugurGuildGuardianToken", "AGGT", {from: accounts[0]});
     await guardianREPToken.mint(accounts[7], "500000");
     await guardianREPToken.mint(accounts[8], "500000");
     await guardianREPToken.mint(accounts[9], "500000");
@@ -125,6 +126,7 @@ contract("AugurGuild", function (accounts) {
         data: [
           await new web3.eth.Contract(AugurGuild.abi).methods
             .setPermission(
+              [constants.NULL_ADDRESS],
               [constants.ANY_ADDRESS],
               [constants.ANY_FUNC_SIGNATURE],
               [100],
@@ -159,6 +161,7 @@ contract("AugurGuild", function (accounts) {
         data: [
           await new web3.eth.Contract(AugurGuild.abi).methods
             .setPermission(
+              [constants.NULL_ADDRESS],
               [augurGuild.address],
               [constants.ANY_FUNC_SIGNATURE],
               [0],
@@ -200,7 +203,6 @@ contract("AugurGuild", function (accounts) {
       
       // A fork disputes happen in augur and is set to happens in 60 seconds
       const forkTime = await time.latest() + 60;
-      console.log(augurUniverseB.address, forkTime)
       await augurUniverseA.setFork(augurUniverseB.address, forkTime);
 
       // Advance 40 seconds and create a proposal that wont be able to execute
