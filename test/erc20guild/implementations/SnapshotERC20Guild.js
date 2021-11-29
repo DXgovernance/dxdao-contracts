@@ -74,6 +74,7 @@ contract("SnapshotERC20Guild", function (accounts) {
         data: [
           await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
             .setPermission(
+              [constants.NULL_ADDRESS],
               [constants.ANY_ADDRESS],
               [constants.ANY_FUNC_SIGNATURE],
               [100],
