@@ -67,7 +67,7 @@ contract("WalletScheme", function (accounts) {
     await registrarWalletScheme.initialize(
       org.avatar.address,
       votingMachine.address,
-      votingMachine.params,
+      true,
       org.controller.address,
       permissionRegistry.address,
       "Wallet Scheme Registrar",
@@ -79,7 +79,7 @@ contract("WalletScheme", function (accounts) {
     await masterWalletScheme.initialize(
       org.avatar.address,
       votingMachine.address,
-      votingMachine.params,
+      true,
       org.controller.address,
       permissionRegistry.address,
       "Master Wallet",
@@ -91,8 +91,8 @@ contract("WalletScheme", function (accounts) {
     await quickWalletScheme.initialize(
       org.avatar.address,
       votingMachine.address,
-      votingMachine.params,
-      constants.NULL_ADDRESS,
+      false,
+      org.controller.address,
       permissionRegistry.address,
       "Quick Wallet",
       executionTimeout,
@@ -217,8 +217,8 @@ contract("WalletScheme", function (accounts) {
     await newWalletScheme.initialize(
       org.avatar.address,
       votingMachine.address,
-      votingMachine.params,
-      constants.NULL_ADDRESS,
+      false,
+      org.controller.address,
       permissionRegistry.address,
       "New Wallet",
       executionTimeout,
@@ -563,6 +563,20 @@ contract("WalletScheme", function (accounts) {
       ),
       newVotingParamsHash
     );
+
+    // Test that the masterWalletScheme now will submit proposals with new voting configuration
+    const submitProposalTx = await masterWalletScheme.proposeCalls(
+      [accounts[1]],
+      ["0x00"],
+      [1],
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    assert.equal(
+      helpers.logDecoder.decodeLogs(submitProposalTx.receipt.rawLogs)[0].args._paramsHash,
+      newVotingParamsHash
+    );
+
   });
 
   it("MasterWalletScheme - setMaxSecondsForExecution is callable only form the avatar", async function () {
@@ -2058,8 +2072,8 @@ contract("WalletScheme", function (accounts) {
       unitializedWalletScheme.initialize(
         org.avatar.address,
         accounts[0],
-        accounts[0],
-        constants.NULL_ADDRESS,
+        false,
+        org.controller.address,
         permissionRegistry.address,
         "Master Wallet",
         86400 - 1,
@@ -2071,8 +2085,8 @@ contract("WalletScheme", function (accounts) {
       unitializedWalletScheme.initialize(
         constants.NULL_ADDRESS,
         accounts[0],
-        accounts[0],
-        constants.NULL_ADDRESS,
+        false,
+        org.controller.address,
         permissionRegistry.address,
         "Master Wallet",
         executionTimeout,
@@ -2087,8 +2101,8 @@ contract("WalletScheme", function (accounts) {
       masterWalletScheme.initialize(
         org.avatar.address,
         accounts[0],
-        accounts[0],
-        constants.NULL_ADDRESS,
+        false,
+        org.controller.address,
         permissionRegistry.address,
         "Master Wallet",
         executionTimeout,

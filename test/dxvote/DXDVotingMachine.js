@@ -85,7 +85,7 @@ contract("DXDVotingMachine", function (accounts) {
     await expensiveVoteWalletScheme.initialize(
       org.avatar.address,
       genVotingMachine.address,
-      genVotingMachine.params,
+      true,
       org.controller.address,
       permissionRegistry.address,
       "Expensive Scheme",
@@ -97,7 +97,7 @@ contract("DXDVotingMachine", function (accounts) {
     await cheapVoteWalletScheme.initialize(
       org.avatar.address,
       dxdVotingMachine.address,
-      dxdVotingMachine.params,
+      true,
       org.controller.address,
       permissionRegistry.address,
       "Cheap Scheme",

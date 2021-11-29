@@ -89,7 +89,7 @@ contract("DXdao", function (accounts) {
     await masterWalletScheme.initialize(
       avatar.address,
       votingMachine.address,
-      votingMachine.params,
+      true,
       controller.address,
       permissionRegistry.address,
       "Master Scheme",
