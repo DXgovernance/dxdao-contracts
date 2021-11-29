@@ -5,6 +5,7 @@ Repository with all the smart contracts for DXdao 1.x Governance.
 ## Configuration
 
 Set your `.env` file following the `.env.example` file:
+
 ```
 // Required
 KEY_MNEMONIC="Seed Pharse Here"
@@ -60,6 +61,7 @@ The smart contracts used for the DXdao avatar, reputation, native token and cont
 Code taken from: https://github.com/daostack/arc/releases/tag/0.0.1-rc.19
 
 ### DXdao
+
 These are the smart contracts of the DXdao deployed in mainnet.
 
 Code taken from: https://github.com/gnosis/dx-daostack.
@@ -80,6 +82,7 @@ The Quick Wallet scheme will have access to funds held by the scheme itself, wit
 ### Schemes Configuration
 
 - Scheme Parameters:
+
   - **name**: The name of the scheme, this will be used to identify the scheme by name in DXvote dapp.
 
   - **callToController**: If the scheme make calls to the controller or not. A Scheme that makes calls to a controller will make calls from the dxdao avatar (which gives access to the dxdao funds) and a scheme that do not call the controller will make call directly from itself, which means that it will have access only to the funds held in the scheme address.
@@ -88,12 +91,12 @@ The Quick Wallet scheme will have access to funds held by the scheme itself, wit
 
   - **maxRepPercentageToMint**: This is the maximum amount of rep in percentage allowed to be minted by proposal, the value can be between 0-100, if a proposal execution mints 5% of REP and the `maxRepPercentageToMint` equals 3, it will fail.
 
-- **Controller Permissions**: This are four values that determine what the scheme can do in the dxdao controller contract, the most powerful contract in the stack, the only two values that we use from it are `canRegisterSchemes` and `canGenericCall`. `canRegisterSchemes` allows the addition/removal of schemes and the `canGenericCall` allows the execution of calls in the avatar contract. 
+- **Controller Permissions**: This are four values that determine what the scheme can do in the dxdao controller contract, the most powerful contract in the stack, the only two values that we use from it are `canRegisterSchemes` and `canGenericCall`. `canRegisterSchemes` allows the addition/removal of schemes and the `canGenericCall` allows the execution of calls in the avatar contract.
 
 - **Permission Registry Permissions**: This permissions are checked before a proposal execution to check that the total value transferred by asset and the functions to be called are allowed. If a scheme make calls to the controller the permissions are checked from the avatar address.
-The permissions are set by asset, specifying the sender and receiver addresses, the signature of the function to be used and the value to be transferred.
-It allows the use of "wildcard" permissions by using `0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa` for any address and `0xaaaaaaaa` for any signature.
-It also allows the use of global transfer limits, by setting the limit by asset using the scheme as receiver address, any value recorded here will be used as global transfer limit in the proposal check.
+  The permissions are set by asset, specifying the sender and receiver addresses, the signature of the function to be used and the value to be transferred.
+  It allows the use of "wildcard" permissions by using `0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa` for any address and `0xaaaaaaaa` for any signature.
+  It also allows the use of global transfer limits, by setting the limit by asset using the scheme as receiver address, any value recorded here will be used as global transfer limit in the proposal check.
 
 - **Voting Machine Params**:
   - **queuedVoteRequiredPercentage**: The percentage of votes required to execute a proposal in queued state.
@@ -108,7 +111,6 @@ It also allows the use of global transfer limits, by setting the limit by asset 
   - **minimumDaoBounty**: The minimum amount to be set as downstake when a proposal is created.
   - **daoBountyConst**: The downstake for proposal is calculated when the proposal is created, by using the formula: `(daoBountyConst * averageBoostDownstakes) / 100`. If the value calculated is higher than `minimumDaoBounty` then this value will be used, if not the start downstake of the proposal will be `minimumDaoBounty`.
 
-
 #### DXD Voting Machine
 
 The DXD Voting Machine is a fork of the the Genesis Protocol (GEN token voting machine) with new very cool features:
@@ -122,6 +124,7 @@ The DXD Voting Machine is a fork of the the Genesis Protocol (GEN token voting m
 - Signal Votes: Allows the voter just to signal his vote decision on a proposal but it does not execute the vote itself, this vote can be executed later by any other user.
 
 ### ERC20Guild
+
 The smart contracts to add a very basic, efficient and flexible governance layer over an ERC20 token.
 
 The guild **executes previously authorized functions** to smart contracts after a proposal to execute that function reaches the **minimum amount of votes** using **locked tokens as voting power** after a **period of time**.
@@ -151,7 +154,9 @@ The guild **executes previously authorized functions** to smart contracts after 
 This folder holds smart contracts in dafts status, a place for dxdao worker to show smart contract ideas in code.
 
 #### DXDGuild
+
 The DXDGuild is an ERC20Guild with minimal modifications designed to be used to vote on the Genesis Protocol Voting Machine. The DXDGuild will have an amount of REP that will be used to vote in favor or against DXdao proposals. The DXDGuild will create two proposals per DXdao proposal that wants to participate. One proposal will be to execute a positive vote on the Genesis Protocol and the other to execute a negative vote on the Genesis Protocol. The proposals are created at the same time and therefore they resolve at the same time.
 
 ### Utils
+
 The smart contracts used to facilitate and automate the deployment of the DXdao.

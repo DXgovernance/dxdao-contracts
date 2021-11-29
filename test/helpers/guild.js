@@ -8,40 +8,48 @@ const DxControllerCreator = artifacts.require("DxControllerCreator.sol");
 const { BN, time } = require("@openzeppelin/test-helpers");
 
 export async function createAndSetupGuildToken(accounts, balances) {
-  const [ firstAccount, ...restOfAccounts ] = accounts;
-  const [ firstBalance, ...restOfBalances ] = balances;
+  const [firstAccount, ...restOfAccounts] = accounts;
+  const [, ...restOfBalances] = balances;
   const totalSupply = balances.reduce((a, b) => a + b, 0);
   const guildToken = await ERC20Mock.new(firstAccount, totalSupply);
 
-  await Promise.all(restOfAccounts.map((account, idx) => {
-    return guildToken.transfer(account, restOfBalances[ idx ]);
-  }));
+  await Promise.all(
+    restOfAccounts.map((account, idx) => {
+      return guildToken.transfer(account, restOfBalances[idx]);
+    })
+  );
 
   return guildToken;
 }
 
-export async function createDAO(guild, accounts, founderToken =  [ 0, 0, 0, 0 ], founderReputation = [ 10, 10, 10, 10 ]) {
-  const orgToken = await ERC20Mock.new(accounts[ 0 ], new BN("0"));
+export async function createDAO(
+  guild,
+  accounts,
+  founderToken = [0, 0, 0, 0],
+  founderReputation = [10, 10, 10, 10]
+) {
+  const orgToken = await ERC20Mock.new(accounts[0], new BN("0"));
   const controllerCreator = await DxControllerCreator.new();
 
-  const daoCreator = await DaoCreator.new(
-    controllerCreator.address,
-  );
+  const daoCreator = await DaoCreator.new(controllerCreator.address);
 
   const walletScheme = await WalletScheme.new();
 
   const votingMachine = await helpers.setupGenesisProtocol(
-    accounts, orgToken.address, 0, constants.NULL_ADDRESS
+    accounts,
+    orgToken.address,
+    0,
+    constants.NULL_ADDRESS
   );
 
   const org = await helpers.setupOrganizationWithArrays(
     daoCreator,
-    [ accounts[ 0 ], accounts[ 1 ], accounts[ 2 ], guild.address ],
+    [accounts[0], accounts[1], accounts[2], guild.address],
     founderToken,
     founderReputation
   );
-  
-  const permissionRegistry = await PermissionRegistry.new(accounts[ 0 ], 10);
+
+  const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
 
   await walletScheme.initialize(
     org.avatar.address,
@@ -53,27 +61,29 @@ export async function createDAO(guild, accounts, founderToken =  [ 0, 0, 0, 0 ],
     86400,
     5
   );
-  
+
   await permissionRegistry.setAdminPermission(
-    constants.NULL_ADDRESS, 
-    org.avatar.address, 
-    constants.ANY_ADDRESS, 
+    constants.NULL_ADDRESS,
+    org.avatar.address,
+    constants.ANY_ADDRESS,
     constants.ANY_FUNC_SIGNATURE,
-    constants.MAX_UINT_256, 
+    constants.MAX_UINT_256,
     true
   );
   await time.increase(10);
 
   await daoCreator.setSchemes(
     org.avatar.address,
-    [ walletScheme.address ],
-    [ votingMachine.params ],
-    [ helpers.encodePermission({
-      canGenericCall: true,
-      canUpgrade: true,
-      canChangeConstraints: true,
-      canRegisterSchemes: true
-    }) ],
+    [walletScheme.address],
+    [votingMachine.params],
+    [
+      helpers.encodePermission({
+        canGenericCall: true,
+        canUpgrade: true,
+        canChangeConstraints: true,
+        canRegisterSchemes: true,
+      }),
+    ],
     "metaData"
   );
 
@@ -85,37 +95,40 @@ export async function createDAO(guild, accounts, founderToken =  [ 0, 0, 0, 0 ],
   };
 }
 
-export async function createProposal({guild, to, data, value, description, contentHash, account}) {
+export async function createProposal({
+  guild,
+  to,
+  data,
+  value,
+  description,
+  contentHash,
+  account,
+}) {
   const tx = await guild.createProposal(
     to,
     data,
     value,
     description,
     contentHash,
-    {from: account}
+    { from: account }
   );
 
   // Return proposal ID
   return helpers.getValueFromLogs(tx, "proposalId", "ProposalCreated");
 }
 
-export async function setAllVotesOnProposal({guild, proposalId, account}) {
-  const tokenAddress = await guild.token();
-  const token = await ERC20Mock.at(tokenAddress);
+export async function setAllVotesOnProposal({ guild, proposalId, account }) {
   const votingPower = await guild.votingPowerOf(account);
-  return guild.setVote(
-    proposalId,
-    votingPower,
-    {from: account}
-  );
+  return guild.setVote(proposalId, votingPower, { from: account });
 }
 
-export async function setXVotesOnProposal({guild, proposalId, votes, account}) {
-  return guild.setVote(
-    proposalId,
-    votes,
-    {from: account}
-  );
+export async function setXVotesOnProposal({
+  guild,
+  proposalId,
+  votes,
+  account,
+}) {
+  return guild.setVote(proposalId, votes, { from: account });
 }
 
 export const GUILD_PROPOSAL_STATES = {
