@@ -43,6 +43,7 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 _lockTime,
         address _permissionRegistry
     ) public override virtual initializer {
+        __Ownable_init();
         super.initialize(
             _token,
             _proposalTime,

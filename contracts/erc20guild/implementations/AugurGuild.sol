@@ -134,12 +134,12 @@ contract AugurGuild is GuardedERC20Guild, MigratableERC20Guild {
     }
 
     function lockTokens(uint256 tokenAmount) public override(ERC20Guild, MigratableERC20Guild) 
-        virtual isInitialized
+        virtual
     {
         MigratableERC20Guild.lockTokens(tokenAmount);
     }
     function withdrawTokens(uint256 tokenAmount) public override(ERC20Guild, MigratableERC20Guild)
-        virtual isInitialized
+        virtual
     {
         MigratableERC20Guild.withdrawTokens(tokenAmount);
     }

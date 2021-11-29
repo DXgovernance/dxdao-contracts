@@ -48,6 +48,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 _lockTime,
         address _permissionRegistry
     ) public override initializer {
+        __Ownable_init();
         super.initialize(
             _token,
             _proposalTime,
