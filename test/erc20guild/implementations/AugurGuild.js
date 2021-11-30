@@ -232,9 +232,17 @@ contract("AugurGuild", function (accounts) {
       
       assert.equal(await augurGuild.votingPowerOf(accounts[1]), "50000");
       assert.equal(await augurGuild.votingPowerOf(accounts[2]), "50000");
+      
+      // Wont be able to change token vault before fork
+      await time.increaseTo(forkTime - 1);
+      await expectRevert.unspecified(augurGuild.changeTokenVault(tokenVaultB.address));
 
+      // Can change token vault only once after fork
       await time.increaseTo(forkTime + 1);
       await augurGuild.changeTokenVault(tokenVaultB.address);
+      
+      // Can change token vault again
+      await expectRevert.unspecified(augurGuild.changeTokenVault(tokenVaultB.address));
 
       await time.increase(time.duration.seconds(10));
 
