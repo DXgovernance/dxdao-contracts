@@ -45,6 +45,13 @@ This script will get the DXdao Rep from mainnet or xdai DXdao rep token and REP 
 
 `yarn coverage`
 
+## Create2
+
+This hardhat task runs on the selected network, it receives the name of the contract that wants to be deployed using create2 and the salt. In case a contract has a initialize function you can also send teh initialization parameters.
+
+Example for ERC20Token:
+`yarn hardhat create2 --network arbitrumTestnet --contract ERC20Token --salt 2 --initializer "DXGovTestToken,DXGTT,0xC4B60a931929d3ed0AC423F9Ea80e5962726dA73,100000000000000000000000"`
+
 ## Sourcify
 
 A shell script to be used with https://github.com/crytic/solc-select to flatten and get the metadata files for https://sourcify.dev/ verification. The files are saved in the .temp folder.
