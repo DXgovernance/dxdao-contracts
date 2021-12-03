@@ -219,24 +219,14 @@ contract("MigratableERC20Guild", function (accounts) {
     assert.equal(await erc20Guild.votingPowerOf(accounts[2]), "50000");
 
     await time.increase(time.duration.seconds(31));
-    const receipt = await erc20Guild.endProposal(guildProposalId);
-    expectEvent(receipt, "ProposalStateChanged", {
-      proposalId: guildProposalId,
-      newState: "3"
-    });
+    await expectRevert(
+      erc20Guild.endProposal(guildProposalId),
+      "ERC20Guild: Proposal call failed"
+    );
 
-    assert.equal(await erc20Guild.votingPowerOf(accounts[1]), "500000");
-    assert.equal(await erc20Guild.votingPowerOf(accounts[2]), "500000");
-    assert.equal(await erc20Guild.votingPowerOf(accounts[3]), "0");
-    assert.equal(await erc20Guild.votingPowerOf(accounts[4]), "0");
-    assert.equal(await erc20Guild.votingPowerOf(accounts[5]), "0");
+    assert.equal(await erc20Guild.getToken(), guildTokenA.address);
+    assert.equal(await erc20Guild.getTokenVault(), tokenVaultA);
 
-    assert.equal(await erc20Guild.getToken(), guildTokenB.address);
-    assert.equal(await erc20Guild.getTokenVault(), tokenVaultB.address);
-
-    await guildTokenB.approve(tokenVaultB.address, 500000, { from: accounts[3] });
-    await erc20Guild.lockTokens(500000, { from: accounts[3] });
-    assert.equal(await erc20Guild.votingPowerOf(accounts[3]), "500000");
   });
 
 });
