@@ -233,16 +233,40 @@ contract("AugurGuild", function (accounts) {
       assert.equal(await augurGuild.votingPowerOf(accounts[1]), "50000");
       assert.equal(await augurGuild.votingPowerOf(accounts[2]), "50000");
       
-      // Wont be able to change token vault before fork
-      await time.increaseTo(forkTime - 1);
-      await expectRevert.unspecified(augurGuild.changeTokenVault(tokenVaultB.address));
+      // Can change token vault form non guardian address
+      await expectRevert(augurGuild.changeTokenVault(tokenVaultB.address), "AugurGuild: Only guardian can change the token vault");
 
-      // Can change token vault only once after fork
-      await time.increaseTo(forkTime + 1);
-      await augurGuild.changeTokenVault(tokenVaultB.address);
+      const changeTokenVaultProposal = await createProposal({
+        guild: guardianGuild,
+        actions: [{
+          to: [augurGuild.address],
+          data: [
+            await new web3.eth.Contract(AugurGuild.abi).methods
+              .changeTokenVault(tokenVaultB.address)
+              .encodeABI()
+          ],
+          value: [0],
+        }],
+        account: accounts[7],
+      });
+      await setAllVotesOnProposal({
+        guild: guardianGuild,
+        proposalId: changeTokenVaultProposal,
+        action: 1,
+        account: accounts[8],
+      });
+      await setAllVotesOnProposal({
+        guild: guardianGuild,
+        proposalId: changeTokenVaultProposal,
+        action: 1,
+        account: accounts[7],
+      });
       
-      // Can change token vault again
-      await expectRevert.unspecified(augurGuild.changeTokenVault(tokenVaultB.address));
+      // Change before fork finish because there is already a winning universe
+      await time.increase(10);
+      await guardianGuild.endProposal(changeTokenVaultProposal);
+
+      await time.increaseTo(forkTime);
 
       await time.increase(time.duration.seconds(10));
 

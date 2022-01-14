@@ -66,13 +66,8 @@ contract AugurGuild is GuardedERC20Guild, MigratableERC20Guild {
     // The token vault admin has to be the guild.
     // @param newTokenVault The address of the new token vault
     function changeTokenVault(address newTokenVault) public override virtual {
-        (, bytes memory getForkEndTimeData) = augurUniverse
-            .call(abi.encodeWithSignature("getForkEndTime()"));
-
-        uint256 forkTime = abi.decode(getForkEndTimeData, (uint256));
-
-        require(forkTime < block.timestamp, "AugurGuild: Fork hasn't ended yet");
-
+        require(msg.sender == guildGuardian, "AugurGuild: Only guardian can change the token vault");
+        
         (bool getWinningChildUniverseSuccess, bytes memory getWinningChildUniverseData) = augurUniverse
             .call(abi.encodeWithSignature("getWinningChildUniverse()"));
 
