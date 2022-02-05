@@ -21,11 +21,11 @@ contract("DXDVestingFactory", function (accounts) {
   describe("Create", function () {
     it("Can create vesting and transfer ownership", async function () {
       const dxdTokenMock = await ERC20Mock.new(accounts[0], 1000);
-      const vestingFactory = new DXDVestingFactory(
+      const vestingFactory = await new DXDVestingFactory(
         dxdTokenMock.address,
         accounts[0]
       );
-      dxdTokenMock.approve(vestingFactory, 1);
+      await dxdTokenMock.approve(vestingFactory, 1);
 
       const receipt = await vestingFactory.create(
         accounts[1],
