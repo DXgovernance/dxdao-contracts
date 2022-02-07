@@ -21,19 +21,28 @@ contract("DXDVestingFactory", function (accounts) {
   describe("Create", function () {
     it("Can create vesting and transfer ownership", async function () {
       const dxdTokenMock = await ERC20Mock.new(accounts[0], 1000);
+      console.log({ dxdTokenMock });
+      console.log("token mock");
       const vestingFactory = await new DXDVestingFactory(
         dxdTokenMock.address,
         accounts[0]
       );
-      await dxdTokenMock.approve(vestingFactory, 1);
+      console.log("vesting factory");
+      // Approve breaks
+      await dxdTokenMock.approve(vestingFactory.address, 10, {
+        from: accounts[0],
+      });
+      console.log("approve");
 
       const receipt = await vestingFactory.create(
         accounts[1],
-        time.latest(),
-        time.duration.seconds(1),
-        time.duration.seconds(2),
-        1
+        new BN("0"),
+        new BN("60"),
+        new BN("120"),
+        new BN("1")
       );
+
+      console.log("create");
       const owner = await new web3.eth.Contract(
         TokenVesting.abi,
         receipt.vestingContractAddress
