@@ -18,41 +18,41 @@ const ERC20Mock = artifacts.require("ERC20Mock.sol");
 require("chai").should();
 
 contract("DXDVestingFactory", function (accounts) {
+
   describe("Create", function () {
+
     it("Can create vesting and transfer ownership", async function () {
       const dao = accounts[0];
       const contributor = accounts[1];
 
       const dxdTokenMock = await ERC20Mock.new(dao, 1000);
-      console.log({ dxdTokenMock });
-      console.log("token mock");
+
       const vestingFactory = await DXDVestingFactory.new(
         dxdTokenMock.address,
         dao
       );
-      console.log("vesting factory");
       await dxdTokenMock.approve(vestingFactory.address, 10, {
         from: dao,
       });
-      console.log("approve");
-      console.log({ vestingFactory });
+
+      const timeNow = (await time.latest()).toNumber();
+      
       const receipt = await vestingFactory.create(
-        contributor.address,
-        (await time.latest()).toNumber(),
+        contributor,
+        timeNow,
         600,
         1200,
         1,
-        { from: dao.address }
+        { from: dao }
       );
 
-      console.log({ receipt });
-      const owner = await new web3.eth.Contract(
+      const newVestingContract = await new web3.eth.Contract(
         TokenVesting.abi,
-        receipt.vestingContractAddress
-      ).methods
-        .owner()
-        .call();
-      expect(owner).to.be.equal(dao.address);
+        receipt.logs[0].args.vestingContractAddress
+      );
+
+      const owner = await newVestingContract.methods.owner().call();
+      expect(owner).to.be.equal(dao);
     });
   });
 });
