@@ -22,8 +22,8 @@ contract DXDVestingFactory {
     ) public {
         TokenVesting newVestingContract =
             new TokenVesting(beneficiary, start, cliffDuration, duration, true);
-        newVestingContract.transferOwnership(DXdao);
         DXD.transferFrom(msg.sender, address(newVestingContract), value);
+        newVestingContract.transferOwnership(DXdao);
         emit VestingCreated(address(newVestingContract));
     }
 }
