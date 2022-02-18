@@ -22,6 +22,8 @@ jobs:
           node-version: 12.19.1
       - name: Install Dependencies
         run: yarn
+      - name: Format Check
+        run: yarn format-check
       - name: Solidity Linter
         run: yarn solidity-linter
       - name: Solidity Tests
