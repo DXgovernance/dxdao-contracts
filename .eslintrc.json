@@ -18,9 +18,9 @@
     "comma-spacing": "error",
     "brace-style": "error",
     "function-paren-newline": ["error", "consistent"],
-    "max-len": ["warning", 120],
+    "max-len": ["warn", 120],
     "key-spacing": "error",
-    "quotes": ["warning", "double"],
+    "quotes": ["warn", "double"],
     "space-infix-ops": "error"
   }
 }
