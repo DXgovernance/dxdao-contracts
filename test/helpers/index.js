@@ -33,7 +33,7 @@ export const logDecoder = new LogDecoder([
   PermissionRegistry.abi,
   DXDVestingFactory.abi,
   DXdaoNFT.abi,
-  ERC20Guild.abi
+  ERC20Guild.abi,
 ]);
 
 export function getProposalAddress(tx) {
@@ -388,16 +388,15 @@ export function encodeERC20Approve(to, value) {
 }
 
 export function create2Address(creatorAddress, bytecode, saltHex) {
+  const parts = [
+    "ff",
+    creatorAddress.slice(2),
+    saltHex.slice(2),
+    web3.utils.sha3(bytecode).slice(2),
+  ];
 
-    const parts = [
-      'ff',
-      creatorAddress.slice(2),
-      saltHex.slice(2),
-      web3.utils.sha3(bytecode).slice(2),
-    ];
-  
-    const partsHash = web3.utils.sha3(`0x${parts.join('')}`);
-    return `0x${partsHash.slice(-40)}`.toLowerCase();
+  const partsHash = web3.utils.sha3(`0x${parts.join("")}`);
+  return `0x${partsHash.slice(-40)}`.toLowerCase();
 }
 
 export {
