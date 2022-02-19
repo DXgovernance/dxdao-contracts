@@ -171,9 +171,8 @@ contract("DXDVotingMachine", function (accounts) {
         constants.NULL_ADDRESS,
         { from: accounts[3] }
       );
-      const organizationRefundConf = await dxdVotingMachine.contract.organizationRefunds(
-        org.avatar.address
-      );
+      const organizationRefundConf =
+        await dxdVotingMachine.contract.organizationRefunds(org.avatar.address);
       assert.equal(0, organizationRefundConf.balance);
       assert.equal(VOTE_GAS, organizationRefundConf.voteGas);
       assert.equal(constants.GAS_PRICE, organizationRefundConf.maxGasPrice);
@@ -246,9 +245,10 @@ contract("DXDVotingMachine", function (accounts) {
       );
       expect(tx.receipt.gasUsed).to.be.closeTo(gastVoteWithoutRefund, 1);
 
-      let organizationProposal = await expensiveVoteWalletScheme.getOrganizationProposal(
-        expensiveProposalId
-      );
+      let organizationProposal =
+        await expensiveVoteWalletScheme.getOrganizationProposal(
+          expensiveProposalId
+        );
       assert.equal(
         organizationProposal.state,
         constants.WalletSchemeProposalState.executionSuccedd
@@ -294,9 +294,8 @@ contract("DXDVotingMachine", function (accounts) {
       );
       expect(tx.receipt.gasUsed - VOTE_GAS).to.be.closeTo(gasVoteWithRefund, 1);
 
-      organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(
-        cheapProposalId
-      );
+      organizationProposal =
+        await cheapVoteWalletScheme.getOrganizationProposal(cheapProposalId);
       assert.equal(
         organizationProposal.state,
         constants.WalletSchemeProposalState.executionSuccedd
@@ -421,9 +420,8 @@ contract("DXDVotingMachine", function (accounts) {
       );
       expect(tx.receipt.gasUsed).to.be.closeTo(gastVoteWithoutRefund, 1);
 
-      const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(
-        proposalId
-      );
+      const organizationProposal =
+        await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
         constants.WalletSchemeProposalState.executionSuccedd
@@ -643,9 +641,8 @@ contract("DXDVotingMachine", function (accounts) {
         { from: accounts[4] }
       );
 
-      const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(
-        proposalId
-      );
+      const organizationProposal =
+        await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
         constants.WalletSchemeProposalState.executionSuccedd
@@ -689,9 +686,8 @@ contract("DXDVotingMachine", function (accounts) {
         { from: accounts[4] }
       );
 
-      const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(
-        proposalId
-      );
+      const organizationProposal =
+        await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
         constants.WalletSchemeProposalState.rejected
@@ -762,9 +758,8 @@ contract("DXDVotingMachine", function (accounts) {
           .voteDecision,
         0
       );
-      const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(
-        proposalId
-      );
+      const organizationProposal =
+        await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
         constants.WalletSchemeProposalState.executionSuccedd
@@ -808,9 +803,8 @@ contract("DXDVotingMachine", function (accounts) {
           .voteDecision,
         0
       );
-      const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(
-        proposalId
-      );
+      const organizationProposal =
+        await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
         constants.WalletSchemeProposalState.rejected
@@ -834,24 +828,26 @@ contract("DXDVotingMachine", function (accounts) {
           1950
         )
         .encodeABI();
-      const setBoostedVoteRequiredPercentageTx = await cheapVoteWalletScheme.proposeCalls(
-        [org.controller.address],
-        [
-          helpers.encodeGenericCallData(
-            org.avatar.address,
-            dxdVotingMachine.address,
-            setBoostedVoteRequiredPercentageData,
-            0
-          ),
-        ],
-        [0],
-        constants.TEST_TITLE,
-        constants.SOME_HASH
-      );
-      const setBoostedVoteRequiredPercentageProposalId = await helpers.getValueFromLogs(
-        setBoostedVoteRequiredPercentageTx,
-        "_proposalId"
-      );
+      const setBoostedVoteRequiredPercentageTx =
+        await cheapVoteWalletScheme.proposeCalls(
+          [org.controller.address],
+          [
+            helpers.encodeGenericCallData(
+              org.avatar.address,
+              dxdVotingMachine.address,
+              setBoostedVoteRequiredPercentageData,
+              0
+            ),
+          ],
+          [0],
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        );
+      const setBoostedVoteRequiredPercentageProposalId =
+        await helpers.getValueFromLogs(
+          setBoostedVoteRequiredPercentageTx,
+          "_proposalId"
+        );
       const organizationId = (
         await dxdVotingMachine.contract.proposals(
           setBoostedVoteRequiredPercentageProposalId
@@ -936,9 +932,8 @@ contract("DXDVotingMachine", function (accounts) {
         }
       );
 
-      const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(
-        testProposalId
-      );
+      const organizationProposal =
+        await cheapVoteWalletScheme.getOrganizationProposal(testProposalId);
       assert.equal(
         organizationProposal.state,
         constants.WalletSchemeProposalState.executionSuccedd
@@ -998,9 +993,8 @@ contract("DXDVotingMachine", function (accounts) {
         }
       );
 
-      const organizationProposal = await cheapVoteWalletScheme.getOrganizationProposal(
-        testProposalId
-      );
+      const organizationProposal =
+        await cheapVoteWalletScheme.getOrganizationProposal(testProposalId);
       assert.equal(
         organizationProposal.state,
         constants.WalletSchemeProposalState.rejected

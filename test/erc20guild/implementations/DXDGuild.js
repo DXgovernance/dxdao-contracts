@@ -12,7 +12,9 @@ const {
 } = require("@openzeppelin/test-helpers");
 
 const DXDGuild = artifacts.require("DXDGuild.sol");
-const GlobalPermissionRegistry = artifacts.require("GlobalPermissionRegistry.sol");
+const GlobalPermissionRegistry = artifacts.require(
+  "GlobalPermissionRegistry.sol"
+);
 const ActionMock = artifacts.require("ActionMock.sol");
 
 require("chai").should();
@@ -34,13 +36,10 @@ contract("DXDGuild", function (accounts) {
     walletSchemeProposalData;
 
   beforeEach(async function () {
-    guildToken = await createAndSetupGuildToken(accounts.slice(0, 5), [
-      0,
-      50,
-      100,
-      100,
-      250,
-    ]);
+    guildToken = await createAndSetupGuildToken(
+      accounts.slice(0, 5),
+      [0, 50, 100, 100, 250]
+    );
     dxdGuild = await DXDGuild.new();
     const globalPermissionRegistry = await GlobalPermissionRegistry.new();
 
@@ -49,21 +48,22 @@ contract("DXDGuild", function (accounts) {
     votingMachine = createDaoResult.votingMachine;
     org = createDaoResult.org;
     actionMock = await ActionMock.new();
-    await dxdGuild
-      .methods['initialize(address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,address,address)'](
-        guildToken.address,
-        30,
-        30,
-        5000,
-        1100,
-        VOTE_GAS,
-        MAX_GAS_PRICE,
-        10,
-        TIMELOCK,
-        globalPermissionRegistry.address,
-        votingMachine.address
-      );
-    
+    await dxdGuild.methods[
+      "initialize(address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,address,address)"
+    ](
+      guildToken.address,
+      30,
+      30,
+      5000,
+      1100,
+      VOTE_GAS,
+      MAX_GAS_PRICE,
+      10,
+      TIMELOCK,
+      globalPermissionRegistry.address,
+      votingMachine.address
+    );
+
     await time.increase(time.duration.seconds(1));
 
     tokenVault = await dxdGuild.getTokenVault();
@@ -99,13 +99,14 @@ contract("DXDGuild", function (accounts) {
 
   describe("DXDGuild", function () {
     it("execute a positive vote on the voting machine from the dxd-guild", async function () {
-      
-      const DXDVotingMachineContract = await new web3.eth.Contract(votingMachine.contract.abi);
-      const positiveVoteData = DXDVotingMachineContract
-        .methods.vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS)
+      const DXDVotingMachineContract = await new web3.eth.Contract(
+        votingMachine.contract.abi
+      );
+      const positiveVoteData = DXDVotingMachineContract.methods
+        .vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS)
         .encodeABI();
-      const negativeVoteData = DXDVotingMachineContract
-        .methods.vote(walletSchemeProposalId, 2, 0, constants.NULL_ADDRESS)
+      const negativeVoteData = DXDVotingMachineContract.methods
+        .vote(walletSchemeProposalId, 2, 0, constants.NULL_ADDRESS)
         .encodeABI();
 
       await expectRevert(
@@ -116,7 +117,7 @@ contract("DXDGuild", function (accounts) {
           2,
           `vote on ${walletSchemeProposalId}`,
           constants.SOME_HASH,
-          { from: accounts[1]}
+          { from: accounts[1] }
         ),
         "ERC20Guild: Not enough votes to create proposal"
       );
@@ -143,7 +144,7 @@ contract("DXDGuild", function (accounts) {
         dxdGuild.endProposal(proposalId),
         "ERC20Guild: Proposal hasn't ended yet"
       );
-      
+
       await setAllVotesOnProposal({
         guild: dxdGuild,
         proposalId: proposalId,
@@ -163,12 +164,10 @@ contract("DXDGuild", function (accounts) {
 
       expectEvent(txVote, "VoteAdded", { proposalId: proposalId });
       await time.increase(time.duration.seconds(31));
-      const receipt = await dxdGuild.endProposal(
-        proposalId
-      );
+      const receipt = await dxdGuild.endProposal(proposalId);
       expectEvent(receipt, "ProposalStateChanged", {
         proposalId: proposalId,
-        newState: "3"
+        newState: "3",
       });
       await expectRevert(
         dxdGuild.endProposal(proposalId),
