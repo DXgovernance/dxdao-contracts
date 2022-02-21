@@ -11,7 +11,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.19.1]
+        node-version: [12.20.0]
 
     steps:
       - name: Checkout
@@ -19,7 +19,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: 12.19.1
+          node-version: 12.20.0
       - name: Install Dependencies
         run: yarn
       - name: Format Check
