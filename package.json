@@ -19,8 +19,10 @@
     "solidity-linter": "./scripts/solhint.sh",
     "lint": "eslint .",
     "lint --fix": "eslint --fix .",
-    "format": "prettier --write \"test/**/*.{js,jsx,ts,tsx,json,md}\"",
-    "format-check": "prettier --check \"test/**/*.{js,jsx,ts,tsx,json,md}\""
+    "format": "prettier --write \"test/**/*.{js,jsx,ts,tsx,json,md}\" \"contracts/**/*.sol\"",
+    "format-check": "prettier --check \"test/**/*.{js,jsx,ts,tsx,json,md}\" \"contracts/**/*.sol\"",
+    "postinstall": "husky install",
+    "pre-commit": "lint-staged"
   },
   "devDependencies": {
     "@babel/cli": "^7.10.1",
@@ -54,12 +56,15 @@
     "hardhat": "^2.6.8",
     "hardhat-dependency-compiler": "^1.1.1",
     "hardhat-gas-reporter": "^1.0.4",
+    "husky": "^7.0.4",
+    "lint-staged": "^12.3.4",
     "pm2": "^2.9.3",
     "promisify": "^0.0.3",
     "pug": "^2.0.0-rc.4",
     "rimraf": "^2.6.2",
     "run-with-ganache": "^0.1.1",
     "solhint": "^3.3.5",
+    "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.16",
     "truffle": "^5.1.28",
     "truffle-hdwallet-provider": "^1.0.17",
@@ -87,10 +92,16 @@
     "moment": "^2.27.0",
     "openzeppelin-solidity": "2.4.0",
     "prettier": "^2.0.5",
-    "prettier-plugin-solidity": "^1.0.0-alpha.55",
+    "prettier-plugin-solidity": "^1.0.0-beta.19",
     "truffle-flattener": "^1.4.4"
   },
   "peerDependencies": {
     "ganache-cli": "^6.4.1"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,sol}": [
+      "yarn format",
+      "yarn solidity-linter"
+    ]
   }
 }

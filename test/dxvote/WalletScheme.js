@@ -457,9 +457,8 @@ contract("WalletScheme", function (accounts) {
       { from: accounts[2] }
     );
 
-    const organizationProposal1 = await registrarWalletScheme.getOrganizationProposal(
-      proposalId3
-    );
+    const organizationProposal1 =
+      await registrarWalletScheme.getOrganizationProposal(proposalId3);
     assert.equal(
       organizationProposal1.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -468,9 +467,8 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal1.to[0], org.controller.address);
     assert.equal(organizationProposal1.value[0], 0);
 
-    const organizationProposal2 = await registrarWalletScheme.getOrganizationProposal(
-      proposalId4
-    );
+    const organizationProposal2 =
+      await registrarWalletScheme.getOrganizationProposal(proposalId4);
     assert.equal(
       organizationProposal2.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -479,9 +477,8 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal2.to[0], org.controller.address);
     assert.equal(organizationProposal2.value[0], 0);
 
-    const organizationProposal3 = await registrarWalletScheme.getOrganizationProposal(
-      proposalId5
-    );
+    const organizationProposal3 =
+      await registrarWalletScheme.getOrganizationProposal(proposalId5);
     assert.equal(
       organizationProposal3.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -573,10 +570,10 @@ contract("WalletScheme", function (accounts) {
       constants.SOME_HASH
     );
     assert.equal(
-      helpers.logDecoder.decodeLogs(submitProposalTx.receipt.rawLogs)[0].args._paramsHash,
+      helpers.logDecoder.decodeLogs(submitProposalTx.receipt.rawLogs)[0].args
+        ._paramsHash,
       newVotingParamsHash
     );
-
   });
 
   it("MasterWalletScheme - setMaxSecondsForExecution is callable only form the avatar", async function () {
@@ -632,9 +629,8 @@ contract("WalletScheme", function (accounts) {
       { from: accounts[2] }
     );
 
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -702,9 +698,8 @@ contract("WalletScheme", function (accounts) {
       { from: accounts[2] }
     );
 
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionTimeout
@@ -869,9 +864,8 @@ contract("WalletScheme", function (accounts) {
     );
     assert.equal(stateChangeEvent.args._state, 2);
 
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.rejected
@@ -882,14 +876,14 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.to[0], actionMock.address);
     assert.equal(organizationProposal.value[0], 0);
   });
-  
+
   it("MasterWalletScheme - proposal with value to gnosisSafe - positive decision - proposal executed", async function () {
     await web3.eth.sendTransaction({
       from: accounts[0],
       to: org.avatar.address,
       value: 1000,
     });
-    
+
     var gnosisSafe = await GnosisSafe.new();
     var gnosisProxy = await GnosisProxy.new(gnosisSafe.address);
     const tx = await masterWalletScheme.proposeCalls(
@@ -908,9 +902,8 @@ contract("WalletScheme", function (accounts) {
       { from: accounts[2] }
     );
 
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -939,9 +932,8 @@ contract("WalletScheme", function (accounts) {
       { from: accounts[2] }
     );
 
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -988,13 +980,14 @@ contract("WalletScheme", function (accounts) {
       )
       .encodeABI();
 
-    const actionMockExecuteCallWithRequiredData = await actionMock.contract.methods
-      .executeCallWithRequiredSuccess(
-        masterWalletScheme.address,
-        executeSignedVoteData,
-        0
-      )
-      .encodeABI();
+    const actionMockExecuteCallWithRequiredData =
+      await actionMock.contract.methods
+        .executeCallWithRequiredSuccess(
+          masterWalletScheme.address,
+          executeSignedVoteData,
+          0
+        )
+        .encodeABI();
 
     const actionMockExecuteCallData = await actionMock.contract.methods
       .executeCall(masterWalletScheme.address, executeSignedVoteData, 0)
@@ -1376,9 +1369,8 @@ contract("WalletScheme", function (accounts) {
       { from: accounts[2] }
     );
 
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(
-      proposalId2
-    );
+    const organizationProposal =
+      await masterWalletScheme.getOrganizationProposal(proposalId2);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -1535,9 +1527,8 @@ contract("WalletScheme", function (accounts) {
       { from: accounts[2], gas: 9000000 }
     );
 
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(
-      proposalId2
-    );
+    const organizationProposal =
+      await masterWalletScheme.getOrganizationProposal(proposalId2);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -1592,9 +1583,8 @@ contract("WalletScheme", function (accounts) {
       Number(balanceBeforePay) + constants.TEST_VALUE
     );
 
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -1673,9 +1663,8 @@ contract("WalletScheme", function (accounts) {
     assert.equal(returnValue["0"], true);
     assert.equal(returnValue["1"], null);
 
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -1732,9 +1721,8 @@ contract("WalletScheme", function (accounts) {
     );
     assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
 
-    const mintRepProposal = await masterWalletScheme.getOrganizationProposalByIndex(
-      0
-    );
+    const mintRepProposal =
+      await masterWalletScheme.getOrganizationProposalByIndex(0);
     assert.equal(
       mintRepProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -1743,9 +1731,8 @@ contract("WalletScheme", function (accounts) {
     assert.equal(mintRepProposal.to[0], org.controller.address);
     assert.equal(mintRepProposal.value[0], 0);
 
-    const burnRepProposal = await masterWalletScheme.getOrganizationProposalByIndex(
-      1
-    );
+    const burnRepProposal =
+      await masterWalletScheme.getOrganizationProposalByIndex(1);
     assert.equal(
       burnRepProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -1987,9 +1974,8 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await votingMachine.contract.execute(proposalId);
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.submitted
@@ -2046,9 +2032,8 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_VALUE
     );
 
-    const organizationProposal = await masterWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -2155,9 +2140,8 @@ contract("WalletScheme", function (accounts) {
     );
     assert.equal(stateChangeEvent.args._state, 2);
 
-    const organizationProposal = await quickWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await quickWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.rejected
@@ -2186,9 +2170,8 @@ contract("WalletScheme", function (accounts) {
       { from: accounts[2] }
     );
 
-    const organizationProposal = await quickWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await quickWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -2240,9 +2223,8 @@ contract("WalletScheme", function (accounts) {
       Number(balanceBeforePay) + constants.TEST_VALUE
     );
 
-    const organizationProposal = await quickWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await quickWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -2320,9 +2302,8 @@ contract("WalletScheme", function (accounts) {
     const returnValues = executionEvent.args._callsDataResult[0];
     assert.equal(returnValues, "0x");
 
-    const organizationProposal = await quickWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await quickWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -2642,9 +2623,8 @@ contract("WalletScheme", function (accounts) {
       { from: accounts[2] }
     );
 
-    const organizationProposal = await quickWalletScheme.getOrganizationProposal(
-      proposalId2
-    );
+    const organizationProposal =
+      await quickWalletScheme.getOrganizationProposal(proposalId2);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -2715,9 +2695,8 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_VALUE
     );
 
-    const organizationProposal = await quickWalletScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal =
+      await quickWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
@@ -2835,9 +2814,8 @@ contract("WalletScheme", function (accounts) {
       );
       assert.equal(await testToken.balanceOf(org.avatar.address), "150");
 
-      const organizationProposal = await masterWalletScheme.getOrganizationProposal(
-        proposalId2
-      );
+      const organizationProposal =
+        await masterWalletScheme.getOrganizationProposal(proposalId2);
       assert.equal(
         organizationProposal.state,
         constants.WalletSchemeProposalState.executionSuccedd
@@ -3037,9 +3015,8 @@ contract("WalletScheme", function (accounts) {
       );
       assert.equal(await testToken.balanceOf(quickWalletScheme.address), "150");
 
-      const organizationProposal = await quickWalletScheme.getOrganizationProposal(
-        proposalId2
-      );
+      const organizationProposal =
+        await quickWalletScheme.getOrganizationProposal(proposalId2);
       assert.equal(
         organizationProposal.state,
         constants.WalletSchemeProposalState.executionSuccedd

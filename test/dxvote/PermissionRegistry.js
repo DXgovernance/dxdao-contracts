@@ -285,9 +285,8 @@ contract("PermissionRegistry", function (accounts) {
       { from: accounts[2] }
     );
 
-    const organizationProposal = await quickWalletScheme.getOrganizationProposal(
-      proposalId2
-    );
+    const organizationProposal =
+      await quickWalletScheme.getOrganizationProposal(proposalId2);
     assert.equal(
       organizationProposal.state,
       constants.WalletSchemeProposalState.executionSuccedd
