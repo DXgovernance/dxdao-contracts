@@ -13,10 +13,10 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 */
 contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
-    
+
     address guildGuardian;
     uint256 extraTimeForGuardian;
-    
+
     // @dev Initilizer
     // @param _token The ERC20 token that will be used as source of voting power
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
@@ -42,7 +42,7 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 _maxActiveProposals,
         uint256 _lockTime,
         address _permissionRegistry
-    ) public override virtual initializer {
+    ) public virtual override initializer {
         super.initialize(
             _token,
             _proposalTime,
@@ -64,13 +64,13 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
             true
         );
     }
-    
+
     // @dev Executes a proposal that is not votable anymore and can be finished
     // If this function is called by the guild guardian the proposal can end sooner after proposal endTime
     // If this function is not called by the guild guardian the proposal can end sooner after proposal endTime plus
     // the extraTimeForGuardian
     // @param proposalId The id of the proposal to be executed
-    function endProposal(bytes32 proposalId) public override virtual {
+    function endProposal(bytes32 proposalId) public virtual override {
         require(
             proposals[proposalId].state == ProposalState.Active,
             "GuardedERC20Guild: Proposal already executed"
@@ -82,7 +82,8 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
             );
         else
             require(
-                proposals[proposalId].endTime.add(extraTimeForGuardian) < block.timestamp,
+                proposals[proposalId].endTime.add(extraTimeForGuardian) <
+                    block.timestamp,
                 "GuardedERC20Guild: Proposal hasn't ended yet for guild"
             );
         super.endProposal(proposalId);
@@ -102,7 +103,7 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
         proposals[proposalId].state = ProposalState.Rejected;
         emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
     }
-    
+
     // @dev Set GuardedERC20Guild guardian configuration
     // @param _guildGuardian The address of the guild guardian
     // @param _extraTimeForGuardian The extra time the proposals would be locked for guardian verification
@@ -123,13 +124,12 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     }
 
     // @dev Get the guildGuardian address
-    function getGuildGuardian() public view returns(address) {
+    function getGuildGuardian() public view returns (address) {
         return guildGuardian;
     }
 
     // @dev Get the extraTimeForGuardian
-    function getExtraTimeForGuardian() public view returns(uint256) {
+    function getExtraTimeForGuardian() public view returns (uint256) {
         return extraTimeForGuardian;
     }
-       
 }

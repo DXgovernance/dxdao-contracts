@@ -68,9 +68,7 @@ contract DXDVotingMachine is GenesisProtocol {
         if (organizationRefunds[msg.sender].voteGas > 0)
             organizationRefunds[msg.sender].balance = organizationRefunds[
                 msg.sender
-            ]
-                .balance
-                .add(msg.value);
+            ].balance.add(msg.value);
     }
 
     /**
@@ -147,14 +145,13 @@ contract DXDVotingMachine is GenesisProtocol {
         uint256 amount,
         bytes calldata signature
     ) external {
-        bytes32 voteHashed =
-            hashVote(
-                votingMachine,
-                proposalId,
-                msg.sender,
-                voteDecision,
-                amount
-            );
+        bytes32 voteHashed = hashVote(
+            votingMachine,
+            proposalId,
+            msg.sender,
+            voteDecision,
+            amount
+        );
         require(
             msg.sender ==
                 voteHashed.toEthSignedMessageHash().recover(signature),
@@ -262,17 +259,14 @@ contract DXDVotingMachine is GenesisProtocol {
     {
         address orgAddress = organizations[organizationId];
         if (organizationRefunds[orgAddress].voteGas > 0) {
-            uint256 gasRefund =
-                organizationRefunds[orgAddress].voteGas.mul(
-                    tx.gasprice.min(organizationRefunds[orgAddress].maxGasPrice)
-                );
+            uint256 gasRefund = organizationRefunds[orgAddress].voteGas.mul(
+                tx.gasprice.min(organizationRefunds[orgAddress].maxGasPrice)
+            );
             if (organizationRefunds[orgAddress].balance >= gasRefund) {
                 toAddress.transfer(gasRefund);
                 organizationRefunds[orgAddress].balance = organizationRefunds[
                     orgAddress
-                ]
-                    .balance
-                    .sub(gasRefund);
+                ].balance.sub(gasRefund);
             }
         }
     }
@@ -369,18 +363,17 @@ contract DXDVotingMachine is GenesisProtocol {
         Proposal storage proposal = proposals[_proposalId];
         Parameters memory params = parameters[proposal.paramsHash];
         Proposal memory tmpProposal = proposal;
-        uint256 totalReputation =
-            VotingMachineCallbacksInterface(proposal.callbacks)
-                .getTotalReputationSupply(_proposalId);
+        uint256 totalReputation = VotingMachineCallbacksInterface(
+            proposal.callbacks
+        ).getTotalReputationSupply(_proposalId);
         //first divide by 100 to prevent overflow
-        uint256 executionBar =
-            (totalReputation / 100) * params.queuedVoteRequiredPercentage;
-        uint256 _boostedVoteRequiredPercentage =
-            boostedVoteRequiredPercentage[proposal.organizationId][
-                proposal.paramsHash
-            ];
-        uint256 boostedExecutionBar =
-            (totalReputation / 10000) * _boostedVoteRequiredPercentage;
+        uint256 executionBar = (totalReputation / 100) *
+            params.queuedVoteRequiredPercentage;
+        uint256 _boostedVoteRequiredPercentage = boostedVoteRequiredPercentage[
+            proposal.organizationId
+        ][proposal.paramsHash];
+        uint256 boostedExecutionBar = (totalReputation / 10000) *
+            _boostedVoteRequiredPercentage;
         ExecutionState executionState = ExecutionState.None;
         uint256 averageDownstakesOfBoosted;
         uint256 confidenceThreshold;
@@ -509,8 +502,9 @@ contract DXDVotingMachine is GenesisProtocol {
                     tmpProposal.organizationId
                 ] = orgBoostedProposalsCnt[tmpProposal.organizationId].sub(1);
                 //remove a value from average = ((average * nbValues) - value) / (nbValues - 1);
-                uint256 boostedProposals =
-                    orgBoostedProposalsCnt[tmpProposal.organizationId];
+                uint256 boostedProposals = orgBoostedProposalsCnt[
+                    tmpProposal.organizationId
+                ];
                 if (boostedProposals == 0) {
                     averagesDownstakesOfBoosted[proposal.organizationId] = 0;
                 } else {

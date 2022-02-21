@@ -42,8 +42,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
 
-    bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
-    bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
+    bytes4 public constant ERC20_TRANSFER_SIGNATURE =
+        bytes4(keccak256("transfer(address,uint256)"));
+    bytes4 public constant ERC20_APPROVE_SIGNATURE =
+        bytes4(keccak256("approve(address,uint256)"));
     bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
 
     enum ProposalState {
@@ -141,7 +143,12 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     bytes32[] proposalsIds;
 
     event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
-    event VoteAdded(bytes32 indexed proposalId, uint256 indexed action, address voter, uint256 votingPower);
+    event VoteAdded(
+        bytes32 indexed proposalId,
+        uint256 indexed action,
+        address voter,
+        uint256 votingPower
+    );
     event TokensLocked(address voter, uint256 value);
     event TokensWithdrawn(address voter, uint256 value);
 
@@ -254,14 +261,24 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 functionSignature[i] != bytes4(0),
                 "ERC20Guild: Empty signatures not allowed"
             );
-            permissionRegistry.setPermission(asset[i], to[i], functionSignature[i], valueAllowed[i], allowance[i]);
+            permissionRegistry.setPermission(
+                asset[i],
+                to[i],
+                functionSignature[i],
+                valueAllowed[i],
+                allowance[i]
+            );
         }
         require(
             permissionRegistry.getPermissionTime(
                 address(0),
                 address(this),
                 address(this),
-                bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
+                bytes4(
+                    keccak256(
+                        "setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)"
+                    )
+                )
             ) > 0,
             "ERC20Guild: setConfig function allowance cant be turned off"
         );
@@ -270,7 +287,11 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 address(0),
                 address(this),
                 address(this),
-                bytes4(keccak256("setPermission(address[],address[],bytes4[],uint256[],bool[])"))
+                bytes4(
+                    keccak256(
+                        "setPermission(address[],address[],bytes4[],uint256[],bool[])"
+                    )
+                )
             ) > 0,
             "ERC20Guild: setPermission function allowance cant be turned off"
         );
@@ -287,9 +308,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     // @dev Set the permission delay in the permission registry
     // @param allowance If the function is allowed to be called or not
-    function setPermissionDelay(
-        uint256 permissionDelay
-    ) public virtual {
+    function setPermissionDelay(uint256 permissionDelay) public virtual {
         require(
             msg.sender == address(this),
             "ERC20Guild: Only callable by ERC20guild itself"
@@ -312,7 +331,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         string memory title,
         bytes memory contentHash
     ) public virtual returns (bytes32) {
-        return _createProposal(to, data, value, totalActions, title, contentHash);
+        return
+            _createProposal(to, data, value, totalActions, title, contentHash);
     }
 
     // @dev Set a hash of an call to be validated using EIP1271
@@ -472,7 +492,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             "ERC20Guild: to, data value arrays cannot be empty"
         );
         for (uint256 i = 0; i < to.length; i++) {
-            require(to[i] != address(permissionRegistry), "ERC20Guild: Cant call permission registry directly");
+            require(
+                to[i] != address(permissionRegistry),
+                "ERC20Guild: Cant call permission registry directly"
+            );
         }
         bytes32 proposalId = keccak256(
             abi.encodePacked(msg.sender, block.timestamp, totalProposals)
@@ -521,13 +544,19 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
         if (winningAction == 0) {
             proposals[proposalId].state = ProposalState.Rejected;
-            emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
+            emit ProposalStateChanged(
+                proposalId,
+                uint256(ProposalState.Rejected)
+            );
         } else if (
             proposals[proposalId].endTime.add(timeForExecution) <
             block.timestamp
         ) {
             proposals[proposalId].state = ProposalState.Failed;
-            emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
+            emit ProposalStateChanged(
+                proposalId,
+                uint256(ProposalState.Failed)
+            );
         } else {
             proposals[proposalId].state = ProposalState.Executed;
 
@@ -536,11 +565,15 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             );
             i = callsPerAction.mul(winningAction.sub(1));
             uint256 endCall = i.add(callsPerAction);
-            
+
             for (i; i < endCall; i++) {
-                if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
-                  
-                    bytes4 callDataFuncSignature = getFuncSignature(proposals[proposalId].data[i]);
+                if (
+                    proposals[proposalId].to[i] != address(0) &&
+                    proposals[proposalId].data[i].length > 0
+                ) {
+                    bytes4 callDataFuncSignature = getFuncSignature(
+                        proposals[proposalId].data[i]
+                    );
                     address asset = address(0);
                     address _to = proposals[proposalId].to[i];
                     uint256 _value = proposals[proposalId].value[i];
@@ -553,17 +586,21 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                     ) {
                         asset = proposals[proposalId].to[i];
                         callDataFuncSignature = ANY_SIGNATURE;
-                        (_to, _value) = erc20TransferOrApproveDecode(proposals[proposalId].data[i]);
+                        (_to, _value) = erc20TransferOrApproveDecode(
+                            proposals[proposalId].data[i]
+                        );
                     }
 
                     // The permission registry keeps track of all value transferred and checks call permission
-                    try permissionRegistry.setPermissionUsed(
-                        asset,
-                        address(this),
-                        _to,
-                        callDataFuncSignature,
-                        _value
-                    ) { } catch Error(string memory reason) {
+                    try
+                        permissionRegistry.setPermissionUsed(
+                            asset,
+                            address(this),
+                            _to,
+                            callDataFuncSignature,
+                            _value
+                        )
+                    {} catch Error(string memory reason) {
                         revert(reason);
                     }
 
@@ -575,7 +612,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                     isExecutingProposal = false;
                 }
             }
-            emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
+            emit ProposalStateChanged(
+                proposalId,
+                uint256(ProposalState.Executed)
+            );
         }
         activeProposalsNow = activeProposalsNow.sub(1);
     }
@@ -638,14 +678,22 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         permissionRegistry.setPermission(
             address(0),
             address(this),
-            bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")),
+            bytes4(
+                keccak256(
+                    "setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)"
+                )
+            ),
             0,
             true
         );
         permissionRegistry.setPermission(
             address(0),
             address(this),
-            bytes4(keccak256("setPermission(address[],address[],bytes4[],uint256[],bool[])")),
+            bytes4(
+                keccak256(
+                    "setPermission(address[],address[],bytes4[],uint256[],bool[])"
+                )
+            ),
             0,
             true
         );
@@ -727,8 +775,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             "ERC20Guild: Proposal ended, cant be voted"
         );
         require(
-            (votingPowerOf(voter) >= votingPower)
-            && (votingPower > proposals[proposalId].votes[voter].votingPower),
+            (votingPowerOf(voter) >= votingPower) &&
+                (votingPower > proposals[proposalId].votes[voter].votingPower),
             "ERC20Guild: Invalid votingPower amount"
         );
         require(
@@ -736,16 +784,17 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 proposals[proposalId].votes[voter].action == action,
             "ERC20Guild: Cant change action voted, only increase votingPower"
         );
-    
-        proposals[proposalId].totalVotes[action] = proposals[proposalId].totalVotes[action]
+
+        proposals[proposalId].totalVotes[action] = proposals[proposalId]
+            .totalVotes[action]
             .sub(proposals[proposalId].votes[voter].votingPower)
             .add(votingPower);
 
         proposals[proposalId].votes[voter].action = action;
         proposals[proposalId].votes[voter].votingPower = votingPower;
-        
+
         emit VoteAdded(proposalId, action, voter, votingPower);
-        
+
         if (voteGas > 0) {
             uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
             if (address(this).balance >= gasRefund) {
@@ -757,7 +806,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @dev Get the voting power of an account
     // @param account The address of the account
     function votingPowerOf(address account)
-        public view virtual returns (uint256)
+        public
+        view
+        virtual
+        returns (uint256)
     {
         return tokensLocked[account].amount;
     }
@@ -765,7 +817,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @dev Get the voting power of multiple addresses
     // @param accounts The addresses of the accounts
     function votingPowerOfMultiple(address[] memory accounts)
-        public view virtual returns (uint256[] memory)
+        public
+        view
+        virtual
+        returns (uint256[] memory)
     {
         uint256[] memory votes = new uint256[](accounts.length);
         for (uint256 i = 0; i < accounts.length; i++) {
@@ -775,62 +830,62 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // @dev Get the address of the ERC20Token used for voting
-    function getToken() public view returns(address) {
+    function getToken() public view returns (address) {
         return address(token);
     }
 
     // @dev Get the address of the permission registry contract
-    function getPermissionRegistry() public view returns(address) {
+    function getPermissionRegistry() public view returns (address) {
         return address(permissionRegistry);
     }
 
     // @dev Get the name of the ERC20Guild
-    function getName() public view returns(string memory) {
+    function getName() public view returns (string memory) {
         return name;
     }
 
     // @dev Get the proposalTime
-    function getProposalTime() public view returns(uint256) {
+    function getProposalTime() public view returns (uint256) {
         return proposalTime;
     }
 
     // @dev Get the timeForExecution
-    function getTimeForExecution() public view returns(uint256) {
+    function getTimeForExecution() public view returns (uint256) {
         return timeForExecution;
     }
 
     // @dev Get the voteGas
-    function getVoteGas() public view returns(uint256) {
+    function getVoteGas() public view returns (uint256) {
         return voteGas;
     }
 
     // @dev Get the maxGasPrice
-    function getMaxGasPrice() public view returns(uint256) {
+    function getMaxGasPrice() public view returns (uint256) {
         return maxGasPrice;
     }
 
     // @dev Get the maxActiveProposals
-    function getMaxActiveProposals() public view returns(uint256) {
+    function getMaxActiveProposals() public view returns (uint256) {
         return maxActiveProposals;
     }
 
     // @dev Get the totalProposals
-    function getTotalProposals() public view returns(uint256) {
+    function getTotalProposals() public view returns (uint256) {
         return totalProposals;
     }
 
     // @dev Get the activeProposalsNow
-    function getActiveProposalsNow() public view returns(uint256) {
+    function getActiveProposalsNow() public view returns (uint256) {
         return activeProposalsNow;
     }
 
     // @dev Get if a signed vote has been executed or not
-    function getSignedVote(bytes32 signedVoteHash) public view returns(bool) {
+    function getSignedVote(bytes32 signedVoteHash) public view returns (bool) {
         return signedVotes[signedVoteHash];
     }
 
     // @dev Get the proposalsIds array
-    function getProposalsIds() public view returns(bytes32[] memory) {
+    function getProposalsIds() public view returns (bytes32[] memory) {
         return proposalsIds;
     }
 
@@ -847,19 +902,24 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @return contentHash The content hash of the content reference of the proposal
     // @return state If the proposal state
     // @return totalVotes The total votes of the proposal
-    function getProposal(bytes32 proposalId) public view virtual returns (
-        address creator,
-        uint256 startTime,
-        uint256 endTime,
-        address[] memory to,
-        bytes[] memory data,
-        uint256[] memory value,
-        uint256 totalActions,
-        string memory title,
-        bytes memory contentHash,
-        ProposalState state,
-        uint256[] memory totalVotes
-    ) {
+    function getProposal(bytes32 proposalId)
+        public
+        view
+        virtual
+        returns (
+            address creator,
+            uint256 startTime,
+            uint256 endTime,
+            address[] memory to,
+            bytes[] memory data,
+            uint256[] memory value,
+            uint256 totalActions,
+            string memory title,
+            bytes memory contentHash,
+            ProposalState state,
+            uint256[] memory totalVotes
+        )
+    {
         Proposal storage proposal = proposals[proposalId];
         return (
             proposal.creator,
@@ -882,7 +942,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @return action The selected action of teh voter
     // @return votingPower The amount of voting power used in the vote
     function getProposalVotesOfVoter(bytes32 proposalId, address voter)
-        public view virtual returns (uint256 action, uint256 votingPower)
+        public
+        view
+        virtual
+        returns (uint256 action, uint256 votingPower)
     {
         return (
             proposals[proposalId].votes[voter].action,
@@ -892,14 +955,20 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     // @dev Get minimum amount of votingPower needed for creation
     function getVotingPowerForProposalCreation()
-        public view virtual returns (uint256)
+        public
+        view
+        virtual
+        returns (uint256)
     {
         return getTotalLocked().mul(votingPowerForProposalCreation).div(10000);
     }
 
     // @dev Get minimum amount of votingPower needed for proposal execution
     function getVotingPowerForProposalExecution()
-        public view virtual returns (uint256)
+        public
+        view
+        virtual
+        returns (uint256)
     {
         return getTotalLocked().mul(votingPowerForProposalExecution).div(10000);
     }
@@ -908,7 +977,11 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     //@param _data ERC20 address and value encoded data.
     //@return to The account to receive the tokens
     //@return value The value of tokens to be transfered/approved
-    function erc20TransferOrApproveDecode(bytes memory _data) public pure returns (address to, uint256 value) {
+    function erc20TransferOrApproveDecode(bytes memory _data)
+        public
+        pure
+        returns (address to, uint256 value)
+    {
         assembly {
             to := mload(add(_data, 36))
             value := mload(add(_data, 68))
@@ -916,7 +989,12 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // @dev Get the first four bytes (function signature) of a bytes variable
-    function getFuncSignature(bytes memory data) public view virtual returns (bytes4) {
+    function getFuncSignature(bytes memory data)
+        public
+        view
+        virtual
+        returns (bytes4)
+    {
         bytes32 functionSignature = bytes32(0);
         assembly {
             functionSignature := mload(add(data, 32))
@@ -925,41 +1003,54 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // @dev Get the length of the proposalIds array
-    function getProposalsIdsLength() public virtual view returns (uint256) {
+    function getProposalsIdsLength() public view virtual returns (uint256) {
         return proposalsIds.length;
     }
 
     // @dev Get the tokenVault address
-    function getTokenVault() public virtual view returns(address) {
+    function getTokenVault() public view virtual returns (address) {
         return address(tokenVault);
     }
 
     // @dev Get the lockTime
-    function getLockTime() public virtual view returns(uint256) {
+    function getLockTime() public view virtual returns (uint256) {
         return lockTime;
     }
 
     // @dev Get the totalLocked
-    function getTotalLocked() public virtual view returns(uint256) {
+    function getTotalLocked() public view virtual returns (uint256) {
         return totalLocked;
     }
 
     // @dev Get the locked timestamp of a voter tokens
-    function getVoterLockTimestamp(address voter) public virtual view returns(uint256) {
+    function getVoterLockTimestamp(address voter)
+        public
+        view
+        virtual
+        returns (uint256)
+    {
         return tokensLocked[voter].timestamp;
     }
 
     // @dev Gets the validity of a EIP1271 hash
     // @param _hash The EIP1271 hash
-    function getEIP1271SignedHash(bytes32 _hash) public view virtual returns (bool) {
+    function getEIP1271SignedHash(bytes32 _hash)
+        public
+        view
+        virtual
+        returns (bool)
+    {
         return EIP1271SignedHashes[_hash];
     }
 
     // @dev Get if the hash and signature are valid EIP1271 signatures
     function isValidSignature(bytes32 hash, bytes memory signature)
-        external view returns (bytes4 magicValue)
+        external
+        view
+        returns (bytes4 magicValue)
     {
-        return ((votingPowerOf(hash.recover(signature)) > 0) &&
+        return
+            ((votingPowerOf(hash.recover(signature)) > 0) &&
                 EIP1271SignedHashes[hash])
                 ? this.isValidSignature.selector
                 : bytes4(0);
@@ -970,9 +1061,13 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param proposalId The id fo the proposal to be voted
     // @param action The proposal action to be voted
     // @param votingPower The amount of voting power to be used
-    function hashVote( address voter, bytes32 proposalId, uint256 action, uint256 votingPower )
-        public virtual pure returns (bytes32)
-    {
-        return keccak256(abi.encodePacked(voter, proposalId, action, votingPower));
+    function hashVote(
+        address voter,
+        bytes32 proposalId,
+        uint256 action,
+        uint256 votingPower
+    ) public pure virtual returns (bytes32) {
+        return
+            keccak256(abi.encodePacked(voter, proposalId, action, votingPower));
     }
 }

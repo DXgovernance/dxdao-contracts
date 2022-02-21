@@ -10,29 +10,30 @@ pragma solidity ^0.5.11;
  *
  */
 
-
 library RealMath {
-
     /**
      * How many total bits are there?
      */
-    uint256 constant private REAL_BITS = 256;
+    uint256 private constant REAL_BITS = 256;
 
     /**
      * How many fractional bits are there?
      */
-    uint256 constant private REAL_FBITS = 40;
+    uint256 private constant REAL_FBITS = 40;
 
     /**
      * What's the first non-fractional bit
      */
-    uint256 constant private REAL_ONE = uint256(1) << REAL_FBITS;
+    uint256 private constant REAL_ONE = uint256(1) << REAL_FBITS;
 
     /**
      * Raise a real number to any positive integer power
      */
-    function pow(uint256 realBase, uint256 exponent) internal pure returns (uint256) {
-
+    function pow(uint256 realBase, uint256 exponent)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 tempRealBase = realBase;
         uint256 tempExponent = exponent;
 
@@ -44,7 +45,7 @@ library RealMath {
                 // If the low bit is set, multiply in the (many-times-squared) base
                 realResult = mul(realResult, tempRealBase);
             }
-                // Shift off the low bit
+            // Shift off the low bit
             tempExponent = tempExponent >> 1;
             if (tempExponent != 0) {
                 // Do the squaring
@@ -59,8 +60,13 @@ library RealMath {
     /**
      * Create a real from a rational fraction.
      */
-    function fraction(uint216 numerator, uint216 denominator) internal pure returns (uint256) {
-        return div(uint256(numerator) * REAL_ONE, uint256(denominator) * REAL_ONE);
+    function fraction(uint216 numerator, uint216 denominator)
+        internal
+        pure
+        returns (uint256)
+    {
+        return
+            div(uint256(numerator) * REAL_ONE, uint256(denominator) * REAL_ONE);
     }
 
     /**
@@ -70,17 +76,23 @@ library RealMath {
         // When multiplying fixed point in x.y and z.w formats we get (x+z).(y+w) format.
         // So we just have to clip off the extra REAL_FBITS fractional bits.
         uint256 res = realA * realB;
-        require(res/realA == realB, "RealMath mul overflow");
+        require(res / realA == realB, "RealMath mul overflow");
         return (res >> REAL_FBITS);
     }
 
     /**
      * Divide one real by another real. Truncates overflows.
      */
-    function div(uint256 realNumerator, uint256 realDenominator) private pure returns (uint256) {
+    function div(uint256 realNumerator, uint256 realDenominator)
+        private
+        pure
+        returns (uint256)
+    {
         // We use the reverse of the multiplication trick: convert numerator from
         // x.y to (x+z).(y+w) fixed point, then divide by denom in z.w fixed point.
-        return uint256((uint256(realNumerator) * REAL_ONE) / uint256(realDenominator));
+        return
+            uint256(
+                (uint256(realNumerator) * REAL_ONE) / uint256(realDenominator)
+            );
     }
-
 }

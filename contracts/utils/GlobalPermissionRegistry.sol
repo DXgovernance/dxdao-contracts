@@ -49,7 +49,7 @@ contract GlobalPermissionRegistry {
     mapping(address => mapping(address => mapping(address => mapping(bytes4 => Permission))))
         public permissions;
 
-    Permission emptyPermission = Permission(0,0,0,0,false);
+    Permission emptyPermission = Permission(0, 0, 0, 0, false);
 
     /**
      * @dev Set the time delay for a call to show as allowed
@@ -79,8 +79,8 @@ contract GlobalPermissionRegistry {
             "GlobalPermissionRegistry: Cant set permissions to GlobalPermissionRegistry"
         );
         if (allowed) {
-            permissions[asset][msg.sender][to][functionSignature].fromTime = block.timestamp
-                .add(permissionDelay[msg.sender]);
+            permissions[asset][msg.sender][to][functionSignature]
+                .fromTime = block.timestamp.add(permissionDelay[msg.sender]);
             permissions[asset][msg.sender][to][functionSignature]
                 .valueAllowed = valueAllowed;
         } else {
@@ -103,7 +103,11 @@ contract GlobalPermissionRegistry {
      * @dev Get the time delay to be used for an address
      * @param fromAddress The address that will set the permission
      */
-    function getPermissionDelay(address fromAddress) public view returns(uint256) {
+    function getPermissionDelay(address fromAddress)
+        public
+        view
+        returns (uint256)
+    {
         return permissionDelay[fromAddress];
     }
 
@@ -130,8 +134,12 @@ contract GlobalPermissionRegistry {
                 permission = permissions[asset][from][to][ANY_SIGNATURE];
             }
             // Check if there is a value allowed to any address
-            else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
-                permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
+            else if (
+                permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet
+            ) {
+                permission = permissions[asset][from][ANY_ADDRESS][
+                    ANY_SIGNATURE
+                ];
             }
 
             // If the asset is ETH check if there is an allowance to any address and function signature
@@ -145,12 +153,20 @@ contract GlobalPermissionRegistry {
                 permission = permissions[asset][from][to][ANY_SIGNATURE];
             }
             // Check if there is there is an allowance to any address with the function signature
-            else if (permissions[asset][from][ANY_ADDRESS][functionSignature].isSet) {
-                permission = permissions[asset][from][ANY_ADDRESS][functionSignature];
+            else if (
+                permissions[asset][from][ANY_ADDRESS][functionSignature].isSet
+            ) {
+                permission = permissions[asset][from][ANY_ADDRESS][
+                    functionSignature
+                ];
             }
             // Check if there is there is an allowance to any address and any function
-            else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
-                permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
+            else if (
+                permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet
+            ) {
+                permission = permissions[asset][from][ANY_ADDRESS][
+                    ANY_SIGNATURE
+                ];
             }
         }
         return (permission.valueAllowed, permission.fromTime);
@@ -178,36 +194,61 @@ contract GlobalPermissionRegistry {
         if (asset != address(0)) {
             // Check if there is a value allowed to any address
             if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
-                fromTime = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].fromTime;
-                _setValueTransferred(permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE], valueTransferred);
+                fromTime = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE]
+                    .fromTime;
+                _setValueTransferred(
+                    permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE],
+                    valueTransferred
+                );
             }
             // Check if there is a value allowed specifically to the `to` address
             if (permissions[asset][from][to][ANY_SIGNATURE].isSet) {
                 fromTime = permissions[asset][from][to][ANY_SIGNATURE].fromTime;
-                _setValueTransferred(permissions[asset][from][to][ANY_SIGNATURE], valueTransferred);
+                _setValueTransferred(
+                    permissions[asset][from][to][ANY_SIGNATURE],
+                    valueTransferred
+                );
             }
 
             // If the asset is ETH check if there is an allowance to any address and function signature
         } else {
             // Check if there is there is an allowance to any address and any function
             if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
-                fromTime = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].fromTime;
-                _setValueTransferred(permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE], valueTransferred);
+                fromTime = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE]
+                    .fromTime;
+                _setValueTransferred(
+                    permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE],
+                    valueTransferred
+                );
             }
             // Check if there is there is an allowance to any address with the function signature
-            if (permissions[asset][from][ANY_ADDRESS][functionSignature].isSet) {
-                fromTime = permissions[asset][from][ANY_ADDRESS][functionSignature].fromTime;
-                _setValueTransferred(permissions[asset][from][ANY_ADDRESS][functionSignature], valueTransferred);
+            if (
+                permissions[asset][from][ANY_ADDRESS][functionSignature].isSet
+            ) {
+                fromTime = permissions[asset][from][ANY_ADDRESS][
+                    functionSignature
+                ].fromTime;
+                _setValueTransferred(
+                    permissions[asset][from][ANY_ADDRESS][functionSignature],
+                    valueTransferred
+                );
             }
             // Check is there an allowance to the implementation address for any function signature
             if (permissions[asset][from][to][ANY_SIGNATURE].isSet) {
                 fromTime = permissions[asset][from][to][ANY_SIGNATURE].fromTime;
-                _setValueTransferred(permissions[asset][from][to][ANY_SIGNATURE], valueTransferred);
+                _setValueTransferred(
+                    permissions[asset][from][to][ANY_SIGNATURE],
+                    valueTransferred
+                );
             }
             // Check is there an allowance to the implementation address with the function signature
             if (permissions[asset][from][to][functionSignature].isSet) {
-                fromTime = permissions[asset][from][to][functionSignature].fromTime;
-                _setValueTransferred(permissions[asset][from][to][functionSignature], valueTransferred);
+                fromTime = permissions[asset][from][to][functionSignature]
+                    .fromTime;
+                _setValueTransferred(
+                    permissions[asset][from][to][functionSignature],
+                    valueTransferred
+                );
             }
         }
         require(
@@ -221,12 +262,17 @@ contract GlobalPermissionRegistry {
      * @param permission The permission to add the value transferred
      * @param valueTransferred The value to be transfered
      */
-    function _setValueTransferred(Permission storage permission, uint256 valueTransferred) internal {
+    function _setValueTransferred(
+        Permission storage permission,
+        uint256 valueTransferred
+    ) internal {
         if (permission.valueTransferedOnBlock < block.number) {
             permission.valueTransferedOnBlock = block.number;
             permission.valueTransferred = valueTransferred;
         } else {
-            permission.valueTransferred = permission.valueTransferred.add(valueTransferred);
+            permission.valueTransferred = permission.valueTransferred.add(
+                valueTransferred
+            );
         }
         require(
             permission.valueTransferred <= permission.valueAllowed,
@@ -248,7 +294,12 @@ contract GlobalPermissionRegistry {
         address to,
         bytes4 functionSignature
     ) public view returns (uint256) {
-        (,uint256 fromTime) = getPermission(asset, from, to, functionSignature);
+        (, uint256 fromTime) = getPermission(
+            asset,
+            from,
+            to,
+            functionSignature
+        );
         return fromTime;
     }
 
@@ -266,7 +317,12 @@ contract GlobalPermissionRegistry {
         address to,
         bytes4 functionSignature
     ) public view returns (uint256) {
-        (uint256 valueAllowed,) = getPermission(asset, from, to, functionSignature);
+        (uint256 valueAllowed, ) = getPermission(
+            asset,
+            from,
+            to,
+            functionSignature
+        );
         return valueAllowed;
     }
 }

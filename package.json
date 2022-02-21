@@ -101,7 +101,8 @@
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,md,sol}": [
       "yarn format",
-      "yarn solidity-linter"
+      "yarn solidity-linter",
+      "git add"
     ]
   }
 }

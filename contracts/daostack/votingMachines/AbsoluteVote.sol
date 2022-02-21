@@ -6,14 +6,13 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./VotingMachineCallbacksInterface.sol";
 import "./ProposalExecuteInterface.sol";
 
-
 contract AbsoluteVote is IntVoteInterface {
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     struct Parameters {
         uint256 precReq; // how many percentages required for the proposal to be passed
         address voteOnBehalf; //if this address is set so only this address is allowed
-                              // to vote of behalf of someone else.
+        // to vote of behalf of someone else.
     }
 
     struct Voter {
@@ -28,22 +27,22 @@ contract AbsoluteVote is IntVoteInterface {
         uint256 numOfChoices;
         bytes32 paramsHash; // the hash of the parameters of the proposal
         uint256 totalVotes;
-        mapping(uint=>uint) votes;
-        mapping(address=>Voter) voters;
+        mapping(uint256 => uint256) votes;
+        mapping(address => Voter) voters;
     }
 
     event AVVoteProposal(bytes32 indexed _proposalId, bool _isProxyVote);
 
-    mapping(bytes32=>Parameters) public parameters;  // A mapping from hashes to parameters
-    mapping(bytes32=>Proposal) public proposals; // Mapping from the ID of the proposal to the proposal itself.
-    mapping(bytes32=>address) public organizations;
+    mapping(bytes32 => Parameters) public parameters; // A mapping from hashes to parameters
+    mapping(bytes32 => Proposal) public proposals; // Mapping from the ID of the proposal to the proposal itself.
+    mapping(bytes32 => address) public organizations;
 
     uint256 public constant MAX_NUM_OF_CHOICES = 10;
     uint256 public proposalsCnt; // Total amount of proposals
 
-  /**
-   * @dev Check that the proposal is votable (open and not executed yet)
-   */
+    /**
+     * @dev Check that the proposal is votable (open and not executed yet)
+     */
     modifier votable(bytes32 _proposalId) {
         require(proposals[_proposalId].open);
         _;
@@ -57,10 +56,12 @@ contract AbsoluteVote is IntVoteInterface {
      * @param _organization address
      * @return proposal's id.
      */
-    function propose(uint256 _numOfChoices, bytes32 _paramsHash, address, address _organization)
-        external
-        returns(bytes32)
-    {
+    function propose(
+        uint256 _numOfChoices,
+        bytes32 _paramsHash,
+        address,
+        address _organization
+    ) external returns (bytes32) {
         // Check valid params and number of choices:
         require(parameters[_paramsHash].precReq > 0);
         require(_numOfChoices > 0 && _numOfChoices <= MAX_NUM_OF_CHOICES);
@@ -72,7 +73,9 @@ contract AbsoluteVote is IntVoteInterface {
         proposal.numOfChoices = _numOfChoices;
         proposal.paramsHash = _paramsHash;
         proposal.callbacks = msg.sender;
-        proposal.organizationId = keccak256(abi.encodePacked(msg.sender, _organization));
+        proposal.organizationId = keccak256(
+            abi.encodePacked(msg.sender, _organization)
+        );
         proposal.open = true;
         proposals[proposalId] = proposal;
         if (organizations[proposal.organizationId] == address(0)) {
@@ -82,7 +85,13 @@ contract AbsoluteVote is IntVoteInterface {
                 organizations[proposal.organizationId] = _organization;
             }
         }
-        emit NewProposal(proposalId, organizations[proposal.organizationId], _numOfChoices, msg.sender, _paramsHash);
+        emit NewProposal(
+            proposalId,
+            organizations[proposal.organizationId],
+            _numOfChoices,
+            msg.sender,
+            _paramsHash
+        );
         return proposalId;
     }
 
@@ -99,12 +108,8 @@ contract AbsoluteVote is IntVoteInterface {
         bytes32 _proposalId,
         uint256 _vote,
         uint256 _amount,
-        address _voter)
-        external
-        votable(_proposalId)
-        returns(bool)
-        {
-
+        address _voter
+    ) external votable(_proposalId) returns (bool) {
         Proposal storage proposal = proposals[_proposalId];
         Parameters memory params = parameters[proposal.paramsHash];
         address voter;
@@ -117,43 +122,55 @@ contract AbsoluteVote is IntVoteInterface {
         return internalVote(_proposalId, voter, _vote, _amount);
     }
 
-  /**
-   * @dev Cancel the vote of the msg.sender: subtract the reputation amount from the votes
-   * and delete the voter from the proposal struct
-   * @param _proposalId id of the proposal
-   */
+    /**
+     * @dev Cancel the vote of the msg.sender: subtract the reputation amount from the votes
+     * and delete the voter from the proposal struct
+     * @param _proposalId id of the proposal
+     */
     function cancelVote(bytes32 _proposalId) external votable(_proposalId) {
         cancelVoteInternal(_proposalId, msg.sender);
     }
 
     /**
-      * @dev execute check if the proposal has been decided, and if so, execute the proposal
-      * @param _proposalId the id of the proposal
-      * @return bool true - the proposal has been executed
-      *              false - otherwise.
+     * @dev execute check if the proposal has been decided, and if so, execute the proposal
+     * @param _proposalId the id of the proposal
+     * @return bool true - the proposal has been executed
+     *              false - otherwise.
      */
-    function execute(bytes32 _proposalId) external votable(_proposalId) returns(bool) {
+    function execute(bytes32 _proposalId)
+        external
+        votable(_proposalId)
+        returns (bool)
+    {
         return _execute(_proposalId);
     }
 
-  /**
-   * @dev getNumberOfChoices returns the number of choices possible in this proposal
-   * excluding the abstain vote (0)
-   * @param _proposalId the ID of the proposal
-   * @return uint256 that contains number of choices
-   */
-    function getNumberOfChoices(bytes32 _proposalId) external view returns(uint256) {
+    /**
+     * @dev getNumberOfChoices returns the number of choices possible in this proposal
+     * excluding the abstain vote (0)
+     * @param _proposalId the ID of the proposal
+     * @return uint256 that contains number of choices
+     */
+    function getNumberOfChoices(bytes32 _proposalId)
+        external
+        view
+        returns (uint256)
+    {
         return proposals[_proposalId].numOfChoices;
     }
 
-  /**
-   * @dev voteInfo returns the vote and the amount of reputation of the user committed to this proposal
-   * @param _proposalId the ID of the proposal
-   * @param _voter the address of the voter
-   * @return uint256 vote - the voters vote
-   *        uint256 reputation - amount of reputation committed by _voter to _proposalId
-   */
-    function voteInfo(bytes32 _proposalId, address _voter) external view returns(uint, uint) {
+    /**
+     * @dev voteInfo returns the vote and the amount of reputation of the user committed to this proposal
+     * @param _proposalId the ID of the proposal
+     * @param _voter the address of the voter
+     * @return uint256 vote - the voters vote
+     *        uint256 reputation - amount of reputation committed by _voter to _proposalId
+     */
+    function voteInfo(bytes32 _proposalId, address _voter)
+        external
+        view
+        returns (uint256, uint256)
+    {
         Voter memory voter = proposals[_proposalId].voters[_voter];
         return (voter.vote, voter.reputation);
     }
@@ -164,24 +181,28 @@ contract AbsoluteVote is IntVoteInterface {
      * @param _choice the index in the
      * @return voted reputation for the given choice
      */
-    function voteStatus(bytes32 _proposalId, uint256 _choice) external view returns(uint256) {
+    function voteStatus(bytes32 _proposalId, uint256 _choice)
+        external
+        view
+        returns (uint256)
+    {
         return proposals[_proposalId].votes[_choice];
     }
 
     /**
-      * @dev isVotable check if the proposal is votable
-      * @param _proposalId the ID of the proposal
-      * @return bool true or false
-    */
-    function isVotable(bytes32 _proposalId) external view returns(bool) {
-        return  proposals[_proposalId].open;
+     * @dev isVotable check if the proposal is votable
+     * @param _proposalId the ID of the proposal
+     * @return bool true or false
+     */
+    function isVotable(bytes32 _proposalId) external view returns (bool) {
+        return proposals[_proposalId].open;
     }
 
     /**
      * @dev isAbstainAllow returns if the voting machine allow abstain (0)
      * @return bool true or false
      */
-    function isAbstainAllow() external pure returns(bool) {
+    function isAbstainAllow() external pure returns (bool) {
         return true;
     }
 
@@ -190,14 +211,21 @@ contract AbsoluteVote is IntVoteInterface {
      * @return min - minimum number of choices
                max - maximum number of choices
      */
-    function getAllowedRangeOfChoices() external pure returns(uint256 min, uint256 max) {
+    function getAllowedRangeOfChoices()
+        external
+        pure
+        returns (uint256 min, uint256 max)
+    {
         return (0, MAX_NUM_OF_CHOICES);
     }
 
     /**
      * @dev hash the parameters, save them if necessary, and return the hash value
-    */
-    function setParameters(uint256 _precReq, address _voteOnBehalf) public returns(bytes32) {
+     */
+    function setParameters(uint256 _precReq, address _voteOnBehalf)
+        public
+        returns (bytes32)
+    {
         require(_precReq <= 100 && _precReq > 0);
         bytes32 hashedParameters = getParametersHash(_precReq, _voteOnBehalf);
         parameters[hashedParameters] = Parameters({
@@ -210,17 +238,27 @@ contract AbsoluteVote is IntVoteInterface {
     /**
      * @dev hashParameters returns a hash of the given parameters
      */
-    function getParametersHash(uint256 _precReq, address _voteOnBehalf) public pure returns(bytes32) {
+    function getParametersHash(uint256 _precReq, address _voteOnBehalf)
+        public
+        pure
+        returns (bytes32)
+    {
         return keccak256(abi.encodePacked(_precReq, _voteOnBehalf));
     }
 
     function cancelVoteInternal(bytes32 _proposalId, address _voter) internal {
         Proposal storage proposal = proposals[_proposalId];
         Voter memory voter = proposal.voters[_voter];
-        proposal.votes[voter.vote] = (proposal.votes[voter.vote]).sub(voter.reputation);
+        proposal.votes[voter.vote] = (proposal.votes[voter.vote]).sub(
+            voter.reputation
+        );
         proposal.totalVotes = (proposal.totalVotes).sub(voter.reputation);
         delete proposal.voters[_voter];
-        emit CancelVoting(_proposalId, organizations[proposal.organizationId], _voter);
+        emit CancelVoting(
+            _proposalId,
+            organizations[proposal.organizationId],
+            _voter
+        );
     }
 
     function deleteProposal(bytes32 _proposalId) internal {
@@ -232,23 +270,35 @@ contract AbsoluteVote is IntVoteInterface {
     }
 
     /**
-      * @dev execute check if the proposal has been decided, and if so, execute the proposal
-      * @param _proposalId the id of the proposal
-      * @return bool true - the proposal has been executed
-      *              false - otherwise.
+     * @dev execute check if the proposal has been decided, and if so, execute the proposal
+     * @param _proposalId the id of the proposal
+     * @return bool true - the proposal has been executed
+     *              false - otherwise.
      */
-    function _execute(bytes32 _proposalId) internal votable(_proposalId) returns(bool) {
+    function _execute(bytes32 _proposalId)
+        internal
+        votable(_proposalId)
+        returns (bool)
+    {
         Proposal storage proposal = proposals[_proposalId];
-        uint256 totalReputation =
-        VotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(_proposalId);
+        uint256 totalReputation = VotingMachineCallbacksInterface(
+            proposal.callbacks
+        ).getTotalReputationSupply(_proposalId);
         uint256 precReq = parameters[proposal.paramsHash].precReq;
         // Check if someone crossed the bar:
         for (uint256 cnt = 0; cnt <= proposal.numOfChoices; cnt++) {
-            if (proposal.votes[cnt] > (totalReputation/100)*precReq) {
+            if (proposal.votes[cnt] > (totalReputation / 100) * precReq) {
                 Proposal memory tmpProposal = proposal;
                 deleteProposal(_proposalId);
-                emit ExecuteProposal(_proposalId, organizations[tmpProposal.organizationId], cnt, totalReputation);
-                return ProposalExecuteInterface(tmpProposal.callbacks).executeProposal(_proposalId, int(cnt));
+                emit ExecuteProposal(
+                    _proposalId,
+                    organizations[tmpProposal.organizationId],
+                    cnt,
+                    totalReputation
+                );
+                return
+                    ProposalExecuteInterface(tmpProposal.callbacks)
+                        .executeProposal(_proposalId, int256(cnt));
             }
         }
         return false;
@@ -263,12 +313,18 @@ contract AbsoluteVote is IntVoteInterface {
      * throws if proposal is not open or if it has been executed
      * NB: executes the proposal if a decision has been reached
      */
-    function internalVote(bytes32 _proposalId, address _voter, uint256 _vote, uint256 _rep) internal returns(bool) {
+    function internalVote(
+        bytes32 _proposalId,
+        address _voter,
+        uint256 _vote,
+        uint256 _rep
+    ) internal returns (bool) {
         Proposal storage proposal = proposals[_proposalId];
         // Check valid vote:
         require(_vote <= proposal.numOfChoices);
         // Check voter has enough reputation:
-        uint256 reputation = VotingMachineCallbacksInterface(proposal.callbacks).reputationOf(_voter, _proposalId);
+        uint256 reputation = VotingMachineCallbacksInterface(proposal.callbacks)
+            .reputationOf(_voter, _proposalId);
         require(reputation > 0, "_voter must have reputation");
         require(reputation >= _rep);
         uint256 rep = _rep;
@@ -282,12 +338,15 @@ contract AbsoluteVote is IntVoteInterface {
         // The voting itself:
         proposal.votes[_vote] = rep.add(proposal.votes[_vote]);
         proposal.totalVotes = rep.add(proposal.totalVotes);
-        proposal.voters[_voter] = Voter({
-            reputation: rep,
-            vote: _vote
-        });
+        proposal.voters[_voter] = Voter({reputation: rep, vote: _vote});
         // Event:
-        emit VoteProposal(_proposalId, organizations[proposal.organizationId], _voter, _vote, rep);
+        emit VoteProposal(
+            _proposalId,
+            organizations[proposal.organizationId],
+            _voter,
+            _vote,
+            rep
+        );
         emit AVVoteProposal(_proposalId, (_voter != msg.sender));
         // execute the proposal if this vote was decisive:
         return _execute(_proposalId);
