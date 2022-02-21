@@ -4,5 +4,13 @@
   "arrowParens": "avoid",
   "endOfLine": "crlf",
   "printWidth": 80,
-  "useTabs": false
+  "useTabs": false,
+  "overrides": [
+    {
+      "files": "*.sol",
+      "options": {
+        "printWidth": 120,
+      }
+    }
+  ]
 }
