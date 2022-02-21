@@ -20,13 +20,7 @@ contract DXDVestingFactory {
         uint256 duration,
         uint256 value
     ) public {
-        TokenVesting newVestingContract = new TokenVesting(
-            beneficiary,
-            start,
-            cliffDuration,
-            duration,
-            true
-        );
+        TokenVesting newVestingContract = new TokenVesting(beneficiary, start, cliffDuration, duration, true);
         DXD.transferFrom(msg.sender, address(newVestingContract), value);
         newVestingContract.transferOwnership(DXdao);
         emit VestingCreated(address(newVestingContract));

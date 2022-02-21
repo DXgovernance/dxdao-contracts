@@ -61,20 +61,8 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
             _lockTime,
             _permissionRegistry
         );
-        permissionRegistry.setPermission(
-            address(0),
-            _token,
-            bytes4(keccak256("mint(address,uint256)")),
-            0,
-            true
-        );
-        permissionRegistry.setPermission(
-            address(0),
-            _token,
-            bytes4(keccak256("burn(address,uint256)")),
-            0,
-            true
-        );
+        permissionRegistry.setPermission(address(0), _token, bytes4(keccak256("mint(address,uint256)")), 0, true);
+        permissionRegistry.setPermission(address(0), _token, bytes4(keccak256("burn(address,uint256)")), 0, true);
     }
 
     // @dev Set the voting power to vote in a proposal
@@ -104,10 +92,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     ) public virtual override {
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "SnapshotERC20Guild: Already voted");
-        require(
-            voter == hashedVote.toEthSignedMessageHash().recover(signature),
-            "SnapshotERC20Guild: Wrong signer"
-        );
+        require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "SnapshotERC20Guild: Wrong signer");
         _setSnapshottedVote(voter, proposalId, action, votingPower);
         signedVotes[hashedVote] = true;
     }
@@ -137,16 +122,8 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         string memory title,
         bytes memory contentHash
     ) public virtual override returns (bytes32) {
-        bytes32 proposalId = super.createProposal(
-            to,
-            data,
-            value,
-            totalActions,
-            title,
-            contentHash
-        );
-        proposalsSnapshots[proposalId] = ERC20SnapshotRep(address(token))
-            .getCurrentSnapshotId();
+        bytes32 proposalId = super.createProposal(to, data, value, totalActions, title, contentHash);
+        proposalsSnapshots[proposalId] = ERC20SnapshotRep(address(token)).getCurrentSnapshotId();
         return proposalId;
     }
 
@@ -161,13 +138,9 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256 action,
         uint256 votingPower
     ) internal {
+        require(proposals[proposalId].endTime > block.timestamp, "SnapshotERC20Guild: Proposal ended, cant be voted");
         require(
-            proposals[proposalId].endTime > block.timestamp,
-            "SnapshotERC20Guild: Proposal ended, cant be voted"
-        );
-        require(
-            votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >=
-                votingPower,
+            votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >= votingPower,
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
         require(
@@ -175,8 +148,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
             "SnapshotERC20Guild: Cant decrease votingPower in vote"
         );
         require(
-            proposals[proposalId].votes[voter].action == 0 ||
-                proposals[proposalId].votes[voter].action == action,
+            proposals[proposalId].votes[voter].action == 0 || proposals[proposalId].votes[voter].action == action,
             "SnapshotERC20Guild: Cant change action voted, only increase votingPower"
         );
 
@@ -201,47 +173,32 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     // @dev Get the voting power of multiple addresses at a certain snapshotId
     // @param accounts The addresses of the accounts
     // @param snapshotIds The snapshotIds to be used
-    function votingPowerOfMultipleAt(
-        address[] memory accounts,
-        uint256[] memory snapshotIds
-    ) public view virtual returns (uint256[] memory) {
+    function votingPowerOfMultipleAt(address[] memory accounts, uint256[] memory snapshotIds)
+        public
+        view
+        virtual
+        returns (uint256[] memory)
+    {
         uint256[] memory votes = new uint256[](accounts.length);
-        for (uint256 i = 0; i < accounts.length; i++)
-            votes[i] = votingPowerOfAt(accounts[i], snapshotIds[i]);
+        for (uint256 i = 0; i < accounts.length; i++) votes[i] = votingPowerOfAt(accounts[i], snapshotIds[i]);
         return votes;
     }
 
     // @dev Get the voting power of an address at a certain snapshotId
     // @param account The address of the account
     // @param snapshotId The snapshotId to be used
-    function votingPowerOfAt(address account, uint256 snapshotId)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
-        return
-            ERC20SnapshotRep(address(token)).balanceOfAt(account, snapshotId);
+    function votingPowerOfAt(address account, uint256 snapshotId) public view virtual returns (uint256) {
+        return ERC20SnapshotRep(address(token)).balanceOfAt(account, snapshotId);
     }
 
     // @dev Get the voting power of an account
     // @param account The address of the account
-    function votingPowerOf(address account)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function votingPowerOf(address account) public view virtual override returns (uint256) {
         return ERC20SnapshotRep(address(token)).balanceOf(account);
     }
 
     // @dev Get the proposal snapshot id
-    function getProposalSnapshotId(bytes32 proposalId)
-        public
-        view
-        returns (uint256)
-    {
+    function getProposalSnapshotId(bytes32 proposalId) public view returns (uint256) {
         return proposalsSnapshots[proposalId];
     }
 }

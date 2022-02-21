@@ -24,10 +24,7 @@ contract TokenCapGC {
      * @param _cap the cap to check the total supply against.
      * @return the calculated parameters hash
      */
-    function setParameters(IERC20 _token, uint256 _cap)
-        public
-        returns (bytes32)
-    {
+    function setParameters(IERC20 _token, uint256 _cap) public returns (bytes32) {
         bytes32 paramsHash = getParametersHash(_token, _cap);
         parameters[paramsHash].token = _token;
         parameters[paramsHash].cap = _cap;
@@ -40,11 +37,7 @@ contract TokenCapGC {
      * @param _cap the cap to check the total supply against.
      * @return the calculated parameters hash
      */
-    function getParametersHash(IERC20 _token, uint256 _cap)
-        public
-        pure
-        returns (bytes32)
-    {
+    function getParametersHash(IERC20 _token, uint256 _cap) public pure returns (bytes32) {
         return (keccak256(abi.encodePacked(_token, _cap)));
     }
 
@@ -73,8 +66,7 @@ contract TokenCapGC {
     ) public view returns (bool) {
         if (
             (parameters[_paramsHash].token != IERC20(0)) &&
-            (parameters[_paramsHash].token.totalSupply() >
-                parameters[_paramsHash].cap)
+            (parameters[_paramsHash].token.totalSupply() > parameters[_paramsHash].cap)
         ) {
             return false;
         }

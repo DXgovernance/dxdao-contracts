@@ -8,15 +8,8 @@ contract ActionMock {
         emit ReceivedEther(msg.sender, msg.value);
     }
 
-    function test(address _addr, uint256 number)
-        public
-        payable
-        returns (uint256)
-    {
-        require(
-            msg.sender == _addr,
-            "ActionMock: the caller must be equal to _addr"
-        );
+    function test(address _addr, uint256 number) public payable returns (uint256) {
+        require(msg.sender == _addr, "ActionMock: the caller must be equal to _addr");
         emit ReceivedEther(msg.sender, msg.value);
         emit LogNumber(number);
         return number;
@@ -26,14 +19,8 @@ contract ActionMock {
         return true;
     }
 
-    function testWithoutReturnValue(address _addr, uint256 number)
-        public
-        payable
-    {
-        require(
-            msg.sender == _addr,
-            "ActionMock: the caller must be equal to _addr"
-        );
+    function testWithoutReturnValue(address _addr, uint256 number) public payable {
+        require(msg.sender == _addr, "ActionMock: the caller must be equal to _addr");
         emit ReceivedEther(msg.sender, msg.value);
         emit LogNumber(number);
     }
@@ -51,9 +38,7 @@ contract ActionMock {
         bytes memory data,
         uint256 value
     ) public returns (bool, bytes memory) {
-        (bool success, bytes memory result) = address(to).call.value(value)(
-            data
-        );
+        (bool success, bytes memory result) = address(to).call.value(value)(data);
         require(success, "ActionMock: Call execution failed");
         return (success, result);
     }

@@ -22,18 +22,9 @@ interface VotingMachineCallbacksInterface {
         bytes32 _proposalId
     ) external returns (bool);
 
-    function getTotalReputationSupply(bytes32 _proposalId)
-        external
-        view
-        returns (uint256);
+    function getTotalReputationSupply(bytes32 _proposalId) external view returns (uint256);
 
-    function reputationOf(address _owner, bytes32 _proposalId)
-        external
-        view
-        returns (uint256);
+    function reputationOf(address _owner, bytes32 _proposalId) external view returns (uint256);
 
-    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId)
-        external
-        view
-        returns (uint256);
+    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns (uint256);
 }

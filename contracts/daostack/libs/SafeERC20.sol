@@ -20,12 +20,9 @@ import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 library SafeERC20 {
     using Address for address;
 
-    bytes4 private constant TRANSFER_SELECTOR =
-        bytes4(keccak256(bytes("transfer(address,uint256)")));
-    bytes4 private constant TRANSFERFROM_SELECTOR =
-        bytes4(keccak256(bytes("transferFrom(address,address,uint256)")));
-    bytes4 private constant APPROVE_SELECTOR =
-        bytes4(keccak256(bytes("approve(address,uint256)")));
+    bytes4 private constant TRANSFER_SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
+    bytes4 private constant TRANSFERFROM_SELECTOR = bytes4(keccak256(bytes("transferFrom(address,address,uint256)")));
+    bytes4 private constant APPROVE_SELECTOR = bytes4(keccak256(bytes("approve(address,uint256)")));
 
     function safeTransfer(
         address _erc20Addr,
@@ -38,16 +35,11 @@ library SafeERC20 {
         (
             bool success,
             bytes memory returnValue // solhint-disable-next-line avoid-low-level-calls
-        ) = _erc20Addr.call(
-                abi.encodeWithSelector(TRANSFER_SELECTOR, _to, _value)
-            );
+        ) = _erc20Addr.call(abi.encodeWithSelector(TRANSFER_SELECTOR, _to, _value));
         // call return false when something wrong
         require(success);
         //check return value
-        require(
-            returnValue.length == 0 ||
-                (returnValue.length == 32 && (returnValue[31] != 0))
-        );
+        require(returnValue.length == 0 || (returnValue.length == 32 && (returnValue[31] != 0)));
     }
 
     function safeTransferFrom(
@@ -62,21 +54,11 @@ library SafeERC20 {
         (
             bool success,
             bytes memory returnValue // solhint-disable-next-line avoid-low-level-calls
-        ) = _erc20Addr.call(
-                abi.encodeWithSelector(
-                    TRANSFERFROM_SELECTOR,
-                    _from,
-                    _to,
-                    _value
-                )
-            );
+        ) = _erc20Addr.call(abi.encodeWithSelector(TRANSFERFROM_SELECTOR, _from, _to, _value));
         // call return false when something wrong
         require(success);
         //check return value
-        require(
-            returnValue.length == 0 ||
-                (returnValue.length == 32 && (returnValue[31] != 0))
-        );
+        require(returnValue.length == 0 || (returnValue.length == 32 && (returnValue[31] != 0)));
     }
 
     function safeApprove(
@@ -89,23 +71,15 @@ library SafeERC20 {
 
         // safeApprove should only be called when setting an initial allowance,
         // or when resetting it to zero.
-        require(
-            (_value == 0) ||
-                (IERC20(_erc20Addr).allowance(address(this), _spender) == 0)
-        );
+        require((_value == 0) || (IERC20(_erc20Addr).allowance(address(this), _spender) == 0));
 
         (
             bool success,
             bytes memory returnValue // solhint-disable-next-line avoid-low-level-calls
-        ) = _erc20Addr.call(
-                abi.encodeWithSelector(APPROVE_SELECTOR, _spender, _value)
-            );
+        ) = _erc20Addr.call(abi.encodeWithSelector(APPROVE_SELECTOR, _spender, _value));
         // call return false when something wrong
         require(success);
         //check return value
-        require(
-            returnValue.length == 0 ||
-                (returnValue.length == 32 && (returnValue[31] != 0))
-        );
+        require(returnValue.length == 0 || (returnValue.length == 32 && (returnValue[31] != 0)));
     }
 }

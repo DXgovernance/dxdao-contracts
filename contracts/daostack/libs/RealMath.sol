@@ -29,11 +29,7 @@ library RealMath {
     /**
      * Raise a real number to any positive integer power
      */
-    function pow(uint256 realBase, uint256 exponent)
-        internal
-        pure
-        returns (uint256)
-    {
+    function pow(uint256 realBase, uint256 exponent) internal pure returns (uint256) {
         uint256 tempRealBase = realBase;
         uint256 tempExponent = exponent;
 
@@ -60,13 +56,8 @@ library RealMath {
     /**
      * Create a real from a rational fraction.
      */
-    function fraction(uint216 numerator, uint216 denominator)
-        internal
-        pure
-        returns (uint256)
-    {
-        return
-            div(uint256(numerator) * REAL_ONE, uint256(denominator) * REAL_ONE);
+    function fraction(uint216 numerator, uint216 denominator) internal pure returns (uint256) {
+        return div(uint256(numerator) * REAL_ONE, uint256(denominator) * REAL_ONE);
     }
 
     /**
@@ -83,16 +74,9 @@ library RealMath {
     /**
      * Divide one real by another real. Truncates overflows.
      */
-    function div(uint256 realNumerator, uint256 realDenominator)
-        private
-        pure
-        returns (uint256)
-    {
+    function div(uint256 realNumerator, uint256 realDenominator) private pure returns (uint256) {
         // We use the reverse of the multiplication trick: convert numerator from
         // x.y to (x+z).(y+w) fixed point, then divide by denom in z.w fixed point.
-        return
-            uint256(
-                (uint256(realNumerator) * REAL_ONE) / uint256(realDenominator)
-            );
+        return uint256((uint256(realNumerator) * REAL_ONE) / uint256(realDenominator));
     }
 }

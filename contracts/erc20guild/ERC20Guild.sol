@@ -42,10 +42,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
 
-    bytes4 public constant ERC20_TRANSFER_SIGNATURE =
-        bytes4(keccak256("transfer(address,uint256)"));
-    bytes4 public constant ERC20_APPROVE_SIGNATURE =
-        bytes4(keccak256("approve(address,uint256)"));
+    bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
+    bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
     bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
 
     enum ProposalState {
@@ -143,12 +141,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     bytes32[] proposalsIds;
 
     event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
-    event VoteAdded(
-        bytes32 indexed proposalId,
-        uint256 indexed action,
-        address voter,
-        uint256 votingPower
-    );
+    event VoteAdded(bytes32 indexed proposalId, uint256 indexed action, address voter, uint256 votingPower);
     event TokensLocked(address voter, uint256 value);
     event TokensWithdrawn(address voter, uint256 value);
 
@@ -245,10 +238,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256[] memory valueAllowed,
         bool[] memory allowance
     ) public virtual {
-        require(
-            msg.sender == address(this),
-            "ERC20Guild: Only callable by ERC20guild itself"
-        );
+        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
         require(
             (to.length == functionSignature.length) &&
                 (to.length == valueAllowed.length) &&
@@ -257,28 +247,15 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             "ERC20Guild: Wrong length of asset, to, functionSignature or allowance arrays"
         );
         for (uint256 i = 0; i < to.length; i++) {
-            require(
-                functionSignature[i] != bytes4(0),
-                "ERC20Guild: Empty signatures not allowed"
-            );
-            permissionRegistry.setPermission(
-                asset[i],
-                to[i],
-                functionSignature[i],
-                valueAllowed[i],
-                allowance[i]
-            );
+            require(functionSignature[i] != bytes4(0), "ERC20Guild: Empty signatures not allowed");
+            permissionRegistry.setPermission(asset[i], to[i], functionSignature[i], valueAllowed[i], allowance[i]);
         }
         require(
             permissionRegistry.getPermissionTime(
                 address(0),
                 address(this),
                 address(this),
-                bytes4(
-                    keccak256(
-                        "setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)"
-                    )
-                )
+                bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
             ) > 0,
             "ERC20Guild: setConfig function allowance cant be turned off"
         );
@@ -287,11 +264,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                 address(0),
                 address(this),
                 address(this),
-                bytes4(
-                    keccak256(
-                        "setPermission(address[],address[],bytes4[],uint256[],bool[])"
-                    )
-                )
+                bytes4(keccak256("setPermission(address[],address[],bytes4[],uint256[],bool[])"))
             ) > 0,
             "ERC20Guild: setPermission function allowance cant be turned off"
         );
@@ -309,10 +282,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @dev Set the permission delay in the permission registry
     // @param allowance If the function is allowed to be called or not
     function setPermissionDelay(uint256 permissionDelay) public virtual {
-        require(
-            msg.sender == address(this),
-            "ERC20Guild: Only callable by ERC20guild itself"
-        );
+        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
         permissionRegistry.setPermissionDelay(permissionDelay);
     }
 
@@ -331,18 +301,14 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         string memory title,
         bytes memory contentHash
     ) public virtual returns (bytes32) {
-        return
-            _createProposal(to, data, value, totalActions, title, contentHash);
+        return _createProposal(to, data, value, totalActions, title, contentHash);
     }
 
     // @dev Set a hash of an call to be validated using EIP1271
     // @param _hash The EIP1271 hash to be added or removed
     // @param isValid If the hash is valid or not
     function setEIP1271SignedHash(bytes32 _hash, bool isValid) public virtual {
-        require(
-            msg.sender == address(this),
-            "ERC20Guild: Only callable by the guild"
-        );
+        require(msg.sender == address(this), "ERC20Guild: Only callable by the guild");
         EIP1271SignedHashes[_hash] = isValid;
     }
 
@@ -374,8 +340,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256[] memory votingPowers
     ) public virtual {
         require(
-            (proposalIds.length == votingPowers.length) &&
-                (proposalIds.length == actions.length),
+            (proposalIds.length == votingPowers.length) && (proposalIds.length == actions.length),
             "ERC20Guild: Wrong length of proposalIds, actions or votingPowers"
         );
         for (uint256 i = 0; i < proposalIds.length; i++)
@@ -397,10 +362,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     ) public virtual {
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "ERC20Guild: Already voted");
-        require(
-            voter == hashedVote.toEthSignedMessageHash().recover(signature),
-            "ERC20Guild: Wrong signer"
-        );
+        require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "ERC20Guild: Wrong signer");
         _setVote(voter, proposalId, action, votingPower);
         signedVotes[hashedVote] = true;
     }
@@ -419,13 +381,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bytes[] memory signatures
     ) public virtual {
         for (uint256 i = 0; i < proposalIds.length; i++) {
-            setSignedVote(
-                proposalIds[i],
-                actions[i],
-                votingPowers[i],
-                voters[i],
-                signatures[i]
-            );
+            setSignedVote(proposalIds[i], actions[i], votingPowers[i], voters[i], signatures[i]);
         }
     }
 
@@ -433,9 +389,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param tokenAmount The amount of tokens to be locked
     function lockTokens(uint256 tokenAmount) public virtual {
         tokenVault.deposit(msg.sender, tokenAmount);
-        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(
-            tokenAmount
-        );
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(tokenAmount);
         tokensLocked[msg.sender].timestamp = block.timestamp.add(lockTime);
         totalLocked = totalLocked.add(tokenAmount);
         emit TokensLocked(msg.sender, tokenAmount);
@@ -444,17 +398,9 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @dev Withdraw tokens locked in the guild, this will decrease the voting power
     // @param tokenAmount The amount of tokens to be withdrawn
     function withdrawTokens(uint256 tokenAmount) public virtual {
-        require(
-            votingPowerOf(msg.sender) >= tokenAmount,
-            "ERC20Guild: Unable to withdraw more tokens than locked"
-        );
-        require(
-            tokensLocked[msg.sender].timestamp < block.timestamp,
-            "ERC20Guild: Tokens still locked"
-        );
-        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(
-            tokenAmount
-        );
+        require(votingPowerOf(msg.sender) >= tokenAmount, "ERC20Guild: Unable to withdraw more tokens than locked");
+        require(tokensLocked[msg.sender].timestamp < block.timestamp, "ERC20Guild: Tokens still locked");
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(tokenAmount);
         totalLocked = totalLocked.sub(tokenAmount);
         tokenVault.withdraw(msg.sender, tokenAmount);
         emit TokensWithdrawn(msg.sender, tokenAmount);
@@ -475,10 +421,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         string memory title,
         bytes memory contentHash
     ) internal returns (bytes32) {
-        require(
-            activeProposalsNow < getMaxActiveProposals(),
-            "ERC20Guild: Maximum amount of active proposals reached"
-        );
+        require(activeProposalsNow < getMaxActiveProposals(), "ERC20Guild: Maximum amount of active proposals reached");
         require(
             votingPowerOf(msg.sender) >= getVotingPowerForProposalCreation(),
             "ERC20Guild: Not enough votes to create proposal"
@@ -487,19 +430,11 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             (to.length == data.length) && (to.length == value.length),
             "ERC20Guild: Wrong length of to, data or value arrays"
         );
-        require(
-            to.length > 0,
-            "ERC20Guild: to, data value arrays cannot be empty"
-        );
+        require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
         for (uint256 i = 0; i < to.length; i++) {
-            require(
-                to[i] != address(permissionRegistry),
-                "ERC20Guild: Cant call permission registry directly"
-            );
+            require(to[i] != address(permissionRegistry), "ERC20Guild: Cant call permission registry directly");
         }
-        bytes32 proposalId = keccak256(
-            abi.encodePacked(msg.sender, block.timestamp, totalProposals)
-        );
+        bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, block.timestamp, totalProposals));
         totalProposals = totalProposals.add(1);
         Proposal storage newProposal = proposals[proposalId];
         newProposal.creator = msg.sender;
@@ -523,40 +458,23 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @param proposalId The id of the proposal to be executed
     function _endProposal(bytes32 proposalId) internal {
         require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
-        require(
-            proposals[proposalId].state == ProposalState.Active,
-            "ERC20Guild: Proposal already executed"
-        );
-        require(
-            proposals[proposalId].endTime < block.timestamp,
-            "ERC20Guild: Proposal hasn't ended yet"
-        );
+        require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
+        require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
         uint256 winningAction = 0;
         uint256 i = 1;
         for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
             if (
-                proposals[proposalId].totalVotes[i] >=
-                getVotingPowerForProposalExecution() &&
-                proposals[proposalId].totalVotes[i] >
-                proposals[proposalId].totalVotes[winningAction]
+                proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution() &&
+                proposals[proposalId].totalVotes[i] > proposals[proposalId].totalVotes[winningAction]
             ) winningAction = i;
         }
 
         if (winningAction == 0) {
             proposals[proposalId].state = ProposalState.Rejected;
-            emit ProposalStateChanged(
-                proposalId,
-                uint256(ProposalState.Rejected)
-            );
-        } else if (
-            proposals[proposalId].endTime.add(timeForExecution) <
-            block.timestamp
-        ) {
+            emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
+        } else if (proposals[proposalId].endTime.add(timeForExecution) < block.timestamp) {
             proposals[proposalId].state = ProposalState.Failed;
-            emit ProposalStateChanged(
-                proposalId,
-                uint256(ProposalState.Failed)
-            );
+            emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
         } else {
             proposals[proposalId].state = ProposalState.Executed;
 
@@ -567,13 +485,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             uint256 endCall = i.add(callsPerAction);
 
             for (i; i < endCall; i++) {
-                if (
-                    proposals[proposalId].to[i] != address(0) &&
-                    proposals[proposalId].data[i].length > 0
-                ) {
-                    bytes4 callDataFuncSignature = getFuncSignature(
-                        proposals[proposalId].data[i]
-                    );
+                if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
+                    bytes4 callDataFuncSignature = getFuncSignature(proposals[proposalId].data[i]);
                     address asset = address(0);
                     address _to = proposals[proposalId].to[i];
                     uint256 _value = proposals[proposalId].value[i];
@@ -586,36 +499,25 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                     ) {
                         asset = proposals[proposalId].to[i];
                         callDataFuncSignature = ANY_SIGNATURE;
-                        (_to, _value) = erc20TransferOrApproveDecode(
-                            proposals[proposalId].data[i]
-                        );
+                        (_to, _value) = erc20TransferOrApproveDecode(proposals[proposalId].data[i]);
                     }
 
                     // The permission registry keeps track of all value transferred and checks call permission
                     try
-                        permissionRegistry.setPermissionUsed(
-                            asset,
-                            address(this),
-                            _to,
-                            callDataFuncSignature,
-                            _value
-                        )
+                        permissionRegistry.setPermissionUsed(asset, address(this), _to, callDataFuncSignature, _value)
                     {} catch Error(string memory reason) {
                         revert(reason);
                     }
 
                     isExecutingProposal = true;
-                    (bool success, ) = proposals[proposalId].to[i].call{
-                        value: proposals[proposalId].value[i]
-                    }(proposals[proposalId].data[i]);
+                    (bool success, ) = proposals[proposalId].to[i].call{value: proposals[proposalId].value[i]}(
+                        proposals[proposalId].data[i]
+                    );
                     require(success, "ERC20Guild: Proposal call failed");
                     isExecutingProposal = false;
                 }
             }
-            emit ProposalStateChanged(
-                proposalId,
-                uint256(ProposalState.Executed)
-            );
+            emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
         activeProposalsNow = activeProposalsNow.sub(1);
     }
@@ -646,22 +548,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _lockTime,
         address _permissionRegistry
     ) internal {
-        require(
-            address(_token) != address(0),
-            "ERC20Guild: token cant be zero address"
-        );
-        require(
-            _proposalTime > 0,
-            "ERC20Guild: proposal time has to be more tha 0"
-        );
-        require(
-            _lockTime >= _proposalTime,
-            "ERC20Guild: lockTime has to be higher or equal to proposalTime"
-        );
-        require(
-            _votingPowerForProposalExecution > 0,
-            "ERC20Guild: voting power for execution has to be more than 0"
-        );
+        require(address(_token) != address(0), "ERC20Guild: token cant be zero address");
+        require(_proposalTime > 0, "ERC20Guild: proposal time has to be more tha 0");
+        require(_lockTime >= _proposalTime, "ERC20Guild: lockTime has to be higher or equal to proposalTime");
+        require(_votingPowerForProposalExecution > 0, "ERC20Guild: voting power for execution has to be more than 0");
         name = _name;
         token = IERC20Upgradeable(_token);
         tokenVault = new TokenVault();
@@ -678,22 +568,14 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         permissionRegistry.setPermission(
             address(0),
             address(this),
-            bytes4(
-                keccak256(
-                    "setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)"
-                )
-            ),
+            bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")),
             0,
             true
         );
         permissionRegistry.setPermission(
             address(0),
             address(this),
-            bytes4(
-                keccak256(
-                    "setPermission(address[],address[],bytes4[],uint256[],bool[])"
-                )
-            ),
+            bytes4(keccak256("setPermission(address[],address[],bytes4[],uint256[],bool[])")),
             0,
             true
         );
@@ -733,22 +615,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _maxActiveProposals,
         uint256 _lockTime
     ) internal {
-        require(
-            msg.sender == address(this),
-            "ERC20Guild: Only callable by ERC20guild itself when initialized"
-        );
-        require(
-            _proposalTime > 0,
-            "ERC20Guild: proposal time has to be more tha 0"
-        );
-        require(
-            _lockTime >= _proposalTime,
-            "ERC20Guild: lockTime has to be higher or equal to proposalTime"
-        );
-        require(
-            _votingPowerForProposalExecution > 0,
-            "ERC20Guild: voting power for execution has to be more than 0"
-        );
+        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself when initialized");
+        require(_proposalTime > 0, "ERC20Guild: proposal time has to be more tha 0");
+        require(_lockTime >= _proposalTime, "ERC20Guild: lockTime has to be higher or equal to proposalTime");
+        require(_votingPowerForProposalExecution > 0, "ERC20Guild: voting power for execution has to be more than 0");
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerForProposalExecution = _votingPowerForProposalExecution;
@@ -770,18 +640,13 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 action,
         uint256 votingPower
     ) internal {
+        require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cant be voted");
         require(
-            proposals[proposalId].endTime > block.timestamp,
-            "ERC20Guild: Proposal ended, cant be voted"
-        );
-        require(
-            (votingPowerOf(voter) >= votingPower) &&
-                (votingPower > proposals[proposalId].votes[voter].votingPower),
+            (votingPowerOf(voter) >= votingPower) && (votingPower > proposals[proposalId].votes[voter].votingPower),
             "ERC20Guild: Invalid votingPower amount"
         );
         require(
-            proposals[proposalId].votes[voter].action == 0 ||
-                proposals[proposalId].votes[voter].action == action,
+            proposals[proposalId].votes[voter].action == 0 || proposals[proposalId].votes[voter].action == action,
             "ERC20Guild: Cant change action voted, only increase votingPower"
         );
 
@@ -805,23 +670,13 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     // @dev Get the voting power of an account
     // @param account The address of the account
-    function votingPowerOf(address account)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
+    function votingPowerOf(address account) public view virtual returns (uint256) {
         return tokensLocked[account].amount;
     }
 
     // @dev Get the voting power of multiple addresses
     // @param accounts The addresses of the accounts
-    function votingPowerOfMultiple(address[] memory accounts)
-        public
-        view
-        virtual
-        returns (uint256[] memory)
-    {
+    function votingPowerOfMultiple(address[] memory accounts) public view virtual returns (uint256[] memory) {
         uint256[] memory votes = new uint256[](accounts.length);
         for (uint256 i = 0; i < accounts.length; i++) {
             votes[i] = votingPowerOf(accounts[i]);
@@ -947,29 +802,16 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         virtual
         returns (uint256 action, uint256 votingPower)
     {
-        return (
-            proposals[proposalId].votes[voter].action,
-            proposals[proposalId].votes[voter].votingPower
-        );
+        return (proposals[proposalId].votes[voter].action, proposals[proposalId].votes[voter].votingPower);
     }
 
     // @dev Get minimum amount of votingPower needed for creation
-    function getVotingPowerForProposalCreation()
-        public
-        view
-        virtual
-        returns (uint256)
-    {
+    function getVotingPowerForProposalCreation() public view virtual returns (uint256) {
         return getTotalLocked().mul(votingPowerForProposalCreation).div(10000);
     }
 
     // @dev Get minimum amount of votingPower needed for proposal execution
-    function getVotingPowerForProposalExecution()
-        public
-        view
-        virtual
-        returns (uint256)
-    {
+    function getVotingPowerForProposalExecution() public view virtual returns (uint256) {
         return getTotalLocked().mul(votingPowerForProposalExecution).div(10000);
     }
 
@@ -977,11 +819,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     //@param _data ERC20 address and value encoded data.
     //@return to The account to receive the tokens
     //@return value The value of tokens to be transfered/approved
-    function erc20TransferOrApproveDecode(bytes memory _data)
-        public
-        pure
-        returns (address to, uint256 value)
-    {
+    function erc20TransferOrApproveDecode(bytes memory _data) public pure returns (address to, uint256 value) {
         assembly {
             to := mload(add(_data, 36))
             value := mload(add(_data, 68))
@@ -989,12 +827,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // @dev Get the first four bytes (function signature) of a bytes variable
-    function getFuncSignature(bytes memory data)
-        public
-        view
-        virtual
-        returns (bytes4)
-    {
+    function getFuncSignature(bytes memory data) public view virtual returns (bytes4) {
         bytes32 functionSignature = bytes32(0);
         assembly {
             functionSignature := mload(add(data, 32))
@@ -1023,35 +856,20 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // @dev Get the locked timestamp of a voter tokens
-    function getVoterLockTimestamp(address voter)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
+    function getVoterLockTimestamp(address voter) public view virtual returns (uint256) {
         return tokensLocked[voter].timestamp;
     }
 
     // @dev Gets the validity of a EIP1271 hash
     // @param _hash The EIP1271 hash
-    function getEIP1271SignedHash(bytes32 _hash)
-        public
-        view
-        virtual
-        returns (bool)
-    {
+    function getEIP1271SignedHash(bytes32 _hash) public view virtual returns (bool) {
         return EIP1271SignedHashes[_hash];
     }
 
     // @dev Get if the hash and signature are valid EIP1271 signatures
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        view
-        returns (bytes4 magicValue)
-    {
+    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue) {
         return
-            ((votingPowerOf(hash.recover(signature)) > 0) &&
-                EIP1271SignedHashes[hash])
+            ((votingPowerOf(hash.recover(signature)) > 0) && EIP1271SignedHashes[hash])
                 ? this.isValidSignature.selector
                 : bytes4(0);
     }
@@ -1067,7 +885,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 action,
         uint256 votingPower
     ) public pure virtual returns (bytes32) {
-        return
-            keccak256(abi.encodePacked(voter, proposalId, action, votingPower));
+        return keccak256(abi.encodePacked(voter, proposalId, action, votingPower));
     }
 }

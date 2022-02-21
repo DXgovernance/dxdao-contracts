@@ -58,31 +58,20 @@ contract Redeemer {
         )
     {
         bool callContributionReward;
-        (
-            gpRewards,
-            gpDaoBountyReward,
-            executed,
-            winningVote,
-            callContributionReward
-        ) = genesisProtocolRedeem(_genesisProtocol, _proposalId, _beneficiary);
+        (gpRewards, gpDaoBountyReward, executed, winningVote, callContributionReward) = genesisProtocolRedeem(
+            _genesisProtocol,
+            _proposalId,
+            _beneficiary
+        );
         if (callContributionReward) {
             //redeem from contributionReward only if it executed
-            if (
-                _contributionReward.getProposalExecutionTime(
-                    _proposalId,
-                    address(_avatar)
-                ) > 0
-            ) {
+            if (_contributionReward.getProposalExecutionTime(_proposalId, address(_avatar)) > 0) {
                 (
                     crReputationReward,
                     crNativeTokenReward,
                     crEthReward,
                     crExternalTokenReward
-                ) = contributionRewardRedeem(
-                    _contributionReward,
-                    _proposalId,
-                    _avatar
-                );
+                ) = contributionRewardRedeem(_contributionReward, _proposalId, _avatar);
             }
         }
     }
@@ -101,9 +90,7 @@ contract Redeemer {
             bool callContributionReward
         )
     {
-        GenesisProtocol.ProposalState pState = _genesisProtocol.state(
-            _proposalId
-        );
+        GenesisProtocol.ProposalState pState = _genesisProtocol.state(_proposalId);
 
         if (
             (pState == GenesisProtocolLogic.ProposalState.Queued) ||
@@ -120,8 +107,10 @@ contract Redeemer {
         ) {
             gpRewards = _genesisProtocol.redeem(_proposalId, _beneficiary);
             if (pState == GenesisProtocolLogic.ProposalState.Executed) {
-                (gpDaoBountyReward[0], gpDaoBountyReward[1]) = _genesisProtocol
-                    .redeemDaoBounty(_proposalId, _beneficiary);
+                (gpDaoBountyReward[0], gpDaoBountyReward[1]) = _genesisProtocol.redeemDaoBounty(
+                    _proposalId,
+                    _beneficiary
+                );
             }
             winningVote = _genesisProtocol.winningVote(_proposalId);
             callContributionReward = true;
@@ -144,41 +133,26 @@ contract Redeemer {
         bool[4] memory whatToRedeem;
         whatToRedeem[0] = true; //reputation
         whatToRedeem[1] = true; //nativeToken
-        uint256 periodsToPay = _contributionReward.getPeriodsToPay(
-            _proposalId,
-            address(_avatar),
-            2
-        );
-        uint256 ethReward = _contributionReward.getProposalEthReward(
-            _proposalId,
-            address(_avatar)
-        );
-        uint256 externalTokenReward = _contributionReward
-            .getProposalExternalTokenReward(_proposalId, address(_avatar));
-        address externalTokenAddress = _contributionReward
-            .getProposalExternalToken(_proposalId, address(_avatar));
+        uint256 periodsToPay = _contributionReward.getPeriodsToPay(_proposalId, address(_avatar), 2);
+        uint256 ethReward = _contributionReward.getProposalEthReward(_proposalId, address(_avatar));
+        uint256 externalTokenReward = _contributionReward.getProposalExternalTokenReward(_proposalId, address(_avatar));
+        address externalTokenAddress = _contributionReward.getProposalExternalToken(_proposalId, address(_avatar));
         ethReward = periodsToPay.mul(ethReward);
         if ((ethReward == 0) || (address(_avatar).balance < ethReward)) {
             whatToRedeem[2] = false;
         } else {
             whatToRedeem[2] = true;
         }
-        periodsToPay = _contributionReward.getPeriodsToPay(
-            _proposalId,
-            address(_avatar),
-            3
-        );
+        periodsToPay = _contributionReward.getPeriodsToPay(_proposalId, address(_avatar), 3);
         externalTokenReward = periodsToPay.mul(externalTokenReward);
         if (
             (externalTokenReward == 0) ||
-            (IERC20(externalTokenAddress).balanceOf(address(_avatar)) <
-                externalTokenReward)
+            (IERC20(externalTokenAddress).balanceOf(address(_avatar)) < externalTokenReward)
         ) {
             whatToRedeem[3] = false;
         } else {
             whatToRedeem[3] = true;
         }
-        (reputation, nativeToken, eth, externalToken) = _contributionReward
-            .redeem(_proposalId, _avatar, whatToRedeem);
+        (reputation, nativeToken, eth, externalToken) = _contributionReward.redeem(_proposalId, _avatar, whatToRedeem);
     }
 }

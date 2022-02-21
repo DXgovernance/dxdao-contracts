@@ -8,12 +8,7 @@ import "../dxdao/DxController.sol";
 contract DxControllerCreator {
     function create(Avatar _avatar) public returns (address) {
         DxController controller = new DxController(_avatar);
-        controller.registerScheme(
-            msg.sender,
-            bytes32(0),
-            bytes4(0x0000001f),
-            address(_avatar)
-        );
+        controller.registerScheme(msg.sender, bytes32(0), bytes4(0x0000001f), address(_avatar));
         controller.unregisterScheme(address(this), address(_avatar));
         return address(controller);
     }
@@ -60,11 +55,7 @@ contract DaoCreator {
         for (uint256 i = 0; i < _founders.length; i++) {
             require(_founders[i] != address(0));
             if (_foundersTokenAmount[i] > 0) {
-                DxController(_avatar.owner()).mintTokens(
-                    _foundersTokenAmount[i],
-                    _founders[i],
-                    address(_avatar)
-                );
+                DxController(_avatar.owner()).mintTokens(_foundersTokenAmount[i], _founders[i], address(_avatar));
             }
             if (_foundersReputationAmount[i] > 0) {
                 DxController(_avatar.owner()).mintReputation(
@@ -133,12 +124,7 @@ contract DaoCreator {
         // register initial schemes:
         DxController controller = DxController(_avatar.owner());
         for (uint256 i = 0; i < _schemes.length; i++) {
-            controller.registerScheme(
-                _schemes[i],
-                _params[i],
-                _permissions[i],
-                address(_avatar)
-            );
+            controller.registerScheme(_schemes[i], _params[i], _permissions[i], address(_avatar));
         }
         controller.metaData(_metaData, _avatar);
         // Unregister self:
@@ -181,16 +167,11 @@ contract DaoCreator {
         // Mint token and reputation for founders:
         for (uint256 i = 0; i < _founders.length; i++) {
             if (_foundersReputationAmount[i] > 0) {
-                nativeReputation.mint(
-                    _founders[i],
-                    _foundersReputationAmount[i]
-                );
+                nativeReputation.mint(_founders[i], _foundersReputationAmount[i]);
             }
         }
 
-        DxController controller = DxController(
-            controllerCreator.create(avatar)
-        );
+        DxController controller = DxController(controllerCreator.create(avatar));
 
         // Transfer ownership:
         avatar.transferOwnership(address(controller));

@@ -68,9 +68,7 @@ interface ControllerInterface {
      * @param _scheme the address of the scheme
      * @return bool which represents a success
      */
-    function unregisterScheme(address _scheme, address _avatar)
-        external
-        returns (bool);
+    function unregisterScheme(address _scheme, address _avatar) external returns (bool);
 
     /**
      * @dev unregister the caller's scheme
@@ -98,9 +96,7 @@ interface ControllerInterface {
      * @param _avatar the organization avatar.
      * @return bool which represents a success
      */
-    function removeGlobalConstraint(address _globalConstraint, address _avatar)
-        external
-        returns (bool);
+    function removeGlobalConstraint(address _globalConstraint, address _avatar) external returns (bool);
 
     /**
      * @dev upgrade the Controller
@@ -109,9 +105,7 @@ interface ControllerInterface {
      * @param _avatar address
      * @return bool which represents a success
      */
-    function upgradeController(address _newController, Avatar _avatar)
-        external
-        returns (bool);
+    function upgradeController(address _newController, Avatar _avatar) external returns (bool);
 
     /**
      * @dev perform a generic call to an arbitrary contract
@@ -197,52 +191,29 @@ interface ControllerInterface {
      * @param _avatar Avatar
      * @return bool which represents a success
      */
-    function metaData(string calldata _metaData, Avatar _avatar)
-        external
-        returns (bool);
+    function metaData(string calldata _metaData, Avatar _avatar) external returns (bool);
 
     /**
      * @dev getNativeReputation
      * @param _avatar the organization avatar.
      * @return organization native reputation
      */
-    function getNativeReputation(address _avatar)
-        external
-        view
-        returns (address);
+    function getNativeReputation(address _avatar) external view returns (address);
 
-    function isSchemeRegistered(address _scheme, address _avatar)
-        external
-        view
-        returns (bool);
+    function isSchemeRegistered(address _scheme, address _avatar) external view returns (bool);
 
-    function getSchemeParameters(address _scheme, address _avatar)
-        external
-        view
-        returns (bytes32);
+    function getSchemeParameters(address _scheme, address _avatar) external view returns (bytes32);
 
-    function getGlobalConstraintParameters(
-        address _globalConstraint,
-        address _avatar
-    ) external view returns (bytes32);
+    function getGlobalConstraintParameters(address _globalConstraint, address _avatar) external view returns (bytes32);
 
-    function getSchemePermissions(address _scheme, address _avatar)
-        external
-        view
-        returns (bytes4);
+    function getSchemePermissions(address _scheme, address _avatar) external view returns (bytes4);
 
     /**
      * @dev globalConstraintsCount return the global constraint pre and post count
      * @return uint256 globalConstraintsPre count.
      * @return uint256 globalConstraintsPost count.
      */
-    function globalConstraintsCount(address _avatar)
-        external
-        view
-        returns (uint256, uint256);
+    function globalConstraintsCount(address _avatar) external view returns (uint256, uint256);
 
-    function isGlobalConstraintRegistered(
-        address _globalConstraint,
-        address _avatar
-    ) external view returns (bool);
+    function isGlobalConstraintRegistered(address _globalConstraint, address _avatar) external view returns (bool);
 }

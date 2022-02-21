@@ -10,11 +10,7 @@ import "../votingMachines/VotingMachineCallbacks.sol";
  * @dev The SchemeRegistrar is used for registering and unregistering schemes at organizations
  */
 
-contract SchemeRegistrar is
-    UniversalScheme,
-    VotingMachineCallbacks,
-    ProposalExecuteInterface
-{
+contract SchemeRegistrar is UniversalScheme, VotingMachineCallbacks, ProposalExecuteInterface {
     event NewSchemeProposal(
         address indexed _avatar,
         bytes32 indexed _proposalId,
@@ -33,11 +29,7 @@ contract SchemeRegistrar is
         string _descriptionHash
     );
 
-    event ProposalExecuted(
-        address indexed _avatar,
-        bytes32 indexed _proposalId,
-        int256 _param
-    );
+    event ProposalExecuted(address indexed _avatar, bytes32 indexed _proposalId, int256 _param);
     event ProposalDeleted(address indexed _avatar, bytes32 indexed _proposalId);
 
     // a SchemeProposal is a  proposal to add or remove a scheme to/from the an organization
@@ -49,8 +41,7 @@ contract SchemeRegistrar is
     }
 
     // A mapping from the organization (Avatar) address to the saved data of the organization:
-    mapping(address => mapping(bytes32 => SchemeProposal))
-        public organizationsProposals;
+    mapping(address => mapping(bytes32 => SchemeProposal)) public organizationsProposals;
 
     // A mapping from hashes to parameters (use to store a particular configuration on the controller)
     struct Parameters {
@@ -72,17 +63,13 @@ contract SchemeRegistrar is
         returns (bool)
     {
         Avatar avatar = proposalsInfo[msg.sender][_proposalId].avatar;
-        SchemeProposal memory proposal = organizationsProposals[
-            address(avatar)
-        ][_proposalId];
+        SchemeProposal memory proposal = organizationsProposals[address(avatar)][_proposalId];
         require(proposal.scheme != address(0));
         delete organizationsProposals[address(avatar)][_proposalId];
         emit ProposalDeleted(address(avatar), _proposalId);
         if (_param == 1) {
             // Define controller and get the params:
-            ControllerInterface controller = ControllerInterface(
-                avatar.owner()
-            );
+            ControllerInterface controller = ControllerInterface(avatar.owner());
 
             // Add a scheme:
             if (proposal.addScheme) {
@@ -97,12 +84,7 @@ contract SchemeRegistrar is
             }
             // Remove a scheme:
             if (!proposal.addScheme) {
-                require(
-                    controller.unregisterScheme(
-                        proposal.scheme,
-                        address(avatar)
-                    )
-                );
+                require(controller.unregisterScheme(proposal.scheme, address(avatar)));
             }
         }
         emit ProposalExecuted(address(avatar), _proposalId, _param);
@@ -117,11 +99,7 @@ contract SchemeRegistrar is
         bytes32 _voteRemoveParams,
         IntVoteInterface _intVote
     ) public returns (bytes32) {
-        bytes32 paramsHash = getParametersHash(
-            _voteRegisterParams,
-            _voteRemoveParams,
-            _intVote
-        );
+        bytes32 paramsHash = getParametersHash(_voteRegisterParams, _voteRemoveParams, _intVote);
         parameters[paramsHash].voteRegisterParams = _voteRegisterParams;
         parameters[paramsHash].voteRemoveParams = _voteRemoveParams;
         parameters[paramsHash].intVote = _intVote;
@@ -133,14 +111,7 @@ contract SchemeRegistrar is
         bytes32 _voteRemoveParams,
         IntVoteInterface _intVote
     ) public pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    _voteRegisterParams,
-                    _voteRemoveParams,
-                    _intVote
-                )
-            );
+        return keccak256(abi.encodePacked(_voteRegisterParams, _voteRemoveParams, _intVote));
     }
 
     /**
@@ -162,9 +133,7 @@ contract SchemeRegistrar is
     ) public returns (bytes32) {
         // propose
         require(_scheme != address(0), "scheme cannot be zero");
-        Parameters memory controllerParams = parameters[
-            getParametersFromController(_avatar)
-        ];
+        Parameters memory controllerParams = parameters[getParametersFromController(_avatar)];
 
         bytes32 proposalId = controllerParams.intVote.propose(
             2,
@@ -189,9 +158,10 @@ contract SchemeRegistrar is
             _descriptionHash
         );
         organizationsProposals[address(_avatar)][proposalId] = proposal;
-        proposalsInfo[address(controllerParams.intVote)][
-            proposalId
-        ] = ProposalInfo({blockNumber: block.number, avatar: _avatar});
+        proposalsInfo[address(controllerParams.intVote)][proposalId] = ProposalInfo({
+            blockNumber: block.number,
+            avatar: _avatar
+        });
         return proposalId;
     }
 
@@ -212,24 +182,10 @@ contract SchemeRegistrar is
         Parameters memory params = parameters[paramsHash];
 
         IntVoteInterface intVote = params.intVote;
-        bytes32 proposalId = intVote.propose(
-            2,
-            params.voteRemoveParams,
-            msg.sender,
-            address(_avatar)
-        );
+        bytes32 proposalId = intVote.propose(2, params.voteRemoveParams, msg.sender, address(_avatar));
         organizationsProposals[address(_avatar)][proposalId].scheme = _scheme;
-        emit RemoveSchemeProposal(
-            address(_avatar),
-            proposalId,
-            address(intVote),
-            _scheme,
-            _descriptionHash
-        );
-        proposalsInfo[address(params.intVote)][proposalId] = ProposalInfo({
-            blockNumber: block.number,
-            avatar: _avatar
-        });
+        emit RemoveSchemeProposal(address(_avatar), proposalId, address(intVote), _scheme, _descriptionHash);
+        proposalsInfo[address(params.intVote)][proposalId] = ProposalInfo({blockNumber: block.number, avatar: _avatar});
         return proposalId;
     }
 }

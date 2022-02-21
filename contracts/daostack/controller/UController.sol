@@ -55,39 +55,12 @@ contract UController is ControllerInterface {
     //mapping for all reputation system and tokens addresses registered.
     mapping(address => bool) public actors;
 
-    event MintReputation(
-        address indexed _sender,
-        address indexed _to,
-        uint256 _amount,
-        address indexed _avatar
-    );
-    event BurnReputation(
-        address indexed _sender,
-        address indexed _from,
-        uint256 _amount,
-        address indexed _avatar
-    );
-    event MintTokens(
-        address indexed _sender,
-        address indexed _beneficiary,
-        uint256 _amount,
-        address indexed _avatar
-    );
-    event RegisterScheme(
-        address indexed _sender,
-        address indexed _scheme,
-        address indexed _avatar
-    );
-    event UnregisterScheme(
-        address indexed _sender,
-        address indexed _scheme,
-        address indexed _avatar
-    );
-    event UpgradeController(
-        address indexed _oldController,
-        address _newController,
-        address _avatar
-    );
+    event MintReputation(address indexed _sender, address indexed _to, uint256 _amount, address indexed _avatar);
+    event BurnReputation(address indexed _sender, address indexed _from, uint256 _amount, address indexed _avatar);
+    event MintTokens(address indexed _sender, address indexed _beneficiary, uint256 _amount, address indexed _avatar);
+    event RegisterScheme(address indexed _sender, address indexed _scheme, address indexed _avatar);
+    event UnregisterScheme(address indexed _sender, address indexed _scheme, address indexed _avatar);
+    event UpgradeController(address indexed _oldController, address _newController, address _avatar);
 
     event AddGlobalConstraint(
         address indexed _globalConstraint,
@@ -132,79 +105,56 @@ contract UController is ControllerInterface {
 
     // Modifiers:
     modifier onlyRegisteredScheme(address avatar) {
-        require(
-            organizations[avatar].schemes[msg.sender].permissions &
-                bytes4(0x00000001) ==
-                bytes4(0x00000001)
-        );
+        require(organizations[avatar].schemes[msg.sender].permissions & bytes4(0x00000001) == bytes4(0x00000001));
         _;
     }
 
     modifier onlyRegisteringSchemes(address avatar) {
-        require(
-            organizations[avatar].schemes[msg.sender].permissions &
-                bytes4(0x00000002) ==
-                bytes4(0x00000002)
-        );
+        require(organizations[avatar].schemes[msg.sender].permissions & bytes4(0x00000002) == bytes4(0x00000002));
         _;
     }
 
     modifier onlyGlobalConstraintsScheme(address avatar) {
-        require(
-            organizations[avatar].schemes[msg.sender].permissions &
-                bytes4(0x00000004) ==
-                bytes4(0x00000004)
-        );
+        require(organizations[avatar].schemes[msg.sender].permissions & bytes4(0x00000004) == bytes4(0x00000004));
         _;
     }
 
     modifier onlyUpgradingScheme(address _avatar) {
-        require(
-            organizations[_avatar].schemes[msg.sender].permissions &
-                bytes4(0x00000008) ==
-                bytes4(0x00000008)
-        );
+        require(organizations[_avatar].schemes[msg.sender].permissions & bytes4(0x00000008) == bytes4(0x00000008));
         _;
     }
 
     modifier onlyGenericCallScheme(address _avatar) {
-        require(
-            organizations[_avatar].schemes[msg.sender].permissions &
-                bytes4(0x00000010) ==
-                bytes4(0x00000010)
-        );
+        require(organizations[_avatar].schemes[msg.sender].permissions & bytes4(0x00000010) == bytes4(0x00000010));
         _;
     }
 
     modifier onlyMetaDataScheme(address _avatar) {
-        require(
-            organizations[_avatar].schemes[msg.sender].permissions &
-                bytes4(0x00000010) ==
-                bytes4(0x00000010)
-        );
+        require(organizations[_avatar].schemes[msg.sender].permissions & bytes4(0x00000010) == bytes4(0x00000010));
         _;
     }
 
     modifier onlySubjectToConstraint(bytes32 func, address _avatar) {
         uint256 idx;
-        GlobalConstraint[] memory globalConstraintsPre = organizations[_avatar]
-            .globalConstraintsPre;
-        GlobalConstraint[] memory globalConstraintsPost = organizations[_avatar]
-            .globalConstraintsPost;
+        GlobalConstraint[] memory globalConstraintsPre = organizations[_avatar].globalConstraintsPre;
+        GlobalConstraint[] memory globalConstraintsPost = organizations[_avatar].globalConstraintsPost;
         for (idx = 0; idx < globalConstraintsPre.length; idx++) {
             require(
-                (GlobalConstraintInterface(globalConstraintsPre[idx].gcAddress))
-                    .pre(msg.sender, globalConstraintsPre[idx].params, func)
+                (GlobalConstraintInterface(globalConstraintsPre[idx].gcAddress)).pre(
+                    msg.sender,
+                    globalConstraintsPre[idx].params,
+                    func
+                )
             );
         }
         _;
         for (idx = 0; idx < globalConstraintsPost.length; idx++) {
             require(
-                (
-                    GlobalConstraintInterface(
-                        globalConstraintsPost[idx].gcAddress
-                    )
-                ).post(msg.sender, globalConstraintsPost[idx].params, func)
+                (GlobalConstraintInterface(globalConstraintsPost[idx].gcAddress)).post(
+                    msg.sender,
+                    globalConstraintsPost[idx].params,
+                    func
+                )
             );
         }
     }
@@ -220,12 +170,7 @@ contract UController is ControllerInterface {
         uint256 _amount,
         address _to,
         address _avatar
-    )
-        external
-        onlyRegisteredScheme(_avatar)
-        onlySubjectToConstraint("mintReputation", _avatar)
-        returns (bool)
-    {
+    ) external onlyRegisteredScheme(_avatar) onlySubjectToConstraint("mintReputation", _avatar) returns (bool) {
         emit MintReputation(msg.sender, _to, _amount, _avatar);
         return organizations[_avatar].nativeReputation.mint(_to, _amount);
     }
@@ -240,12 +185,7 @@ contract UController is ControllerInterface {
         uint256 _amount,
         address _from,
         address _avatar
-    )
-        external
-        onlyRegisteredScheme(_avatar)
-        onlySubjectToConstraint("burnReputation", _avatar)
-        returns (bool)
-    {
+    ) external onlyRegisteredScheme(_avatar) onlySubjectToConstraint("burnReputation", _avatar) returns (bool) {
         emit BurnReputation(msg.sender, _from, _amount, _avatar);
         return organizations[_avatar].nativeReputation.burn(_from, _amount);
     }
@@ -261,12 +201,7 @@ contract UController is ControllerInterface {
         uint256 _amount,
         address _beneficiary,
         address _avatar
-    )
-        external
-        onlyRegisteredScheme(_avatar)
-        onlySubjectToConstraint("mintTokens", _avatar)
-        returns (bool)
-    {
+    ) external onlyRegisteredScheme(_avatar) onlySubjectToConstraint("mintTokens", _avatar) returns (bool) {
         emit MintTokens(msg.sender, _beneficiary, _amount, _avatar);
         return organizations[_avatar].nativeToken.mint(_beneficiary, _amount);
     }
@@ -284,34 +219,17 @@ contract UController is ControllerInterface {
         bytes32 _paramsHash,
         bytes4 _permissions,
         address _avatar
-    )
-        external
-        onlyRegisteringSchemes(_avatar)
-        onlySubjectToConstraint("registerScheme", _avatar)
-        returns (bool)
-    {
-        bytes4 schemePermission = organizations[_avatar]
-            .schemes[_scheme]
-            .permissions;
-        bytes4 senderPermission = organizations[_avatar]
-            .schemes[msg.sender]
-            .permissions;
+    ) external onlyRegisteringSchemes(_avatar) onlySubjectToConstraint("registerScheme", _avatar) returns (bool) {
+        bytes4 schemePermission = organizations[_avatar].schemes[_scheme].permissions;
+        bytes4 senderPermission = organizations[_avatar].schemes[msg.sender].permissions;
         // Check scheme has at least the permissions it is changing, and at least the current permissions:
         // Implementation is a bit messy. One must recall logic-circuits ^^
 
         // produces non-zero if sender does not have all of the perms that are changing between old and new
-        require(
-            bytes4(0x0000001f) &
-                (_permissions ^ schemePermission) &
-                (~senderPermission) ==
-                bytes4(0)
-        );
+        require(bytes4(0x0000001f) & (_permissions ^ schemePermission) & (~senderPermission) == bytes4(0));
 
         // produces non-zero if sender does not have all of the perms in the old scheme
-        require(
-            bytes4(0x0000001f) & (schemePermission & (~senderPermission)) ==
-                bytes4(0)
-        );
+        require(bytes4(0x0000001f) & (schemePermission & (~senderPermission)) == bytes4(0));
 
         // Add or change the scheme:
         organizations[_avatar].schemes[_scheme] = Scheme({
@@ -334,20 +252,14 @@ contract UController is ControllerInterface {
         onlySubjectToConstraint("unregisterScheme", _avatar)
         returns (bool)
     {
-        bytes4 schemePermission = organizations[_avatar]
-            .schemes[_scheme]
-            .permissions;
+        bytes4 schemePermission = organizations[_avatar].schemes[_scheme].permissions;
         //check if the scheme is registered
         if (schemePermission & bytes4(0x00000001) == bytes4(0)) {
             return false;
         }
         // Check the unregistering scheme has enough permissions:
         require(
-            bytes4(0x0000001f) &
-                (schemePermission &
-                    (
-                        ~organizations[_avatar].schemes[msg.sender].permissions
-                    )) ==
+            bytes4(0x0000001f) & (schemePermission & (~organizations[_avatar].schemes[msg.sender].permissions)) ==
                 bytes4(0)
         );
 
@@ -384,34 +296,20 @@ contract UController is ControllerInterface {
         address _avatar
     ) external onlyGlobalConstraintsScheme(_avatar) returns (bool) {
         Organization storage organization = organizations[_avatar];
-        GlobalConstraintInterface.CallPhase when = GlobalConstraintInterface(
-            _globalConstraint
-        ).when();
+        GlobalConstraintInterface.CallPhase when = GlobalConstraintInterface(_globalConstraint).when();
         if (
             (when == GlobalConstraintInterface.CallPhase.Pre) ||
             (when == GlobalConstraintInterface.CallPhase.PreAndPost)
         ) {
-            if (
-                !organization
-                    .globalConstraintsRegisterPre[_globalConstraint]
-                    .isRegistered
-            ) {
-                organization.globalConstraintsPre.push(
-                    GlobalConstraint(_globalConstraint, _params)
-                );
-                organization.globalConstraintsRegisterPre[
-                        _globalConstraint
-                    ] = GlobalConstraintRegister(
+            if (!organization.globalConstraintsRegisterPre[_globalConstraint].isRegistered) {
+                organization.globalConstraintsPre.push(GlobalConstraint(_globalConstraint, _params));
+                organization.globalConstraintsRegisterPre[_globalConstraint] = GlobalConstraintRegister(
                     true,
                     organization.globalConstraintsPre.length - 1
                 );
             } else {
                 organization
-                    .globalConstraintsPre[
-                        organization
-                            .globalConstraintsRegisterPre[_globalConstraint]
-                            .index
-                    ]
+                    .globalConstraintsPre[organization.globalConstraintsRegisterPre[_globalConstraint].index]
                     .params = _params;
             }
         }
@@ -420,27 +318,15 @@ contract UController is ControllerInterface {
             (when == GlobalConstraintInterface.CallPhase.Post) ||
             (when == GlobalConstraintInterface.CallPhase.PreAndPost)
         ) {
-            if (
-                !organization
-                    .globalConstraintsRegisterPost[_globalConstraint]
-                    .isRegistered
-            ) {
-                organization.globalConstraintsPost.push(
-                    GlobalConstraint(_globalConstraint, _params)
-                );
-                organization.globalConstraintsRegisterPost[
-                        _globalConstraint
-                    ] = GlobalConstraintRegister(
+            if (!organization.globalConstraintsRegisterPost[_globalConstraint].isRegistered) {
+                organization.globalConstraintsPost.push(GlobalConstraint(_globalConstraint, _params));
+                organization.globalConstraintsRegisterPost[_globalConstraint] = GlobalConstraintRegister(
                     true,
                     organization.globalConstraintsPost.length - 1
                 );
             } else {
                 organization
-                    .globalConstraintsPost[
-                        organization
-                            .globalConstraintsRegisterPost[_globalConstraint]
-                            .index
-                    ]
+                    .globalConstraintsPost[organization.globalConstraintsRegisterPost[_globalConstraint].index]
                     .params = _params;
             }
         }
@@ -459,9 +345,7 @@ contract UController is ControllerInterface {
         onlyGlobalConstraintsScheme(_avatar)
         returns (bool)
     {
-        GlobalConstraintInterface.CallPhase when = GlobalConstraintInterface(
-            _globalConstraint
-        ).when();
+        GlobalConstraintInterface.CallPhase when = GlobalConstraintInterface(_globalConstraint).when();
         if (
             (when == GlobalConstraintInterface.CallPhase.Pre) ||
             (when == GlobalConstraintInterface.CallPhase.PreAndPost)
@@ -494,28 +378,13 @@ contract UController is ControllerInterface {
         newControllers[address(_avatar)] = _newController;
         _avatar.transferOwnership(_newController);
         require(_avatar.owner() == _newController);
-        if (
-            organizations[address(_avatar)].nativeToken.owner() == address(this)
-        ) {
-            organizations[address(_avatar)].nativeToken.transferOwnership(
-                _newController
-            );
-            require(
-                organizations[address(_avatar)].nativeToken.owner() ==
-                    _newController
-            );
+        if (organizations[address(_avatar)].nativeToken.owner() == address(this)) {
+            organizations[address(_avatar)].nativeToken.transferOwnership(_newController);
+            require(organizations[address(_avatar)].nativeToken.owner() == _newController);
         }
-        if (
-            organizations[address(_avatar)].nativeReputation.owner() ==
-            address(this)
-        ) {
-            organizations[address(_avatar)].nativeReputation.transferOwnership(
-                _newController
-            );
-            require(
-                organizations[address(_avatar)].nativeReputation.owner() ==
-                    _newController
-            );
+        if (organizations[address(_avatar)].nativeReputation.owner() == address(this)) {
+            organizations[address(_avatar)].nativeReputation.transferOwnership(_newController);
+            require(organizations[address(_avatar)].nativeReputation.owner() == _newController);
         }
         emit UpgradeController(address(this), _newController, address(_avatar));
         return true;
@@ -609,13 +478,7 @@ contract UController is ControllerInterface {
         onlySubjectToConstraint("externalTokenTransferFrom", address(_avatar))
         returns (bool)
     {
-        return
-            _avatar.externalTokenTransferFrom(
-                _externalToken,
-                _from,
-                _to,
-                _value
-            );
+        return _avatar.externalTokenTransferFrom(_externalToken, _from, _to, _value);
     }
 
     /**
@@ -654,46 +517,28 @@ contract UController is ControllerInterface {
         return _avatar.metaData(_metaData);
     }
 
-    function isSchemeRegistered(address _scheme, address _avatar)
-        external
-        view
-        returns (bool)
-    {
+    function isSchemeRegistered(address _scheme, address _avatar) external view returns (bool) {
         return _isSchemeRegistered(_scheme, _avatar);
     }
 
-    function getSchemeParameters(address _scheme, address _avatar)
-        external
-        view
-        returns (bytes32)
-    {
+    function getSchemeParameters(address _scheme, address _avatar) external view returns (bytes32) {
         return organizations[_avatar].schemes[_scheme].paramsHash;
     }
 
-    function getSchemePermissions(address _scheme, address _avatar)
-        external
-        view
-        returns (bytes4)
-    {
+    function getSchemePermissions(address _scheme, address _avatar) external view returns (bytes4) {
         return organizations[_avatar].schemes[_scheme].permissions;
     }
 
-    function getGlobalConstraintParameters(
-        address _globalConstraint,
-        address _avatar
-    ) external view returns (bytes32) {
+    function getGlobalConstraintParameters(address _globalConstraint, address _avatar) external view returns (bytes32) {
         Organization storage organization = organizations[_avatar];
 
-        GlobalConstraintRegister memory register = organization
-            .globalConstraintsRegisterPre[_globalConstraint];
+        GlobalConstraintRegister memory register = organization.globalConstraintsRegisterPre[_globalConstraint];
 
         if (register.isRegistered) {
             return organization.globalConstraintsPre[register.index].params;
         }
 
-        register = organization.globalConstraintsRegisterPost[
-            _globalConstraint
-        ];
+        register = organization.globalConstraintsRegisterPost[_globalConstraint];
 
         if (register.isRegistered) {
             return organization.globalConstraintsPost[register.index].params;
@@ -705,27 +550,16 @@ contract UController is ControllerInterface {
      * @return uint256 globalConstraintsPre count.
      * @return uint256 globalConstraintsPost count.
      */
-    function globalConstraintsCount(address _avatar)
-        external
-        view
-        returns (uint256, uint256)
-    {
+    function globalConstraintsCount(address _avatar) external view returns (uint256, uint256) {
         return (
             organizations[_avatar].globalConstraintsPre.length,
             organizations[_avatar].globalConstraintsPost.length
         );
     }
 
-    function isGlobalConstraintRegistered(
-        address _globalConstraint,
-        address _avatar
-    ) external view returns (bool) {
-        return (organizations[_avatar]
-            .globalConstraintsRegisterPre[_globalConstraint]
-            .isRegistered ||
-            organizations[_avatar]
-                .globalConstraintsRegisterPost[_globalConstraint]
-                .isRegistered);
+    function isGlobalConstraintRegistered(address _globalConstraint, address _avatar) external view returns (bool) {
+        return (organizations[_avatar].globalConstraintsRegisterPre[_globalConstraint].isRegistered ||
+            organizations[_avatar].globalConstraintsRegisterPost[_globalConstraint].isRegistered);
     }
 
     /**
@@ -733,11 +567,7 @@ contract UController is ControllerInterface {
      * @param _avatar the organization avatar.
      * @return organization native reputation
      */
-    function getNativeReputation(address _avatar)
-        external
-        view
-        returns (address)
-    {
+    function getNativeReputation(address _avatar) external view returns (address) {
         return address(organizations[_avatar].nativeReputation);
     }
 
@@ -747,38 +577,23 @@ contract UController is ControllerInterface {
      * @param _avatar the organization avatar.
      * @return bool which represents a success
      */
-    function removeGlobalConstraintPre(
-        address _globalConstraint,
-        address _avatar
-    ) private returns (bool) {
-        GlobalConstraintRegister
-            memory globalConstraintRegister = organizations[_avatar]
-                .globalConstraintsRegisterPre[_globalConstraint];
-        GlobalConstraint[] storage globalConstraints = organizations[_avatar]
-            .globalConstraintsPre;
+    function removeGlobalConstraintPre(address _globalConstraint, address _avatar) private returns (bool) {
+        GlobalConstraintRegister memory globalConstraintRegister = organizations[_avatar].globalConstraintsRegisterPre[
+            _globalConstraint
+        ];
+        GlobalConstraint[] storage globalConstraints = organizations[_avatar].globalConstraintsPre;
 
         if (globalConstraintRegister.isRegistered) {
             if (globalConstraintRegister.index < globalConstraints.length - 1) {
-                GlobalConstraint memory globalConstraint = globalConstraints[
-                    globalConstraints.length - 1
-                ];
-                globalConstraints[
-                    globalConstraintRegister.index
-                ] = globalConstraint;
+                GlobalConstraint memory globalConstraint = globalConstraints[globalConstraints.length - 1];
+                globalConstraints[globalConstraintRegister.index] = globalConstraint;
                 organizations[_avatar]
                     .globalConstraintsRegisterPre[globalConstraint.gcAddress]
                     .index = globalConstraintRegister.index;
             }
             globalConstraints.length--;
-            delete organizations[_avatar].globalConstraintsRegisterPre[
-                _globalConstraint
-            ];
-            emit RemoveGlobalConstraint(
-                _globalConstraint,
-                globalConstraintRegister.index,
-                true,
-                _avatar
-            );
+            delete organizations[_avatar].globalConstraintsRegisterPre[_globalConstraint];
+            emit RemoveGlobalConstraint(_globalConstraint, globalConstraintRegister.index, true, _avatar);
             return true;
         }
         return false;
@@ -790,50 +605,29 @@ contract UController is ControllerInterface {
      * @param _avatar the organization avatar.
      * @return bool which represents a success
      */
-    function removeGlobalConstraintPost(
-        address _globalConstraint,
-        address _avatar
-    ) private returns (bool) {
-        GlobalConstraintRegister
-            memory globalConstraintRegister = organizations[_avatar]
-                .globalConstraintsRegisterPost[_globalConstraint];
-        GlobalConstraint[] storage globalConstraints = organizations[_avatar]
-            .globalConstraintsPost;
+    function removeGlobalConstraintPost(address _globalConstraint, address _avatar) private returns (bool) {
+        GlobalConstraintRegister memory globalConstraintRegister = organizations[_avatar].globalConstraintsRegisterPost[
+            _globalConstraint
+        ];
+        GlobalConstraint[] storage globalConstraints = organizations[_avatar].globalConstraintsPost;
 
         if (globalConstraintRegister.isRegistered) {
             if (globalConstraintRegister.index < globalConstraints.length - 1) {
-                GlobalConstraint memory globalConstraint = globalConstraints[
-                    globalConstraints.length - 1
-                ];
-                globalConstraints[
-                    globalConstraintRegister.index
-                ] = globalConstraint;
+                GlobalConstraint memory globalConstraint = globalConstraints[globalConstraints.length - 1];
+                globalConstraints[globalConstraintRegister.index] = globalConstraint;
                 organizations[_avatar]
                     .globalConstraintsRegisterPost[globalConstraint.gcAddress]
                     .index = globalConstraintRegister.index;
             }
             globalConstraints.length--;
-            delete organizations[_avatar].globalConstraintsRegisterPost[
-                _globalConstraint
-            ];
-            emit RemoveGlobalConstraint(
-                _globalConstraint,
-                globalConstraintRegister.index,
-                false,
-                _avatar
-            );
+            delete organizations[_avatar].globalConstraintsRegisterPost[_globalConstraint];
+            emit RemoveGlobalConstraint(_globalConstraint, globalConstraintRegister.index, false, _avatar);
             return true;
         }
         return false;
     }
 
-    function _isSchemeRegistered(address _scheme, address _avatar)
-        private
-        view
-        returns (bool)
-    {
-        return (organizations[_avatar].schemes[_scheme].permissions &
-            bytes4(0x00000001) !=
-            bytes4(0));
+    function _isSchemeRegistered(address _scheme, address _avatar) private view returns (bool) {
+        return (organizations[_avatar].schemes[_scheme].permissions & bytes4(0x00000001) != bytes4(0));
     }
 }

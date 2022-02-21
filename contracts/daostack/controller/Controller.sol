@@ -46,33 +46,16 @@ contract Controller is ControllerInterface {
     // globalConstraintsPost that determine post conditions for all actions on the controller
     GlobalConstraint[] public globalConstraintsPost;
     // globalConstraintsRegisterPre indicate if a globalConstraints is registered as a pre global constraint
-    mapping(address => GlobalConstraintRegister)
-        public globalConstraintsRegisterPre;
+    mapping(address => GlobalConstraintRegister) public globalConstraintsRegisterPre;
     // globalConstraintsRegisterPost indicate if a globalConstraints is registered as a post global constraint
-    mapping(address => GlobalConstraintRegister)
-        public globalConstraintsRegisterPost;
+    mapping(address => GlobalConstraintRegister) public globalConstraintsRegisterPost;
 
-    event MintReputation(
-        address indexed _sender,
-        address indexed _to,
-        uint256 _amount
-    );
-    event BurnReputation(
-        address indexed _sender,
-        address indexed _from,
-        uint256 _amount
-    );
-    event MintTokens(
-        address indexed _sender,
-        address indexed _beneficiary,
-        uint256 _amount
-    );
+    event MintReputation(address indexed _sender, address indexed _to, uint256 _amount);
+    event BurnReputation(address indexed _sender, address indexed _from, uint256 _amount);
+    event MintTokens(address indexed _sender, address indexed _beneficiary, uint256 _amount);
     event RegisterScheme(address indexed _sender, address indexed _scheme);
     event UnregisterScheme(address indexed _sender, address indexed _scheme);
-    event UpgradeController(
-        address indexed _oldController,
-        address _newController
-    );
+    event UpgradeController(address indexed _oldController, address _newController);
 
     event AddGlobalConstraint(
         address indexed _globalConstraint,
@@ -80,20 +63,13 @@ contract Controller is ControllerInterface {
         GlobalConstraintInterface.CallPhase _when
     );
 
-    event RemoveGlobalConstraint(
-        address indexed _globalConstraint,
-        uint256 _index,
-        bool _isPre
-    );
+    event RemoveGlobalConstraint(address indexed _globalConstraint, uint256 _index, bool _isPre);
 
     constructor(Avatar _avatar) public {
         avatar = _avatar;
         nativeToken = avatar.nativeToken();
         nativeReputation = avatar.nativeReputation();
-        schemes[msg.sender] = Scheme({
-            paramsHash: bytes32(0),
-            permissions: bytes4(0x0000001F)
-        });
+        schemes[msg.sender] = Scheme({paramsHash: bytes32(0), permissions: bytes4(0x0000001F)});
     }
 
     // Do not allow mistaken calls:
@@ -104,50 +80,32 @@ contract Controller is ControllerInterface {
 
     // Modifiers:
     modifier onlyRegisteredScheme() {
-        require(
-            schemes[msg.sender].permissions & bytes4(0x00000001) ==
-                bytes4(0x00000001)
-        );
+        require(schemes[msg.sender].permissions & bytes4(0x00000001) == bytes4(0x00000001));
         _;
     }
 
     modifier onlyRegisteringSchemes() {
-        require(
-            schemes[msg.sender].permissions & bytes4(0x00000002) ==
-                bytes4(0x00000002)
-        );
+        require(schemes[msg.sender].permissions & bytes4(0x00000002) == bytes4(0x00000002));
         _;
     }
 
     modifier onlyGlobalConstraintsScheme() {
-        require(
-            schemes[msg.sender].permissions & bytes4(0x00000004) ==
-                bytes4(0x00000004)
-        );
+        require(schemes[msg.sender].permissions & bytes4(0x00000004) == bytes4(0x00000004));
         _;
     }
 
     modifier onlyUpgradingScheme() {
-        require(
-            schemes[msg.sender].permissions & bytes4(0x00000008) ==
-                bytes4(0x00000008)
-        );
+        require(schemes[msg.sender].permissions & bytes4(0x00000008) == bytes4(0x00000008));
         _;
     }
 
     modifier onlyGenericCallScheme() {
-        require(
-            schemes[msg.sender].permissions & bytes4(0x00000010) ==
-                bytes4(0x00000010)
-        );
+        require(schemes[msg.sender].permissions & bytes4(0x00000010) == bytes4(0x00000010));
         _;
     }
 
     modifier onlyMetaDataScheme() {
-        require(
-            schemes[msg.sender].permissions & bytes4(0x00000010) ==
-                bytes4(0x00000010)
-        );
+        require(schemes[msg.sender].permissions & bytes4(0x00000010) == bytes4(0x00000010));
         _;
     }
 
@@ -155,18 +113,21 @@ contract Controller is ControllerInterface {
         uint256 idx;
         for (idx = 0; idx < globalConstraintsPre.length; idx++) {
             require(
-                (GlobalConstraintInterface(globalConstraintsPre[idx].gcAddress))
-                    .pre(msg.sender, globalConstraintsPre[idx].params, func)
+                (GlobalConstraintInterface(globalConstraintsPre[idx].gcAddress)).pre(
+                    msg.sender,
+                    globalConstraintsPre[idx].params,
+                    func
+                )
             );
         }
         _;
         for (idx = 0; idx < globalConstraintsPost.length; idx++) {
             require(
-                (
-                    GlobalConstraintInterface(
-                        globalConstraintsPost[idx].gcAddress
-                    )
-                ).post(msg.sender, globalConstraintsPost[idx].params, func)
+                (GlobalConstraintInterface(globalConstraintsPost[idx].gcAddress)).post(
+                    msg.sender,
+                    globalConstraintsPost[idx].params,
+                    func
+                )
             );
         }
     }
@@ -186,13 +147,7 @@ contract Controller is ControllerInterface {
         uint256 _amount,
         address _to,
         address _avatar
-    )
-        external
-        onlyRegisteredScheme
-        onlySubjectToConstraint("mintReputation")
-        isAvatarValid(_avatar)
-        returns (bool)
-    {
+    ) external onlyRegisteredScheme onlySubjectToConstraint("mintReputation") isAvatarValid(_avatar) returns (bool) {
         emit MintReputation(msg.sender, _to, _amount);
         return nativeReputation.mint(_to, _amount);
     }
@@ -207,13 +162,7 @@ contract Controller is ControllerInterface {
         uint256 _amount,
         address _from,
         address _avatar
-    )
-        external
-        onlyRegisteredScheme
-        onlySubjectToConstraint("burnReputation")
-        isAvatarValid(_avatar)
-        returns (bool)
-    {
+    ) external onlyRegisteredScheme onlySubjectToConstraint("burnReputation") isAvatarValid(_avatar) returns (bool) {
         emit BurnReputation(msg.sender, _from, _amount);
         return nativeReputation.burn(_from, _amount);
     }
@@ -228,13 +177,7 @@ contract Controller is ControllerInterface {
         uint256 _amount,
         address _beneficiary,
         address _avatar
-    )
-        external
-        onlyRegisteredScheme
-        onlySubjectToConstraint("mintTokens")
-        isAvatarValid(_avatar)
-        returns (bool)
-    {
+    ) external onlyRegisteredScheme onlySubjectToConstraint("mintTokens") isAvatarValid(_avatar) returns (bool) {
         emit MintTokens(msg.sender, _beneficiary, _amount);
         return nativeToken.mint(_beneficiary, _amount);
     }
@@ -251,13 +194,7 @@ contract Controller is ControllerInterface {
         bytes32 _paramsHash,
         bytes4 _permissions,
         address _avatar
-    )
-        external
-        onlyRegisteringSchemes
-        onlySubjectToConstraint("registerScheme")
-        isAvatarValid(_avatar)
-        returns (bool)
-    {
+    ) external onlyRegisteringSchemes onlySubjectToConstraint("registerScheme") isAvatarValid(_avatar) returns (bool) {
         Scheme memory scheme = schemes[_scheme];
 
         // Check scheme has at least the permissions it is changing, and at least the current permissions:
@@ -265,18 +202,11 @@ contract Controller is ControllerInterface {
 
         // produces non-zero if sender does not have all of the perms that are changing between old and new
         require(
-            bytes4(0x0000001f) &
-                (_permissions ^ scheme.permissions) &
-                (~schemes[msg.sender].permissions) ==
-                bytes4(0)
+            bytes4(0x0000001f) & (_permissions ^ scheme.permissions) & (~schemes[msg.sender].permissions) == bytes4(0)
         );
 
         // produces non-zero if sender does not have all of the perms in the old scheme
-        require(
-            bytes4(0x0000001f) &
-                (scheme.permissions & (~schemes[msg.sender].permissions)) ==
-                bytes4(0)
-        );
+        require(bytes4(0x0000001f) & (scheme.permissions & (~schemes[msg.sender].permissions)) == bytes4(0));
 
         // Add or change the scheme:
         schemes[_scheme].paramsHash = _paramsHash;
@@ -302,12 +232,7 @@ contract Controller is ControllerInterface {
             return false;
         }
         // Check the unregistering scheme has enough permissions:
-        require(
-            bytes4(0x0000001f) &
-                (schemes[_scheme].permissions &
-                    (~schemes[msg.sender].permissions)) ==
-                bytes4(0)
-        );
+        require(bytes4(0x0000001f) & (schemes[_scheme].permissions & (~schemes[msg.sender].permissions)) == bytes4(0));
 
         // Unregister:
         emit UnregisterScheme(msg.sender, _scheme);
@@ -319,11 +244,7 @@ contract Controller is ControllerInterface {
      * @dev unregister the caller's scheme
      * @return bool which represents a success
      */
-    function unregisterSelf(address _avatar)
-        external
-        isAvatarValid(_avatar)
-        returns (bool)
-    {
+    function unregisterSelf(address _avatar) external isAvatarValid(_avatar) returns (bool) {
         if (_isSchemeRegistered(msg.sender) == false) {
             return false;
         }
@@ -342,55 +263,34 @@ contract Controller is ControllerInterface {
         address _globalConstraint,
         bytes32 _params,
         address _avatar
-    )
-        external
-        onlyGlobalConstraintsScheme
-        isAvatarValid(_avatar)
-        returns (bool)
-    {
-        GlobalConstraintInterface.CallPhase when = GlobalConstraintInterface(
-            _globalConstraint
-        ).when();
+    ) external onlyGlobalConstraintsScheme isAvatarValid(_avatar) returns (bool) {
+        GlobalConstraintInterface.CallPhase when = GlobalConstraintInterface(_globalConstraint).when();
         if (
             (when == GlobalConstraintInterface.CallPhase.Pre) ||
             (when == GlobalConstraintInterface.CallPhase.PreAndPost)
         ) {
             if (!globalConstraintsRegisterPre[_globalConstraint].isRegistered) {
-                globalConstraintsPre.push(
-                    GlobalConstraint(_globalConstraint, _params)
-                );
-                globalConstraintsRegisterPre[
-                    _globalConstraint
-                ] = GlobalConstraintRegister(
+                globalConstraintsPre.push(GlobalConstraint(_globalConstraint, _params));
+                globalConstraintsRegisterPre[_globalConstraint] = GlobalConstraintRegister(
                     true,
                     globalConstraintsPre.length - 1
                 );
             } else {
-                globalConstraintsPre[
-                    globalConstraintsRegisterPre[_globalConstraint].index
-                ].params = _params;
+                globalConstraintsPre[globalConstraintsRegisterPre[_globalConstraint].index].params = _params;
             }
         }
         if (
             (when == GlobalConstraintInterface.CallPhase.Post) ||
             (when == GlobalConstraintInterface.CallPhase.PreAndPost)
         ) {
-            if (
-                !globalConstraintsRegisterPost[_globalConstraint].isRegistered
-            ) {
-                globalConstraintsPost.push(
-                    GlobalConstraint(_globalConstraint, _params)
-                );
-                globalConstraintsRegisterPost[
-                    _globalConstraint
-                ] = GlobalConstraintRegister(
+            if (!globalConstraintsRegisterPost[_globalConstraint].isRegistered) {
+                globalConstraintsPost.push(GlobalConstraint(_globalConstraint, _params));
+                globalConstraintsRegisterPost[_globalConstraint] = GlobalConstraintRegister(
                     true,
                     globalConstraintsPost.length - 1
                 );
             } else {
-                globalConstraintsPost[
-                    globalConstraintsRegisterPost[_globalConstraint].index
-                ].params = _params;
+                globalConstraintsPost[globalConstraintsRegisterPost[_globalConstraint].index].params = _params;
             }
         }
         emit AddGlobalConstraint(_globalConstraint, _params, when);
@@ -411,31 +311,19 @@ contract Controller is ControllerInterface {
     {
         GlobalConstraintRegister memory globalConstraintRegister;
         GlobalConstraint memory globalConstraint;
-        GlobalConstraintInterface.CallPhase when = GlobalConstraintInterface(
-            _globalConstraint
-        ).when();
+        GlobalConstraintInterface.CallPhase when = GlobalConstraintInterface(_globalConstraint).when();
         bool retVal = false;
 
         if (
             (when == GlobalConstraintInterface.CallPhase.Pre) ||
             (when == GlobalConstraintInterface.CallPhase.PreAndPost)
         ) {
-            globalConstraintRegister = globalConstraintsRegisterPre[
-                _globalConstraint
-            ];
+            globalConstraintRegister = globalConstraintsRegisterPre[_globalConstraint];
             if (globalConstraintRegister.isRegistered) {
-                if (
-                    globalConstraintRegister.index <
-                    globalConstraintsPre.length - 1
-                ) {
-                    globalConstraint = globalConstraintsPre[
-                        globalConstraintsPre.length - 1
-                    ];
-                    globalConstraintsPre[
-                        globalConstraintRegister.index
-                    ] = globalConstraint;
-                    globalConstraintsRegisterPre[globalConstraint.gcAddress]
-                        .index = globalConstraintRegister.index;
+                if (globalConstraintRegister.index < globalConstraintsPre.length - 1) {
+                    globalConstraint = globalConstraintsPre[globalConstraintsPre.length - 1];
+                    globalConstraintsPre[globalConstraintRegister.index] = globalConstraint;
+                    globalConstraintsRegisterPre[globalConstraint.gcAddress].index = globalConstraintRegister.index;
                 }
                 globalConstraintsPre.length--;
                 delete globalConstraintsRegisterPre[_globalConstraint];
@@ -446,22 +334,12 @@ contract Controller is ControllerInterface {
             (when == GlobalConstraintInterface.CallPhase.Post) ||
             (when == GlobalConstraintInterface.CallPhase.PreAndPost)
         ) {
-            globalConstraintRegister = globalConstraintsRegisterPost[
-                _globalConstraint
-            ];
+            globalConstraintRegister = globalConstraintsRegisterPost[_globalConstraint];
             if (globalConstraintRegister.isRegistered) {
-                if (
-                    globalConstraintRegister.index <
-                    globalConstraintsPost.length - 1
-                ) {
-                    globalConstraint = globalConstraintsPost[
-                        globalConstraintsPost.length - 1
-                    ];
-                    globalConstraintsPost[
-                        globalConstraintRegister.index
-                    ] = globalConstraint;
-                    globalConstraintsRegisterPost[globalConstraint.gcAddress]
-                        .index = globalConstraintRegister.index;
+                if (globalConstraintRegister.index < globalConstraintsPost.length - 1) {
+                    globalConstraint = globalConstraintsPost[globalConstraintsPost.length - 1];
+                    globalConstraintsPost[globalConstraintRegister.index] = globalConstraint;
+                    globalConstraintsRegisterPost[globalConstraint.gcAddress].index = globalConstraintRegister.index;
                 }
                 globalConstraintsPost.length--;
                 delete globalConstraintsRegisterPost[_globalConstraint];
@@ -596,13 +474,7 @@ contract Controller is ControllerInterface {
         isAvatarValid(address(_avatar))
         returns (bool)
     {
-        return
-            avatar.externalTokenTransferFrom(
-                _externalToken,
-                _from,
-                _to,
-                _value
-            );
+        return avatar.externalTokenTransferFrom(_externalToken, _from, _to, _value);
     }
 
     /**
@@ -648,21 +520,11 @@ contract Controller is ControllerInterface {
      * @param _avatar the organization avatar.
      * @return organization native reputation
      */
-    function getNativeReputation(address _avatar)
-        external
-        view
-        isAvatarValid(_avatar)
-        returns (address)
-    {
+    function getNativeReputation(address _avatar) external view isAvatarValid(_avatar) returns (address) {
         return address(nativeReputation);
     }
 
-    function isSchemeRegistered(address _scheme, address _avatar)
-        external
-        view
-        isAvatarValid(_avatar)
-        returns (bool)
-    {
+    function isSchemeRegistered(address _scheme, address _avatar) external view isAvatarValid(_avatar) returns (bool) {
         return _isSchemeRegistered(_scheme);
     }
 
@@ -684,14 +546,8 @@ contract Controller is ControllerInterface {
         return schemes[_scheme].permissions;
     }
 
-    function getGlobalConstraintParameters(address _globalConstraint, address)
-        external
-        view
-        returns (bytes32)
-    {
-        GlobalConstraintRegister memory register = globalConstraintsRegisterPre[
-            _globalConstraint
-        ];
+    function getGlobalConstraintParameters(address _globalConstraint, address) external view returns (bytes32) {
+        GlobalConstraintRegister memory register = globalConstraintsRegisterPre[_globalConstraint];
 
         if (register.isRegistered) {
             return globalConstraintsPre[register.index].params;
@@ -709,19 +565,16 @@ contract Controller is ControllerInterface {
      * @return uint256 globalConstraintsPre count.
      * @return uint256 globalConstraintsPost count.
      */
-    function globalConstraintsCount(address _avatar)
-        external
-        view
-        isAvatarValid(_avatar)
-        returns (uint256, uint256)
-    {
+    function globalConstraintsCount(address _avatar) external view isAvatarValid(_avatar) returns (uint256, uint256) {
         return (globalConstraintsPre.length, globalConstraintsPost.length);
     }
 
-    function isGlobalConstraintRegistered(
-        address _globalConstraint,
-        address _avatar
-    ) external view isAvatarValid(_avatar) returns (bool) {
+    function isGlobalConstraintRegistered(address _globalConstraint, address _avatar)
+        external
+        view
+        isAvatarValid(_avatar)
+        returns (bool)
+    {
         return (globalConstraintsRegisterPre[_globalConstraint].isRegistered ||
             globalConstraintsRegisterPost[_globalConstraint].isRegistered);
     }

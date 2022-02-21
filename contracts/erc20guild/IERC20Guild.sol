@@ -3,16 +3,8 @@ pragma solidity ^0.8.8;
 
 interface IERC20Guild {
     event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
-    event VoteAdded(
-        bytes32 indexed proposalId,
-        address voter,
-        uint256 votingPower
-    );
-    event SetAllowance(
-        address indexed to,
-        bytes4 functionSignature,
-        bool allowance
-    );
+    event VoteAdded(bytes32 indexed proposalId, address voter, uint256 votingPower);
+    event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
 
     fallback() external payable;
 
@@ -99,10 +91,7 @@ interface IERC20Guild {
 
     function votingPowerOf(address account) external view returns (uint256);
 
-    function votingPowerOfMultiple(address[] memory accounts)
-        external
-        view
-        returns (uint256[] memory);
+    function votingPowerOfMultiple(address[] memory accounts) external view returns (uint256[] memory);
 
     function getToken() external view returns (address);
 
@@ -134,10 +123,7 @@ interface IERC20Guild {
 
     function getTotalLocked() external view returns (uint256);
 
-    function getVoterLockTimestamp(address voter)
-        external
-        view
-        returns (uint256);
+    function getVoterLockTimestamp(address voter) external view returns (uint256);
 
     function getProposal(bytes32 proposalId)
         external
@@ -161,15 +147,9 @@ interface IERC20Guild {
         view
         returns (uint256 action, uint256 votingPower);
 
-    function getVotingPowerForProposalCreation()
-        external
-        view
-        returns (uint256);
+    function getVotingPowerForProposalCreation() external view returns (uint256);
 
-    function getVotingPowerForProposalExecution()
-        external
-        view
-        returns (uint256);
+    function getVotingPowerForProposalExecution() external view returns (uint256);
 
     function getFuncSignature(bytes memory data) external view returns (bytes4);
 
@@ -177,10 +157,7 @@ interface IERC20Guild {
 
     function getEIP1271SignedHash(bytes32 _hash) external view returns (bool);
 
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        view
-        returns (bytes4 magicValue);
+    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue);
 
     function hashVote(
         address voter,

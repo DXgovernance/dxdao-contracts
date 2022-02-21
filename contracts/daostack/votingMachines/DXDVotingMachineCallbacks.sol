@@ -17,30 +17,12 @@ contract DXDVotingMachineCallbacks is VotingMachineCallbacksInterface {
     // proposalId  ->  block number
     mapping(bytes32 => uint256) public proposalsBlockNumber;
 
-    function mintReputation(uint256 _amount, address _beneficiary)
-        external
-        onlyVotingMachine
-        returns (bool)
-    {
-        return
-            ControllerInterface(avatar.owner()).mintReputation(
-                _amount,
-                _beneficiary,
-                address(avatar)
-            );
+    function mintReputation(uint256 _amount, address _beneficiary) external onlyVotingMachine returns (bool) {
+        return ControllerInterface(avatar.owner()).mintReputation(_amount, _beneficiary, address(avatar));
     }
 
-    function burnReputation(uint256 _amount, address _beneficiary)
-        external
-        onlyVotingMachine
-        returns (bool)
-    {
-        return
-            ControllerInterface(avatar.owner()).burnReputation(
-                _amount,
-                _beneficiary,
-                address(avatar)
-            );
+    function burnReputation(uint256 _amount, address _beneficiary) external onlyVotingMachine returns (bool) {
+        return ControllerInterface(avatar.owner()).burnReputation(_amount, _beneficiary, address(avatar));
     }
 
     function stakingTokenTransfer(
@@ -48,43 +30,18 @@ contract DXDVotingMachineCallbacks is VotingMachineCallbacksInterface {
         address _beneficiary,
         uint256 _amount
     ) external onlyVotingMachine returns (bool) {
-        return
-            ControllerInterface(avatar.owner()).externalTokenTransfer(
-                _stakingToken,
-                _beneficiary,
-                _amount,
-                avatar
-            );
+        return ControllerInterface(avatar.owner()).externalTokenTransfer(_stakingToken, _beneficiary, _amount, avatar);
     }
 
-    function balanceOfStakingToken(IERC20 _stakingToken)
-        external
-        view
-        returns (uint256)
-    {
+    function balanceOfStakingToken(IERC20 _stakingToken) external view returns (uint256) {
         return _stakingToken.balanceOf(address(avatar));
     }
 
-    function getTotalReputationSupply(bytes32 _proposalId)
-        external
-        view
-        returns (uint256)
-    {
-        return
-            Avatar(avatar).nativeReputation().totalSupplyAt(
-                proposalsBlockNumber[_proposalId]
-            );
+    function getTotalReputationSupply(bytes32 _proposalId) external view returns (uint256) {
+        return Avatar(avatar).nativeReputation().totalSupplyAt(proposalsBlockNumber[_proposalId]);
     }
 
-    function reputationOf(address _owner, bytes32 _proposalId)
-        external
-        view
-        returns (uint256)
-    {
-        return
-            Avatar(avatar).nativeReputation().balanceOfAt(
-                _owner,
-                proposalsBlockNumber[_proposalId]
-            );
+    function reputationOf(address _owner, bytes32 _proposalId) external view returns (uint256) {
+        return Avatar(avatar).nativeReputation().balanceOfAt(_owner, proposalsBlockNumber[_proposalId]);
     }
 }

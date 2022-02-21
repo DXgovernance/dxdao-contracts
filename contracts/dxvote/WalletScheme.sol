@@ -22,15 +22,12 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
     using SafeMath for uint256;
 
     string public SCHEME_TYPE = "Wallet Scheme v1.1";
-    bytes4 public constant ERC20_TRANSFER_SIGNATURE =
-        bytes4(keccak256("transfer(address,uint256)"));
-    bytes4 public constant ERC20_APPROVE_SIGNATURE =
-        bytes4(keccak256("approve(address,uint256)"));
+    bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
+    bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
     bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
         bytes4(keccak256("setMaxSecondsForExecution(uint256)"));
     bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
-    address public constant ANY_ADDRESS =
-        address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
+    address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
 
     enum ProposalState {
         None,
@@ -71,15 +68,8 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
     // Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
     bool internal executingProposal;
 
-    event ProposalStateChange(
-        bytes32 indexed _proposalId,
-        uint256 indexed _state
-    );
-    event ExecutionResults(
-        bytes32 indexed _proposalId,
-        bool[] _callsSucessResult,
-        bytes[] _callsDataResult
-    );
+    event ProposalStateChange(bytes32 indexed _proposalId, uint256 indexed _state);
+    event ExecutionResults(bytes32 indexed _proposalId, bool[] _callsSucessResult, bytes[] _callsDataResult);
 
     /**
      * @dev initialize
@@ -105,10 +95,7 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
     ) external {
         require(avatar == Avatar(0), "WalletScheme: cannot init twice");
         require(_avatar != Avatar(0), "WalletScheme: avatar cannot be zero");
-        require(
-            _controller != address(0),
-            "WalletScheme: controller cannot be zero"
-        );
+        require(_controller != address(0), "WalletScheme: controller cannot be zero");
         require(
             _maxSecondsForExecution >= 86400,
             "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
@@ -127,10 +114,7 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
      * @dev Fallback function that allows the wallet to receive ETH when the controller address is not set
      */
     function() external payable {
-        require(
-            !doAvatarGenericCalls,
-            "WalletScheme: Cant receive if it will make generic calls to avatar"
-        );
+        require(!doAvatarGenericCalls, "WalletScheme: Cant receive if it will make generic calls to avatar");
     }
 
     /**
@@ -138,9 +122,7 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
      * @param _maxSecondsForExecution New max proposal time in seconds to be used
      * @return bool success
      */
-    function setMaxSecondsForExecution(uint256 _maxSecondsForExecution)
-        external
-    {
+    function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external {
         require(
             msg.sender == address(avatar),
             "WalletScheme: setMaxSecondsForExecution is callable only form the avatar"
@@ -158,31 +140,18 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
      * @param _decision a parameter of the voting result, 1 yes and 2 is no.
      * @return bool success
      */
-    function executeProposal(bytes32 _proposalId, int256 _decision)
-        external
-        onlyVotingMachine
-        returns (bool)
-    {
-        require(
-            !executingProposal,
-            "WalletScheme: proposal execution already running"
-        );
+    function executeProposal(bytes32 _proposalId, int256 _decision) external onlyVotingMachine returns (bool) {
+        require(!executingProposal, "WalletScheme: proposal execution already running");
         executingProposal = true;
 
         Proposal storage proposal = proposals[_proposalId];
-        require(
-            proposal.state == ProposalState.Submitted,
-            "WalletScheme: must be a submitted proposal"
-        );
+        require(proposal.state == ProposalState.Submitted, "WalletScheme: must be a submitted proposal");
 
         // If the amount of time passed since submission plus max proposal time is lower than block timestamp
         // the proposal timeout execution is reached and proposal cant be executed from now on
         if (proposal.submittedTime.add(maxSecondsForExecution) < now) {
             proposal.state = ProposalState.ExecutionTimeout;
-            emit ProposalStateChange(
-                _proposalId,
-                uint256(ProposalState.ExecutionTimeout)
-            );
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionTimeout));
 
             // If decision is 1, it means the proposal was approved by the voting machine
         } else if (_decision == 1) {
@@ -192,9 +161,7 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
             // Keep track of the permissionsIds that are loaded into storage to remove them later
             bytes4 callDataFuncSignature;
             bytes32 permissionHash;
-            bytes32[] memory permissionHashUsed = new bytes32[](
-                proposal.to.length
-            );
+            bytes32[] memory permissionHashUsed = new bytes32[](proposal.to.length);
             address[] memory assetsUsed = new address[](proposal.to.length);
             for (uint256 i = 0; i < proposal.to.length; i++) {
                 callDataFuncSignature = getFuncSignature(proposal.callData[i]);
@@ -202,53 +169,34 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
                     ERC20_TRANSFER_SIGNATURE == callDataFuncSignature ||
                     ERC20_APPROVE_SIGNATURE == callDataFuncSignature
                 ) {
-                    (
-                        address _to,
-                        uint256 _value
-                    ) = erc20TransferOrApproveDecode(proposal.callData[i]);
-                    permissionHash = keccak256(
-                        abi.encodePacked(proposal.to[i], _to)
-                    );
+                    (address _to, uint256 _value) = erc20TransferOrApproveDecode(proposal.callData[i]);
+                    permissionHash = keccak256(abi.encodePacked(proposal.to[i], _to));
 
                     // Save asset in assets used to check later and add the used value transfered
-                    if (valueTransferedByAsset[proposal.to[i]] == 0)
-                        assetsUsed[i] = proposal.to[i];
+                    if (valueTransferedByAsset[proposal.to[i]] == 0) assetsUsed[i] = proposal.to[i];
 
-                    valueTransferedByAsset[
-                        proposal.to[i]
-                    ] = valueTransferedByAsset[proposal.to[i]].add(_value);
+                    valueTransferedByAsset[proposal.to[i]] = valueTransferedByAsset[proposal.to[i]].add(_value);
 
                     // Save permission in permissions used to check later and add the value transfered
-                    if (valueTransferedByAssetAndRecipient[permissionHash] == 0)
-                        permissionHashUsed[i] = permissionHash;
+                    if (valueTransferedByAssetAndRecipient[permissionHash] == 0) permissionHashUsed[i] = permissionHash;
 
-                    valueTransferedByAssetAndRecipient[
+                    valueTransferedByAssetAndRecipient[permissionHash] = valueTransferedByAssetAndRecipient[
                         permissionHash
-                    ] = valueTransferedByAssetAndRecipient[permissionHash].add(
-                        _value
-                    );
+                    ].add(_value);
                 } else {
-                    permissionHash = keccak256(
-                        abi.encodePacked(address(0), proposal.to[i])
-                    );
+                    permissionHash = keccak256(abi.encodePacked(address(0), proposal.to[i]));
 
                     // Save asset in assets used to check later and add the used value transfered
-                    if (valueTransferedByAsset[address(0)] == 0)
-                        assetsUsed[i] = address(0);
+                    if (valueTransferedByAsset[address(0)] == 0) assetsUsed[i] = address(0);
 
-                    valueTransferedByAsset[address(0)] = valueTransferedByAsset[
-                        address(0)
-                    ].add(proposal.value[i]);
+                    valueTransferedByAsset[address(0)] = valueTransferedByAsset[address(0)].add(proposal.value[i]);
 
                     // Save permission in permissions used to check later and add the value transfered
-                    if (valueTransferedByAssetAndRecipient[permissionHash] == 0)
-                        permissionHashUsed[i] = permissionHash;
+                    if (valueTransferedByAssetAndRecipient[permissionHash] == 0) permissionHashUsed[i] = permissionHash;
 
-                    valueTransferedByAssetAndRecipient[
+                    valueTransferedByAssetAndRecipient[permissionHash] = valueTransferedByAssetAndRecipient[
                         permissionHash
-                    ] = valueTransferedByAssetAndRecipient[permissionHash].add(
-                        proposal.value[i]
-                    );
+                    ].add(proposal.value[i]);
                 }
             }
 
@@ -267,10 +215,7 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
                     ANY_SIGNATURE
                 );
                 require(
-                    (_fromTime == 0) ||
-                        (_fromTime > 0 &&
-                            _valueAllowed >=
-                            valueTransferedByAsset[assetsUsed[i]]),
+                    (_fromTime == 0) || (_fromTime > 0 && _valueAllowed >= valueTransferedByAsset[assetsUsed[i]]),
                     "WalletScheme: total value transfered of asset in proposal not allowed"
                 );
                 delete valueTransferedByAsset[assetsUsed[i]];
@@ -286,58 +231,38 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
                     ERC20_TRANSFER_SIGNATURE == callDataFuncSignature ||
                     ERC20_APPROVE_SIGNATURE == callDataFuncSignature
                 ) {
-                    (address _to, uint256 _) = erc20TransferOrApproveDecode(
-                        proposal.callData[i]
+                    (address _to, uint256 _) = erc20TransferOrApproveDecode(proposal.callData[i]);
+                    (_valueAllowed, _fromTime) = permissionRegistry.getPermission(
+                        proposal.to[i],
+                        doAvatarGenericCalls ? address(avatar) : address(this),
+                        _to,
+                        callDataFuncSignature
                     );
-                    (_valueAllowed, _fromTime) = permissionRegistry
-                        .getPermission(
-                            proposal.to[i],
-                            doAvatarGenericCalls
-                                ? address(avatar)
-                                : address(this),
-                            _to,
-                            callDataFuncSignature
-                        );
                     require(
                         _valueAllowed >=
-                            valueTransferedByAssetAndRecipient[
-                                keccak256(abi.encodePacked(proposal.to[i], _to))
-                            ],
+                            valueTransferedByAssetAndRecipient[keccak256(abi.encodePacked(proposal.to[i], _to))],
                         "WalletScheme: erc20 value call not allowed"
                     );
                 } else {
-                    (_valueAllowed, _fromTime) = permissionRegistry
-                        .getPermission(
-                            address(0),
-                            doAvatarGenericCalls
-                                ? address(avatar)
-                                : address(this),
-                            proposal.to[i],
-                            callDataFuncSignature
-                        );
+                    (_valueAllowed, _fromTime) = permissionRegistry.getPermission(
+                        address(0),
+                        doAvatarGenericCalls ? address(avatar) : address(this),
+                        proposal.to[i],
+                        callDataFuncSignature
+                    );
                     require(
                         _valueAllowed >=
-                            valueTransferedByAssetAndRecipient[
-                                keccak256(
-                                    abi.encodePacked(address(0), proposal.to[i])
-                                )
-                            ],
+                            valueTransferedByAssetAndRecipient[keccak256(abi.encodePacked(address(0), proposal.to[i]))],
                         "WalletScheme: value call not allowed"
                     );
                 }
 
                 // Check that the time from which the call can be executed means is higher than zero (which means that
                 // is allowed) and that is lower than the actual timestamp
-                require(
-                    _fromTime > 0 && now > _fromTime,
-                    "WalletScheme: call not allowed"
-                );
+                require(_fromTime > 0 && now > _fromTime, "WalletScheme: call not allowed");
 
                 // If controller address is set the code needs to be encoded to generiCall function
-                if (
-                    doAvatarGenericCalls &&
-                    proposal.to[i] != address(controller)
-                ) {
+                if (doAvatarGenericCalls && proposal.to[i] != address(controller)) {
                     bytes memory genericCallData = abi.encodeWithSignature(
                         "genericCall(address,bytes,address,uint256)",
                         proposal.to[i],
@@ -345,65 +270,43 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
                         avatar,
                         proposal.value[i]
                     );
-                    (callsSucessResult[i], callsDataResult[i]) = address(
-                        controller
-                    ).call.value(0)(genericCallData);
+                    (callsSucessResult[i], callsDataResult[i]) = address(controller).call.value(0)(genericCallData);
 
                     // The success is form the generic call, but the result data is from the call to the controller
-                    (bool genericCallSucessResult, ) = abi.decode(
-                        callsDataResult[i],
-                        (bool, bytes)
-                    );
+                    (bool genericCallSucessResult, ) = abi.decode(callsDataResult[i], (bool, bytes));
                     callsSucessResult[i] = genericCallSucessResult;
 
                     // If controller address is not set the call is made to
                 } else {
-                    (callsSucessResult[i], callsDataResult[i]) = address(
-                        proposal.to[i]
-                    ).call.value(proposal.value[i])(proposal.callData[i]);
+                    (callsSucessResult[i], callsDataResult[i]) = address(proposal.to[i]).call.value(proposal.value[i])(
+                        proposal.callData[i]
+                    );
                 }
 
                 // If the call reverted the entire execution will revert
-                require(
-                    callsSucessResult[i],
-                    "WalletScheme: call execution failed"
-                );
+                require(callsSucessResult[i], "WalletScheme: call execution failed");
             }
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
             require(
-                (oldRepSupply.mul(uint256(100).add(maxRepPercentageChange)).div(
-                    100
-                ) >= avatar.nativeReputation().totalSupply()) &&
-                    (oldRepSupply
-                        .mul(uint256(100).sub(maxRepPercentageChange))
-                        .div(100) <= avatar.nativeReputation().totalSupply()),
+                (oldRepSupply.mul(uint256(100).add(maxRepPercentageChange)).div(100) >=
+                    avatar.nativeReputation().totalSupply()) &&
+                    (oldRepSupply.mul(uint256(100).sub(maxRepPercentageChange)).div(100) <=
+                        avatar.nativeReputation().totalSupply()),
                 "WalletScheme: maxRepPercentageChange passed"
             );
 
             // Delete all valueTransferedByAssetAndRecipient values saved in storage
             for (uint256 i = 0; i < permissionHashUsed.length; i++) {
-                delete valueTransferedByAssetAndRecipient[
-                    permissionHashUsed[i]
-                ];
+                delete valueTransferedByAssetAndRecipient[permissionHashUsed[i]];
             }
             proposal.state = ProposalState.ExecutionSucceeded;
-            emit ProposalStateChange(
-                _proposalId,
-                uint256(ProposalState.ExecutionSucceeded)
-            );
-            emit ExecutionResults(
-                _proposalId,
-                callsSucessResult,
-                callsDataResult
-            );
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
+            emit ExecutionResults(_proposalId, callsSucessResult, callsDataResult);
 
             // If decision is 2, it means the proposal was rejected by the voting machine
         } else {
             proposal.state = ProposalState.Rejected;
-            emit ProposalStateChange(
-                _proposalId,
-                uint256(ProposalState.Rejected)
-            );
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         }
 
         executingProposal = false;
@@ -442,41 +345,24 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
             // Only allow proposing calls to this address to call setMaxSecondsForExecution function
             require(
                 _to[i] != address(this) ||
-                    (callDataFuncSignature ==
-                        SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE &&
-                        _value[i] == 0),
+                    (callDataFuncSignature == SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE && _value[i] == 0),
                 "WalletScheme: invalid proposal caller"
             );
 
             // This will fail only when and ERC20 transfer or approve with ETH value is proposed
             require(
                 (callDataFuncSignature != ERC20_TRANSFER_SIGNATURE &&
-                    callDataFuncSignature != ERC20_APPROVE_SIGNATURE) ||
-                    _value[i] == 0,
+                    callDataFuncSignature != ERC20_APPROVE_SIGNATURE) || _value[i] == 0,
                 "WalletScheme: cant propose ERC20 transfers with value"
             );
         }
-        require(
-            _to.length == _callData.length,
-            "WalletScheme: invalid _callData length"
-        );
-        require(
-            _to.length == _value.length,
-            "WalletScheme: invalid _value length"
-        );
+        require(_to.length == _callData.length, "WalletScheme: invalid _callData length");
+        require(_to.length == _value.length, "WalletScheme: invalid _value length");
 
-        bytes32 voteParams = controller.getSchemeParameters(
-            address(this),
-            address(avatar)
-        );
+        bytes32 voteParams = controller.getSchemeParameters(address(this), address(avatar));
 
         // Get the proposal id that will be used from the voting machine
-        bytes32 proposalId = votingMachine.propose(
-            2,
-            voteParams,
-            msg.sender,
-            address(avatar)
-        );
+        bytes32 proposalId = votingMachine.propose(2, voteParams, msg.sender, address(avatar));
 
         // Add the proposal to the proposals mapping, proposals list and proposals information mapping
         proposals[proposalId] = Proposal({
@@ -548,11 +434,7 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
      * @return to The account to receive the tokens
      * @return value The value of tokens to be transfered/approved
      */
-    function erc20TransferOrApproveDecode(bytes memory _data)
-        public
-        pure
-        returns (address to, uint256 value)
-    {
+    function erc20TransferOrApproveDecode(bytes memory _data) public pure returns (address to, uint256 value) {
         assembly {
             to := mload(add(_data, 36))
             value := mload(add(_data, 68))

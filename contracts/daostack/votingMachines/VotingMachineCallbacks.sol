@@ -10,10 +10,7 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
     }
 
     modifier onlyVotingMachine(bytes32 _proposalId) {
-        require(
-            proposalsInfo[msg.sender][_proposalId].avatar != Avatar(address(0)),
-            "only VotingMachine"
-        );
+        require(proposalsInfo[msg.sender][_proposalId].avatar != Avatar(address(0)), "only VotingMachine");
         _;
     }
 
@@ -29,12 +26,7 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         if (avatar == Avatar(0)) {
             return false;
         }
-        return
-            ControllerInterface(avatar.owner()).mintReputation(
-                _amount,
-                _beneficiary,
-                address(avatar)
-            );
+        return ControllerInterface(avatar.owner()).mintReputation(_amount, _beneficiary, address(avatar));
     }
 
     function burnReputation(
@@ -46,12 +38,7 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         if (avatar == Avatar(0)) {
             return false;
         }
-        return
-            ControllerInterface(avatar.owner()).burnReputation(
-                _amount,
-                _beneficiary,
-                address(avatar)
-            );
+        return ControllerInterface(avatar.owner()).burnReputation(_amount, _beneficiary, address(avatar));
     }
 
     function stakingTokenTransfer(
@@ -64,20 +51,10 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         if (avatar == Avatar(0)) {
             return false;
         }
-        return
-            ControllerInterface(avatar.owner()).externalTokenTransfer(
-                _stakingToken,
-                _beneficiary,
-                _amount,
-                avatar
-            );
+        return ControllerInterface(avatar.owner()).externalTokenTransfer(_stakingToken, _beneficiary, _amount, avatar);
     }
 
-    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId)
-        external
-        view
-        returns (uint256)
-    {
+    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns (uint256) {
         Avatar avatar = proposalsInfo[msg.sender][_proposalId].avatar;
         if (proposalsInfo[msg.sender][_proposalId].avatar == Avatar(0)) {
             return 0;
@@ -85,34 +62,19 @@ contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
         return _stakingToken.balanceOf(address(avatar));
     }
 
-    function getTotalReputationSupply(bytes32 _proposalId)
-        external
-        view
-        returns (uint256)
-    {
+    function getTotalReputationSupply(bytes32 _proposalId) external view returns (uint256) {
         ProposalInfo memory proposal = proposalsInfo[msg.sender][_proposalId];
         if (proposal.avatar == Avatar(0)) {
             return 0;
         }
-        return
-            proposal.avatar.nativeReputation().totalSupplyAt(
-                proposal.blockNumber
-            );
+        return proposal.avatar.nativeReputation().totalSupplyAt(proposal.blockNumber);
     }
 
-    function reputationOf(address _owner, bytes32 _proposalId)
-        external
-        view
-        returns (uint256)
-    {
+    function reputationOf(address _owner, bytes32 _proposalId) external view returns (uint256) {
         ProposalInfo memory proposal = proposalsInfo[msg.sender][_proposalId];
         if (proposal.avatar == Avatar(0)) {
             return 0;
         }
-        return
-            proposal.avatar.nativeReputation().balanceOfAt(
-                _owner,
-                proposal.blockNumber
-            );
+        return proposal.avatar.nativeReputation().balanceOfAt(_owner, proposal.blockNumber);
     }
 }

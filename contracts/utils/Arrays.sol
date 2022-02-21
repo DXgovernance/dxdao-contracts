@@ -7,11 +7,7 @@ library Arrays {
         return (a / 2) + (b / 2) + (((a % 2) + (b % 2)) / 2);
     }
 
-    function findUpperBound(uint256[] storage _array, uint256 _element)
-        internal
-        view
-        returns (uint256)
-    {
+    function findUpperBound(uint256[] storage _array, uint256 _element) internal view returns (uint256) {
         uint256 low = 0;
         uint256 high = _array.length;
 

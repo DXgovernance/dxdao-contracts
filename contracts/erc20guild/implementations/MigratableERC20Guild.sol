@@ -23,19 +23,12 @@ contract MigratableERC20Guild is ERC20Guild {
     // The token vault admin has to be the guild.
     // @param newTokenVault The address of the new token vault
     function changeTokenVault(address newTokenVault) public virtual {
-        require(
-            msg.sender == address(this),
-            "MigratableERC2Guild: The vault can be changed only by the guild"
-        );
+        require(msg.sender == address(this), "MigratableERC2Guild: The vault can be changed only by the guild");
         tokenVault = TokenVault(newTokenVault);
-        require(
-            tokenVault.getAdmin() == address(this),
-            "MigratableERC2Guild: The vault admin has to be the guild"
-        );
+        require(tokenVault.getAdmin() == address(this), "MigratableERC2Guild: The vault admin has to be the guild");
         token = IERC20Upgradeable(tokenVault.getToken());
         require(
-            newTokenVault.codehash ==
-                keccak256(abi.encodePacked(type(TokenVault).runtimeCode)),
+            newTokenVault.codehash == keccak256(abi.encodePacked(type(TokenVault).runtimeCode)),
             "MigratableERC2Guild: Wrong code of newTokenVault"
         );
         lastMigrationTimestamp = block.timestamp;
@@ -45,16 +38,11 @@ contract MigratableERC20Guild is ERC20Guild {
     // @param tokenAmount The amount of tokens to be locked
     function lockTokens(uint256 tokenAmount) public virtual override {
         tokenVault.deposit(msg.sender, tokenAmount);
-        tokensLockedByVault[address(tokenVault)][msg.sender]
-            .amount = tokensLockedByVault[address(tokenVault)][msg.sender]
-            .amount
-            .add(tokenAmount);
-        tokensLockedByVault[address(tokenVault)][msg.sender].timestamp = block
-            .timestamp
-            .add(lockTime);
-        totalLockedByVault[address(tokenVault)] = totalLockedByVault[
-            address(tokenVault)
-        ].add(tokenAmount);
+        tokensLockedByVault[address(tokenVault)][msg.sender].amount = tokensLockedByVault[address(tokenVault)][
+            msg.sender
+        ].amount.add(tokenAmount);
+        tokensLockedByVault[address(tokenVault)][msg.sender].timestamp = block.timestamp.add(lockTime);
+        totalLockedByVault[address(tokenVault)] = totalLockedByVault[address(tokenVault)].add(tokenAmount);
         emit TokensLocked(msg.sender, tokenAmount);
     }
 
@@ -66,17 +54,13 @@ contract MigratableERC20Guild is ERC20Guild {
             "MigratableERC2Guild: Unable to withdraw more tokens than locked"
         );
         require(
-            tokensLockedByVault[address(tokenVault)][msg.sender].timestamp <
-                block.timestamp,
+            tokensLockedByVault[address(tokenVault)][msg.sender].timestamp < block.timestamp,
             "MigratableERC2Guild: Tokens still locked"
         );
-        tokensLockedByVault[address(tokenVault)][msg.sender]
-            .amount = tokensLockedByVault[address(tokenVault)][msg.sender]
-            .amount
-            .sub(tokenAmount);
-        totalLockedByVault[address(tokenVault)] = totalLockedByVault[
-            address(tokenVault)
-        ].sub(tokenAmount);
+        tokensLockedByVault[address(tokenVault)][msg.sender].amount = tokensLockedByVault[address(tokenVault)][
+            msg.sender
+        ].amount.sub(tokenAmount);
+        totalLockedByVault[address(tokenVault)] = totalLockedByVault[address(tokenVault)].sub(tokenAmount);
         tokenVault.withdraw(msg.sender, tokenAmount);
         emit TokensWithdrawn(msg.sender, tokenAmount);
     }
@@ -84,51 +68,36 @@ contract MigratableERC20Guild is ERC20Guild {
     // @dev Lock tokens in the guild to be used as voting power in an external vault
     // @param tokenAmount The amount of tokens to be locked
     // @param _tokenVault The token vault to be used
-    function lockExternalTokens(uint256 tokenAmount, address _tokenVault)
-        public
-        virtual
-    {
+    function lockExternalTokens(uint256 tokenAmount, address _tokenVault) public virtual {
         require(
             address(tokenVault) != _tokenVault,
             "MigratableERC2Guild: Use default lockTokens(uint256) function to lock in official vault"
         );
         TokenVault(_tokenVault).deposit(msg.sender, tokenAmount);
-        tokensLockedByVault[_tokenVault][msg.sender]
-            .amount = tokensLockedByVault[_tokenVault][msg.sender].amount.add(
+        tokensLockedByVault[_tokenVault][msg.sender].amount = tokensLockedByVault[_tokenVault][msg.sender].amount.add(
             tokenAmount
         );
-        tokensLockedByVault[_tokenVault][msg.sender].timestamp = block
-            .timestamp
-            .add(lockTime);
-        totalLockedByVault[_tokenVault] = totalLockedByVault[_tokenVault].add(
-            tokenAmount
-        );
+        tokensLockedByVault[_tokenVault][msg.sender].timestamp = block.timestamp.add(lockTime);
+        totalLockedByVault[_tokenVault] = totalLockedByVault[_tokenVault].add(tokenAmount);
         emit TokensLocked(msg.sender, tokenAmount);
     }
 
     // @dev Withdraw tokens locked in the guild from an external vault
     // @param tokenAmount The amount of tokens to be withdrawn
     // @param _tokenVault The token vault to be used
-    function withdrawExternalTokens(uint256 tokenAmount, address _tokenVault)
-        public
-        virtual
-    {
+    function withdrawExternalTokens(uint256 tokenAmount, address _tokenVault) public virtual {
         require(
             address(tokenVault) != _tokenVault,
             "MigratableERC2Guild: Use default withdrawTokens(uint256) function to withdraw from official vault"
         );
         require(
-            tokensLockedByVault[_tokenVault][msg.sender].timestamp <
-                block.timestamp,
+            tokensLockedByVault[_tokenVault][msg.sender].timestamp < block.timestamp,
             "MigratableERC2Guild: Tokens still locked"
         );
-        tokensLockedByVault[_tokenVault][msg.sender]
-            .amount = tokensLockedByVault[_tokenVault][msg.sender].amount.sub(
+        tokensLockedByVault[_tokenVault][msg.sender].amount = tokensLockedByVault[_tokenVault][msg.sender].amount.sub(
             tokenAmount
         );
-        totalLockedByVault[_tokenVault] = totalLockedByVault[_tokenVault].sub(
-            tokenAmount
-        );
+        totalLockedByVault[_tokenVault] = totalLockedByVault[_tokenVault].sub(tokenAmount);
         TokenVault(_tokenVault).withdraw(msg.sender, tokenAmount);
         emit TokensWithdrawn(msg.sender, tokenAmount);
     }
@@ -141,10 +110,7 @@ contract MigratableERC20Guild is ERC20Guild {
     function endProposal(bytes32 proposalId) public virtual override {
         if (proposals[proposalId].startTime < lastMigrationTimestamp) {
             proposals[proposalId].state = ProposalState.Failed;
-            emit ProposalStateChanged(
-                proposalId,
-                uint256(ProposalState.Failed)
-            );
+            emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
         } else {
             super.endProposal(proposalId);
         }
@@ -152,24 +118,12 @@ contract MigratableERC20Guild is ERC20Guild {
 
     // @dev Get the voting power of an account
     // @param account The address of the account
-    function votingPowerOf(address account)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function votingPowerOf(address account) public view virtual override returns (uint256) {
         return tokensLockedByVault[address(tokenVault)][account].amount;
     }
 
     // @dev Get the locked timestamp of a voter tokens
-    function getVoterLockTimestamp(address voter)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function getVoterLockTimestamp(address voter) public view virtual override returns (uint256) {
         return tokensLockedByVault[address(tokenVault)][voter].timestamp;
     }
 
@@ -179,18 +133,11 @@ contract MigratableERC20Guild is ERC20Guild {
     }
 
     // @dev Get the code of an address
-    function getCodeAt(address _addr)
-        internal
-        view
-        returns (bytes memory o_code)
-    {
+    function getCodeAt(address _addr) internal view returns (bytes memory o_code) {
         assembly {
             let size := extcodesize(_addr)
             o_code := mload(0x40)
-            mstore(
-                0x40,
-                add(o_code, and(add(add(size, 0x20), 0x1f), not(0x1f)))
-            )
+            mstore(0x40, add(o_code, and(add(add(size, 0x20), 0x1f), not(0x1f))))
             mstore(o_code, size)
             extcodecopy(_addr, add(o_code, 0x20), 0, size)
         }

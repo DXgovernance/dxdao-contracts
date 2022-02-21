@@ -17,10 +17,7 @@ contract ETHRelayer {
     receive() external payable {}
 
     function relay() public {
-        (bool success, ) = receiver.call{
-            gas: 100000,
-            value: address(this).balance
-        }("");
+        (bool success, ) = receiver.call{gas: 100000, value: address(this).balance}("");
         require(success, "ETHRelayer: Relay transfer failed");
     }
 }

@@ -5,10 +5,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
 
 // mock class using ERC20
 contract ERC20Mock is ERC20, ERC20Detailed {
-    constructor(address initialAccount, uint256 initialBalance)
-        public
-        ERC20Detailed("DXD", "DXdao", 18)
-    {
+    constructor(address initialAccount, uint256 initialBalance) public ERC20Detailed("DXD", "DXdao", 18) {
         _mint(initialAccount, initialBalance);
     }
 }

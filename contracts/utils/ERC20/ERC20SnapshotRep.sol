@@ -8,15 +8,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 /**
  * @title ERC20SnapshotRep
  */
-contract ERC20SnapshotRep is
-    Initializable,
-    OwnableUpgradeable,
-    ERC20SnapshotUpgradeable
-{
-    function initialize(string memory name, string memory symbol)
-        public
-        initializer
-    {
+contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpgradeable {
+    function initialize(string memory name, string memory symbol) public initializer {
         __ERC20_init(name, symbol);
         __Ownable_init();
     }

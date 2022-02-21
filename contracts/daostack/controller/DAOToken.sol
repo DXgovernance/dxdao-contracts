@@ -37,11 +37,7 @@ contract DAOToken is ERC20, ERC20Burnable, Ownable {
      * @param _to The address that will receive the minted tokens.
      * @param _amount The amount of tokens to mint.
      */
-    function mint(address _to, uint256 _amount)
-        public
-        onlyOwner
-        returns (bool)
-    {
+    function mint(address _to, uint256 _amount) public onlyOwner returns (bool) {
         if (cap > 0) require(totalSupply().add(_amount) <= cap);
         _mint(_to, _amount);
         return true;

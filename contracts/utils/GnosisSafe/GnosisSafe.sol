@@ -8,10 +8,7 @@ pragma solidity >=0.5.0 <0.7.0;
 // @author Richard Meissner - <richard@gnosis.pm>
 contract SelfAuthorized {
     modifier authorized() {
-        require(
-            msg.sender == address(this),
-            "Method can only be called from this contract"
-        );
+        require(msg.sender == address(this), "Method can only be called from this contract");
         _;
     }
 }
@@ -30,10 +27,7 @@ contract MasterCopy is SelfAuthorized {
     // @param _masterCopy New contract address.
     function changeMasterCopy(address _masterCopy) public authorized {
         // Master copy address cannot be null.
-        require(
-            _masterCopy != address(0),
-            "Invalid master copy address provided"
-        );
+        require(_masterCopy != address(0), "Invalid master copy address provided");
         masterCopy = _masterCopy;
         emit ChangedMasterCopy(_masterCopy);
     }
@@ -46,10 +40,7 @@ contract Module is MasterCopy {
     ModuleManager public manager;
 
     modifier authorized() {
-        require(
-            msg.sender == address(manager),
-            "Method can only be called from manager"
-        );
+        require(msg.sender == address(manager), "Method can only be called from manager");
         _;
     }
 
@@ -80,10 +71,8 @@ contract Executor {
         Enum.Operation operation,
         uint256 txGas
     ) internal returns (bool success) {
-        if (operation == Enum.Operation.Call)
-            success = executeCall(to, value, data, txGas);
-        else if (operation == Enum.Operation.DelegateCall)
-            success = executeDelegateCall(to, data, txGas);
+        if (operation == Enum.Operation.Call) success = executeCall(to, value, data, txGas);
+        else if (operation == Enum.Operation.DelegateCall) success = executeDelegateCall(to, data, txGas);
         else success = false;
     }
 
@@ -95,15 +84,7 @@ contract Executor {
     ) internal returns (bool success) {
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            success := call(
-                txGas,
-                to,
-                value,
-                add(data, 0x20),
-                mload(data),
-                0,
-                0
-            )
+            success := call(txGas, to, value, add(data, 0x20), mload(data), 0, 0)
         }
     }
 
@@ -114,14 +95,7 @@ contract Executor {
     ) internal returns (bool success) {
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            success := delegatecall(
-                txGas,
-                to,
-                add(data, 0x20),
-                mload(data),
-                0,
-                0
-            )
+            success := delegatecall(txGas, to, add(data, 0x20), mload(data), 0, 0)
         }
     }
 }
@@ -138,22 +112,10 @@ contract SecuredTokenTransfer {
         address receiver,
         uint256 amount
     ) internal returns (bool transferred) {
-        bytes memory data = abi.encodeWithSignature(
-            "transfer(address,uint256)",
-            receiver,
-            amount
-        );
+        bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", receiver, amount);
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            let success := call(
-                sub(gas, 10000),
-                token,
-                0,
-                add(data, 0x20),
-                mload(data),
-                0,
-                0
-            )
+            let success := call(sub(gas, 10000), token, 0, add(data, 0x20), mload(data), 0, 0)
             let ptr := mload(0x40)
             mstore(0x40, add(ptr, returndatasize()))
             returndatacopy(ptr, 0, returndatasize())
@@ -185,17 +147,11 @@ contract ModuleManager is SelfAuthorized, Executor {
     mapping(address => address) internal modules;
 
     function setupModules(address to, bytes memory data) internal {
-        require(
-            modules[SENTINEL_MODULES] == address(0),
-            "Modules have already been initialized"
-        );
+        require(modules[SENTINEL_MODULES] == address(0), "Modules have already been initialized");
         modules[SENTINEL_MODULES] = SENTINEL_MODULES;
         if (to != address(0))
             // Setup has to complete successfully or transaction fails.
-            require(
-                executeDelegateCall(to, data, gasleft()),
-                "Could not finish initialization"
-            );
+            require(executeDelegateCall(to, data, gasleft()), "Could not finish initialization");
     }
 
     // @dev Allows to add a module to the whitelist.
@@ -204,15 +160,11 @@ contract ModuleManager is SelfAuthorized, Executor {
     function enableModule(Module module) public authorized {
         // Module address cannot be null or sentinel.
         require(
-            address(module) != address(0) &&
-                address(module) != SENTINEL_MODULES,
+            address(module) != address(0) && address(module) != SENTINEL_MODULES,
             "Invalid module address provided"
         );
         // Module cannot be added twice.
-        require(
-            modules[address(module)] == address(0),
-            "Module has already been added"
-        );
+        require(modules[address(module)] == address(0), "Module has already been added");
         modules[address(module)] = modules[SENTINEL_MODULES];
         modules[SENTINEL_MODULES] = address(module);
         emit EnabledModule(module);
@@ -225,14 +177,10 @@ contract ModuleManager is SelfAuthorized, Executor {
     function disableModule(Module prevModule, Module module) public authorized {
         // Validate module address and check that it corresponds to module index.
         require(
-            address(module) != address(0) &&
-                address(module) != SENTINEL_MODULES,
+            address(module) != address(0) && address(module) != SENTINEL_MODULES,
             "Invalid module address provided"
         );
-        require(
-            modules[address(prevModule)] == address(module),
-            "Invalid prevModule, module pair provided"
-        );
+        require(modules[address(prevModule)] == address(module), "Invalid prevModule, module pair provided");
         modules[address(prevModule)] = modules[address(module)];
         modules[address(module)] = address(0);
         emit DisabledModule(module);
@@ -310,11 +258,7 @@ contract ModuleManager is SelfAuthorized, Executor {
         // Populate return array
         uint256 moduleCount = 0;
         address currentModule = modules[start];
-        while (
-            currentModule != address(0x0) &&
-            currentModule != SENTINEL_MODULES &&
-            moduleCount < pageSize
-        ) {
+        while (currentModule != address(0x0) && currentModule != SENTINEL_MODULES && moduleCount < pageSize) {
             array[moduleCount] = currentModule;
             currentModule = modules[currentModule];
             moduleCount++;
@@ -345,17 +289,12 @@ contract OwnerManager is SelfAuthorized {
     // @dev Setup function sets initial storage of contract.
     // @param _owners List of Safe owners.
     // @param _threshold Number of required confirmations for a Safe transaction.
-    function setupOwners(address[] memory _owners, uint256 _threshold)
-        internal
-    {
+    function setupOwners(address[] memory _owners, uint256 _threshold) internal {
         // Threshold can only be 0 at initialization.
         // Check ensures that setup function can only be called once.
         require(threshold == 0, "Owners have already been setup");
         // Validate that threshold is smaller than number of added owners.
-        require(
-            _threshold <= _owners.length,
-            "Threshold cannot exceed owner count"
-        );
+        require(_threshold <= _owners.length, "Threshold cannot exceed owner count");
         // There has to be at least one Safe owner.
         require(_threshold >= 1, "Threshold needs to be greater than 0");
         // Initializing Safe owners.
@@ -363,15 +302,9 @@ contract OwnerManager is SelfAuthorized {
         for (uint256 i = 0; i < _owners.length; i++) {
             // Owner address cannot be null.
             address owner = _owners[i];
-            require(
-                owner != address(0) && owner != SENTINEL_OWNERS,
-                "Invalid owner address provided"
-            );
+            require(owner != address(0) && owner != SENTINEL_OWNERS, "Invalid owner address provided");
             // No duplicate owners allowed.
-            require(
-                owners[owner] == address(0),
-                "Duplicate owner address provided"
-            );
+            require(owners[owner] == address(0), "Duplicate owner address provided");
             owners[currentOwner] = owner;
             currentOwner = owner;
         }
@@ -384,15 +317,9 @@ contract OwnerManager is SelfAuthorized {
     //      This can only be done via a Safe transaction.
     // @param owner New owner address.
     // @param _threshold New threshold.
-    function addOwnerWithThreshold(address owner, uint256 _threshold)
-        public
-        authorized
-    {
+    function addOwnerWithThreshold(address owner, uint256 _threshold) public authorized {
         // Owner address cannot be null.
-        require(
-            owner != address(0) && owner != SENTINEL_OWNERS,
-            "Invalid owner address provided"
-        );
+        require(owner != address(0) && owner != SENTINEL_OWNERS, "Invalid owner address provided");
         // No duplicate owners allowed.
         require(owners[owner] == address(0), "Address is already an owner");
         owners[owner] = owners[SENTINEL_OWNERS];
@@ -414,19 +341,10 @@ contract OwnerManager is SelfAuthorized {
         uint256 _threshold
     ) public authorized {
         // Only allow to remove an owner, if threshold can still be reached.
-        require(
-            ownerCount - 1 >= _threshold,
-            "New owner count needs to be larger than new threshold"
-        );
+        require(ownerCount - 1 >= _threshold, "New owner count needs to be larger than new threshold");
         // Validate owner address and check that it corresponds to owner index.
-        require(
-            owner != address(0) && owner != SENTINEL_OWNERS,
-            "Invalid owner address provided"
-        );
-        require(
-            owners[prevOwner] == owner,
-            "Invalid prevOwner, owner pair provided"
-        );
+        require(owner != address(0) && owner != SENTINEL_OWNERS, "Invalid owner address provided");
+        require(owners[prevOwner] == owner, "Invalid prevOwner, owner pair provided");
         owners[prevOwner] = owners[owner];
         owners[owner] = address(0);
         ownerCount--;
@@ -446,21 +364,12 @@ contract OwnerManager is SelfAuthorized {
         address newOwner
     ) public authorized {
         // Owner address cannot be null.
-        require(
-            newOwner != address(0) && newOwner != SENTINEL_OWNERS,
-            "Invalid owner address provided"
-        );
+        require(newOwner != address(0) && newOwner != SENTINEL_OWNERS, "Invalid owner address provided");
         // No duplicate owners allowed.
         require(owners[newOwner] == address(0), "Address is already an owner");
         // Validate oldOwner address and check that it corresponds to owner index.
-        require(
-            oldOwner != address(0) && oldOwner != SENTINEL_OWNERS,
-            "Invalid owner address provided"
-        );
-        require(
-            owners[prevOwner] == oldOwner,
-            "Invalid prevOwner, owner pair provided"
-        );
+        require(oldOwner != address(0) && oldOwner != SENTINEL_OWNERS, "Invalid owner address provided");
+        require(owners[prevOwner] == oldOwner, "Invalid prevOwner, owner pair provided");
         owners[newOwner] = owners[oldOwner];
         owners[prevOwner] = newOwner;
         owners[oldOwner] = address(0);
@@ -473,10 +382,7 @@ contract OwnerManager is SelfAuthorized {
     // @param _threshold New threshold.
     function changeThreshold(uint256 _threshold) public authorized {
         // Validate that threshold is smaller than number of owners.
-        require(
-            _threshold <= ownerCount,
-            "Threshold cannot exceed owner count"
-        );
+        require(_threshold <= ownerCount, "Threshold cannot exceed owner count");
         // There has to be at least one Safe owner.
         require(_threshold >= 1, "Threshold needs to be greater than 0");
         threshold = _threshold;
@@ -624,10 +530,7 @@ contract ISignatureValidator is ISignatureValidatorConstants {
      * MUST NOT modify state (using STATICCALL for solc < 0.5, view modifier for solc > 0.5)
      * MUST allow external calls
      */
-    function isValidSignature(bytes memory _data, bytes memory _signature)
-        public
-        view
-        returns (bytes4);
+    function isValidSignature(bytes memory _data, bytes memory _signature) public view returns (bytes4);
 }
 
 /**
@@ -721,14 +624,12 @@ contract GnosisSafe is
     //keccak256(
     //    "SafeTx(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,uint256 nonce)"
     //);
-    bytes32 private constant SAFE_TX_TYPEHASH =
-        0xbb8310d486368db6bd6f849402fdd73ad53d316b5a4b2644ad6efe0f941286d8;
+    bytes32 private constant SAFE_TX_TYPEHASH = 0xbb8310d486368db6bd6f849402fdd73ad53d316b5a4b2644ad6efe0f941286d8;
 
     //keccak256(
     //    "SafeMessage(bytes message)"
     //);
-    bytes32 private constant SAFE_MSG_TYPEHASH =
-        0x60b3cbf8b4a223d68d641b3b6ddf9a298e7f33710cf3d3a9d1146b5a6150fbca;
+    bytes32 private constant SAFE_MSG_TYPEHASH = 0x60b3cbf8b4a223d68d641b3b6ddf9a298e7f33710cf3d3a9d1146b5a6150fbca;
 
     event ApproveHash(bytes32 indexed approvedHash, address indexed owner);
     event SignMsg(bytes32 indexed msgHash);
@@ -770,12 +671,9 @@ contract GnosisSafe is
         address payable paymentReceiver
     ) external {
         require(domainSeparator == 0, "Domain Separator already set!");
-        domainSeparator = keccak256(
-            abi.encode(DOMAIN_SEPARATOR_TYPEHASH, this)
-        );
+        domainSeparator = keccak256(abi.encode(DOMAIN_SEPARATOR_TYPEHASH, this));
         setupOwners(_owners, _threshold);
-        if (fallbackHandler != address(0))
-            internalSetFallbackHandler(fallbackHandler);
+        if (fallbackHandler != address(0)) internalSetFallbackHandler(fallbackHandler);
         // As setupOwners can only be called if the contract has not been initialized we don't need a check for setupModules
         setupModules(to, data);
 
@@ -830,32 +728,17 @@ contract GnosisSafe is
             txHash = keccak256(txHashData);
             checkSignatures(txHash, txHashData, signatures, true);
         }
-        require(
-            gasleft() >= safeTxGas,
-            "Not enough gas to execute safe transaction"
-        );
+        require(gasleft() >= safeTxGas, "Not enough gas to execute safe transaction");
         // Use scope here to limit variable lifetime and prevent `stack too deep` errors
         {
             uint256 gasUsed = gasleft();
             // If no safeTxGas has been set and the gasPrice is 0 we assume that all available gas can be used
-            success = execute(
-                to,
-                value,
-                data,
-                operation,
-                safeTxGas == 0 && gasPrice == 0 ? gasleft() : safeTxGas
-            );
+            success = execute(to, value, data, operation, safeTxGas == 0 && gasPrice == 0 ? gasleft() : safeTxGas);
             gasUsed = gasUsed.sub(gasleft());
             // We transfer the calculated tx costs to the tx.origin to avoid sending it to intermediate contracts that have made calls
             uint256 payment = 0;
             if (gasPrice > 0) {
-                payment = handlePayment(
-                    gasUsed,
-                    baseGas,
-                    gasPrice,
-                    gasToken,
-                    refundReceiver
-                );
+                payment = handlePayment(gasUsed, baseGas, gasPrice, gasToken, refundReceiver);
             }
             if (success) emit ExecutionSuccess(txHash, payment);
             else emit ExecutionFailure(txHash, payment);
@@ -870,25 +753,15 @@ contract GnosisSafe is
         address payable refundReceiver
     ) private returns (uint256 payment) {
         // solium-disable-next-line security/no-tx-origin
-        address payable receiver = refundReceiver == address(0)
-            ? tx.origin
-            : refundReceiver;
+        address payable receiver = refundReceiver == address(0) ? tx.origin : refundReceiver;
         if (gasToken == address(0)) {
             // For ETH we will only adjust the gas price to not be higher than the actual used gas price
-            payment = gasUsed.add(baseGas).mul(
-                gasPrice < tx.gasprice ? gasPrice : tx.gasprice
-            );
+            payment = gasUsed.add(baseGas).mul(gasPrice < tx.gasprice ? gasPrice : tx.gasprice);
             // solium-disable-next-line security/no-send
-            require(
-                receiver.send(payment),
-                "Could not pay gas costs with ether"
-            );
+            require(receiver.send(payment), "Could not pay gas costs with ether");
         } else {
             payment = gasUsed.add(baseGas).mul(gasPrice);
-            require(
-                transferToken(gasToken, receiver, payment),
-                "Could not pay gas costs with token"
-            );
+            require(transferToken(gasToken, receiver, payment), "Could not pay gas costs with token");
         }
     }
 
@@ -910,10 +783,7 @@ contract GnosisSafe is
         // Check that a threshold is set
         require(_threshold > 0, "Threshold needs to be defined!");
         // Check that the provided signature data is not too short
-        require(
-            signatures.length >= _threshold.mul(65),
-            "Signatures data too short"
-        );
+        require(signatures.length >= _threshold.mul(65), "Signatures data too short");
         // There cannot be an owner with address 0.
         address lastOwner = address(0);
         address currentOwner;
@@ -931,10 +801,7 @@ contract GnosisSafe is
                 // Check that signature data pointer (s) is not pointing inside the static part of the signatures bytes
                 // This check is not completely accurate, since it is possible that more signatures than the threshold are send.
                 // Here we only check that the pointer is not pointing inside the part that is being processed
-                require(
-                    uint256(s) >= _threshold.mul(65),
-                    "Invalid contract signature location: inside static part"
-                );
+                require(uint256(s) >= _threshold.mul(65), "Invalid contract signature location: inside static part");
 
                 // Check that signature data pointer (s) is in bounds (points to the length of data -> 32 bytes)
                 require(
@@ -949,8 +816,7 @@ contract GnosisSafe is
                     contractSignatureLen := mload(add(add(signatures, s), 0x20))
                 }
                 require(
-                    uint256(s).add(32).add(contractSignatureLen) <=
-                        signatures.length,
+                    uint256(s).add(32).add(contractSignatureLen) <= signatures.length,
                     "Invalid contract signature location: data not complete"
                 );
 
@@ -962,10 +828,7 @@ contract GnosisSafe is
                     contractSignature := add(add(signatures, s), 0x20)
                 }
                 require(
-                    ISignatureValidator(currentOwner).isValidSignature(
-                        data,
-                        contractSignature
-                    ) == EIP1271_MAGIC_VALUE,
+                    ISignatureValidator(currentOwner).isValidSignature(data, contractSignature) == EIP1271_MAGIC_VALUE,
                     "Invalid contract signature provided"
                 );
                 // If v is 1 then it is an approved hash
@@ -974,8 +837,7 @@ contract GnosisSafe is
                 currentOwner = address(uint256(r));
                 // Hashes are automatically approved by the sender of the message or when they have been pre-approved via a separate transaction
                 require(
-                    msg.sender == currentOwner ||
-                        approvedHashes[currentOwner][dataHash] != 0,
+                    msg.sender == currentOwner || approvedHashes[currentOwner][dataHash] != 0,
                     "Hash has not been approved"
                 );
                 // Hash has been marked for consumption. If this hash was pre-approved free storage
@@ -985,12 +847,7 @@ contract GnosisSafe is
             } else if (v > 30) {
                 // To support eth_sign and similar we adjust v and hash the messageHash with the Ethereum message prefix before applying ecrecover
                 currentOwner = ecrecover(
-                    keccak256(
-                        abi.encodePacked(
-                            "\x19Ethereum Signed Message:\n32",
-                            dataHash
-                        )
-                    ),
+                    keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)),
                     v - 4,
                     r,
                     s
@@ -1000,9 +857,7 @@ contract GnosisSafe is
                 currentOwner = ecrecover(dataHash, v, r, s);
             }
             require(
-                currentOwner > lastOwner &&
-                    owners[currentOwner] != address(0) &&
-                    currentOwner != SENTINEL_OWNERS,
+                currentOwner > lastOwner && owners[currentOwner] != address(0) && currentOwner != SENTINEL_OWNERS,
                 "Invalid owner provided"
             );
             lastOwner = currentOwner;
@@ -1040,10 +895,7 @@ contract GnosisSafe is
      * @param hashToApprove The hash that should be marked as approved for signatures that are verified by this contract.
      */
     function approveHash(bytes32 hashToApprove) external {
-        require(
-            owners[msg.sender] != address(0),
-            "Only owners can approve a hash"
-        );
+        require(owners[msg.sender] != address(0), "Only owners can approve a hash");
         approvedHashes[msg.sender][hashToApprove] = 1;
         emit ApproveHash(hashToApprove, msg.sender);
     }
@@ -1067,10 +919,7 @@ contract GnosisSafe is
      * @param _signature Signature byte array associated with _data
      * @return a bool upon valid or invalid signature with corresponding _data
      */
-    function isValidSignature(bytes calldata _data, bytes calldata _signature)
-        external
-        returns (bytes4)
-    {
+    function isValidSignature(bytes calldata _data, bytes calldata _signature) external returns (bytes4) {
         bytes32 messageHash = getMessageHash(_data);
         if (_signature.length == 0) {
             require(signedMessages[messageHash] != 0, "Hash not approved");
@@ -1084,23 +933,9 @@ contract GnosisSafe is
     // @dev Returns hash of a message that can be signed by owners.
     // @param message Message that should be hashed
     // @return Message hash.
-    function getMessageHash(bytes memory message)
-        public
-        view
-        returns (bytes32)
-    {
-        bytes32 safeMessageHash = keccak256(
-            abi.encode(SAFE_MSG_TYPEHASH, keccak256(message))
-        );
-        return
-            keccak256(
-                abi.encodePacked(
-                    bytes1(0x19),
-                    bytes1(0x01),
-                    domainSeparator,
-                    safeMessageHash
-                )
-            );
+    function getMessageHash(bytes memory message) public view returns (bytes32) {
+        bytes32 safeMessageHash = keccak256(abi.encode(SAFE_MSG_TYPEHASH, keccak256(message)));
+        return keccak256(abi.encodePacked(bytes1(0x19), bytes1(0x01), domainSeparator, safeMessageHash));
     }
 
     // @dev Returns the bytes that are hashed to be signed by owners.
@@ -1142,13 +977,7 @@ contract GnosisSafe is
                 _nonce
             )
         );
-        return
-            abi.encodePacked(
-                bytes1(0x19),
-                bytes1(0x01),
-                domainSeparator,
-                safeTxHash
-            );
+        return abi.encodePacked(bytes1(0x19), bytes1(0x01), domainSeparator, safeTxHash);
     }
 
     // @dev Returns hash to be signed by owners.

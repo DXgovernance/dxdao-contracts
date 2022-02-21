@@ -35,15 +35,8 @@ interface IntVoteInterface {
         uint256 _reputation
     );
 
-    event CancelProposal(
-        bytes32 indexed _proposalId,
-        address indexed _organization
-    );
-    event CancelVoting(
-        bytes32 indexed _proposalId,
-        address indexed _organization,
-        address indexed _voter
-    );
+    event CancelProposal(bytes32 indexed _proposalId, address indexed _organization);
+    event CancelVoting(bytes32 indexed _proposalId, address indexed _organization, address indexed _voter);
 
     /**
      * @dev register a new proposal with the given parameters. Every proposal has a unique ID which is being
@@ -70,10 +63,7 @@ interface IntVoteInterface {
 
     function cancelVote(bytes32 _proposalId) external;
 
-    function getNumberOfChoices(bytes32 _proposalId)
-        external
-        view
-        returns (uint256);
+    function getNumberOfChoices(bytes32 _proposalId) external view returns (uint256);
 
     function isVotable(bytes32 _proposalId) external view returns (bool);
 
@@ -83,10 +73,7 @@ interface IntVoteInterface {
      * @param _choice the index in the
      * @return voted reputation for the given choice
      */
-    function voteStatus(bytes32 _proposalId, uint256 _choice)
-        external
-        view
-        returns (uint256);
+    function voteStatus(bytes32 _proposalId, uint256 _choice) external view returns (uint256);
 
     /**
      * @dev isAbstainAllow returns if the voting machine allow abstain (0)
@@ -99,8 +86,5 @@ interface IntVoteInterface {
      * @return min - minimum number of choices
                max - maximum number of choices
      */
-    function getAllowedRangeOfChoices()
-        external
-        pure
-        returns (uint256 min, uint256 max);
+    function getAllowedRangeOfChoices() external pure returns (uint256 min, uint256 max);
 }

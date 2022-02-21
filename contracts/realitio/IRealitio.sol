@@ -45,10 +45,7 @@ interface IRealitio {
 
     function template_hashes(uint256) external view returns (bytes32);
 
-    function getContentHash(bytes32 question_id)
-        external
-        view
-        returns (bytes32);
+    function getContentHash(bytes32 question_id) external view returns (bytes32);
 
     function question_claims(bytes32)
         external
@@ -82,10 +79,7 @@ interface IRealitio {
 
     function isFinalized(bytes32 question_id) external view returns (bool);
 
-    function getHistoryHash(bytes32 question_id)
-        external
-        view
-        returns (bytes32);
+    function getHistoryHash(bytes32 question_id) external view returns (bytes32);
 
     function commitments(bytes32)
         external
@@ -100,10 +94,7 @@ interface IRealitio {
 
     function getBestAnswer(bytes32 question_id) external view returns (bytes32);
 
-    function isPendingArbitration(bytes32 question_id)
-        external
-        view
-        returns (bool);
+    function isPendingArbitration(bytes32 question_id) external view returns (bool);
 
     function questions(bytes32)
         external
@@ -134,10 +125,7 @@ interface IRealitio {
         uint256 nonce
     ) external payable returns (bytes32);
 
-    function getFinalAnswer(bytes32 question_id)
-        external
-        view
-        returns (bytes32);
+    function getFinalAnswer(bytes32 question_id) external view returns (bytes32);
 
     function getFinalizeTS(bytes32 question_id) external view returns (uint32);
 

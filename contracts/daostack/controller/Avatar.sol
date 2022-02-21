@@ -16,29 +16,11 @@ contract Avatar is Ownable {
     DAOToken public nativeToken;
     Reputation public nativeReputation;
 
-    event GenericCall(
-        address indexed _contract,
-        bytes _data,
-        uint256 _value,
-        bool _success
-    );
+    event GenericCall(address indexed _contract, bytes _data, uint256 _value, bool _success);
     event SendEther(uint256 _amountInWei, address indexed _to);
-    event ExternalTokenTransfer(
-        address indexed _externalToken,
-        address indexed _to,
-        uint256 _value
-    );
-    event ExternalTokenTransferFrom(
-        address indexed _externalToken,
-        address _from,
-        address _to,
-        uint256 _value
-    );
-    event ExternalTokenApproval(
-        address indexed _externalToken,
-        address _spender,
-        uint256 _value
-    );
+    event ExternalTokenTransfer(address indexed _externalToken, address indexed _to, uint256 _value);
+    event ExternalTokenTransferFrom(address indexed _externalToken, address _from, address _to, uint256 _value);
+    event ExternalTokenApproval(address indexed _externalToken, address _spender, uint256 _value);
     event ReceiveEther(address indexed _sender, uint256 _value);
     event MetaData(string _metaData);
 
@@ -87,11 +69,7 @@ contract Avatar is Ownable {
      * @param _to send the ethers to this address
      * @return bool which represents success
      */
-    function sendEther(uint256 _amountInWei, address payable _to)
-        public
-        onlyOwner
-        returns (bool)
-    {
+    function sendEther(uint256 _amountInWei, address payable _to) public onlyOwner returns (bool) {
         _to.transfer(_amountInWei);
         emit SendEther(_amountInWei, _to);
         return true;
@@ -129,12 +107,7 @@ contract Avatar is Ownable {
         uint256 _value
     ) public onlyOwner returns (bool) {
         address(_externalToken).safeTransferFrom(_from, _to, _value);
-        emit ExternalTokenTransferFrom(
-            address(_externalToken),
-            _from,
-            _to,
-            _value
-        );
+        emit ExternalTokenTransferFrom(address(_externalToken), _from, _to, _value);
         return true;
     }
 

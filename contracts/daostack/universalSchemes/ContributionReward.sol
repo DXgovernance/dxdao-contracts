@@ -11,11 +11,7 @@ import "../votingMachines/VotingMachineCallbacks.sol";
  * him with token, reputation, ether or any combination.
  */
 
-contract ContributionReward is
-    UniversalScheme,
-    VotingMachineCallbacks,
-    ProposalExecuteInterface
-{
+contract ContributionReward is UniversalScheme, VotingMachineCallbacks, ProposalExecuteInterface {
     using SafeMath for uint256;
 
     event NewContributionProposal(
@@ -29,11 +25,7 @@ contract ContributionReward is
         address _beneficiary
     );
 
-    event ProposalExecuted(
-        address indexed _avatar,
-        bytes32 indexed _proposalId,
-        int256 _param
-    );
+    event ProposalExecuted(address indexed _avatar, bytes32 indexed _proposalId, int256 _param);
 
     event RedeemReputation(
         address indexed _avatar,
@@ -78,8 +70,7 @@ contract ContributionReward is
     }
 
     // A mapping from the organization (Avatar) address to the saved data of the organization:
-    mapping(address => mapping(bytes32 => ContributionProposal))
-        public organizationsProposals;
+    mapping(address => mapping(bytes32 => ContributionProposal)) public organizationsProposals;
 
     // A mapping from hashes to parameters (use to store a particular configuration on the controller)
     struct Parameters {
@@ -101,19 +92,12 @@ contract ContributionReward is
         returns (bool)
     {
         ProposalInfo memory proposal = proposalsInfo[msg.sender][_proposalId];
-        require(
-            organizationsProposals[address(proposal.avatar)][_proposalId]
-                .executionTime == 0
-        );
-        require(
-            organizationsProposals[address(proposal.avatar)][_proposalId]
-                .beneficiary != address(0)
-        );
+        require(organizationsProposals[address(proposal.avatar)][_proposalId].executionTime == 0);
+        require(organizationsProposals[address(proposal.avatar)][_proposalId].beneficiary != address(0));
         // Check if vote was successful:
         if (_param == 1) {
             // solhint-disable-next-line not-rely-on-time
-            organizationsProposals[address(proposal.avatar)][_proposalId]
-                .executionTime = now;
+            organizationsProposals[address(proposal.avatar)][_proposalId].executionTime = now;
         }
         emit ProposalExecuted(address(proposal.avatar), _proposalId, _param);
         return true;
@@ -122,10 +106,7 @@ contract ContributionReward is
     /**
      * @dev hash the parameters, save them if necessary, and return the hash value
      */
-    function setParameters(
-        bytes32 _voteApproveParams,
-        IntVoteInterface _intVote
-    ) public returns (bytes32) {
+    function setParameters(bytes32 _voteApproveParams, IntVoteInterface _intVote) public returns (bytes32) {
         bytes32 paramsHash = getParametersHash(_voteApproveParams, _intVote);
         parameters[paramsHash].voteApproveParams = _voteApproveParams;
         parameters[paramsHash].intVote = _intVote;
@@ -138,10 +119,7 @@ contract ContributionReward is
      * @param _intVote the voting machine used to approve a contribution
      * @return a hash of the parameters
      */
-    function getParametersHash(
-        bytes32 _voteApproveParams,
-        IntVoteInterface _intVote
-    ) public pure returns (bytes32) {
+    function getParametersHash(bytes32 _voteApproveParams, IntVoteInterface _intVote) public pure returns (bytes32) {
         return (keccak256(abi.encodePacked(_voteApproveParams, _intVote)));
     }
 
@@ -168,9 +146,7 @@ contract ContributionReward is
         address payable _beneficiary
     ) public returns (bytes32) {
         validateProposalParams(_reputationChange, _rewards);
-        Parameters memory controllerParams = parameters[
-            getParametersFromController(_avatar)
-        ];
+        Parameters memory controllerParams = parameters[getParametersFromController(_avatar)];
 
         bytes32 contributionId = controllerParams.intVote.propose(
             2,
@@ -209,9 +185,10 @@ contract ContributionReward is
             beneficiary
         );
 
-        proposalsInfo[address(controllerParams.intVote)][
-            contributionId
-        ] = ProposalInfo({blockNumber: block.number, avatar: _avatar});
+        proposalsInfo[address(controllerParams.intVote)][contributionId] = ProposalInfo({
+            blockNumber: block.number,
+            avatar: _avatar
+        });
         return contributionId;
     }
 
@@ -221,22 +198,11 @@ contract ContributionReward is
      * @param _avatar address of the controller
      * @return reputation the redeemed reputation.
      */
-    function redeemReputation(bytes32 _proposalId, Avatar _avatar)
-        public
-        returns (int256 reputation)
-    {
-        ContributionProposal memory _proposal = organizationsProposals[
-            address(_avatar)
-        ][_proposalId];
-        ContributionProposal storage proposal = organizationsProposals[
-            address(_avatar)
-        ][_proposalId];
+    function redeemReputation(bytes32 _proposalId, Avatar _avatar) public returns (int256 reputation) {
+        ContributionProposal memory _proposal = organizationsProposals[address(_avatar)][_proposalId];
+        ContributionProposal storage proposal = organizationsProposals[address(_avatar)][_proposalId];
         require(proposal.executionTime != 0);
-        uint256 periodsToPay = getPeriodsToPay(
-            _proposalId,
-            address(_avatar),
-            0
-        );
+        uint256 periodsToPay = getPeriodsToPay(_proposalId, address(_avatar), 0);
 
         //set proposal reward to zero to prevent reentrancy attack.
         proposal.reputationChange = 0;
@@ -259,15 +225,8 @@ contract ContributionReward is
             );
         }
         if (reputation != 0) {
-            proposal.redeemedPeriods[0] = proposal.redeemedPeriods[0].add(
-                periodsToPay
-            );
-            emit RedeemReputation(
-                address(_avatar),
-                _proposalId,
-                _proposal.beneficiary,
-                reputation
-            );
+            proposal.redeemedPeriods[0] = proposal.redeemedPeriods[0].add(periodsToPay);
+            emit RedeemReputation(address(_avatar), _proposalId, _proposal.beneficiary, reputation);
         }
         //restore proposal reward.
         proposal.reputationChange = _proposal.reputationChange;
@@ -279,43 +238,19 @@ contract ContributionReward is
      * @param _avatar address of the controller
      * @return amount the redeemed nativeToken.
      */
-    function redeemNativeToken(bytes32 _proposalId, Avatar _avatar)
-        public
-        returns (uint256 amount)
-    {
-        ContributionProposal memory _proposal = organizationsProposals[
-            address(_avatar)
-        ][_proposalId];
-        ContributionProposal storage proposal = organizationsProposals[
-            address(_avatar)
-        ][_proposalId];
+    function redeemNativeToken(bytes32 _proposalId, Avatar _avatar) public returns (uint256 amount) {
+        ContributionProposal memory _proposal = organizationsProposals[address(_avatar)][_proposalId];
+        ContributionProposal storage proposal = organizationsProposals[address(_avatar)][_proposalId];
         require(proposal.executionTime != 0);
-        uint256 periodsToPay = getPeriodsToPay(
-            _proposalId,
-            address(_avatar),
-            1
-        );
+        uint256 periodsToPay = getPeriodsToPay(_proposalId, address(_avatar), 1);
         //set proposal rewards to zero to prevent reentrancy attack.
         proposal.nativeTokenReward = 0;
 
         amount = periodsToPay.mul(_proposal.nativeTokenReward);
         if (amount > 0) {
-            require(
-                ControllerInterface(_avatar.owner()).mintTokens(
-                    amount,
-                    _proposal.beneficiary,
-                    address(_avatar)
-                )
-            );
-            proposal.redeemedPeriods[1] = proposal.redeemedPeriods[1].add(
-                periodsToPay
-            );
-            emit RedeemNativeToken(
-                address(_avatar),
-                _proposalId,
-                _proposal.beneficiary,
-                amount
-            );
+            require(ControllerInterface(_avatar.owner()).mintTokens(amount, _proposal.beneficiary, address(_avatar)));
+            proposal.redeemedPeriods[1] = proposal.redeemedPeriods[1].add(periodsToPay);
+            emit RedeemNativeToken(address(_avatar), _proposalId, _proposal.beneficiary, amount);
         }
 
         //restore proposal reward.
@@ -328,43 +263,19 @@ contract ContributionReward is
      * @param _avatar address of the controller
      * @return amount ether redeemed amount
      */
-    function redeemEther(bytes32 _proposalId, Avatar _avatar)
-        public
-        returns (uint256 amount)
-    {
-        ContributionProposal memory _proposal = organizationsProposals[
-            address(_avatar)
-        ][_proposalId];
-        ContributionProposal storage proposal = organizationsProposals[
-            address(_avatar)
-        ][_proposalId];
+    function redeemEther(bytes32 _proposalId, Avatar _avatar) public returns (uint256 amount) {
+        ContributionProposal memory _proposal = organizationsProposals[address(_avatar)][_proposalId];
+        ContributionProposal storage proposal = organizationsProposals[address(_avatar)][_proposalId];
         require(proposal.executionTime != 0);
-        uint256 periodsToPay = getPeriodsToPay(
-            _proposalId,
-            address(_avatar),
-            2
-        );
+        uint256 periodsToPay = getPeriodsToPay(_proposalId, address(_avatar), 2);
         //set proposal rewards to zero to prevent reentrancy attack.
         proposal.ethReward = 0;
         amount = periodsToPay.mul(_proposal.ethReward);
 
         if (amount > 0) {
-            require(
-                ControllerInterface(_avatar.owner()).sendEther(
-                    amount,
-                    _proposal.beneficiary,
-                    _avatar
-                )
-            );
-            proposal.redeemedPeriods[2] = proposal.redeemedPeriods[2].add(
-                periodsToPay
-            );
-            emit RedeemEther(
-                address(_avatar),
-                _proposalId,
-                _proposal.beneficiary,
-                amount
-            );
+            require(ControllerInterface(_avatar.owner()).sendEther(amount, _proposal.beneficiary, _avatar));
+            proposal.redeemedPeriods[2] = proposal.redeemedPeriods[2].add(periodsToPay);
+            emit RedeemEther(address(_avatar), _proposalId, _proposal.beneficiary, amount);
         }
 
         //restore proposal reward.
@@ -377,29 +288,15 @@ contract ContributionReward is
      * @param _avatar address of the controller
      * @return amount the external token redeemed amount
      */
-    function redeemExternalToken(bytes32 _proposalId, Avatar _avatar)
-        public
-        returns (uint256 amount)
-    {
-        ContributionProposal memory _proposal = organizationsProposals[
-            address(_avatar)
-        ][_proposalId];
-        ContributionProposal storage proposal = organizationsProposals[
-            address(_avatar)
-        ][_proposalId];
+    function redeemExternalToken(bytes32 _proposalId, Avatar _avatar) public returns (uint256 amount) {
+        ContributionProposal memory _proposal = organizationsProposals[address(_avatar)][_proposalId];
+        ContributionProposal storage proposal = organizationsProposals[address(_avatar)][_proposalId];
         require(proposal.executionTime != 0);
-        uint256 periodsToPay = getPeriodsToPay(
-            _proposalId,
-            address(_avatar),
-            3
-        );
+        uint256 periodsToPay = getPeriodsToPay(_proposalId, address(_avatar), 3);
         //set proposal rewards to zero to prevent reentrancy attack.
         proposal.externalTokenReward = 0;
 
-        if (
-            proposal.externalToken != IERC20(0) &&
-            _proposal.externalTokenReward > 0
-        ) {
+        if (proposal.externalToken != IERC20(0) && _proposal.externalTokenReward > 0) {
             amount = periodsToPay.mul(_proposal.externalTokenReward);
             if (amount > 0) {
                 require(
@@ -410,15 +307,8 @@ contract ContributionReward is
                         _avatar
                     )
                 );
-                proposal.redeemedPeriods[3] = proposal.redeemedPeriods[3].add(
-                    periodsToPay
-                );
-                emit RedeemExternalToken(
-                    address(_avatar),
-                    _proposalId,
-                    _proposal.beneficiary,
-                    amount
-                );
+                proposal.redeemedPeriods[3] = proposal.redeemedPeriods[3].add(periodsToPay);
+                emit RedeemExternalToken(address(_avatar), _proposalId, _proposal.beneficiary, amount);
             }
         }
         //restore proposal reward.
@@ -484,29 +374,18 @@ contract ContributionReward is
         uint256 _redeemType
     ) public view returns (uint256) {
         require(_redeemType <= 3, "should be in the redeemedPeriods range");
-        ContributionProposal memory _proposal = organizationsProposals[_avatar][
-            _proposalId
-        ];
+        ContributionProposal memory _proposal = organizationsProposals[_avatar][_proposalId];
         if (_proposal.executionTime == 0) return 0;
         uint256 periodsFromExecution;
         if (_proposal.periodLength > 0) {
             // solhint-disable-next-line not-rely-on-time
-            periodsFromExecution =
-                (now.sub(_proposal.executionTime)) /
-                (_proposal.periodLength);
+            periodsFromExecution = (now.sub(_proposal.executionTime)) / (_proposal.periodLength);
         }
         uint256 periodsToPay;
-        if (
-            (_proposal.periodLength == 0) ||
-            (periodsFromExecution >= _proposal.numberOfPeriods)
-        ) {
-            periodsToPay = _proposal.numberOfPeriods.sub(
-                _proposal.redeemedPeriods[_redeemType]
-            );
+        if ((_proposal.periodLength == 0) || (periodsFromExecution >= _proposal.numberOfPeriods)) {
+            periodsToPay = _proposal.numberOfPeriods.sub(_proposal.redeemedPeriods[_redeemType]);
         } else {
-            periodsToPay = periodsFromExecution.sub(
-                _proposal.redeemedPeriods[_redeemType]
-            );
+            periodsToPay = periodsFromExecution.sub(_proposal.redeemedPeriods[_redeemType]);
         }
         return periodsToPay;
     }
@@ -527,41 +406,22 @@ contract ContributionReward is
         address _avatar,
         uint256 _redeemType
     ) public view returns (uint256) {
-        return
-            organizationsProposals[_avatar][_proposalId].redeemedPeriods[
-                _redeemType
-            ];
+        return organizationsProposals[_avatar][_proposalId].redeemedPeriods[_redeemType];
     }
 
-    function getProposalEthReward(bytes32 _proposalId, address _avatar)
-        public
-        view
-        returns (uint256)
-    {
+    function getProposalEthReward(bytes32 _proposalId, address _avatar) public view returns (uint256) {
         return organizationsProposals[_avatar][_proposalId].ethReward;
     }
 
-    function getProposalExternalTokenReward(
-        bytes32 _proposalId,
-        address _avatar
-    ) public view returns (uint256) {
+    function getProposalExternalTokenReward(bytes32 _proposalId, address _avatar) public view returns (uint256) {
         return organizationsProposals[_avatar][_proposalId].externalTokenReward;
     }
 
-    function getProposalExternalToken(bytes32 _proposalId, address _avatar)
-        public
-        view
-        returns (address)
-    {
-        return
-            address(organizationsProposals[_avatar][_proposalId].externalToken);
+    function getProposalExternalToken(bytes32 _proposalId, address _avatar) public view returns (address) {
+        return address(organizationsProposals[_avatar][_proposalId].externalToken);
     }
 
-    function getProposalExecutionTime(bytes32 _proposalId, address _avatar)
-        public
-        view
-        returns (uint256)
-    {
+    function getProposalExecutionTime(bytes32 _proposalId, address _avatar) public view returns (uint256) {
         return organizationsProposals[_avatar][_proposalId].executionTime;
     }
 
@@ -577,14 +437,8 @@ contract ContributionReward is
      *         rewards[3] - Period length - if set to zero it allows immediate redeeming after execution.
      *         rewards[4] - Number of periods
      */
-    function validateProposalParams(
-        int256 _reputationChange,
-        uint256[5] memory _rewards
-    ) private pure {
-        require(
-            ((_rewards[3] > 0) || (_rewards[4] == 1)),
-            "periodLength equal 0 require numberOfPeriods to be 1"
-        );
+    function validateProposalParams(int256 _reputationChange, uint256[5] memory _rewards) private pure {
+        require(((_rewards[3] > 0) || (_rewards[4] == 1)), "periodLength equal 0 require numberOfPeriods to be 1");
         if (_rewards[4] > 0) {
             // This is the only case of overflow not detected by the check below
             require(
@@ -593,9 +447,7 @@ contract ContributionReward is
             );
             //check that numberOfPeriods * _reputationChange will not overflow
             require(
-                (int256(_rewards[4]) * _reputationChange) /
-                    int256(_rewards[4]) ==
-                    _reputationChange,
+                (int256(_rewards[4]) * _reputationChange) / int256(_rewards[4]) == _reputationChange,
                 "numberOfPeriods * reputationChange will overflow"
             );
             //check that numberOfPeriods * tokenReward will not overflow

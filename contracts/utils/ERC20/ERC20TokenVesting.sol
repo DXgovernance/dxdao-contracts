@@ -56,21 +56,12 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
         uint256 __duration,
         bool __revocable
     ) public initializer {
-        require(
-            __beneficiary != address(0),
-            "TokenVesting: beneficiary is the zero address"
-        );
+        require(__beneficiary != address(0), "TokenVesting: beneficiary is the zero address");
         // solhint-disable-next-line max-line-length
-        require(
-            __cliffDuration <= __duration,
-            "TokenVesting: cliff is longer than duration"
-        );
+        require(__cliffDuration <= __duration, "TokenVesting: cliff is longer than duration");
         require(__duration > 0, "TokenVesting: duration is 0");
         // solhint-disable-next-line max-line-length
-        require(
-            __start.add(__duration) > block.timestamp,
-            "TokenVesting: final time is before current time"
-        );
+        require(__start.add(__duration) > block.timestamp, "TokenVesting: final time is before current time");
 
         __Ownable_init();
         _beneficiary = __beneficiary;
@@ -152,10 +143,7 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
      */
     function revoke(IERC20 token) public onlyOwner {
         require(_revocable, "TokenVesting: cannot revoke");
-        require(
-            !_revoked[address(token)],
-            "TokenVesting: token already revoked"
-        );
+        require(!_revoked[address(token)], "TokenVesting: token already revoked");
 
         uint256 balance = token.balanceOf(address(this));
 
@@ -187,9 +175,7 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
 
         if (block.timestamp < _cliff) {
             return 0;
-        } else if (
-            block.timestamp >= _start.add(_duration) || _revoked[address(token)]
-        ) {
+        } else if (block.timestamp >= _start.add(_duration) || _revoked[address(token)]) {
             return totalBalance;
         } else {
             return totalBalance.mul(block.timestamp.sub(_start)).div(_duration);
