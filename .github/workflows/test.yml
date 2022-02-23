@@ -1,4 +1,4 @@
-name: main
+name: Tests
 
 on:
   push:
@@ -22,16 +22,5 @@ jobs:
           node-version: 16.13.0
       - name: Install Dependencies
         run: yarn
-      - name: Format Check
-        run: yarn format-check
-      - name: Solidity Linter
-        run: yarn solidity-linter
-      - name: Run Slither
-        uses: crytic/slither-action@v0.1.0
-        continue-on-error: true
-        id: slither
-        with:
-          node-version: 16.13.0
-          sarif: results.sarif
       - name: Solidity Tests
         run: npx hardhat test
