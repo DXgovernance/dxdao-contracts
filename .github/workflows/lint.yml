@@ -42,5 +42,6 @@ jobs:
         uses: crytic/slither-action@v0.1.0
         continue-on-error: true
         with:
-          slither-args: --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack'
+          options: user --root
+          slither-args: --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack
           node-version: 16.13.0
