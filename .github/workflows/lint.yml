@@ -38,15 +38,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install Dependencies
-        run: yarn
-
-      - name: compile with truffle
-        run: yarn truffle compile
-
       - name: Run Slither
         uses: crytic/slither-action@v0.1.0
         continue-on-error: true
         with:
+          slither-args: --exclude-dependencies --filter-path 'realitio|openzeppelin'
           node-version: 16.13.0
-          ignore-compile: true
