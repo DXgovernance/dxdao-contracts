@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  setup:
+  lint:
     runs-on: ubuntu-latest
 
     strategy:
@@ -38,9 +38,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Install Dependencies
+        run: yarn
+
+      - name: compile with truffle
+        run: truffle compile
+
       - name: Run Slither
         uses: crytic/slither-action@v0.1.0
+        ignore-compile: true
         continue-on-error: true
         with:
           node-version: 16.13.0
-          target: "contracts/"
