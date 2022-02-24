@@ -42,11 +42,11 @@ jobs:
         run: yarn
 
       - name: compile with truffle
-        run: truffle compile
+        run: yarn truffle compile
 
       - name: Run Slither
         uses: crytic/slither-action@v0.1.0
-        ignore-compile: true
         continue-on-error: true
         with:
           node-version: 16.13.0
+          ignore-compile: true
