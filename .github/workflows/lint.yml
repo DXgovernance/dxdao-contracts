@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-      - uses: actions/checkout@v2
+        uses: actions/checkout@v2
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
@@ -44,7 +44,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install Yarn
-      - run: yarn install
+        run: yarn install
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
