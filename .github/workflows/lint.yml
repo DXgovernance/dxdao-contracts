@@ -12,6 +12,7 @@ jobs:
     strategy:
       matrix:
         node-version: [16.13.0]
+        python-version: [3.9]
 
     steps:
       - name: Checkout
@@ -20,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: 16.13.0
+          node-version: ${{ matrix.node-version }}
 
       - name: Install Dependencies
         run: yarn
@@ -33,15 +34,43 @@ jobs:
 
   slither:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-      - name: Run Slither
-        uses: crytic/slither-action@v0.1.0
-        continue-on-error: true
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
         with:
-          options: user --root
-          slither-args: --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack
-          node-version: 16.13.0
+          node-version: ${{ matrix.node-version }}
+      - run: yarn install
+      - run: yarn compile
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          sudo snap install solc
+          python -m pip install --upgrade pip
+          pip install slither-analyzer==0.8.2
+
+      - name: Summary of static ananlysis
+        run: |
+          slither . --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print human-summary
+
+      - name: Contract summary of static ananlysis
+        run: |
+          slither . --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print contract-summary
+
+      - name: Function summary
+        run: |
+          slither . --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print function-summary
+
+      - name: Inheritance
+        run: |
+          slither . --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print inheritance
+
+      - name: Data dependency
+        run: |
+          slither . --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print data-dependency
