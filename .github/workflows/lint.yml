@@ -35,14 +35,16 @@ jobs:
   slither:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
       - uses: actions/checkout@v2
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
+
+      - name: Install Yarn
       - run: yarn install
-      - run: yarn compile
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
@@ -55,22 +57,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install slither-analyzer==0.8.2
 
+      - name: Compile contracts
+      - run: yarn compile
+
       - name: Summary of static ananlysis
         run: |
-          slither . --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print human-summary
+          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print human-summary
 
       - name: Contract summary of static ananlysis
         run: |
-          slither . --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print contract-summary
+          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print contract-summary
 
-      - name: Function summary
+      - name: Function summary of contracts
         run: |
-          slither . --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print function-summary
+          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print function-summary
 
-      - name: Inheritance
+      - name: Inheritance analysis of contracts
         run: |
-          slither . --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print inheritance
+          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print inheritance
 
-      - name: Data dependency
+      - name: Data dependency of contracts
         run: |
-          slither . --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print data-dependency
+          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print data-dependency
