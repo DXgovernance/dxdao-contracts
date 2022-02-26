@@ -84,3 +84,7 @@ jobs:
       - name: Data dependency of contracts
         run: |
           slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print data-dependency
+
+      - name: Analysis of contracts
+        run: |
+          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack'
