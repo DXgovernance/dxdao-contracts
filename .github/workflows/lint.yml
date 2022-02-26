@@ -12,7 +12,6 @@ jobs:
     strategy:
       matrix:
         node-version: [16.13.0]
-        python-version: [3.9]
 
     steps:
       - name: Checkout
@@ -34,6 +33,12 @@ jobs:
 
   slither:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.13.0]
+        python-version: [3.9]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -43,7 +48,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install Yarn
+      - name: Install yarn
         run: yarn install
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -58,7 +63,7 @@ jobs:
           pip install slither-analyzer==0.8.2
 
       - name: Compile contracts
-      - run: yarn compile
+        run: yarn compile
 
       - name: Summary of static ananlysis
         run: |
