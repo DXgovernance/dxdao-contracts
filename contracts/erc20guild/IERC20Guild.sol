@@ -1,23 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-
 interface IERC20Guild {
-
-    event ProposalStateChanged(
-        bytes32 indexed proposalId,
-        uint256 newState
-    );
-    event VoteAdded(
-        bytes32 indexed proposalId,
-        address voter,
-        uint256 votingPower
-    );
-    event SetAllowance(
-        address indexed to,
-        bytes4 functionSignature,
-        bool allowance
-    );
+    event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
+    event VoteAdded(bytes32 indexed proposalId, address voter, uint256 votingPower);
+    event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
 
     fallback() external payable;
 
@@ -57,9 +44,7 @@ interface IERC20Guild {
         bool[] memory allowance
     ) external;
 
-    function setPermissionDelay(
-        uint256 permissionDelay
-    ) external;
+    function setPermissionDelay(uint256 permissionDelay) external;
 
     function createProposal(
         address[] memory to,
@@ -71,10 +56,18 @@ interface IERC20Guild {
     ) external returns (bytes32);
 
     function endProposal(bytes32 proposalId) external;
-    
-    function setVote(bytes32 proposalId, uint256 action, uint256 votingPower) external;
 
-    function setVotes(bytes32[] memory proposalIds, uint256[] memory actions, uint256[] memory votingPowers) external;
+    function setVote(
+        bytes32 proposalId,
+        uint256 action,
+        uint256 votingPower
+    ) external;
+
+    function setVotes(
+        bytes32[] memory proposalIds,
+        uint256[] memory actions,
+        uint256[] memory votingPowers
+    ) external;
 
     function setSignedVote(
         bytes32 proposalId,
@@ -93,62 +86,66 @@ interface IERC20Guild {
     ) external;
 
     function lockTokens(uint256 tokenAmount) external;
-    
+
     function withdrawTokens(uint256 tokenAmount) external;
 
     function votingPowerOf(address account) external view returns (uint256);
 
     function votingPowerOfMultiple(address[] memory accounts) external view returns (uint256[] memory);
 
-    function getToken() external view returns(address);
+    function getToken() external view returns (address);
 
-    function getPermissionRegistry() external view returns(address);
+    function getPermissionRegistry() external view returns (address);
 
-    function getName() external view returns(string memory);
+    function getName() external view returns (string memory);
 
-    function getProposalTime() external view returns(uint256);
+    function getProposalTime() external view returns (uint256);
 
-    function getTimeForExecution() external view returns(uint256);
+    function getTimeForExecution() external view returns (uint256);
 
-    function getVoteGas() external view returns(uint256);
+    function getVoteGas() external view returns (uint256);
 
-    function getMaxGasPrice() external view returns(uint256);
+    function getMaxGasPrice() external view returns (uint256);
 
-    function getMaxActiveProposals() external view returns(uint256);
+    function getMaxActiveProposals() external view returns (uint256);
 
-    function getTotalProposals() external view returns(uint256);
+    function getTotalProposals() external view returns (uint256);
 
-    function getActiveProposalsNow() external view returns(uint256);
+    function getActiveProposalsNow() external view returns (uint256);
 
-    function getSignedVote(bytes32 signedVoteHash) external view returns(bool);
+    function getSignedVote(bytes32 signedVoteHash) external view returns (bool);
 
-    function getProposalsIds() external view returns(bytes32[] memory);
+    function getProposalsIds() external view returns (bytes32[] memory);
 
-    function getTokenVault() external view returns(address);
+    function getTokenVault() external view returns (address);
 
-    function getLockTime() external view returns(uint256);
+    function getLockTime() external view returns (uint256);
 
-    function getTotalLocked() external view returns(uint256);
+    function getTotalLocked() external view returns (uint256);
 
-    function getVoterLockTimestamp(address voter) external view returns(uint256);
+    function getVoterLockTimestamp(address voter) external view returns (uint256);
 
-    function getProposal(bytes32 proposalId) external view returns (
-        address creator,
-        uint256 startTime,
-        uint256 endTime,
-        address[] memory to,
-        bytes[] memory data,
-        uint256[] memory value,
-        uint256 totalActions,
-        string memory title,
-        bytes memory contentHash,
-        uint256 state,
-        uint256[] memory totalVotes
-    );
+    function getProposal(bytes32 proposalId)
+        external
+        view
+        returns (
+            address creator,
+            uint256 startTime,
+            uint256 endTime,
+            address[] memory to,
+            bytes[] memory data,
+            uint256[] memory value,
+            uint256 totalActions,
+            string memory title,
+            bytes memory contentHash,
+            uint256 state,
+            uint256[] memory totalVotes
+        );
 
-    function getProposalVotesOfVoter(bytes32 proposalId, address voter) external view returns (
-        uint256 action, uint256 votingPower
-    );
+    function getProposalVotesOfVoter(bytes32 proposalId, address voter)
+        external
+        view
+        returns (uint256 action, uint256 votingPower);
 
     function getVotingPowerForProposalCreation() external view returns (uint256);
 
@@ -168,5 +165,4 @@ interface IERC20Guild {
         uint256 action,
         uint256 votingPower
     ) external pure returns (bytes32);
-
 }

@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
 /**
  * @title ERC20TokenVesting
  * @dev A token holder contract that can release its token balance gradually like a
@@ -35,8 +36,8 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
 
     bool private _revocable;
 
-    mapping (address => uint256) private _released;
-    mapping (address => bool) private _revoked;
+    mapping(address => uint256) private _released;
+    mapping(address => bool) private _revoked;
 
     /**
      * @dev Creates a vesting contract that vests its balance of any ERC20 token to the
@@ -49,8 +50,12 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
      * @param __revocable whether the vesting is revocable or not
      */
     function initialize(
-        address __beneficiary, uint256 __start, uint256 __cliffDuration, uint256 __duration, bool __revocable
-    ) public initializer{
+        address __beneficiary,
+        uint256 __start,
+        uint256 __cliffDuration,
+        uint256 __duration,
+        bool __revocable
+    ) public initializer {
         require(__beneficiary != address(0), "TokenVesting: beneficiary is the zero address");
         // solhint-disable-next-line max-line-length
         require(__cliffDuration <= __duration, "TokenVesting: cliff is longer than duration");

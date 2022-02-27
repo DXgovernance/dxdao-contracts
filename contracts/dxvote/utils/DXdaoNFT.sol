@@ -10,11 +10,7 @@ contract DXdaoNFT is ERC721URIStorage, Ownable {
 
     constructor() ERC721("DXdao NFT", "DXNFT") {}
 
-    function mint(address recipient, string memory tokenURI)
-        public
-        onlyOwner
-        returns (uint256)
-    {
+    function mint(address recipient, string memory tokenURI) public onlyOwner returns (uint256) {
         _tokenIds.increment();
 
         uint256 newItemId = _tokenIds.current();

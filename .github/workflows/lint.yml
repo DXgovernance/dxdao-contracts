@@ -1,0 +1,90 @@
+name: Lint
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.13.0]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Format Check
+        run: yarn format-check
+
+      - name: Solidity Linter
+        run: yarn solidity-linter
+
+  slither:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.13.0]
+        python-version: [3.9]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install yarn
+        run: yarn install
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          sudo snap install solc
+          python -m pip install --upgrade pip
+          pip install slither-analyzer==0.8.2
+
+      - name: Compile contracts
+        run: yarn compile
+
+      - name: Summary of static ananlysis
+        run: |
+          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print human-summary
+
+      - name: Contract summary of static ananlysis
+        run: |
+          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print contract-summary
+
+      - name: Function summary of contracts
+        run: |
+          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print function-summary
+
+      - name: Inheritance analysis of contracts
+        run: |
+          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print inheritance
+
+      - name: Data dependency of contracts
+        run: |
+          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print data-dependency
+
+      - name: Analysis of contracts
+        run: |
+          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack'
