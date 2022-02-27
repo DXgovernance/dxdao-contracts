@@ -39,10 +39,13 @@ contract SnapshotERC20Guild is ERC20Guild {
     // @param proposalId The id of the proposal to set the vote
     // @param action The proposal action to be voted
     // @param votingPower The votingPower to use in the proposal
-    function setVote(bytes32 proposalId, uint256 action, uint256 votingPower) public override virtual {
+    function setVote(
+        bytes32 proposalId,
+        uint256 action,
+        uint256 votingPower
+    ) public virtual override {
         require(
-            votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >=
-                votingPower,
+            votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >= votingPower,
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
         super.setVote(proposalId, action, votingPower);
@@ -60,32 +63,25 @@ contract SnapshotERC20Guild is ERC20Guild {
         uint256 votingPower,
         address voter,
         bytes memory signature
-    ) public override virtual {
+    ) public virtual override {
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "SnapshotERC20Guild: Already voted");
+        require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "SnapshotERC20Guild: Wrong signer");
         require(
-            voter == hashedVote.toEthSignedMessageHash().recover(signature),
-            "SnapshotERC20Guild: Wrong signer"
-        );
-        require(
-            votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >=
-                votingPower,
+            votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >= votingPower,
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
-        super.setSignedVote(proposalId, action,votingPower, voter, signature);
+        super.setSignedVote(proposalId, action, votingPower, voter, signature);
         signedVotes[hashedVote] = true;
     }
 
-
     // @dev Lock tokens in the guild to be used as voting power
     // @param tokenAmount The amount of tokens to be locked
-    function lockTokens(uint256 tokenAmount) public override virtual {
+    function lockTokens(uint256 tokenAmount) public virtual override {
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
         tokenVault.deposit(msg.sender, tokenAmount);
-        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(
-            tokenAmount
-        );
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(tokenAmount);
         tokensLocked[msg.sender].timestamp = block.timestamp.add(lockTime);
         totalLocked = totalLocked.add(tokenAmount);
         emit TokensLocked(msg.sender, tokenAmount);
@@ -93,20 +89,15 @@ contract SnapshotERC20Guild is ERC20Guild {
 
     // @dev Release tokens locked in the guild, this will decrease the voting power
     // @param tokenAmount The amount of tokens to be withdrawn
-    function withdrawTokens(uint256 tokenAmount) public override virtual {
+    function withdrawTokens(uint256 tokenAmount) public virtual override {
         require(
             votingPowerOf(msg.sender) >= tokenAmount,
             "SnapshotERC20Guild: Unable to withdraw more tokens than locked"
         );
-        require(
-            tokensLocked[msg.sender].timestamp < block.timestamp,
-            "SnapshotERC20Guild: Tokens still locked"
-        );
+        require(tokensLocked[msg.sender].timestamp < block.timestamp, "SnapshotERC20Guild: Tokens still locked");
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
-        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(
-            tokenAmount
-        );
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(tokenAmount);
         totalLocked = totalLocked.sub(tokenAmount);
         tokenVault.withdraw(msg.sender, tokenAmount);
         emit TokensWithdrawn(msg.sender, tokenAmount);
@@ -126,7 +117,7 @@ contract SnapshotERC20Guild is ERC20Guild {
         uint256 totalActions,
         string memory title,
         bytes memory contentHash
-    ) public override virtual returns (bytes32) {
+    ) public virtual override returns (bytes32) {
         bytes32 proposalId = super.createProposal(to, data, value, totalActions, title, contentHash);
         _currentSnapshotId = _currentSnapshotId.add(1);
         proposalsSnapshots[proposalId] = _currentSnapshotId;
@@ -135,34 +126,24 @@ contract SnapshotERC20Guild is ERC20Guild {
 
     // @dev Executes a proposal that is not votable anymore and can be finished
     // @param proposalId The id of the proposal to be executed
-    function endProposal(bytes32 proposalId) public override virtual {
+    function endProposal(bytes32 proposalId) public virtual override {
         require(!isExecutingProposal, "SnapshotERC20Guild: Proposal under execution");
-        require(
-            proposals[proposalId].state == ProposalState.Active,
-            "SnapshotERC20Guild: Proposal already executed"
-        );
-        require(
-            proposals[proposalId].endTime < block.timestamp,
-            "SnapshotERC20Guild: Proposal hasn't ended yet"
-        );
+        require(proposals[proposalId].state == ProposalState.Active, "SnapshotERC20Guild: Proposal already executed");
+        require(proposals[proposalId].endTime < block.timestamp, "SnapshotERC20Guild: Proposal hasn't ended yet");
         uint256 winningAction = 0;
         uint256 i = 1;
         for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
             if (
                 proposals[proposalId].totalVotes[i] >=
                 getVotingPowerForProposalExecution(proposalsSnapshots[proposalId]) &&
-                proposals[proposalId].totalVotes[i] >
-                proposals[proposalId].totalVotes[winningAction]
+                proposals[proposalId].totalVotes[i] > proposals[proposalId].totalVotes[winningAction]
             ) winningAction = i;
         }
 
         if (winningAction == 0) {
             proposals[proposalId].state = ProposalState.Rejected;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
-        } else if (
-            proposals[proposalId].endTime.add(timeForExecution) <
-            block.timestamp
-        ) {
+        } else if (proposals[proposalId].endTime.add(timeForExecution) < block.timestamp) {
             proposals[proposalId].state = ProposalState.Failed;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
         } else {
@@ -173,10 +154,9 @@ contract SnapshotERC20Guild is ERC20Guild {
             );
             i = callsPerAction.mul(winningAction.sub(1));
             uint256 endCall = i.add(callsPerAction);
-            
+
             for (i; i < endCall; i++) {
                 if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
-                  
                     bytes4 callDataFuncSignature = getFuncSignature(proposals[proposalId].data[i]);
                     address asset = address(0);
                     address _to = proposals[proposalId].to[i];
@@ -194,20 +174,16 @@ contract SnapshotERC20Guild is ERC20Guild {
                     }
 
                     // The permission registry keeps track of all value transferred and checks call permission
-                    try permissionRegistry.setPermissionUsed(
-                        asset,
-                        address(this),
-                        _to,
-                        callDataFuncSignature,
-                        _value
-                    ) { } catch Error(string memory reason) {
+                    try
+                        permissionRegistry.setPermissionUsed(asset, address(this), _to, callDataFuncSignature, _value)
+                    {} catch Error(string memory reason) {
                         revert(reason);
                     }
 
                     isExecutingProposal = true;
-                    (bool success, ) = proposals[proposalId].to[i].call{
-                        value: proposals[proposalId].value[i]
-                    }(proposals[proposalId].data[i]);
+                    (bool success, ) = proposals[proposalId].to[i].call{value: proposals[proposalId].value[i]}(
+                        proposals[proposalId].data[i]
+                    );
                     require(success, "SnapshotERC20Guild: Proposal call failed");
                     isExecutingProposal = false;
                 }
@@ -220,14 +196,8 @@ contract SnapshotERC20Guild is ERC20Guild {
     // @dev Get the voting power of an address at a certain snapshotId
     // @param account The address of the account
     // @param snapshotId The snapshotId to be used
-    function votingPowerOfAt(address account, uint256 snapshotId)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
-        (bool snapshotted, uint256 value) =
-            _valueAt(snapshotId, _votesSnapshots[account]);
+    function votingPowerOfAt(address account, uint256 snapshotId) public view virtual returns (uint256) {
+        (bool snapshotted, uint256 value) = _valueAt(snapshotId, _votesSnapshots[account]);
         if (snapshotted) return value;
         else return votingPowerOf(account);
     }
@@ -235,44 +205,37 @@ contract SnapshotERC20Guild is ERC20Guild {
     // @dev Get the voting power of multiple addresses at a certain snapshotId
     // @param accounts The addresses of the accounts
     // @param snapshotIds The snapshotIds to be used
-    function votingPowerOfMultipleAt(
-        address[] memory accounts,
-        uint256[] memory snapshotIds
-    ) public view virtual returns (uint256[] memory) {
+    function votingPowerOfMultipleAt(address[] memory accounts, uint256[] memory snapshotIds)
+        public
+        view
+        virtual
+        returns (uint256[] memory)
+    {
         uint256[] memory votes = new uint256[](accounts.length);
-        for (uint256 i = 0; i < accounts.length; i++)
-            votes[i] = votingPowerOfAt(accounts[i], snapshotIds[i]);
+        for (uint256 i = 0; i < accounts.length; i++) votes[i] = votingPowerOfAt(accounts[i], snapshotIds[i]);
         return votes;
     }
 
     // @dev Get the total amount of tokes locked at a certain snapshotId
     // @param snapshotId The snapshotId to be used
-    function totalLockedAt(uint256 snapshotId)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
-        (bool snapshotted, uint256 value) =
-            _valueAt(snapshotId, _totalLockedSnapshots);
+    function totalLockedAt(uint256 snapshotId) public view virtual returns (uint256) {
+        (bool snapshotted, uint256 value) = _valueAt(snapshotId, _totalLockedSnapshots);
         if (snapshotted) return value;
         else return totalLocked;
     }
 
     // @dev Get minimum amount of votingPower needed for proposal execution
-    function getVotingPowerForProposalExecution(uint256 proposalId)
-        public view virtual returns (uint256)
-    {
+    function getVotingPowerForProposalExecution(uint256 proposalId) public view virtual returns (uint256) {
         return totalLockedAt(proposalId).mul(votingPowerForProposalExecution).div(10000);
     }
 
     // @dev Get the proposal snapshot id
-    function getProposalSnapshotId(bytes32 proposalId) public view returns(uint256) {
+    function getProposalSnapshotId(bytes32 proposalId) public view returns (uint256) {
         return proposalsSnapshots[proposalId];
     }
 
     // @dev Get the current snapshot id
-    function getCurrentSnapshotId() public view returns(uint256) {
+    function getCurrentSnapshotId() public view returns (uint256) {
         return _currentSnapshotId;
     }
 
@@ -280,11 +243,7 @@ contract SnapshotERC20Guild is ERC20Guild {
     // Private functions used to take track of snapshots in contract storage
     ///
 
-    function _valueAt(uint256 snapshotId, Snapshots storage snapshots)
-        private
-        view
-        returns (bool, uint256)
-    {
+    function _valueAt(uint256 snapshotId, Snapshots storage snapshots) private view returns (bool, uint256) {
         require(snapshotId > 0, "SnapshotERC20Guild: id is 0");
         // solhint-disable-next-line max-line-length
         require(snapshotId <= _currentSnapshotId, "SnapshotERC20Guild: nonexistent id");
@@ -320,9 +279,7 @@ contract SnapshotERC20Guild is ERC20Guild {
         _updateSnapshot(_totalLockedSnapshots, totalLocked);
     }
 
-    function _updateSnapshot(Snapshots storage snapshots, uint256 currentValue)
-        private
-    {
+    function _updateSnapshot(Snapshots storage snapshots, uint256 currentValue) private {
         uint256 currentId = _currentSnapshotId;
         if (_lastSnapshotId(snapshots.ids) < currentId) {
             snapshots.ids.push(currentId);
@@ -330,11 +287,7 @@ contract SnapshotERC20Guild is ERC20Guild {
         }
     }
 
-    function _lastSnapshotId(uint256[] storage ids)
-        private
-        view
-        returns (uint256)
-    {
+    function _lastSnapshotId(uint256[] storage ids) private view returns (uint256) {
         if (ids.length == 0) {
             return 0;
         } else {

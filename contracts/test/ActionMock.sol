@@ -1,7 +1,6 @@
 pragma solidity 0.5.17;
 
 contract ActionMock {
-
     event ReceivedEther(address indexed _sender, uint256 _value);
     event LogNumber(uint256 number);
 
@@ -25,16 +24,22 @@ contract ActionMock {
         emit ReceivedEther(msg.sender, msg.value);
         emit LogNumber(number);
     }
-    
-    function executeCall(address to, bytes memory data, uint256 value) public returns (bool, bytes memory) {
-      return address(to).call.value(value)(data);
-    }
-    
-    function executeCallWithRequiredSuccess(
-      address to, bytes memory data, uint256 value
+
+    function executeCall(
+        address to,
+        bytes memory data,
+        uint256 value
     ) public returns (bool, bytes memory) {
-      (bool success, bytes memory result) = address(to).call.value(value)(data);
-      require(success, 'ActionMock: Call execution failed');
-      return (success, result);
+        return address(to).call.value(value)(data);
+    }
+
+    function executeCallWithRequiredSuccess(
+        address to,
+        bytes memory data,
+        uint256 value
+    ) public returns (bool, bytes memory) {
+        (bool success, bytes memory result) = address(to).call.value(value)(data);
+        require(success, "ActionMock: Call execution failed");
+        return (success, result);
     }
 }

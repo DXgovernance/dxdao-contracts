@@ -17,8 +17,7 @@ contract DXDVotingMachine is GenesisProtocol {
 
     // organization id scheme => parameters hash => required % of votes in boosted proposal.
     // 100 == 1%, 2500 == 25%.
-    mapping(bytes32 => mapping(bytes32 => uint256))
-        public boostedVoteRequiredPercentage;
+    mapping(bytes32 => mapping(bytes32 => uint256)) public boostedVoteRequiredPercentage;
 
     struct OrganizationRefunds {
         uint256 balance;
@@ -46,12 +45,7 @@ contract DXDVotingMachine is GenesisProtocol {
     mapping(bytes32 => mapping(address => VoteDecision)) public votesSignaled;
 
     // Event used to signal votes to be executed on chain
-    event VoteSignaled(
-        bytes32 proposalId,
-        address voter,
-        uint256 voteDecision,
-        uint256 amount
-    );
+    event VoteSignaled(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount);
 
     /**
      * @dev Constructor
@@ -66,11 +60,7 @@ contract DXDVotingMachine is GenesisProtocol {
      */
     function() external payable {
         if (organizationRefunds[msg.sender].voteGas > 0)
-            organizationRefunds[msg.sender].balance = organizationRefunds[
-                msg.sender
-            ]
-                .balance
-                .add(msg.value);
+            organizationRefunds[msg.sender].balance = organizationRefunds[msg.sender].balance.add(msg.value);
     }
 
     /**
@@ -79,9 +69,7 @@ contract DXDVotingMachine is GenesisProtocol {
      * @param _maxGasPrice the maximun amount of gas price to be paid, if the gas used is higehr than this value only a
      * portion of the total gas would be refunded
      */
-    function setOrganizationRefund(uint256 _voteGas, uint256 _maxGasPrice)
-        public
-    {
+    function setOrganizationRefund(uint256 _voteGas, uint256 _maxGasPrice) public {
         organizationRefunds[msg.sender].voteGas = _voteGas;
         organizationRefunds[msg.sender].maxGasPrice = _maxGasPrice;
     }
@@ -97,9 +85,9 @@ contract DXDVotingMachine is GenesisProtocol {
         bytes32 _paramsHash,
         uint256 _boostedVotePeriodLimit
     ) public {
-        boostedVoteRequiredPercentage[
-            keccak256(abi.encodePacked(_scheme, msg.sender))
-        ][_paramsHash] = _boostedVotePeriodLimit;
+        boostedVoteRequiredPercentage[keccak256(abi.encodePacked(_scheme, msg.sender))][
+            _paramsHash
+        ] = _boostedVotePeriodLimit;
     }
 
     /**
@@ -147,28 +135,10 @@ contract DXDVotingMachine is GenesisProtocol {
         uint256 amount,
         bytes calldata signature
     ) external {
-        bytes32 voteHashed =
-            hashVote(
-                votingMachine,
-                proposalId,
-                msg.sender,
-                voteDecision,
-                amount
-            );
-        require(
-            msg.sender ==
-                voteHashed.toEthSignedMessageHash().recover(signature),
-            "wrong signer"
-        );
+        bytes32 voteHashed = hashVote(votingMachine, proposalId, msg.sender, voteDecision, amount);
+        require(msg.sender == voteHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
         require(voteDecision > 0, "invalid voteDecision");
-        emit VoteSigned(
-            votingMachine,
-            proposalId,
-            msg.sender,
-            voteDecision,
-            amount,
-            signature
-        );
+        emit VoteSigned(votingMachine, proposalId, msg.sender, voteDecision, amount, signature);
     }
 
     /**
@@ -185,10 +155,7 @@ contract DXDVotingMachine is GenesisProtocol {
     ) external {
         require(_isVotable(proposalId), "not votable proposal");
         require(voteDecision > 0, "invalid voteDecision");
-        require(
-            votesSignaled[proposalId][msg.sender].voteDecision == 0,
-            "already voted"
-        );
+        require(votesSignaled[proposalId][msg.sender].voteDecision == 0, "already voted");
         votesSignaled[proposalId][msg.sender].voteDecision = voteDecision;
         votesSignaled[proposalId][msg.sender].amount = amount;
         emit VoteSignaled(proposalId, msg.sender, voteDecision, amount);
@@ -217,9 +184,9 @@ contract DXDVotingMachine is GenesisProtocol {
         require(voteDecision > 0, "wrong voteDecision");
         require(
             voter ==
-                hashVote(votingMachine, proposalId, voter, voteDecision, amount)
-                    .toEthSignedMessageHash()
-                    .recover(signature),
+                hashVote(votingMachine, proposalId, voter, voteDecision, amount).toEthSignedMessageHash().recover(
+                    signature
+                ),
             "wrong signer"
         );
         internalVote(proposalId, voter, voteDecision, amount);
@@ -242,10 +209,7 @@ contract DXDVotingMachine is GenesisProtocol {
     ) external {
         require(_isVotable(proposalId), "not votable proposal");
         require(voteDecision > 0, "wrong voteDecision");
-        require(
-            votesSignaled[proposalId][voter].voteDecision > 0,
-            "wrong vote shared"
-        );
+        require(votesSignaled[proposalId][voter].voteDecision > 0, "wrong vote shared");
         internalVote(proposalId, voter, voteDecision, amount);
         delete votesSignaled[proposalId][voter];
         _refundVote(proposals[proposalId].organizationId, msg.sender);
@@ -257,22 +221,15 @@ contract DXDVotingMachine is GenesisProtocol {
      * @param organizationId the id of the organization that should do the refund
      * @param toAddress the address where the refund should be sent
      */
-    function _refundVote(bytes32 organizationId, address payable toAddress)
-        internal
-    {
+    function _refundVote(bytes32 organizationId, address payable toAddress) internal {
         address orgAddress = organizations[organizationId];
         if (organizationRefunds[orgAddress].voteGas > 0) {
-            uint256 gasRefund =
-                organizationRefunds[orgAddress].voteGas.mul(
-                    tx.gasprice.min(organizationRefunds[orgAddress].maxGasPrice)
-                );
+            uint256 gasRefund = organizationRefunds[orgAddress].voteGas.mul(
+                tx.gasprice.min(organizationRefunds[orgAddress].maxGasPrice)
+            );
             if (organizationRefunds[orgAddress].balance >= gasRefund) {
                 toAddress.transfer(gasRefund);
-                organizationRefunds[orgAddress].balance = organizationRefunds[
-                    orgAddress
-                ]
-                    .balance
-                    .sub(gasRefund);
+                organizationRefunds[orgAddress].balance = organizationRefunds[orgAddress].balance.sub(gasRefund);
             }
         }
     }
@@ -293,16 +250,7 @@ contract DXDVotingMachine is GenesisProtocol {
         uint256 voteDecision,
         uint256 amount
     ) public pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    votingMachine,
-                    proposalId,
-                    voter,
-                    voteDecision,
-                    amount
-                )
-            );
+        return keccak256(abi.encodePacked(votingMachine, proposalId, voter, voteDecision, amount));
     }
 
     /**
@@ -348,10 +296,7 @@ contract DXDVotingMachine is GenesisProtocol {
         address scheme,
         bytes32 paramsHash
     ) public view returns (uint256) {
-        return
-            boostedVoteRequiredPercentage[
-                keccak256(abi.encodePacked(scheme, avatar))
-            ][paramsHash];
+        return boostedVoteRequiredPercentage[keccak256(abi.encodePacked(scheme, avatar))][paramsHash];
     }
 
     /**
@@ -361,26 +306,19 @@ contract DXDVotingMachine is GenesisProtocol {
      *              false - otherwise.
      */
     // solhint-disable-next-line function-max-lines,code-complexity
-    function _execute(bytes32 _proposalId)
-        internal
-        votable(_proposalId)
-        returns (bool)
-    {
+    function _execute(bytes32 _proposalId) internal votable(_proposalId) returns (bool) {
         Proposal storage proposal = proposals[_proposalId];
         Parameters memory params = parameters[proposal.paramsHash];
         Proposal memory tmpProposal = proposal;
-        uint256 totalReputation =
-            VotingMachineCallbacksInterface(proposal.callbacks)
-                .getTotalReputationSupply(_proposalId);
+        uint256 totalReputation = VotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(
+            _proposalId
+        );
         //first divide by 100 to prevent overflow
-        uint256 executionBar =
-            (totalReputation / 100) * params.queuedVoteRequiredPercentage;
-        uint256 _boostedVoteRequiredPercentage =
-            boostedVoteRequiredPercentage[proposal.organizationId][
-                proposal.paramsHash
-            ];
-        uint256 boostedExecutionBar =
-            (totalReputation / 10000) * _boostedVoteRequiredPercentage;
+        uint256 executionBar = (totalReputation / 100) * params.queuedVoteRequiredPercentage;
+        uint256 _boostedVoteRequiredPercentage = boostedVoteRequiredPercentage[proposal.organizationId][
+            proposal.paramsHash
+        ];
+        uint256 boostedExecutionBar = (totalReputation / 10000) * _boostedVoteRequiredPercentage;
         ExecutionState executionState = ExecutionState.None;
         uint256 averageDownstakesOfBoosted;
         uint256 confidenceThreshold;
@@ -403,10 +341,7 @@ contract DXDVotingMachine is GenesisProtocol {
                     proposal.winningVote = NO;
                     executionState = ExecutionState.QueueTimeOut;
                 } else {
-                    confidenceThreshold = threshold(
-                        proposal.paramsHash,
-                        proposal.organizationId
-                    );
+                    confidenceThreshold = threshold(proposal.paramsHash, proposal.organizationId);
                     if (_score(_proposalId) > confidenceThreshold) {
                         //change proposal mode to PreBoosted mode.
                         proposal.state = ProposalState.PreBoosted;
@@ -418,45 +353,25 @@ contract DXDVotingMachine is GenesisProtocol {
             }
 
             if (proposal.state == ProposalState.PreBoosted) {
-                confidenceThreshold = threshold(
-                    proposal.paramsHash,
-                    proposal.organizationId
-                );
+                confidenceThreshold = threshold(proposal.paramsHash, proposal.organizationId);
                 // solhint-disable-next-line not-rely-on-time
-                if (
-                    (now - proposal.times[2]) >=
-                    params.preBoostedVotePeriodLimit
-                ) {
+                if ((now - proposal.times[2]) >= params.preBoostedVotePeriodLimit) {
                     if (_score(_proposalId) > confidenceThreshold) {
-                        if (
-                            orgBoostedProposalsCnt[proposal.organizationId] <
-                            MAX_BOOSTED_PROPOSALS
-                        ) {
+                        if (orgBoostedProposalsCnt[proposal.organizationId] < MAX_BOOSTED_PROPOSALS) {
                             //change proposal mode to Boosted mode.
                             proposal.state = ProposalState.Boosted;
 
                             // ONLY CHANGE IN DXD VOTING MACHINE TO BOOST AUTOMATICALLY
-                            proposal.times[1] =
-                                proposal.times[2] +
-                                params.preBoostedVotePeriodLimit;
+                            proposal.times[1] = proposal.times[2] + params.preBoostedVotePeriodLimit;
 
                             orgBoostedProposalsCnt[proposal.organizationId]++;
                             //add a value to average -> average = average + ((value - average) / nbValues)
-                            averageDownstakesOfBoosted = averagesDownstakesOfBoosted[
-                                proposal.organizationId
-                            ];
+                            averageDownstakesOfBoosted = averagesDownstakesOfBoosted[proposal.organizationId];
                             // solium-disable-next-line indentation
-                            averagesDownstakesOfBoosted[
-                                proposal.organizationId
-                            ] = uint256(
+                            averagesDownstakesOfBoosted[proposal.organizationId] = uint256(
                                 int256(averageDownstakesOfBoosted) +
-                                    ((int256(proposal.stakes[NO]) -
-                                        int256(averageDownstakesOfBoosted)) /
-                                        int256(
-                                            orgBoostedProposalsCnt[
-                                                proposal.organizationId
-                                            ]
-                                        ))
+                                    ((int256(proposal.stakes[NO]) - int256(averageDownstakesOfBoosted)) /
+                                        int256(orgBoostedProposalsCnt[proposal.organizationId]))
                             );
                         }
                     } else {
@@ -465,34 +380,20 @@ contract DXDVotingMachine is GenesisProtocol {
                 } else {
                     //check the Confidence level is stable
                     uint256 proposalScore = _score(_proposalId);
-                    if (
-                        proposalScore <=
-                        proposal.confidenceThreshold.min(confidenceThreshold)
-                    ) {
+                    if (proposalScore <= proposal.confidenceThreshold.min(confidenceThreshold)) {
                         proposal.state = ProposalState.Queued;
                     } else if (proposal.confidenceThreshold > proposalScore) {
                         proposal.confidenceThreshold = confidenceThreshold;
-                        emit ConfidenceLevelChange(
-                            _proposalId,
-                            confidenceThreshold
-                        );
+                        emit ConfidenceLevelChange(_proposalId, confidenceThreshold);
                     }
                 }
             }
         }
 
-        if (
-            (proposal.state == ProposalState.Boosted) ||
-            (proposal.state == ProposalState.QuietEndingPeriod)
-        ) {
+        if ((proposal.state == ProposalState.Boosted) || (proposal.state == ProposalState.QuietEndingPeriod)) {
             // solhint-disable-next-line not-rely-on-time
-            if (
-                (now - proposal.times[1]) >=
-                proposal.currentBoostedVotePeriodLimit
-            ) {
-                if (
-                    proposal.votes[proposal.winningVote] >= boostedExecutionBar
-                ) {
+            if ((now - proposal.times[1]) >= proposal.currentBoostedVotePeriodLimit) {
+                if (proposal.votes[proposal.winningVote] >= boostedExecutionBar) {
                     proposal.state = ProposalState.Executed;
                     executionState = ExecutionState.BoostedBarCrossed;
                 } else {
@@ -505,24 +406,16 @@ contract DXDVotingMachine is GenesisProtocol {
 
         if (executionState != ExecutionState.None) {
             if (executionState == ExecutionState.BoostedBarCrossed) {
-                orgBoostedProposalsCnt[
-                    tmpProposal.organizationId
-                ] = orgBoostedProposalsCnt[tmpProposal.organizationId].sub(1);
+                orgBoostedProposalsCnt[tmpProposal.organizationId] = orgBoostedProposalsCnt[tmpProposal.organizationId]
+                    .sub(1);
                 //remove a value from average = ((average * nbValues) - value) / (nbValues - 1);
-                uint256 boostedProposals =
-                    orgBoostedProposalsCnt[tmpProposal.organizationId];
+                uint256 boostedProposals = orgBoostedProposalsCnt[tmpProposal.organizationId];
                 if (boostedProposals == 0) {
                     averagesDownstakesOfBoosted[proposal.organizationId] = 0;
                 } else {
-                    averageDownstakesOfBoosted = averagesDownstakesOfBoosted[
-                        proposal.organizationId
-                    ];
+                    averageDownstakesOfBoosted = averagesDownstakesOfBoosted[proposal.organizationId];
                     averagesDownstakesOfBoosted[proposal.organizationId] =
-                        (
-                            averageDownstakesOfBoosted
-                                .mul(boostedProposals + 1)
-                                .sub(proposal.stakes[NO])
-                        ) /
+                        (averageDownstakesOfBoosted.mul(boostedProposals + 1).sub(proposal.stakes[NO])) /
                         boostedProposals;
                 }
             }
@@ -534,10 +427,7 @@ contract DXDVotingMachine is GenesisProtocol {
             );
             emit GPExecuteProposal(_proposalId, executionState);
             proposal.daoBounty = proposal.daoBountyRemain;
-            ProposalExecuteInterface(proposal.callbacks).executeProposal(
-                _proposalId,
-                int256(proposal.winningVote)
-            );
+            ProposalExecuteInterface(proposal.callbacks).executeProposal(_proposalId, int256(proposal.winningVote));
         }
         if (tmpProposal.state != proposal.state) {
             emit StateChange(_proposalId, proposal.state);

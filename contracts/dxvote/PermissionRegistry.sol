@@ -20,8 +20,7 @@ contract PermissionRegistry {
 
     uint256 public timeDelay;
     address public owner;
-    address public constant ANY_ADDRESS =
-        address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
+    address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
     bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
 
     event PermissionSet(
@@ -40,8 +39,7 @@ contract PermissionRegistry {
     }
 
     // asset address => from address => to address => function call signature allowed => Permission
-    mapping(address => mapping(address => mapping(address => mapping(bytes4 => Permission))))
-        public permissions;
+    mapping(address => mapping(address => mapping(address => mapping(bytes4 => Permission)))) public permissions;
 
     /**
      * @dev Constructor
@@ -49,17 +47,12 @@ contract PermissionRegistry {
      * @param _timeDelay The amount of time that has to pass after permission addition to allow execution
      */
     constructor(address _owner, uint256 _timeDelay) public {
-        require(
-            _owner != address(0),
-            "PermissionRegistry: Invalid owner address"
-        );
+        require(_owner != address(0), "PermissionRegistry: Invalid owner address");
         require(_timeDelay > 0, "PermissionRegistry: Invalid time delay");
         owner = _owner;
         timeDelay = _timeDelay;
-        permissions[address(0)][_owner][address(this)][ANY_SIGNATURE]
-            .fromTime = now;
-        permissions[address(0)][_owner][address(this)][ANY_SIGNATURE]
-            .isSet = true;
+        permissions[address(0)][_owner][address(this)][ANY_SIGNATURE].fromTime = now;
+        permissions[address(0)][_owner][address(this)][ANY_SIGNATURE].isSet = true;
     }
 
     /**
@@ -67,16 +60,10 @@ contract PermissionRegistry {
      * @param newOwner The new owner of the registry that can set any permissions
      */
     function transferOwnership(address newOwner) public {
-        require(
-            msg.sender == owner,
-            "PermissionRegistry: Only callable by owner"
-        );
-        permissions[address(0)][owner][address(this)][ANY_SIGNATURE]
-            .fromTime = 0;
-        permissions[address(0)][newOwner][address(this)][ANY_SIGNATURE]
-            .fromTime = now;
-        permissions[address(0)][newOwner][address(this)][ANY_SIGNATURE]
-            .isSet = true;
+        require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
+        permissions[address(0)][owner][address(this)][ANY_SIGNATURE].fromTime = 0;
+        permissions[address(0)][newOwner][address(this)][ANY_SIGNATURE].fromTime = now;
+        permissions[address(0)][newOwner][address(this)][ANY_SIGNATURE].isSet = true;
         owner = newOwner;
     }
 
@@ -85,10 +72,7 @@ contract PermissionRegistry {
      * @param newTimeDelay The new amount of time that has to pass after permission addition to allow execution
      */
     function setTimeDelay(uint256 newTimeDelay) public {
-        require(
-            msg.sender == owner,
-            "PermissionRegistry: Only callable by owner"
-        );
+        require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
         timeDelay = newTimeDelay;
     }
 
@@ -110,24 +94,12 @@ contract PermissionRegistry {
         uint256 valueAllowed,
         bool allowed
     ) public {
-        require(
-            msg.sender == owner,
-            "PermissionRegistry: Only callable by owner"
-        );
-        require(
-            from != address(0),
-            "PermissionRegistry: Cant use address(0) as from"
-        );
-        require(
-            from != owner || to != address(this),
-            "PermissionRegistry: Cant set owner permissions"
-        );
+        require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
+        require(from != address(0), "PermissionRegistry: Cant use address(0) as from");
+        require(from != owner || to != address(this), "PermissionRegistry: Cant set owner permissions");
         if (allowed) {
-            permissions[asset][from][to][functionSignature].fromTime = now.add(
-                timeDelay
-            );
-            permissions[asset][from][to][functionSignature]
-                .valueAllowed = valueAllowed;
+            permissions[asset][from][to][functionSignature].fromTime = now.add(timeDelay);
+            permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
         } else {
             permissions[asset][from][to][functionSignature].fromTime = 0;
             permissions[asset][from][to][functionSignature].valueAllowed = 0;
@@ -158,23 +130,14 @@ contract PermissionRegistry {
         uint256 valueAllowed,
         bool allowed
     ) public {
-        require(
-            to != address(this),
-            "PermissionRegistry: Cant set permissions to PermissionRegistry"
-        );
-        require(
-            msg.sender != owner && to != address(this),
-            "PermissionRegistry: Cant set owner permissions"
-        );
+        require(to != address(this), "PermissionRegistry: Cant set permissions to PermissionRegistry");
+        require(msg.sender != owner && to != address(this), "PermissionRegistry: Cant set owner permissions");
         if (allowed) {
-            permissions[asset][msg.sender][to][functionSignature].fromTime = now
-                .add(timeDelay);
-            permissions[asset][msg.sender][to][functionSignature]
-                .valueAllowed = valueAllowed;
+            permissions[asset][msg.sender][to][functionSignature].fromTime = now.add(timeDelay);
+            permissions[asset][msg.sender][to][functionSignature].valueAllowed = valueAllowed;
         } else {
             permissions[asset][msg.sender][to][functionSignature].fromTime = 0;
-            permissions[asset][msg.sender][to][functionSignature]
-                .valueAllowed = 0;
+            permissions[asset][msg.sender][to][functionSignature].valueAllowed = 0;
         }
         permissions[asset][msg.sender][to][functionSignature].isSet = true;
         emit PermissionSet(
@@ -210,12 +173,8 @@ contract PermissionRegistry {
                 permission = permissions[asset][from][to][ANY_SIGNATURE];
             }
             // Check if there is a value allowed to any address
-            else if (
-                permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet
-            ) {
-                permission = permissions[asset][from][ANY_ADDRESS][
-                    ANY_SIGNATURE
-                ];
+            else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
+                permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
             }
 
             // If the asset is ETH check if there is an allowance to any address and function signature
@@ -229,20 +188,12 @@ contract PermissionRegistry {
                 permission = permissions[asset][from][to][ANY_SIGNATURE];
             }
             // Check if there is there is an allowance to any address with the function signature
-            else if (
-                permissions[asset][from][ANY_ADDRESS][functionSignature].isSet
-            ) {
-                permission = permissions[asset][from][ANY_ADDRESS][
-                    functionSignature
-                ];
+            else if (permissions[asset][from][ANY_ADDRESS][functionSignature].isSet) {
+                permission = permissions[asset][from][ANY_ADDRESS][functionSignature];
             }
             // Check if there is there is an allowance to any address and any function
-            else if (
-                permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet
-            ) {
-                permission = permissions[asset][from][ANY_ADDRESS][
-                    ANY_SIGNATURE
-                ];
+            else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
+                permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
             }
         }
         return (permission.valueAllowed, permission.fromTime);

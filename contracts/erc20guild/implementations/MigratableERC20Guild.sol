@@ -33,13 +33,14 @@ contract MigratableERC20Guild is ERC20Guild {
         );
         lastMigrationTimestamp = block.timestamp;
     }
-    
+
     // @dev Lock tokens in the guild to be used as voting power in the official vault
     // @param tokenAmount The amount of tokens to be locked
-    function lockTokens(uint256 tokenAmount) public override virtual {
+    function lockTokens(uint256 tokenAmount) public virtual override {
         tokenVault.deposit(msg.sender, tokenAmount);
-        tokensLockedByVault[address(tokenVault)][msg.sender].amount = tokensLockedByVault[address(tokenVault)][msg.sender].amount
-            .add(tokenAmount);
+        tokensLockedByVault[address(tokenVault)][msg.sender].amount = tokensLockedByVault[address(tokenVault)][
+            msg.sender
+        ].amount.add(tokenAmount);
         tokensLockedByVault[address(tokenVault)][msg.sender].timestamp = block.timestamp.add(lockTime);
         totalLockedByVault[address(tokenVault)] = totalLockedByVault[address(tokenVault)].add(tokenAmount);
         emit TokensLocked(msg.sender, tokenAmount);
@@ -47,7 +48,7 @@ contract MigratableERC20Guild is ERC20Guild {
 
     // @dev Withdraw tokens locked in the guild form the official vault, this will decrease the voting power
     // @param tokenAmount The amount of tokens to be withdrawn
-    function withdrawTokens(uint256 tokenAmount) public override virtual {
+    function withdrawTokens(uint256 tokenAmount) public virtual override {
         require(
             votingPowerOf(msg.sender) >= tokenAmount,
             "MigratableERC2Guild: Unable to withdraw more tokens than locked"
@@ -56,8 +57,9 @@ contract MigratableERC20Guild is ERC20Guild {
             tokensLockedByVault[address(tokenVault)][msg.sender].timestamp < block.timestamp,
             "MigratableERC2Guild: Tokens still locked"
         );
-        tokensLockedByVault[address(tokenVault)][msg.sender].amount = tokensLockedByVault[address(tokenVault)][msg.sender].amount
-            .sub(tokenAmount);
+        tokensLockedByVault[address(tokenVault)][msg.sender].amount = tokensLockedByVault[address(tokenVault)][
+            msg.sender
+        ].amount.sub(tokenAmount);
         totalLockedByVault[address(tokenVault)] = totalLockedByVault[address(tokenVault)].sub(tokenAmount);
         tokenVault.withdraw(msg.sender, tokenAmount);
         emit TokensWithdrawn(msg.sender, tokenAmount);
@@ -72,8 +74,9 @@ contract MigratableERC20Guild is ERC20Guild {
             "MigratableERC2Guild: Use default lockTokens(uint256) function to lock in official vault"
         );
         TokenVault(_tokenVault).deposit(msg.sender, tokenAmount);
-        tokensLockedByVault[_tokenVault][msg.sender].amount = tokensLockedByVault[_tokenVault][msg.sender].amount
-            .add(tokenAmount);
+        tokensLockedByVault[_tokenVault][msg.sender].amount = tokensLockedByVault[_tokenVault][msg.sender].amount.add(
+            tokenAmount
+        );
         tokensLockedByVault[_tokenVault][msg.sender].timestamp = block.timestamp.add(lockTime);
         totalLockedByVault[_tokenVault] = totalLockedByVault[_tokenVault].add(tokenAmount);
         emit TokensLocked(msg.sender, tokenAmount);
@@ -91,8 +94,9 @@ contract MigratableERC20Guild is ERC20Guild {
             tokensLockedByVault[_tokenVault][msg.sender].timestamp < block.timestamp,
             "MigratableERC2Guild: Tokens still locked"
         );
-        tokensLockedByVault[_tokenVault][msg.sender].amount = tokensLockedByVault[_tokenVault][msg.sender].amount
-            .sub(tokenAmount);
+        tokensLockedByVault[_tokenVault][msg.sender].amount = tokensLockedByVault[_tokenVault][msg.sender].amount.sub(
+            tokenAmount
+        );
         totalLockedByVault[_tokenVault] = totalLockedByVault[_tokenVault].sub(tokenAmount);
         TokenVault(_tokenVault).withdraw(msg.sender, tokenAmount);
         emit TokensWithdrawn(msg.sender, tokenAmount);
@@ -103,7 +107,7 @@ contract MigratableERC20Guild is ERC20Guild {
     // If this function is not called by the guild guardian the proposal can end sooner after proposal endTime plus
     // the extraTimeForGuardian
     // @param proposalId The id of the proposal to be executed
-    function endProposal(bytes32 proposalId) public override virtual {
+    function endProposal(bytes32 proposalId) public virtual override {
         if (proposals[proposalId].startTime < lastMigrationTimestamp) {
             proposals[proposalId].state = ProposalState.Failed;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
@@ -111,20 +115,20 @@ contract MigratableERC20Guild is ERC20Guild {
             super.endProposal(proposalId);
         }
     }
-    
+
     // @dev Get the voting power of an account
     // @param account The address of the account
-    function votingPowerOf(address account) public override view virtual returns (uint256) {
+    function votingPowerOf(address account) public view virtual override returns (uint256) {
         return tokensLockedByVault[address(tokenVault)][account].amount;
     }
 
-        // @dev Get the locked timestamp of a voter tokens
-    function getVoterLockTimestamp(address voter) public override virtual view returns(uint256) {
+    // @dev Get the locked timestamp of a voter tokens
+    function getVoterLockTimestamp(address voter) public view virtual override returns (uint256) {
         return tokensLockedByVault[address(tokenVault)][voter].timestamp;
     }
 
     // @dev Get the totalLocked
-    function getTotalLocked() public override virtual view returns(uint256) {
+    function getTotalLocked() public view virtual override returns (uint256) {
         return totalLockedByVault[address(tokenVault)];
     }
 

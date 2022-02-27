@@ -183,5 +183,4 @@ contract DaoCreator {
         emit NewOrg(address(avatar));
         return (address(avatar));
     }
-    
 }

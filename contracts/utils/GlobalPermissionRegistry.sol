@@ -24,8 +24,7 @@ contract GlobalPermissionRegistry {
     using SafeMath for uint256;
 
     mapping(address => uint256) public permissionDelay;
-    address public constant ANY_ADDRESS =
-        address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
+    address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
     bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
 
     event PermissionSet(
@@ -46,10 +45,9 @@ contract GlobalPermissionRegistry {
     }
 
     // asset address => from address => to address => function call signature allowed => Permission
-    mapping(address => mapping(address => mapping(address => mapping(bytes4 => Permission))))
-        public permissions;
+    mapping(address => mapping(address => mapping(address => mapping(bytes4 => Permission)))) public permissions;
 
-    Permission emptyPermission = Permission(0,0,0,0,false);
+    Permission emptyPermission = Permission(0, 0, 0, 0, false);
 
     /**
      * @dev Set the time delay for a call to show as allowed
@@ -74,19 +72,15 @@ contract GlobalPermissionRegistry {
         uint256 valueAllowed,
         bool allowed
     ) public {
-        require(
-            to != address(this),
-            "GlobalPermissionRegistry: Cant set permissions to GlobalPermissionRegistry"
-        );
+        require(to != address(this), "GlobalPermissionRegistry: Cant set permissions to GlobalPermissionRegistry");
         if (allowed) {
-            permissions[asset][msg.sender][to][functionSignature].fromTime = block.timestamp
-                .add(permissionDelay[msg.sender]);
-            permissions[asset][msg.sender][to][functionSignature]
-                .valueAllowed = valueAllowed;
+            permissions[asset][msg.sender][to][functionSignature].fromTime = block.timestamp.add(
+                permissionDelay[msg.sender]
+            );
+            permissions[asset][msg.sender][to][functionSignature].valueAllowed = valueAllowed;
         } else {
             permissions[asset][msg.sender][to][functionSignature].fromTime = 0;
-            permissions[asset][msg.sender][to][functionSignature]
-                .valueAllowed = 0;
+            permissions[asset][msg.sender][to][functionSignature].valueAllowed = 0;
         }
         permissions[asset][msg.sender][to][functionSignature].isSet = true;
         emit PermissionSet(
@@ -103,7 +97,7 @@ contract GlobalPermissionRegistry {
      * @dev Get the time delay to be used for an address
      * @param fromAddress The address that will set the permission
      */
-    function getPermissionDelay(address fromAddress) public view returns(uint256) {
+    function getPermissionDelay(address fromAddress) public view returns (uint256) {
         return permissionDelay[fromAddress];
     }
 
@@ -210,10 +204,7 @@ contract GlobalPermissionRegistry {
                 _setValueTransferred(permissions[asset][from][to][functionSignature], valueTransferred);
             }
         }
-        require(
-            fromTime > 0 && fromTime < block.timestamp,
-            "GlobalPermissionRegistry: Call not allowed"
-        );
+        require(fromTime > 0 && fromTime < block.timestamp, "GlobalPermissionRegistry: Call not allowed");
     }
 
     /**
@@ -248,7 +239,7 @@ contract GlobalPermissionRegistry {
         address to,
         bytes4 functionSignature
     ) public view returns (uint256) {
-        (,uint256 fromTime) = getPermission(asset, from, to, functionSignature);
+        (, uint256 fromTime) = getPermission(asset, from, to, functionSignature);
         return fromTime;
     }
 
@@ -266,7 +257,7 @@ contract GlobalPermissionRegistry {
         address to,
         bytes4 functionSignature
     ) public view returns (uint256) {
-        (uint256 valueAllowed,) = getPermission(asset, from, to, functionSignature);
+        (uint256 valueAllowed, ) = getPermission(asset, from, to, functionSignature);
         return valueAllowed;
     }
 }
