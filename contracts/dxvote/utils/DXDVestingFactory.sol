@@ -6,9 +6,11 @@ contract DXDVestingFactory {
     event VestingCreated(address vestingContractAddress);
 
     IERC20 public DXD;
+    address public DXdao;
 
-    constructor(address _DXD) public {
+    constructor(address _DXD, address _DXdao) public {
         DXD = IERC20(_DXD);
+        DXdao = _DXdao;
     }
 
     function create(
@@ -21,6 +23,7 @@ contract DXDVestingFactory {
         TokenVesting newVestingContract =
             new TokenVesting(beneficiary, start, cliffDuration, duration, true);
         DXD.transferFrom(msg.sender, address(newVestingContract), value);
+        newVestingContract.transferOwnership(DXdao);
         emit VestingCreated(address(newVestingContract));
     }
 }

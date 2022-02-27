@@ -11,6 +11,8 @@ require('@openzeppelin/hardhat-upgrades');
 require('@nomiclabs/hardhat-etherscan');
 require('hardhat-dependency-compiler');
 
+require('./scripts/create2');
+
 const INFURA_PROJECT_ID = process.env.KEY_INFURA_API_KEY;
 const MNEMONIC = process.env.KEY_MNEMONIC;
 const ETHERSCAN_API_KEY = process.env.KEY_ETHERSCAN;
@@ -138,18 +140,6 @@ module.exports = {
       'contracts/utils/GnosisSafe/GnosisSafe.sol': { version: '0.5.14' },
       'contracts/utils/Create2Deployer.sol': { version: '0.5.17', evmVersion: "istanbul", optimizer: { enabled: false, runs: 200 } },
       'contracts/omen/OMNToken.sol': { version: '0.8.8' },
-      'contracts/omen/OMNGuild.sol': {
-        version: '0.8.8',
-        settings: { optimizer: { enabled: true, runs: 100 } },
-      },
-      'contracts/dxdao/DXDGuild.sol': {
-        version: '0.8.8',
-        settings: { optimizer: { enabled: true, runs: 100 } },
-      },
-      'contracts/erc20guild/ERC20Guild.sol': {
-        version: '0.8.8',
-        settings: { optimizer: { enabled: true, runs: 100 } },
-      },
       'contracts/erc20guild/IERC20Guild.sol': { version: '0.8.8' },
     },
   },

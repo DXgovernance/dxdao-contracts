@@ -363,10 +363,11 @@ contract("SchemeRegistrar", accounts => {
     );
     var proposalId = await helpers.getValueFromLogs(tx, "_proposalId", 1);
     //check organizationsProposals before execution
-    var organizationProposal = await testSetup.schemeRegistrar.organizationsProposals(
-      testSetup.org.avatar.address,
-      proposalId
-    );
+    var organizationProposal =
+      await testSetup.schemeRegistrar.organizationsProposals(
+        testSetup.org.avatar.address,
+        proposalId
+      );
     assert.equal(organizationProposal[1], true); //proposalType
 
     //Vote with reputation to trigger execution
@@ -387,10 +388,11 @@ contract("SchemeRegistrar", accounts => {
       false
     );
     //check organizationsProposals after execution
-    organizationProposal = await testSetup.schemeRegistrar.organizationsProposals(
-      testSetup.org.avatar.address,
-      proposalId
-    );
+    organizationProposal =
+      await testSetup.schemeRegistrar.organizationsProposals(
+        testSetup.org.avatar.address,
+        proposalId
+      );
     assert.equal(organizationProposal[2], 0); //proposalType
   });
 
@@ -427,10 +429,11 @@ contract("SchemeRegistrar", accounts => {
       false
     );
     //check organizationsProposals after execution
-    var organizationProposal = await testSetup.schemeRegistrar.organizationsProposals(
-      testSetup.org.avatar.address,
-      proposalId
-    );
+    var organizationProposal =
+      await testSetup.schemeRegistrar.organizationsProposals(
+        testSetup.org.avatar.address,
+        proposalId
+      );
     assert.equal(organizationProposal[2], 0); //proposalType
   });
 

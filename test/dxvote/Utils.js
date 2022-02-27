@@ -110,7 +110,10 @@ contract("Dxvote Utils", function (accounts) {
 
     nftMinter = await DXdaoNFT.new();
     await nftMinter.transferOwnership(org.avatar.address);
-    vestingFactory = await DXDVestingFactory.new(standardTokenMock.address);
+    vestingFactory = await DXDVestingFactory.new(
+      standardTokenMock.address,
+      org.avatar.address
+    );
 
     await daoCreator.setSchemes(
       org.avatar.address,

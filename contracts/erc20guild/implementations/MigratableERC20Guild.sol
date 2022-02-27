@@ -27,6 +27,10 @@ contract MigratableERC20Guild is ERC20Guild {
         tokenVault = TokenVault(newTokenVault);
         require(tokenVault.getAdmin() == address(this), "MigratableERC2Guild: The vault admin has to be the guild");
         token = IERC20Upgradeable(tokenVault.getToken());
+        require(
+            newTokenVault.codehash == keccak256(abi.encodePacked(type(TokenVault).runtimeCode)),
+            "MigratableERC2Guild: Wrong code of newTokenVault"
+        );
         lastMigrationTimestamp = block.timestamp;
     }
     
@@ -122,5 +126,16 @@ contract MigratableERC20Guild is ERC20Guild {
     // @dev Get the totalLocked
     function getTotalLocked() public override virtual view returns(uint256) {
         return totalLockedByVault[address(tokenVault)];
+    }
+
+    // @dev Get the code of an address
+    function getCodeAt(address _addr) internal view returns (bytes memory o_code) {
+        assembly {
+            let size := extcodesize(_addr)
+            o_code := mload(0x40)
+            mstore(0x40, add(o_code, and(add(add(size, 0x20), 0x1f), not(0x1f))))
+            mstore(o_code, size)
+            extcodecopy(_addr, add(o_code, 0x20), 0, size)
+        }
     }
 }

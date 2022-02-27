@@ -20,10 +20,10 @@ sed -i '/SPDX-License-Identifier/d' .temp/$contractFile
 sed -i '5s/.*/\/\/ SPDX-License-Identifier: AGPL-3.0/' .temp/$contractFile
 
 # Compile and save the metadata file
-solc --optimize --metadata --metadata-literal .temp/$contractFile > .temp/metadata.json
+solc --optimize --metadata --metadata-literal .temp/$contractFile > .temp/metadatas
 
 # Extract the portion of the file that has the metadata of the contract we are interested
 startMetadataContract=${contractFile}:${contractName}
 echo $startMetadataContract
-awk "/$startMetadataContract/, EOF" .temp/metadata.json > .temp/$contractName.json
-sed -i "3,3!d" .temp/$contractName.json 
+awk "/$startMetadataContract/, EOF" .temp/metadatas > .temp/metadata.json
+sed -i "3,3!d" .temp/metadata.json 

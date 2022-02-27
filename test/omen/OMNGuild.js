@@ -4,7 +4,7 @@
 //   createProposal,
 //   setAllVotesOnProposal,
 // } = require("../helpers/guild");
-// 
+//
 // const { soliditySha3 } = require("web3-utils");
 // const {
 //   BN,
@@ -12,19 +12,19 @@
 //   expectRevert,
 //   time,
 // } = require("@openzeppelin/test-helpers");
-// 
+//
 // const OMNGuild = artifacts.require("OMNGuild");
 // const Realitio = artifacts.require("Realitio");
-// 
+//
 // require("chai").should();
-// 
+//
 // contract("OMNGuild", function (accounts) {
 //   const constants = helpers.constants;
 //   const TIMELOCK = new BN("60");
 //   const VOTE_GAS = new BN("50000"); // 50k
 //   const MAX_GAS_PRICE = new BN("8000000000"); // 8 gwei
 //   const OMN_REWARD = 6;
-// 
+//
 //   let guildToken,
 //     omnGuild,
 //     realitio,
@@ -34,7 +34,7 @@
 //     tx,
 //     marketValidationProposalValid,
 //     marketValidationProposalInvalid;
-// 
+//
 //   beforeEach(async function () {
 //     guildToken = await createAndSetupGuildToken(accounts.slice(0, 5), [
 //       100,
@@ -45,7 +45,7 @@
 //     ]);
 //     omnGuild = await OMNGuild.new();
 //     realitio = await Realitio.new();
-// 
+//
 //     await omnGuild.initialize(
 //       guildToken.address, //  _token:
 //       60 * 60 * 24 * 7, //  _proposalTime:
@@ -59,21 +59,21 @@
 //       99, //  _maxAmountVotes:
 //       realitio.address //  _realitIO:
 //     );
-// 
+//
 //     tokenVault = await omnGuild.tokenVault();
-// 
+//
 //     await guildToken.approve(tokenVault, 60);
 //     await guildToken.approve(tokenVault, 50, { from: accounts[1] });
 //     await guildToken.approve(tokenVault, 100, { from: accounts[2] });
 //     await guildToken.approve(tokenVault, 150, { from: accounts[3] });
 //     await guildToken.approve(tokenVault, 200, { from: accounts[4] });
-// 
+//
 //     await omnGuild.lockTokens(60);
 //     await omnGuild.lockTokens(50, { from: accounts[1] });
 //     await omnGuild.lockTokens(100, { from: accounts[2] });
 //     await omnGuild.lockTokens(150, { from: accounts[3] });
 //     await omnGuild.lockTokens(200, { from: accounts[4] });
-// 
+//
 //     const data = await new web3.eth.Contract(OMNGuild.abi).methods
 //       .setOMNGuildConfig(
 //         99, /// _maxAmountVotes The max amount of votes allowed ot have
@@ -101,12 +101,12 @@
 //       account: accounts[0],
 //     });
 //     await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
-// 
+//
 //     const receipt = await omnGuild.endProposal(guildProposalId);
 //     expectEvent(receipt, "ProposalExecuted", {
 //       proposalId: guildProposalId,
 //     });
-// 
+//
 //     const latest = (await time.latest()).toNumber();
 //     questionId = (
 //       await realitio.askQuestion(
@@ -118,7 +118,7 @@
 //         0 /* nonce */
 //       )
 //     ).receipt.logs[0].args.question_id;
-// 
+//
 //     await realitio.submitAnswer(questionId, soliditySha3(true), 0, {
 //       value: 1,
 //     });
@@ -129,7 +129,7 @@
 //     marketValidationProposalValid = tx.logs[0].args.proposalId;
 //     marketValidationProposalInvalid = tx.logs[1].args.proposalId;
 //   });
-// 
+//
 //   describe("OMNGuild use tests", function () {
 //     it("vote on and execute a market validation proposal from the omn-guild", async function () {
 //       await expectRevert(
@@ -155,16 +155,16 @@
 //       const txVote = await omnGuild.setVote(marketValidationProposalValid, 20, {
 //         from: accounts[4],
 //       });
-// 
+//
 //       expectEvent(txVote, "VoteAdded", {
 //         proposalId: marketValidationProposalValid,
 //       });
-// 
+//
 //       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
-// 
+//
 //       if (constants.ARC_GAS_PRICE > 1)
 //         expect(txVote.receipt.gasUsed).to.be.below(80000);
-// 
+//
 //       await expectRevert(
 //         omnGuild.endProposal(marketValidationProposalValid),
 //         "OMNGuild: Use endMarketValidationProposal to end proposals to validate market"
@@ -189,12 +189,12 @@
 //         soliditySha3(true)
 //       );
 //     });
-// 
+//
 //     const msgD = "Proposal already executed";
 //     it(msgD, async function () {
 //       await expectRevert(omnGuild.endProposal(guildProposalId), msgD);
 //     });
-// 
+//
 //     it("test proposal failed/ended", async function () {
 //       await omnGuild.setVote(marketValidationProposalValid, 20, {
 //         from: accounts[4],
@@ -220,12 +220,12 @@
 //       );
 //       assert.equal(proposalInfo.state, constants.GuildProposalState.Rejected);
 //     });
-// 
+//
 //     it("test changing vote I.B.3.c: Voters CANNOT change vote once they've voted", async function () {
 //       await omnGuild.setVote(marketValidationProposalInvalid, 1, {
 //         from: accounts[4],
 //       });
-// 
+//
 //       await expectRevert(
 //         omnGuild.setVote(marketValidationProposalInvalid, 1, {
 //           from: accounts[4],
@@ -239,12 +239,12 @@
 //         "OMNGuild: Already voted"
 //       );
 //     });
-// 
+//
 //     it("test changing vote I.B.3.c: Voters CANNOT change vote once they've voted", async function () {
 //       await omnGuild.setVote(marketValidationProposalValid, 1, {
 //         from: accounts[4],
 //       });
-// 
+//
 //       await expectRevert(
 //         omnGuild.setVote(marketValidationProposalInvalid, 1, {
 //           from: accounts[4],
@@ -258,7 +258,7 @@
 //         "OMNGuild: Already voted"
 //       );
 //     });
-// 
+//
 //     const msgE =
 //       "OMNGuild: Cant claim from proposal that isnt for market validation";
 //     it(msgE, async function () {
@@ -276,7 +276,7 @@
 //         msgE
 //       );
 //     });
-// 
+//
 //     it("claim rewards for successful vote", async function () {
 //       const txVote = await omnGuild.setVote(marketValidationProposalValid, 10, {
 //         from: accounts[4],
@@ -291,9 +291,9 @@
 //         ),
 //         "OMNGuild: Proposal to claim should be executed or rejected"
 //       );
-// 
+//
 //       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
-// 
+//
 //       const receipt = await omnGuild.endMarketValidationProposal(questionId);
 //       expectEvent(receipt, "ProposalExecuted", {
 //         proposalId: marketValidationProposalValid,
@@ -303,7 +303,7 @@
 //         await realitio.getFinalAnswer(questionId),
 //         soliditySha3(true)
 //       );
-// 
+//
 //       assert.equal(await guildToken.balanceOf(accounts[4]), 0);
 //       await guildToken.transfer(omnGuild.address, 50, { from: accounts[2] });
 //       await omnGuild.claimMarketValidationVoteRewards(
@@ -319,7 +319,7 @@
 //         "OMNGuild: Vote reward already claimed"
 //       );
 //     });
-// 
+//
 //     it("claim rewards for unsuccessful vote", async function () {
 //       const txVote = await omnGuild.setVote(marketValidationProposalValid, 10, {
 //         from: accounts[3],
@@ -344,9 +344,9 @@
 //         ),
 //         "OMNGuild: Proposal to claim should be executed or rejected"
 //       );
-// 
+//
 //       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
-// 
+//
 //       const receipt = await omnGuild.endMarketValidationProposal(questionId);
 //       expectEvent(receipt, "ProposalExecuted", {
 //         proposalId: marketValidationProposalValid,
@@ -438,13 +438,13 @@
 //         "OMNGuild: Already voted"
 //       );
 //     });
-// 
+//
 //     it("test createProposal", async function () {
 //       await expectRevert(
 //         omnGuild.setSpecialProposerPermission(accounts[2], 3, 4),
 //         "Only callable by the guild"
 //       );
-// 
+//
 //       const testCall = web3.eth.abi.encodeFunctionSignature(
 //         "getVotingPowerForProposalExecution()"
 //       );
@@ -468,7 +468,7 @@
 //         proposalId: testProposalId,
 //         account: accounts[0],
 //       });
-// 
+//
 //       const setAllowanceData = await new web3.eth.Contract(OMNGuild.abi).methods
 //         .setAllowance([accounts[0]], [testCall], [true])
 //         .encodeABI();
@@ -486,11 +486,11 @@
 //         proposalId: setAllowanceProposalId,
 //         account: accounts[0],
 //       });
-// 
+//
 //       await omnGuild.setVote(setAllowanceProposalId, 40, {
 //         from: accounts[4],
 //       });
-// 
+//
 //       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
 //       await expectRevert(
 //         omnGuild.endProposal(testProposalId),
@@ -502,7 +502,7 @@
 //       expectEvent(setAllowanceReceipt, "ProposalExecuted", {
 //         proposalId: setAllowanceProposalId,
 //       });
-// 
+//
 //       const data = await new web3.eth.Contract(OMNGuild.abi).methods
 //         .setSpecialProposerPermission(
 //           accounts[0], // proposer
@@ -527,7 +527,7 @@
 //       await omnGuild.setVote(setSpecialProposerPermissionProposalId, 40, {
 //         from: accounts[4],
 //       });
-// 
+//
 //       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
 //       const receipt = await omnGuild.endProposal(
 //         setSpecialProposerPermissionProposalId
@@ -540,12 +540,12 @@
 //       expectEvent(receipt, "ProposalExecuted", {
 //         proposalId: setSpecialProposerPermissionProposalId,
 //       });
-// 
+//
 //       const releaseReceipt = await omnGuild.releaseTokens(60);
 //       expectEvent(releaseReceipt, "TokensReleased", {
 //         voter: accounts[0],
 //       });
-// 
+//
 //       const tx2 = await omnGuild.createProposal(
 //         [accounts[0]], //  to:
 //         [testData], //  data:
@@ -579,16 +579,16 @@
 //     });
 //   });
 // });
-// 
+//
 // contract("OMNGuild", function (accounts) {
 //   const constants = helpers.constants;
 //   const TIMELOCK = new BN("60");
 //   const VOTE_GAS = new BN("50000"); // 50k
 //   const MAX_GAS_PRICE = new BN("8000000000"); // 8 gwei
 //   const OMN_REWARD = 6;
-// 
+//
 //   let guildToken, omnGuild, realitio, tokenVault, questionId;
-// 
+//
 //   beforeEach(async function () {
 //     guildToken = await createAndSetupGuildToken(accounts.slice(0, 5), [
 //       100,
@@ -600,7 +600,7 @@
 //     omnGuild = await OMNGuild.new();
 //     realitio = await Realitio.new();
 //     await guildToken.transfer(omnGuild.address, 50, { from: accounts[2] });
-// 
+//
 //     await omnGuild.initialize(
 //       guildToken.address, //  _token:
 //       60 * 60 * 24 * 7, //  _proposalTime:
@@ -614,20 +614,20 @@
 //       99999, //  _maxAmountVotes:
 //       realitio.address //  _realitIO:
 //     );
-// 
+//
 //     tokenVault = await omnGuild.tokenVault();
-// 
+//
 //     await guildToken.approve(tokenVault, 50, { from: accounts[1] });
 //     await guildToken.approve(tokenVault, 100, { from: accounts[2] });
 //     await guildToken.approve(tokenVault, 150, { from: accounts[3] });
 //     await guildToken.approve(tokenVault, 200, { from: accounts[4] });
-// 
+//
 //     await omnGuild.lockTokens(50, { from: accounts[1] });
 //     await omnGuild.lockTokens(100, { from: accounts[2] });
 //     await omnGuild.lockTokens(150, { from: accounts[3] });
 //     await omnGuild.lockTokens(200, { from: accounts[4] });
 //   });
-// 
+//
 //   describe("OMNGuild set up tests", function () {
 //     const msgA = "OMNGuild: Only the Guild can configure the guild";
 //     it(msgA, async function () {
@@ -669,19 +669,19 @@
 //         proposalId: guildProposalId,
 //         account: accounts[1],
 //       });
-// 
+//
 //       await expectRevert(
 //         omnGuild.endProposal(guildProposalId),
 //         "Proposal hasnt ended yet"
 //       );
-// 
+//
 //       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
-// 
+//
 //       const receipt = await omnGuild.endProposal(guildProposalId);
 //       expectEvent(receipt, "ProposalExecuted", {
 //         proposalId: guildProposalId,
 //       });
-// 
+//
 //       const latest = (await time.latest()).toNumber();
 //       questionId = (
 //         await realitio.askQuestion(
@@ -732,14 +732,14 @@
 //         proposalId: guildProposalId,
 //         account: accounts[1],
 //       });
-// 
+//
 //       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 1000));
-// 
+//
 //       const receipt = await omnGuild.endProposal(guildProposalId);
 //       expectEvent(receipt, "ProposalExecuted", {
 //         proposalId: guildProposalId,
 //       });
-// 
+//
 //       const latest = (await time.latest()).toNumber();
 //       questionId = (
 //         await realitio.askQuestion(
