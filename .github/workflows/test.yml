@@ -26,4 +26,9 @@ jobs:
         run: yarn
 
       - name: Solidity Tests
-        run: npx hardhat test
+        run: yarn coverage
+
+      - name: Generate coverage report
+        uses: romeovs/lcov-reporter-action@v0.2.16
+        with:
+          lcov-file: ./coverage/lcov.info
