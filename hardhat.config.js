@@ -139,7 +139,7 @@ module.exports = {
     },
   },
   gasReporter: {
-    enabled: process.env.GAS_REPORTER === "true",
+    enabled: process.env.REPORT_GAS ? true : false,
   },
   networks: hardharNetworks,
   etherscan: { apiKey: ETHERSCAN_API_KEY },
