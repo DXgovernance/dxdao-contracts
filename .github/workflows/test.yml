@@ -29,6 +29,8 @@ jobs:
         run: yarn coverage
 
       - name: Generate coverage report
-        uses: romeovs/lcov-reporter-action@v0.2.16
+        uses: coverallsapp/github-action@master
         with:
-          lcov-file: ./coverage/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel: true
+          path-to-lcov: "./coverage/lcov.info"
