@@ -181,7 +181,6 @@ contract DXDVotingMachine is GenesisProtocol {
     ) external {
         require(votingMachine == address(this), "wrong votingMachine");
         require(_isVotable(proposalId), "not votable proposal");
-        require(voteDecision > 0, "wrong voteDecision");
         require(
             voter ==
                 hashVote(votingMachine, proposalId, voter, voteDecision, amount).toEthSignedMessageHash().recover(
@@ -208,7 +207,6 @@ contract DXDVotingMachine is GenesisProtocol {
         uint256 amount
     ) external {
         require(_isVotable(proposalId), "not votable proposal");
-        require(voteDecision > 0, "wrong voteDecision");
         require(votesSignaled[proposalId][voter].voteDecision > 0, "wrong vote shared");
         internalVote(proposalId, voter, voteDecision, amount);
         delete votesSignaled[proposalId][voter];
