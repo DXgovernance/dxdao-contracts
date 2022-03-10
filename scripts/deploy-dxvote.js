@@ -1,25 +1,33 @@
+/* eslint-disable no-case-declarations */
 require("@nomiclabs/hardhat-web3");
-const fs = require("fs");
+
+const contentHash = require("content-hash");
+const IPFS = require("ipfs");
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 const MAX_UINT_256 =
   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
+
 const { encodePermission } = require("../test/helpers/permissions");
+const moment = require("moment");
+const { default: BigNumber } = require("bignumber.js");
 
 task("deploy-dxvote", "Deploy dxvote in localhost network")
-  .addParam("deployconfig", "The path to the depply ccnfig file")
+  .addParam("deployconfig", "The deploy config json in string format")
   .setAction(async ({ deployconfig }) => {
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    const deploymentConfig = JSON.parse(
-      await fs.readFileSync(deployconfig, "utf-8")
-    );
+    const deploymentConfig = JSON.parse(deployconfig);
 
     const DxAvatar = await hre.artifacts.require("DxAvatar");
     const DxReputation = await hre.artifacts.require("DxReputation");
     const DxController = await hre.artifacts.require("DxController");
+    const ContributionReward = await hre.artifacts.require(
+      "ContributionReward"
+    );
+    const Redeemer = await hre.artifacts.require("Redeemer");
     const WalletScheme = await hre.artifacts.require("WalletScheme");
     const PermissionRegistry = await hre.artifacts.require(
       "PermissionRegistry"
@@ -87,10 +95,14 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
 
     // Deploy DXD
     let votingMachineToken;
-    votingMachineToken = await ERC20Mock.new(
-      accounts[0],
-      web3.utils.toWei("100")
-    );
+    const totalDXD = deploymentConfig.votingMachineToken.reduce(function (
+      prev,
+      cur
+    ) {
+      return new BigNumber(prev).add(cur.amount.toString());
+    },
+    0);
+    votingMachineToken = await ERC20Mock.new(accounts[0], totalDXD.toString());
     networkContracts.votingMachines.dxd.token = votingMachineToken.address;
 
     // Deploy Avatar
@@ -105,20 +117,23 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       votingMachineToken.address,
       reputation.address
     );
-    if (
-      (await votingMachineToken.balanceOf(accounts[0], {
-        from: accounts[0],
-        gasPrice: 0,
-      })) > web3.utils.toWei("100000000")
-    )
-      await votingMachineToken.transfer(
-        avatar.address,
-        web3.utils.toWei("100000000")
-      );
+
     console.log("DXdao Avatar deployed to:", avatar.address);
     networkContracts.avatar = avatar.address;
     networkContracts.token = votingMachineToken.address;
     await waitBlocks(1);
+
+    // Distribute DXD
+    console.log("Distirbuting DXD...");
+    await deploymentConfig.votingMachineToken.map(
+      async votingMachineTokenHolder => {
+        await votingMachineToken.transfer(
+          votingMachineTokenHolder.address,
+          votingMachineTokenHolder.amount,
+          { from: accounts[0] }
+        );
+      }
+    );
 
     // Deploy Controller and transfer avatar to controller
     let controller;
@@ -138,6 +153,15 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     networkContracts.votingMachines.dxd.address = votingMachine.address;
     networkContracts.votingMachines.dxd.token = votingMachineToken.address;
     await waitBlocks(1);
+    await votingMachineToken.approve(votingMachine.address, MAX_UINT_256, {
+      from: accounts[0],
+    });
+    await votingMachineToken.approve(votingMachine.address, MAX_UINT_256, {
+      from: accounts[1],
+    });
+    await votingMachineToken.approve(votingMachine.address, MAX_UINT_256, {
+      from: accounts[2],
+    });
 
     // Deploy PermissionRegistry
     let permissionRegistry;
@@ -204,9 +228,108 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     networkContracts.permissionRegistry = permissionRegistry.address;
     await waitBlocks(1);
 
-    // Deploy Schemes
-    for (var s = 0; s < deploymentConfig.schemes.length; s++) {
-      const schemeConfiguration = deploymentConfig.schemes[s];
+    // Deploy ContributionReward Scheme
+    console.log("Deploying ContributionReward scheme");
+    const contributionReward = await ContributionReward.new();
+    const redeemer = await Redeemer.new();
+    const contributionRewardParamsHash = await votingMachine.getParametersHash(
+      [
+        deploymentConfig.contributionReward.queuedVoteRequiredPercentage.toString(),
+        deploymentConfig.contributionReward.queuedVotePeriodLimit.toString(),
+        deploymentConfig.contributionReward.boostedVotePeriodLimit.toString(),
+        deploymentConfig.contributionReward.preBoostedVotePeriodLimit.toString(),
+        deploymentConfig.contributionReward.thresholdConst.toString(),
+        deploymentConfig.contributionReward.quietEndingPeriod.toString(),
+        deploymentConfig.contributionReward.proposingRepReward.toString(),
+        deploymentConfig.contributionReward.votersReputationLossRatio.toString(),
+        deploymentConfig.contributionReward.minimumDaoBounty.toString(),
+        deploymentConfig.contributionReward.daoBountyConst.toString(),
+        0,
+      ],
+      NULL_ADDRESS,
+      { from: accounts[0], gasPrice: 0 }
+    );
+    await votingMachine.setParameters(
+      [
+        deploymentConfig.contributionReward.queuedVoteRequiredPercentage.toString(),
+        deploymentConfig.contributionReward.queuedVotePeriodLimit.toString(),
+        deploymentConfig.contributionReward.boostedVotePeriodLimit.toString(),
+        deploymentConfig.contributionReward.preBoostedVotePeriodLimit.toString(),
+        deploymentConfig.contributionReward.thresholdConst.toString(),
+        deploymentConfig.contributionReward.quietEndingPeriod.toString(),
+        deploymentConfig.contributionReward.proposingRepReward.toString(),
+        deploymentConfig.contributionReward.votersReputationLossRatio.toString(),
+        deploymentConfig.contributionReward.minimumDaoBounty.toString(),
+        deploymentConfig.contributionReward.daoBountyConst.toString(),
+        0,
+      ],
+      NULL_ADDRESS
+    );
+    await contributionReward.setParameters(
+      contributionRewardParamsHash,
+      votingMachine.address
+    );
+    const contributionRewardVotingmachineParamsHash =
+      await contributionReward.getParametersHash(
+        contributionRewardParamsHash,
+        votingMachine.address
+      );
+    await controller.registerScheme(
+      contributionReward.address,
+      contributionRewardVotingmachineParamsHash,
+      encodePermission({
+        canGenericCall: true,
+        canUpgrade: false,
+        canRegisterSchemes: false,
+      }),
+      avatar.address
+    );
+
+    networkContracts.daostack = {
+      [contributionReward.address]: {
+        contractToCall: controller.address,
+        creationLogEncoding: [
+          [
+            {
+              name: "_descriptionHash",
+              type: "string",
+            },
+            {
+              name: "_reputationChange",
+              type: "int256",
+            },
+            {
+              name: "_rewards",
+              type: "uint256[5]",
+            },
+            {
+              name: "_externalToken",
+              type: "address",
+            },
+            {
+              name: "_beneficiary",
+              type: "address",
+            },
+          ],
+        ],
+        name: "ContributionReward",
+        newProposalTopics: [
+          [
+            "0xcbdcbf9aaeb1e9eff0f75d74e1c1e044bc87110164baec7d18d825b0450d97df",
+            "0x000000000000000000000000519b70055af55a007110b4ff99b0ea33071c720a",
+          ],
+        ],
+        redeemer: redeemer.address,
+        supported: true,
+        type: "ContributionReward",
+        voteParams: contributionRewardVotingmachineParamsHash,
+        votingMachine: votingMachine.address,
+      },
+    };
+
+    // Deploy Wallet Schemes
+    for (var s = 0; s < deploymentConfig.walletSchemes.length; s++) {
+      const schemeConfiguration = deploymentConfig.walletSchemes[s];
 
       console.log(`Deploying ${schemeConfiguration.name}...`);
       const newScheme = await WalletScheme.new();
@@ -331,6 +454,16 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       networkContracts.schemes[schemeConfiguration.name] = newScheme.address;
     }
 
+    // Distribute ETH
+    console.log("Distirbuting ETH...");
+    await deploymentConfig.ethTransfers.map(async ethTransfer => {
+      await web3.eth.sendTransaction({
+        to: ethTransfer.address,
+        value: ethTransfer.amount,
+        from: accounts[0],
+      });
+    });
+
     // Deploy dxDaoNFT if it is not set
     let dxDaoNFT;
     console.log("Deploying DXdaoNFT...");
@@ -356,6 +489,110 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     await dxDaoNFT.transferOwnership(avatar.address);
     await controller.unregisterScheme(accounts[0], avatar.address);
 
+    const startTime = moment().unix();
+    const ipfs = await IPFS.create();
+    let proposals = [];
+    for (let i = 0; i < deploymentConfig.actions.length; i++) {
+      const action = deploymentConfig.actions[i];
+
+      if (action.time)
+        await network.provider.send("evm_increaseTime", [
+          startTime + action.time - moment().unix(),
+        ]);
+
+      switch (action.type) {
+        case "proposal":
+          const { cid } = await ipfs.add(
+            JSON.stringify({
+              description: action.data.description,
+              title: action.data.title,
+              tags: action.data.tags,
+              url: "",
+            })
+          );
+
+          console.log("Submitting proposal");
+          const proposalCreationTx =
+            action.data.scheme === "ContributionReward"
+              ? await (
+                  await ContributionReward.at(
+                    networkContracts.schemes[contributionReward.address]
+                  )
+                ).proposeContributionReward(
+                  avatar.address,
+                  contentHash.fromIpfs(cid.toString()),
+                  action.data.reputationChange,
+                  action.data.rewards,
+                  action.data.externalToken,
+                  action.data.beneficiary,
+                  { from: action.from }
+                )
+              : await (
+                  await WalletScheme.at(
+                    networkContracts.schemes[action.data.scheme]
+                  )
+                ).proposeCalls(
+                  action.data.to,
+                  action.data.callData,
+                  action.data.value,
+                  action.data.title,
+                  contentHash.fromIpfs(cid.toString()),
+                  { from: action.from }
+                );
+          proposals.push(proposalCreationTx.receipt.logs[0].args._proposalId);
+          break;
+        case "vote":
+          console.log("Adding vote");
+          await votingMachine.vote(
+            proposals[action.data.proposal],
+            action.data.decision,
+            action.data.amount,
+            action.from,
+            { from: action.from }
+          );
+          break;
+        case "stake":
+          console.log("Adding stake");
+          await votingMachine.stake(
+            proposals[action.data.proposal],
+            action.data.decision,
+            action.data.amount,
+            { from: action.from }
+          );
+          break;
+        case "execute":
+          console.log("Executing proposal");
+          try {
+            await votingMachine.execute(proposals[action.data.proposal], {
+              from: action.from,
+            });
+          } catch (error) {
+            console.log(`Execution of proposal ${action.data.proposal} failed`);
+          }
+          break;
+        case "redeem":
+          console.log("Executing redeem");
+          await votingMachine.redeem(
+            proposals[action.data.proposal],
+            action.from,
+            { from: action.from }
+          );
+          break;
+        default:
+          break;
+      }
+    }
+
+    const timeInhardhat = (await web3.eth.getBlock("latest")).timestamp;
+
+    // Increase time to local time
+    await hre.network.provider.request({
+      method: "evm_increaseTime",
+      params: [moment().unix() - timeInhardhat],
+    });
+
     // Deployment Finished
     console.log("Contracts deployed:", networkContracts);
+
+    return networkContracts;
   });

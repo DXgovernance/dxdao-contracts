@@ -13,6 +13,9 @@ require("hardhat-dependency-compiler");
 
 require("./scripts/create2");
 require("./scripts/deploy-dxvote");
+require("./scripts/deploy-dxvote-develop");
+
+const moment = require("moment");
 
 // MNEMONIC KEY = "dxdao dxdao dxdao dxdao dxdao dxdao dxdao dxdao dxdao dxdao dxdao dxdao"
 // # Account #0: 0x79706c8e413cdaee9e63f282507287b9ea9c0928 (10000 ETH)
@@ -84,6 +87,7 @@ const ETHERSCAN_API_KEY = process.env.KEY_ETHERSCAN;
 const hardharNetworks = process.env.CI
   ? {
       hardhat: {
+        accounts: { mnemonic: MNEMONIC },
         throwOnTransactionFailures: true,
         throwOnCallFailures: true,
         allowUnlimitedContractSize: true,
@@ -94,12 +98,14 @@ const hardharNetworks = process.env.CI
     }
   : {
       hardhat: {
+        accounts: { mnemonic: MNEMONIC },
         throwOnTransactionFailures: true,
         throwOnCallFailures: true,
         allowUnlimitedContractSize: true,
         gasLimit: 9000000,
         gasPrice: 10000000000, // 10 gwei
         timeout: 60000,
+        initialDate: moment().subtract(32, "days").toDate().toString(),
         mining: {
           auto: true,
           interval: 1000,
