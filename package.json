@@ -88,6 +88,7 @@
     "@truffle/hdwallet-provider": "^1.4.0",
     "arb-ethers-web3-bridge": "^0.7.3",
     "chai": "^4.2.0",
+    "ipfs-core": "^0.14.1",
     "math": "0.0.3",
     "moment": "^2.27.0",
     "openzeppelin-solidity": "2.4.0",

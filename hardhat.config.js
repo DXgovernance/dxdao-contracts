@@ -105,10 +105,10 @@ const hardharNetworks = process.env.CI
         gasLimit: 9000000,
         gasPrice: 10000000000, // 10 gwei
         timeout: 60000,
-        initialDate: moment().subtract(32, "days").toDate().toString(),
+        initialDate: moment.unix(0).toDate().toString(),
         mining: {
           auto: true,
-          interval: 1000,
+          interval: 500,
         },
       },
       mainnet: {

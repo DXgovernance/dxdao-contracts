@@ -2,11 +2,12 @@
 require("@nomiclabs/hardhat-web3");
 
 const contentHash = require("content-hash");
-const IPFS = require("ipfs");
-const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-const MAX_UINT_256 =
-  "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
+const IPFS = require("ipfs-core");
+const {
+  NULL_ADDRESS,
+  ANY_FUNC_SIGNATURE,
+  MAX_UINT_256,
+} = require("../test/helpers/constants");
 
 const { encodePermission } = require("../test/helpers/permissions");
 const moment = require("moment");
@@ -19,6 +20,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    let addresses = {};
     const deploymentConfig = JSON.parse(deployconfig);
 
     const DxAvatar = await hre.artifacts.require("DxAvatar");
@@ -32,6 +34,9 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     const PermissionRegistry = await hre.artifacts.require(
       "PermissionRegistry"
     );
+    const GlobalPermissionRegistry = await hre.artifacts.require(
+      "GlobalPermissionRegistry"
+    );
     const DXDVotingMachine = await hre.artifacts.require("DXDVotingMachine");
     const ERC20Mock = await hre.artifacts.require("ERC20Mock");
     const Multicall = await hre.artifacts.require("Multicall");
@@ -41,8 +46,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     async function waitBlocks(blocks) {
       const toBlock = (await web3.eth.getBlock("latest")).number + blocks;
       while ((await web3.eth.getBlock("latest")).number < toBlock) {
-        console.log("Waiting to block", toBlock, "...");
-        await sleep(1000);
+        await sleep(500);
       }
       return;
     }
@@ -81,7 +85,6 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
 
     // Deploy and mint Reputation
     let reputation;
-
     console.log("Deploying DxReputation...");
     reputation = await DxReputation.new();
     console.log("DX Reputation deployed to:", reputation.address);
@@ -92,48 +95,57 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
 
     networkContracts.fromBlock = fromBlock;
     networkContracts.reputation = reputation.address;
+    addresses["Reputation"] = reputation.address;
 
-    // Deploy DXD
-    let votingMachineToken;
-    const totalDXD = deploymentConfig.votingMachineToken.reduce(function (
-      prev,
-      cur
-    ) {
-      return new BigNumber(prev).add(cur.amount.toString());
-    },
-    0);
-    votingMachineToken = await ERC20Mock.new(accounts[0], totalDXD.toString());
-    networkContracts.votingMachines.dxd.token = votingMachineToken.address;
+    // Deploy Tokens
+    let tokens = {};
+    await Promise.all(
+      deploymentConfig.tokens.map(async tokenToDeploy => {
+        console.log(
+          "Deploying token",
+          tokenToDeploy.name,
+          tokenToDeploy.symbol
+        );
+        const totalSupply = tokenToDeploy.distribution.reduce(function (
+          prev,
+          cur
+        ) {
+          return new BigNumber(prev).add(cur.amount.toString());
+        },
+        0);
+        const newToken = await ERC20Mock.new(
+          accounts[0],
+          totalSupply.toString()
+        );
+
+        await tokenToDeploy.distribution.map(async tokenHolder => {
+          await newToken.transfer(tokenHolder.address, tokenHolder.amount, {
+            from: accounts[0],
+          });
+        });
+        tokens[tokenToDeploy.symbol] = newToken;
+        addresses[tokenToDeploy.symbol] = newToken.address;
+      })
+    );
 
     // Deploy Avatar
     let avatar;
     console.log(
       "Deploying DxAvatar...",
-      votingMachineToken.address,
+      tokens.DXD.address,
       reputation.address
     );
     avatar = await DxAvatar.new(
       "DXdao",
-      votingMachineToken.address,
+      tokens.DXD.address,
       reputation.address
     );
-
     console.log("DXdao Avatar deployed to:", avatar.address);
     networkContracts.avatar = avatar.address;
-    networkContracts.token = votingMachineToken.address;
-    await waitBlocks(1);
+    networkContracts.token = addresses["DXD"];
+    addresses["Avatar"] = avatar.address;
 
-    // Distribute DXD
-    console.log("Distirbuting DXD...");
-    await deploymentConfig.votingMachineToken.map(
-      async votingMachineTokenHolder => {
-        await votingMachineToken.transfer(
-          votingMachineTokenHolder.address,
-          votingMachineTokenHolder.amount,
-          { from: accounts[0] }
-        );
-      }
-    );
+    await waitBlocks(1);
 
     // Deploy Controller and transfer avatar to controller
     let controller;
@@ -143,31 +155,39 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     await avatar.transferOwnership(controller.address);
     await reputation.transferOwnership(controller.address);
     networkContracts.controller = controller.address;
+    addresses["Controller"] = controller.address;
     await waitBlocks(1);
 
     // Deploy DXDVotingMachine
     let votingMachine;
     console.log("Deploying DXDVotingMachine...");
-    votingMachine = await DXDVotingMachine.new(votingMachineToken.address);
+    votingMachine = await DXDVotingMachine.new(tokens.DXD.address);
     console.log("DXDVotingMachine deployed to:", votingMachine.address);
     networkContracts.votingMachines.dxd.address = votingMachine.address;
-    networkContracts.votingMachines.dxd.token = votingMachineToken.address;
+    networkContracts.votingMachines.dxd.token = tokens.DXD.address;
     await waitBlocks(1);
-    await votingMachineToken.approve(votingMachine.address, MAX_UINT_256, {
+    await tokens.DXD.approve(votingMachine.address, MAX_UINT_256, {
       from: accounts[0],
     });
-    await votingMachineToken.approve(votingMachine.address, MAX_UINT_256, {
+    await tokens.DXD.approve(votingMachine.address, MAX_UINT_256, {
       from: accounts[1],
     });
-    await votingMachineToken.approve(votingMachine.address, MAX_UINT_256, {
+    await tokens.DXD.approve(votingMachine.address, MAX_UINT_256, {
       from: accounts[2],
     });
+    addresses["DXDVotingMachine"] = votingMachine.address;
 
     // Deploy PermissionRegistry
     let permissionRegistry;
-
     console.log("Deploying PermissionRegistry...");
     permissionRegistry = await PermissionRegistry.new(accounts[0], 1);
+    addresses["PermissionRegistry"] = permissionRegistry.address;
+
+    // Deploy GlobalPermissionRegistry
+    let globalPermissionRegistry;
+    console.log("Deploying GlobalPermissionRegistry...");
+    globalPermissionRegistry = await GlobalPermissionRegistry.new();
+    addresses["GlobalPermissionRegistry"] = globalPermissionRegistry.address;
 
     // Only allow the functions mintReputation, burnReputation, genericCall, registerScheme and unregisterScheme to be
     // called to in the controller contract from a scheme that calls the controller.
@@ -224,8 +244,18 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       true
     );
 
+    await permissionRegistry.setAdminPermission(
+      NULL_ADDRESS,
+      avatar.address,
+      permissionRegistry.address,
+      ANY_FUNC_SIGNATURE,
+      0,
+      true
+    );
+
     console.log("Permission Registry deployed to:", permissionRegistry.address);
     networkContracts.permissionRegistry = permissionRegistry.address;
+    addresses["PermissionRegstry"] = permissionRegistry.address;
     await waitBlocks(1);
 
     // Deploy ContributionReward Scheme
@@ -326,6 +356,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
         votingMachine: votingMachine.address,
       },
     };
+    addresses["ContributionReward"] = contributionReward.address;
 
     // Deploy Wallet Schemes
     for (var s = 0; s < deploymentConfig.walletSchemes.length; s++) {
@@ -387,20 +418,16 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       console.log("Setting scheme permissions...");
       for (var p = 0; p < schemeConfiguration.permissions.length; p++) {
         const permission = schemeConfiguration.permissions[p];
-        if (networkContracts.schemes && networkContracts.schemes[permission.to])
-          permission.to = networkContracts.schemes[permission.to];
-        else if (permission.to === "ITSELF") permission.to = newScheme.address;
-        else if (permission.to === "DXDVotingMachine")
-          permission.to = networkContracts.votingMachines.dxd.address;
+        if (permission.to === "ITSELF") permission.to = newScheme.address;
+        else if (addresses[permission.to])
+          permission.to = addresses[permission.to];
 
         await permissionRegistry.setAdminPermission(
-          permission.asset === "DXD"
-            ? networkContracts.votingMachines.dxd.address
-            : permission.asset,
+          addresses[permission.asset] || permission.asset,
           schemeConfiguration.doAvatarGenericCalls
             ? avatar.address
             : newScheme.address,
-          permission.to,
+          addresses[permission.to] || permission.to,
           permission.functionSignature,
           permission.value.toString(),
           permission.allowed
@@ -452,23 +479,15 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       );
 
       networkContracts.schemes[schemeConfiguration.name] = newScheme.address;
+      addresses[schemeConfiguration.name] = newScheme.address;
     }
-
-    // Distribute ETH
-    console.log("Distirbuting ETH...");
-    await deploymentConfig.ethTransfers.map(async ethTransfer => {
-      await web3.eth.sendTransaction({
-        to: ethTransfer.address,
-        value: ethTransfer.amount,
-        from: accounts[0],
-      });
-    });
 
     // Deploy dxDaoNFT if it is not set
     let dxDaoNFT;
     console.log("Deploying DXdaoNFT...");
     dxDaoNFT = await DXdaoNFT.new();
     networkContracts.utils.dxDaoNFT = dxDaoNFT.address;
+    addresses["DXdaoNFT"] = dxDaoNFT.address;
 
     // Deploy DXDVestingFactory if it is not set
     let dxdVestingFactory;
@@ -478,6 +497,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       avatar.address
     );
     networkContracts.utils.dxdVestingFactory = dxdVestingFactory.address;
+    addresses["DXDVestingFactory"] = dxdVestingFactory.address;
 
     // Transfer all ownership and power to the dao
     console.log("Transfering ownership...");
@@ -489,38 +509,99 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     await dxDaoNFT.transferOwnership(avatar.address);
     await controller.unregisterScheme(accounts[0], avatar.address);
 
-    const startTime = moment().unix();
+    // Deploy Guilds
+    let guilds = {};
+    let proposals = {
+      dxvote: [],
+    };
+
+    await Promise.all(
+      deploymentConfig.guilds.map(async guildToDeploy => {
+        console.log("Deploying guild", guildToDeploy.name);
+        const GuildContract = await hre.artifacts.require(
+          guildToDeploy.contractName
+        );
+        const newGuild = await GuildContract.new();
+        await newGuild.initialize(
+          tokens[guildToDeploy.token].address,
+          guildToDeploy.proposalTime,
+          guildToDeploy.timeForExecution,
+          guildToDeploy.votingPowerForProposalExecution,
+          guildToDeploy.votingPowerForProposalCreation,
+          guildToDeploy.name,
+          guildToDeploy.voteGas,
+          guildToDeploy.maxGasPrice,
+          guildToDeploy.maxActiveProposals,
+          guildToDeploy.lockTime,
+          globalPermissionRegistry.address
+        );
+        guilds[guildToDeploy.name] = newGuild;
+        addresses[guildToDeploy.name] = newGuild.address;
+        proposals[guildToDeploy.name] = [];
+        addresses[guildToDeploy.name + "-vault"] =
+          await newGuild.getTokenVault();
+      })
+    );
+
+    console.log("Contracts deployed:", networkContracts);
+
+    const startTime = deploymentConfig.startTimestampForActions;
+
+    // Increase time to start time for actions
+    await hre.network.provider.request({
+      method: "evm_increaseTime",
+      params: [startTime - (await web3.eth.getBlock("latest")).timestamp],
+    });
+
     const ipfs = await IPFS.create();
-    let proposals = [];
     for (let i = 0; i < deploymentConfig.actions.length; i++) {
       const action = deploymentConfig.actions[i];
 
       if (action.time)
-        await network.provider.send("evm_increaseTime", [
-          startTime + action.time - moment().unix(),
-        ]);
+        await network.provider.send("evm_increaseTime", [action.time]);
+      console.log("Executing action:", action);
 
       switch (action.type) {
-        case "proposal":
-          const { cid } = await ipfs.add(
-            JSON.stringify({
-              description: action.data.description,
-              title: action.data.title,
-              tags: action.data.tags,
-              url: "",
-            })
+        case "approve":
+          await tokens[action.data.asset].approve(
+            addresses[action.data.address] || action.data.address,
+            action.data.amount,
+            { from: action.from }
           );
+          break;
 
-          console.log("Submitting proposal");
+        case "transfer":
+          action.data.asset === NULL_ADDRESS
+            ? await web3.eth.sendTransaction({
+                to: addresses[action.data.address] || action.data.address,
+                value: action.data.amount,
+                from: action.from,
+              })
+            : await tokens[action.data.asset].transfer(
+                addresses[action.data.address] || action.data.address,
+                action.data.amount,
+                { from: action.from }
+              );
+          break;
+
+        case "proposal":
+          const proposalDescriptionHash = (
+            await ipfs.add(
+              JSON.stringify({
+                description: action.data.description,
+                title: action.data.title,
+                tags: action.data.tags,
+                url: "",
+              })
+            )
+          ).cid.toString();
           const proposalCreationTx =
             action.data.scheme === "ContributionReward"
               ? await (
-                  await ContributionReward.at(
-                    networkContracts.schemes[contributionReward.address]
-                  )
+                  await ContributionReward.at(contributionReward.address)
                 ).proposeContributionReward(
                   avatar.address,
-                  contentHash.fromIpfs(cid.toString()),
+                  contentHash.fromIpfs(proposalDescriptionHash),
                   action.data.reputationChange,
                   action.data.rewards,
                   action.data.externalToken,
@@ -528,23 +609,22 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
                   { from: action.from }
                 )
               : await (
-                  await WalletScheme.at(
-                    networkContracts.schemes[action.data.scheme]
-                  )
+                  await WalletScheme.at(addresses[action.data.scheme])
                 ).proposeCalls(
-                  action.data.to,
+                  action.data.to.map(_to => addresses[_to] || _to),
                   action.data.callData,
                   action.data.value,
                   action.data.title,
-                  contentHash.fromIpfs(cid.toString()),
+                  contentHash.fromIpfs(proposalDescriptionHash),
                   { from: action.from }
                 );
-          proposals.push(proposalCreationTx.receipt.logs[0].args._proposalId);
+          proposals.dxvote.push(
+            proposalCreationTx.receipt.logs[0].args._proposalId
+          );
           break;
         case "vote":
-          console.log("Adding vote");
           await votingMachine.vote(
-            proposals[action.data.proposal],
+            proposals.dxvote[action.data.proposal],
             action.data.decision,
             action.data.amount,
             action.from,
@@ -552,29 +632,76 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
           );
           break;
         case "stake":
-          console.log("Adding stake");
           await votingMachine.stake(
-            proposals[action.data.proposal],
+            proposals.dxvote[action.data.proposal],
             action.data.decision,
             action.data.amount,
             { from: action.from }
           );
           break;
         case "execute":
-          console.log("Executing proposal");
           try {
-            await votingMachine.execute(proposals[action.data.proposal], {
-              from: action.from,
-            });
+            await votingMachine.execute(
+              proposals.dxvote[action.data.proposal],
+              {
+                from: action.from,
+                gas: 9000000,
+              }
+            );
           } catch (error) {
-            console.log(`Execution of proposal ${action.data.proposal} failed`);
+            console.log("Execution of proposal failed", error);
           }
           break;
         case "redeem":
-          console.log("Executing redeem");
           await votingMachine.redeem(
-            proposals[action.data.proposal],
+            proposals.dxvote[action.data.proposal],
             action.from,
+            { from: action.from }
+          );
+          break;
+        case "guild-createProposal":
+          const guildProposalDescriptionHash = (
+            await ipfs.add(
+              JSON.stringify({ description: action.data.proposalBody, url: "" })
+            )
+          ).cid.toString();
+          const guildProposalCreationTx = await guilds[
+            action.data.guildName
+          ].createProposal(
+            action.data.to.map(_to => addresses[_to] || _to),
+            action.data.callData,
+            action.data.value,
+            action.data.totalActions,
+            action.data.title,
+            contentHash.fromIpfs(guildProposalDescriptionHash).toString(),
+            { from: action.from }
+          );
+          proposals[action.data.guildName].push(
+            guildProposalCreationTx.receipt.logs[0].args.proposalId
+          );
+          break;
+        case "guild-lockTokens":
+          await guilds[action.data.guildName].lockTokens(action.data.amount, {
+            from: action.from,
+          });
+          break;
+        case "guild-withdrawTokens":
+          await guilds[action.data.guildName].withdrawTokens(
+            action.data.amount,
+            { from: action.from }
+          );
+          break;
+        case "guild-voteProposal":
+          console.log(proposals);
+          await guilds[action.data.guildName].setVote(
+            proposals[action.data.guildName][action.data.proposal],
+            action.data.action,
+            action.data.votingPower
+          );
+          break;
+        case "guild-endProposal":
+          await guilds[action.data.guildName].endProposal(
+            proposals[action.data.guildName][action.data.proposal],
             { from: action.from }
           );
           break;
@@ -583,16 +710,11 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       }
     }
 
-    const timeInhardhat = (await web3.eth.getBlock("latest")).timestamp;
-
     // Increase time to local time
     await hre.network.provider.request({
       method: "evm_increaseTime",
-      params: [moment().unix() - timeInhardhat],
+      params: [moment().unix() - (await web3.eth.getBlock("latest")).timestamp],
     });
-
-    // Deployment Finished
-    console.log("Contracts deployed:", networkContracts);
 
     return networkContracts;
   });
