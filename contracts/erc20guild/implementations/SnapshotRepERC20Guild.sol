@@ -120,7 +120,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         uint256[] memory value,
         uint256 totalActions,
         string memory title,
-        bytes memory contentHash
+        string memory contentHash
     ) public virtual override returns (bytes32) {
         bytes32 proposalId = super.createProposal(to, data, value, totalActions, title, contentHash);
         proposalsSnapshots[proposalId] = ERC20SnapshotRep(address(token)).getCurrentSnapshotId();

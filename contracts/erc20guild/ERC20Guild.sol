@@ -128,7 +128,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bytes[] data;
         uint256[] value;
         string title;
-        bytes contentHash;
+        string contentHash;
         ProposalState state;
         uint256[] totalVotes;
         mapping(address => Vote) votes;
@@ -299,7 +299,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256[] memory value,
         uint256 totalActions,
         string memory title,
-        bytes memory contentHash
+        string memory contentHash
     ) public virtual returns (bytes32) {
         return _createProposal(to, data, value, totalActions, title, contentHash);
     }
@@ -419,7 +419,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256[] memory value,
         uint256 totalActions,
         string memory title,
-        bytes memory contentHash
+        string memory contentHash
     ) internal returns (bytes32) {
         require(activeProposalsNow < getMaxActiveProposals(), "ERC20Guild: Maximum amount of active proposals reached");
         require(
@@ -770,7 +770,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
             uint256[] memory value,
             uint256 totalActions,
             string memory title,
-            bytes memory contentHash,
+            string memory contentHash,
             ProposalState state,
             uint256[] memory totalVotes
         )
