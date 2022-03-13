@@ -3,11 +3,11 @@ require("@nomiclabs/hardhat-web3");
 
 const contentHash = require("content-hash");
 const IPFS = require("ipfs-core");
-const {
-  NULL_ADDRESS,
-  ANY_FUNC_SIGNATURE,
-  MAX_UINT_256,
-} = require("../test/helpers/constants");
+
+const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
+const MAX_UINT_256 =
+  "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
 const { encodePermission } = require("../test/helpers/permissions");
 const moment = require("moment");
