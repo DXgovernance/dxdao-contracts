@@ -1,10 +1,8 @@
 require("@nomiclabs/hardhat-web3");
 const moment = require("moment");
-const {
-  NULL_ADDRESS,
-  ANY_FUNC_SIGNATURE,
-  ANY_ADDRESS,
-} = require("../test/helpers/constants");
+const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
+const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
+const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
 task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
   async () => {
