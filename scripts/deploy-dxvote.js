@@ -21,8 +21,11 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     }
 
     let addresses = {};
+
+    // Parse string json config to json object
     const deploymentConfig = JSON.parse(deployconfig);
 
+    // Import contracts
     const DxAvatar = await hre.artifacts.require("DxAvatar");
     const DxReputation = await hre.artifacts.require("DxReputation");
     const DxController = await hre.artifacts.require("DxController");
@@ -50,8 +53,25 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       }
       return;
     }
+
+    // Get ETH accounts to be used
     const accounts = await web3.eth.getAccounts();
+
+    // Get fromBlock for network contracts
     const fromBlock = (await web3.eth.getBlock("latest")).number;
+
+    // Set networkContracts object that will store the contracts deployed
+    let networkContracts = {
+      fromBlock: fromBlock,
+      avatar: null,
+      reputation: null,
+      token: null,
+      controller: null,
+      permissionRegistry: null,
+      schemes: {},
+      utils: {},
+      votingMachines: {},
+    };
 
     // Get initial REP holders
     let founders = [],
@@ -61,20 +81,6 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       initialRep.push(initialRepHolder.amount.toString());
     });
 
-    let networkContracts = {
-      fromBlock: 0,
-      avatar: null,
-      reputation: null,
-      token: null,
-      controller: null,
-      permissionRegistry: null,
-      schemes: {},
-      utils: {},
-      votingMachines: {
-        dxd: {},
-      },
-    };
-
     // Deploy Multicall
     let multicall;
     console.log("Deploying Multicall...");
@@ -83,19 +89,18 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     await waitBlocks(1);
     networkContracts.utils.multicall = multicall.address;
 
-    // Deploy and mint Reputation
+    // Deploy Reputation
     let reputation;
     console.log("Deploying DxReputation...");
     reputation = await DxReputation.new();
     console.log("DX Reputation deployed to:", reputation.address);
-    await waitBlocks(1);
-
-    await reputation.mintMultiple(founders, initialRep);
-    await waitBlocks(1);
-
-    networkContracts.fromBlock = fromBlock;
     networkContracts.reputation = reputation.address;
     addresses["Reputation"] = reputation.address;
+    await waitBlocks(1);
+
+    // Mint DXvote REP
+    await reputation.mintMultiple(founders, initialRep);
+    await waitBlocks(1);
 
     // Deploy Tokens
     let tokens = {};
@@ -144,7 +149,6 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     networkContracts.avatar = avatar.address;
     networkContracts.token = addresses["DXD"];
     addresses["Avatar"] = avatar.address;
-
     await waitBlocks(1);
 
     // Deploy Controller and transfer avatar to controller
@@ -179,13 +183,13 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     });
     addresses["DXDVotingMachine"] = votingMachine.address;
 
-    // Deploy PermissionRegistry
+    // Deploy PermissionRegistry to be used by WalletSchemes
     let permissionRegistry;
     console.log("Deploying PermissionRegistry...");
     permissionRegistry = await PermissionRegistry.new(accounts[0], 1);
     addresses["PermissionRegistry"] = permissionRegistry.address;
 
-    // Deploy GlobalPermissionRegistry
+    // Deploy GlobalPermissionRegistry to be used by guilds
     let globalPermissionRegistry;
     console.log("Deploying GlobalPermissionRegistry...");
     globalPermissionRegistry = await GlobalPermissionRegistry.new();
@@ -264,6 +268,11 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     console.log("Deploying ContributionReward scheme");
     const contributionReward = await ContributionReward.new();
     const redeemer = await Redeemer.new();
+
+    // The ContributionReward scheme was designed by DAOstack to be used as an universal scheme,
+    // which means that index the voting params used in the voting machine hash by voting machine
+    // So the voting parameters are set in the voting machine, and that voting parameters hash is registered in the ContributionReward
+    // And then other voting parameter hash is calculated for that voting machine and contribution reward, and that is the one used in the controller
     const contributionRewardParamsHash = await votingMachine.getParametersHash(
       [
         deploymentConfig.contributionReward.queuedVoteRequiredPercentage.toString(),
@@ -370,6 +379,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
         `${schemeConfiguration.name} deployed to: ${newScheme.address}`
       );
 
+      // This is simpler than the ContributionReward, just register the params in the VotingMachine and use that ones for the schem registration
       let schemeParamsHash = await votingMachine.getParametersHash(
         [
           schemeConfiguration.queuedVoteRequiredPercentage.toString(),
@@ -405,6 +415,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
         NULL_ADDRESS
       );
 
+      // The Wallet scheme has to be initialized right after being created
       console.log("Initializing scheme...");
       await newScheme.initialize(
         avatar.address,
@@ -417,6 +428,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
         schemeConfiguration.maxRepPercentageChange
       );
 
+      // Set the initial permissions in the WalletScheme
       console.log("Setting scheme permissions...");
       for (var p = 0; p < schemeConfiguration.permissions.length; p++) {
         const permission = schemeConfiguration.permissions[p];
@@ -436,6 +448,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
         );
       }
 
+      // Set the boostedVoteRequiredPercentage
       if (schemeConfiguration.boostedVoteRequiredPercentage > 0) {
         console.log(
           "Setting boosted vote required percentage in voting machine..."
@@ -472,6 +485,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
         );
       }
 
+      // Finally the scheme is configured and ready to be registered
       console.log("Registering scheme in controller...");
       await controller.registerScheme(
         newScheme.address,
@@ -484,14 +498,14 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       addresses[schemeConfiguration.name] = newScheme.address;
     }
 
-    // Deploy dxDaoNFT if it is not set
+    // Deploy dxDaoNFT
     let dxDaoNFT;
     console.log("Deploying DXdaoNFT...");
     dxDaoNFT = await DXdaoNFT.new();
     networkContracts.utils.dxDaoNFT = dxDaoNFT.address;
     addresses["DXdaoNFT"] = dxDaoNFT.address;
 
-    // Deploy DXDVestingFactory if it is not set
+    // Deploy DXDVestingFactory
     let dxdVestingFactory;
     console.log("Deploying DXDVestingFactory...");
     dxdVestingFactory = await DXDVestingFactory.new(
@@ -517,6 +531,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       dxvote: [],
     };
 
+    // Each guild is created and initialized and use a previously deployed token or specific token address
     await Promise.all(
       deploymentConfig.guilds.map(async guildToDeploy => {
         console.log("Deploying guild", guildToDeploy.name);
@@ -556,6 +571,8 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     });
 
     const ipfs = await IPFS.create();
+
+    // Execute a set of actions once all contracts are deployed
     for (let i = 0; i < deploymentConfig.actions.length; i++) {
       const action = deploymentConfig.actions[i];
 

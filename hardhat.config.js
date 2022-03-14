@@ -108,7 +108,7 @@ const hardharNetworks = process.env.CI
         initialDate: moment.unix(0).toDate().toString(),
         mining: {
           auto: true,
-          interval: 500,
+          interval: 1000,
         },
       },
       mainnet: {
