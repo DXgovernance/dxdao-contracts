@@ -29,8 +29,7 @@ jobs:
         run: yarn coverage
 
       - name: Generate coverage report
-        uses: coverallsapp/github-action@master
+        uses: terencetcf/github-actions-lcov-minimum-coverage-checker@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel: true
-          path-to-lcov: "./coverage/lcov.info"
+          coverage-file: coverage/lcov.info
+          minimum-coverage: 90
