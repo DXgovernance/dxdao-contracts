@@ -110,7 +110,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
           prev,
           cur
         ) {
-          return new BigNumber(prev).add(cur.amount.toString());
+          return new BigNumber(prev).plus(cur.amount.toString());
         },
         0);
         const newToken = await ERC20Mock.new(
@@ -716,5 +716,5 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       params: [moment().unix() - (await web3.eth.getBlock("latest")).timestamp],
     });
 
-    return networkContracts;
+    return { networkContracts, addresses };
   });
