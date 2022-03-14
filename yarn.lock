@@ -718,14 +718,6 @@
     buffer "^5.4.3"
     seedrandom "^3.0.5"
 
-"@daostack/infra@0.0.1-rc.19":
-  version "0.0.1-rc.19"
-  resolved "https://registry.yarnpkg.com/@daostack/infra/-/infra-0.0.1-rc.19.tgz#bf50ca452aec8e20ba97f495e2e04a8cea00f571"
-  integrity sha512-Izvhc+WSzo6FAqPpuO7trrpd0Eeawf2TvqIAuCcCHoAbQ4IYYdtcF127IMhdFWJqXYadIYsDnqTPdYzX0xPC0w==
-  dependencies:
-    ethereumjs-abi "^0.6.5"
-    openzeppelin-solidity "2.4.0"
-
 "@ensdomains/address-encoder@^0.1.7":
   version "0.1.9"
   resolved "https://registry.yarnpkg.com/@ensdomains/address-encoder/-/address-encoder-0.1.9.tgz#f948c485443d9ef7ed2c0c4790e931c33334d02d"

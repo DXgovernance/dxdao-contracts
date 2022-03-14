@@ -78,7 +78,6 @@
   },
   "license": "AGPL-3.0",
   "dependencies": {
-    "@daostack/infra": "0.0.1-rc.19",
     "@maticnetwork/eth-decoder": "^0.0.4",
     "@openzeppelin/contracts": "4.3.2",
     "@openzeppelin/contracts-upgradeable": "4.3.2",

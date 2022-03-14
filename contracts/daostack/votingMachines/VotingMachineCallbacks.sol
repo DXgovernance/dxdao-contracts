@@ -1,7 +1,7 @@
 pragma solidity ^0.5.4;
 
 import "../universalSchemes/UniversalScheme.sol";
-import "@daostack/infra/contracts/votingMachines/GenesisProtocol.sol";
+import "./GenesisProtocol.sol";
 
 contract VotingMachineCallbacks is VotingMachineCallbacksInterface {
     struct ProposalInfo {
