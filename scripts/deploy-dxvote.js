@@ -163,8 +163,10 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     console.log("Deploying DXDVotingMachine...");
     votingMachine = await DXDVotingMachine.new(tokens.DXD.address);
     console.log("DXDVotingMachine deployed to:", votingMachine.address);
-    networkContracts.votingMachines.dxd.address = votingMachine.address;
-    networkContracts.votingMachines.dxd.token = tokens.DXD.address;
+    networkContracts.votingMachines[votingMachine.address] = {
+      type: "DXDVotingMachine",
+      token: tokens.DXD.address,
+    };
     await waitBlocks(1);
     await tokens.DXD.approve(votingMachine.address, MAX_UINT_256, {
       from: accounts[0],
@@ -493,7 +495,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     let dxdVestingFactory;
     console.log("Deploying DXDVestingFactory...");
     dxdVestingFactory = await DXDVestingFactory.new(
-      networkContracts.votingMachines.dxd.token,
+      networkContracts.votingMachines[votingMachine.address].token,
       avatar.address
     );
     networkContracts.utils.dxdVestingFactory = dxdVestingFactory.address;
