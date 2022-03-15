@@ -52,7 +52,7 @@ interface IERC20Guild {
         uint256[] memory value,
         uint256 totalActions,
         string memory title,
-        bytes memory contentHash
+        string memory contentHash
     ) external returns (bytes32);
 
     function endProposal(bytes32 proposalId) external;
@@ -137,7 +137,7 @@ interface IERC20Guild {
             uint256[] memory value,
             uint256 totalActions,
             string memory title,
-            bytes memory contentHash,
+            string memory contentHash,
             uint256 state,
             uint256[] memory totalVotes
         );

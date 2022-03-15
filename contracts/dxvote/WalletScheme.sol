@@ -2,7 +2,7 @@ pragma solidity 0.5.17;
 pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "@daostack/infra/contracts/votingMachines/ProposalExecuteInterface.sol";
+import "../daostack/votingMachines/ProposalExecuteInterface.sol";
 import "../daostack/votingMachines/DXDVotingMachineCallbacks.sol";
 import "./PermissionRegistry.sol";
 

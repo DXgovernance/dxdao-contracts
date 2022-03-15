@@ -21,7 +21,6 @@
     "lint --fix": "eslint --fix .",
     "format": "prettier --write \"test/**/*.{js,jsx,ts,tsx,json,md}\" \"contracts/**/*.sol\"",
     "format-check": "prettier --check \"test/**/*.{js,jsx,ts,tsx,json,md}\" \"contracts/**/*.sol\"",
-    "postinstall": "husky install",
     "pre-commit": "lint-staged"
   },
   "devDependencies": {
@@ -79,7 +78,6 @@
   },
   "license": "AGPL-3.0",
   "dependencies": {
-    "@daostack/infra": "0.0.1-rc.19",
     "@maticnetwork/eth-decoder": "^0.0.4",
     "@openzeppelin/contracts": "4.3.2",
     "@openzeppelin/contracts-upgradeable": "4.3.2",
@@ -88,6 +86,7 @@
     "@truffle/hdwallet-provider": "^1.4.0",
     "arb-ethers-web3-bridge": "^0.7.3",
     "chai": "^4.2.0",
+    "ipfs-core": "^0.14.1",
     "math": "0.0.3",
     "moment": "^2.27.0",
     "openzeppelin-solidity": "2.4.0",

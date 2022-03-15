@@ -4,12 +4,13 @@
   "parserOptions": {
     "ecmaVersion": 6,
     "sourceType": "module",
-"requireConfigFile": false,
+    "requireConfigFile": false,
     "ecmaFeatures": {
       "jsx": true
     }
   },
   "rules": {
+    "no-console": "off",
     "semi": 2,
     "no-undef": "off",
     "eol-last": 2,

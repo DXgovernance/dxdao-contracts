@@ -6,7 +6,7 @@ import "../controller/Avatar.sol";
 
 import "./VotingMachineCallbacksInterface.sol";
 
-import "@daostack/infra/contracts/votingMachines/IntVoteInterface.sol";
+import "./IntVoteInterface.sol";
 
 contract DXDVotingMachineCallbacks is VotingMachineCallbacksInterface {
     IntVoteInterface public votingMachine;
