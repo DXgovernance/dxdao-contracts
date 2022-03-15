@@ -6,7 +6,7 @@ import { addGuildsToRegistry } from "../../helpers/guild";
 
 const GuildRegistry = artifacts.require("GuildRegistry.sol");
 
-contract.only("GuildRegistry", accounts => {
+contract("GuildRegistry", accounts => {
   let guildRegistry;
   beforeEach(async () => {
     guildRegistry = await GuildRegistry.new({
