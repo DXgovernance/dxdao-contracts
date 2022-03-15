@@ -20,10 +20,7 @@ contract GuildUtils is Ownable {
 
     mapping(address => Guild) guildStructs;
 
-    function addGuild(address guildAddress, string memory guildName)
-        external
-        onlyOwner
-    {
+    function addGuild(address guildAddress, string memory guildName) external onlyOwner {
         guildStructs[guildAddress].guildName = guildName;
         guildStructs[guildAddress].index = _index.current();
         _guilds.push(guildAddress);
@@ -47,12 +44,7 @@ contract GuildUtils is Ownable {
         return _guilds.length;
     }
 
-    function getGuildName(address guildAddress)
-        external
-        view
-        onlyOwner
-        returns (string memory)
-    {
+    function getGuildName(address guildAddress) external view onlyOwner returns (string memory) {
         return guildStructs[guildAddress].guildName;
     }
 }

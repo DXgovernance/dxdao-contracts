@@ -24,3 +24,4 @@ tags
 .temp
 .log/
 yarn-error.log
+contracts/hardhat-dependency-compiler

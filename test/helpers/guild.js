@@ -149,3 +149,13 @@ export const GUILD_PROPOSAL_STATES = {
   executed: 2,
   failed: 3,
 };
+
+export const addGuildsToRegistry = async ({
+  guildRegistry,
+  address,
+  account,
+}) => {
+  return guildRegistry.addGuild(address, {
+    from: account,
+  });
+};
