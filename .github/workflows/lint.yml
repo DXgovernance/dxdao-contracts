@@ -87,4 +87,4 @@ jobs:
 
       - name: Analysis of contracts
         run: |
-          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack'
+          slither . --ignore-compile --exclude-dependencies --exclude naming-convention --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack'
