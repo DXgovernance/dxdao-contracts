@@ -1,8 +1,10 @@
 pragma solidity ^0.5.4;
 
 import "openzeppelin-solidity/contracts/drafts/TokenVesting.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 
 contract DXDVestingFactory {
+    using SafeERC20 for IERC20;
     event VestingCreated(address vestingContractAddress);
 
     IERC20 public DXD;
@@ -21,7 +23,7 @@ contract DXDVestingFactory {
         uint256 value
     ) public {
         TokenVesting newVestingContract = new TokenVesting(beneficiary, start, cliffDuration, duration, true);
-        DXD.transferFrom(msg.sender, address(newVestingContract), value);
+        DXD.safeTransferFrom(msg.sender, address(newVestingContract), value);
         newVestingContract.transferOwnership(DXdao);
         emit VestingCreated(address(newVestingContract));
     }

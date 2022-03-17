@@ -3,7 +3,7 @@ pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
 /**
  * @title TokenVault
@@ -13,6 +13,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
  */
 contract TokenVault is Initializable {
     using SafeMathUpgradeable for uint256;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     IERC20Upgradeable public token;
     address public admin;
@@ -37,14 +38,14 @@ contract TokenVault is Initializable {
     // @dev Deposit the tokens from the user to the vault from the admin contract
     function deposit(address user, uint256 amount) public isInitialized {
         require(msg.sender == admin);
-        token.transferFrom(user, address(this), amount);
+        token.safeTransferFrom(user, address(this), amount);
         balances[user] = balances[user].add(amount);
     }
 
     // @dev Withdraw the tokens to the user from the vault from the admin contract
     function withdraw(address user, uint256 amount) public isInitialized {
         require(msg.sender == admin);
-        token.transfer(user, amount);
+        token.safeTransferFrom(user, amount);
         balances[user] = balances[user].sub(amount);
     }
 
