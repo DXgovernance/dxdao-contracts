@@ -14,8 +14,8 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
-    address guildGuardian;
-    uint256 extraTimeForGuardian;
+    address public guildGuardian;
+    uint256 public extraTimeForGuardian;
 
     // @dev Initilizer
     // @param _token The ERC20 token that will be used as source of voting power

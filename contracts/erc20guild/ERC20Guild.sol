@@ -55,71 +55,73 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // The ERC20 token that will be used as source of voting power
-    IERC20Upgradeable token;
+    IERC20Upgradeable public token;
 
     // The address of the GlobalPermissionRegistry to be used
-    GlobalPermissionRegistry permissionRegistry;
+    GlobalPermissionRegistry public permissionRegistry;
 
     // The name of the ERC20Guild
-    string name;
+    string public name;
 
     // The amount of time in seconds that a proposal will be active for voting
-    uint256 proposalTime;
+    uint256 public proposalTime;
 
     // The amount of time in seconds that a proposal action will have to execute successfully
-    uint256 timeForExecution;
+    uint256 public timeForExecution;
 
     // The percentage of voting power in base 10000 needed to execute a proposal action
     // 100 == 1% 2500 == 25%
-    uint256 votingPowerForProposalExecution;
+    uint256 public votingPowerForProposalExecution;
 
     // The percentage of voting power in base 10000 needed to create a proposal
     // 100 == 1% 2500 == 25%
-    uint256 votingPowerForProposalCreation;
+    uint256 public votingPowerForProposalCreation;
 
     // The amount of gas in wei unit used for vote refunds
-    uint256 voteGas;
+    uint256 public voteGas;
 
     // The maximum gas price used for vote refunds
-    uint256 maxGasPrice;
+    uint256 public maxGasPrice;
 
     // The maximum amount of proposals to be active at the same time
-    uint256 maxActiveProposals;
+    uint256 public maxActiveProposals;
 
     // The total amount of proposals created, used as nonce for proposals creation
-    uint256 totalProposals;
+    uint256 public totalProposals;
 
     // The amount of active proposals
-    uint256 activeProposalsNow;
+    uint256 public activeProposalsNow;
 
     // The amount of time in seconds that the voting tokens would be locked
-    uint256 lockTime;
+    uint256 public lockTime;
 
     // The total amount of tokens locked
-    uint256 totalLocked;
+    uint256 public totalLocked;
 
     // The address of the Token Vault contract, where tokens are being held for the users
-    TokenVault tokenVault;
+    TokenVault public tokenVault;
 
     // The tokens locked indexed by token holder address.
     struct TokenLock {
         uint256 amount;
         uint256 timestamp;
     }
-    mapping(address => TokenLock) tokensLocked;
+
+    mapping(address => TokenLock) public tokensLocked;
 
     // All the signed votes that were executed, to avoid double signed vote execution.
-    mapping(bytes32 => bool) signedVotes;
+    mapping(bytes32 => bool) public signedVotes;
 
     // The EIP1271 hashes that were signed by the ERC20Guild
     // Once a hash is signed by the guild it can be verified with a signature from any voter with balance
-    mapping(bytes32 => bool) EIP1271SignedHashes;
+    mapping(bytes32 => bool) public EIP1271SignedHashes;
 
     // Vote and Proposal structs used in the proposals mapping
     struct Vote {
         uint256 action;
         uint256 votingPower;
     }
+
     struct Proposal {
         address creator;
         uint256 startTime;
@@ -135,10 +137,10 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // Mapping of all proposals created indexed by proposal id
-    mapping(bytes32 => Proposal) proposals;
+    mapping(bytes32 => Proposal) public proposals;
 
     // Array to keep track of the proposals ids in contract storage
-    bytes32[] proposalsIds;
+    bytes32[] public proposalsIds;
 
     event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
     event VoteAdded(bytes32 indexed proposalId, uint256 indexed action, address voter, uint256 votingPower);

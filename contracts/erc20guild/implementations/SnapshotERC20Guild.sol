@@ -19,7 +19,7 @@ contract SnapshotERC20Guild is ERC20Guild {
     using ECDSAUpgradeable for bytes32;
 
     // Proposal id => Snapshot id
-    mapping(bytes32 => uint256) proposalsSnapshots;
+    mapping(bytes32 => uint256) public proposalsSnapshots;
 
     // Snapshotted values have arrays of ids and the value corresponding to that id. These could be an array of a
     // Snapshot struct, but that would impede usage of functions that work on an array.

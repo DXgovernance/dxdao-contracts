@@ -12,10 +12,10 @@ contract MigratableERC20Guild is ERC20Guild {
     using SafeMathUpgradeable for uint256;
 
     // The tokens locked indexed by token holder address.
-    mapping(address => mapping(address => TokenLock)) tokensLockedByVault;
+    mapping(address => mapping(address => TokenLock)) public tokensLockedByVault;
 
     // The total amount of tokens locked
-    mapping(address => uint256) totalLockedByVault;
+    mapping(address => uint256) public totalLockedByVault;
 
     uint256 public lastMigrationTimestamp;
 

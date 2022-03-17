@@ -20,7 +20,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     using ECDSAUpgradeable for bytes32;
 
     // Proposal id => Snapshot id
-    mapping(bytes32 => uint256) proposalsSnapshots;
+    mapping(bytes32 => uint256) public proposalsSnapshots;
 
     // @dev Initilizer
     // @param _token The ERC20 token that will be used as source of voting power
