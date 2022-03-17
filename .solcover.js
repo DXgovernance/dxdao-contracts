@@ -8,5 +8,5 @@ module.exports = {
     "votingMachines/",
     "node_modules/@daostack",
   ],
-  istanbulReporter: ["html"],
+  istanbulReporter: ["lcov"],
 };

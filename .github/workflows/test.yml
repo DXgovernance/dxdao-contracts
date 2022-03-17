@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  setup:
+  coverage:
     runs-on: ubuntu-latest
 
     strategy:
@@ -26,4 +26,10 @@ jobs:
         run: yarn
 
       - name: Solidity Tests
-        run: npx hardhat test
+        run: yarn coverage
+
+      - name: Test Coverage Check
+        uses: terencetcf/github-actions-lcov-minimum-coverage-checker@v1
+        with:
+          coverage-file: coverage/lcov.info
+          minimum-coverage: 80
