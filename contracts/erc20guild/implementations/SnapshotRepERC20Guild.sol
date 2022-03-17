@@ -11,8 +11,8 @@ import "../../utils/ERC20/ERC20SnapshotRep.sol";
   @title SnapshotRepERC20Guild
   @author github:AugustoL
   @dev An ERC20Guild designed to work with a snapshotted voting token, no locking needed.
-  When a proposal is created it saves the snapshot if at the moment of creation, the voters can vote only with the voting
-  power they had at that time.
+  When a proposal is created it saves the snapshot if at the moment of creation,
+  the voters can vote only with the voting power they had at that time.
 */
 contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;

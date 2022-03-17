@@ -29,8 +29,8 @@ import "../utils/TokenVault.sol";
   The guild can execute only allowed functions, if a function is not allowed it will need to set the allowance for it.
   The allowed functions have a timestamp that marks from what time the function can be executed.
   A limit to a maximum amount of active proposals can be set, an active proposal is a proposal that is in Active state.
-  Gas can be refunded to the account executing the vote, for this to happen the voteGas and maxGasPrice values need to be
-  set.
+  Gas can be refunded to the account executing the vote, for this to happen the voteGas and maxGasPrice values need to
+  be set.
   Signed votes can be executed in behalf of other users, to sign a vote the voter needs to hash it with the function
   hashVote, after signing the hash teh voter can share it to other account to be executed.
   Multiple votes and signed votes can be executed in one transaction.
