@@ -226,8 +226,8 @@ contract DXDVotingMachine is GenesisProtocol {
                 tx.gasprice.min(organizationRefunds[orgAddress].maxGasPrice)
             );
             if (organizationRefunds[orgAddress].balance >= gasRefund) {
-                toAddress.transfer(gasRefund);
                 organizationRefunds[orgAddress].balance = organizationRefunds[orgAddress].balance.sub(gasRefund);
+                toAddress.transfer(gasRefund);
             }
         }
     }
