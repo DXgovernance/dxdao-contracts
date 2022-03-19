@@ -12,9 +12,6 @@ contract("GuildRegistry", accounts => {
     guildRegistry = await GuildRegistry.new({
       from: accounts[0],
     });
-    return {
-      guildRegistry,
-    };
   });
 
   describe("Retrieve Guild Registry information", () => {
