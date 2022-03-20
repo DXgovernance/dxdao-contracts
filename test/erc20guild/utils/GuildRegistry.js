@@ -25,9 +25,8 @@ contract("GuildRegistry", accounts => {
         from: accounts[0],
       });
       const getGuildsAddresses = await guildRegistry.getGuildsAddresses();
-      const getTotalGuilds = await guildRegistry.getTotalGuilds();
       assert.deepEqual(getGuildsAddresses, [SOME_ADDRESS]);
-      assert.equal(getTotalGuilds, 1);
+      assert.equal(getGuildsAddresses.length, 1);
       await expectEvent(addGuild, "AddGuild");
     });
 
@@ -72,16 +71,6 @@ contract("GuildRegistry", accounts => {
       const getGuildsAddresses = await guildRegistry.getGuildsAddresses();
       assert.deepEqual(getGuildsAddresses, [SOME_ADDRESS]);
       await expectEvent(removeGuild, "RemoveGuild");
-    });
-
-    it("should return the total amount of guilds", async () => {
-      await addGuildsToRegistry({
-        guildRegistry,
-        address: SOME_ADDRESS,
-        account: accounts[0],
-      });
-      const getTotalGuilds = await guildRegistry.getTotalGuilds();
-      assert.equal(getTotalGuilds, 1);
     });
 
     it("should return all guild addresses", async () => {

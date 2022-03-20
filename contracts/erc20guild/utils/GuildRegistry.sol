@@ -40,10 +40,6 @@ contract GuildRegistry is Ownable {
         emit RemoveGuild(guildAddress);
     }
 
-    function getTotalGuilds() external view returns (uint256) {
-        return guilds.length;
-    }
-
     function getGuildsAddresses() external view returns (address[] memory) {
         return guilds;
     }
