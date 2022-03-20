@@ -45,7 +45,7 @@ contract TokenVault is Initializable {
     // @dev Withdraw the tokens to the user from the vault from the admin contract
     function withdraw(address user, uint256 amount) public isInitialized {
         require(msg.sender == admin);
-        token.safeTransferFrom(user, amount);
+        token.safeTransfer(user, amount);
         balances[user] = balances[user].sub(amount);
     }
 

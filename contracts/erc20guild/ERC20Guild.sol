@@ -665,7 +665,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         if (voteGas > 0) {
             uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
             if (address(this).balance >= gasRefund) {
-                payable(msg.sender).call{value: gasRefund}("");
+                (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
+                require(success, "Failed to refund gas");
             }
         }
     }

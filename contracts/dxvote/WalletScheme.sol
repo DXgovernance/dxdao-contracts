@@ -21,7 +21,7 @@ import "./PermissionRegistry.sol";
 contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
     using SafeMath for uint256;
 
-    string public SCHEME_TYPE = "Wallet Scheme v1.1";
+    string public constant SCHEME_TYPE = "Wallet Scheme v1.1";
     bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
     bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
     bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
