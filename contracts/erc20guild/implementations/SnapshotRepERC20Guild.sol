@@ -93,8 +93,8 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "SnapshotERC20Guild: Already voted");
         require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "SnapshotERC20Guild: Wrong signer");
-        _setSnapshottedVote(voter, proposalId, action, votingPower);
         signedVotes[hashedVote] = true;
+        _setSnapshottedVote(voter, proposalId, action, votingPower);
     }
 
     // @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild

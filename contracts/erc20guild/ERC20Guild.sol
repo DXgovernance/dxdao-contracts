@@ -365,8 +365,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "ERC20Guild: Already voted");
         require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "ERC20Guild: Wrong signer");
-        _setVote(voter, proposalId, action, votingPower);
         signedVotes[hashedVote] = true;
+        _setVote(voter, proposalId, action, votingPower);
     }
 
     // @dev Set the voting power to vote in multiple proposals using signed votes
