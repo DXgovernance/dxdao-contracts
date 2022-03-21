@@ -245,8 +245,9 @@ contract GenesisProtocolLogic is IntVoteInterface {
         );
         require(_execute(_proposalId), "proposal need to expire");
 
-        proposal.secondsFromTimeOutTillExecuteBoosted = // solhint-disable-next-line not-rely-on-time
-        now.sub(proposal.currentBoostedVotePeriodLimit.add(proposal.times[1]));
+        proposal.secondsFromTimeOutTillExecuteBoosted = now.sub( // solhint-disable-next-line not-rely-on-time
+            proposal.currentBoostedVotePeriodLimit.add(proposal.times[1])
+        );
 
         expirationCallBounty = calcExecuteCallBounty(_proposalId);
         proposal.totalStakes = proposal.totalStakes.sub(expirationCallBounty);
