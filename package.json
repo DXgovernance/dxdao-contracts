@@ -14,7 +14,7 @@
   "scripts": {
     "test": "npx hardhat test",
     "coverage": "./scripts/coverage.sh",
-    "compile": "rm -rf artifacts cache && npx hardhat compile",
+    "compile": "rm -rf artifacts cache contracts/hardhat-dependency-compiler && npx hardhat compile",
     "deploy": "node scripts/deploy.js",
     "solidity-linter": "./scripts/solhint.sh",
     "lint": "eslint .",
