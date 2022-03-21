@@ -413,7 +413,7 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
      * @param proposalIndex the index of the proposal in the proposals list
      */
     function getOrganizationProposalByIndex(uint256 proposalIndex)
-        public
+        external
         view
         returns (
             address[] memory to,
@@ -456,14 +456,14 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
     /**
      * @dev Get the proposals length
      */
-    function getOrganizationProposalsLength() public view returns (uint256) {
+    function getOrganizationProposalsLength() external view returns (uint256) {
         return proposalsList.length;
     }
 
     /**
      * @dev Get the proposals ids
      */
-    function getOrganizationProposals() public view returns (bytes32[] memory) {
+    function getOrganizationProposals() external view returns (bytes32[] memory) {
         return proposalsList;
     }
 }

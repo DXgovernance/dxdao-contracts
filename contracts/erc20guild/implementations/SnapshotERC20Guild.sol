@@ -77,7 +77,7 @@ contract SnapshotERC20Guild is ERC20Guild {
 
     // @dev Lock tokens in the guild to be used as voting power
     // @param tokenAmount The amount of tokens to be locked
-    function lockTokens(uint256 tokenAmount) public virtual override {
+    function lockTokens(uint256 tokenAmount) external virtual override {
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
         tokenVault.deposit(msg.sender, tokenAmount);
@@ -89,7 +89,7 @@ contract SnapshotERC20Guild is ERC20Guild {
 
     // @dev Release tokens locked in the guild, this will decrease the voting power
     // @param tokenAmount The amount of tokens to be withdrawn
-    function withdrawTokens(uint256 tokenAmount) public virtual override {
+    function withdrawTokens(uint256 tokenAmount) external virtual override {
         require(
             votingPowerOf(msg.sender) >= tokenAmount,
             "SnapshotERC20Guild: Unable to withdraw more tokens than locked"
@@ -206,7 +206,7 @@ contract SnapshotERC20Guild is ERC20Guild {
     // @param accounts The addresses of the accounts
     // @param snapshotIds The snapshotIds to be used
     function votingPowerOfMultipleAt(address[] memory accounts, uint256[] memory snapshotIds)
-        public
+        external
         view
         virtual
         returns (uint256[] memory)
@@ -230,12 +230,12 @@ contract SnapshotERC20Guild is ERC20Guild {
     }
 
     // @dev Get the proposal snapshot id
-    function getProposalSnapshotId(bytes32 proposalId) public view returns (uint256) {
+    function getProposalSnapshotId(bytes32 proposalId) external view returns (uint256) {
         return proposalsSnapshots[proposalId];
     }
 
     // @dev Get the current snapshot id
-    function getCurrentSnapshotId() public view returns (uint256) {
+    function getCurrentSnapshotId() external view returns (uint256) {
         return _currentSnapshotId;
     }
 

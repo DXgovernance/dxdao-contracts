@@ -69,7 +69,7 @@ contract DXDVotingMachine is GenesisProtocol {
      * @param _maxGasPrice the maximun amount of gas price to be paid, if the gas used is higehr than this value only a
      * portion of the total gas would be refunded
      */
-    function setOrganizationRefund(uint256 _voteGas, uint256 _maxGasPrice) public {
+    function setOrganizationRefund(uint256 _voteGas, uint256 _maxGasPrice) external {
         organizationRefunds[msg.sender].voteGas = _voteGas;
         organizationRefunds[msg.sender].maxGasPrice = _maxGasPrice;
     }
@@ -84,7 +84,7 @@ contract DXDVotingMachine is GenesisProtocol {
         address _scheme,
         bytes32 _paramsHash,
         uint256 _boostedVotePeriodLimit
-    ) public {
+    ) external {
         boostedVoteRequiredPercentage[keccak256(abi.encodePacked(_scheme, msg.sender))][
             _paramsHash
         ] = _boostedVotePeriodLimit;
@@ -293,7 +293,7 @@ contract DXDVotingMachine is GenesisProtocol {
         address avatar,
         address scheme,
         bytes32 paramsHash
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         return boostedVoteRequiredPercentage[keccak256(abi.encodePacked(scheme, avatar))][paramsHash];
     }
 

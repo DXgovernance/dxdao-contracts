@@ -21,7 +21,7 @@ contract DXDVestingFactory {
         uint256 cliffDuration,
         uint256 duration,
         uint256 value
-    ) public {
+    ) external {
         TokenVesting newVestingContract = new TokenVesting(beneficiary, start, cliffDuration, duration, true);
         DXD.safeTransferFrom(msg.sender, address(newVestingContract), value);
         newVestingContract.transferOwnership(DXdao);

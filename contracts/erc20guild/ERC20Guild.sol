@@ -214,7 +214,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
         uint256 _lockTime
-    ) public virtual {
+    ) external virtual {
         _setConfig(
             _proposalTime,
             _timeForExecution,
@@ -239,7 +239,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bytes4[] memory functionSignature,
         uint256[] memory valueAllowed,
         bool[] memory allowance
-    ) public virtual {
+    ) external virtual {
         require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
         require(
             (to.length == functionSignature.length) &&
@@ -283,7 +283,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     // @dev Set the permission delay in the permission registry
     // @param allowance If the function is allowed to be called or not
-    function setPermissionDelay(uint256 permissionDelay) public virtual {
+    function setPermissionDelay(uint256 permissionDelay) external virtual {
         require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
         permissionRegistry.setPermissionDelay(permissionDelay);
     }
@@ -309,7 +309,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @dev Set a hash of an call to be validated using EIP1271
     // @param _hash The EIP1271 hash to be added or removed
     // @param isValid If the hash is valid or not
-    function setEIP1271SignedHash(bytes32 _hash, bool isValid) public virtual {
+    function setEIP1271SignedHash(bytes32 _hash, bool isValid) external virtual {
         require(msg.sender == address(this), "ERC20Guild: Only callable by the guild");
         EIP1271SignedHashes[_hash] = isValid;
     }
@@ -340,7 +340,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         bytes32[] memory proposalIds,
         uint256[] memory actions,
         uint256[] memory votingPowers
-    ) public virtual {
+    ) external virtual {
         require(
             (proposalIds.length == votingPowers.length) && (proposalIds.length == actions.length),
             "ERC20Guild: Wrong length of proposalIds, actions or votingPowers"
@@ -381,7 +381,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         uint256[] memory votingPowers,
         address[] memory voters,
         bytes[] memory signatures
-    ) public virtual {
+    ) external virtual {
         for (uint256 i = 0; i < proposalIds.length; i++) {
             setSignedVote(proposalIds[i], actions[i], votingPowers[i], voters[i], signatures[i]);
         }
@@ -389,7 +389,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     // @dev Lock tokens in the guild to be used as voting power
     // @param tokenAmount The amount of tokens to be locked
-    function lockTokens(uint256 tokenAmount) public virtual {
+    function lockTokens(uint256 tokenAmount) external virtual {
         tokenVault.deposit(msg.sender, tokenAmount);
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(tokenAmount);
         tokensLocked[msg.sender].timestamp = block.timestamp.add(lockTime);
@@ -399,7 +399,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     // @dev Withdraw tokens locked in the guild, this will decrease the voting power
     // @param tokenAmount The amount of tokens to be withdrawn
-    function withdrawTokens(uint256 tokenAmount) public virtual {
+    function withdrawTokens(uint256 tokenAmount) external virtual {
         require(votingPowerOf(msg.sender) >= tokenAmount, "ERC20Guild: Unable to withdraw more tokens than locked");
         require(tokensLocked[msg.sender].timestamp < block.timestamp, "ERC20Guild: Tokens still locked");
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(tokenAmount);
@@ -679,7 +679,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     // @dev Get the voting power of multiple addresses
     // @param accounts The addresses of the accounts
-    function votingPowerOfMultiple(address[] memory accounts) public view virtual returns (uint256[] memory) {
+    function votingPowerOfMultiple(address[] memory accounts) external view virtual returns (uint256[] memory) {
         uint256[] memory votes = new uint256[](accounts.length);
         for (uint256 i = 0; i < accounts.length; i++) {
             votes[i] = votingPowerOf(accounts[i]);
@@ -688,37 +688,37 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // @dev Get the address of the ERC20Token used for voting
-    function getToken() public view returns (address) {
+    function getToken() external view returns (address) {
         return address(token);
     }
 
     // @dev Get the address of the permission registry contract
-    function getPermissionRegistry() public view returns (address) {
+    function getPermissionRegistry() external view returns (address) {
         return address(permissionRegistry);
     }
 
     // @dev Get the name of the ERC20Guild
-    function getName() public view returns (string memory) {
+    function getName() external view returns (string memory) {
         return name;
     }
 
     // @dev Get the proposalTime
-    function getProposalTime() public view returns (uint256) {
+    function getProposalTime() external view returns (uint256) {
         return proposalTime;
     }
 
     // @dev Get the timeForExecution
-    function getTimeForExecution() public view returns (uint256) {
+    function getTimeForExecution() external view returns (uint256) {
         return timeForExecution;
     }
 
     // @dev Get the voteGas
-    function getVoteGas() public view returns (uint256) {
+    function getVoteGas() external view returns (uint256) {
         return voteGas;
     }
 
     // @dev Get the maxGasPrice
-    function getMaxGasPrice() public view returns (uint256) {
+    function getMaxGasPrice() external view returns (uint256) {
         return maxGasPrice;
     }
 
@@ -728,22 +728,22 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // @dev Get the totalProposals
-    function getTotalProposals() public view returns (uint256) {
+    function getTotalProposals() external view returns (uint256) {
         return totalProposals;
     }
 
     // @dev Get the activeProposalsNow
-    function getActiveProposalsNow() public view returns (uint256) {
+    function getActiveProposalsNow() external view returns (uint256) {
         return activeProposalsNow;
     }
 
     // @dev Get if a signed vote has been executed or not
-    function getSignedVote(bytes32 signedVoteHash) public view returns (bool) {
+    function getSignedVote(bytes32 signedVoteHash) external view returns (bool) {
         return signedVotes[signedVoteHash];
     }
 
     // @dev Get the proposalsIds array
-    function getProposalsIds() public view returns (bytes32[] memory) {
+    function getProposalsIds() external view returns (bytes32[] memory) {
         return proposalsIds;
     }
 
@@ -761,7 +761,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @return state If the proposal state
     // @return totalVotes The total votes of the proposal
     function getProposal(bytes32 proposalId)
-        public
+        external
         view
         virtual
         returns (
@@ -800,7 +800,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @return action The selected action of teh voter
     // @return votingPower The amount of voting power used in the vote
     function getProposalVotesOfVoter(bytes32 proposalId, address voter)
-        public
+        external
         view
         virtual
         returns (uint256 action, uint256 votingPower)
@@ -839,17 +839,17 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // @dev Get the length of the proposalIds array
-    function getProposalsIdsLength() public view virtual returns (uint256) {
+    function getProposalsIdsLength() external view virtual returns (uint256) {
         return proposalsIds.length;
     }
 
     // @dev Get the tokenVault address
-    function getTokenVault() public view virtual returns (address) {
+    function getTokenVault() external view virtual returns (address) {
         return address(tokenVault);
     }
 
     // @dev Get the lockTime
-    function getLockTime() public view virtual returns (uint256) {
+    function getLockTime() external view virtual returns (uint256) {
         return lockTime;
     }
 
@@ -859,13 +859,13 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     }
 
     // @dev Get the locked timestamp of a voter tokens
-    function getVoterLockTimestamp(address voter) public view virtual returns (uint256) {
+    function getVoterLockTimestamp(address voter) external view virtual returns (uint256) {
         return tokensLocked[voter].timestamp;
     }
 
     // @dev Gets the validity of a EIP1271 hash
     // @param _hash The EIP1271 hash
-    function getEIP1271SignedHash(bytes32 _hash) public view virtual returns (bool) {
+    function getEIP1271SignedHash(bytes32 _hash) external view virtual returns (bool) {
         return EIP1271SignedHashes[_hash];
     }
 

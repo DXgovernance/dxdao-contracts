@@ -29,31 +29,31 @@ contract TokenVault is Initializable {
     // @dev Initializer
     // @param _token The address of the token to be used
     // @param _admin The address of the contract that will execute deposits and withdrawals
-    function initialize(address _token, address _admin) public initializer {
+    function initialize(address _token, address _admin) external initializer {
         token = IERC20Upgradeable(_token);
         admin = _admin;
         initialized = true;
     }
 
     // @dev Deposit the tokens from the user to the vault from the admin contract
-    function deposit(address user, uint256 amount) public isInitialized {
+    function deposit(address user, uint256 amount) external isInitialized {
         require(msg.sender == admin);
         token.safeTransferFrom(user, address(this), amount);
         balances[user] = balances[user].add(amount);
     }
 
     // @dev Withdraw the tokens to the user from the vault from the admin contract
-    function withdraw(address user, uint256 amount) public isInitialized {
+    function withdraw(address user, uint256 amount) external isInitialized {
         require(msg.sender == admin);
         token.safeTransfer(user, amount);
         balances[user] = balances[user].sub(amount);
     }
 
-    function getToken() public view returns (address) {
+    function getToken() external view returns (address) {
         return address(token);
     }
 
-    function getAdmin() public view returns (address) {
+    function getAdmin() external view returns (address) {
         return admin;
     }
 }
