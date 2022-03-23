@@ -98,12 +98,12 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     }
 
     // @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild
-    function lockTokens(uint256 tokenAmount) public virtual override {
+    function lockTokens(uint256 tokenAmount) external virtual override {
         revert("SnapshotERC20Guild: token vault disabled");
     }
 
     // @dev Override and disable withdraw of tokens, not needed in SnapshotRepERC20Guild
-    function withdrawTokens(uint256 tokenAmount) public virtual override {
+    function withdrawTokens(uint256 tokenAmount) external virtual override {
         revert("SnapshotERC20Guild: token vault disabled");
     }
 
@@ -175,7 +175,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     // @param accounts The addresses of the accounts
     // @param snapshotIds The snapshotIds to be used
     function votingPowerOfMultipleAt(address[] memory accounts, uint256[] memory snapshotIds)
-        public
+        external
         view
         virtual
         returns (uint256[] memory)
@@ -199,7 +199,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     }
 
     // @dev Get the proposal snapshot id
-    function getProposalSnapshotId(bytes32 proposalId) public view returns (uint256) {
+    function getProposalSnapshotId(bytes32 proposalId) external view returns (uint256) {
         return proposalsSnapshots[proposalId];
     }
 }

@@ -59,7 +59,7 @@ contract PermissionRegistry {
      * @dev Transfer Ownership
      * @param newOwner The new owner of the registry that can set any permissions
      */
-    function transferOwnership(address newOwner) public {
+    function transferOwnership(address newOwner) external {
         require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
         permissions[address(0)][owner][address(this)][ANY_SIGNATURE].fromTime = 0;
         permissions[address(0)][newOwner][address(this)][ANY_SIGNATURE].fromTime = now;
@@ -93,7 +93,7 @@ contract PermissionRegistry {
         bytes4 functionSignature,
         uint256 valueAllowed,
         bool allowed
-    ) public {
+    ) external {
         require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
         require(from != address(0), "PermissionRegistry: Cant use address(0) as from");
         require(from != owner || to != address(this), "PermissionRegistry: Cant set owner permissions");
@@ -129,7 +129,7 @@ contract PermissionRegistry {
         bytes4 functionSignature,
         uint256 valueAllowed,
         bool allowed
-    ) public {
+    ) external {
         require(to != address(this), "PermissionRegistry: Cant set permissions to PermissionRegistry");
         require(msg.sender != owner && to != address(this), "PermissionRegistry: Cant set owner permissions");
         if (allowed) {
@@ -163,7 +163,7 @@ contract PermissionRegistry {
         address from,
         address to,
         bytes4 functionSignature
-    ) public view returns (uint256 valueAllowed, uint256 fromTime) {
+    ) external view returns (uint256 valueAllowed, uint256 fromTime) {
         Permission memory permission;
 
         // If the asset is an ERC20 token check the value allowed to be transfered
