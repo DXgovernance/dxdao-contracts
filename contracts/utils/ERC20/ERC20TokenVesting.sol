@@ -107,6 +107,13 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
     }
 
     /**
+     * @return the amount of the token released.
+     */
+    function released(address token) public view returns (uint256) {
+        return _released[token];
+    }
+
+    /**
      * @return true if the token is revoked.
      */
     function revoked(address token) external view returns (bool) {

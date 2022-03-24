@@ -102,7 +102,6 @@
     "*.{ts,tsx,js,jsx,json,md,sol}": [
       "yarn format",
       "yarn solidity-linter",
-      "yarn clean",
       "git add"
     ]
   }
