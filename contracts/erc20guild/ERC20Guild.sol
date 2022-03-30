@@ -7,6 +7,8 @@ import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+
 import "../utils/GlobalPermissionRegistry.sol";
 import "../utils/TokenVault.sol";
 
@@ -41,6 +43,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
+    using AddressUpgradeable for address;
 
     bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
     bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
@@ -506,12 +509,15 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
                     // The permission registry keeps track of all value transferred and checks call permission
                     try
+                        // slither-disable-next-line all
                         permissionRegistry.setPermissionUsed(asset, address(this), _to, callDataFuncSignature, _value)
                     {} catch Error(string memory reason) {
                         revert(reason);
                     }
 
                     isExecutingProposal = true;
+                    // We use isExecutingProposal varibale to avoid reentrancy in proposal execution
+                    // slither-disable-next-line all
                     (bool success, ) = proposals[proposalId].to[i].call{value: proposals[proposalId].value[i]}(
                         proposals[proposalId].data[i]
                     );
@@ -664,7 +670,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
         if (voteGas > 0) {
             uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
-            if (address(this).balance >= gasRefund) {
+            if (address(this).balance >= gasRefund && !address(msg.sender).isContract()) {
                 (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
                 require(success, "Failed to refund gas");
             }

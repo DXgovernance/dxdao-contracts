@@ -62,29 +62,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install slither-analyzer==0.8.2
 
-      - name: Compile contracts
-        run: yarn compile
-
-      - name: Summary of static ananlysis
-        run: |
-          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print human-summary
-
-      - name: Contract summary of static ananlysis
-        run: |
-          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print contract-summary
-
-      - name: Function summary of contracts
-        run: |
-          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print function-summary
-
-      - name: Inheritance analysis of contracts
-        run: |
-          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print inheritance
-
-      - name: Data dependency of contracts
-        run: |
-          slither . --ignore-compile --exclude-dependencies --filter-path 'realitio|openzeppelin|GnosisSafe|test|daostack' --print data-dependency
-
-      - name: Analysis of contracts
-        run: |
-          slither . --ignore-compile --exclude-dependencies --config-file slither.config.json
+      - name: Run lint task
+        run: ./scripts/lint.sh

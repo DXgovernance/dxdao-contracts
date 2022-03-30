@@ -374,6 +374,7 @@ contract WalletScheme is DXDVotingMachineCallbacks, ProposalExecuteInterface {
             descriptionHash: _descriptionHash,
             submittedTime: now
         });
+        // slither-disable-next-line all
         proposalsList.push(proposalId);
         proposalsBlockNumber[proposalId] = block.number;
         emit ProposalStateChange(proposalId, uint256(ProposalState.Submitted));

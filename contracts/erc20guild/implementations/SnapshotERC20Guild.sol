@@ -71,6 +71,7 @@ contract SnapshotERC20Guild is ERC20Guild {
             votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >= votingPower,
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
+        // slither-disable-next-line all
         super.setSignedVote(proposalId, action, votingPower, voter, signature);
         signedVotes[hashedVote] = true;
     }
@@ -181,6 +182,8 @@ contract SnapshotERC20Guild is ERC20Guild {
                     }
 
                     isExecutingProposal = true;
+                    // We use isExecutingProposal varibale to avoid reentrancy in proposal execution
+                    // slither-disable-next-line all
                     (bool success, ) = proposals[proposalId].to[i].call{value: proposals[proposalId].value[i]}(
                         proposals[proposalId].data[i]
                     );
