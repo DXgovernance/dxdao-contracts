@@ -48,7 +48,7 @@ contract("EnforcedBinaryGuild", function (accounts) {
   });
 
   describe("Create proposal", function () {
-    it.only("Can create proposal with enforced options", async function () {
+    it("Proposals have enforced 'No' options", async function () {
       const guildProposalId = await createProposal({
         guild: enforcedBinaryGuild,
         actions: [
@@ -74,6 +74,37 @@ contract("EnforcedBinaryGuild", function (accounts) {
       assert.equal(createdProposal.data[createdProposal.data.length - 1], "0x");
       assert.equal(createdProposal.value[createdProposal.value.length - 1], "0");
     });
+
+    it.only("Proposals have correct number of calls", async function () {
+        const guildProposalId = await createProposal({
+          guild: enforcedBinaryGuild,
+          actions: [
+            {
+              to: [accounts[1], accounts[2]],
+              data: ["0x00", "0x00"],
+              value: [10, 50],
+            },
+          ],
+          account: accounts[3],
+        });
+  
+        const createdProposal = await enforcedBinaryGuild.getProposal(
+          guildProposalId
+        );
+  
+        assert.equal(createdProposal.to.length, 4);
+        assert.equal(createdProposal.data.length, 4);
+        assert.equal(createdProposal.value.length, 4);
+        assert.equal(createdProposal.totalActions, 2);
+  
+        assert.equal(createdProposal.to[createdProposal.to.length - 1], ZERO_ADDRESS);
+        assert.equal(createdProposal.data[createdProposal.data.length - 1], "0x");
+        assert.equal(createdProposal.value[createdProposal.value.length - 1], "0");
+
+        assert.equal(createdProposal.to[createdProposal.to.length - 2], ZERO_ADDRESS);
+        assert.equal(createdProposal.data[createdProposal.data.length - 2], "0x");
+        assert.equal(createdProposal.value[createdProposal.value.length - 2], "0");
+      });
   });
 });
 
