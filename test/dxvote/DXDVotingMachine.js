@@ -475,7 +475,7 @@ contract("DXDVotingMachine", function (accounts) {
       proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     });
 
-    it("fail sharing ivalid vote signature", async function () {
+    it("fail sharing invalid vote signature", async function () {
       const voteHash = await dxdVotingMachine.contract.hashVote(
         dxdVotingMachine.address,
         proposalId,
@@ -493,6 +493,7 @@ contract("DXDVotingMachine", function (accounts) {
 
       try {
         await dxdVotingMachine.contract.shareSignedVote(
+          accounts[3],
           dxdVotingMachine.address,
           proposalId,
           2,
@@ -500,13 +501,17 @@ contract("DXDVotingMachine", function (accounts) {
           votesignature,
           { from: accounts[3] }
         );
-        assert(false, "cannot share invalid vote signature different vote");
+        assert(
+          false,
+          "cannot share invalid vote signature with different vote"
+        );
       } catch (error) {
         helpers.assertVMException(error);
       }
 
       try {
         await dxdVotingMachine.contract.shareSignedVote(
+          accounts[3],
           dxdVotingMachine.address,
           proposalId,
           1,
@@ -518,9 +523,28 @@ contract("DXDVotingMachine", function (accounts) {
       } catch (error) {
         helpers.assertVMException(error);
       }
+    });
+    it("Can share a vote signed by a different user", async function () {
+      const voteHash = await dxdVotingMachine.contract.hashVote(
+        dxdVotingMachine.address,
+        proposalId,
+        accounts[3],
+        1,
+        70000
+      );
+
+      const votesignature = fixSignature(
+        await web3.eth.sign(voteHash, accounts[3])
+      );
+
+      assert.equal(
+        accounts[3],
+        web3.eth.accounts.recover(voteHash, votesignature)
+      );
 
       try {
         await dxdVotingMachine.contract.shareSignedVote(
+          accounts[3],
           dxdVotingMachine.address,
           proposalId,
           1,
@@ -528,7 +552,42 @@ contract("DXDVotingMachine", function (accounts) {
           votesignature,
           { from: accounts[1] }
         );
-        assert(false, "cannot share invalid vote signature form other address");
+        assert(true, "cannot share invalid vote signature from other address");
+      } catch (error) {
+        helpers.assertVMException(error);
+      }
+    });
+
+    it("Cannot share a vote with the incorrect signature", async function () {
+      const voteHash = await dxdVotingMachine.contract.hashVote(
+        dxdVotingMachine.address,
+        proposalId,
+        accounts[3],
+        1,
+        70000,
+        { from: accounts[1] }
+      );
+
+      const votesignature = fixSignature(
+        await web3.eth.sign(voteHash, accounts[1])
+      );
+
+      assert.equal(
+        accounts[1],
+        web3.eth.accounts.recover(voteHash, votesignature)
+      );
+
+      try {
+        await dxdVotingMachine.contract.shareSignedVote(
+          accounts[3],
+          dxdVotingMachine.address,
+          proposalId,
+          1,
+          70000,
+          votesignature,
+          { from: accounts[1] }
+        );
+        assert(false, "cannot share invalid vote signature from other address");
       } catch (error) {
         helpers.assertVMException(error);
       }
@@ -551,6 +610,7 @@ contract("DXDVotingMachine", function (accounts) {
       );
 
       const shareVoteTx = await dxdVotingMachine.contract.shareSignedVote(
+        accounts[3],
         dxdVotingMachine.address,
         proposalId,
         1,
@@ -623,6 +683,7 @@ contract("DXDVotingMachine", function (accounts) {
       );
 
       const shareVoteTx = await dxdVotingMachine.contract.shareSignedVote(
+        accounts[3],
         dxdVotingMachine.address,
         proposalId,
         1,
@@ -667,6 +728,7 @@ contract("DXDVotingMachine", function (accounts) {
       );
 
       const shareVoteTx = await dxdVotingMachine.contract.shareSignedVote(
+        accounts[3],
         dxdVotingMachine.address,
         proposalId,
         2,
