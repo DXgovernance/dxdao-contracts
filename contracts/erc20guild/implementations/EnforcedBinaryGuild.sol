@@ -30,15 +30,18 @@ contract EnforcedBinaryGuild is ERC20Guild {
         string memory title,
         string memory contentHash
     ) public virtual override returns (bytes32) {
+        require(totalActions > 0, "EnforcedBinaryGuild: Must have at least one action");
         require(
             (to.length == data.length) && (to.length == value.length),
             "EnforcedBinaryGuild: Wrong length of to, data or value arrays"
         );
         require(to.length > 0, "EnforcedBinaryGuild: to, data, value arrays cannot be empty");
 
-        address[] memory _to = new address[](to.length + 1);
-        bytes[] memory _data = new bytes[](data.length + 1);
-        uint256[] memory _value = new uint256[](value.length + 1);
+        uint256 callsPerAction = to.length.div(totalActions);
+
+        address[] memory _to = new address[](to.length + callsPerAction);
+        bytes[] memory _data = new bytes[](data.length + callsPerAction);
+        uint256[] memory _value = new uint256[](value.length + callsPerAction);
 
         for (uint256 i = 0; i < to.length; i++) {
             _to[i] = to[i];
@@ -46,9 +49,11 @@ contract EnforcedBinaryGuild is ERC20Guild {
             _value[i] = value[i];
         }
 
-        _to[_to.length - 1] = address(0);
-        _data[_data.length - 1] = "";
-        _value[_value.length - 1] = 0;
+        for (uint256 i = 0; i < callsPerAction; i++) {
+            _to[to.length - 1 + i] = address(0);
+            _data[data.length - 1 + i] = "";
+            _value[value.length - 1 + i] = 0;
+        }
         totalActions += 1;
 
         return _createProposal(_to, _data, _value, totalActions, title, contentHash);
