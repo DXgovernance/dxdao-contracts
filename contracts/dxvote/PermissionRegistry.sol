@@ -78,8 +78,7 @@ contract PermissionRegistry {
     }
 
     /**
-     * @dev Sets the time from which the function can be executed from a contract to another a with wich value.
-     * This function is used only by the permission registry owner to set and overwrite any permission.
+     * @dev Sets the time from which the function can be executed from a contract to another contract.
      * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
      * @param from The address that will be called
      * @param to The address that will be called
@@ -87,7 +86,7 @@ contract PermissionRegistry {
      * @param valueAllowed The amount of value allowed of the asset to be sent
      * @param allowed If the function is allowed or not.
      */
-    function setAdminPermission(
+    function setPermission(
         address asset,
         address from,
         address to,
@@ -95,9 +94,24 @@ contract PermissionRegistry {
         uint256 valueAllowed,
         bool allowed
     ) public {
-        require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
         require(from != address(0), "PermissionRegistry: Cant use address(0) as from");
-        require(from != owner || to != address(this), "PermissionRegistry: Cant set owner permissions");
+        if (msg.sender == owner) {
+            require(from != owner || to != address(this), "PermissionRegistry: Cant set owner permissions");
+            _setPermission(asset, from, to, functionSignature, valueAllowed, allowed);
+        } else {
+            require(to != address(this), "PermissionRegistry: Cant set permissions to PermissionRegistry");
+            _setPermission(asset, msg.sender, to, functionSignature, valueAllowed, allowed);
+        }
+    }
+
+    function _setPermission(
+        address asset,
+        address from,
+        address to,
+        bytes4 functionSignature,
+        uint256 valueAllowed,
+        bool allowed
+    ) internal {
         if (allowed) {
             permissions[asset][from][to][functionSignature].fromTime = now.add(timeDelay);
             permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
@@ -113,41 +127,6 @@ contract PermissionRegistry {
             functionSignature,
             permissions[asset][from][to][functionSignature].fromTime,
             permissions[asset][from][to][functionSignature].valueAllowed
-        );
-    }
-
-    /**
-     * @dev Sets the time from which the function can be executed from a contract to another a with wich value.
-     * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
-     * @param to The address that will be called
-     * @param functionSignature The signature of the function to be executed
-     * @param valueAllowed The amount of value allowed of the asset to be sent
-     * @param allowed If the function is allowed or not.
-     */
-    function setPermission(
-        address asset,
-        address to,
-        bytes4 functionSignature,
-        uint256 valueAllowed,
-        bool allowed
-    ) public {
-        require(to != address(this), "PermissionRegistry: Cant set permissions to PermissionRegistry");
-        require(msg.sender != owner && to != address(this), "PermissionRegistry: Cant set owner permissions");
-        if (allowed) {
-            permissions[asset][msg.sender][to][functionSignature].fromTime = now.add(timeDelay);
-            permissions[asset][msg.sender][to][functionSignature].valueAllowed = valueAllowed;
-        } else {
-            permissions[asset][msg.sender][to][functionSignature].fromTime = 0;
-            permissions[asset][msg.sender][to][functionSignature].valueAllowed = 0;
-        }
-        permissions[asset][msg.sender][to][functionSignature].isSet = true;
-        emit PermissionSet(
-            asset,
-            msg.sender,
-            to,
-            functionSignature,
-            permissions[asset][msg.sender][to][functionSignature].fromTime,
-            permissions[asset][msg.sender][to][functionSignature].valueAllowed
         );
     }
 
