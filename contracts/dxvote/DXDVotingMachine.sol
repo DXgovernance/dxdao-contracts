@@ -129,16 +129,17 @@ contract DXDVotingMachine is GenesisProtocol {
      * @param signature the encoded vote signature
      */
     function shareSignedVote(
+        address voter,
         address votingMachine,
         bytes32 proposalId,
         uint256 voteDecision,
         uint256 amount,
         bytes calldata signature
     ) external {
-        bytes32 voteHashed = hashVote(votingMachine, proposalId, msg.sender, voteDecision, amount);
-        require(msg.sender == voteHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
         require(voteDecision > 0, "invalid voteDecision");
-        emit VoteSigned(votingMachine, proposalId, msg.sender, voteDecision, amount, signature);
+        bytes32 voteHashed = hashVote(votingMachine, proposalId, voter, voteDecision, amount);
+        require(voter == voteHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
+        emit VoteSigned(votingMachine, proposalId, voter, voteDecision, amount, signature);
     }
 
     /**
