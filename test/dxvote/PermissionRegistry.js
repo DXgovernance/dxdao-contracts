@@ -122,6 +122,13 @@ contract("PermissionRegistry", function (accounts) {
     );
   });
 
+  it("Cannot tranfer ownership to address zero", async function () {
+    await expectRevert(
+      permissionRegistry.transferOwnership(constants.NULL_ADDRESS),
+      "PermissionRegistry: Invalid owner address"
+    );
+  });
+
   it("PermissionRegistry - fail in deploying wring wrong args", async function () {
     await expectRevert(
       PermissionRegistry.new(constants.NULL_ADDRESS, 10),

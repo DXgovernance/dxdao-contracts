@@ -61,7 +61,7 @@ contract PermissionRegistry {
      */
     function transferOwnership(address newOwner) public {
         require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
-        require(_owner != address(0), "PermissionRegistry: Invalid owner address");
+        require(newOwner != address(0), "PermissionRegistry: Invalid owner address");
         permissions[address(0)][owner][address(this)][ANY_SIGNATURE].fromTime = 0;
         permissions[address(0)][newOwner][address(this)][ANY_SIGNATURE].fromTime = now;
         permissions[address(0)][newOwner][address(this)][ANY_SIGNATURE].isSet = true;
