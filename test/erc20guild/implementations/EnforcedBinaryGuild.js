@@ -245,4 +245,3 @@ contract("EnforcedBinaryGuild", function (accounts) {
     });
   });
 });
-

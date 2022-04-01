@@ -56,7 +56,7 @@ contract EnforcedBinaryGuild is ERC20Guild {
         }
         totalActions += 1;
 
-        return _createProposal(_to, _data, _value, totalActions, title, contentHash);
+        return super.createProposal(_to, _data, _value, totalActions, title, contentHash);
     }
 
     // @dev Executes a proposal that is not votable anymore and can be finished
@@ -79,7 +79,7 @@ contract EnforcedBinaryGuild is ERC20Guild {
             proposals[proposalId].state = ProposalState.Failed;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
         } else {
-            super.endProposal(proposalId);
+            _endProposal(proposalId);
         }
     }
 }
