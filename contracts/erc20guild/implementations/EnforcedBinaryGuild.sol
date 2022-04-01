@@ -79,7 +79,7 @@ contract EnforcedBinaryGuild is ERC20Guild {
             proposals[proposalId].state = ProposalState.Failed;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
         } else {
-            _endProposal(proposalId);
+            super.endProposal(proposalId);
         }
     }
 }
