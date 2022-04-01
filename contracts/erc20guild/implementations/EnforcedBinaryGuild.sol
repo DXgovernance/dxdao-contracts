@@ -39,6 +39,7 @@ contract EnforcedBinaryGuild is ERC20Guild {
 
         uint256 callsPerAction = to.length.div(totalActions);
 
+        // Clone the arrays amd append the "No" action to the end of them
         address[] memory _to = new address[](to.length + callsPerAction);
         bytes[] memory _data = new bytes[](data.length + callsPerAction);
         uint256[] memory _value = new uint256[](value.length + callsPerAction);
