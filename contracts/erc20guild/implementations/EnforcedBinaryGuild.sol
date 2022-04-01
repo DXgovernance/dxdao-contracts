@@ -49,13 +49,37 @@ contract EnforcedBinaryGuild is ERC20Guild {
             _value[i] = value[i];
         }
 
-        for (uint256 i = 0; i < callsPerAction; i++) {
-            _to[to.length - 1 + i] = address(0);
-            _data[data.length - 1 + i] = "";
-            _value[value.length - 1 + i] = 0;
+        for (uint256 i = to.length; i < _to.length; i++) {
+            _to[i] = address(0);
+            _data[i] = "";
+            _value[i] = 0;
         }
         totalActions += 1;
 
         return _createProposal(_to, _data, _value, totalActions, title, contentHash);
+    }
+
+    // @dev Executes a proposal that is not votable anymore and can be finished
+    // If the most voted option is the "No" option, then the proposal is marked as failed
+    // @param proposalId The id of the proposal to be executed
+    function endProposal(bytes32 proposalId) public virtual override {
+        require(!isExecutingProposal, "EnforcedBinaryGuild: Proposal under execution");
+        require(proposals[proposalId].state == ProposalState.Active, "EnforcedBinaryGuild: Proposal already executed");
+        require(proposals[proposalId].endTime < block.timestamp, "EnforcedBinaryGuild: Proposal hasn't ended yet");
+
+        uint256 winningAction = 0;
+        for (uint256 i = 1; i < proposals[proposalId].totalVotes.length; i++) {
+            if (
+                proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution() &&
+                proposals[proposalId].totalVotes[i] > proposals[proposalId].totalVotes[winningAction]
+            ) winningAction = i;
+        }
+
+        if (winningAction == proposals[proposalId].totalVotes.length - 1) {
+            proposals[proposalId].state = ProposalState.Failed;
+            emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
+        } else {
+            super.endProposal(proposalId);
+        }
     }
 }
