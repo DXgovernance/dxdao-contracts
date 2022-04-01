@@ -19,7 +19,7 @@ contract EnforcedBinaryGuild is ERC20Guild {
     // @param to The receiver addresses of each call to be executed
     // @param data The data to be executed on each call to be executed
     // @param value The ETH value to be sent on each call to be executed
-    // @param totalActions The amount of actions that would be offered to the voters
+    // @param totalActions The amount of actions that would be offered to the voters, excluding the "No" action
     // @param title The title of the proposal
     // @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
