@@ -5,9 +5,9 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 /**
  * @title PermissionRegistry.
  * @dev A registry of smart contracts functions and ERC20 transfers that are allowed to be called between contracts.
- * There owner of the contract acts as admin and can set and overwrite any permission.
+ * The owner of the contract acts as an admin and can set and overwrite any permission.
  * The registry allows setting "wildcard" permissions for recipients and functions, this means that permissions like
- * this contract can call any contract, this contract can call this funciton to any contract or this contract call
+ * this contract can call any contract, this contract can call this funciton to any contract or this contract can call
  * call any function in this contract can be set.
  * The smart contracts permissions are stored  using the asset 0x0 and stores the `from` address, `to` address,
  *   `value` uint256 and `fromTime` uint256, if `fromTime` is zero it meants the function is not allowed.
@@ -69,7 +69,7 @@ contract PermissionRegistry {
     }
 
     /**
-     * @dev Set the time delay for a call to show as allowed
+     * @dev Set the global time delay for a function call to show as allowed
      * @param newTimeDelay The new amount of time that has to pass after permission addition to allow execution
      */
     function setTimeDelay(uint256 newTimeDelay) public {
@@ -78,7 +78,8 @@ contract PermissionRegistry {
     }
 
     /**
-     * @dev Sets the time from which the function can be executed from a contract to another contract.
+     * @dev wrapper function for _setPermissions, if the owner of the contract calls this function
+     * it has full permissions to set or overwrite any permission otherwise it can only set its own permissions
      * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
      * @param from The address that will be called
      * @param to The address that will be called
@@ -94,7 +95,6 @@ contract PermissionRegistry {
         uint256 valueAllowed,
         bool allowed
     ) public {
-        require(from != address(0), "PermissionRegistry: Cant use address(0) as from");
         if (msg.sender == owner) {
             require(from != owner || to != address(this), "PermissionRegistry: Cant set owner permissions");
             _setPermission(asset, from, to, functionSignature, valueAllowed, allowed);
@@ -104,6 +104,15 @@ contract PermissionRegistry {
         }
     }
 
+    /**
+     * @dev Sets the time from which the function can be executed from a contract to another contract.
+     * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
+     * @param from The address that will be called
+     * @param to The address that will be called
+     * @param functionSignature The signature of the function to be executed
+     * @param valueAllowed The amount of value allowed of the asset to be sent
+     * @param allowed If the function is allowed or not.
+     */
     function _setPermission(
         address asset,
         address from,
@@ -112,6 +121,7 @@ contract PermissionRegistry {
         uint256 valueAllowed,
         bool allowed
     ) internal {
+        require(from != address(0), "PermissionRegistry: Cant use address(0) as from");
         if (allowed) {
             permissions[asset][from][to][functionSignature].fromTime = now.add(timeDelay);
             permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
@@ -131,7 +141,7 @@ contract PermissionRegistry {
     }
 
     /**
-     * @dev Gets the time from which the function can be executed from a contract to another and with wich value.
+     * @dev Gets the time from which the function can be executed from a contract to another and with which value.
      * In case of now being allowed to do the call it returns zero in both values
      * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
      * @param from The address from wich the call will be executed
