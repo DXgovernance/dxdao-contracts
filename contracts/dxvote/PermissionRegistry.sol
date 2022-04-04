@@ -56,11 +56,19 @@ contract PermissionRegistry {
     }
 
     /**
+     * @dev Modifier to check that the caller is the owner of the contract
+     * @notice We are not able to import the Ownable contract as our pragma solidity version is too old
+     */
+    modifier onlyOwner() {
+        require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
+        _;
+    }
+
+    /**
      * @dev Transfer Ownership
      * @param newOwner The new owner of the registry that can set any permissions
      */
-    function transferOwnership(address newOwner) public {
-        require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
+    function transferOwnership(address newOwner) public onlyOwner {
         require(newOwner != address(0), "PermissionRegistry: Invalid owner address");
         permissions[address(0)][owner][address(this)][ANY_SIGNATURE].fromTime = 0;
         permissions[address(0)][newOwner][address(this)][ANY_SIGNATURE].fromTime = now;
@@ -72,8 +80,7 @@ contract PermissionRegistry {
      * @dev Set the global time delay for a function call to show as allowed
      * @param newTimeDelay The new amount of time that has to pass after permission addition to allow execution
      */
-    function setTimeDelay(uint256 newTimeDelay) public {
-        require(msg.sender == owner, "PermissionRegistry: Only callable by owner");
+    function setTimeDelay(uint256 newTimeDelay) public onlyOwner {
         timeDelay = newTimeDelay;
     }
 
