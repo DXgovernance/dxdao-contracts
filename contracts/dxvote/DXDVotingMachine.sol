@@ -59,8 +59,11 @@ contract DXDVotingMachine is GenesisProtocol {
      * @dev Allows the voting machine to receive ether to be used to refund voting costs
      */
     function() external payable {
-        if (organizationRefunds[msg.sender].voteGas > 0)
-            organizationRefunds[msg.sender].balance = organizationRefunds[msg.sender].balance.add(msg.value);
+        require(
+            organizationRefunds[msg.sender].voteGas > 0, 
+            "DXDVotingMachine: Address not registered in organizationRefounds"
+        );
+        organizationRefunds[msg.sender].balance = organizationRefunds[msg.sender].balance.add(msg.value);
     }
 
     /**
