@@ -75,7 +75,7 @@ contract("DXDVotingMachine", function (accounts) {
 
     permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -547,20 +547,24 @@ contract("DXDVotingMachine", function (accounts) {
         web3.eth.accounts.recover(voteHash, votesignature)
       );
 
-      try {
-        await dxdVotingMachine.contract.shareSignedVote(
-          dxdVotingMachine.address,
-          proposalId,
-          accounts[3],
-          1,
-          70000,
-          votesignature,
-          { from: accounts[1] }
-        );
-        assert(true, "cannot share invalid vote signature from other address");
-      } catch (error) {
-        helpers.assertVMException(error);
-      }
+      const voteTx = await dxdVotingMachine.contract.shareSignedVote(
+        dxdVotingMachine.address,
+        proposalId,
+        accounts[3],
+        1,
+        70000,
+        votesignature,
+        { from: accounts[1] }
+      );
+
+      expectEvent(voteTx, "VoteSigned", {
+        votingMachine: dxdVotingMachine.address,
+        proposalId: proposalId,
+        voter: accounts[3],
+        voteDecision: "1",
+        amount: "70000",
+        signature: votesignature,
+      });
     });
 
     it("Cannot share a vote with the incorrect signature", async function () {
