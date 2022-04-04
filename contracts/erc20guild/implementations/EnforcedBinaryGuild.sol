@@ -55,7 +55,7 @@ contract EnforcedBinaryGuild is ERC20Guild {
             _data[i] = "";
             _value[i] = 0;
         }
-        totalActions += 1;
+        totalActions = totalActions.add(1);
 
         return super.createProposal(_to, _data, _value, totalActions, title, contentHash);
     }
