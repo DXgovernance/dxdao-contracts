@@ -115,7 +115,7 @@ contract DXDVotingMachine is GenesisProtocol {
             voter = msg.sender;
         }
         bool voteResult = internalVote(_proposalId, voter, _vote, _amount);
-        _refundVote(proposal.organizationId, msg.sender);
+        _refundVote(proposal.organizationId);
         return voteResult;
     }
 
@@ -189,7 +189,7 @@ contract DXDVotingMachine is GenesisProtocol {
             "wrong signer"
         );
         internalVote(proposalId, voter, voteDecision, amount);
-        _refundVote(proposals[proposalId].organizationId, msg.sender);
+        _refundVote(proposals[proposalId].organizationId);
     }
 
     /**
@@ -210,23 +210,22 @@ contract DXDVotingMachine is GenesisProtocol {
         require(votesSignaled[proposalId][voter].voteDecision > 0, "wrong vote shared");
         internalVote(proposalId, voter, voteDecision, amount);
         delete votesSignaled[proposalId][voter];
-        _refundVote(proposals[proposalId].organizationId, msg.sender);
+        _refundVote(proposals[proposalId].organizationId);
     }
 
     /**
      * @dev Refund a vote gas cost to an address
      *
      * @param organizationId the id of the organization that should do the refund
-     * @param toAddress the address where the refund should be sent
      */
-    function _refundVote(bytes32 organizationId, address payable toAddress) internal {
+    function _refundVote(bytes32 organizationId) internal {
         address orgAddress = organizations[organizationId];
         if (organizationRefunds[orgAddress].voteGas > 0) {
             uint256 gasRefund = organizationRefunds[orgAddress].voteGas.mul(
                 tx.gasprice.min(organizationRefunds[orgAddress].maxGasPrice)
             );
             if (organizationRefunds[orgAddress].balance >= gasRefund) {
-                toAddress.transfer(gasRefund);
+                msg.sender.transfer(gasRefund);
                 organizationRefunds[orgAddress].balance = organizationRefunds[orgAddress].balance.sub(gasRefund);
             }
         }
