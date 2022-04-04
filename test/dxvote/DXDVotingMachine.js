@@ -1069,4 +1069,40 @@ contract("DXDVotingMachine", function (accounts) {
       assert.equal(organizationProposal.value[0], 0);
     });
   });
+
+  it("DXDVotingMachine should receive value only if organizationRefund exists", async function () {
+    await expectRevert(
+      // Send value to DXDVotingMachine with unregistered organization address
+      web3.eth.sendTransaction({
+        from: accounts[0],
+        to: dxdVotingMachine.address,
+        value: constants.TEST_VALUE,
+      }),
+      "Address not registered in organizationRefounds"
+    );
+
+    // get contract instance
+    const contract = new web3.eth.Contract(
+      DXDVotingMachine.abi,
+      dxdVotingMachine.address
+    );
+
+    // register organization
+    await contract.methods
+      .setOrganizationRefund(VOTE_GAS, constants.GAS_PRICE)
+      .send({ from: accounts[1] });
+
+    // Send value to DXDVotingMachine with registered organization address
+    await web3.eth.sendTransaction({
+      from: accounts[1],
+      to: contract.options.address,
+      value: constants.TEST_VALUE,
+    });
+    // Get organizationRefund data
+    const organizationRefoundData = await contract.methods
+      .organizationRefunds(accounts[1])
+      .call();
+
+    assert.equal(Number(organizationRefoundData.balance), constants.TEST_VALUE);
+  });
 });
