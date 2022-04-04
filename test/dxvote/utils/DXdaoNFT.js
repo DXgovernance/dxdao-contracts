@@ -12,7 +12,7 @@ contract("DXdaoNFT", accounts => {
     });
   });
 
-  describe.only("Mint DXdaoNFT", () => {
+  describe("Mint DXdaoNFT", () => {
     it("should mint a DXdaoNFT", async () => {
       const mint = await dxDaoNFT.mint(SOME_ADDRESS, SOME_TOKEN_URI, {
         from: accounts[0],
