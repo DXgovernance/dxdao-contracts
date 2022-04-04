@@ -124,14 +124,15 @@ contract DXDVotingMachine is GenesisProtocol {
      *
      * @param votingMachine the voting machine address
      * @param proposalId id of the proposal
+     * @param voter address of voter
      * @param voteDecision the vote decision, NO(2) or YES(1).
      * @param amount the reputation amount to vote with, 0 will use all available REP
      * @param signature the encoded vote signature
      */
     function shareSignedVote(
-        address voter,
         address votingMachine,
         bytes32 proposalId,
+        address voter,
         uint256 voteDecision,
         uint256 amount,
         bytes calldata signature
