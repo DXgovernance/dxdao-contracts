@@ -60,7 +60,7 @@ contract DXDVotingMachine is GenesisProtocol {
      */
     function() external payable {
         require(
-            organizationRefunds[msg.sender].voteGas > 0, 
+            organizationRefunds[msg.sender].voteGas > 0,
             "DXDVotingMachine: Address not registered in organizationRefounds"
         );
         organizationRefunds[msg.sender].balance = organizationRefunds[msg.sender].balance.add(msg.value);
@@ -75,6 +75,17 @@ contract DXDVotingMachine is GenesisProtocol {
     function setOrganizationRefund(uint256 _voteGas, uint256 _maxGasPrice) public {
         organizationRefunds[msg.sender].voteGas = _voteGas;
         organizationRefunds[msg.sender].maxGasPrice = _maxGasPrice;
+    }
+
+    function withdrawRefundBalance() public {
+        require(
+            organizationRefunds[msg.sender].voteGas > 0 || organizationRefunds[msg.sender].maxGasPrice > 0,
+            "DXDVotingMachine: Address not registered in organizationRefounds"
+        );
+        require(organizationRefunds[msg.sender].balance > 0, "DXDVotingMachine: Organization refund balance is zero");
+        uint256 amount = organizationRefunds[msg.sender].balance;
+        organizationRefunds[msg.sender].balance = 0;
+        msg.sender.transfer(amount);
     }
 
     /**
