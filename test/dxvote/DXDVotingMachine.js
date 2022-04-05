@@ -75,7 +75,7 @@ contract("DXDVotingMachine", function (accounts) {
 
     permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
