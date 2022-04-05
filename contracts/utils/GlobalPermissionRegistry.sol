@@ -65,6 +65,8 @@ contract GlobalPermissionRegistry is OwnableUpgradeable {
         permissionDelay[msg.sender] = _timeDelay;
     }
 
+    // TO DO: Add removePermission function that will set the value isSet in the permissions to false and trigger PermissionRemoved event
+
     /**
      * @dev Sets the time from which the function can be executed from a contract to another a with which value.
      * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
