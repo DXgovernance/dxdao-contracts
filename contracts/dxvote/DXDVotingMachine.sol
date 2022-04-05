@@ -60,7 +60,7 @@ contract DXDVotingMachine is GenesisProtocol {
      */
     function() external payable {
         require(
-            organizationRefunds[msg.sender].voteGas > 0, 
+            organizationRefunds[msg.sender].voteGas > 0,
             "DXDVotingMachine: Address not registered in organizationRefounds"
         );
         organizationRefunds[msg.sender].balance = organizationRefunds[msg.sender].balance.add(msg.value);
@@ -127,6 +127,7 @@ contract DXDVotingMachine is GenesisProtocol {
      *
      * @param votingMachine the voting machine address
      * @param proposalId id of the proposal
+     * @param voter address of voter
      * @param voteDecision the vote decision, NO(2) or YES(1).
      * @param amount the reputation amount to vote with, 0 will use all available REP
      * @param signature the encoded vote signature
@@ -134,14 +135,15 @@ contract DXDVotingMachine is GenesisProtocol {
     function shareSignedVote(
         address votingMachine,
         bytes32 proposalId,
+        address voter,
         uint256 voteDecision,
         uint256 amount,
         bytes calldata signature
     ) external {
-        bytes32 voteHashed = hashVote(votingMachine, proposalId, msg.sender, voteDecision, amount);
-        require(msg.sender == voteHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
         require(voteDecision > 0, "invalid voteDecision");
-        emit VoteSigned(votingMachine, proposalId, msg.sender, voteDecision, amount, signature);
+        bytes32 voteHashed = hashVote(votingMachine, proposalId, voter, voteDecision, amount);
+        require(voter == voteHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
+        emit VoteSigned(votingMachine, proposalId, voter, voteDecision, amount, signature);
     }
 
     /**

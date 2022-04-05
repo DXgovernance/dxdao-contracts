@@ -7,6 +7,7 @@ const {
   expectEvent,
   expectRevert,
 } = require("@openzeppelin/test-helpers");
+
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
@@ -74,7 +75,7 @@ contract("DXDVotingMachine", function (accounts) {
 
     permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -479,7 +480,7 @@ contract("DXDVotingMachine", function (accounts) {
       proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     });
 
-    it("fail sharing ivalid vote signature", async function () {
+    it("fail sharing invalid vote signature", async function () {
       const voteHash = await dxdVotingMachine.contract.hashVote(
         dxdVotingMachine.address,
         proposalId,
@@ -499,12 +500,16 @@ contract("DXDVotingMachine", function (accounts) {
         await dxdVotingMachine.contract.shareSignedVote(
           dxdVotingMachine.address,
           proposalId,
+          accounts[3],
           2,
           70000,
           votesignature,
           { from: accounts[3] }
         );
-        assert(false, "cannot share invalid vote signature different vote");
+        assert(
+          false,
+          "cannot share invalid vote signature with different vote"
+        );
       } catch (error) {
         helpers.assertVMException(error);
       }
@@ -513,6 +518,7 @@ contract("DXDVotingMachine", function (accounts) {
         await dxdVotingMachine.contract.shareSignedVote(
           dxdVotingMachine.address,
           proposalId,
+          accounts[3],
           1,
           71000,
           votesignature,
@@ -522,20 +528,76 @@ contract("DXDVotingMachine", function (accounts) {
       } catch (error) {
         helpers.assertVMException(error);
       }
+    });
+    it("Can share a vote signed by a different user", async function () {
+      const voteHash = await dxdVotingMachine.contract.hashVote(
+        dxdVotingMachine.address,
+        proposalId,
+        accounts[3],
+        1,
+        70000
+      );
 
-      try {
-        await dxdVotingMachine.contract.shareSignedVote(
+      const votesignature = fixSignature(
+        await web3.eth.sign(voteHash, accounts[3])
+      );
+
+      assert.equal(
+        accounts[3],
+        web3.eth.accounts.recover(voteHash, votesignature)
+      );
+
+      const voteTx = await dxdVotingMachine.contract.shareSignedVote(
+        dxdVotingMachine.address,
+        proposalId,
+        accounts[3],
+        1,
+        70000,
+        votesignature,
+        { from: accounts[1] }
+      );
+
+      expectEvent(voteTx, "VoteSigned", {
+        votingMachine: dxdVotingMachine.address,
+        proposalId: proposalId,
+        voter: accounts[3],
+        voteDecision: "1",
+        amount: "70000",
+        signature: votesignature,
+      });
+    });
+
+    it("Cannot share a vote with the incorrect signature", async function () {
+      const voteHash = await dxdVotingMachine.contract.hashVote(
+        dxdVotingMachine.address,
+        proposalId,
+        accounts[3],
+        1,
+        70000,
+        { from: accounts[1] }
+      );
+
+      const votesignature = fixSignature(
+        await web3.eth.sign(voteHash, accounts[1])
+      );
+
+      assert.equal(
+        accounts[1],
+        web3.eth.accounts.recover(voteHash, votesignature)
+      );
+
+      await expectRevert(
+        dxdVotingMachine.contract.shareSignedVote(
           dxdVotingMachine.address,
           proposalId,
+          accounts[3],
           1,
           70000,
           votesignature,
           { from: accounts[1] }
-        );
-        assert(false, "cannot share invalid vote signature form other address");
-      } catch (error) {
-        helpers.assertVMException(error);
-      }
+        ),
+        "wrong signer"
+      );
     });
 
     it("fail executing vote with invalid data", async function () {
@@ -557,6 +619,7 @@ contract("DXDVotingMachine", function (accounts) {
       const shareVoteTx = await dxdVotingMachine.contract.shareSignedVote(
         dxdVotingMachine.address,
         proposalId,
+        accounts[3],
         1,
         70000,
         votesignature,
@@ -629,6 +692,7 @@ contract("DXDVotingMachine", function (accounts) {
       const shareVoteTx = await dxdVotingMachine.contract.shareSignedVote(
         dxdVotingMachine.address,
         proposalId,
+        accounts[3],
         1,
         0,
         votesignature,
@@ -673,6 +737,7 @@ contract("DXDVotingMachine", function (accounts) {
       const shareVoteTx = await dxdVotingMachine.contract.shareSignedVote(
         dxdVotingMachine.address,
         proposalId,
+        accounts[3],
         2,
         60000,
         votesignature,
