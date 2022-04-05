@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
  * @title GlobalPermissionRegistry.
@@ -20,8 +21,8 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
  * a function limit is set it will add the value transferred in both of them.
  */
 
-contract GlobalPermissionRegistry {
-    using SafeMath for uint256;
+contract GlobalPermissionRegistry is OwnableUpgradeable {
+    using SafeMathUpgradeable for uint256;
 
     mapping(address => uint256) public permissionDelay;
     address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
@@ -50,6 +51,13 @@ contract GlobalPermissionRegistry {
     Permission emptyPermission = Permission(0, 0, 0, 0, false);
 
     /**
+     * @dev initializer
+     */
+    function initialize() public initializer {
+        __Ownable_init();
+    }
+
+    /**
      * @dev Set the time delay for a call to show as allowed
      * @param _timeDelay The amount of time that has to pass after permission addition to allow execution
      */
@@ -60,6 +68,7 @@ contract GlobalPermissionRegistry {
     /**
      * @dev Sets the time from which the function can be executed from a contract to another a with which value.
      * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
+     * @param from The address that will execute the call
      * @param to The address that will be called
      * @param functionSignature The signature of the function to be executed
      * @param valueAllowed The amount of value allowed of the asset to be sent
@@ -67,29 +76,31 @@ contract GlobalPermissionRegistry {
      */
     function setPermission(
         address asset,
+        address from,
         address to,
         bytes4 functionSignature,
         uint256 valueAllowed,
         bool allowed
     ) public {
+        if (msg.sender != owner()) {
+            require(from == msg.sender, "GlobalPermissionRegistry: Only owner can specify from value");
+        }
         require(to != address(this), "GlobalPermissionRegistry: Cant set permissions to GlobalPermissionRegistry");
         if (allowed) {
-            permissions[asset][msg.sender][to][functionSignature].fromTime = block.timestamp.add(
-                permissionDelay[msg.sender]
-            );
-            permissions[asset][msg.sender][to][functionSignature].valueAllowed = valueAllowed;
+            permissions[asset][from][to][functionSignature].fromTime = block.timestamp.add(permissionDelay[from]);
+            permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
         } else {
-            permissions[asset][msg.sender][to][functionSignature].fromTime = 0;
-            permissions[asset][msg.sender][to][functionSignature].valueAllowed = 0;
+            permissions[asset][from][to][functionSignature].fromTime = 0;
+            permissions[asset][from][to][functionSignature].valueAllowed = 0;
         }
-        permissions[asset][msg.sender][to][functionSignature].isSet = true;
+        permissions[asset][from][to][functionSignature].isSet = true;
         emit PermissionSet(
             asset,
-            msg.sender,
+            from,
             to,
             functionSignature,
-            permissions[asset][msg.sender][to][functionSignature].fromTime,
-            permissions[asset][msg.sender][to][functionSignature].valueAllowed
+            permissions[asset][from][to][functionSignature].fromTime,
+            permissions[asset][from][to][functionSignature].valueAllowed
         );
     }
 

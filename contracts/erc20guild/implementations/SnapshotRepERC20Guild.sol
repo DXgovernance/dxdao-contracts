@@ -61,8 +61,22 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
             _lockTime,
             _permissionRegistry
         );
-        permissionRegistry.setPermission(address(0), _token, bytes4(keccak256("mint(address,uint256)")), 0, true);
-        permissionRegistry.setPermission(address(0), _token, bytes4(keccak256("burn(address,uint256)")), 0, true);
+        permissionRegistry.setPermission(
+            address(0),
+            address(this),
+            _token,
+            bytes4(keccak256("mint(address,uint256)")),
+            0,
+            true
+        );
+        permissionRegistry.setPermission(
+            address(0),
+            address(this),
+            _token,
+            bytes4(keccak256("burn(address,uint256)")),
+            0,
+            true
+        );
     }
 
     // @dev Set the voting power to vote in a proposal
