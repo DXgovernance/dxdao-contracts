@@ -77,6 +77,20 @@ contract DXDVotingMachine is GenesisProtocol {
         organizationRefunds[msg.sender].maxGasPrice = _maxGasPrice;
     }
 
+    function withdrawRefundBalance() public {
+        require(
+             organizationRefunds[msg.sender].voteGas > 0 || organizationRefunds[msg.sender].maxGasPrice > 0, 
+            "DXDVotingMachine: Address not registered in organizationRefounds"
+        );
+        require(
+            organizationRefunds[msg.sender].balance > 0, 
+            "DXDVotingMachine: Organization refund balance is zero"
+        );
+        uint256 amount = organizationRefunds[msg.sender].balance;
+        organizationRefunds[msg.sender].balance = 0;
+        msg.sender.transfer(amount);
+    }
+
     /**
      * @dev Config the requried % of votes needed in a boosted proposal in a scheme, only callable by the avatar
      * @param _scheme the scheme address that wants to be configured

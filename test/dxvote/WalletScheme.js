@@ -99,7 +99,7 @@ contract("WalletScheme", function (accounts) {
       1
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -108,7 +108,7 @@ contract("WalletScheme", function (accounts) {
       true
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       quickWalletScheme.address,
       constants.ANY_ADDRESS,

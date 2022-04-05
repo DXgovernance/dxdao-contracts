@@ -62,7 +62,7 @@ export async function createDAO(
     5
   );
 
-  await permissionRegistry.setAdminPermission(
+  await permissionRegistry.setPermission(
     constants.NULL_ADDRESS,
     org.avatar.address,
     constants.ANY_ADDRESS,
