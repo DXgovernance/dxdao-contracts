@@ -65,6 +65,7 @@ contract("ERC20Guild", function (accounts) {
       [0, 50000, 50000, 100000, 100000, 200000]
     );
     globalPermissionRegistry = await GlobalPermissionRegistry.new();
+    await globalPermissionRegistry.initialize();
 
     const erc20GuildInitializeData = await new web3.eth.Contract(
       ERC20Guild.abi
@@ -111,7 +112,7 @@ contract("ERC20Guild", function (accounts) {
           value: [new BN("101"), new BN("0")],
         },
         {
-          to: [actionMockB.address, , constants.NULL_ADDRESS],
+          to: [actionMockB.address, constants.NULL_ADDRESS],
           data: [helpers.testCallFrom(erc20Guild.address, 666), "0x00"],
           value: [new BN("10"), new BN("0")],
         },

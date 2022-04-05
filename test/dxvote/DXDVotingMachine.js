@@ -3,7 +3,9 @@ const { fixSignature } = require("../helpers/sign");
 
 const { BN, time, expectEvent } = require("@openzeppelin/test-helpers");
 
-const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
+const GlobalPermissionRegistry = artifacts.require(
+  "./GlobalPermissionRegistry.sol"
+);
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
@@ -68,9 +70,10 @@ contract("DXDVotingMachine", function (accounts) {
       from: accounts[1],
     });
 
-    permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
+    permissionRegistry = await GlobalPermissionRegistry.new(accounts[0], 10);
+    await permissionRegistry.initialize();
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,

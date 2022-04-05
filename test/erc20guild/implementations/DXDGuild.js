@@ -42,6 +42,7 @@ contract("DXDGuild", function (accounts) {
     );
     dxdGuild = await DXDGuild.new();
     const globalPermissionRegistry = await GlobalPermissionRegistry.new();
+    await globalPermissionRegistry.initialize();
 
     const createDaoResult = await createDAO(dxdGuild, accounts);
     walletScheme = createDaoResult.walletScheme;
