@@ -84,8 +84,8 @@ contract DXDVotingMachine is GenesisProtocol {
         );
         require(organizationRefunds[msg.sender].balance > 0, "DXDVotingMachine: Organization refund balance is zero");
         uint256 amount = organizationRefunds[msg.sender].balance;
-        organizationRefunds[msg.sender].balance = 0;
         msg.sender.transfer(amount);
+        organizationRefunds[msg.sender].balance = 0;
     }
 
     /**
