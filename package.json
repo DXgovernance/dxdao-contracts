@@ -12,10 +12,9 @@
     "tsconfig.json"
   ],
   "scripts": {
-    "test": "npx hardhat test",
+    "test": "npx hardhat test && rm -r contracts/hardhat-dependency-compiler",
     "coverage": "./scripts/coverage.sh",
-    "clean": "rm -r contracts/hardhat-dependency-compiler",
-    "compile": "rm -rf artifacts cache && npx hardhat compile",
+    "compile": "rm -rf artifacts cache contracts/hardhat-dependency-compiler && npx hardhat compile",
     "deploy": "node scripts/deploy.js",
     "solidity-linter": "./scripts/solhint.sh",
     "lint": "eslint .",

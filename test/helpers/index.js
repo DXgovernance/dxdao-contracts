@@ -16,7 +16,9 @@ const GenesisProtocol = artifacts.require("./GenesisProtocol.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
-const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
+const GlobalPermissionRegistry = artifacts.require(
+  "./GlobalPermissionRegistry.sol"
+);
 const DXDVestingFactory = artifacts.require("./DXDVestingFactory.sol");
 const DXdaoNFT = artifacts.require("./DXdaoNFT.sol");
 const ERC20Guild = artifacts.require("./ERC20Guild.sol");
@@ -30,7 +32,7 @@ export const logDecoder = new LogDecoder([
   GenesisProtocol.abi,
   DXDVotingMachine.abi,
   WalletScheme.abi,
-  PermissionRegistry.abi,
+  GlobalPermissionRegistry.abi,
   DXDVestingFactory.abi,
   DXdaoNFT.abi,
   ERC20Guild.abi,

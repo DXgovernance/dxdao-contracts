@@ -45,6 +45,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     const Multicall = await hre.artifacts.require("Multicall");
     const DXdaoNFT = await hre.artifacts.require("DXdaoNFT");
     const DXDVestingFactory = await hre.artifacts.require("DXDVestingFactory");
+    const GuildRegistry = await hre.artifacts.require("GuildRegistry");
 
     async function waitBlocks(blocks) {
       const toBlock = (await web3.eth.getBlock("latest")).number + blocks;
@@ -530,6 +531,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     let proposals = {
       dxvote: [],
     };
+    const guildRegistry = await GuildRegistry.new();
 
     // Each guild is created and initialized and use a previously deployed token or specific token address
     await Promise.all(
@@ -552,6 +554,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
           guildToDeploy.lockTime,
           globalPermissionRegistry.address
         );
+        await guildRegistry.addGuild(newGuild.address);
         guilds[guildToDeploy.name] = newGuild;
         addresses[guildToDeploy.name] = newGuild.address;
         proposals[guildToDeploy.name] = [];
@@ -559,6 +562,9 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
           await newGuild.getTokenVault();
       })
     );
+
+    await guildRegistry.transferOwnership(avatar.address);
+    networkContracts.utils.guildRegistry = guildRegistry.address;
 
     console.log("Contracts deployed:", networkContracts);
 

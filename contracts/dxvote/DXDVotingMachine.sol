@@ -59,8 +59,11 @@ contract DXDVotingMachine is GenesisProtocol {
      * @dev Allows the voting machine to receive ether to be used to refund voting costs
      */
     function() external payable {
-        if (organizationRefunds[msg.sender].voteGas > 0)
-            organizationRefunds[msg.sender].balance = organizationRefunds[msg.sender].balance.add(msg.value);
+        require(
+            organizationRefunds[msg.sender].voteGas > 0,
+            "DXDVotingMachine: Address not registered in organizationRefounds"
+        );
+        organizationRefunds[msg.sender].balance = organizationRefunds[msg.sender].balance.add(msg.value);
     }
 
     /**
@@ -72,6 +75,19 @@ contract DXDVotingMachine is GenesisProtocol {
     function setOrganizationRefund(uint256 _voteGas, uint256 _maxGasPrice) external {
         organizationRefunds[msg.sender].voteGas = _voteGas;
         organizationRefunds[msg.sender].maxGasPrice = _maxGasPrice;
+    }
+
+    /**
+     * @dev Withdraw organization refund balance
+     */
+    function withdrawRefundBalance() public {
+        require(
+            organizationRefunds[msg.sender].voteGas > 0,
+            "DXDVotingMachine: Address not registered in organizationRefounds"
+        );
+        require(organizationRefunds[msg.sender].balance > 0, "DXDVotingMachine: Organization refund balance is zero");
+        msg.sender.transfer(organizationRefunds[msg.sender].balance);
+        organizationRefunds[msg.sender].balance = 0;
     }
 
     /**
@@ -115,7 +131,7 @@ contract DXDVotingMachine is GenesisProtocol {
             voter = msg.sender;
         }
         bool voteResult = internalVote(_proposalId, voter, _vote, _amount);
-        _refundVote(proposal.organizationId, msg.sender);
+        _refundVote(proposal.organizationId);
         return voteResult;
     }
 
@@ -124,6 +140,7 @@ contract DXDVotingMachine is GenesisProtocol {
      *
      * @param votingMachine the voting machine address
      * @param proposalId id of the proposal
+     * @param voter address of voter
      * @param voteDecision the vote decision, NO(2) or YES(1).
      * @param amount the reputation amount to vote with, 0 will use all available REP
      * @param signature the encoded vote signature
@@ -131,14 +148,15 @@ contract DXDVotingMachine is GenesisProtocol {
     function shareSignedVote(
         address votingMachine,
         bytes32 proposalId,
+        address voter,
         uint256 voteDecision,
         uint256 amount,
         bytes calldata signature
     ) external {
-        bytes32 voteHashed = hashVote(votingMachine, proposalId, msg.sender, voteDecision, amount);
-        require(msg.sender == voteHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
         require(voteDecision > 0, "invalid voteDecision");
-        emit VoteSigned(votingMachine, proposalId, msg.sender, voteDecision, amount, signature);
+        bytes32 voteHashed = hashVote(votingMachine, proposalId, voter, voteDecision, amount);
+        require(voter == voteHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
+        emit VoteSigned(votingMachine, proposalId, voter, voteDecision, amount, signature);
     }
 
     /**
@@ -189,7 +207,7 @@ contract DXDVotingMachine is GenesisProtocol {
             "wrong signer"
         );
         internalVote(proposalId, voter, voteDecision, amount);
-        _refundVote(proposals[proposalId].organizationId, msg.sender);
+        _refundVote(proposals[proposalId].organizationId);
     }
 
     /**
@@ -210,16 +228,15 @@ contract DXDVotingMachine is GenesisProtocol {
         require(votesSignaled[proposalId][voter].voteDecision > 0, "wrong vote shared");
         internalVote(proposalId, voter, voteDecision, amount);
         delete votesSignaled[proposalId][voter];
-        _refundVote(proposals[proposalId].organizationId, msg.sender);
+        _refundVote(proposals[proposalId].organizationId);
     }
 
     /**
      * @dev Refund a vote gas cost to an address
      *
      * @param organizationId the id of the organization that should do the refund
-     * @param toAddress the address where the refund should be sent
      */
-    function _refundVote(bytes32 organizationId, address payable toAddress) internal {
+    function _refundVote(bytes32 organizationId) internal {
         address orgAddress = organizations[organizationId];
         if (organizationRefunds[orgAddress].voteGas > 0) {
             uint256 gasRefund = organizationRefunds[orgAddress].voteGas.mul(
@@ -227,7 +244,7 @@ contract DXDVotingMachine is GenesisProtocol {
             );
             if (organizationRefunds[orgAddress].balance >= gasRefund) {
                 organizationRefunds[orgAddress].balance = organizationRefunds[orgAddress].balance.sub(gasRefund);
-                toAddress.transfer(gasRefund);
+                msg.sender.transfer(gasRefund);
             }
         }
     }

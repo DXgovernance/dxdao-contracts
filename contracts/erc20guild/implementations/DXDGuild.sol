@@ -55,6 +55,7 @@ contract DXDGuild is ERC20Guild, OwnableUpgradeable {
         );
         permissionRegistry.setPermission(
             address(0),
+            address(this),
             _votingMachine,
             bytes4(keccak256("vote(bytes32,uint256,uint256,address)")),
             0,

@@ -3,13 +3,15 @@ import * as helpers from "../helpers";
 const { time, expectRevert } = require("@openzeppelin/test-helpers");
 
 const WalletScheme = artifacts.require("./WalletScheme.sol");
-const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
+const GlobalPermissionRegistry = artifacts.require(
+  "./GlobalPermissionRegistry.sol"
+);
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 
-contract("PermissionRegistry", function (accounts) {
+contract("GlobalPermissionRegistry", function (accounts) {
   let permissionRegistry,
     masterWalletScheme,
     quickWalletScheme,
@@ -54,7 +56,8 @@ contract("PermissionRegistry", function (accounts) {
       0 // activationTime
     );
 
-    permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
+    permissionRegistry = await GlobalPermissionRegistry.new(accounts[0], 30);
+    await permissionRegistry.initialize();
 
     masterWalletScheme = await WalletScheme.new();
     await masterWalletScheme.initialize(
@@ -78,24 +81,6 @@ contract("PermissionRegistry", function (accounts) {
       "Quick Wallet",
       executionTimeout,
       0
-    );
-
-    await permissionRegistry.setAdminPermission(
-      constants.NULL_ADDRESS,
-      org.avatar.address,
-      constants.ANY_ADDRESS,
-      constants.ANY_FUNC_SIGNATURE,
-      constants.MAX_UINT_256,
-      true
-    );
-
-    await permissionRegistry.setAdminPermission(
-      constants.NULL_ADDRESS,
-      quickWalletScheme.address,
-      constants.ANY_ADDRESS,
-      constants.ANY_FUNC_SIGNATURE,
-      constants.MAX_UINT_256,
-      true
     );
 
     await time.increase(30);
@@ -122,20 +107,15 @@ contract("PermissionRegistry", function (accounts) {
     );
   });
 
-  it("PermissionRegistry - fail in deploying wring wrong args", async function () {
+  it("Cannot tranfer ownership to address zero", async function () {
     await expectRevert(
-      PermissionRegistry.new(constants.NULL_ADDRESS, 10),
-      "PermissionRegistry: Invalid owner address"
-    );
-
-    await expectRevert(
-      PermissionRegistry.new(org.avatar.address, 0),
-      "PermissionRegistry: Invalid time delay"
+      permissionRegistry.transferOwnership(constants.NULL_ADDRESS),
+      "Ownable: new owner is the zero address"
     );
   });
 
-  it("PermissionRegistry - transfer ownerhip and set time delay", async function () {
-    await permissionRegistry.setAdminPermission(
+  it("transfer ownerhip and set time delay", async function () {
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -144,62 +124,25 @@ contract("PermissionRegistry", function (accounts) {
       false
     );
 
-    await permissionRegistry.setAdminPermission(
-      constants.NULL_ADDRESS,
-      quickWalletScheme.address,
-      constants.ANY_ADDRESS,
-      constants.ANY_FUNC_SIGNATURE,
-      constants.MAX_UINT_256,
-      false
-    );
-
-    await expectRevert(
-      permissionRegistry.setPermission(
-        constants.NULL_ADDRESS,
-        permissionRegistry.address,
-        constants.ANY_FUNC_SIGNATURE,
-        constants.MAX_UINT_256,
-        true
-      ),
-      "PermissionRegistry: Cant set permissions to PermissionRegistry"
-    );
-
     await permissionRegistry.transferOwnership(org.avatar.address);
 
     await expectRevert(
-      permissionRegistry.setAdminPermission(
-        constants.NULL_ADDRESS,
-        quickWalletScheme.address,
-        constants.ANY_ADDRESS,
-        constants.ANY_FUNC_SIGNATURE,
-        constants.MAX_UINT_256,
-        true
-      ),
-      "PermissionRegistry: Only callable by owner"
-    );
-
-    await expectRevert(
-      permissionRegistry.setTimeDelay(60),
-      "PermissionRegistry: Only callable by owner"
-    );
-
-    await expectRevert(
       permissionRegistry.transferOwnership(accounts[0]),
-      "PermissionRegistry: Only callable by owner"
+      "Ownable: caller is not the owner"
     );
 
-    const setTimeDelayData = new web3.eth.Contract(
-      PermissionRegistry.abi
+    const setPermissionDelayData = new web3.eth.Contract(
+      GlobalPermissionRegistry.abi
     ).methods
-      .setTimeDelay(60)
+      .setPermissionDelay(60)
       .encodeABI();
 
     const callData = helpers.testCallFrom(quickWalletScheme.address);
 
-    const setAdminPermissionData = new web3.eth.Contract(
-      PermissionRegistry.abi
+    const setPermissionData = new web3.eth.Contract(
+      GlobalPermissionRegistry.abi
     ).methods
-      .setAdminPermission(
+      .setPermission(
         constants.NULL_ADDRESS,
         quickWalletScheme.address,
         actionMock.address,
@@ -211,7 +154,7 @@ contract("PermissionRegistry", function (accounts) {
 
     const tx = await masterWalletScheme.proposeCalls(
       [permissionRegistry.address, permissionRegistry.address],
-      [setTimeDelayData, setAdminPermissionData],
+      [setPermissionData, setPermissionDelayData],
       [0, 0],
       constants.TEST_TITLE,
       constants.SOME_HASH
@@ -237,21 +180,24 @@ contract("PermissionRegistry", function (accounts) {
       constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
-    const testCallAllowedFromTime = (
-      await permissionRegistry.getPermission(
-        constants.NULL_ADDRESS,
-        quickWalletScheme.address,
-        actionMock.address,
-        callData.substring(0, 10)
-      )
-    ).fromTime;
+    // const testCallAllowedFromTime = (
+    //   await permissionRegistry.getPermission(
+    //     constants.NULL_ADDRESS,
+    //     quickWalletScheme.address,
+    //     actionMock.address,
+    //     callData.substring(0, 10)
+    //   )
+    // ).fromTime;
+
+    // assert.equal(
+    //   testCallAllowedFromTime.toNumber(),
+    //   (await time.latest()).toNumber() + 60
+    // );
 
     assert.equal(
-      testCallAllowedFromTime.toNumber(),
-      (await time.latest()).toNumber() + 60
+      await permissionRegistry.getPermissionDelay(org.avatar.address),
+      60
     );
-
-    assert.equal(await permissionRegistry.timeDelay(), 60);
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
@@ -268,15 +214,15 @@ contract("PermissionRegistry", function (accounts) {
     const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
 
     // The call to execute is not allowed YET, because we change the delay time to 30 seconds
-    await expectRevert(
-      votingMachine.contract.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
-        from: accounts[2],
-      }),
-      "call not allowed"
-    );
+    // await expectRevert(
+    //   votingMachine.contract.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
+    //     from: accounts[2],
+    //   }),
+    //   "call not allowed"
+    // );
 
     // After increasing the time it will allow the proposal execution
-    await time.increaseTo(testCallAllowedFromTime);
+    await time.increase(30);
     await votingMachine.contract.vote(
       proposalId2,
       1,
@@ -296,28 +242,10 @@ contract("PermissionRegistry", function (accounts) {
     assert.equal(organizationProposal.value[0], 0);
   });
 
-  it("PermissionRegistry - transfer ownerhip and set permission from quickwallet", async function () {
-    await permissionRegistry.setAdminPermission(
-      constants.NULL_ADDRESS,
-      org.avatar.address,
-      constants.ANY_ADDRESS,
-      constants.ANY_FUNC_SIGNATURE,
-      constants.MAX_UINT_256,
-      false
-    );
-
-    await permissionRegistry.setAdminPermission(
-      constants.NULL_ADDRESS,
-      quickWalletScheme.address,
-      constants.ANY_ADDRESS,
-      constants.ANY_FUNC_SIGNATURE,
-      constants.MAX_UINT_256,
-      false
-    );
-
+  it("remove permission from quickwallet", async function () {
     const callData = helpers.testCallFrom(quickWalletScheme.address);
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       quickWalletScheme.address,
       actionMock.address,
@@ -326,11 +254,18 @@ contract("PermissionRegistry", function (accounts) {
       true
     );
 
+    const setPermissionDelayData = new web3.eth.Contract(
+      GlobalPermissionRegistry.abi
+    ).methods
+      .setPermissionDelay(60)
+      .encodeABI();
+
     const setPermissionData = new web3.eth.Contract(
-      PermissionRegistry.abi
+      GlobalPermissionRegistry.abi
     ).methods
       .setPermission(
         constants.NULL_ADDRESS,
+        quickWalletScheme.address,
         actionMock.address,
         callData.substring(0, 10),
         666,
@@ -338,37 +273,16 @@ contract("PermissionRegistry", function (accounts) {
       )
       .encodeABI();
 
-    // Allow quickWalletScheme set its own permissions
-    await permissionRegistry.setAdminPermission(
-      constants.NULL_ADDRESS,
-      quickWalletScheme.address,
-      permissionRegistry.address,
-      setPermissionData.substring(0, 10),
-      0,
-      true
-    );
-
     await permissionRegistry.transferOwnership(org.avatar.address);
 
     const tx = await quickWalletScheme.proposeCalls(
-      [permissionRegistry.address],
-      [setPermissionData],
-      [0],
+      [permissionRegistry.address, permissionRegistry.address],
+      [setPermissionDelayData, setPermissionData],
+      [0, 0],
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-
-    const setPermissionCallAllowedFromTime = (
-      await permissionRegistry.getPermission(
-        constants.NULL_ADDRESS,
-        quickWalletScheme.address,
-        permissionRegistry.address,
-        setPermissionData.substring(0, 10)
-      )
-    ).fromTime;
-
-    await time.increaseTo(setPermissionCallAllowedFromTime);
 
     assert.notEqual(
       (
@@ -380,6 +294,18 @@ contract("PermissionRegistry", function (accounts) {
         )
       ).fromTime.toString(),
       0
+    );
+
+    assert.equal(
+      (
+        await permissionRegistry.getPermission(
+          constants.NULL_ADDRESS,
+          quickWalletScheme.address,
+          actionMock.address,
+          callData.substring(0, 10)
+        )
+      ).valueAllowed.toString(),
+      "666"
     );
 
     await votingMachine.contract.vote(
@@ -395,6 +321,8 @@ contract("PermissionRegistry", function (accounts) {
       constants.WalletSchemeProposalState.executionSuccedd
     );
 
+    await time.increase(60);
+
     assert.equal(
       (
         await permissionRegistry.getPermission(
@@ -403,7 +331,7 @@ contract("PermissionRegistry", function (accounts) {
           actionMock.address,
           callData.substring(0, 10)
         )
-      ).fromTime,
+      ).fromTime.toString(),
       0
     );
 
@@ -415,7 +343,7 @@ contract("PermissionRegistry", function (accounts) {
           actionMock.address,
           callData.substring(0, 10)
         )
-      ).valueAllowed,
+      ).valueAllowed.toString(),
       0
     );
   });

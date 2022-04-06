@@ -1,9 +1,17 @@
 import * as helpers from "../helpers";
 const { fixSignature } = require("../helpers/sign");
 
-const { BN, time, expectEvent } = require("@openzeppelin/test-helpers");
+const {
+  BN,
+  time,
+  expectEvent,
+  expectRevert,
+  balance,
+} = require("@openzeppelin/test-helpers");
 
-const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
+const GlobalPermissionRegistry = artifacts.require(
+  "./GlobalPermissionRegistry.sol"
+);
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
@@ -68,9 +76,10 @@ contract("DXDVotingMachine", function (accounts) {
       from: accounts[1],
     });
 
-    permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
+    permissionRegistry = await GlobalPermissionRegistry.new(accounts[0], 10);
+    await permissionRegistry.initialize();
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -475,7 +484,7 @@ contract("DXDVotingMachine", function (accounts) {
       proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     });
 
-    it("fail sharing ivalid vote signature", async function () {
+    it("fail sharing invalid vote signature", async function () {
       const voteHash = await dxdVotingMachine.contract.hashVote(
         dxdVotingMachine.address,
         proposalId,
@@ -495,12 +504,16 @@ contract("DXDVotingMachine", function (accounts) {
         await dxdVotingMachine.contract.shareSignedVote(
           dxdVotingMachine.address,
           proposalId,
+          accounts[3],
           2,
           70000,
           votesignature,
           { from: accounts[3] }
         );
-        assert(false, "cannot share invalid vote signature different vote");
+        assert(
+          false,
+          "cannot share invalid vote signature with different vote"
+        );
       } catch (error) {
         helpers.assertVMException(error);
       }
@@ -509,6 +522,7 @@ contract("DXDVotingMachine", function (accounts) {
         await dxdVotingMachine.contract.shareSignedVote(
           dxdVotingMachine.address,
           proposalId,
+          accounts[3],
           1,
           71000,
           votesignature,
@@ -518,20 +532,76 @@ contract("DXDVotingMachine", function (accounts) {
       } catch (error) {
         helpers.assertVMException(error);
       }
+    });
+    it("Can share a vote signed by a different user", async function () {
+      const voteHash = await dxdVotingMachine.contract.hashVote(
+        dxdVotingMachine.address,
+        proposalId,
+        accounts[3],
+        1,
+        70000
+      );
 
-      try {
-        await dxdVotingMachine.contract.shareSignedVote(
+      const votesignature = fixSignature(
+        await web3.eth.sign(voteHash, accounts[3])
+      );
+
+      assert.equal(
+        accounts[3],
+        web3.eth.accounts.recover(voteHash, votesignature)
+      );
+
+      const voteTx = await dxdVotingMachine.contract.shareSignedVote(
+        dxdVotingMachine.address,
+        proposalId,
+        accounts[3],
+        1,
+        70000,
+        votesignature,
+        { from: accounts[1] }
+      );
+
+      expectEvent(voteTx, "VoteSigned", {
+        votingMachine: dxdVotingMachine.address,
+        proposalId: proposalId,
+        voter: accounts[3],
+        voteDecision: "1",
+        amount: "70000",
+        signature: votesignature,
+      });
+    });
+
+    it("Cannot share a vote with the incorrect signature", async function () {
+      const voteHash = await dxdVotingMachine.contract.hashVote(
+        dxdVotingMachine.address,
+        proposalId,
+        accounts[3],
+        1,
+        70000,
+        { from: accounts[1] }
+      );
+
+      const votesignature = fixSignature(
+        await web3.eth.sign(voteHash, accounts[1])
+      );
+
+      assert.equal(
+        accounts[1],
+        web3.eth.accounts.recover(voteHash, votesignature)
+      );
+
+      await expectRevert(
+        dxdVotingMachine.contract.shareSignedVote(
           dxdVotingMachine.address,
           proposalId,
+          accounts[3],
           1,
           70000,
           votesignature,
           { from: accounts[1] }
-        );
-        assert(false, "cannot share invalid vote signature form other address");
-      } catch (error) {
-        helpers.assertVMException(error);
-      }
+        ),
+        "wrong signer"
+      );
     });
 
     it("fail executing vote with invalid data", async function () {
@@ -553,6 +623,7 @@ contract("DXDVotingMachine", function (accounts) {
       const shareVoteTx = await dxdVotingMachine.contract.shareSignedVote(
         dxdVotingMachine.address,
         proposalId,
+        accounts[3],
         1,
         70000,
         votesignature,
@@ -625,6 +696,7 @@ contract("DXDVotingMachine", function (accounts) {
       const shareVoteTx = await dxdVotingMachine.contract.shareSignedVote(
         dxdVotingMachine.address,
         proposalId,
+        accounts[3],
         1,
         0,
         votesignature,
@@ -669,6 +741,7 @@ contract("DXDVotingMachine", function (accounts) {
       const shareVoteTx = await dxdVotingMachine.contract.shareSignedVote(
         dxdVotingMachine.address,
         proposalId,
+        accounts[3],
         2,
         60000,
         votesignature,
@@ -1002,6 +1075,140 @@ contract("DXDVotingMachine", function (accounts) {
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
       assert.equal(organizationProposal.value[0], 0);
+    });
+  });
+
+  describe("Fallback function", function () {
+    it("Should not receive value from unregistered organization", async function () {
+      await expectRevert(
+        // Send value to DXDVotingMachine with unregistered organization address
+        web3.eth.sendTransaction({
+          from: accounts[0],
+          to: dxdVotingMachine.address,
+          value: constants.TEST_VALUE,
+        }),
+        "Address not registered in organizationRefounds"
+      );
+    });
+    it("Should receive value from registered organization", async function () {
+      // get contract instance
+      const contract = new web3.eth.Contract(
+        DXDVotingMachine.abi,
+        dxdVotingMachine.address
+      );
+
+      // register organization
+      await contract.methods
+        .setOrganizationRefund(VOTE_GAS, constants.GAS_PRICE)
+        .send({ from: accounts[1] });
+
+      // Send value to DXDVotingMachine with registered organization address
+      await web3.eth.sendTransaction({
+        from: accounts[1],
+        to: contract.options.address,
+        value: constants.TEST_VALUE,
+      });
+      // Get organizationRefund data
+      const organizationRefoundData = await contract.methods
+        .organizationRefunds(accounts[1])
+        .call();
+
+      assert.equal(
+        Number(organizationRefoundData.balance),
+        constants.TEST_VALUE
+      );
+    });
+  });
+
+  describe("withdrawRefundBalance", function () {
+    let dxdVotingMachineInstance;
+    beforeEach(function () {
+      dxdVotingMachineInstance = new web3.eth.Contract(
+        DXDVotingMachine.abi,
+        dxdVotingMachine.address
+      );
+    });
+
+    it("Should not withdraw refund balance if organization is not registered", async function () {
+      const unexistentOrganizationAddress = accounts[2];
+      const expectedErrorMsg =
+        "DXDVotingMachine: Address not registered in organizationRefounds";
+      try {
+        await dxdVotingMachineInstance.methods
+          .withdrawRefundBalance()
+          .call({ from: unexistentOrganizationAddress });
+      } catch (e) {
+        expect(e.message).to.contain(expectedErrorMsg);
+      }
+    });
+
+    it("Should not withdraw if organization has no balance", async function () {
+      const registeredOrganization = accounts[3];
+      const expectedErrorMsg =
+        "DXDVotingMachine: Organization refund balance is zero";
+
+      // register organization
+      await dxdVotingMachineInstance.methods
+        .setOrganizationRefund(VOTE_GAS, constants.GAS_PRICE)
+        .send({ from: registeredOrganization });
+
+      try {
+        await dxdVotingMachineInstance.methods
+          .withdrawRefundBalance()
+          .call({ from: registeredOrganization });
+      } catch (e) {
+        expect(e.message).to.contain(expectedErrorMsg);
+      }
+    });
+
+    it("Should withdraw refund balance if balance is bigger than 0 for registered organizations", async function () {
+      const registeredOrganizationAddress = accounts[4];
+      const VALUE = 500000000000;
+      const tracker = await balance.tracker(
+        registeredOrganizationAddress,
+        "wei"
+      );
+      const initialBalance = await tracker.get();
+
+      // register organization
+      await dxdVotingMachineInstance.methods
+        .setOrganizationRefund(VOTE_GAS, constants.GAS_PRICE)
+        .send({ from: registeredOrganizationAddress });
+
+      // Send value to DXDVotingMachine with registered organization address
+      await web3.eth.sendTransaction({
+        from: registeredOrganizationAddress,
+        to: dxdVotingMachineInstance.options.address,
+        value: VALUE,
+      });
+
+      const orgRefund = await dxdVotingMachineInstance.methods
+        .organizationRefunds(registeredOrganizationAddress)
+        .call();
+
+      // check org balance has been updated ok.
+      expect(Number(orgRefund.balance)).to.eql(VALUE);
+
+      // withdraw refund balance
+      await dxdVotingMachineInstance.methods
+        .withdrawRefundBalance()
+        .send({ from: registeredOrganizationAddress });
+
+      const orgBalance = Number(
+        (
+          await dxdVotingMachineInstance.methods
+            .organizationRefunds(registeredOrganizationAddress)
+            .call()
+        ).balance
+      );
+
+      const { fees } = await tracker.deltaWithFees();
+      const balanceAfterWithdraw = await tracker.get();
+
+      // Expect reset balance
+      expect(orgBalance).to.eql(0);
+
+      expect(balanceAfterWithdraw).to.eql(initialBalance.sub(fees));
     });
   });
 });

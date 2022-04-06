@@ -25,4 +25,3 @@ tags
 .log/
 yarn-error.log
 venv/
-contracts/hardhat-dependency-compiler/

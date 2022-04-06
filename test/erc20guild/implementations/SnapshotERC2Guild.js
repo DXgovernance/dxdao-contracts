@@ -47,6 +47,7 @@ contract("SnapshotERC20Guild", function (accounts) {
     );
 
     globalPermissionRegistry = await GlobalPermissionRegistry.new();
+    await globalPermissionRegistry.initialize();
 
     erc20Guild = await SnapshotERC20Guild.new();
     await erc20Guild.initialize(

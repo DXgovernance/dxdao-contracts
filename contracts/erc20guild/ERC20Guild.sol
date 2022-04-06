@@ -253,7 +253,14 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         );
         for (uint256 i = 0; i < to.length; i++) {
             require(functionSignature[i] != bytes4(0), "ERC20Guild: Empty signatures not allowed");
-            permissionRegistry.setPermission(asset[i], to[i], functionSignature[i], valueAllowed[i], allowance[i]);
+            permissionRegistry.setPermission(
+                asset[i],
+                address(this),
+                to[i],
+                functionSignature[i],
+                valueAllowed[i],
+                allowance[i]
+            );
         }
         require(
             permissionRegistry.getPermissionTime(
@@ -508,12 +515,18 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                     }
 
                     // The permission registry keeps track of all value transferred and checks call permission
-                    try
-                        // slither-disable-next-line all
-                        permissionRegistry.setPermissionUsed(asset, address(this), _to, callDataFuncSignature, _value)
-                    {} catch Error(string memory reason) {
-                        revert(reason);
-                    }
+                    if (_to != address(permissionRegistry))
+                        try
+                            permissionRegistry.setPermissionUsed(
+                                asset,
+                                address(this),
+                                _to,
+                                callDataFuncSignature,
+                                _value
+                            )
+                        {} catch Error(string memory reason) {
+                            revert(reason);
+                        }
 
                     isExecutingProposal = true;
                     // We use isExecutingProposal varibale to avoid reentrancy in proposal execution
@@ -576,12 +589,14 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         permissionRegistry.setPermission(
             address(0),
             address(this),
+            address(this),
             bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")),
             0,
             true
         );
         permissionRegistry.setPermission(
             address(0),
+            address(this),
             address(this),
             bytes4(keccak256("setPermission(address[],address[],bytes4[],uint256[],bool[])")),
             0,
@@ -590,12 +605,14 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         permissionRegistry.setPermission(
             address(0),
             address(this),
+            address(this),
             bytes4(keccak256("setPermissionDelay(uint256)")),
             0,
             true
         );
         permissionRegistry.setPermission(
             address(0),
+            address(this),
             address(this),
             bytes4(keccak256("setEIP1271SignedHash(bytes32,bool)")),
             0,
