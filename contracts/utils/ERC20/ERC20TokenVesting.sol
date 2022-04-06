@@ -55,7 +55,7 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
         uint256 __cliffDuration,
         uint256 __duration,
         bool __revocable
-    ) public initializer {
+    ) external initializer {
         require(__beneficiary != address(0), "TokenVesting: beneficiary is the zero address");
         // solhint-disable-next-line max-line-length
         require(__cliffDuration <= __duration, "TokenVesting: cliff is longer than duration");
@@ -74,35 +74,35 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
     /**
      * @return the beneficiary of the tokens.
      */
-    function beneficiary() public view returns (address) {
+    function beneficiary() external view returns (address) {
         return _beneficiary;
     }
 
     /**
      * @return the cliff time of the token vesting.
      */
-    function cliff() public view returns (uint256) {
+    function cliff() external view returns (uint256) {
         return _cliff;
     }
 
     /**
      * @return the start time of the token vesting.
      */
-    function start() public view returns (uint256) {
+    function start() external view returns (uint256) {
         return _start;
     }
 
     /**
      * @return the duration of the token vesting.
      */
-    function duration() public view returns (uint256) {
+    function duration() external view returns (uint256) {
         return _duration;
     }
 
     /**
      * @return true if the vesting is revocable.
      */
-    function revocable() public view returns (bool) {
+    function revocable() external view returns (bool) {
         return _revocable;
     }
 
@@ -116,7 +116,7 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
     /**
      * @return true if the token is revoked.
      */
-    function revoked(address token) public view returns (bool) {
+    function revoked(address token) external view returns (bool) {
         return _revoked[token];
     }
 
@@ -124,7 +124,7 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
      * @notice Transfers vested tokens to beneficiary.
      * @param token ERC20 token which is being vested
      */
-    function release(IERC20 token) public {
+    function release(IERC20 token) external {
         uint256 unreleased = _releasableAmount(token);
 
         require(unreleased > 0, "TokenVesting: no tokens are due");
@@ -141,7 +141,7 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
      * remain in the contract, the rest are returned to the owner.
      * @param token ERC20 token which is being vested
      */
-    function revoke(IERC20 token) public onlyOwner {
+    function revoke(IERC20 token) external onlyOwner {
         require(_revocable, "TokenVesting: cannot revoke");
         require(!_revoked[address(token)], "TokenVesting: token already revoked");
 

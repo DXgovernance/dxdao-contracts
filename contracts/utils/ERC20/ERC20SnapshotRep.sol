@@ -9,25 +9,25 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
  * @title ERC20SnapshotRep
  */
 contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpgradeable {
-    function initialize(string memory name, string memory symbol) public initializer {
+    function initialize(string memory name, string memory symbol) external initializer {
         __ERC20_init(name, symbol);
         __Ownable_init();
     }
 
-    function snapshot() public {
+    function snapshot() external {
         _snapshot();
     }
 
-    function getCurrentSnapshotId() public view virtual returns (uint256) {
+    function getCurrentSnapshotId() external view virtual returns (uint256) {
         return _getCurrentSnapshotId();
     }
 
-    function mint(address to, uint256 amount) public virtual onlyOwner {
+    function mint(address to, uint256 amount) external virtual onlyOwner {
         _snapshot();
         _mint(to, amount);
     }
 
-    function burn(address to, uint256 amount) public virtual onlyOwner {
+    function burn(address to, uint256 amount) external virtual onlyOwner {
         _snapshot();
         _burn(to, amount);
     }
