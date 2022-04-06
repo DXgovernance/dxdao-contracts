@@ -4,7 +4,9 @@ const { time } = require("@openzeppelin/test-helpers");
 const moment = require("moment");
 
 const WalletScheme = artifacts.require("./WalletScheme.sol");
-const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
+const GlobalPermissionRegistry = artifacts.require(
+  "./GlobalPermissionRegistry.sol"
+);
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
@@ -53,7 +55,8 @@ contract("Dxvote Utils", function (accounts) {
       web3.utils.toWei("50"),
       { from: accounts[1] }
     );
-    permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
+    permissionRegistry = await GlobalPermissionRegistry.new(accounts[0], 30);
+    await permissionRegistry.initialize();
 
     masterWalletScheme = await WalletScheme.new();
     await masterWalletScheme.initialize(
@@ -79,7 +82,7 @@ contract("Dxvote Utils", function (accounts) {
       0
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -88,7 +91,7 @@ contract("Dxvote Utils", function (accounts) {
       true
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       standardTokenMock.address,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -97,7 +100,7 @@ contract("Dxvote Utils", function (accounts) {
       true
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       quickWalletScheme.address,
       constants.ANY_ADDRESS,

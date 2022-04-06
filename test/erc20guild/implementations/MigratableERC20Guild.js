@@ -55,6 +55,7 @@ contract("MigratableERC20Guild", function (accounts) {
       [0, 500000, 500000, 500000]
     );
     globalPermissionRegistry = await GlobalPermissionRegistry.new();
+    await globalPermissionRegistry.initialize();
 
     erc20Guild = await MigratableERC20Guild.new();
     await erc20Guild.initialize(

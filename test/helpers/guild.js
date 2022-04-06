@@ -2,7 +2,9 @@ import * as helpers from "./index";
 const constants = require("./constants");
 const ERC20Mock = artifacts.require("ERC20Mock.sol");
 const WalletScheme = artifacts.require("WalletScheme.sol");
-const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
+const GlobalPermissionRegistry = artifacts.require(
+  "GlobalPermissionRegistry.sol"
+);
 const DaoCreator = artifacts.require("DaoCreator.sol");
 const DxControllerCreator = artifacts.require("DxControllerCreator.sol");
 const { BN, time } = require("@openzeppelin/test-helpers");
@@ -49,7 +51,11 @@ export async function createDAO(
     founderReputation
   );
 
-  const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
+  const permissionRegistry = await GlobalPermissionRegistry.new(
+    accounts[0],
+    10
+  );
+  await permissionRegistry.initialize();
 
   await walletScheme.initialize(
     org.avatar.address,
@@ -62,7 +68,7 @@ export async function createDAO(
     5
   );
 
-  await permissionRegistry.setAdminPermission(
+  await permissionRegistry.setPermission(
     constants.NULL_ADDRESS,
     org.avatar.address,
     constants.ANY_ADDRESS,
