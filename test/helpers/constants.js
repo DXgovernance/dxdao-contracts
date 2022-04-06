@@ -15,6 +15,8 @@ export const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 export const TEST_VALUE = 666;
 export const TEST_TITLE = "Awesome Proposal Title";
 export const ERC20_TRANSFER_SIGNATURE = "0xa9059cbb";
+export const SOME_TOKEN_URI =
+  "http://www.someTokenImplementation.com/tokens/19";
 
 export const WalletSchemeProposalState = {
   none: 0,
