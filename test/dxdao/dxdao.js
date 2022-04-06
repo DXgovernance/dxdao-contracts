@@ -1,8 +1,6 @@
 import * as helpers from "../helpers";
 
-const GlobalPermissionRegistry = artifacts.require(
-  "./GlobalPermissionRegistry.sol"
-);
+const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const DxController = artifacts.require("./DxController.sol");
 const DxAvatar = artifacts.require("./DxAvatar.sol");
@@ -86,10 +84,7 @@ contract("DXdao", function (accounts) {
       voteOnBehalf
     );
 
-    const permissionRegistry = await GlobalPermissionRegistry.new(
-      accounts[0],
-      10
-    );
+    const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
     await permissionRegistry.initialize();
 
     await masterWalletScheme.initialize(

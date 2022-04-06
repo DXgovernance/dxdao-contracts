@@ -3,9 +3,7 @@ const { fixSignature } = require("../helpers/sign");
 const { time, expectRevert } = require("@openzeppelin/test-helpers");
 
 const WalletScheme = artifacts.require("./WalletScheme.sol");
-const GlobalPermissionRegistry = artifacts.require(
-  "./GlobalPermissionRegistry.sol"
-);
+const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
@@ -63,7 +61,7 @@ contract("WalletScheme", function (accounts) {
       0 // activationTime
     );
 
-    permissionRegistry = await GlobalPermissionRegistry.new(accounts[0], 30);
+    permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
     await permissionRegistry.initialize();
 
     registrarWalletScheme = await WalletScheme.new();
@@ -302,7 +300,7 @@ contract("WalletScheme", function (accounts) {
             constants.NULL_ADDRESS,
             { from: accounts[2] }
           ),
-          "GlobalPermissionRegistry: Call not allowed"
+          "PermissionRegistry: Call not allowed"
         );
       })
     );
@@ -326,7 +324,7 @@ contract("WalletScheme", function (accounts) {
             constants.NULL_ADDRESS,
             { from: accounts[2] }
           ),
-          "GlobalPermissionRegistry: Call not allowed"
+          "PermissionRegistry: Call not allowed"
         );
       })
     );
@@ -1096,7 +1094,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "GlobalPermissionRegistry: Call not allowed"
+      "PermissionRegistry: Call not allowed"
     );
 
     assert.equal(
@@ -1162,7 +1160,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "GlobalPermissionRegistry: Value limit reached"
+      "PermissionRegistry: Value limit reached"
     );
 
     assert.equal(
@@ -1216,7 +1214,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "GlobalPermissionRegistry: Value limit reached"
+      "PermissionRegistry: Value limit reached"
     );
 
     assert.equal(
@@ -1276,7 +1274,7 @@ contract("WalletScheme", function (accounts) {
     );
 
     const setPermissionData = new web3.eth.Contract(
-      GlobalPermissionRegistry.abi
+      PermissionRegistry.abi
     ).methods
       .setPermission(
         constants.NULL_ADDRESS,
@@ -1404,7 +1402,7 @@ contract("WalletScheme", function (accounts) {
     );
 
     const setPermissionData = new web3.eth.Contract(
-      GlobalPermissionRegistry.abi
+      PermissionRegistry.abi
     ).methods
       .setPermission(
         constants.NULL_ADDRESS,
@@ -2492,7 +2490,7 @@ contract("WalletScheme", function (accounts) {
     );
 
     const setPermissionData = new web3.eth.Contract(
-      GlobalPermissionRegistry.abi
+      PermissionRegistry.abi
     ).methods
       .setPermission(
         constants.NULL_ADDRESS,
@@ -2668,7 +2666,7 @@ contract("WalletScheme", function (accounts) {
       );
 
       const setPermissionData = new web3.eth.Contract(
-        GlobalPermissionRegistry.abi
+        PermissionRegistry.abi
       ).methods
         .setPermission(
           testToken.address,
@@ -2777,7 +2775,7 @@ contract("WalletScheme", function (accounts) {
         votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
           from: accounts[2],
         }),
-        "GlobalPermissionRegistry: Value limit reached"
+        "PermissionRegistry: Value limit reached"
       );
 
       assert.equal(
@@ -2842,7 +2840,7 @@ contract("WalletScheme", function (accounts) {
       );
 
       const setPermissionData = new web3.eth.Contract(
-        GlobalPermissionRegistry.abi
+        PermissionRegistry.abi
       ).methods
         .setPermission(
           testToken.address,
