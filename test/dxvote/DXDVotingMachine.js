@@ -822,8 +822,6 @@ contract("DXDVotingMachine", function (accounts) {
       await dxdVotingMachine.contract.executeSignaledVote(
         voteInfoFromLog.proposalId,
         voteInfoFromLog.voter,
-        voteInfoFromLog.voteDecision,
-        voteInfoFromLog.amount,
         { from: accounts[4] }
       );
       assert.equal(
@@ -867,8 +865,6 @@ contract("DXDVotingMachine", function (accounts) {
       await dxdVotingMachine.contract.executeSignaledVote(
         voteInfoFromLog.proposalId,
         voteInfoFromLog.voter,
-        voteInfoFromLog.voteDecision,
-        voteInfoFromLog.amount,
         { from: accounts[4] }
       );
       assert.equal(

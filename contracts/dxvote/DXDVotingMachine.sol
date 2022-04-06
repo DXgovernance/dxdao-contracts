@@ -215,18 +215,16 @@ contract DXDVotingMachine is GenesisProtocol {
      *
      * @param proposalId id of the proposal to vote
      * @param voter the signer of the vote
-     * @param voteDecision the vote decisions, NO(2) or YES(1).
-     * @param amount the reputation amount to vote with, 0 will use all available REP
      */
-    function executeSignaledVote(
-        bytes32 proposalId,
-        address voter,
-        uint256 voteDecision,
-        uint256 amount
-    ) external {
+    function executeSignaledVote(bytes32 proposalId, address voter) external {
         require(_isVotable(proposalId), "not votable proposal");
         require(votesSignaled[proposalId][voter].voteDecision > 0, "wrong vote shared");
-        internalVote(proposalId, voter, voteDecision, amount);
+        internalVote(
+            proposalId,
+            voter,
+            votesSignaled[proposalId][voter].voteDecision,
+            votesSignaled[proposalId][voter].amount
+        );
         delete votesSignaled[proposalId][voter];
         _refundVote(proposals[proposalId].organizationId);
     }
@@ -420,7 +418,10 @@ contract DXDVotingMachine is GenesisProtocol {
         }
 
         if (executionState != ExecutionState.None) {
-            if (executionState == ExecutionState.BoostedBarCrossed) {
+            if (
+                (executionState == ExecutionState.BoostedTimeOut) ||
+                (executionState == ExecutionState.BoostedBarCrossed)
+            ) {
                 orgBoostedProposalsCnt[tmpProposal.organizationId] = orgBoostedProposalsCnt[tmpProposal.organizationId]
                     .sub(1);
                 //remove a value from average = ((average * nbValues) - value) / (nbValues - 1);
