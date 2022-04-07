@@ -6,6 +6,7 @@ const {
   time,
   expectEvent,
   expectRevert,
+  balance,
 } = require("@openzeppelin/test-helpers");
 
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
@@ -74,6 +75,7 @@ contract("DXDVotingMachine", function (accounts) {
     });
 
     permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
+    await permissionRegistry.initialize();
 
     await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
@@ -888,8 +890,6 @@ contract("DXDVotingMachine", function (accounts) {
       await dxdVotingMachine.contract.executeSignaledVote(
         voteInfoFromLog.proposalId,
         voteInfoFromLog.voter,
-        voteInfoFromLog.voteDecision,
-        voteInfoFromLog.amount,
         { from: accounts[4] }
       );
       assert.equal(
@@ -933,8 +933,6 @@ contract("DXDVotingMachine", function (accounts) {
       await dxdVotingMachine.contract.executeSignaledVote(
         voteInfoFromLog.proposalId,
         voteInfoFromLog.voter,
-        voteInfoFromLog.voteDecision,
-        voteInfoFromLog.amount,
         { from: accounts[4] }
       );
       assert.equal(
@@ -1144,39 +1142,137 @@ contract("DXDVotingMachine", function (accounts) {
     });
   });
 
-  it("DXDVotingMachine should receive value only if organizationRefund exists", async function () {
-    await expectRevert(
-      // Send value to DXDVotingMachine with unregistered organization address
-      web3.eth.sendTransaction({
-        from: accounts[0],
-        to: dxdVotingMachine.address,
-        value: constants.TEST_VALUE,
-      }),
-      "Address not registered in organizationRefounds"
-    );
-
-    // get contract instance
-    const contract = new web3.eth.Contract(
-      DXDVotingMachine.abi,
-      dxdVotingMachine.address
-    );
-
-    // register organization
-    await contract.methods
-      .setOrganizationRefund(VOTE_GAS, constants.GAS_PRICE)
-      .send({ from: accounts[1] });
-
-    // Send value to DXDVotingMachine with registered organization address
-    await web3.eth.sendTransaction({
-      from: accounts[1],
-      to: contract.options.address,
-      value: constants.TEST_VALUE,
+  describe("Fallback function", function () {
+    it("Should not receive value from unregistered organization", async function () {
+      await expectRevert(
+        // Send value to DXDVotingMachine with unregistered organization address
+        web3.eth.sendTransaction({
+          from: accounts[0],
+          to: dxdVotingMachine.address,
+          value: constants.TEST_VALUE,
+        }),
+        "Address not registered in organizationRefounds"
+      );
     });
-    // Get organizationRefund data
-    const organizationRefoundData = await contract.methods
-      .organizationRefunds(accounts[1])
-      .call();
+    it("Should receive value from registered organization", async function () {
+      // get contract instance
+      const contract = new web3.eth.Contract(
+        DXDVotingMachine.abi,
+        dxdVotingMachine.address
+      );
 
-    assert.equal(Number(organizationRefoundData.balance), constants.TEST_VALUE);
+      // register organization
+      await contract.methods
+        .setOrganizationRefund(VOTE_GAS, constants.GAS_PRICE)
+        .send({ from: accounts[1] });
+
+      // Send value to DXDVotingMachine with registered organization address
+      await web3.eth.sendTransaction({
+        from: accounts[1],
+        to: contract.options.address,
+        value: constants.TEST_VALUE,
+      });
+      // Get organizationRefund data
+      const organizationRefoundData = await contract.methods
+        .organizationRefunds(accounts[1])
+        .call();
+
+      assert.equal(
+        Number(organizationRefoundData.balance),
+        constants.TEST_VALUE
+      );
+    });
+  });
+
+  describe("withdrawRefundBalance", function () {
+    let dxdVotingMachineInstance;
+    beforeEach(function () {
+      dxdVotingMachineInstance = new web3.eth.Contract(
+        DXDVotingMachine.abi,
+        dxdVotingMachine.address
+      );
+    });
+
+    it("Should not withdraw refund balance if organization is not registered", async function () {
+      const unexistentOrganizationAddress = accounts[2];
+      const expectedErrorMsg =
+        "DXDVotingMachine: Address not registered in organizationRefounds";
+      try {
+        await dxdVotingMachineInstance.methods
+          .withdrawRefundBalance()
+          .call({ from: unexistentOrganizationAddress });
+      } catch (e) {
+        expect(e.message).to.contain(expectedErrorMsg);
+      }
+    });
+
+    it("Should not withdraw if organization has no balance", async function () {
+      const registeredOrganization = accounts[3];
+      const expectedErrorMsg =
+        "DXDVotingMachine: Organization refund balance is zero";
+
+      // register organization
+      await dxdVotingMachineInstance.methods
+        .setOrganizationRefund(VOTE_GAS, constants.GAS_PRICE)
+        .send({ from: registeredOrganization });
+
+      try {
+        await dxdVotingMachineInstance.methods
+          .withdrawRefundBalance()
+          .call({ from: registeredOrganization });
+      } catch (e) {
+        expect(e.message).to.contain(expectedErrorMsg);
+      }
+    });
+
+    it("Should withdraw refund balance if balance is bigger than 0 for registered organizations", async function () {
+      const registeredOrganizationAddress = accounts[4];
+      const VALUE = 500000000000;
+      const tracker = await balance.tracker(
+        registeredOrganizationAddress,
+        "wei"
+      );
+      const initialBalance = await tracker.get();
+
+      // register organization
+      await dxdVotingMachineInstance.methods
+        .setOrganizationRefund(VOTE_GAS, constants.GAS_PRICE)
+        .send({ from: registeredOrganizationAddress });
+
+      // Send value to DXDVotingMachine with registered organization address
+      await web3.eth.sendTransaction({
+        from: registeredOrganizationAddress,
+        to: dxdVotingMachineInstance.options.address,
+        value: VALUE,
+      });
+
+      const orgRefund = await dxdVotingMachineInstance.methods
+        .organizationRefunds(registeredOrganizationAddress)
+        .call();
+
+      // check org balance has been updated ok.
+      expect(Number(orgRefund.balance)).to.eql(VALUE);
+
+      // withdraw refund balance
+      await dxdVotingMachineInstance.methods
+        .withdrawRefundBalance()
+        .send({ from: registeredOrganizationAddress });
+
+      const orgBalance = Number(
+        (
+          await dxdVotingMachineInstance.methods
+            .organizationRefunds(registeredOrganizationAddress)
+            .call()
+        ).balance
+      );
+
+      const { fees } = await tracker.deltaWithFees();
+      const balanceAfterWithdraw = await tracker.get();
+
+      // Expect reset balance
+      expect(orgBalance).to.eql(0);
+
+      expect(balanceAfterWithdraw).to.eql(initialBalance.sub(fees));
+    });
   });
 });

@@ -37,9 +37,6 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     const PermissionRegistry = await hre.artifacts.require(
       "PermissionRegistry"
     );
-    const GlobalPermissionRegistry = await hre.artifacts.require(
-      "GlobalPermissionRegistry"
-    );
     const DXDVotingMachine = await hre.artifacts.require("DXDVotingMachine");
     const ERC20Mock = await hre.artifacts.require("ERC20Mock");
     const Multicall = await hre.artifacts.require("Multicall");
@@ -187,14 +184,9 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     // Deploy PermissionRegistry to be used by WalletSchemes
     let permissionRegistry;
     console.log("Deploying PermissionRegistry...");
-    permissionRegistry = await PermissionRegistry.new(accounts[0], 1);
+    permissionRegistry = await PermissionRegistry.new();
+    await permissionRegistry.initialize();
     addresses["PermissionRegistry"] = permissionRegistry.address;
-
-    // Deploy GlobalPermissionRegistry to be used by guilds
-    let globalPermissionRegistry;
-    console.log("Deploying GlobalPermissionRegistry...");
-    globalPermissionRegistry = await GlobalPermissionRegistry.new();
-    addresses["GlobalPermissionRegistry"] = globalPermissionRegistry.address;
 
     // Only allow the functions mintReputation, burnReputation, genericCall, registerScheme and unregisterScheme to be
     // called to in the controller contract from a scheme that calls the controller.
@@ -232,7 +224,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       ).signature,
     ];
     for (var i = 0; i < notAllowedControllerFunctions.length; i++) {
-      await permissionRegistry.setAdminPermission(
+      await permissionRegistry.setPermission(
         NULL_ADDRESS,
         avatar.address,
         controller.address,
@@ -242,19 +234,10 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       );
     }
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       NULL_ADDRESS,
       avatar.address,
       controller.address,
-      ANY_FUNC_SIGNATURE,
-      0,
-      true
-    );
-
-    await permissionRegistry.setAdminPermission(
-      NULL_ADDRESS,
-      avatar.address,
-      permissionRegistry.address,
       ANY_FUNC_SIGNATURE,
       0,
       true
@@ -437,7 +420,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
         else if (addresses[permission.to])
           permission.to = addresses[permission.to];
 
-        await permissionRegistry.setAdminPermission(
+        await permissionRegistry.setPermission(
           addresses[permission.asset] || permission.asset,
           schemeConfiguration.doAvatarGenericCalls
             ? avatar.address
@@ -518,10 +501,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
 
     // Transfer all ownership and power to the dao
     console.log("Transfering ownership...");
-    // Set the permission delay in the permission registry
-    await permissionRegistry.setTimeDelay(
-      deploymentConfig.permissionRegistryDelay
-    );
+    // Set the in the permission registry
     await permissionRegistry.transferOwnership(avatar.address);
     await dxDaoNFT.transferOwnership(avatar.address);
     await controller.unregisterScheme(accounts[0], avatar.address);
@@ -552,7 +532,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
           guildToDeploy.maxGasPrice,
           guildToDeploy.maxActiveProposals,
           guildToDeploy.lockTime,
-          globalPermissionRegistry.address
+          permissionRegistry.address
         );
         await guildRegistry.addGuild(newGuild.address);
         guilds[guildToDeploy.name] = newGuild;

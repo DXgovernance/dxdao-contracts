@@ -85,6 +85,7 @@ contract("DXdao", function (accounts) {
     );
 
     const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
+    await permissionRegistry.initialize();
 
     await masterWalletScheme.initialize(
       avatar.address,

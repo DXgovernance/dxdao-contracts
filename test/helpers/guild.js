@@ -50,6 +50,7 @@ export async function createDAO(
   );
 
   const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
+  await permissionRegistry.initialize();
 
   await walletScheme.initialize(
     org.avatar.address,
@@ -62,7 +63,7 @@ export async function createDAO(
     5
   );
 
-  await permissionRegistry.setAdminPermission(
+  await permissionRegistry.setPermission(
     constants.NULL_ADDRESS,
     org.avatar.address,
     constants.ANY_ADDRESS,

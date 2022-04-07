@@ -11,8 +11,8 @@ import "../../utils/ERC20/ERC20SnapshotRep.sol";
   @title SnapshotRepERC20Guild
   @author github:AugustoL
   @dev An ERC20Guild designed to work with a snapshotted voting token, no locking needed.
-  When a proposal is created it saves the snapshot if at the moment of creation, the voters can vote only with the voting
-  power they had at that time.
+  When a proposal is created it saves the snapshot if at the moment of creation,
+  the voters can vote only with the voting power they had at that time.
 */
 contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
@@ -20,7 +20,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     using ECDSAUpgradeable for bytes32;
 
     // Proposal id => Snapshot id
-    mapping(bytes32 => uint256) proposalsSnapshots;
+    mapping(bytes32 => uint256) public proposalsSnapshots;
 
     // @dev Initilizer
     // @param _token The ERC20 token that will be used as source of voting power
@@ -61,8 +61,22 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
             _lockTime,
             _permissionRegistry
         );
-        permissionRegistry.setPermission(address(0), _token, bytes4(keccak256("mint(address,uint256)")), 0, true);
-        permissionRegistry.setPermission(address(0), _token, bytes4(keccak256("burn(address,uint256)")), 0, true);
+        permissionRegistry.setPermission(
+            address(0),
+            address(this),
+            _token,
+            bytes4(keccak256("mint(address,uint256)")),
+            0,
+            true
+        );
+        permissionRegistry.setPermission(
+            address(0),
+            address(this),
+            _token,
+            bytes4(keccak256("burn(address,uint256)")),
+            0,
+            true
+        );
     }
 
     // @dev Set the voting power to vote in a proposal
@@ -93,17 +107,17 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "SnapshotERC20Guild: Already voted");
         require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "SnapshotERC20Guild: Wrong signer");
-        _setSnapshottedVote(voter, proposalId, action, votingPower);
         signedVotes[hashedVote] = true;
+        _setSnapshottedVote(voter, proposalId, action, votingPower);
     }
 
     // @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild
-    function lockTokens(uint256 tokenAmount) public virtual override {
+    function lockTokens(uint256 tokenAmount) external virtual override {
         revert("SnapshotERC20Guild: token vault disabled");
     }
 
     // @dev Override and disable withdraw of tokens, not needed in SnapshotRepERC20Guild
-    function withdrawTokens(uint256 tokenAmount) public virtual override {
+    function withdrawTokens(uint256 tokenAmount) external virtual override {
         revert("SnapshotERC20Guild: token vault disabled");
     }
 
@@ -165,7 +179,8 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
         if (voteGas > 0) {
             uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
             if (address(this).balance >= gasRefund) {
-                payable(msg.sender).call{value: gasRefund}("");
+                (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
+                require(success, "Failed to refund gas");
             }
         }
     }
@@ -174,7 +189,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     // @param accounts The addresses of the accounts
     // @param snapshotIds The snapshotIds to be used
     function votingPowerOfMultipleAt(address[] memory accounts, uint256[] memory snapshotIds)
-        public
+        external
         view
         virtual
         returns (uint256[] memory)
@@ -198,7 +213,7 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     }
 
     // @dev Get the proposal snapshot id
-    function getProposalSnapshotId(bytes32 proposalId) public view returns (uint256) {
+    function getProposalSnapshotId(bytes32 proposalId) external view returns (uint256) {
         return proposalsSnapshots[proposalId];
     }
 }

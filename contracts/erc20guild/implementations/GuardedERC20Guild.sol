@@ -14,8 +14,8 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
-    address guildGuardian;
-    uint256 extraTimeForGuardian;
+    address public guildGuardian;
+    uint256 public extraTimeForGuardian;
 
     // @dev Initilizer
     // @param _token The ERC20 token that will be used as source of voting power
@@ -59,6 +59,7 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
         permissionRegistry.setPermission(
             address(0),
             address(this),
+            address(this),
             bytes4(keccak256("setGuardianConfig(address,uint256)")),
             0,
             true
@@ -87,7 +88,7 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
 
     // @dev Rejects a proposal directly without execution, only callable by the guardian
     // @param proposalId The id of the proposal to be executed
-    function rejectProposal(bytes32 proposalId) public {
+    function rejectProposal(bytes32 proposalId) external {
         require(proposals[proposalId].state == ProposalState.Active, "GuardedERC20Guild: Proposal already executed");
         require((msg.sender == guildGuardian), "GuardedERC20Guild: Proposal can be rejected only by guardian");
         proposals[proposalId].state = ProposalState.Rejected;
@@ -97,7 +98,7 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     // @dev Set GuardedERC20Guild guardian configuration
     // @param _guildGuardian The address of the guild guardian
     // @param _extraTimeForGuardian The extra time the proposals would be locked for guardian verification
-    function setGuardianConfig(address _guildGuardian, uint256 _extraTimeForGuardian) public {
+    function setGuardianConfig(address _guildGuardian, uint256 _extraTimeForGuardian) external {
         require(
             (guildGuardian == address(0)) || (msg.sender == address(this)),
             "GuardedERC20Guild: Only callable by the guild itself when guildGuardian is set"
@@ -108,12 +109,12 @@ contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
     }
 
     // @dev Get the guildGuardian address
-    function getGuildGuardian() public view returns (address) {
+    function getGuildGuardian() external view returns (address) {
         return guildGuardian;
     }
 
     // @dev Get the extraTimeForGuardian
-    function getExtraTimeForGuardian() public view returns (uint256) {
+    function getExtraTimeForGuardian() external view returns (uint256) {
         return extraTimeForGuardian;
     }
 }

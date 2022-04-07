@@ -286,7 +286,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
             to: ["PermissionRegistry"],
             callData: [
               new web3.eth.Contract(PermissionRegistry.abi).methods
-                .setAdminPermission(
+                .setPermission(
                   NULL_ADDRESS,
                   "0xE0FC07f3aC4F6AF1463De20eb60Cf1A764E259db",
                   "0x1A0370A6f5b6cE96B1386B208a8519552eb714D9",

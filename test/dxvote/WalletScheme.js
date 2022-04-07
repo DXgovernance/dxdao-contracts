@@ -62,6 +62,7 @@ contract("WalletScheme", function (accounts) {
     );
 
     permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
+    await permissionRegistry.initialize();
 
     registrarWalletScheme = await WalletScheme.new();
     await registrarWalletScheme.initialize(
@@ -99,7 +100,7 @@ contract("WalletScheme", function (accounts) {
       1
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -108,7 +109,7 @@ contract("WalletScheme", function (accounts) {
       true
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       quickWalletScheme.address,
       constants.ANY_ADDRESS,
@@ -152,7 +153,7 @@ contract("WalletScheme", function (accounts) {
           method => method.name === "metaData"
         ).signature,
       ].map(async funcSignature => {
-        await permissionRegistry.setAdminPermission(
+        await permissionRegistry.setPermission(
           constants.NULL_ADDRESS,
           org.avatar.address,
           org.controller.address,
@@ -163,7 +164,7 @@ contract("WalletScheme", function (accounts) {
       })
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       org.controller.address,
@@ -299,7 +300,7 @@ contract("WalletScheme", function (accounts) {
             constants.NULL_ADDRESS,
             { from: accounts[2] }
           ),
-          "call not allowed"
+          "PermissionRegistry: Call not allowed"
         );
       })
     );
@@ -323,7 +324,7 @@ contract("WalletScheme", function (accounts) {
             constants.NULL_ADDRESS,
             { from: accounts[2] }
           ),
-          "call not allowed"
+          "PermissionRegistry: Call not allowed"
         );
       })
     );
@@ -1070,7 +1071,7 @@ contract("WalletScheme", function (accounts) {
   });
 
   it("Not allowed by permission registry", async function () {
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -1093,7 +1094,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "call not allowed"
+      "PermissionRegistry: Call not allowed"
     );
 
     assert.equal(
@@ -1118,7 +1119,7 @@ contract("WalletScheme", function (accounts) {
   });
 
   it("Global ETH transfer value not allowed value by permission registry", async function () {
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -1127,7 +1128,7 @@ contract("WalletScheme", function (accounts) {
       false
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       actionMock.address,
@@ -1136,7 +1137,7 @@ contract("WalletScheme", function (accounts) {
       true
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       masterWalletScheme.address,
@@ -1159,7 +1160,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "total value transfered of asset in proposal not allowed"
+      "PermissionRegistry: Value limit reached"
     );
 
     assert.equal(
@@ -1184,7 +1185,13 @@ contract("WalletScheme", function (accounts) {
   });
 
   it("MasterWalletScheme - positive decision - proposal executed - not allowed value by permission registry in multiple calls", async function () {
-    await permissionRegistry.setAdminPermission(
+    await web3.eth.sendTransaction({
+      from: accounts[0],
+      to: org.avatar.address,
+      value: constants.TEST_VALUE,
+    });
+
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -1193,21 +1200,12 @@ contract("WalletScheme", function (accounts) {
       true
     );
 
-    await permissionRegistry.setAdminPermission(
-      constants.NULL_ADDRESS,
-      org.avatar.address,
-      masterWalletScheme.address,
-      constants.ANY_FUNC_SIGNATURE,
-      100,
-      true
-    );
-
     const callData = helpers.testCallFrom(org.avatar.address);
 
     const tx = await masterWalletScheme.proposeCalls(
       [actionMock.address, actionMock.address],
       [callData, callData],
-      [50, 51],
+      [50, 3],
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
@@ -1216,7 +1214,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "total value transfered of asset in proposal not allowed"
+      "PermissionRegistry: Value limit reached"
     );
 
     assert.equal(
@@ -1266,7 +1264,7 @@ contract("WalletScheme", function (accounts) {
       0
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -1280,6 +1278,7 @@ contract("WalletScheme", function (accounts) {
     ).methods
       .setPermission(
         constants.NULL_ADDRESS,
+        org.avatar.address,
         actionMock.address,
         callData.substring(0, 10),
         666,
@@ -1287,28 +1286,7 @@ contract("WalletScheme", function (accounts) {
       )
       .encodeABI();
 
-    await permissionRegistry.setAdminPermission(
-      constants.NULL_ADDRESS,
-      org.avatar.address,
-      permissionRegistry.address,
-      setPermissionData.substring(0, 10),
-      0,
-      true
-    );
-
-    assert.equal(
-      (
-        await permissionRegistry.getPermission(
-          constants.NULL_ADDRESS,
-          org.avatar.address,
-          permissionRegistry.address,
-          setPermissionData.substring(0, 10)
-        )
-      ).fromTime.toString(),
-      Number(await time.latest()) + 30
-    );
-
-    await time.increase(30);
+    await time.increase(1);
 
     // Proposal to allow calling actionMock
     const tx = await masterWalletScheme.proposeCalls(
@@ -1326,6 +1304,7 @@ contract("WalletScheme", function (accounts) {
       constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
+
     const setPermissionTime = Number(await time.latest());
 
     assert.equal(
@@ -1337,7 +1316,7 @@ contract("WalletScheme", function (accounts) {
           callData.substring(0, 10)
         )
       ).fromTime.toString(),
-      setPermissionTime + 30
+      setPermissionTime
     );
     assert.equal(
       (
@@ -1351,7 +1330,7 @@ contract("WalletScheme", function (accounts) {
       0
     );
 
-    await time.increase(30);
+    await time.increase(1);
 
     const tx2 = await masterWalletScheme.proposeCalls(
       [actionMock.address],
@@ -1381,6 +1360,12 @@ contract("WalletScheme", function (accounts) {
   });
 
   it("MasterWalletScheme - positive decision - proposal executed - allowed any func signature by permission registry from scheme", async function () {
+    await web3.eth.sendTransaction({
+      from: accounts[0],
+      to: org.avatar.address,
+      value: 1000,
+    });
+
     const callData = helpers.testCallFrom(org.avatar.address);
 
     assert.notEqual(
@@ -1406,13 +1391,14 @@ contract("WalletScheme", function (accounts) {
       0
     );
 
-    await permissionRegistry.setAdminPermission(
+    // Since the permission was set and cant be disabled it has to be changed ot the minimal value allowed to be sent to any contract
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
       constants.ANY_FUNC_SIGNATURE,
-      constants.MAX_UINT_256,
-      false
+      666,
+      true
     );
 
     const setPermissionData = new web3.eth.Contract(
@@ -1420,6 +1406,7 @@ contract("WalletScheme", function (accounts) {
     ).methods
       .setPermission(
         constants.NULL_ADDRESS,
+        org.avatar.address,
         constants.ANY_ADDRESS,
         callData.substring(0, 10),
         666,
@@ -1427,28 +1414,7 @@ contract("WalletScheme", function (accounts) {
       )
       .encodeABI();
 
-    await permissionRegistry.setAdminPermission(
-      constants.NULL_ADDRESS,
-      org.avatar.address,
-      permissionRegistry.address,
-      setPermissionData.substring(0, 10),
-      0,
-      true
-    );
-
-    assert.equal(
-      (
-        await permissionRegistry.getPermission(
-          constants.NULL_ADDRESS,
-          org.avatar.address,
-          permissionRegistry.address,
-          setPermissionData.substring(0, 10)
-        )
-      ).fromTime.toString(),
-      Number(await time.latest()) + 30
-    );
-
-    await time.increase(30);
+    await time.increase(1);
     // Proposal to allow calling any actionMock function
     const tx = await masterWalletScheme.proposeCalls(
       [permissionRegistry.address],
@@ -1476,7 +1442,7 @@ contract("WalletScheme", function (accounts) {
           callData.substring(0, 10)
         )
       ).fromTime.toString(),
-      setPermissionTime + 30
+      setPermissionTime
     );
 
     assert.equal(
@@ -1490,27 +1456,21 @@ contract("WalletScheme", function (accounts) {
       ).valueAllowed.toString(),
       666
     );
-    assert.equal(
+    assert.notEqual(
       (
         await permissionRegistry.permissions(
           constants.NULL_ADDRESS,
           org.avatar.address,
           constants.ANY_ADDRESS,
-          constants.ANY_FUNC_SIGNATURE
+          callData.substring(0, 10)
         )
       ).fromTime.toString(),
       0
     );
 
-    await time.increase(30);
+    await time.increase(1);
 
     const actionMock2 = await ActionMock.new();
-    await web3.eth.sendTransaction({
-      from: accounts[0],
-      to: org.avatar.address,
-      value: 1000,
-    });
-
     const tx2 = await masterWalletScheme.proposeCalls(
       [actionMock.address, actionMock2.address],
       [callData, callData],
@@ -2497,7 +2457,7 @@ contract("WalletScheme", function (accounts) {
       0
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       quickWalletScheme.address,
       constants.ANY_ADDRESS,
@@ -2534,35 +2494,15 @@ contract("WalletScheme", function (accounts) {
     ).methods
       .setPermission(
         constants.NULL_ADDRESS,
-        constants.ANY_ADDRESS,
+        quickWalletScheme.address,
+        actionMock.address,
         constants.ANY_FUNC_SIGNATURE,
         constants.MAX_UINT_256,
         true
       )
       .encodeABI();
 
-    await permissionRegistry.setAdminPermission(
-      constants.NULL_ADDRESS,
-      quickWalletScheme.address,
-      permissionRegistry.address,
-      setPermissionData.substring(0, 10),
-      0,
-      true
-    );
-
-    assert.equal(
-      (
-        await permissionRegistry.getPermission(
-          constants.NULL_ADDRESS,
-          quickWalletScheme.address,
-          permissionRegistry.address,
-          setPermissionData.substring(0, 10)
-        )
-      ).fromTime.toString(),
-      Number(await time.latest()) + 30
-    );
-
-    await time.increase(30);
+    await time.increase(1);
 
     // Proposal to allow calling actionMock
     const tx = await quickWalletScheme.proposeCalls(
@@ -2591,7 +2531,7 @@ contract("WalletScheme", function (accounts) {
           callData.substring(0, 10)
         )
       ).fromTime.toString(),
-      setPermissionTime + 30
+      setPermissionTime
     );
     assert.equal(
       (
@@ -2602,10 +2542,10 @@ contract("WalletScheme", function (accounts) {
           constants.ANY_FUNC_SIGNATURE
         )
       ).fromTime.toString(),
-      setPermissionTime + 30
+      0
     );
 
-    await time.increase(30);
+    await time.increase(1);
 
     const tx2 = await quickWalletScheme.proposeCalls(
       [actionMock.address],
@@ -2716,7 +2656,7 @@ contract("WalletScheme", function (accounts) {
     it("MasterWalletScheme - positive decision - proposal executed - ERC20 transfer allowed by permission registry from scheme", async function () {
       await testToken.transfer(org.avatar.address, 200, { from: accounts[1] });
 
-      await permissionRegistry.setAdminPermission(
+      await permissionRegistry.setPermission(
         constants.NULL_ADDRESS,
         org.avatar.address,
         constants.ANY_ADDRESS,
@@ -2730,6 +2670,7 @@ contract("WalletScheme", function (accounts) {
       ).methods
         .setPermission(
           testToken.address,
+          org.avatar.address,
           actionMock.address,
           constants.ANY_FUNC_SIGNATURE,
           100,
@@ -2737,28 +2678,7 @@ contract("WalletScheme", function (accounts) {
         )
         .encodeABI();
 
-      await permissionRegistry.setAdminPermission(
-        constants.NULL_ADDRESS,
-        org.avatar.address,
-        permissionRegistry.address,
-        setPermissionData.substring(0, 10),
-        0,
-        true
-      );
-
-      assert.equal(
-        (
-          await permissionRegistry.getPermission(
-            constants.NULL_ADDRESS,
-            org.avatar.address,
-            permissionRegistry.address,
-            setPermissionData.substring(0, 10)
-          )
-        ).fromTime.toString(),
-        Number(await time.latest()) + 30
-      );
-
-      await time.increase(30);
+      await time.increase(1);
 
       // Proposal to allow calling actionMock
       const tx = await masterWalletScheme.proposeCalls(
@@ -2785,12 +2705,12 @@ contract("WalletScheme", function (accounts) {
       );
       assert.approximately(
         erc20TransferPermission.fromTime.toNumber(),
-        setPermissionTime + 30,
+        setPermissionTime,
         1
       );
       assert.equal(erc20TransferPermission.valueAllowed.toString(), 100);
 
-      await time.increase(30);
+      await time.increase(1);
 
       const transferData = await new web3.eth.Contract(testToken.abi).methods
         .transfer(actionMock.address, "50")
@@ -2826,21 +2746,14 @@ contract("WalletScheme", function (accounts) {
     });
 
     it("MasterWalletScheme - positive decision - proposal executed - not allowed ERC20 value by permission registry in multiple calls", async function () {
-      await permissionRegistry.setAdminPermission(
+      await testToken.transfer(org.avatar.address, 200, { from: accounts[1] });
+
+      await permissionRegistry.setPermission(
         testToken.address,
         org.avatar.address,
         constants.ANY_ADDRESS,
         constants.ANY_FUNC_SIGNATURE,
-        51,
-        true
-      );
-
-      await permissionRegistry.setAdminPermission(
-        testToken.address,
-        org.avatar.address,
-        masterWalletScheme.address,
-        constants.ANY_FUNC_SIGNATURE,
-        101,
+        100,
         true
       );
 
@@ -2862,7 +2775,7 @@ contract("WalletScheme", function (accounts) {
         votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
           from: accounts[2],
         }),
-        "total value transfered of asset in proposal not allowed"
+        "PermissionRegistry: Value limit reached"
       );
 
       assert.equal(
@@ -2887,7 +2800,7 @@ contract("WalletScheme", function (accounts) {
     });
 
     it("MasterWalletScheme - positive decision - proposal executed - not allowed ERC20 transfer with value", async function () {
-      await permissionRegistry.setAdminPermission(
+      await permissionRegistry.setPermission(
         testToken.address,
         org.avatar.address,
         constants.ANY_ADDRESS,
@@ -2917,7 +2830,7 @@ contract("WalletScheme", function (accounts) {
         from: accounts[1],
       });
 
-      await permissionRegistry.setAdminPermission(
+      await permissionRegistry.setPermission(
         constants.NULL_ADDRESS,
         quickWalletScheme.address,
         constants.ANY_ADDRESS,
@@ -2931,6 +2844,7 @@ contract("WalletScheme", function (accounts) {
       ).methods
         .setPermission(
           testToken.address,
+          quickWalletScheme.address,
           actionMock.address,
           constants.ANY_FUNC_SIGNATURE,
           100,
@@ -2938,28 +2852,7 @@ contract("WalletScheme", function (accounts) {
         )
         .encodeABI();
 
-      await permissionRegistry.setAdminPermission(
-        constants.NULL_ADDRESS,
-        quickWalletScheme.address,
-        permissionRegistry.address,
-        setPermissionData.substring(0, 10),
-        0,
-        true
-      );
-
-      assert.equal(
-        (
-          await permissionRegistry.getPermission(
-            constants.NULL_ADDRESS,
-            quickWalletScheme.address,
-            permissionRegistry.address,
-            setPermissionData.substring(0, 10)
-          )
-        ).fromTime.toString(),
-        Number(await time.latest()) + 30
-      );
-
-      await time.increase(30);
+      await time.increase(1);
 
       // Proposal to allow calling actionMock
       const tx = await quickWalletScheme.proposeCalls(
@@ -2988,10 +2881,10 @@ contract("WalletScheme", function (accounts) {
             constants.ANY_FUNC_SIGNATURE
           )
         ).fromTime.toString(),
-        setPermissionTime + 30
+        setPermissionTime
       );
 
-      await time.increase(30);
+      await time.increase(1);
 
       const transferData = await new web3.eth.Contract(testToken.abi).methods
         .transfer(actionMock.address, "50")

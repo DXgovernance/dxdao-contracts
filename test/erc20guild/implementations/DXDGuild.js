@@ -12,9 +12,7 @@ const {
 } = require("@openzeppelin/test-helpers");
 
 const DXDGuild = artifacts.require("DXDGuild.sol");
-const GlobalPermissionRegistry = artifacts.require(
-  "GlobalPermissionRegistry.sol"
-);
+const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
 
 require("chai").should();
@@ -41,7 +39,8 @@ contract("DXDGuild", function (accounts) {
       [0, 50, 100, 100, 250]
     );
     dxdGuild = await DXDGuild.new();
-    const globalPermissionRegistry = await GlobalPermissionRegistry.new();
+    const permissionRegistry = await PermissionRegistry.new();
+    await permissionRegistry.initialize();
 
     const createDaoResult = await createDAO(dxdGuild, accounts);
     walletScheme = createDaoResult.walletScheme;
@@ -60,7 +59,7 @@ contract("DXDGuild", function (accounts) {
       MAX_GAS_PRICE,
       10,
       TIMELOCK,
-      globalPermissionRegistry.address,
+      permissionRegistry.address,
       votingMachine.address
     );
 

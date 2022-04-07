@@ -72,9 +72,22 @@ contract DXDVotingMachine is GenesisProtocol {
      * @param _maxGasPrice the maximun amount of gas price to be paid, if the gas used is higehr than this value only a
      * portion of the total gas would be refunded
      */
-    function setOrganizationRefund(uint256 _voteGas, uint256 _maxGasPrice) public {
+    function setOrganizationRefund(uint256 _voteGas, uint256 _maxGasPrice) external {
         organizationRefunds[msg.sender].voteGas = _voteGas;
         organizationRefunds[msg.sender].maxGasPrice = _maxGasPrice;
+    }
+
+    /**
+     * @dev Withdraw organization refund balance
+     */
+    function withdrawRefundBalance() public {
+        require(
+            organizationRefunds[msg.sender].voteGas > 0,
+            "DXDVotingMachine: Address not registered in organizationRefounds"
+        );
+        require(organizationRefunds[msg.sender].balance > 0, "DXDVotingMachine: Organization refund balance is zero");
+        msg.sender.transfer(organizationRefunds[msg.sender].balance);
+        organizationRefunds[msg.sender].balance = 0;
     }
 
     /**
@@ -87,7 +100,7 @@ contract DXDVotingMachine is GenesisProtocol {
         address _scheme,
         bytes32 _paramsHash,
         uint256 _boostedVotePeriodLimit
-    ) public {
+    ) external {
         boostedVoteRequiredPercentage[keccak256(abi.encodePacked(_scheme, msg.sender))][
             _paramsHash
         ] = _boostedVotePeriodLimit;
@@ -202,18 +215,16 @@ contract DXDVotingMachine is GenesisProtocol {
      *
      * @param proposalId id of the proposal to vote
      * @param voter the signer of the vote
-     * @param voteDecision the vote decisions, NO(2) or YES(1).
-     * @param amount the reputation amount to vote with, 0 will use all available REP
      */
-    function executeSignaledVote(
-        bytes32 proposalId,
-        address voter,
-        uint256 voteDecision,
-        uint256 amount
-    ) external {
+    function executeSignaledVote(bytes32 proposalId, address voter) external {
         require(_isVotable(proposalId), "not votable proposal");
         require(votesSignaled[proposalId][voter].voteDecision > 0, "wrong vote shared");
-        internalVote(proposalId, voter, voteDecision, amount);
+        internalVote(
+            proposalId,
+            voter,
+            votesSignaled[proposalId][voter].voteDecision,
+            votesSignaled[proposalId][voter].amount
+        );
         delete votesSignaled[proposalId][voter];
         _refundVote(proposals[proposalId].organizationId);
     }
@@ -230,8 +241,8 @@ contract DXDVotingMachine is GenesisProtocol {
                 tx.gasprice.min(organizationRefunds[orgAddress].maxGasPrice)
             );
             if (organizationRefunds[orgAddress].balance >= gasRefund) {
-                msg.sender.transfer(gasRefund);
                 organizationRefunds[orgAddress].balance = organizationRefunds[orgAddress].balance.sub(gasRefund);
+                msg.sender.transfer(gasRefund);
             }
         }
     }
@@ -297,7 +308,7 @@ contract DXDVotingMachine is GenesisProtocol {
         address avatar,
         address scheme,
         bytes32 paramsHash
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         return boostedVoteRequiredPercentage[keccak256(abi.encodePacked(scheme, avatar))][paramsHash];
     }
 
@@ -407,7 +418,10 @@ contract DXDVotingMachine is GenesisProtocol {
         }
 
         if (executionState != ExecutionState.None) {
-            if (executionState == ExecutionState.BoostedBarCrossed) {
+            if (
+                (executionState == ExecutionState.BoostedTimeOut) ||
+                (executionState == ExecutionState.BoostedBarCrossed)
+            ) {
                 orgBoostedProposalsCnt[tmpProposal.organizationId] = orgBoostedProposalsCnt[tmpProposal.organizationId]
                     .sub(1);
                 //remove a value from average = ((average * nbValues) - value) / (nbValues - 1);

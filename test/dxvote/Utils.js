@@ -54,6 +54,7 @@ contract("Dxvote Utils", function (accounts) {
       { from: accounts[1] }
     );
     permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
+    await permissionRegistry.initialize();
 
     masterWalletScheme = await WalletScheme.new();
     await masterWalletScheme.initialize(
@@ -79,7 +80,7 @@ contract("Dxvote Utils", function (accounts) {
       0
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -88,7 +89,7 @@ contract("Dxvote Utils", function (accounts) {
       true
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       standardTokenMock.address,
       org.avatar.address,
       constants.ANY_ADDRESS,
@@ -97,7 +98,7 @@ contract("Dxvote Utils", function (accounts) {
       true
     );
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       quickWalletScheme.address,
       constants.ANY_ADDRESS,

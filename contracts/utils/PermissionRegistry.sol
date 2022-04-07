@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
- * @title GlobalPermissionRegistry.
+ * @title PermissionRegistry.
  * @dev A registry of smart contracts functions and ERC20 transfers that are allowed to be called between contracts.
  * A time delay in seconds over the permissions can be set form any contract, this delay would be added to any new
  * permissions sent by that address.
+ * The PermissionRegistry owner (if there is an owner and owner address is not 0x0) can overwrite/set any permission.
  * The registry allows setting "wildcard" permissions for recipients and functions, this means that permissions like
  * this contract can call any contract, this contract can call this function to any contract or this contract call
  * call any function in this contract can be set.
@@ -20,8 +22,8 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
  * a function limit is set it will add the value transferred in both of them.
  */
 
-contract GlobalPermissionRegistry {
-    using SafeMath for uint256;
+contract PermissionRegistry is OwnableUpgradeable {
+    using SafeMathUpgradeable for uint256;
 
     mapping(address => uint256) public permissionDelay;
     address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
@@ -50,6 +52,13 @@ contract GlobalPermissionRegistry {
     Permission emptyPermission = Permission(0, 0, 0, 0, false);
 
     /**
+     * @dev initializer
+     */
+    function initialize() public initializer {
+        __Ownable_init();
+    }
+
+    /**
      * @dev Set the time delay for a call to show as allowed
      * @param _timeDelay The amount of time that has to pass after permission addition to allow execution
      */
@@ -57,9 +66,12 @@ contract GlobalPermissionRegistry {
         permissionDelay[msg.sender] = _timeDelay;
     }
 
+    // TO DO: Add removePermission function that will set the value isSet in the permissions to false and trigger PermissionRemoved event
+
     /**
      * @dev Sets the time from which the function can be executed from a contract to another a with which value.
      * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
+     * @param from The address that will execute the call
      * @param to The address that will be called
      * @param functionSignature The signature of the function to be executed
      * @param valueAllowed The amount of value allowed of the asset to be sent
@@ -67,29 +79,31 @@ contract GlobalPermissionRegistry {
      */
     function setPermission(
         address asset,
+        address from,
         address to,
         bytes4 functionSignature,
         uint256 valueAllowed,
         bool allowed
     ) public {
-        require(to != address(this), "GlobalPermissionRegistry: Cant set permissions to GlobalPermissionRegistry");
-        if (allowed) {
-            permissions[asset][msg.sender][to][functionSignature].fromTime = block.timestamp.add(
-                permissionDelay[msg.sender]
-            );
-            permissions[asset][msg.sender][to][functionSignature].valueAllowed = valueAllowed;
-        } else {
-            permissions[asset][msg.sender][to][functionSignature].fromTime = 0;
-            permissions[asset][msg.sender][to][functionSignature].valueAllowed = 0;
+        if (msg.sender != owner()) {
+            require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
         }
-        permissions[asset][msg.sender][to][functionSignature].isSet = true;
+        require(to != address(this), "PermissionRegistry: Cant set permissions to PermissionRegistry");
+        if (allowed) {
+            permissions[asset][from][to][functionSignature].fromTime = block.timestamp.add(permissionDelay[from]);
+            permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
+        } else {
+            permissions[asset][from][to][functionSignature].fromTime = 0;
+            permissions[asset][from][to][functionSignature].valueAllowed = 0;
+        }
+        permissions[asset][from][to][functionSignature].isSet = true;
         emit PermissionSet(
             asset,
-            msg.sender,
+            from,
             to,
             functionSignature,
-            permissions[asset][msg.sender][to][functionSignature].fromTime,
-            permissions[asset][msg.sender][to][functionSignature].valueAllowed
+            permissions[asset][from][to][functionSignature].fromTime,
+            permissions[asset][from][to][functionSignature].valueAllowed
         );
     }
 
@@ -204,7 +218,7 @@ contract GlobalPermissionRegistry {
                 _setValueTransferred(permissions[asset][from][to][functionSignature], valueTransferred);
             }
         }
-        require(fromTime > 0 && fromTime < block.timestamp, "GlobalPermissionRegistry: Call not allowed");
+        require(fromTime > 0 && fromTime < block.timestamp, "PermissionRegistry: Call not allowed");
     }
 
     /**
@@ -219,10 +233,7 @@ contract GlobalPermissionRegistry {
         } else {
             permission.valueTransferred = permission.valueTransferred.add(valueTransferred);
         }
-        require(
-            permission.valueTransferred <= permission.valueAllowed,
-            "GlobalPermissionRegistry: Value limit reached"
-        );
+        require(permission.valueTransferred <= permission.valueAllowed, "PermissionRegistry: Value limit reached");
     }
 
     /**

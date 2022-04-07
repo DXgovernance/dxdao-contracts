@@ -21,9 +21,7 @@ const {
 } = require("@openzeppelin/test-helpers");
 
 const MigratableERC20Guild = artifacts.require("MigratableERC20Guild.sol");
-const GlobalPermissionRegistry = artifacts.require(
-  "GlobalPermissionRegistry.sol"
-);
+const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const TokenVault = artifacts.require("TokenVault.sol");
 const TokenVaultThief = artifacts.require("TokenVaultThief.sol");
 
@@ -41,7 +39,7 @@ contract("MigratableERC20Guild", function (accounts) {
     tokenVaultA,
     tokenVaultB,
     erc20Guild,
-    globalPermissionRegistry,
+    permissionRegistry,
     genericProposal;
 
   beforeEach(async function () {
@@ -54,7 +52,8 @@ contract("MigratableERC20Guild", function (accounts) {
       accounts.slice(0, 4),
       [0, 500000, 500000, 500000]
     );
-    globalPermissionRegistry = await GlobalPermissionRegistry.new();
+    permissionRegistry = await PermissionRegistry.new();
+    await permissionRegistry.initialize();
 
     erc20Guild = await MigratableERC20Guild.new();
     await erc20Guild.initialize(
@@ -68,7 +67,7 @@ contract("MigratableERC20Guild", function (accounts) {
       0,
       10,
       60,
-      globalPermissionRegistry.address
+      permissionRegistry.address
     );
 
     tokenVaultA = await erc20Guild.getTokenVault();
