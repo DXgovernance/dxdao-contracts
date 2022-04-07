@@ -22,7 +22,7 @@ contract WalletScheme {
     using SafeMath for uint256;
     using Address for address;
 
-    string public SCHEME_TYPE = "Wallet Scheme v1.2";
+    string public constant SCHEME_TYPE = "Wallet Scheme v1.2";
     bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
     bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
     bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
@@ -308,6 +308,7 @@ contract WalletScheme {
             descriptionHash: _descriptionHash,
             submittedTime: block.timestamp
         });
+        // slither-disable-next-line all
         proposalsList.push(proposalId);
         proposalsBlockNumber[proposalId] = block.number;
         emit ProposalStateChange(proposalId, uint256(ProposalState.Submitted));
@@ -347,7 +348,7 @@ contract WalletScheme {
      * @param proposalIndex the index of the proposal in the proposals list
      */
     function getOrganizationProposalByIndex(uint256 proposalIndex)
-        public
+        external
         view
         returns (
             address[] memory to,
@@ -390,14 +391,14 @@ contract WalletScheme {
     /**
      * @dev Get the proposals length
      */
-    function getOrganizationProposalsLength() public view returns (uint256) {
+    function getOrganizationProposalsLength() external view returns (uint256) {
         return proposalsList.length;
     }
 
     /**
      * @dev Get the proposals ids
      */
-    function getOrganizationProposals() public view returns (bytes32[] memory) {
+    function getOrganizationProposals() external view returns (bytes32[] memory) {
         return proposalsList;
     }
 
