@@ -7,9 +7,8 @@ import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
+import "../utils/PermissionRegistry.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-
-import "../utils/GlobalPermissionRegistry.sol";
 import "../utils/TokenVault.sol";
 
 /*
@@ -60,8 +59,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // The ERC20 token that will be used as source of voting power
     IERC20Upgradeable public token;
 
-    // The address of the GlobalPermissionRegistry to be used
-    GlobalPermissionRegistry public permissionRegistry;
+    // The address of the PermissionRegistry to be used
+    PermissionRegistry permissionRegistry;
 
     // The name of the ERC20Guild
     string public name;
@@ -585,7 +584,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
         lockTime = _lockTime;
-        permissionRegistry = GlobalPermissionRegistry(_permissionRegistry);
+        permissionRegistry = PermissionRegistry(_permissionRegistry);
         permissionRegistry.setPermission(
             address(0),
             address(this),

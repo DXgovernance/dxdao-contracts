@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../utils/GlobalPermissionRegistry.sol";
+import "../utils/PermissionRegistry.sol";
 
 /**
  * @title WalletScheme.
@@ -53,7 +53,7 @@ contract WalletScheme {
 
     bool public doAvatarGenericCalls;
     address public controller;
-    GlobalPermissionRegistry public permissionRegistry;
+    PermissionRegistry public permissionRegistry;
     string public schemeName;
     uint256 public maxSecondsForExecution;
     uint256 public maxRepPercentageChange;
@@ -100,7 +100,7 @@ contract WalletScheme {
         votingMachine = _votingMachine;
         doAvatarGenericCalls = _doAvatarGenericCalls;
         controller = _controller;
-        permissionRegistry = GlobalPermissionRegistry(_permissionRegistry);
+        permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
         maxSecondsForExecution = _maxSecondsForExecution;
         maxRepPercentageChange = _maxRepPercentageChange;

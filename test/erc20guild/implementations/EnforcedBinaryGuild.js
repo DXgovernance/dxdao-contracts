@@ -12,9 +12,7 @@ const {
 } = require("../../helpers/guild");
 
 const EnforcedBinaryGuild = artifacts.require("EnforcedBinaryGuild.sol");
-const GlobalPermissionRegistry = artifacts.require(
-  "GlobalPermissionRegistry.sol"
-);
+const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 
 require("chai").should();
 
@@ -27,7 +25,7 @@ contract("EnforcedBinaryGuild", function (accounts) {
       [0, 50, 100, 100, 250]
     );
 
-    const globalPermissionRegistry = await GlobalPermissionRegistry.new();
+    const permissionRegistry = await PermissionRegistry.new();
 
     enforcedBinaryGuild = await EnforcedBinaryGuild.new();
     await enforcedBinaryGuild.initialize(
@@ -41,7 +39,7 @@ contract("EnforcedBinaryGuild", function (accounts) {
       0,
       10,
       60,
-      globalPermissionRegistry.address
+      permissionRegistry.address
     );
 
     tokenVault = await enforcedBinaryGuild.getTokenVault();

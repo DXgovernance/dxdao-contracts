@@ -21,9 +21,7 @@ const {
 } = require("@openzeppelin/test-helpers");
 
 const SnapshotERC20Guild = artifacts.require("SnapshotERC20Guild.sol");
-const GlobalPermissionRegistry = artifacts.require(
-  "GlobalPermissionRegistry.sol"
-);
+const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 
 require("chai").should();
 
@@ -34,11 +32,7 @@ contract("SnapshotERC20Guild", function (accounts) {
   const MAX_GAS_PRICE = new BN(8000000000); // 8 gwei
   const REAL_GAS_PRICE = new BN(constants.GAS_PRICE); // 10 gwei (check config)
 
-  let guildToken,
-    tokenVault,
-    erc20Guild,
-    globalPermissionRegistry,
-    genericProposal;
+  let guildToken, tokenVault, erc20Guild, permissionRegistry, genericProposal;
 
   beforeEach(async function () {
     guildToken = await createAndSetupGuildToken(
@@ -46,8 +40,8 @@ contract("SnapshotERC20Guild", function (accounts) {
       [0, 50000, 50000, 100000, 100000, 200000]
     );
 
-    globalPermissionRegistry = await GlobalPermissionRegistry.new();
-    await globalPermissionRegistry.initialize();
+    permissionRegistry = await PermissionRegistry.new();
+    await permissionRegistry.initialize();
 
     erc20Guild = await SnapshotERC20Guild.new();
     await erc20Guild.initialize(
@@ -61,7 +55,7 @@ contract("SnapshotERC20Guild", function (accounts) {
       0,
       10,
       60,
-      globalPermissionRegistry.address
+      permissionRegistry.address
     );
 
     tokenVault = await erc20Guild.getTokenVault();

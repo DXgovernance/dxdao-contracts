@@ -26,9 +26,7 @@ const TransparentUpgradeableProxy = artifacts.require(
 );
 const Create2Deployer = artifacts.require("Create2Deployer.sol");
 const ERC20Guild = artifacts.require("ERC20Guild.sol");
-const GlobalPermissionRegistry = artifacts.require(
-  "GlobalPermissionRegistry.sol"
-);
+const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const IERC20Guild = artifacts.require("IERC20Guild.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
 const ERC20Mock = artifacts.require("ERC20Mock.sol");
@@ -46,7 +44,7 @@ contract("ERC20Guild", function (accounts) {
     actionMockA,
     actionMockB,
     erc20Guild,
-    globalPermissionRegistry,
+    permissionRegistry,
     genericProposal;
 
   beforeEach(async function () {
@@ -64,8 +62,8 @@ contract("ERC20Guild", function (accounts) {
       accounts.slice(0, 6),
       [0, 50000, 50000, 100000, 100000, 200000]
     );
-    globalPermissionRegistry = await GlobalPermissionRegistry.new();
-    await globalPermissionRegistry.initialize();
+    permissionRegistry = await PermissionRegistry.new();
+    await permissionRegistry.initialize();
 
     const erc20GuildInitializeData = await new web3.eth.Contract(
       ERC20Guild.abi
@@ -81,7 +79,7 @@ contract("ERC20Guild", function (accounts) {
         0,
         10,
         60,
-        globalPermissionRegistry.address
+        permissionRegistry.address
       )
       .encodeABI();
 
@@ -281,7 +279,7 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(await erc20Guild.getToken(), guildToken.address);
       assert.equal(
         await erc20Guild.getPermissionRegistry(),
-        globalPermissionRegistry.address
+        permissionRegistry.address
       );
       assert.equal(await erc20Guild.getName(), "TestGuild");
       assert.equal(await erc20Guild.getTotalProposals(), 0);
@@ -304,7 +302,7 @@ contract("ERC20Guild", function (accounts) {
           0,
           3,
           60,
-          globalPermissionRegistry.address
+          permissionRegistry.address
         ),
         "ERC20Guild: token cant be zero address"
       );
@@ -324,7 +322,7 @@ contract("ERC20Guild", function (accounts) {
           0,
           3,
           60,
-          globalPermissionRegistry.address
+          permissionRegistry.address
         ),
         "ERC20Guild: proposal time has to be more tha 0"
       );
@@ -344,7 +342,7 @@ contract("ERC20Guild", function (accounts) {
           0,
           3,
           29,
-          globalPermissionRegistry.address
+          permissionRegistry.address
         ),
         "ERC20Guild: lockTime has to be higher or equal to proposalTime"
       );
@@ -364,7 +362,7 @@ contract("ERC20Guild", function (accounts) {
           0,
           3,
           60,
-          globalPermissionRegistry.address
+          permissionRegistry.address
         ),
         "ERC20Guild: voting power for execution has to be more than 0"
       );
@@ -384,7 +382,7 @@ contract("ERC20Guild", function (accounts) {
           0,
           3,
           60,
-          globalPermissionRegistry.address
+          permissionRegistry.address
         ),
         "Initializable: contract is already initialized"
       );
@@ -584,7 +582,7 @@ contract("ERC20Guild", function (accounts) {
         "ERC20Guild: Proposal call failed"
       );
       assert.equal(
-        await globalPermissionRegistry.getPermissionTime(
+        await permissionRegistry.getPermissionTime(
           constants.NULL_ADDRESS,
           erc20Guild.address,
           actionMockA.address,
@@ -596,7 +594,7 @@ contract("ERC20Guild", function (accounts) {
 
     it("Proposal for setting permission delay should succeed", async function () {
       assert.equal(
-        await globalPermissionRegistry.getPermissionDelay(erc20Guild.address),
+        await permissionRegistry.getPermissionDelay(erc20Guild.address),
         "0"
       );
 
@@ -631,7 +629,7 @@ contract("ERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await erc20Guild.endProposal(guildProposalId),
         assert.equal(
-          await globalPermissionRegistry.getPermissionDelay(erc20Guild.address),
+          await permissionRegistry.getPermissionDelay(erc20Guild.address),
           "120"
         );
     });
@@ -805,7 +803,7 @@ contract("ERC20Guild", function (accounts) {
 
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "GlobalPermissionRegistry: Call not allowed"
+        "PermissionRegistry: Call not allowed"
       );
     });
 
@@ -827,7 +825,7 @@ contract("ERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(30));
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "GlobalPermissionRegistry: Call not allowed"
+        "PermissionRegistry: Call not allowed"
       );
 
       await time.increase(time.duration.seconds(30));
@@ -1088,7 +1086,7 @@ contract("ERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "GlobalPermissionRegistry: Call not allowed"
+        "PermissionRegistry: Call not allowed"
       );
     });
 
@@ -1126,7 +1124,7 @@ contract("ERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "GlobalPermissionRegistry: Value limit reached"
+        "PermissionRegistry: Value limit reached"
       );
     });
 
@@ -1171,7 +1169,7 @@ contract("ERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "GlobalPermissionRegistry: Value limit reached"
+        "PermissionRegistry: Value limit reached"
       );
     });
 
@@ -1213,7 +1211,7 @@ contract("ERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "GlobalPermissionRegistry: Value limit reached"
+        "PermissionRegistry: Value limit reached"
       );
     });
 
@@ -1301,7 +1299,7 @@ contract("ERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "GlobalPermissionRegistry: Value limit reached"
+        "PermissionRegistry: Value limit reached"
       );
     });
 
@@ -1340,7 +1338,7 @@ contract("ERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "GlobalPermissionRegistry: Value limit reached'"
+        "PermissionRegistry: Value limit reached'"
       );
     });
   });
