@@ -163,7 +163,7 @@ contract WalletScheme {
 
             for (uint256 i = 0; i < proposal.to.length; i++) {
                 _asset = address(0);
-                _callDataFuncSignature = getFuncSignature(proposal.callData[i]);
+                _callDataFuncSignature = this.getFuncSignature(proposal.callData[i]);
                 _to = proposal.to[i];
                 _value = proposal.value[i];
                 // Checks that thte value tha is transfered (in ETH or ERC20) is lower or equal to the one that is
@@ -173,7 +173,7 @@ contract WalletScheme {
                     ERC20_APPROVE_SIGNATURE == _callDataFuncSignature
                 ) {
                     _asset = proposal.to[i];
-                    (_to, _value) = erc20TransferOrApproveDecode(proposal.callData[i]);
+                    (_to, _value) = this.erc20TransferOrApproveDecode(proposal.callData[i]);
                 }
 
                 // The permission registry keeps track of all value transferred and checks call permission
@@ -244,7 +244,7 @@ contract WalletScheme {
      */
     function proposeCalls(
         address[] memory _to,
-        bytes[] memory _callData,
+        bytes[] calldata _callData,
         uint256[] memory _value,
         string memory _title,
         string memory _descriptionHash
@@ -252,7 +252,6 @@ contract WalletScheme {
         // Check the proposal calls
         for (uint256 i = 0; i < _to.length; i++) {
             bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
-
             // Check that no proposals are submitted to wildcard address and function signature
             require(
                 _to[i] != ANY_ADDRESS,
@@ -368,23 +367,20 @@ contract WalletScheme {
      * @return to The account to receive the tokens
      * @return value The value of tokens to be transfered/approved
      */
-    function erc20TransferOrApproveDecode(bytes memory _data) public pure returns (address to, uint256 value) {
-        assembly {
-            to := mload(add(_data, 36))
-            value := mload(add(_data, 68))
-        }
+    function erc20TransferOrApproveDecode(bytes calldata _data) public pure returns (address to, uint256 value) {
+        (to, value) = abi.decode(_data[4:], (address, uint256));
     }
 
     /**
      * @dev Get call data signature
      * @param data The bytes data of the data to get the signature
      */
-    function getFuncSignature(bytes memory data) public pure returns (bytes4) {
-        bytes32 functionSignature = bytes32(0);
-        assembly {
-            functionSignature := mload(add(data, 32))
+    function getFuncSignature(bytes calldata data) public pure returns (bytes4) {
+        if (data.length >= 4) {
+            return bytes4(data[:4]);
+        } else {
+            return bytes4(0);
         }
-        return bytes4(functionSignature);
     }
 
     /**
