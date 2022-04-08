@@ -38,6 +38,7 @@ contract MigratableERC20Guild is ERC20Guild {
     // @param tokenAmount The amount of tokens to be locked
     function lockTokens(uint256 tokenAmount) public virtual override {
         tokenVault.deposit(msg.sender, tokenAmount);
+        if (tokensLockedByVault[address(tokenVault)][msg.sender].amount == 0) totalMembers = totalMembers.add(1);
         tokensLockedByVault[address(tokenVault)][msg.sender].amount = tokensLockedByVault[address(tokenVault)][
             msg.sender
         ].amount.add(tokenAmount);
@@ -62,6 +63,7 @@ contract MigratableERC20Guild is ERC20Guild {
         ].amount.sub(tokenAmount);
         totalLockedByVault[address(tokenVault)] = totalLockedByVault[address(tokenVault)].sub(tokenAmount);
         tokenVault.withdraw(msg.sender, tokenAmount);
+        if (tokensLockedByVault[address(tokenVault)][msg.sender].amount == 0) totalMembers = totalMembers.sub(1);
         emit TokensWithdrawn(msg.sender, tokenAmount);
     }
 

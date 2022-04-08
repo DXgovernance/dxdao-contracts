@@ -89,6 +89,9 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // The total amount of proposals created, used as nonce for proposals creation
     uint256 totalProposals;
 
+    // The total amount of members that have voting power
+    uint256 totalMembers;
+
     // The amount of active proposals
     uint256 activeProposalsNow;
 
@@ -395,6 +398,8 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @dev Lock tokens in the guild to be used as voting power
     // @param tokenAmount The amount of tokens to be locked
     function lockTokens(uint256 tokenAmount) public virtual {
+        require(tokenAmount > 0, "ERC20Guild: Tokens to lock should be higher than 0");
+        if (tokensLocked[msg.sender].amount == 0) totalMembers = totalMembers.add(1);
         tokenVault.deposit(msg.sender, tokenAmount);
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(tokenAmount);
         tokensLocked[msg.sender].timestamp = block.timestamp.add(lockTime);
@@ -410,6 +415,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(tokenAmount);
         totalLocked = totalLocked.sub(tokenAmount);
         tokenVault.withdraw(msg.sender, tokenAmount);
+        if (tokensLocked[msg.sender].amount == 0) totalMembers = totalMembers.sub(1);
         emit TokensWithdrawn(msg.sender, tokenAmount);
     }
 
@@ -745,6 +751,11 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @dev Get the totalProposals
     function getTotalProposals() public view returns (uint256) {
         return totalProposals;
+    }
+
+    // @dev Get the totalMembers
+    function getTotalMembers() public view returns (uint256) {
+        return totalMembers;
     }
 
     // @dev Get the activeProposalsNow
