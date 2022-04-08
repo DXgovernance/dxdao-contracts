@@ -173,7 +173,7 @@ export const setupGenesisProtocol = async function (
   const votingMachine =
     votingMachineType === "dxd"
       ? await DXDVotingMachine.new(token, { gas: constants.GAS_LIMIT })
-      : await GenesisProtocol.new(token, { gas: constants.GAS_LIMIT });
+      : await DXDVotingMachine.new(token, { gas: constants.GAS_LIMIT });
 
   // register some parameters
   await votingMachine.setParameters(
