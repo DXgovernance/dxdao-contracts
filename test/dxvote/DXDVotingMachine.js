@@ -135,6 +135,7 @@ contract("DXDVotingMachine", function (accounts) {
   });
 
   describe("Payable Votes", function () {
+    let setRefundConfProposalId;
     beforeEach(async function () {
       await web3.eth.sendTransaction({
         from: accounts[0],
@@ -160,7 +161,7 @@ contract("DXDVotingMachine", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const setRefundConfProposalId = await helpers.getValueFromLogs(
+      setRefundConfProposalId = await helpers.getValueFromLogs(
         setRefundConfTx,
         "_proposalId"
       );
@@ -438,7 +439,7 @@ contract("DXDVotingMachine", function (accounts) {
       assert.equal(organizationProposal.value[0], 0);
     });
 
-    it.only("vote fails if user is not allowed to vote on behalf", async function () {
+    it("vote fails if user is not allowed to vote on behalf", async function () {
       await web3.eth.sendTransaction({
         from: accounts[0],
         to: org.avatar.address,
@@ -562,6 +563,20 @@ contract("DXDVotingMachine", function (accounts) {
         }),
         "user not allowed to vote on behalf"
       );
+    });
+
+    it("Can view rep of votes and amount staked on proposal", async function () {
+      const statusInfo =
+        await dxdVotingMachine.contract.proposalStatusWithVotes(
+          setRefundConfProposalId
+        );
+
+      expect(statusInfo["0"].toNumber()).to.equal(70000);
+      expect(statusInfo["1"].toNumber()).to.equal(0);
+      expect(statusInfo["2"].toNumber()).to.equal(70000);
+      expect(statusInfo["3"].toNumber()).to.equal(0);
+      expect(statusInfo["4"].toNumber()).to.equal(0);
+      expect(statusInfo["5"].toNumber()).to.equal(15);
     });
   });
 
