@@ -210,6 +210,7 @@ contract("DXDVotingMachine", function (accounts) {
         fundVotingMachineTx,
         "_proposalId"
       );
+
       await dxdVotingMachine.contract.vote(
         fundVotingMachineProposalId,
         1,
@@ -439,130 +440,164 @@ contract("DXDVotingMachine", function (accounts) {
       assert.equal(organizationProposal.value[0], 0);
     });
 
-    it("vote fails if user is not allowed to vote on behalf", async function () {
-      await web3.eth.sendTransaction({
-        from: accounts[0],
-        to: org.avatar.address,
-        value: 1000,
+    describe("VoteOnBehalf", function () {
+      let genericProposalId;
+      beforeEach(async function () {
+        const defaultParamaters = [
+          "50",
+          "172800",
+          "86400",
+          "3600",
+          "2000",
+          "0",
+          "60",
+          "10",
+          "15",
+          "10",
+          "0",
+        ];
+
+        await dxdVotingMachine.contract.setParameters(
+          defaultParamaters,
+          accounts[3]
+        );
+
+        const parameterHash = await dxdVotingMachine.contract.getParametersHash(
+          defaultParamaters,
+          accounts[3]
+        );
+
+        const tempWalletScheme = await WalletScheme.new();
+        await tempWalletScheme.initialize(
+          org.avatar.address,
+          dxdVotingMachine.address,
+          true,
+          org.controller.address,
+          permissionRegistry.address,
+          "Temp Scheme",
+          172800,
+          5
+        );
+
+        await permissionRegistry.setPermission(
+          constants.NULL_ADDRESS,
+          tempWalletScheme.address,
+          constants.ANY_ADDRESS,
+          constants.ANY_FUNC_SIGNATURE,
+          constants.MAX_UINT_256,
+          true
+        );
+
+        const registerSchemeData = await org.controller.contract.methods
+          .registerScheme(
+            tempWalletScheme.address,
+            parameterHash,
+            helpers.encodePermission({
+              canGenericCall: true,
+              canUpgrade: true,
+              canChangeConstraints: true,
+              canRegisterSchemes: true,
+            }),
+            org.avatar.address
+          )
+          .encodeABI();
+
+        const registerProposalId = await helpers.getValueFromLogs(
+          await cheapVoteWalletScheme.proposeCalls(
+            [org.controller.address],
+            [registerSchemeData],
+            [0],
+            constants.TEST_TITLE,
+            constants.SOME_HASH
+          ),
+          "_proposalId"
+        );
+
+        assert.equal(
+          (
+            await cheapVoteWalletScheme.getOrganizationProposal(
+              registerProposalId
+            )
+          ).state,
+          constants.WalletSchemeProposalState.submitted
+        );
+
+        await dxdVotingMachine.contract.vote(
+          registerProposalId,
+          1,
+          0,
+          constants.NULL_ADDRESS,
+          { from: accounts[3] }
+        );
+
+        assert.equal(
+          (
+            await cheapVoteWalletScheme.getOrganizationProposal(
+              registerProposalId
+            )
+          ).state,
+          constants.WalletSchemeProposalState.executionSuccedd
+        );
+
+        assert.equal(
+          await org.controller.getSchemeParameters(
+            tempWalletScheme.address,
+            org.avatar.address
+          ),
+          parameterHash
+        );
+
+        const callData = helpers.testCallFrom(tempWalletScheme.address);
+
+        genericProposalId = await helpers.getValueFromLogs(
+          await tempWalletScheme.proposeCalls(
+            [actionMock.address],
+            [callData],
+            [0],
+            constants.TEST_TITLE,
+            constants.SOME_HASH
+          ),
+          "_proposalId"
+        );
       });
 
-      const defaultParamaters = [
-        "50",
-        "172800",
-        "86400",
-        "3600",
-        "2000",
-        "0",
-        "60",
-        "10",
-        "15",
-        "10",
-        "0",
-      ];
+      it("Fails if address is not allowed to vote on behalf", async function () {
+        const proposalParamsHash = (
+          await dxdVotingMachine.contract.proposals(genericProposalId)
+        ).paramsHash;
 
-      await dxdVotingMachine.contract.setParameters(
-        defaultParamaters,
-        accounts[3]
-      );
+        const params = await dxdVotingMachine.contract.parameters(
+          proposalParamsHash
+        );
 
-      const parameterHash = await dxdVotingMachine.contract.getParametersHash(
-        defaultParamaters,
-        accounts[3]
-      );
+        assert.equal(params.voteOnBehalf, accounts[3]);
 
-      const unregisterSchemeData = await org.controller.contract.methods
-        .unregisterScheme(cheapVoteWalletScheme.address, org.avatar.address)
-        .encodeABI();
-
-      const reRegisterSchemeData = await org.controller.contract.methods
-        .registerScheme(
-          cheapVoteWalletScheme.address,
-          parameterHash,
-          helpers.encodePermission({
-            canGenericCall: true,
-            canUpgrade: true,
-            canChangeConstraints: true,
-            canRegisterSchemes: true,
+        await expectRevert(
+          dxdVotingMachine.contract.vote(genericProposalId, 1, 0, accounts[2], {
+            from: accounts[1],
           }),
-          org.avatar.address
-        )
-        .encodeABI();
+          "address not allowed to vote on behalf"
+        );
+      });
+      it("Succeeds if allowed address is able to vote on behalf", async function () {
+        const tx = await dxdVotingMachine.contract.vote(
+          genericProposalId,
+          1,
+          0,
+          accounts[2],
+          {
+            from: accounts[3],
+          }
+        );
 
-      const unRegisterProposalId = await helpers.getValueFromLogs(
-        await expensiveVoteWalletScheme.proposeCalls(
-          [org.controller.address],
-          [unregisterSchemeData],
-          [0],
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
-        "_proposalId"
-      );
-
-      assert.equal(
-        (
-          await expensiveVoteWalletScheme.getOrganizationProposal(
-            unRegisterProposalId
-          )
-        ).state,
-        constants.WalletSchemeProposalState.submitted
-      );
-
-      const reRegisterProposalId = await helpers.getValueFromLogs(
-        await expensiveVoteWalletScheme.proposeCalls(
-          [org.controller.address],
-          [reRegisterSchemeData],
-          [0],
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
-        "_proposalId"
-      );
-
-      assert.equal(
-        (
-          await expensiveVoteWalletScheme.getOrganizationProposal(
-            reRegisterProposalId
-          )
-        ).state,
-        constants.WalletSchemeProposalState.submitted
-      );
-
-      assert.equal(
-        await org.controller.getSchemeParameters(
-          cheapVoteWalletScheme.address,
-          org.avatar.address
-        ),
-        parameterHash
-      );
-
-      const genericProposalId = await helpers.getValueFromLogs(
-        await cheapVoteWalletScheme.proposeCalls(
-          [org.controller.address],
-          ["0x0"],
-          [0],
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
-        "_proposalId"
-      );
-
-      const proposalParamsHash = (
-        await dxdVotingMachine.contract.proposals(genericProposalId)
-      ).paramsHash;
-
-      const params = await dxdVotingMachine.contract.parameters(
-        proposalParamsHash
-      );
-
-      assert.equal(params.voteOnBehalf, accounts[3]);
-
-      await expectRevert(
-        dxdVotingMachine.contract.vote(genericProposalId, 1, 0, accounts[2], {
-          from: accounts[1],
-        }),
-        "user not allowed to vote on behalf"
-      );
+        await expectEvent(tx, "VoteProposal", {
+          _proposalId: genericProposalId,
+          _organization: org.avatar.address,
+          _voter: accounts[2],
+          _vote: "1",
+          _reputation: "10000",
+        });
+      });
     });
 
     it("Can view rep of votes and amount staked on proposal", async function () {
