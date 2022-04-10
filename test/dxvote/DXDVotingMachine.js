@@ -1212,6 +1212,7 @@ contract("DXDVotingMachine", function (accounts) {
         _proposalId: testProposalId,
         _proposalState: "4",
       });
+
       await time.increase(3600 + 1);
       await dxdVotingMachine.contract.vote(
         testProposalId,
@@ -1245,6 +1246,95 @@ contract("DXDVotingMachine", function (accounts) {
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
       assert.equal(organizationProposal.value[0], 0);
+    });
+
+    it.only("execution state is preBoosted after the vote execution bar has been crossed", async function () {
+      // stake enough times to enter preboosted mode
+      // execution bar of a proposal has been reached after it has been preBoosted
+      const genericCallData = helpers.encodeGenericCallData(
+        org.avatar.address,
+        actionMock.address,
+        testCallFrom(org.avatar.address),
+        0
+      );
+      const tx = await cheapVoteWalletScheme.proposeCalls(
+        [org.controller.address],
+        [genericCallData],
+        [0],
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      );
+      const testProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const stakeTx = await dxdVotingMachine.contract.stake(
+        testProposalId,
+        1,
+        1000,
+        { from: accounts[1] }
+      );
+
+      //check stateChange to preboosted
+      expectEvent(stakeTx.receipt, "StateChange", {
+        _proposalId: testProposalId,
+        _proposalState: "4",
+      });
+
+      await time.increase(3600 + 1);
+
+      await dxdVotingMachine.contract.vote(
+        testProposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[2], gasPrice: constants.GAS_PRICE }
+      );
+      await dxdVotingMachine.contract.vote(
+        testProposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[1], gasPrice: constants.GAS_PRICE }
+      );
+
+      await dxdVotingMachine.contract.vote(
+        testProposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[3], gasPrice: constants.GAS_PRICE }
+      );
+
+      await dxdVotingMachine.contract.vote(
+        testProposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[4], gasPrice: constants.GAS_PRICE }
+      );
+      //await time.increase(86400 + 1);
+
+      // check Execution State while executing
+      const executeTx = await dxdVotingMachine.contract.execute(
+        testProposalId,
+        { from: accounts[1], gasPrice: constants.GAS_PRICE }
+      );
+      // Check it changed to executed in redeem
+      await expectEvent.inTransaction(
+        executeTx.tx,
+        dxdVotingMachine.contract,
+        "StateChange",
+        {
+          _proposalId: testProposalId,
+          _proposalState: "2",
+        }
+      );
+    });
+    it("execution state is Boosted after the vote execution bar has been crossed", async function () {
+      // stake enough to enter boosted mode
+      // execution bar of a proposal has been reached after it has been boosted
+    });
+
+    it("Correct calcuation of down staked boosted proposal", async function () {
+      // create a proposal and downstake it with a few different accounts and check calculation
     });
   });
 
