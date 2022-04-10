@@ -129,16 +129,14 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
             });
             break;
           case "ERC20SnapshotRep":
-            newToken = await ERC20SnapshotRep.new(
+            newToken = await ERC20SnapshotRep.new();
+            await newToken.initialize(
               tokenToDeploy.name,
               tokenToDeploy.symbol,
               {
                 from: accounts[0],
               }
             );
-            // This is 0x0 for some reason
-            owner = await newToken.owner();
-            console.log({ owner });
             await tokenToDeploy.distribution.map(async tokenHolder => {
               await newToken.mint(tokenHolder.address, tokenHolder.amount, {
                 from: accounts[0],
