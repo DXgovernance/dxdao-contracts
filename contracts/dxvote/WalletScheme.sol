@@ -243,12 +243,12 @@ contract WalletScheme {
      * @return an id which represents the proposal
      */
     function proposeCalls(
-        address[] memory _to,
+        address[] calldata _to,
         bytes[] calldata _callData,
-        uint256[] memory _value,
-        string memory _title,
-        string memory _descriptionHash
-    ) public returns (bytes32) {
+        uint256[] calldata _value,
+        string calldata _title,
+        string calldata _descriptionHash
+    ) external returns (bytes32) {
         // Check the proposal calls
         for (uint256 i = 0; i < _to.length; i++) {
             bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
