@@ -803,7 +803,7 @@ contract("DXDVotingMachine", function (accounts) {
         dxdVotingMachine.contract.signalVote(proposalId, 3, 60000, {
           from: accounts[3],
         }),
-        "invalid voteDecision"
+        "wrong decision value"
       );
       const signalVoteTx = await dxdVotingMachine.contract.signalVote(
         proposalId,

@@ -50,6 +50,11 @@ contract DXDVotingMachine is GenesisProtocol {
     // Event used to signal votes to be executed on chain
     event VoteSignaled(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount);
 
+    modifier validDecision(bytes32 proposalId, uint256 decision) {
+        require(decision <= getNumberOfChoices(proposalId) && decision > 0, "wrong decision value");
+        _;
+    }
+
     /**
      * @dev Constructor
      */
@@ -155,8 +160,7 @@ contract DXDVotingMachine is GenesisProtocol {
         uint256 voteDecision,
         uint256 amount,
         bytes calldata signature
-    ) external {
-        require(voteDecision <= getNumberOfChoices(proposalId) && voteDecision > 0, "invalid voteDecision");
+    ) external validDecision(proposalId, voteDecision) {
         bytes32 voteHashed = hashVote(votingMachine, proposalId, voter, voteDecision, amount);
         require(voter == voteHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
         emit VoteSigned(votingMachine, proposalId, voter, voteDecision, amount, signature);
@@ -173,9 +177,8 @@ contract DXDVotingMachine is GenesisProtocol {
         bytes32 proposalId,
         uint256 voteDecision,
         uint256 amount
-    ) external {
+    ) external validDecision(proposalId, voteDecision) {
         require(_isVotable(proposalId), "not votable proposal");
-        require(voteDecision <= getNumberOfChoices(proposalId) && voteDecision > 0, "invalid voteDecision");
         require(votesSignaled[proposalId][msg.sender].voteDecision == 0, "already voted");
         votesSignaled[proposalId][msg.sender].voteDecision = voteDecision;
         votesSignaled[proposalId][msg.sender].amount = amount;
@@ -259,9 +262,8 @@ contract DXDVotingMachine is GenesisProtocol {
         uint256 _vote,
         uint256 _amount,
         address _staker
-    ) internal returns (bool) {
+    ) internal validDecision(_proposalId, _vote) returns (bool) {
         // 0 is not a valid vote.
-        require(_vote <= getNumberOfChoices(_proposalId) && _vote > 0, "wrong vote value");
         require(_amount > 0, "staking amount should be >0");
 
         if (_execute(_proposalId)) {
@@ -372,8 +374,7 @@ contract DXDVotingMachine is GenesisProtocol {
         address _voter,
         uint256 _vote,
         uint256 _rep
-    ) internal returns (bool) {
-        require(_vote <= getNumberOfChoices(_proposalId) && _vote > 0, "wrong vote value");
+    ) internal validDecision(_proposalId, _vote) returns (bool) {
         if (_execute(_proposalId)) {
             return true;
         }
