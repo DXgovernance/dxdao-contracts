@@ -1,6 +1,9 @@
 name: Tests
 
 on:
+  pull_request:
+    branches:
+      - develop
   push:
     branches: ["**"]
   workflow_dispatch:
