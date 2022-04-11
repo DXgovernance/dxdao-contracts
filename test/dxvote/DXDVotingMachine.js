@@ -799,6 +799,12 @@ contract("DXDVotingMachine", function (accounts) {
           .voteDecision,
         0
       );
+      await expectRevert(
+        dxdVotingMachine.contract.signalVote(proposalId, 3, 60000, {
+          from: accounts[3],
+        }),
+        "wrong decision value"
+      );
       const signalVoteTx = await dxdVotingMachine.contract.signalVote(
         proposalId,
         1,
