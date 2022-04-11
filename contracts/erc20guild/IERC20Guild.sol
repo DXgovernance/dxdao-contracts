@@ -111,6 +111,8 @@ interface IERC20Guild {
 
     function getTotalProposals() external view returns (uint256);
 
+    function getTotalMembers() external view returns (uint256);
+
     function getActiveProposalsNow() external view returns (uint256);
 
     function getSignedVote(bytes32 signedVoteHash) external view returns (bool);

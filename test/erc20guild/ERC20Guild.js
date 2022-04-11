@@ -285,6 +285,7 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(await erc20Guild.getTotalProposals(), 0);
       assert.equal(await erc20Guild.getActiveProposalsNow(), 0);
       assert.equal(await erc20Guild.getProposalsIdsLength(), 0);
+      assert.equal(await erc20Guild.getTotalMembers(), 0);
       assert.deepEqual(await erc20Guild.getProposalsIds(), []);
     });
 
@@ -1486,6 +1487,7 @@ contract("ERC20Guild", function (accounts) {
 
       // approve lockable guild to "transfer in" tokens to lock
       await guildToken.approve(tokenVault, 50000, { from: accounts[1] });
+      assert.equal(await erc20Guild.getTotalMembers(), 0);
 
       const txLock = await erc20Guild.lockTokens(50000, { from: accounts[1] });
       const lockEvent = helpers.logDecoder.decodeLogs(
@@ -1494,6 +1496,7 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(lockEvent.name, "TokensLocked");
       assert.equal(lockEvent.args[0], accounts[1]);
       assert.equal(lockEvent.args[1], 50000);
+      assert.equal(await erc20Guild.getTotalMembers(), 1);
 
       const now = await time.latest();
       let voterLockTimestamp = await erc20Guild.getVoterLockTimestamp(
@@ -1535,6 +1538,7 @@ contract("ERC20Guild", function (accounts) {
       const txRelease = await erc20Guild.withdrawTokens(50000, {
         from: accounts[1],
       });
+      assert.equal(await erc20Guild.getTotalMembers(), 0);
 
       const withdrawEvent = helpers.logDecoder.decodeLogs(
         txRelease.receipt.rawLogs
