@@ -31,6 +31,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         {
           name: "DXDao on localhost",
           symbol: "DXD",
+          type: "ERC20",
           distribution: [
             {
               address: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
@@ -49,6 +50,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         {
           name: "REPGuildToken",
           symbol: "RGT",
+          type: "ERC20SnapshotRep",
           distribution: [
             {
               address: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
@@ -286,7 +288,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
             to: ["PermissionRegistry"],
             callData: [
               new web3.eth.Contract(PermissionRegistry.abi).methods
-                .setAdminPermission(
+                .setPermission(
                   NULL_ADDRESS,
                   "0xE0FC07f3aC4F6AF1463De20eb60Cf1A764E259db",
                   "0x1A0370A6f5b6cE96B1386B208a8519552eb714D9",

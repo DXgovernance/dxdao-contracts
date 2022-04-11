@@ -5,10 +5,11 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
- * @title GlobalPermissionRegistry.
+ * @title PermissionRegistry.
  * @dev A registry of smart contracts functions and ERC20 transfers that are allowed to be called between contracts.
  * A time delay in seconds over the permissions can be set form any contract, this delay would be added to any new
  * permissions sent by that address.
+ * The PermissionRegistry owner (if there is an owner and owner address is not 0x0) can overwrite/set any permission.
  * The registry allows setting "wildcard" permissions for recipients and functions, this means that permissions like
  * this contract can call any contract, this contract can call this function to any contract or this contract call
  * call any function in this contract can be set.
@@ -21,7 +22,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
  * a function limit is set it will add the value transferred in both of them.
  */
 
-contract GlobalPermissionRegistry is OwnableUpgradeable {
+contract PermissionRegistry is OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
     mapping(address => uint256) public permissionDelay;
@@ -85,9 +86,9 @@ contract GlobalPermissionRegistry is OwnableUpgradeable {
         bool allowed
     ) public {
         if (msg.sender != owner()) {
-            require(from == msg.sender, "GlobalPermissionRegistry: Only owner can specify from value");
+            require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
         }
-        require(to != address(this), "GlobalPermissionRegistry: Cant set permissions to GlobalPermissionRegistry");
+        require(to != address(this), "PermissionRegistry: Cant set permissions to PermissionRegistry");
         if (allowed) {
             permissions[asset][from][to][functionSignature].fromTime = block.timestamp.add(permissionDelay[from]);
             permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
@@ -217,7 +218,7 @@ contract GlobalPermissionRegistry is OwnableUpgradeable {
                 _setValueTransferred(permissions[asset][from][to][functionSignature], valueTransferred);
             }
         }
-        require(fromTime > 0 && fromTime < block.timestamp, "GlobalPermissionRegistry: Call not allowed");
+        require(fromTime > 0 && fromTime < block.timestamp, "PermissionRegistry: Call not allowed");
     }
 
     /**
@@ -232,10 +233,7 @@ contract GlobalPermissionRegistry is OwnableUpgradeable {
         } else {
             permission.valueTransferred = permission.valueTransferred.add(valueTransferred);
         }
-        require(
-            permission.valueTransferred <= permission.valueAllowed,
-            "GlobalPermissionRegistry: Value limit reached"
-        );
+        require(permission.valueTransferred <= permission.valueAllowed, "PermissionRegistry: Value limit reached");
     }
 
     /**

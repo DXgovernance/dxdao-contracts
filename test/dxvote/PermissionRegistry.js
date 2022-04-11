@@ -3,15 +3,13 @@ import * as helpers from "../helpers";
 const { time, expectRevert } = require("@openzeppelin/test-helpers");
 
 const WalletScheme = artifacts.require("./WalletScheme.sol");
-const GlobalPermissionRegistry = artifacts.require(
-  "./GlobalPermissionRegistry.sol"
-);
+const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 
-contract("GlobalPermissionRegistry", function (accounts) {
+contract("PermissionRegistry", function (accounts) {
   let permissionRegistry,
     masterWalletScheme,
     quickWalletScheme,
@@ -56,7 +54,7 @@ contract("GlobalPermissionRegistry", function (accounts) {
       0 // activationTime
     );
 
-    permissionRegistry = await GlobalPermissionRegistry.new(accounts[0], 30);
+    permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
     await permissionRegistry.initialize();
 
     masterWalletScheme = await WalletScheme.new();
@@ -132,7 +130,7 @@ contract("GlobalPermissionRegistry", function (accounts) {
     );
 
     const setPermissionDelayData = new web3.eth.Contract(
-      GlobalPermissionRegistry.abi
+      PermissionRegistry.abi
     ).methods
       .setPermissionDelay(60)
       .encodeABI();
@@ -140,7 +138,7 @@ contract("GlobalPermissionRegistry", function (accounts) {
     const callData = helpers.testCallFrom(quickWalletScheme.address);
 
     const setPermissionData = new web3.eth.Contract(
-      GlobalPermissionRegistry.abi
+      PermissionRegistry.abi
     ).methods
       .setPermission(
         constants.NULL_ADDRESS,
@@ -255,13 +253,13 @@ contract("GlobalPermissionRegistry", function (accounts) {
     );
 
     const setPermissionDelayData = new web3.eth.Contract(
-      GlobalPermissionRegistry.abi
+      PermissionRegistry.abi
     ).methods
       .setPermissionDelay(60)
       .encodeABI();
 
     const setPermissionData = new web3.eth.Contract(
-      GlobalPermissionRegistry.abi
+      PermissionRegistry.abi
     ).methods
       .setPermission(
         constants.NULL_ADDRESS,

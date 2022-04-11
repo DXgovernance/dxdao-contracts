@@ -9,9 +9,7 @@ const {
   balance,
 } = require("@openzeppelin/test-helpers");
 
-const GlobalPermissionRegistry = artifacts.require(
-  "./GlobalPermissionRegistry.sol"
-);
+const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
@@ -76,7 +74,7 @@ contract("DXDVotingMachine", function (accounts) {
       from: accounts[1],
     });
 
-    permissionRegistry = await GlobalPermissionRegistry.new(accounts[0], 10);
+    permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
     await permissionRegistry.initialize();
 
     await permissionRegistry.setPermission(
@@ -822,8 +820,6 @@ contract("DXDVotingMachine", function (accounts) {
       await dxdVotingMachine.contract.executeSignaledVote(
         voteInfoFromLog.proposalId,
         voteInfoFromLog.voter,
-        voteInfoFromLog.voteDecision,
-        voteInfoFromLog.amount,
         { from: accounts[4] }
       );
       assert.equal(
@@ -867,8 +863,6 @@ contract("DXDVotingMachine", function (accounts) {
       await dxdVotingMachine.contract.executeSignaledVote(
         voteInfoFromLog.proposalId,
         voteInfoFromLog.voter,
-        voteInfoFromLog.voteDecision,
-        voteInfoFromLog.amount,
         { from: accounts[4] }
       );
       assert.equal(

@@ -19,7 +19,7 @@ contract SnapshotERC20Guild is ERC20Guild {
     using ECDSAUpgradeable for bytes32;
 
     // Proposal id => Snapshot id
-    mapping(bytes32 => uint256) proposalsSnapshots;
+    mapping(bytes32 => uint256) public proposalsSnapshots;
 
     // Snapshotted values have arrays of ids and the value corresponding to that id. These could be an array of a
     // Snapshot struct, but that would impede usage of functions that work on an array.
@@ -71,13 +71,14 @@ contract SnapshotERC20Guild is ERC20Guild {
             votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >= votingPower,
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
+        // slither-disable-next-line all
         super.setSignedVote(proposalId, action, votingPower, voter, signature);
         signedVotes[hashedVote] = true;
     }
 
     // @dev Lock tokens in the guild to be used as voting power
     // @param tokenAmount The amount of tokens to be locked
-    function lockTokens(uint256 tokenAmount) public virtual override {
+    function lockTokens(uint256 tokenAmount) external virtual override {
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
         tokenVault.deposit(msg.sender, tokenAmount);
@@ -89,7 +90,7 @@ contract SnapshotERC20Guild is ERC20Guild {
 
     // @dev Release tokens locked in the guild, this will decrease the voting power
     // @param tokenAmount The amount of tokens to be withdrawn
-    function withdrawTokens(uint256 tokenAmount) public virtual override {
+    function withdrawTokens(uint256 tokenAmount) external virtual override {
         require(
             votingPowerOf(msg.sender) >= tokenAmount,
             "SnapshotERC20Guild: Unable to withdraw more tokens than locked"
@@ -181,6 +182,8 @@ contract SnapshotERC20Guild is ERC20Guild {
                     }
 
                     isExecutingProposal = true;
+                    // We use isExecutingProposal varibale to avoid reentrancy in proposal execution
+                    // slither-disable-next-line all
                     (bool success, ) = proposals[proposalId].to[i].call{value: proposals[proposalId].value[i]}(
                         proposals[proposalId].data[i]
                     );
@@ -206,7 +209,7 @@ contract SnapshotERC20Guild is ERC20Guild {
     // @param accounts The addresses of the accounts
     // @param snapshotIds The snapshotIds to be used
     function votingPowerOfMultipleAt(address[] memory accounts, uint256[] memory snapshotIds)
-        public
+        external
         view
         virtual
         returns (uint256[] memory)
@@ -230,12 +233,12 @@ contract SnapshotERC20Guild is ERC20Guild {
     }
 
     // @dev Get the proposal snapshot id
-    function getProposalSnapshotId(bytes32 proposalId) public view returns (uint256) {
+    function getProposalSnapshotId(bytes32 proposalId) external view returns (uint256) {
         return proposalsSnapshots[proposalId];
     }
 
     // @dev Get the current snapshot id
-    function getCurrentSnapshotId() public view returns (uint256) {
+    function getCurrentSnapshotId() external view returns (uint256) {
         return _currentSnapshotId;
     }
 
