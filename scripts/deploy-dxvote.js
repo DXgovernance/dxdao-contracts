@@ -39,6 +39,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     );
     const DXDVotingMachine = await hre.artifacts.require("DXDVotingMachine");
     const ERC20Mock = await hre.artifacts.require("ERC20Mock");
+    const ERC20SnapshotRep = await hre.artifacts.require("ERC20SnapshotRep");
     const Multicall = await hre.artifacts.require("Multicall");
     const DXdaoNFT = await hre.artifacts.require("DXdaoNFT");
     const DXDVestingFactory = await hre.artifacts.require("DXDVestingFactory");
@@ -116,10 +117,33 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
           return new BigNumber(prev).plus(cur.amount.toString());
         },
         0);
-        const newToken = await ERC20Mock.new(
-          accounts[0],
-          totalSupply.toString()
-        );
+
+        let newToken;
+        switch (tokenToDeploy.type) {
+          case "ERC20":
+            newToken = await ERC20Mock.new(accounts[0], totalSupply.toString());
+            await tokenToDeploy.distribution.map(async tokenHolder => {
+              await newToken.transfer(tokenHolder.address, tokenHolder.amount, {
+                from: accounts[0],
+              });
+            });
+            break;
+          case "ERC20SnapshotRep":
+            newToken = await ERC20SnapshotRep.new();
+            await newToken.initialize(
+              tokenToDeploy.name,
+              tokenToDeploy.symbol,
+              {
+                from: accounts[0],
+              }
+            );
+            await tokenToDeploy.distribution.map(async tokenHolder => {
+              await newToken.mint(tokenHolder.address, tokenHolder.amount, {
+                from: accounts[0],
+              });
+            });
+            break;
+        }
 
         await tokenToDeploy.distribution.map(async tokenHolder => {
           await newToken.transfer(tokenHolder.address, tokenHolder.amount, {
