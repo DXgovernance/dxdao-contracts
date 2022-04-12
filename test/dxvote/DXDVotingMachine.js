@@ -1243,7 +1243,7 @@ contract("DXDVotingMachine", function (accounts) {
       assert.equal(organizationProposal.value[0], 0);
     });
 
-    it.only("execution state is preBoosted after the vote execution bar has been crossed", async function () {
+    it("execution state is preBoosted after the vote execution bar has been crossed", async function () {
       // stake enough times to enter preboosted mode
       // execution bar of a proposal has been reached after it has been preBoosted
       const genericCallData = helpers.encodeGenericCallData(
