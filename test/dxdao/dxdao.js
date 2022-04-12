@@ -42,8 +42,7 @@ contract("DXdao", function (accounts) {
     const token = await DxToken.at(await avatar.nativeToken());
     const controller = await DxController.at(await avatar.owner());
 
-    const votingMachine = await helpers.setupGenesisProtocol(
-      accounts,
+    const votingMachine = await helpers.setUpVotingMachine(
       votingMachineToken.address,
       "dxd",
       constants.NULL_ADDRESS

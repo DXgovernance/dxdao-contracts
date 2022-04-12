@@ -1,15 +1,7 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
-import { assert, expect } from "chai";
+import { expect } from "chai";
 
-const {
-  BN,
-  expectEvent,
-  expectRevert,
-  balance,
-  send,
-  ether,
-  time,
-} = require("@openzeppelin/test-helpers");
+const { expectRevert, time } = require("@openzeppelin/test-helpers");
 
 const DXDVestingFactory = artifacts.require("DXDVestingFactory.sol");
 const TokenVesting = artifacts.require("TokenVesting.sol");

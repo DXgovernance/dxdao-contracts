@@ -11,8 +11,6 @@ const {
 
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
-const DaoCreator = artifacts.require("./DaoCreator.sol");
-const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
@@ -41,21 +39,13 @@ contract("DXDVotingMachine", function (accounts) {
   beforeEach(async function () {
     actionMock = await ActionMock.new();
     const standardTokenMock = await ERC20Mock.new(accounts[1], 1000);
-    const controllerCreator = await DxControllerCreator.new({
-      gas: constants.GAS_LIMIT,
-    });
-    const daoCreator = await DaoCreator.new(controllerCreator.address, {
-      gas: constants.GAS_LIMIT,
-    });
-    org = await helpers.setupOrganizationWithArrays(
-      daoCreator,
+    org = await helpers.setupOrganization(
       [accounts[0], accounts[1], accounts[2], accounts[3]],
       [0, 0, 0, 0],
       [10000, 10000, 10000, 70000]
     );
 
-    genVotingMachine = await helpers.setupGenesisProtocol(
-      accounts,
+    genVotingMachine = await helpers.setUpVotingMachine(
       standardTokenMock.address,
       "gen",
       constants.NULL_ADDRESS
@@ -64,8 +54,7 @@ contract("DXDVotingMachine", function (accounts) {
       from: accounts[1],
     });
 
-    dxdVotingMachine = await helpers.setupGenesisProtocol(
-      accounts,
+    dxdVotingMachine = await helpers.setUpVotingMachine(
       standardTokenMock.address,
       "dxd",
       constants.NULL_ADDRESS
@@ -112,7 +101,7 @@ contract("DXDVotingMachine", function (accounts) {
       5
     );
 
-    await daoCreator.setSchemes(
+    await org.daoCreator.setSchemes(
       org.avatar.address,
       [expensiveVoteWalletScheme.address, cheapVoteWalletScheme.address],
       [genVotingMachine.params, dxdVotingMachine.params],
@@ -260,7 +249,7 @@ contract("DXDVotingMachine", function (accounts) {
         );
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
@@ -307,7 +296,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(cheapProposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
@@ -433,7 +422,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
@@ -891,7 +880,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
     });
 
@@ -937,7 +926,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.rejected
+        constants.WALLET_SCHEME_PROPOSAL_STATES.rejected
       );
     });
   });
@@ -975,6 +964,12 @@ contract("DXDVotingMachine", function (accounts) {
           .voteDecision,
         0
       );
+      await expectRevert(
+        dxdVotingMachine.contract.signalVote(proposalId, 3, 60000, {
+          from: accounts[3],
+        }),
+        "wrong decision value"
+      );
       const signalVoteTx = await dxdVotingMachine.contract.signalVote(
         proposalId,
         1,
@@ -1007,7 +1002,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
     });
 
@@ -1050,7 +1045,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.rejected
+        constants.WALLET_SCHEME_PROPOSAL_STATES.rejected
       );
     });
   });
@@ -1179,7 +1174,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(testProposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
@@ -1241,7 +1236,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(testProposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.rejected
+        constants.WALLET_SCHEME_PROPOSAL_STATES.rejected
       );
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
