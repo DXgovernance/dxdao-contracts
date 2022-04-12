@@ -8,7 +8,7 @@ const { constants, testCallFrom } = require("../../helpers");
 const {
   createAndSetupGuildToken,
   createProposal,
-  setAllVotesOnProposal,
+  setVotesOnProposal,
 } = require("../../helpers/guild");
 
 const EnforcedBinaryGuild = artifacts.require("EnforcedBinaryGuild.sol");
@@ -149,21 +149,21 @@ contract("EnforcedBinaryGuild", function (accounts) {
         account: accounts[1],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: enforcedBinaryGuild,
         proposalId: proposalId,
         action: 2,
         account: accounts[2],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: enforcedBinaryGuild,
         proposalId: proposalId,
         action: 2,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: enforcedBinaryGuild,
         proposalId: proposalId,
         action: 2,
@@ -189,7 +189,7 @@ contract("EnforcedBinaryGuild", function (accounts) {
       );
 
       const proposalInfo = await enforcedBinaryGuild.getProposal(proposalId);
-      assert.equal(proposalInfo.state, constants.GuildProposalState.Failed);
+      assert.equal(proposalInfo.state, constants.GUILD_PROPOSAL_STATES.Failed);
     });
 
     it("Can successfully execute a proposal when not voted on the 'No' option", async function () {
@@ -220,14 +220,14 @@ contract("EnforcedBinaryGuild", function (accounts) {
         ],
         account: accounts[2],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: enforcedBinaryGuild,
         proposalId: yetAnotherProposal,
         action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: enforcedBinaryGuild,
         proposalId: yetAnotherProposal,
         action: 1,

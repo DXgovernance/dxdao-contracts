@@ -4,7 +4,7 @@ import * as helpers from "../../helpers";
 const {
   createAndSetupGuildToken,
   createProposal,
-  setAllVotesOnProposal,
+  setVotesOnProposal,
 } = require("../../helpers/guild");
 
 const {
@@ -74,7 +74,7 @@ contract("SnapshotERC20Guild", function (accounts) {
       ],
       account: accounts[1],
     });
-    await setAllVotesOnProposal({
+    await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setGlobaLPermissionProposal,
       action: 1,
@@ -167,7 +167,7 @@ contract("SnapshotERC20Guild", function (accounts) {
         "SnapshotERC20Guild: Invalid votingPower amount"
       );
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,

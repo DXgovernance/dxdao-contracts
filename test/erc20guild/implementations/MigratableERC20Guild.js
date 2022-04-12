@@ -4,7 +4,7 @@ import * as helpers from "../../helpers";
 const {
   createAndSetupGuildToken,
   createProposal,
-  setAllVotesOnProposal,
+  setVotesOnProposal,
 } = require("../../helpers/guild");
 
 const {
@@ -98,13 +98,13 @@ contract("MigratableERC20Guild", function (accounts) {
       ],
       account: accounts[1],
     });
-    await setAllVotesOnProposal({
+    await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setPermissionToChangeTokenVault,
       action: 1,
       account: accounts[4],
     });
-    await setAllVotesOnProposal({
+    await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setPermissionToChangeTokenVault,
       action: 1,
@@ -144,14 +144,14 @@ contract("MigratableERC20Guild", function (accounts) {
         ],
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -217,14 +217,14 @@ contract("MigratableERC20Guild", function (accounts) {
       ],
       account: accounts[3],
     });
-    await setAllVotesOnProposal({
+    await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: guildProposalId,
       action: 1,
       account: accounts[3],
     });
 
-    await setAllVotesOnProposal({
+    await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: guildProposalId,
       action: 1,

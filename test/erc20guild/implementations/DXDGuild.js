@@ -1,7 +1,7 @@
 import * as helpers from "../../helpers";
 const {
   createAndSetupGuildToken,
-  setAllVotesOnProposal,
+  setVotesOnProposal,
 } = require("../../helpers/guild");
 const {
   BN,
@@ -177,7 +177,7 @@ contract("DXDGuild", function (accounts) {
 
       const proposalId = tx.logs[0].args.proposalId;
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: dxdGuild,
         proposalId: proposalId,
         action: 1,
@@ -189,14 +189,14 @@ contract("DXDGuild", function (accounts) {
         "ERC20Guild: Proposal hasn't ended yet"
       );
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: dxdGuild,
         proposalId: proposalId,
         action: 1,
         account: accounts[2],
       });
 
-      const txVote = await setAllVotesOnProposal({
+      const txVote = await setVotesOnProposal({
         guild: dxdGuild,
         proposalId: proposalId,
         action: 1,
@@ -223,7 +223,7 @@ contract("DXDGuild", function (accounts) {
       const proposalInfo = await dxdGuild.getProposal(proposalId);
       assert.equal(
         proposalInfo.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
       assert.equal(proposalInfo.to[0], votingMachine.address);
       assert.equal(proposalInfo.value[0], 0);

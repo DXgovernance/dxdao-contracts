@@ -1,12 +1,7 @@
 const constants = require("./constants");
 const { encodePermission, decodePermission } = require("./permissions");
-const {
-  encodeGenericCallData,
-  getWalletSchemeEvent,
-} = require("./walletScheme");
 
 const { LogDecoder } = require("@maticnetwork/eth-decoder");
-const { time } = require("@openzeppelin/test-helpers");
 
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
@@ -23,7 +18,6 @@ const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const DXDVestingFactory = artifacts.require("./DXDVestingFactory.sol");
 const DXdaoNFT = artifacts.require("./DXdaoNFT.sol");
 const ERC20Guild = artifacts.require("./ERC20Guild.sol");
-const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 
 export const logDecoder = new LogDecoder([
   Avatar.abi,
@@ -312,10 +306,16 @@ export function create2Address(creatorAddress, bytecode, saltHex) {
   return `0x${partsHash.slice(-40)}`.toLowerCase();
 }
 
-export {
-  encodePermission,
-  decodePermission,
-  encodeGenericCallData,
-  getWalletSchemeEvent,
-  constants,
-};
+export function encodeGenericCallData(avatar, to, data, value) {
+  return new web3.eth.Contract(Controller.abi).methods
+    .genericCall(to, data, avatar, value)
+    .encodeABI();
+}
+
+export function getEventFromTx(tx, eventName) {
+  const logDecoder = new LogDecoder([WalletScheme.abi]);
+  const logs = logDecoder.decodeLogs(tx.receipt.rawLogs);
+  return logs.find(event => event.name === eventName);
+}
+
+export { encodePermission, decodePermission, constants };

@@ -247,7 +247,7 @@ contract("DXDVotingMachine", function (accounts) {
         );
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
@@ -294,7 +294,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(cheapProposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
@@ -420,7 +420,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
@@ -704,7 +704,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
     });
 
@@ -750,7 +750,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.rejected
+        constants.WALLET_SCHEME_PROPOSAL_STATES.rejected
       );
     });
   });
@@ -826,7 +826,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
     });
 
@@ -869,7 +869,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(proposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.rejected
+        constants.WALLET_SCHEME_PROPOSAL_STATES.rejected
       );
     });
   });
@@ -998,7 +998,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(testProposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);
@@ -1059,7 +1059,7 @@ contract("DXDVotingMachine", function (accounts) {
         await cheapVoteWalletScheme.getOrganizationProposal(testProposalId);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.rejected
+        constants.WALLET_SCHEME_PROPOSAL_STATES.rejected
       );
       assert.equal(organizationProposal.callData[0], genericCallData);
       assert.equal(organizationProposal.to[0], org.controller.address);

@@ -46,38 +46,13 @@ export async function createProposal({
   return helpers.getValueFromLogs(tx, "proposalId", "ProposalStateChanged");
 }
 
-export async function setAllVotesOnProposal({
+export async function setVotesOnProposal({
   guild,
   proposalId,
   action,
   account,
+  votingPower = 0,
 }) {
-  const votingPower = await guild.votingPowerOf(account);
+  if (votingPower === 0) votingPower = await guild.votingPowerOf(account);
   return guild.setVote(proposalId, action, votingPower, { from: account });
 }
-
-export async function setXVotesOnProposal({
-  guild,
-  proposalId,
-  votes,
-  account,
-}) {
-  return guild.setVote(proposalId, votes, { from: account });
-}
-
-export const GUILD_PROPOSAL_STATES = {
-  submitted: 0,
-  rejected: 1,
-  executed: 2,
-  failed: 3,
-};
-
-export const addGuildsToRegistry = async ({
-  guildRegistry,
-  address,
-  account,
-}) => {
-  return guildRegistry.addGuild(address, {
-    from: account,
-  });
-};

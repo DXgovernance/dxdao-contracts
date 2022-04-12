@@ -188,7 +188,7 @@ contract("PermissionRegistry", function (accounts) {
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
 
     const tx2 = await quickWalletScheme.proposeCalls(
@@ -222,7 +222,7 @@ contract("PermissionRegistry", function (accounts) {
       await quickWalletScheme.getOrganizationProposal(proposalId2);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], actionMock.address);
@@ -305,7 +305,7 @@ contract("PermissionRegistry", function (accounts) {
 
     assert.equal(
       (await quickWalletScheme.getOrganizationProposal(proposalId)).state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
 
     await time.increase(60);

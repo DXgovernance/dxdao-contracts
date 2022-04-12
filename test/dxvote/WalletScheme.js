@@ -451,7 +451,7 @@ contract("WalletScheme", function (accounts) {
       await registrarWalletScheme.getOrganizationProposal(proposalId3);
     assert.equal(
       organizationProposal1.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal1.callData[0], registerSchemeData);
     assert.equal(organizationProposal1.to[0], org.controller.address);
@@ -461,7 +461,7 @@ contract("WalletScheme", function (accounts) {
       await registrarWalletScheme.getOrganizationProposal(proposalId4);
     assert.equal(
       organizationProposal2.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal2.callData[0], unregisterSchemeData);
     assert.equal(organizationProposal2.to[0], org.controller.address);
@@ -471,7 +471,7 @@ contract("WalletScheme", function (accounts) {
       await registrarWalletScheme.getOrganizationProposal(proposalId5);
     assert.equal(
       organizationProposal3.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal3.callData[0], updateSchemeParamsData);
     assert.equal(organizationProposal3.to[0], org.controller.address);
@@ -623,7 +623,7 @@ contract("WalletScheme", function (accounts) {
       await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(
       organizationProposal.callData[0],
@@ -692,7 +692,7 @@ contract("WalletScheme", function (accounts) {
       await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionTimeout
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
     );
     assert.equal(
       organizationProposal.callData[0],
@@ -848,17 +848,14 @@ contract("WalletScheme", function (accounts) {
       constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
-    const stateChangeEvent = helpers.getWalletSchemeEvent(
-      tx,
-      "ProposalStateChange"
-    );
+    const stateChangeEvent = helpers.getEventFromTx(tx, "ProposalStateChange");
     assert.equal(stateChangeEvent.args._state, 2);
 
     const organizationProposal =
       await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.rejected
+      constants.WALLET_SCHEME_PROPOSAL_STATES.rejected
     );
     assert.equal(organizationProposal.descriptionHash, constants.SOME_HASH);
     assert.equal(organizationProposal.title, constants.TEST_TITLE);
@@ -896,7 +893,7 @@ contract("WalletScheme", function (accounts) {
       await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.callData[0], "0x00");
     assert.equal(organizationProposal.to[0], gnosisProxy.address);
@@ -926,7 +923,7 @@ contract("WalletScheme", function (accounts) {
       await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], actionMock.address);
@@ -1019,12 +1016,12 @@ contract("WalletScheme", function (accounts) {
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId1)).state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId2)).state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
 
     // If we execute a proposal but we dont check the returned value it will still wont execute.
@@ -1050,12 +1047,12 @@ contract("WalletScheme", function (accounts) {
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId1)).state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId3)).state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
   });
 
@@ -1088,7 +1085,7 @@ contract("WalletScheme", function (accounts) {
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
 
     await time.increase(executionTimeout);
@@ -1103,7 +1100,7 @@ contract("WalletScheme", function (accounts) {
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
-      constants.WalletSchemeProposalState.executionTimeout
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
     );
   });
 
@@ -1154,7 +1151,7 @@ contract("WalletScheme", function (accounts) {
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
 
     await time.increase(executionTimeout + 1);
@@ -1169,7 +1166,7 @@ contract("WalletScheme", function (accounts) {
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
-      constants.WalletSchemeProposalState.executionTimeout
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
     );
   });
 
@@ -1208,7 +1205,7 @@ contract("WalletScheme", function (accounts) {
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
 
     await time.increase(executionTimeout + 1);
@@ -1223,7 +1220,7 @@ contract("WalletScheme", function (accounts) {
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
-      constants.WalletSchemeProposalState.executionTimeout
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
     );
   });
 
@@ -1341,7 +1338,7 @@ contract("WalletScheme", function (accounts) {
       await masterWalletScheme.getOrganizationProposal(proposalId2);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], actionMock.address);
@@ -1480,7 +1477,7 @@ contract("WalletScheme", function (accounts) {
       await masterWalletScheme.getOrganizationProposal(proposalId2);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.callData[1], callData);
@@ -1536,7 +1533,7 @@ contract("WalletScheme", function (accounts) {
       await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.callData[0], "0x00");
     assert.equal(organizationProposal.to[0], wallet.address);
@@ -1567,7 +1564,7 @@ contract("WalletScheme", function (accounts) {
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
 
     await time.increase(executionTimeout);
@@ -1582,7 +1579,7 @@ contract("WalletScheme", function (accounts) {
 
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
-      constants.WalletSchemeProposalState.executionTimeout
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
     );
   });
 
@@ -1604,7 +1601,7 @@ contract("WalletScheme", function (accounts) {
       constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
-    const executionEvent = helpers.getWalletSchemeEvent(tx, "ExecutionResults");
+    const executionEvent = helpers.getEventFromTx(tx, "ExecutionResults");
     const returnValue = web3.eth.abi.decodeParameters(
       ["bool", "bytes"],
       executionEvent.args._callsDataResult[0]
@@ -1616,7 +1613,7 @@ contract("WalletScheme", function (accounts) {
       await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], actionMock.address);
@@ -1674,7 +1671,7 @@ contract("WalletScheme", function (accounts) {
       await masterWalletScheme.getOrganizationProposalByIndex(0);
     assert.equal(
       mintRepProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(mintRepProposal.callData[0], callDataMintRep);
     assert.equal(mintRepProposal.to[0], org.controller.address);
@@ -1684,7 +1681,7 @@ contract("WalletScheme", function (accounts) {
       await masterWalletScheme.getOrganizationProposalByIndex(1);
     assert.equal(
       burnRepProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(burnRepProposal.callData[0], callDataBurnRep);
     assert.equal(burnRepProposal.to[0], org.controller.address);
@@ -1754,12 +1751,12 @@ contract("WalletScheme", function (accounts) {
           proposalIdMintRepToFail
         )
       ).state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalIdMintRep))
         .state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
   });
 
@@ -1830,12 +1827,12 @@ contract("WalletScheme", function (accounts) {
           proposalIdMintRepToFail
         )
       ).state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
     assert.equal(
       (await masterWalletScheme.getOrganizationProposal(proposalIdMintRep))
         .state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
   });
 
@@ -1927,7 +1924,7 @@ contract("WalletScheme", function (accounts) {
       await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
   });
 
@@ -1985,7 +1982,7 @@ contract("WalletScheme", function (accounts) {
       await masterWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.descriptionHash, constants.SOME_HASH);
     assert.equal(organizationProposal.callData[0], "0x00");
@@ -2083,17 +2080,14 @@ contract("WalletScheme", function (accounts) {
       constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
-    const stateChangeEvent = helpers.getWalletSchemeEvent(
-      tx,
-      "ProposalStateChange"
-    );
+    const stateChangeEvent = helpers.getEventFromTx(tx, "ProposalStateChange");
     assert.equal(stateChangeEvent.args._state, 2);
 
     const organizationProposal =
       await quickWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.rejected
+      constants.WALLET_SCHEME_PROPOSAL_STATES.rejected
     );
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], actionMock.address);
@@ -2123,7 +2117,7 @@ contract("WalletScheme", function (accounts) {
       await quickWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], actionMock.address);
@@ -2176,7 +2170,7 @@ contract("WalletScheme", function (accounts) {
       await quickWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.callData[0], "0x00");
     assert.equal(organizationProposal.to[0], wallet.address);
@@ -2207,7 +2201,7 @@ contract("WalletScheme", function (accounts) {
 
     assert.equal(
       (await quickWalletScheme.getOrganizationProposal(proposalId)).state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
 
     await time.increase(executionTimeout);
@@ -2222,7 +2216,7 @@ contract("WalletScheme", function (accounts) {
 
     assert.equal(
       (await quickWalletScheme.getOrganizationProposal(proposalId)).state,
-      constants.WalletSchemeProposalState.executionTimeout
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
     );
   });
 
@@ -2246,7 +2240,7 @@ contract("WalletScheme", function (accounts) {
       constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
-    const executionEvent = helpers.getWalletSchemeEvent(tx, "ExecutionResults");
+    const executionEvent = helpers.getEventFromTx(tx, "ExecutionResults");
 
     const returnValues = executionEvent.args._callsDataResult[0];
     assert.equal(returnValues, "0x");
@@ -2255,7 +2249,7 @@ contract("WalletScheme", function (accounts) {
       await quickWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], actionMock.address);
@@ -2359,7 +2353,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(
       (await quickWalletScheme.getOrganizationProposal(proposalIdAddScheme))
         .state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
 
     const addedScheme = await org.controller.schemes(constants.SOME_ADDRESS);
@@ -2383,7 +2377,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(
       (await quickWalletScheme.getOrganizationProposal(proposalIdRemoveScheme))
         .state,
-      constants.WalletSchemeProposalState.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
 
     const removedScheme = await org.controller.schemes(
@@ -2403,7 +2397,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(
       (await quickWalletScheme.getOrganizationProposal(proposalIdAddScheme))
         .state,
-      constants.WalletSchemeProposalState.executionTimeout
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
     );
 
     await votingMachine.contract.vote(
@@ -2416,7 +2410,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(
       (await quickWalletScheme.getOrganizationProposal(proposalIdRemoveScheme))
         .state,
-      constants.WalletSchemeProposalState.executionTimeout
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
     );
   });
 
@@ -2556,7 +2550,7 @@ contract("WalletScheme", function (accounts) {
       await quickWalletScheme.getOrganizationProposal(proposalId2);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], actionMock.address);
@@ -2602,7 +2596,7 @@ contract("WalletScheme", function (accounts) {
       constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
-    const executionEvent = helpers.getWalletSchemeEvent(tx, "ExecutionResults");
+    const executionEvent = helpers.getEventFromTx(tx, "ExecutionResults");
     assert.equal(executionEvent.args._callsSucessResult[0], true);
     assert.equal(executionEvent.args._callsSucessResult[1], true);
     assert.equal(executionEvent.args._callsSucessResult[2], true);
@@ -2628,7 +2622,7 @@ contract("WalletScheme", function (accounts) {
       await quickWalletScheme.getOrganizationProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WalletSchemeProposalState.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
     assert.equal(organizationProposal.callData[0], "0x00");
     assert.equal(organizationProposal.to[0], wallet.address);
@@ -2727,7 +2721,7 @@ contract("WalletScheme", function (accounts) {
         await masterWalletScheme.getOrganizationProposal(proposalId2);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
       assert.equal(organizationProposal.callData[0], transferData);
       assert.equal(organizationProposal.to[0], testToken.address);
@@ -2769,7 +2763,7 @@ contract("WalletScheme", function (accounts) {
 
       assert.equal(
         (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
-        constants.WalletSchemeProposalState.submitted
+        constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
       );
 
       await time.increase(executionTimeout);
@@ -2784,7 +2778,7 @@ contract("WalletScheme", function (accounts) {
 
       assert.equal(
         (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
-        constants.WalletSchemeProposalState.executionTimeout
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
       );
     });
 
@@ -2901,7 +2895,7 @@ contract("WalletScheme", function (accounts) {
         await quickWalletScheme.getOrganizationProposal(proposalId2);
       assert.equal(
         organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
       assert.equal(organizationProposal.callData[0], transferData);
       assert.equal(organizationProposal.to[0], testToken.address);
