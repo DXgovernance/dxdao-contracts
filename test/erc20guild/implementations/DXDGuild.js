@@ -1,6 +1,5 @@
 import * as helpers from "../../helpers";
 const {
-  createDAO,
   createAndSetupGuildToken,
   setAllVotesOnProposal,
 } = require("../../helpers/guild");
@@ -14,6 +13,8 @@ const {
 const DXDGuild = artifacts.require("DXDGuild.sol");
 const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
+const ERC20Mock = artifacts.require("ERC20Mock.sol");
+const WalletScheme = artifacts.require("WalletScheme.sol");
 
 require("chai").should();
 
@@ -39,13 +40,60 @@ contract("DXDGuild", function (accounts) {
       [0, 50, 100, 100, 250]
     );
     dxdGuild = await DXDGuild.new();
-    const permissionRegistry = await PermissionRegistry.new();
+
+    const votingMachineToken = await ERC20Mock.new(accounts[0], 0);
+
+    votingMachine = await helpers.setUpVotingMachine(
+      votingMachineToken.address,
+      0,
+      constants.NULL_ADDRESS
+    );
+
+    org = await helpers.setupOrganization(
+      [accounts[0], accounts[1], accounts[2], dxdGuild.address],
+      [0, 0, 0, 0],
+      [10, 10, 10, 40]
+    );
+
+    const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
     await permissionRegistry.initialize();
 
-    const createDaoResult = await createDAO(dxdGuild, accounts);
-    walletScheme = createDaoResult.walletScheme;
-    votingMachine = createDaoResult.votingMachine;
-    org = createDaoResult.org;
+    walletScheme = await WalletScheme.new();
+    await walletScheme.initialize(
+      org.avatar.address,
+      votingMachine.address,
+      votingMachine.params,
+      org.controller.address,
+      permissionRegistry.address,
+      "God Wallet Scheme",
+      86400,
+      5
+    );
+
+    await permissionRegistry.setPermission(
+      constants.NULL_ADDRESS,
+      org.avatar.address,
+      constants.ANY_ADDRESS,
+      constants.ANY_FUNC_SIGNATURE,
+      constants.MAX_UINT_256,
+      true
+    );
+
+    await org.daoCreator.setSchemes(
+      org.avatar.address,
+      [walletScheme.address],
+      [votingMachine.params],
+      [
+        helpers.encodePermission({
+          canGenericCall: true,
+          canUpgrade: true,
+          canChangeConstraints: true,
+          canRegisterSchemes: true,
+        }),
+      ],
+      "metaData"
+    );
+
     actionMock = await ActionMock.new();
     await dxdGuild.methods[
       "initialize(address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,address,address)"
@@ -91,9 +139,6 @@ contract("DXDGuild", function (accounts) {
       constants.SOME_HASH
     );
     walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await new web3.eth.Contract(votingMachine.contract.abi).methods
-      .vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS)
-      .encodeABI();
   });
 
   describe("DXDGuild", function () {

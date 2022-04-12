@@ -1,10 +1,8 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert } from "chai";
-import { func } from "fast-check";
 import * as helpers from "../helpers";
 const { fixSignature, toEthSignedMessageHash } = require("../helpers/sign");
 const {
-  createDAO,
   createAndSetupGuildToken,
   createProposal,
   setAllVotesOnProposal,
@@ -1436,10 +1434,8 @@ contract("ERC20Guild", function (accounts) {
         endTime,
         to,
         data,
-        value,
         title,
         contentHash,
-        totalVotes,
         state,
       } = await erc20Guild.getProposal(guildProposalId);
 

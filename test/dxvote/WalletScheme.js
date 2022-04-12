@@ -4,8 +4,6 @@ const { time, expectRevert } = require("@openzeppelin/test-helpers");
 
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
-const DaoCreator = artifacts.require("./DaoCreator.sol");
-const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
@@ -18,7 +16,6 @@ contract("WalletScheme", function (accounts) {
     registrarWalletScheme,
     masterWalletScheme,
     quickWalletScheme,
-    daoCreator,
     org,
     actionMock,
     votingMachine,
@@ -31,20 +28,12 @@ contract("WalletScheme", function (accounts) {
     actionMock = await ActionMock.new();
     testToken = await ERC20Mock.new(accounts[1], 1000);
     standardTokenMock = await ERC20Mock.new(accounts[1], 1000);
-    const controllerCreator = await DxControllerCreator.new({
-      gas: constants.GAS_LIMIT,
-    });
-    daoCreator = await DaoCreator.new(controllerCreator.address, {
-      gas: constants.GAS_LIMIT,
-    });
-    org = await helpers.setupOrganizationWithArrays(
-      daoCreator,
+    org = await helpers.setupOrganization(
       [accounts[0], accounts[1], accounts[2]],
       [1000, 1000, 1000],
       [20000, 10000, 70000]
     );
-    votingMachine = await helpers.setupGenesisProtocol(
-      accounts,
+    votingMachine = await helpers.setUpVotingMachine(
       standardTokenMock.address,
       "dxd",
       constants.NULL_ADDRESS, // voteOnBehalf
@@ -175,7 +164,7 @@ contract("WalletScheme", function (accounts) {
 
     await time.increase(30);
 
-    await daoCreator.setSchemes(
+    await org.daoCreator.setSchemes(
       org.avatar.address,
       [
         registrarWalletScheme.address,

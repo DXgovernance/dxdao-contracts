@@ -11,8 +11,6 @@ const {
 
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
-const DaoCreator = artifacts.require("./DaoCreator.sol");
-const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
@@ -41,21 +39,13 @@ contract("DXDVotingMachine", function (accounts) {
   beforeEach(async function () {
     actionMock = await ActionMock.new();
     const standardTokenMock = await ERC20Mock.new(accounts[1], 1000);
-    const controllerCreator = await DxControllerCreator.new({
-      gas: constants.GAS_LIMIT,
-    });
-    const daoCreator = await DaoCreator.new(controllerCreator.address, {
-      gas: constants.GAS_LIMIT,
-    });
-    org = await helpers.setupOrganizationWithArrays(
-      daoCreator,
+    org = await helpers.setupOrganization(
       [accounts[0], accounts[1], accounts[2], accounts[3]],
       [0, 0, 0, 0],
       [10000, 10000, 10000, 70000]
     );
 
-    genVotingMachine = await helpers.setupGenesisProtocol(
-      accounts,
+    genVotingMachine = await helpers.setUpVotingMachine(
       standardTokenMock.address,
       "gen",
       constants.NULL_ADDRESS
@@ -64,8 +54,7 @@ contract("DXDVotingMachine", function (accounts) {
       from: accounts[1],
     });
 
-    dxdVotingMachine = await helpers.setupGenesisProtocol(
-      accounts,
+    dxdVotingMachine = await helpers.setUpVotingMachine(
       standardTokenMock.address,
       "dxd",
       constants.NULL_ADDRESS
@@ -112,7 +101,7 @@ contract("DXDVotingMachine", function (accounts) {
       5
     );
 
-    await daoCreator.setSchemes(
+    await org.daoCreator.setSchemes(
       org.avatar.address,
       [expensiveVoteWalletScheme.address, cheapVoteWalletScheme.address],
       [genVotingMachine.params, dxdVotingMachine.params],

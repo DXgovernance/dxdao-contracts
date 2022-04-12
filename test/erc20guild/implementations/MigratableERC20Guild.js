@@ -1,22 +1,15 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert } from "chai";
-import { func } from "fast-check";
 import * as helpers from "../../helpers";
-const { fixSignature, toEthSignedMessageHash } = require("../../helpers/sign");
 const {
-  createDAO,
   createAndSetupGuildToken,
   createProposal,
   setAllVotesOnProposal,
 } = require("../../helpers/guild");
 
 const {
-  BN,
   expectEvent,
   expectRevert,
-  balance,
-  send,
-  ether,
   time,
 } = require("@openzeppelin/test-helpers");
 
@@ -29,18 +22,13 @@ require("chai").should();
 
 contract("MigratableERC20Guild", function (accounts) {
   const constants = helpers.constants;
-  const ZERO = new BN("0");
-  const VOTE_GAS = new BN(90000); // 90k
-  const MAX_GAS_PRICE = new BN(8000000000); // 8 gwei
-  const REAL_GAS_PRICE = new BN(constants.GAS_PRICE); // 10 gwei (check config)
 
   let guildTokenA,
     guildTokenB,
     tokenVaultA,
     tokenVaultB,
     erc20Guild,
-    permissionRegistry,
-    genericProposal;
+    permissionRegistry;
 
   beforeEach(async function () {
     guildTokenA = await createAndSetupGuildToken(
@@ -163,7 +151,7 @@ contract("MigratableERC20Guild", function (accounts) {
         account: accounts[3],
       });
 
-      const txVote = await setAllVotesOnProposal({
+      await setAllVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -236,7 +224,7 @@ contract("MigratableERC20Guild", function (accounts) {
       account: accounts[3],
     });
 
-    const txVote = await setAllVotesOnProposal({
+    await setAllVotesOnProposal({
       guild: erc20Guild,
       proposalId: guildProposalId,
       action: 1,
