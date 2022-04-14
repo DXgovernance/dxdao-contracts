@@ -38,7 +38,8 @@ contract("DXDVotingMachine", function (accounts) {
 
   beforeEach(async function () {
     actionMock = await ActionMock.new();
-    const standardTokenMock = await ERC20Mock.new(accounts[1], 1000);
+    const standardTokenMock = await ERC20Mock.new(accounts[1], 10000);
+    await standardTokenMock.transfer(accounts[0], 2000, { from: accounts[1] });
     org = await helpers.setupOrganization(
       [accounts[0], accounts[1], accounts[2], accounts[3]],
       [0, 0, 0, 0],
@@ -50,19 +51,25 @@ contract("DXDVotingMachine", function (accounts) {
       "gen",
       constants.NULL_ADDRESS
     );
-    await standardTokenMock.approve(genVotingMachine.contract.address, 1000, {
+    await standardTokenMock.approve(genVotingMachine.contract.address, 8000, {
       from: accounts[1],
     });
 
+    await standardTokenMock.approve(genVotingMachine.contract.address, 2000, {
+      from: accounts[0],
+    });
     dxdVotingMachine = await helpers.setUpVotingMachine(
       standardTokenMock.address,
       "dxd",
       constants.NULL_ADDRESS
     );
-    await standardTokenMock.approve(dxdVotingMachine.contract.address, 1000, {
+    await standardTokenMock.approve(dxdVotingMachine.contract.address, 8000, {
       from: accounts[1],
     });
 
+    await standardTokenMock.approve(dxdVotingMachine.contract.address, 2000, {
+      from: accounts[0],
+    });
     permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
     await permissionRegistry.initialize();
 
@@ -429,6 +436,20 @@ contract("DXDVotingMachine", function (accounts) {
       assert.equal(organizationProposal.value[0], 0);
     });
 
+    it("Can view rep of votes and amount staked on proposal", async function () {
+      const statusInfo =
+        await dxdVotingMachine.contract.proposalStatusWithVotes(
+          setRefundConfProposalId
+        );
+
+      expect(statusInfo["0"].toNumber()).to.equal(70000);
+      expect(statusInfo["1"].toNumber()).to.equal(0);
+      expect(statusInfo["2"].toNumber()).to.equal(70000);
+      expect(statusInfo["3"].toNumber()).to.equal(0);
+      expect(statusInfo["4"].toNumber()).to.equal(0);
+      expect(statusInfo["5"].toNumber()).to.equal(15);
+    });
+
     describe("VoteOnBehalf", function () {
       let genericProposalId;
       beforeEach(async function () {
@@ -508,7 +529,7 @@ contract("DXDVotingMachine", function (accounts) {
               registerProposalId
             )
           ).state,
-          constants.WalletSchemeProposalState.submitted
+          constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
         );
 
         await dxdVotingMachine.contract.vote(
@@ -525,7 +546,7 @@ contract("DXDVotingMachine", function (accounts) {
               registerProposalId
             )
           ).state,
-          constants.WalletSchemeProposalState.executionSuccedd
+          constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
         );
 
         assert.equal(
@@ -587,20 +608,6 @@ contract("DXDVotingMachine", function (accounts) {
           _reputation: "10000",
         });
       });
-    });
-
-    it("Can view rep of votes and amount staked on proposal", async function () {
-      const statusInfo =
-        await dxdVotingMachine.contract.proposalStatusWithVotes(
-          setRefundConfProposalId
-        );
-
-      expect(statusInfo["0"].toNumber()).to.equal(70000);
-      expect(statusInfo["1"].toNumber()).to.equal(0);
-      expect(statusInfo["2"].toNumber()).to.equal(70000);
-      expect(statusInfo["3"].toNumber()).to.equal(0);
-      expect(statusInfo["4"].toNumber()).to.equal(0);
-      expect(statusInfo["5"].toNumber()).to.equal(15);
     });
   });
 
