@@ -1297,6 +1297,13 @@ contract("DXDVotingMachine", function (accounts) {
         true
       );
 
+      console.log(
+        "proposal callbacks:" +
+          (await dxdVotingMachine.contract.proposals(proposalId)).callbacks
+      );
+
+      console.log("cheapWalletScheme address:" + cheapVoteWalletScheme.address);
+
       await time.increase(3600 + 1);
 
       await dxdVotingMachine.contract.vote(
@@ -1357,8 +1364,222 @@ contract("DXDVotingMachine", function (accounts) {
       );
     });
     it.only("execution state is preBoosted after the vote execution bar has been crossed", async function () {
-      // stake enough times to enter preboosted mode
-      // execution bar of a proposal has been reached after it has been preBoosted
+      const genericCallData = helpers.encodeGenericCallData(
+        org.avatar.address,
+        actionMock.address,
+        testCallFrom(org.avatar.address),
+        0
+      );
+
+      console.log("submit proposal");
+
+      const proposalId = await helpers.getValueFromLogs(
+        await cheapVoteWalletScheme.proposeCalls(
+          [org.controller.address],
+          [genericCallData],
+          [0],
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+
+      const upStake = await dxdVotingMachine.contract.stake(
+        proposalId,
+        1,
+        2000,
+        {
+          from: accounts[1],
+        }
+      );
+
+      const totalStaked = (
+        await dxdVotingMachine.contract.proposals(proposalId)
+      ).totalStakes;
+
+      assert.equal(totalStaked, 2000);
+
+      // check preBoosted
+      expectEvent(upStake.receipt, "StateChange", {
+        _proposalId: proposalId,
+        _proposalState: "4",
+      });
+
+      //check preboosted
+      assert.equal(
+        (await dxdVotingMachine.contract.proposals(proposalId)).state,
+        "4"
+      );
+
+      // wait to enter boosted mode
+      await time.increase(3600 + 5);
+
+      // check boosted
+      assert.equal(
+        (await dxdVotingMachine.contract.proposals(proposalId)).state,
+        "5"
+      );
+
+      await dxdVotingMachine.contract.vote(
+        proposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[1], gasPrice: constants.GAS_PRICE }
+      );
+
+      await dxdVotingMachine.contract.vote(
+        proposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[0], gasPrice: constants.GAS_PRICE }
+      );
+
+      await dxdVotingMachine.contract.vote(
+        proposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[2], gasPrice: constants.GAS_PRICE }
+      );
+
+      // wait to pass boostedVotePeriodLimit
+      await time.increase(86400 + 5);
+
+      console.log("execute");
+      const executeTx = await dxdVotingMachine.contract.execute(proposalId, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
+
+      // Check it changed to executed
+      await expectEvent.inTransaction(
+        executeTx.tx,
+        dxdVotingMachine.contract,
+        "StateChange",
+        {
+          _proposalId: proposalId,
+          _proposalState: "2",
+        }
+      );
+
+      const proposalState = (
+        await cheapVoteWalletScheme.getOrganizationProposal(proposalId)
+      ).state;
+
+      assert.equal(
+        proposalState,
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+      );
+    });
+
+    it.skip("Executes proposal with multiple choices", async function () {
+      // NOTE: fails due to the proposals callbacks being set to a non-contract address, when it should be set to cheapVoteWalletScheme address
+      // TODO: place in a require statement that checks if its being called from the walletScheme
+      // TODO: change how proposeCalls works
+      // TODO: create a new function that allows proposeMultiple choice calls
+      const paramsHash = await org.controller.getSchemeParameters(
+        cheapVoteWalletScheme.address,
+        org.avatar.address
+      );
+
+      const defaultParamaters = [
+        "50",
+        "172800",
+        "86400",
+        "3600",
+        "2000",
+        "0",
+        "60",
+        "10",
+        "15",
+        "10",
+        "0",
+      ];
+
+      const parameterHash = await dxdVotingMachine.contract.getParametersHash(
+        defaultParamaters,
+        constants.NULL_ADDRESS
+      );
+
+      console.log(
+        "dxdvotingmachine callback address:" +
+          (await dxdVotingMachine.contract.parameters(parameterHash)).callbacks
+      );
+
+      assert.equal(paramsHash, parameterHash);
+
+      const testProposal =
+        await dxdVotingMachine.contract.proposeMultipleChoice(
+          4,
+          paramsHash,
+          cheapVoteWalletScheme.address,
+          org.avatar.address
+        );
+
+      const proposalId = await helpers.getValueFromLogs(
+        testProposal,
+        "_proposalId"
+      );
+
+      console.log(
+        "proposal callbacks:" +
+          (await dxdVotingMachine.contract.proposals(proposalId)).callbacks
+      );
+      //check submitted
+      assert.equal(
+        (await dxdVotingMachine.contract.proposals(proposalId)).state,
+        "3"
+      );
+
+      await time.increase(3600 + 1);
+
+      await dxdVotingMachine.contract.vote(
+        proposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[1], gasPrice: constants.GAS_PRICE }
+      );
+
+      await time.increase(86400 + 1);
+
+      //check boosted
+      assert.equal(
+        (await dxdVotingMachine.contract.proposals(proposalId)).state,
+        "5"
+      );
+
+      const executeTx = await dxdVotingMachine.contract.execute(proposalId, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
+
+      // Check it changed to executed
+      await expectEvent.inTransaction(
+        executeTx.tx,
+        dxdVotingMachine.contract,
+        "StateChange",
+        {
+          _proposalId: proposalId,
+          _proposalState: "2",
+        }
+      );
+
+      const proposalState = (
+        await cheapVoteWalletScheme.getOrganizationProposal(proposalId)
+      ).state;
+
+      assert.equal(
+        proposalState,
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+      );
+    });
+
+    it("execution state is Boosted after the vote execution bar has been crossed", async function () {
+      // stake enough to enter boosted mode
+      // execution bar of a proposal has been reached after it has been boosted
 
       const genericCallData = helpers.encodeGenericCallData(
         org.avatar.address,
@@ -1399,17 +1620,11 @@ contract("DXDVotingMachine", function (accounts) {
         _proposalState: "4",
       });
 
-      assert.equal(
-        await dxdVotingMachine.contract.shouldBoost(proposalId),
-        true
-      );
-
       //check preboosted
       assert.equal(
         (await dxdVotingMachine.contract.proposals(proposalId)).state,
         "4"
       );
-      await time.increase(3600 + 1);
 
       await dxdVotingMachine.contract.vote(
         proposalId,
@@ -1467,10 +1682,6 @@ contract("DXDVotingMachine", function (accounts) {
         proposalState,
         constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
-    });
-    it("execution state is Boosted after the vote execution bar has been crossed", async function () {
-      // stake enough to enter boosted mode
-      // execution bar of a proposal has been reached after it has been boosted
     });
 
     it("Correct calcuation of down staked boosted proposal", async function () {
