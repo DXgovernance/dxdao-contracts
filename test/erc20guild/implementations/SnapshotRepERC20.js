@@ -23,7 +23,6 @@ contract("SnapshotRepERC20Guild", function (accounts) {
   const constants = helpers.constants;
 
   let guildToken,
-    // tokenVault,
     snapshotRepErc20Guild,
     permissionRegistry,
     createGenericProposal;
@@ -63,15 +62,13 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       permissionRegistry.address // address _permissionRegistry // @param _permissionRegistry The address of the permission registry contract to be used
     );
 
-    // await guildToken.transferOwnership(snapshotRepErc20Guild.address);
-
     createGenericProposal = (config = {}) =>
       Object.assign(
         {
           guild: snapshotRepErc20Guild,
           actions: [
             {
-              to: [snapshotRepErc20Guild.address, constants.ANY_ADDRESS],
+              to: [constants.ANY_ADDRESS, constants.ANY_ADDRESS],
               data: ["0x00", "0x00"],
               value: [new BN("0"), new BN("1")],
             },
@@ -128,6 +125,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
         votingPower,
       });
     });
+
     it("Should fail if proposal ended", async () => {
       const account = accounts[2];
       await time.increase(_proposalTime + 1);
@@ -139,6 +137,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
         "SnapshotERC20Guild: Proposal ended, cant be voted"
       );
     });
+
     it("Should fail if votingPower provided is larger than real user voting power ", async () => {
       const account = accounts[2];
       const invalidVotingPower = new BN(
@@ -154,6 +153,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
         "SnapshotERC20Guild: Invalid votingPower amount"
       );
     });
+
     it("Should fail if user has voted before with larger amount of votingPower and try to decrease it on new vote", async () => {
       const account = accounts[2];
       const action = 0;
@@ -175,6 +175,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
         "SnapshotERC20Guild: Cant decrease votingPower in vote"
       );
     });
+
     it("Should fail if user has voted and try to change voted action", async () => {
       const account = accounts[2];
       const action1 = new BN("1");
@@ -208,6 +209,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
         await snapshotRepErc20Guild.getProposalSnapshotId(proposalId)
       );
     });
+
     it("Should fail if user has voted", async () => {
       const account = accounts[2];
       const action = new BN("0");
@@ -247,6 +249,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
         "SnapshotERC20Guild: Already voted"
       );
     });
+
     it("Should fail if wrong signer", async () => {
       const account = accounts[2];
       const wrongSignerAccount = accounts[3];
@@ -286,6 +289,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       );
     });
   });
+
   describe("withdrawTokens", () => {
     it("Should revert action", async () => {
       await expectRevert(
@@ -294,6 +298,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       );
     });
   });
+
   describe("votingPowerOfMultipleAt", () => {
     it("Should return correct voting power", async () => {
       const account2 = accounts[2];
@@ -316,6 +321,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       expect(votingPower2).to.be.bignumber.equal(initialVotingPowerAcc4);
     });
   });
+
   describe("votingPowerOfAt", () => {
     it("Should return correct voting power", async () => {
       const account = accounts[2];
