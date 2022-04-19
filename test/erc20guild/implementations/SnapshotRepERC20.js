@@ -55,7 +55,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       _votingPowerForProposalExecution, // uint256 _votingPowerForProposalExecution, // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
       _votingPowerForProposalCreation, // uint256 _votingPowerForProposalCreation, // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
       "SnapshotRep Guild", // string memory _name, // @param _name The name of the ERC20Guild
-      0, // uint256 _voteGas, // @param _voteGas The amount of gas in wei unit used for vote refunds
+      10, // uint256 _voteGas, // @param _voteGas The amount of gas in wei unit used for vote refunds
       0, // uint256 _maxGasPrice, // @param _maxGasPrice The maximum gas price used for vote refunds
       10, // uint256 _maxActiveProposals, // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
       60, // uint256 _lockTime, // @param _lockTime The minimum amount of seconds that the tokens would be locked
