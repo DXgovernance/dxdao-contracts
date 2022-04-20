@@ -10,6 +10,7 @@ const MAX_UINT_256 =
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
 const { encodePermission } = require("../test/helpers/permissions");
+const deployTokens = require("./utils/deploy-tokens");
 const moment = require("moment");
 const { default: BigNumber } = require("bignumber.js");
 
@@ -102,52 +103,10 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     await waitBlocks(1);
 
     // Deploy Tokens
-    let tokens = {};
-    await Promise.all(
-      deploymentConfig.tokens.map(async tokenToDeploy => {
-        console.log(
-          "Deploying token",
-          tokenToDeploy.name,
-          tokenToDeploy.symbol
-        );
-        const totalSupply = tokenToDeploy.distribution.reduce(function (
-          prev,
-          cur
-        ) {
-          return new BigNumber(prev).plus(cur.amount.toString());
-        },
-        0);
-
-        let newToken;
-        switch (tokenToDeploy.type) {
-          case "ERC20":
-            newToken = await ERC20Mock.new(accounts[0], totalSupply.toString());
-            await tokenToDeploy.distribution.map(async tokenHolder => {
-              await newToken.transfer(tokenHolder.address, tokenHolder.amount, {
-                from: accounts[0],
-              });
-            });
-            break;
-          case "ERC20SnapshotRep":
-            newToken = await ERC20SnapshotRep.new();
-            await newToken.initialize(
-              tokenToDeploy.name,
-              tokenToDeploy.symbol,
-              {
-                from: accounts[0],
-              }
-            );
-            await tokenToDeploy.distribution.map(async tokenHolder => {
-              await newToken.mint(tokenHolder.address, tokenHolder.amount, {
-                from: accounts[0],
-              });
-            });
-            break;
-        }
-        tokens[tokenToDeploy.symbol] = newToken;
-        addresses[tokenToDeploy.symbol] = newToken.address;
-      })
+    const { tokens, addresses: tokenAddresses } = await deployTokens(
+      deploymentConfig
     );
+    addresses.concat(tokenAddresses);
 
     // Deploy Avatar
     let avatar;
