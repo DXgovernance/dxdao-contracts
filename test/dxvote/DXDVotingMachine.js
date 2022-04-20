@@ -16,7 +16,12 @@ const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 
-contract("DXDVotingMachine", function (accounts) {
+//TODO: test internal vote, repeat vote for user, quiet ending period,
+// TODO: test internal stake, all if statements
+//TODO: test internal propose organizations[proposal.organizationId] = msg.sender
+// TODO: test _execute averageDownStakes when executionState is boosted
+
+contract.only("DXDVotingMachine", function (accounts) {
   let permissionRegistry,
     expensiveVoteWalletScheme,
     cheapVoteWalletScheme,
@@ -1252,7 +1257,7 @@ contract("DXDVotingMachine", function (accounts) {
       assert.equal(organizationProposal.value[0], 0);
     });
 
-    it("calculate average downstake of Boosted Proposals", async function () {
+    it.only("calculate average downstake of Boosted Proposals", async function () {
       const genericCallData = helpers.encodeGenericCallData(
         org.avatar.address,
         actionMock.address,
@@ -1287,24 +1292,13 @@ contract("DXDVotingMachine", function (accounts) {
       const totalStaked = (
         await dxdVotingMachine.contract.proposals(proposalId)
       ).totalStakes;
+
       assert.equal(totalStaked, 10000);
 
       expectEvent(upStake.receipt, "StateChange", {
         _proposalId: proposalId,
         _proposalState: "4",
       });
-
-      assert.equal(
-        await dxdVotingMachine.contract.shouldBoost(proposalId),
-        true
-      );
-
-      console.log(
-        "proposal callbacks:" +
-          (await dxdVotingMachine.contract.proposals(proposalId)).callbacks
-      );
-
-      console.log("cheapWalletScheme address:" + cheapVoteWalletScheme.address);
 
       await time.increase(3600 + 1);
 
@@ -1316,6 +1310,12 @@ contract("DXDVotingMachine", function (accounts) {
         { from: accounts[1], gasPrice: constants.GAS_PRICE }
       );
 
+      //check boosted
+      assert.equal(
+        (await dxdVotingMachine.contract.proposals(proposalId)).state,
+        "5"
+      );
+
       await dxdVotingMachine.contract.vote(
         proposalId,
         1,
@@ -1325,12 +1325,6 @@ contract("DXDVotingMachine", function (accounts) {
       );
 
       await time.increase(86400 + 1);
-
-      //check boosted
-      assert.equal(
-        (await dxdVotingMachine.contract.proposals(proposalId)).state,
-        "5"
-      );
 
       const orgId = (await dxdVotingMachine.contract.proposals(proposalId))
         .organizationId;
@@ -1365,6 +1359,7 @@ contract("DXDVotingMachine", function (accounts) {
         constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
       );
     });
+
     it("execution state is preBoosted after the vote execution bar has been crossed", async function () {
       const genericCallData = helpers.encodeGenericCallData(
         org.avatar.address,
