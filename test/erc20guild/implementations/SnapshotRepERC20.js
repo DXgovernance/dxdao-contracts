@@ -18,6 +18,9 @@ const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 require("chai").should();
 
 const balances = [50000, 50000, 50000, 100000, 100000, 200000];
+const proposalTime = 30;
+const votingPowerForProposalExecution = 5000;
+const votingPowerForProposalCreation = 100;
 
 contract("SnapshotRepERC20Guild", function (accounts) {
   const constants = helpers.constants;
@@ -26,9 +29,6 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     snapshotRepErc20Guild,
     permissionRegistry,
     createGenericProposal;
-  const _proposalTime = 30;
-  const _votingPowerForProposalExecution = 5000;
-  const _votingPowerForProposalCreation = 100;
 
   beforeEach(async function () {
     const repHolders = accounts.slice(0, 6);
@@ -49,17 +49,17 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     await permissionRegistry.initialize();
 
     await snapshotRepErc20Guild.initialize(
-      guildToken.address, // address _token, // @param _token The ERC20 token that will be used as source of voting power
-      _proposalTime, // uint256 _proposalTime, // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
-      30, // uint256 _timeForExecution, // @param _timeForExecution The amount of time in seconds that a proposal action will have to execute successfully
-      _votingPowerForProposalExecution, // uint256 _votingPowerForProposalExecution, // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
-      _votingPowerForProposalCreation, // uint256 _votingPowerForProposalCreation, // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
-      "SnapshotRep Guild", // string memory _name, // @param _name The name of the ERC20Guild
-      10, // uint256 _voteGas, // @param _voteGas The amount of gas in wei unit used for vote refunds
-      0, // uint256 _maxGasPrice, // @param _maxGasPrice The maximum gas price used for vote refunds
-      10, // uint256 _maxActiveProposals, // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
-      60, // uint256 _lockTime, // @param _lockTime The minimum amount of seconds that the tokens would be locked
-      permissionRegistry.address // address _permissionRegistry // @param _permissionRegistry The address of the permission registry contract to be used
+      guildToken.address,
+      proposalTime,
+      30, // _timeForExecution,
+      votingPowerForProposalExecution,
+      votingPowerForProposalCreation,
+      "SnapshotRep Guild",
+      10, //  _voteGas,
+      0, //  _maxGasPrice,
+      10, //  _maxActiveProposals,
+      60, //  _lockTime,
+      permissionRegistry.address
     );
 
     createGenericProposal = (config = {}) =>
@@ -105,7 +105,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
         votingPower.toNumber()
       );
     });
-    it("Should emmit VoteAdded ", async () => {
+    it("Should emmit VoteAdded Event", async () => {
       const account = accounts[2];
       const action = new BN(0);
       const votingPower = new BN(500);
@@ -128,7 +128,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
     it("Should fail if proposal ended", async () => {
       const account = accounts[2];
-      await time.increase(_proposalTime + 1);
+      await time.increase(proposalTime + 1);
       const voteTrigger = snapshotRepErc20Guild.setVote(proposalId, 0, 1, {
         from: account,
       });
@@ -140,12 +140,15 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
     it("Should fail if votingPower provided is larger than real user voting power ", async () => {
       const account = accounts[2];
+      const action = 0;
+
       const invalidVotingPower = new BN(
         await snapshotRepErc20Guild.votingPowerOfAt(account, snapshotId)
       ).add(new BN(100));
+
       const voteTrigger = snapshotRepErc20Guild.setVote(
         proposalId,
-        0, // action
+        action,
         invalidVotingPower
       );
       await expectRevert(
@@ -157,8 +160,8 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     it("Should fail if user has voted before with larger amount of votingPower and try to decrease it on new vote", async () => {
       const account = accounts[2];
       const action = 0;
-
       const votingPower = new BN(1000);
+      const decreasedVotingPower = votingPower.sub(new BN(10));
       await snapshotRepErc20Guild.setVote(proposalId, action, votingPower, {
         from: account,
       });
@@ -166,8 +169,8 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       await expectRevert(
         snapshotRepErc20Guild.setVote(
           proposalId,
-          0,
-          votingPower.sub(new BN(10)),
+          action,
+          decreasedVotingPower,
           {
             from: account,
           }
@@ -250,7 +253,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       );
     });
 
-    it("Should fail if wrong signer", async () => {
+    it("Should fail with wrong signer msg", async () => {
       const account = accounts[2];
       const wrongSignerAccount = accounts[3];
       const action = new BN("0");
@@ -327,9 +330,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       const account = accounts[2];
       const initialVotingPowerAcc = new BN(balances[2]);
 
-      const proposalId1 = await createProposal(
-        createGenericProposal({ account })
-      );
+      const proposalId1 = await createProposal(createGenericProposal());
       const snapshotId1 = new BN(
         await snapshotRepErc20Guild.getProposalSnapshotId(proposalId1)
       );
@@ -343,9 +344,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       // burn tokens
       await guildToken.burn(account, initialVotingPowerAcc);
 
-      const proposalId2 = await createProposal(
-        createGenericProposal({ account })
-      );
+      const proposalId2 = await createProposal(createGenericProposal());
       const snapshotId2 = new BN(
         await snapshotRepErc20Guild.getProposalSnapshotId(proposalId2)
       );
