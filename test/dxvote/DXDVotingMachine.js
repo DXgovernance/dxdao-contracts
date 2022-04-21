@@ -1125,7 +1125,7 @@ contract.only("DXDVotingMachine", function (accounts) {
       );
     });
 
-    it("boosted proposal succed with enough votes", async function () {
+    it("boosted proposal should succeed with enough votes", async function () {
       const genericCallData = helpers.encodeGenericCallData(
         org.avatar.address,
         actionMock.address,
@@ -1195,7 +1195,7 @@ contract.only("DXDVotingMachine", function (accounts) {
       assert.equal(organizationProposal.value[0], 0);
     });
 
-    it("boosted proposal fails with not enough votes", async function () {
+    it("boosted proposal should fail with not enough votes", async function () {
       const genericCallData = helpers.encodeGenericCallData(
         org.avatar.address,
         actionMock.address,
@@ -1257,7 +1257,7 @@ contract.only("DXDVotingMachine", function (accounts) {
       assert.equal(organizationProposal.value[0], 0);
     });
 
-    it.only("calculate average downstake of Boosted Proposals", async function () {
+    it("should calculate average downstake of Boosted Proposals", async function () {
       const genericCallData = helpers.encodeGenericCallData(
         org.avatar.address,
         actionMock.address,
@@ -1550,8 +1550,211 @@ contract.only("DXDVotingMachine", function (accounts) {
       );
     });
 
-    it("Correct calcuation of down staked boosted proposal", async function () {
-      // create a proposal and downstake it with a few different accounts and check calculation
+    it("should check proposal score against confidence threshold", async function () {
+      // now - preBoostedPhaseTime < preBoostedVotePeriod
+      // proposalScore?
+      // confidenceThreshold?
+      //_params[3] - _preBoostedVotePeriodLimit, the time limit for a proposal to be in an preparation state (stable) before boosted.
+
+      const genericCallData = helpers.encodeGenericCallData(
+        org.avatar.address,
+        actionMock.address,
+        testCallFrom(org.avatar.address),
+        0
+      );
+
+      const proposalId = await helpers.getValueFromLogs(
+        await cheapVoteWalletScheme.proposeCalls(
+          [org.controller.address],
+          [genericCallData],
+          [0],
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+
+      const upStake = await dxdVotingMachine.contract.stake(
+        proposalId,
+        1,
+        500,
+        {
+          from: accounts[1],
+        }
+      );
+
+      // downstake
+      await dxdVotingMachine.contract.stake(proposalId, 2, 2000, {
+        from: accounts[0],
+      });
+
+      const totalStaked = (
+        await dxdVotingMachine.contract.proposals(proposalId)
+      ).totalStakes;
+
+      assert.equal(totalStaked, 2500);
+
+      // check preBoosted
+      expectEvent(upStake.receipt, "StateChange", {
+        _proposalId: proposalId,
+        _proposalState: "4",
+      });
+
+      await time.increase(2000);
+
+      await dxdVotingMachine.contract.vote(
+        proposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[1], gasPrice: constants.GAS_PRICE }
+      );
+
+      // vote enough times to pass the execution bar threshold
+      await dxdVotingMachine.contract.vote(
+        proposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[2], gasPrice: constants.GAS_PRICE }
+      );
+
+      await dxdVotingMachine.contract.vote(
+        proposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[3], gasPrice: constants.GAS_PRICE }
+      );
+
+      // check executed
+      assert.equal(
+        (await dxdVotingMachine.contract.proposals(proposalId)).state,
+        "2"
+      );
+
+      const proposalState = (
+        await cheapVoteWalletScheme.getOrganizationProposal(proposalId)
+      ).state;
+
+      assert.equal(
+        proposalState,
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+      );
+    });
+    it("should emit confidenceLevelChange event", async function () {
+      const genericCallData = helpers.encodeGenericCallData(
+        org.avatar.address,
+        actionMock.address,
+        testCallFrom(org.avatar.address),
+        0
+      );
+
+      const proposalId = await helpers.getValueFromLogs(
+        await cheapVoteWalletScheme.proposeCalls(
+          [org.controller.address],
+          [genericCallData],
+          [0],
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+
+      const proposalId2 = await helpers.getValueFromLogs(
+        await cheapVoteWalletScheme.proposeCalls(
+          [org.controller.address],
+          [genericCallData],
+          [0],
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+
+      await dxdVotingMachine.contract.stake(proposalId2, 1, 1500, {
+        from: accounts[1],
+      });
+
+      await time.increase(3600 + 1);
+
+      await dxdVotingMachine.contract.vote(
+        proposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[1], gasPrice: constants.GAS_PRICE }
+      );
+
+      await dxdVotingMachine.contract.execute(proposalId2, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
+
+      // check boosted
+      assert.equal(
+        (await dxdVotingMachine.contract.proposals(proposalId2)).state,
+        "5"
+      );
+
+      await dxdVotingMachine.contract.vote(
+        proposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[1], gasPrice: constants.GAS_PRICE }
+      );
+
+      const upStake = await dxdVotingMachine.contract.stake(
+        proposalId,
+        1,
+        100,
+        {
+          from: accounts[1],
+        }
+      );
+
+      // check preBoosted
+      expectEvent(upStake.receipt, "StateChange", {
+        _proposalId: proposalId,
+        _proposalState: "4",
+      });
+
+      await dxdVotingMachine.contract.vote(
+        proposalId2,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[0], gasPrice: constants.GAS_PRICE }
+      );
+
+      await dxdVotingMachine.contract.vote(
+        proposalId2,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[3], gasPrice: constants.GAS_PRICE }
+      );
+
+      // check executed
+      assert.equal(
+        (await dxdVotingMachine.contract.proposals(proposalId2)).state,
+        "2"
+      );
+
+      const downStake = await dxdVotingMachine.contract.stake(
+        proposalId,
+        2,
+        50,
+        {
+          from: accounts[0],
+        }
+      );
+
+      expectEvent(downStake.receipt, "ConfidenceLevelChange", {
+        _proposalId: proposalId,
+        _confidenceThreshold: "1099511627776",
+      });
     });
   });
 
