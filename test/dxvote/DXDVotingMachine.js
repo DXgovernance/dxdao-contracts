@@ -16,11 +16,6 @@ const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 
-//TODO: test internal vote, repeat vote for user, quiet ending period,
-// TODO: test internal stake, all if statements
-//TODO: test internal propose organizations[proposal.organizationId] = msg.sender
-// TODO: test _execute averageDownStakes when executionState is boosted
-
 contract.only("DXDVotingMachine", function (accounts) {
   let permissionRegistry,
     expensiveVoteWalletScheme,
@@ -455,164 +450,54 @@ contract.only("DXDVotingMachine", function (accounts) {
       expect(statusInfo["5"].toNumber()).to.equal(15);
     });
 
-    describe("VoteOnBehalf", function () {
-      let genericProposalId;
-      beforeEach(async function () {
-        const defaultParamaters = [
-          "50",
-          "172800",
-          "86400",
-          "3600",
-          "2000",
-          "0",
-          "60",
-          "10",
-          "15",
-          "10",
-          "0",
-        ];
+    it.only("Should fail if voter has already voted", async function () {
+      const genericCallData = helpers.encodeGenericCallData(
+        org.avatar.address,
+        actionMock.address,
+        testCallFrom(org.avatar.address),
+        0
+      );
 
-        await dxdVotingMachine.contract.setParameters(
-          defaultParamaters,
-          accounts[3]
-        );
+      const proposalId = await helpers.getValueFromLogs(
+        await cheapVoteWalletScheme.proposeCalls(
+          [org.controller.address],
+          [genericCallData],
+          [0],
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
 
-        const parameterHash = await dxdVotingMachine.contract.getParametersHash(
-          defaultParamaters,
-          accounts[3]
-        );
+      const vote = await dxdVotingMachine.contract.vote(
+        proposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        {
+          from: accounts[1],
+        }
+      );
 
-        const tempWalletScheme = await WalletScheme.new();
-        await tempWalletScheme.initialize(
-          org.avatar.address,
-          dxdVotingMachine.address,
-          true,
-          org.controller.address,
-          permissionRegistry.address,
-          "Temp Scheme",
-          172800,
-          5
-        );
-
-        await permissionRegistry.setPermission(
-          constants.NULL_ADDRESS,
-          tempWalletScheme.address,
-          constants.ANY_ADDRESS,
-          constants.ANY_FUNC_SIGNATURE,
-          constants.MAX_UINT_256,
-          true
-        );
-
-        const registerSchemeData = await org.controller.contract.methods
-          .registerScheme(
-            tempWalletScheme.address,
-            parameterHash,
-            helpers.encodePermission({
-              canGenericCall: true,
-              canUpgrade: true,
-              canChangeConstraints: true,
-              canRegisterSchemes: true,
-            }),
-            org.avatar.address
-          )
-          .encodeABI();
-
-        const registerProposalId = await helpers.getValueFromLogs(
-          await cheapVoteWalletScheme.proposeCalls(
-            [org.controller.address],
-            [registerSchemeData],
-            [0],
-            constants.TEST_TITLE,
-            constants.SOME_HASH
-          ),
-          "_proposalId"
-        );
-
-        assert.equal(
-          (
-            await cheapVoteWalletScheme.getOrganizationProposal(
-              registerProposalId
-            )
-          ).state,
-          constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
-        );
-
-        await dxdVotingMachine.contract.vote(
-          registerProposalId,
-          1,
-          0,
-          constants.NULL_ADDRESS,
-          { from: accounts[3] }
-        );
-
-        assert.equal(
-          (
-            await cheapVoteWalletScheme.getOrganizationProposal(
-              registerProposalId
-            )
-          ).state,
-          constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
-        );
-
-        assert.equal(
-          await org.controller.getSchemeParameters(
-            tempWalletScheme.address,
-            org.avatar.address
-          ),
-          parameterHash
-        );
-
-        const callData = helpers.testCallFrom(tempWalletScheme.address);
-
-        genericProposalId = await helpers.getValueFromLogs(
-          await tempWalletScheme.proposeCalls(
-            [actionMock.address],
-            [callData],
-            [0],
-            constants.TEST_TITLE,
-            constants.SOME_HASH
-          ),
-          "_proposalId"
-        );
+      await expectEvent(vote.receipt, "VoteProposal", {
+        _proposalId: proposalId,
+        _organization: org.avatar.address,
+        _voter: accounts[1],
+        _vote: "1",
+        _reputation: "10000",
       });
 
-      it("Fails if address is not allowed to vote on behalf", async function () {
-        const proposalParamsHash = (
-          await dxdVotingMachine.contract.proposals(genericProposalId)
-        ).paramsHash;
+      const secondVote = await dxdVotingMachine.contract.vote(
+        proposalId,
+        2,
+        0,
+        constants.NULL_ADDRESS,
+        {
+          from: accounts[1],
+        }
+      );
 
-        const params = await dxdVotingMachine.contract.parameters(
-          proposalParamsHash
-        );
-
-        assert.equal(params.voteOnBehalf, accounts[3]);
-
-        await expectRevert(
-          dxdVotingMachine.contract.vote(genericProposalId, 1, 0, accounts[2], {
-            from: accounts[1],
-          }),
-          "address not allowed to vote on behalf"
-        );
-      });
-      it("Succeeds if allowed address is able to vote on behalf", async function () {
-        const tx = await dxdVotingMachine.contract.vote(
-          genericProposalId,
-          1,
-          0,
-          accounts[2],
-          {
-            from: accounts[3],
-          }
-        );
-
-        await expectEvent(tx, "VoteProposal", {
-          _proposalId: genericProposalId,
-          _organization: org.avatar.address,
-          _voter: accounts[2],
-          _vote: "1",
-          _reputation: "10000",
-        });
-      });
+      expectEvent.notEmitted(secondVote.receipt, "VoteProposal");
     });
   });
 
