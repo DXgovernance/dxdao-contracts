@@ -2,7 +2,10 @@ import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { expect } from "chai";
 import * as helpers from "../../helpers";
 const { fixSignature } = require("../../helpers/sign");
-const { createProposal } = require("../../helpers/guild");
+const {
+  createProposal,
+  setAllVotesOnProposal,
+} = require("../../helpers/guild");
 
 const {
   BN,
@@ -17,14 +20,13 @@ const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 
 require("chai").should();
 
+const constants = helpers.constants;
 const balances = [50000, 50000, 50000, 100000, 100000, 200000];
 const proposalTime = 30;
 const votingPowerForProposalExecution = 5000;
 const votingPowerForProposalCreation = 100;
 
 contract("SnapshotRepERC20Guild", function (accounts) {
-  const constants = helpers.constants;
-
   let guildToken,
     snapshotRepErc20Guild,
     permissionRegistry,
@@ -62,6 +64,8 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       permissionRegistry.address
     );
 
+    await guildToken.transferOwnership(snapshotRepErc20Guild.address);
+
     createGenericProposal = (config = {}) =>
       Object.assign(
         {
@@ -77,6 +81,36 @@ contract("SnapshotRepERC20Guild", function (accounts) {
         },
         config
       );
+
+    const setGlobaLPermissionProposal = await createProposal({
+      guild: snapshotRepErc20Guild,
+      actions: [
+        {
+          to: [snapshotRepErc20Guild.address],
+          data: [
+            await new web3.eth.Contract(SnapshotRepERC20Guild.abi).methods
+              .setPermission(
+                [constants.NULL_ADDRESS],
+                [constants.ANY_ADDRESS],
+                [constants.ANY_FUNC_SIGNATURE],
+                [100],
+                [true]
+              )
+              .encodeABI(),
+          ],
+          value: [0],
+        },
+      ],
+      account: accounts[1],
+    });
+    await setAllVotesOnProposal({
+      guild: snapshotRepErc20Guild,
+      proposalId: setGlobaLPermissionProposal,
+      action: 1,
+      account: accounts[1],
+    });
+    await time.increase(proposalTime); // wait for proposal to end
+    await snapshotRepErc20Guild.endProposal(setGlobaLPermissionProposal);
   });
 
   describe("setVote", () => {
@@ -326,7 +360,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
   });
 
   describe("votingPowerOfAt", () => {
-    it("Should return correct voting power", async () => {
+    it("Should return correct voting power for account", async () => {
       const account = accounts[2];
       const initialVotingPowerAcc = new BN(balances[2]);
 
@@ -341,13 +375,41 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       );
       expect(votingPower1).to.be.bignumber.equal(initialVotingPowerAcc);
 
-      // burn tokens
-      await guildToken.burn(account, initialVotingPowerAcc);
+      // burn tokensEncodedCall
+      const burnCallData = await new web3.eth.Contract(guildToken.abi).methods
+        .burn(account, initialVotingPowerAcc)
+        .encodeABI();
+
+      // create proposal to burn tokens
+      const burnProposalId = await createProposal({
+        guild: snapshotRepErc20Guild,
+        actions: [
+          {
+            to: [guildToken.address],
+            data: [burnCallData],
+            value: [0],
+          },
+        ],
+        account: accounts[1],
+      });
+
+      await setAllVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: burnProposalId,
+        action: 1,
+        account: accounts[1],
+      });
+
+      await time.increase(proposalTime);
+
+      // execute burn proposal
+      await snapshotRepErc20Guild.endProposal(burnProposalId);
 
       const proposalId2 = await createProposal(createGenericProposal());
       const snapshotId2 = new BN(
         await snapshotRepErc20Guild.getProposalSnapshotId(proposalId2)
       );
+
       // voting power at snapshotId2 after burn
       const votingPower2 = await snapshotRepErc20Guild.votingPowerOfAt(
         account,
