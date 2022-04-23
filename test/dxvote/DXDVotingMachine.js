@@ -16,7 +16,7 @@ const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 
-contract.only("DXDVotingMachine", function (accounts) {
+contract("DXDVotingMachine", function (accounts) {
   let permissionRegistry,
     expensiveVoteWalletScheme,
     cheapVoteWalletScheme,
@@ -2001,6 +2001,105 @@ contract.only("DXDVotingMachine", function (accounts) {
       expect(orgBalance).to.eql(0);
 
       expect(balanceAfterWithdraw).to.eql(initialBalance.sub(fees));
+    });
+  });
+
+  describe("Staking", function () {
+    let proposalId;
+    beforeEach(async function () {
+      const genericCallData = helpers.encodeGenericCallData(
+        org.avatar.address,
+        actionMock.address,
+        testCallFrom(org.avatar.address),
+        0
+      );
+
+      proposalId = await helpers.getValueFromLogs(
+        await cheapVoteWalletScheme.proposeCalls(
+          [org.controller.address],
+          [genericCallData],
+          [0],
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+    });
+    it("should execute a proposal by staking", async function () {
+      const stake = await dxdVotingMachine.contract.stake(proposalId, 1, 2000, {
+        from: accounts[1],
+      });
+
+      expectEvent(stake.receipt, "StateChange", {
+        _proposalId: proposalId,
+        _proposalState: "4",
+      });
+
+      await time.increase(3600 + 1);
+
+      await dxdVotingMachine.contract.vote(
+        proposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        {
+          from: accounts[1],
+          gasPrice: constants.GAS_PRICE,
+        }
+      );
+
+      // check Boosted
+      assert.equal(
+        (await dxdVotingMachine.contract.proposals(proposalId)).state,
+        "5"
+      );
+
+      await time.increase(86400 + 1);
+
+      const executeStake = await dxdVotingMachine.contract.stake(
+        proposalId,
+        1,
+        2000,
+        {
+          from: accounts[1],
+        }
+      );
+
+      expectEvent(executeStake.receipt, "StateChange", {
+        _proposalId: proposalId,
+        _proposalState: "2", // execute state
+      });
+
+      expectEvent.notEmitted(executeStake.receipt, "Stake");
+    });
+    it("address cannot upstake and downstake on same proposal", async function () {
+      const upStake = await dxdVotingMachine.contract.stake(
+        proposalId,
+        1,
+        100,
+        {
+          from: accounts[1],
+        }
+      );
+
+      expectEvent(upStake.receipt, "Stake", {
+        _proposalId: proposalId,
+        _organization: org.avatar.address,
+        _staker: accounts[1],
+        _vote: "1",
+        _amount: "100",
+      });
+
+      const downStake = await dxdVotingMachine.contract.stake(
+        proposalId,
+        2,
+        100,
+        {
+          from: accounts[1],
+        }
+      );
+
+      expectEvent.notEmitted(downStake.receipt, "Stake");
     });
   });
 });
