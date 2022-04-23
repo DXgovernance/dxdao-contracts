@@ -16,7 +16,7 @@ const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 
-contract("DXDVotingMachine", function (accounts) {
+contract.only("DXDVotingMachine", function (accounts) {
   let permissionRegistry,
     expensiveVoteWalletScheme,
     cheapVoteWalletScheme,
@@ -1364,6 +1364,47 @@ contract("DXDVotingMachine", function (accounts) {
         "_proposalId"
       );
 
+      const proposalId2 = await helpers.getValueFromLogs(
+        await cheapVoteWalletScheme.proposeCalls(
+          [org.controller.address],
+          [genericCallData],
+          [0],
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+
+      const upStake2 = await dxdVotingMachine.contract.stake(
+        proposalId2,
+        1,
+        100,
+        {
+          from: accounts[1],
+        }
+      );
+
+      expectEvent(upStake2.receipt, "StateChange", {
+        _proposalId: proposalId2,
+        _proposalState: "4",
+      });
+
+      await time.increase(3600 + 1);
+
+      await dxdVotingMachine.contract.vote(
+        proposalId2,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        { from: accounts[1], gasPrice: constants.GAS_PRICE }
+      );
+
+      //check boosted
+      assert.equal(
+        (await dxdVotingMachine.contract.proposals(proposalId2)).state,
+        "5"
+      );
+
       await dxdVotingMachine.contract.stake(proposalId, 2, 2000, {
         from: accounts[0],
       });
@@ -1371,7 +1412,7 @@ contract("DXDVotingMachine", function (accounts) {
       const upStake = await dxdVotingMachine.contract.stake(
         proposalId,
         1,
-        8000,
+        7900,
         {
           from: accounts[1],
         }
@@ -1381,7 +1422,7 @@ contract("DXDVotingMachine", function (accounts) {
         await dxdVotingMachine.contract.proposals(proposalId)
       ).totalStakes;
 
-      assert.equal(totalStaked, 10000);
+      assert.equal(totalStaked, 9900);
 
       expectEvent(upStake.receipt, "StateChange", {
         _proposalId: proposalId,
@@ -1420,7 +1461,7 @@ contract("DXDVotingMachine", function (accounts) {
       const totalDownStaked =
         await dxdVotingMachine.contract.averagesDownstakesOfBoosted(orgId);
 
-      assert.equal(totalDownStaked, 2015);
+      assert.equal(totalDownStaked, 1015);
 
       const executeTx = await dxdVotingMachine.contract.execute(proposalId, {
         from: accounts[1],
@@ -1608,14 +1649,6 @@ contract("DXDVotingMachine", function (accounts) {
         0,
         constants.NULL_ADDRESS,
         { from: accounts[3], gasPrice: constants.GAS_PRICE }
-      );
-
-      await dxdVotingMachine.contract.vote(
-        proposalId,
-        1,
-        0,
-        constants.NULL_ADDRESS,
-        { from: accounts[4], gasPrice: constants.GAS_PRICE }
       );
 
       // check executed
