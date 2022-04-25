@@ -4,13 +4,11 @@ pragma solidity ^0.8.8;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 /**
  * @title ERC20SnapshotRep
  */
 contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpgradeable {
-    using SafeMathUpgradeable for uint256;
 
     // @dev total holders of Rep tokens
     uint256 public totalHolders;
@@ -34,7 +32,7 @@ contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpg
 
     function addHolder(address account) internal returns (bool) {
         if (balanceOf(account) == 0) {
-            totalHolders = totalHolders.add(1);
+            totalHolders++;
             return true;
         } else {
             return false;
@@ -43,7 +41,7 @@ contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpg
 
     function removeHolder(address account) internal returns (bool) {
         if (balanceOf(account) == 0 && totalHolders > 0) {
-            totalHolders = totalHolders.sub(1);
+            totalHolders--;
             return true;
         } else {
             return false;
