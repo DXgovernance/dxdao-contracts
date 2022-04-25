@@ -14,7 +14,7 @@ contract("ERC20SnapshotRep", accounts => {
       from: accounts[0],
     });
     await ERC20SnapshotRep.initialize("DXdao", "DXD");
-    await ERC20SnapshotRep._addHolders(SOME_ADDRESS, { from: accounts[0] });
+    await ERC20SnapshotRep._addHolder(SOME_ADDRESS, { from: accounts[0] });
   });
 
   describe("Add and remove totalHolders", () => {
@@ -24,12 +24,12 @@ contract("ERC20SnapshotRep", accounts => {
     });
 
     it("should add totalHolders", async () => {
-      await ERC20SnapshotRep._addHolders(SOME_ADDRESS, { from: accounts[0] });
+      await ERC20SnapshotRep._addHolder(SOME_ADDRESS, { from: accounts[0] });
       const totalHolders = await ERC20SnapshotRep.getTotalHolders();
       assert.equal(totalHolders, 2);
     });
     it("should subtract totalHolders", async () => {
-      await ERC20SnapshotRep._removeHolders(SOME_ADDRESS, {
+      await ERC20SnapshotRep._removeHolder(SOME_ADDRESS, {
         from: accounts[0],
       });
       const totalHolders = await ERC20SnapshotRep.getTotalHolders();
@@ -40,9 +40,9 @@ contract("ERC20SnapshotRep", accounts => {
       await ERC20SnapshotRep.mint(SOME_ADDRESS, 100, {
         from: accounts[0],
       });
-      await ERC20SnapshotRep._addHolders(SOME_ADDRESS, { from: accounts[0] });
+      await ERC20SnapshotRep.mint(SOME_ADDRESS, 100, { from: accounts[0] });
       const totalHolders = await ERC20SnapshotRep.getTotalHolders();
-      assert.equal(totalHolders, 1);
+      assert.equal(totalHolders, 2);
     });
   });
 
@@ -50,8 +50,8 @@ contract("ERC20SnapshotRep", accounts => {
     await ERC20SnapshotRep.mint(SOME_ADDRESS, 100, {
       from: accounts[0],
     });
-    await ERC20SnapshotRep._removeHolders(SOME_ADDRESS, { from: accounts[0] });
+    await ERC20SnapshotRep.burn(SOME_ADDRESS, 50, { from: accounts[0] });
     const totalHolders = await ERC20SnapshotRep.getTotalHolders();
-    assert.equal(totalHolders, 1);
+    assert.equal(totalHolders, 2);
   });
 });

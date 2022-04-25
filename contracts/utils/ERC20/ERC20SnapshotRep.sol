@@ -32,7 +32,7 @@ contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpg
         return totalHolders;
     }
 
-    function addHolders(address account) internal returns (bool) {
+    function addHolder(address account) internal returns (bool) {
         if (balanceOf(account) == 0) {
             totalHolders = totalHolders.add(1);
             return true;
@@ -41,7 +41,7 @@ contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpg
         }
     }
 
-    function removeHolders(address account) internal returns (bool) {
+    function removeHolder(address account) internal returns (bool) {
         if (balanceOf(account) == 0 && totalHolders > 0) {
             totalHolders = totalHolders.sub(1);
             return true;
@@ -53,7 +53,7 @@ contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpg
     function mint(address to, uint256 amount) external virtual onlyOwner {
         _snapshot();
         // @dev we only add to the totalHolders if they did not have tokens prior to minting
-        addHolders(to);
+        addHolder(to);
         _mint(to, amount);
     }
 
@@ -61,12 +61,6 @@ contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpg
         _snapshot();
         _burn(to, amount);
         // @dev we only remove from the totalHolders if they do not have tokens after burning
-        removeHolders(to);
+        removeHolder(to);
     }
-
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override onlyOwner {}
 }
