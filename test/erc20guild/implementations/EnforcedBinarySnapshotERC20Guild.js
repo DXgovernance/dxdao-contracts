@@ -18,7 +18,7 @@ const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 
 require("chai").should();
 
-contract.only("EnforcedBinarySnapshotERC20Guild", function (accounts) {
+contract("EnforcedBinarySnapshotERC20Guild", function (accounts) {
   let guildToken, erc20Guild, tokenVault;
 
   beforeEach(async function () {
