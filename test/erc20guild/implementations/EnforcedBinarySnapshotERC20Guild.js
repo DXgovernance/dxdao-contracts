@@ -388,4 +388,3 @@ contract("EnforcedBinarySnapshotERC20Guild", function (accounts) {
     });
   });
 });
-
