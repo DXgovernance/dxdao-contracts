@@ -79,6 +79,7 @@ contract SnapshotERC20Guild is ERC20Guild {
     // @dev Lock tokens in the guild to be used as voting power
     // @param tokenAmount The amount of tokens to be locked
     function lockTokens(uint256 tokenAmount) external virtual override {
+        if (tokensLocked[msg.sender].amount == 0) totalMembers = totalMembers.add(1);
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
         tokenVault.deposit(msg.sender, tokenAmount);
@@ -101,6 +102,7 @@ contract SnapshotERC20Guild is ERC20Guild {
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(tokenAmount);
         totalLocked = totalLocked.sub(tokenAmount);
         tokenVault.withdraw(msg.sender, tokenAmount);
+        if (tokensLocked[msg.sender].amount == 0) totalMembers = totalMembers.sub(1);
         emit TokensWithdrawn(msg.sender, tokenAmount);
     }
 
