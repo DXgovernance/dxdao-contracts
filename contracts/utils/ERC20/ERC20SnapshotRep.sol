@@ -9,7 +9,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
  * @title ERC20SnapshotRep
  */
 contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpgradeable {
-
     // @dev total holders of Rep tokens
     uint256 public totalHolders;
 
