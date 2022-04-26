@@ -4,11 +4,11 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract DXdaoNFT is ERC721URIStorage, Ownable {
+contract ERC721Factory is ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
-    constructor() ERC721("DXdao NFT", "DXNFT") {}
+    constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
     function mint(address recipient, string memory tokenURI) external onlyOwner {
         _tokenIds.increment();
