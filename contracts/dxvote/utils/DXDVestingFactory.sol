@@ -23,7 +23,10 @@ contract DXDVestingFactory {
         uint256 value
     ) external {
         TokenVesting newVestingContract = new TokenVesting(beneficiary, start, cliffDuration, duration, true);
-        DXD.safeTransferFrom(msg.sender, address(newVestingContract), value);
+
+        DXD.transferFrom(msg.sender, address(newVestingContract), value);
+        require(DXD.balanceOf(address(newVestingContract)) >= value, "DXDVestingFactory: token transfer unsuccessful");
+
         newVestingContract.transferOwnership(DXdao);
         emit VestingCreated(address(newVestingContract));
     }
