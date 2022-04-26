@@ -190,7 +190,7 @@ contract("SnapshotERC20Guild", function (accounts) {
     });
     it("Can withdraw tokens after time limit", async function () {
       // move past the time lock period
-      await time.increase(new BN("60").add(new BN("1")));
+      await time.increase(60 + 1);
 
       // Cant transfer because all user tokens are locked
       await expectRevert(
