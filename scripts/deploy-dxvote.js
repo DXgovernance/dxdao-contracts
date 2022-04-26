@@ -144,12 +144,6 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
             });
             break;
         }
-
-        await tokenToDeploy.distribution.map(async tokenHolder => {
-          await newToken.transfer(tokenHolder.address, tokenHolder.amount, {
-            from: accounts[0],
-          });
-        });
         tokens[tokenToDeploy.symbol] = newToken;
         addresses[tokenToDeploy.symbol] = newToken.address;
       })
@@ -558,6 +552,13 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
           guildToDeploy.lockTime,
           permissionRegistry.address
         );
+        if (guildToDeploy.contractName === "SnapshotRepERC20Guild")
+          await tokens[guildToDeploy.token].transferOwnership(
+            newGuild.address,
+            {
+              from: accounts[0],
+            }
+          );
         await guildRegistry.addGuild(newGuild.address);
         guilds[guildToDeploy.name] = newGuild;
         addresses[guildToDeploy.name] = newGuild.address;

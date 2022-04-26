@@ -160,6 +160,7 @@ contract("SnapshotERC20Guild", function (accounts) {
         await erc20Guild.votingPowerOfAt(accounts[5], guildProposalIdSnapshot),
         "0"
       );
+      assert.equal(await erc20Guild.getTotalMembers(), 5);
 
       // Cant vote because it locked tokens after proposal
       await expectRevert(
@@ -186,6 +187,37 @@ contract("SnapshotERC20Guild", function (accounts) {
         proposalId: guildProposalId,
         newState: "3",
       });
+    });
+    it("Can withdraw tokens after time limit", async function () {
+      // move past the time lock period
+      await time.increase(new BN("60").add(new BN("1")));
+
+      // Cant transfer because all user tokens are locked
+      await expectRevert(
+        guildToken.transfer(accounts[0], 50, { from: accounts[1] }),
+        "ERC20: transfer amount exceeds balance"
+      );
+
+      // try to release more than locked and fail
+      await expectRevert(
+        erc20Guild.withdrawTokens(50001, { from: accounts[1] }),
+        "ERC20Guild: Unable to withdraw more tokens than locked"
+      );
+
+      const txRelease = await erc20Guild.withdrawTokens(50000, {
+        from: accounts[1],
+      });
+
+      const withdrawEvent = helpers.logDecoder.decodeLogs(
+        txRelease.receipt.rawLogs
+      )[1];
+      assert.equal(withdrawEvent.name, "TokensWithdrawn");
+      assert.equal(withdrawEvent.args[0], accounts[1]);
+      assert.equal(withdrawEvent.args[1], 50000);
+      assert.equal(await erc20Guild.getTotalMembers(), 1);
+
+      const votes = await erc20Guild.votingPowerOf(accounts[1]);
+      votes.should.be.bignumber.equal("0");
     });
   });
 });

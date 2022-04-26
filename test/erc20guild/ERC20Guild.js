@@ -1519,13 +1519,13 @@ contract("ERC20Guild", function (accounts) {
       // move past the time lock period
       await time.increase(TIMELOCK.add(new BN("1")));
 
-      // Can transfer because all user tokens are locked
+      // Cant transfer because all user tokens are locked
       await expectRevert(
         guildToken.transfer(accounts[0], 50, { from: accounts[1] }),
         "ERC20: transfer amount exceeds balance"
       );
 
-      // try to release more tha locked and fail
+      // try to release more than locked and fail
       await expectRevert(
         erc20Guild.withdrawTokens(50001, { from: accounts[1] }),
         "ERC20Guild: Unable to withdraw more tokens than locked"
