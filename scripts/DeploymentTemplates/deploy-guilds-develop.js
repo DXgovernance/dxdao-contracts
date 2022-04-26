@@ -1,16 +1,10 @@
 require("@nomiclabs/hardhat-web3");
 const moment = require("moment");
-const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
-const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
-task("deploy-guilds-develop", "Deploy dxvote with develop config").setAction(
-  async () => {
+task("deploy-guilds-develop", "Deploy dxvote with develop config")
+  .addParam("registryAddress", "The registry for the given network")
+  .setAction(async () => {
     console.log("Entered first script");
-    // const PermissionRegistry = await hre.artifacts.require(
-    //   "PermissionRegistry"
-    // );
-    const ERC20Guild = await hre.artifacts.require("ERC20Guild");
 
     const deployconfig = {
       tokens: [
@@ -55,7 +49,7 @@ task("deploy-guilds-develop", "Deploy dxvote with develop config").setAction(
       ],
 
       permissionRegistryDelay: moment.duration(10, "minutes").asSeconds(),
-
+      guildRegistry: registryAddress,
       guilds: [
         {
           token: "DXD",
@@ -87,72 +81,12 @@ task("deploy-guilds-develop", "Deploy dxvote with develop config").setAction(
 
       startTimestampForActions: moment().subtract(10, "minutes").unix(),
 
-      actions: [
-        {
-          type: "guild-lockTokens",
-          from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
-          data: {
-            guildName: "DXDGuild",
-            amount: web3.utils.toWei("100"),
-          },
-        },
-        {
-          type: "guild-withdrawTokens",
-          from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
-          data: {
-            guildName: "DXDGuild",
-            amount: web3.utils.toWei("10"),
-          },
-          time: moment.duration(10, "minutes").asSeconds() + 1,
-        },
-        {
-          type: "guild-createProposal",
-          from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
-          data: {
-            guildName: "DXDGuild",
-            to: ["DXDGuild"],
-            callData: [
-              new web3.eth.Contract(ERC20Guild.abi).methods
-                .setPermission(
-                  [NULL_ADDRESS],
-                  [ANY_ADDRESS],
-                  [ANY_FUNC_SIGNATURE],
-                  [web3.utils.toWei("5").toString()],
-                  [true]
-                )
-                .encodeABI(),
-            ],
-            value: ["0"],
-            totalActions: "1",
-            title: "Proposal Test #0",
-            description:
-              "Allow call any address and function and send a max of 5 ETH per proposal",
-          },
-        },
-        {
-          type: "guild-voteProposal",
-          from: "0xc73480525e9d1198d448ece4a01daea851f72a9d",
-          data: {
-            guildName: "DXDGuild",
-            proposal: 0,
-            action: "1",
-            votingPower: web3.utils.toWei("90").toString(),
-          },
-        },
-        {
-          time: moment.duration(10, "minutes").asSeconds(),
-          type: "guild-endProposal",
-          from: "0xc73480525e9d1198d448ece4a01daea851f72a9d",
-          data: {
-            guildName: "DXDGuild",
-            proposal: 0,
-          },
-        },
-      ],
+      actions: [],
     };
 
     await hre.run("deploy-guilds", {
       deployconfig: JSON.stringify(deployconfig),
     });
-  }
-);
+  });
+
+module.exports = {};

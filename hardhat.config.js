@@ -13,7 +13,9 @@ require("hardhat-dependency-compiler");
 
 require("./scripts/create2");
 require("./scripts/deploy-dxvote");
-require("./scripts/deploy-dxvote-develop");
+require("./scripts/DeploymentTemplates/deploy-dxvote-develop");
+require("./scripts/deploy-guilds");
+require("./scripts/DeploymentTemplates/deploy-guilds-develop");
 
 const moment = require("moment");
 

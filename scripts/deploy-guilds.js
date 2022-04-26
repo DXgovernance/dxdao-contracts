@@ -2,7 +2,7 @@
 require("@nomiclabs/hardhat-web3");
 // const hre = require("hardhat");
 
-const deployTokens = require("./utils/deploy-tokens");
+const { deployTokens } = require("./utils/deploy-tokens");
 const moment = require("moment");
 const { default: BigNumber } = require("bignumber.js");
 const { deployGuilds } = require("./utils/deploy-guilds");
@@ -43,7 +43,7 @@ task("deploy-guilds", "Deploy guilds")
     }
 
     // Get ETH accounts to be used
-    // const accounts = await web3.eth.getAccounts();
+    const accounts = await web3.eth.getAccounts();
 
     // Get fromBlock for network contracts
     const fromBlock = (await web3.eth.getBlock("latest")).number;
@@ -63,9 +63,11 @@ task("deploy-guilds", "Deploy guilds")
 
     // Deploy Tokens
     const { tokens, addresses: tokenAddresses } = await deployTokens(
-      deploymentConfig
+      deploymentConfig,
+      accounts
     );
-    addresses.concat(tokenAddresses);
+
+    addresses = Object.assign(addresses, tokenAddresses);
 
     // Deploy PermissionRegistry to be used by WalletSchemes
     let permissionRegistry;
@@ -80,9 +82,10 @@ task("deploy-guilds", "Deploy guilds")
     await waitBlocks(1);
 
     // Deploy Guilds
-    networkContracts.utils.guildRegistry = await deployGuilds(
+    await deployGuilds(
       deploymentConfig,
-      tokens
+      tokens,
+      deploymentConfig.guildRegistry
     );
 
     // Increase time to local time
@@ -94,16 +97,4 @@ task("deploy-guilds", "Deploy guilds")
     return { networkContracts, addresses };
   });
 
-// async function main() {
-//   console.log(2);
-//   const { networkContracts, addresses } = await hre.run("deploy-guilds");
-//   console.log({ networkContracts, addresses });
-// }
-// console.log(1);
-
-// main()
-//   .then(() => process.exit(0))
-//   .catch(error => {
-//     console.error(error);
-//     process.exit(1);
-//   });
+module.exports = {};

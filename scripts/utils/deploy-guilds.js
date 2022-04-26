@@ -2,14 +2,19 @@
 require("@nomiclabs/hardhat-web3");
 const { default: BigNumber } = require("bignumber.js");
 
-export async function deployGuilds(deploymentConfig, tokens) {
+const contentHash = require("content-hash");
+const IPFS = require("ipfs-core");
+
+export async function deployGuilds(deploymentConfig, tokens, guildRegistry) {
   // Deploy Guilds
   let guilds = {};
   let proposals = {
     dxvote: [],
   };
   const networkContracts = {};
-  const guildRegistry = await GuildRegistry.new();
+  const addresses = {};
+  const PermissionRegistry = await hre.artifacts.require("PermissionRegistry");
+  const permissionRegistry = await PermissionRegistry.new();
 
   // Each guild is created and initialized and use a previously deployed token or specific token address
   await Promise.all(
@@ -34,16 +39,13 @@ export async function deployGuilds(deploymentConfig, tokens) {
       );
       if (guildToDeploy.contractName === "SnapshotRepERC20Guild")
         await tokens[guildToDeploy.token].transferOwnership(newGuild.address);
-      await guildRegistry.addGuild(newGuild.address);
+      await guildRegistry.addGuild(guildRegistry);
       guilds[guildToDeploy.name] = newGuild;
       addresses[guildToDeploy.name] = newGuild.address;
       proposals[guildToDeploy.name] = [];
       addresses[guildToDeploy.name + "-vault"] = await newGuild.getTokenVault();
     })
   );
-
-  await guildRegistry.transferOwnership(avatar.address);
-  networkContracts.utils.guildRegistry = guildRegistry.address;
 
   console.log("Contracts deployed:", networkContracts);
 
@@ -209,5 +211,4 @@ export async function deployGuilds(deploymentConfig, tokens) {
         break;
     }
   }
-  return guildRegistry.address;
 }

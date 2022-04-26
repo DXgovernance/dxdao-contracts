@@ -102,7 +102,7 @@ echo "Starting our own hardhat node instance"
 start-hardhat_node
 
 # Compile your contracts
-yarn compile
+# yarn compile
 
 # Disable isolatedModules and use commonjs in tsconfig
 # contents="$(jq '.compilerOptions.isolatedModules = false' tsconfig.json)" && \
@@ -113,7 +113,7 @@ yarn compile
 # node scripts/beforeBuild.js
 
 # Deploy local contracts
-npx hardhat run --network localhost scripts/deploy-guilds-develop.js
+yarn hardhat --network localhost deploy-guilds-develop
 
 # # Enable isolatedModules and use esnext as module in tsconfig
 # contents="$(jq '.compilerOptions.isolatedModules = true' tsconfig.json)" && \
