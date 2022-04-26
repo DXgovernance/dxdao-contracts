@@ -6,8 +6,8 @@ const moment = require("moment");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
-const DXdaoNFT = artifacts.require("./DXdaoNFT.sol");
-const DXDVestingFactory = artifacts.require("./DXDVestingFactory.sol");
+const ERC721Factory = artifacts.require("./ERC721Factory.sol");
+const ERC20VestingFactory = artifacts.require("./ERC20VestingFactory.sol");
 const TokenVesting = artifacts.require("./TokenVesting.sol");
 
 contract("Dxvote Utils", function (accounts) {
@@ -98,9 +98,11 @@ contract("Dxvote Utils", function (accounts) {
 
     await time.increase(30);
 
-    nftMinter = await DXdaoNFT.new();
+    nftMinter = await ERC721Factory.new("DXDAO NFT", "DXNFT", {
+      from: accounts[0],
+    });
     await nftMinter.transferOwnership(org.avatar.address);
-    vestingFactory = await DXDVestingFactory.new(
+    vestingFactory = await ERC20VestingFactory.new(
       standardTokenMock.address,
       org.avatar.address
     );

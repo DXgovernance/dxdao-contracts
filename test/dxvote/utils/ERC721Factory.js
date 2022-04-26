@@ -2,26 +2,26 @@ import { artifacts, contract } from "hardhat";
 import { SOME_ADDRESS, SOME_TOKEN_URI } from "../../helpers/constants";
 import { expectRevert, expectEvent } from "@openzeppelin/test-helpers";
 
-const DXdaoNFT = artifacts.require("DXdaoNFT.sol");
+const ERC721Factory = artifacts.require("ERC721Factory.sol");
 
-contract("DXdaoNFT", accounts => {
-  let dxDaoNFT;
+contract("ERC721Factory", accounts => {
+  let erc721Factory;
   beforeEach(async () => {
-    dxDaoNFT = await DXdaoNFT.new({
+    erc721Factory = await ERC721Factory.new("DXDAO NFT", "DXNFT", {
       from: accounts[0],
     });
   });
 
-  describe("Mint DXdaoNFT", () => {
-    it("should mint a DXdaoNFT", async () => {
-      const mint = await dxDaoNFT.mint(SOME_ADDRESS, SOME_TOKEN_URI, {
+  describe("Mint ERC721Factory", () => {
+    it("should mint a ERC721Factory", async () => {
+      const mint = await erc721Factory.mint(SOME_ADDRESS, SOME_TOKEN_URI, {
         from: accounts[0],
       });
       await expectEvent(mint, "Transfer");
     });
-    it("should not mint a DXdaoNFT if not the owner", async () => {
+    it("should not mint a ERC721Factory if not the owner", async () => {
       await expectRevert(
-        dxDaoNFT.mint(SOME_ADDRESS, SOME_TOKEN_URI, {
+        erc721Factory.mint(SOME_ADDRESS, SOME_TOKEN_URI, {
           from: accounts[1],
         }),
         "Ownable: caller is not the owner"

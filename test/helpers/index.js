@@ -15,8 +15,8 @@ const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
-const DXDVestingFactory = artifacts.require("./DXDVestingFactory.sol");
-const DXdaoNFT = artifacts.require("./DXdaoNFT.sol");
+const ERC20VestingFactory = artifacts.require("./ERC20VestingFactory.sol");
+const ERC721Factory = artifacts.require("./ERC721Factory.sol");
 const ERC20Guild = artifacts.require("./ERC20Guild.sol");
 
 export const logDecoder = new LogDecoder([
@@ -29,8 +29,8 @@ export const logDecoder = new LogDecoder([
   DXDVotingMachine.abi,
   WalletScheme.abi,
   PermissionRegistry.abi,
-  DXDVestingFactory.abi,
-  DXdaoNFT.abi,
+  ERC20VestingFactory.abi,
+  ERC721Factory.abi,
   ERC20Guild.abi,
 ]);
 
