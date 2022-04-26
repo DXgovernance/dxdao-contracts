@@ -2091,8 +2091,8 @@ contract("DXDVotingMachine", function (accounts) {
     });
   });
 
-  describe.only("Staking", function () {
-    let proposalId;
+  describe("Staking", function () {
+    let stakeProposalId;
     beforeEach(async function () {
       const genericCallData = helpers.encodeGenericCallData(
         org.avatar.address,
@@ -2101,7 +2101,7 @@ contract("DXDVotingMachine", function (accounts) {
         0
       );
 
-      proposalId = await helpers.getValueFromLogs(
+      stakeProposalId = await helpers.getValueFromLogs(
         await cheapVoteWalletScheme.proposeCalls(
           [org.controller.address],
           [genericCallData],
@@ -2113,19 +2113,24 @@ contract("DXDVotingMachine", function (accounts) {
       );
     });
     it("should execute a proposal but fail to stake", async function () {
-      const stake = await dxdVotingMachine.contract.stake(proposalId, 1, 2000, {
-        from: accounts[1],
-      });
+      const stake = await dxdVotingMachine.contract.stake(
+        stakeProposalId,
+        1,
+        2000,
+        {
+          from: accounts[1],
+        }
+      );
 
       expectEvent(stake.receipt, "StateChange", {
-        _proposalId: proposalId,
+        _proposalId: stakeProposalId,
         _proposalState: "4",
       });
 
       await time.increase(3600 + 1);
 
       await dxdVotingMachine.contract.vote(
-        proposalId,
+        stakeProposalId,
         1,
         0,
         constants.NULL_ADDRESS,
@@ -2137,14 +2142,14 @@ contract("DXDVotingMachine", function (accounts) {
 
       // check Boosted
       assert.equal(
-        (await dxdVotingMachine.contract.proposals(proposalId)).state,
+        (await dxdVotingMachine.contract.proposals(stakeProposalId)).state,
         "5"
       );
 
       await time.increase(86400 + 1);
 
       const executeStake = await dxdVotingMachine.contract.stake(
-        proposalId,
+        stakeProposalId,
         1,
         2000,
         {
@@ -2153,7 +2158,7 @@ contract("DXDVotingMachine", function (accounts) {
       );
 
       expectEvent(executeStake.receipt, "StateChange", {
-        _proposalId: proposalId,
+        _proposalId: stakeProposalId,
         _proposalState: "2", // execute state
       });
 
@@ -2161,7 +2166,7 @@ contract("DXDVotingMachine", function (accounts) {
     });
     it("address cannot upstake and downstake on same proposal", async function () {
       const upStake = await dxdVotingMachine.contract.stake(
-        proposalId,
+        stakeProposalId,
         1,
         100,
         {
@@ -2170,7 +2175,7 @@ contract("DXDVotingMachine", function (accounts) {
       );
 
       expectEvent(upStake.receipt, "Stake", {
-        _proposalId: proposalId,
+        _proposalId: stakeProposalId,
         _organization: org.avatar.address,
         _staker: accounts[1],
         _vote: "1",
@@ -2178,7 +2183,7 @@ contract("DXDVotingMachine", function (accounts) {
       });
 
       const downStake = await dxdVotingMachine.contract.stake(
-        proposalId,
+        stakeProposalId,
         2,
         100,
         {
@@ -2187,41 +2192,6 @@ contract("DXDVotingMachine", function (accounts) {
       );
 
       expectEvent.notEmitted(downStake.receipt, "Stake");
-    });
-    it("should fail when staking 0 tokens", async function () {
-      const stake = await dxdVotingMachine.contract.stake(proposalId, 1, 0, {
-        from: accounts[2],
-      });
-      expectRevert(stake, "staking amount should be >0");
-    });
-    it("should fail when staking amount is greater than 2^128", async function () {
-      const overStakingLimit = "100000000000000000000000000000001"; //2^128 + 1
-      const stake = await dxdVotingMachine.contract.stake(
-        proposalId,
-        1,
-        overStakingLimit,
-        {
-          from: accounts[1],
-        }
-      );
-      expectRevert(stake, "staking amount is too high");
-    });
-    it("should fail when total staking amount in proposal is over 2^128", async function () {
-      const stakingLimit = "0x100000000000000000000000000000000"; //2^128 + 1
-
-      await dxdVotingMachine.contract.stake(proposalId, 1, 100, {
-        from: accounts[0],
-      });
-
-      const stake = await dxdVotingMachine.contract.stake(
-        proposalId,
-        1,
-        stakingLimit,
-        {
-          from: accounts[1],
-        }
-      );
-      expectRevert(stake, "total stakes is too high");
     });
   });
 });
