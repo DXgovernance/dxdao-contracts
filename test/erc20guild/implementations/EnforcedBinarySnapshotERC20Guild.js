@@ -8,7 +8,7 @@ const { constants, testCallFrom } = require("../../helpers");
 const {
   createAndSetupGuildToken,
   createProposal,
-  setAllVotesOnProposal,
+  setVotesOnProposal,
 } = require("../../helpers/guild");
 
 const EnforcedBinarySnapshotERC20Guild = artifacts.require(
@@ -75,7 +75,7 @@ contract("EnforcedBinarySnapshotERC20Guild", function (accounts) {
       ],
       account: accounts[1],
     });
-    await setAllVotesOnProposal({
+    await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setGlobalPermissionProposal,
       action: 1,
@@ -248,7 +248,7 @@ contract("EnforcedBinarySnapshotERC20Guild", function (accounts) {
         "SnapshotERC20Guild: Invalid votingPower amount"
       );
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -292,21 +292,21 @@ contract("EnforcedBinarySnapshotERC20Guild", function (accounts) {
         account: accounts[1],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: proposalId,
         action: 2,
         account: accounts[2],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: proposalId,
         action: 2,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: proposalId,
         action: 2,
@@ -332,7 +332,7 @@ contract("EnforcedBinarySnapshotERC20Guild", function (accounts) {
       );
 
       const proposalInfo = await erc20Guild.getProposal(proposalId);
-      assert.equal(proposalInfo.state, constants.GuildProposalState.Failed);
+      assert.equal(proposalInfo.state, constants.GUILD_PROPOSAL_STATES.Failed);
     });
 
     it("Can successfully execute a proposal when not voted on the 'No' option", async function () {
@@ -365,14 +365,14 @@ contract("EnforcedBinarySnapshotERC20Guild", function (accounts) {
         ],
         account: accounts[2],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: yetAnotherProposal,
         action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: yetAnotherProposal,
         action: 1,
