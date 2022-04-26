@@ -2,7 +2,6 @@ import { assert } from "chai";
 import { artifacts, contract } from "hardhat";
 import { SOME_ADDRESS, SOME_OTHER_ADDRESS } from "../../helpers/constants";
 import { expectRevert, expectEvent } from "@openzeppelin/test-helpers";
-import { addGuildsToRegistry } from "../../helpers/guild";
 
 const GuildRegistry = artifacts.require("GuildRegistry.sol");
 
@@ -55,16 +54,9 @@ contract("GuildRegistry", accounts => {
     });
 
     it("should remove the right guild address in the array", async () => {
-      await addGuildsToRegistry({
-        guildRegistry,
-        address: SOME_ADDRESS,
-        account: accounts[0],
-      });
-      await addGuildsToRegistry({
-        guildRegistry,
-        address: SOME_OTHER_ADDRESS,
-        account: accounts[0],
-      });
+      guildRegistry.addGuild(SOME_ADDRESS, { from: accounts[0] });
+      guildRegistry.addGuild(SOME_OTHER_ADDRESS, { from: accounts[0] });
+
       const removeGuild = await guildRegistry.removeGuild(SOME_OTHER_ADDRESS, {
         from: accounts[0],
       });
@@ -74,16 +66,8 @@ contract("GuildRegistry", accounts => {
     });
 
     it("should return all guild addresses", async () => {
-      await addGuildsToRegistry({
-        guildRegistry,
-        address: SOME_ADDRESS,
-        account: accounts[0],
-      });
-      await addGuildsToRegistry({
-        guildRegistry,
-        address: SOME_OTHER_ADDRESS,
-        account: accounts[0],
-      });
+      await guildRegistry.addGuild(SOME_ADDRESS, { from: accounts[0] });
+      await guildRegistry.addGuild(SOME_OTHER_ADDRESS, { from: accounts[0] });
       const getGuildsAddresses = await guildRegistry.getGuildsAddresses();
       assert.equal(getGuildsAddresses.length, 2);
     });

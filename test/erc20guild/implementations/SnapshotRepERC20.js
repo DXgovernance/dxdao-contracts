@@ -2,10 +2,7 @@ import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { expect } from "chai";
 import * as helpers from "../../helpers";
 const { fixSignature } = require("../../helpers/sign");
-const {
-  createProposal,
-  setAllVotesOnProposal,
-} = require("../../helpers/guild");
+const { createProposal, setVotesOnProposal } = require("../../helpers/guild");
 
 const {
   BN,
@@ -103,7 +100,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       ],
       account: accounts[1],
     });
-    await setAllVotesOnProposal({
+    await setVotesOnProposal({
       guild: snapshotRepErc20Guild,
       proposalId: setGlobaLPermissionProposal,
       action: 1,
@@ -393,7 +390,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
         account: accounts[1],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: snapshotRepErc20Guild,
         proposalId: burnProposalId,
         action: 1,

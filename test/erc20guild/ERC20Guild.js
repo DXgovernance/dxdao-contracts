@@ -1,13 +1,11 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert } from "chai";
-import { func } from "fast-check";
 import * as helpers from "../helpers";
 const { fixSignature, toEthSignedMessageHash } = require("../helpers/sign");
 const {
-  createDAO,
   createAndSetupGuildToken,
   createProposal,
-  setAllVotesOnProposal,
+  setVotesOnProposal,
 } = require("../helpers/guild");
 
 const {
@@ -167,13 +165,13 @@ contract("ERC20Guild", function (accounts) {
       ],
       account: accounts[1],
     });
-    await setAllVotesOnProposal({
+    await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setPermissionToActionMockA,
       action: 1,
       account: accounts[4],
     });
-    await setAllVotesOnProposal({
+    await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setPermissionToActionMockA,
       action: 1,
@@ -208,14 +206,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[3],
       });
 
-      const txVote = await setAllVotesOnProposal({
+      const txVote = await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -431,14 +429,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -517,14 +515,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[2],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[2],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -563,14 +561,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[2],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[2],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -614,13 +612,13 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[2],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[4],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -734,13 +732,13 @@ contract("ERC20Guild", function (accounts) {
     it("cannot execute as proposal not ended yet", async function () {
       const guildProposalId = await createProposal(genericProposal);
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -755,7 +753,7 @@ contract("ERC20Guild", function (accounts) {
 
     it("proposal rejected as not enough tokens to execute proposal when proposal ends", async function () {
       const guildProposalId = await createProposal(genericProposal);
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -765,7 +763,7 @@ contract("ERC20Guild", function (accounts) {
 
       await erc20Guild.endProposal(guildProposalId);
       const { state } = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(state, constants.WalletSchemeProposalState.rejected);
+      assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.rejected);
     });
 
     it("cannot end proposal with an unauthorized function", async function () {
@@ -786,14 +784,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[2],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[2],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -810,13 +808,13 @@ contract("ERC20Guild", function (accounts) {
 
     it("proposal fail because it run out of time to execute", async function () {
       const guildProposalId = await createProposal(genericProposal);
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 2,
         account: accounts[2],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 2,
@@ -944,13 +942,13 @@ contract("ERC20Guild", function (accounts) {
 
     it("cannot set votes once executed", async function () {
       const guildProposalId = await createProposal(genericProposal);
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -972,7 +970,7 @@ contract("ERC20Guild", function (accounts) {
 
     it("cannot set votes exceeded your voting balance", async function () {
       const guildProposalId = await createProposal(genericProposal);
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -1037,13 +1035,13 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[1],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: setTestPermissions,
         action: 1,
         account: accounts[4],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: setTestPermissions,
         action: 1,
@@ -1071,14 +1069,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -1109,14 +1107,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -1154,14 +1152,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -1196,14 +1194,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -1241,14 +1239,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -1283,14 +1281,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -1322,14 +1320,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -1378,14 +1376,14 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: allowActionMock,
         action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: allowActionMock,
         action: 1,
@@ -1395,14 +1393,14 @@ contract("ERC20Guild", function (accounts) {
       await erc20Guild.endProposal(allowActionMock);
 
       const guildProposalId = await createProposal(genericProposal);
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 3,
         account: accounts[3],
       });
 
-      const txVote = await setAllVotesOnProposal({
+      const txVote = await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 3,
@@ -1436,10 +1434,8 @@ contract("ERC20Guild", function (accounts) {
         endTime,
         to,
         data,
-        value,
         title,
         contentHash,
-        totalVotes,
         state,
       } = await erc20Guild.getProposal(guildProposalId);
 
@@ -1575,13 +1571,13 @@ contract("ERC20Guild", function (accounts) {
         ],
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
         account: accounts[4],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,

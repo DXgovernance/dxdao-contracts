@@ -2,7 +2,7 @@
 // const {
 //   createAndSetupGuildToken,
 //   createProposal,
-//   setAllVotesOnProposal,
+//   setVotesOnProposal,
 // } = require("../helpers/guild");
 //
 // const { soliditySha3 } = require("web3-utils");
@@ -95,7 +95,7 @@
 //       contentHash: constants.NULL_ADDRESS,
 //       account: accounts[0],
 //     });
-//     await setAllVotesOnProposal({
+//     await setVotesOnProposal({
 //       guild: omnGuild,
 //       proposalId: guildProposalId,
 //       account: accounts[0],
@@ -180,7 +180,7 @@
 //       const proposalInfo = await omnGuild.getProposal(
 //         marketValidationProposalValid
 //       );
-//       assert.equal(proposalInfo.state, constants.GuildProposalState.Executed);
+//       assert.equal(proposalInfo.state, constants.GUILD_PROPOSAL_STATES.Executed);
 //       assert.equal(proposalInfo.to[0], realitio.address);
 //       assert.equal(proposalInfo.value[0], 0);
 //       assert.equal(await realitio.isFinalized(questionId), true);
@@ -207,7 +207,7 @@
 //       const proposalInfo = await omnGuild.getProposal(
 //         marketValidationProposalValid
 //       );
-//       assert.equal(proposalInfo.state, constants.GuildProposalState.Failed);
+//       assert.equal(proposalInfo.state, constants.GUILD_PROPOSAL_STATES.Failed);
 //     });
 //     it("test proposal rejected", async function () {
 //       await time.increase(time.duration.seconds(60 * 60 * 24 * 7 + 100000));
@@ -218,7 +218,7 @@
 //       const proposalInfo = await omnGuild.getProposal(
 //         marketValidationProposalValid
 //       );
-//       assert.equal(proposalInfo.state, constants.GuildProposalState.Rejected);
+//       assert.equal(proposalInfo.state, constants.GUILD_PROPOSAL_STATES.Rejected);
 //     });
 //
 //     it("test changing vote I.B.3.c: Voters CANNOT change vote once they've voted", async function () {
@@ -463,7 +463,7 @@
 //         "proposalId",
 //         "ProposalCreated"
 //       );
-//       await setAllVotesOnProposal({
+//       await setVotesOnProposal({
 //         guild: omnGuild,
 //         proposalId: testProposalId,
 //         account: accounts[0],
@@ -481,7 +481,7 @@
 //         contentHash: constants.NULL_ADDRESS,
 //         account: accounts[1],
 //       });
-//       await setAllVotesOnProposal({
+//       await setVotesOnProposal({
 //         guild: omnGuild,
 //         proposalId: setAllowanceProposalId,
 //         account: accounts[0],
@@ -519,7 +519,7 @@
 //         contentHash: constants.NULL_ADDRESS,
 //         account: accounts[1],
 //       });
-//       await setAllVotesOnProposal({
+//       await setVotesOnProposal({
 //         guild: omnGuild,
 //         proposalId: setSpecialProposerPermissionProposalId,
 //         account: accounts[1],
@@ -558,7 +558,7 @@
 //         "proposalId",
 //         "ProposalCreated"
 //       );
-//       await setAllVotesOnProposal({
+//       await setVotesOnProposal({
 //         guild: omnGuild,
 //         proposalId: testProposal2,
 //         account: accounts[0],
@@ -664,7 +664,7 @@
 //         contentHash: constants.NULL_ADDRESS,
 //         account: accounts[1],
 //       });
-//       await setAllVotesOnProposal({
+//       await setVotesOnProposal({
 //         guild: omnGuild,
 //         proposalId: guildProposalId,
 //         account: accounts[1],
@@ -727,7 +727,7 @@
 //         contentHash: constants.NULL_ADDRESS,
 //         account: accounts[1],
 //       });
-//       await setAllVotesOnProposal({
+//       await setVotesOnProposal({
 //         guild: omnGuild,
 //         proposalId: guildProposalId,
 //         account: accounts[1],
