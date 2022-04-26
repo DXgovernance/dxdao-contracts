@@ -21,6 +21,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    console.log("yo");
     let addresses = {};
 
     // Parse string json config to json object

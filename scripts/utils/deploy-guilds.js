@@ -2,7 +2,7 @@
 require("@nomiclabs/hardhat-web3");
 const { default: BigNumber } = require("bignumber.js");
 
-export async function deployTokens(deploymentConfig, tokens) {
+export async function deployGuilds(deploymentConfig, tokens) {
   // Deploy Guilds
   let guilds = {};
   let proposals = {
@@ -33,9 +33,7 @@ export async function deployTokens(deploymentConfig, tokens) {
         permissionRegistry.address
       );
       if (guildToDeploy.contractName === "SnapshotRepERC20Guild")
-        await tokens[guildToDeploy.token].transferOwnership(newGuild.address, {
-          from: accounts[0],
-        });
+        await tokens[guildToDeploy.token].transferOwnership(newGuild.address);
       await guildRegistry.addGuild(newGuild.address);
       guilds[guildToDeploy.name] = newGuild;
       addresses[guildToDeploy.name] = newGuild.address;
@@ -211,4 +209,5 @@ export async function deployTokens(deploymentConfig, tokens) {
         break;
     }
   }
+  return guildRegistry.address;
 }
