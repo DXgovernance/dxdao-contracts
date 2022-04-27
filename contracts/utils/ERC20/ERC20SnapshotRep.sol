@@ -51,16 +51,16 @@ contract ERC20SnapshotRep is Initializable, OwnableUpgradeable, ERC20SnapshotUpg
     }
 
     function mint(address to, uint256 amount) external virtual onlyOwner {
-        _snapshot();
         // @dev we only add to the totalHolders if they did not have tokens prior to minting
         addHolder(to);
         _mint(to, amount);
+        _snapshot();
     }
 
     function burn(address to, uint256 amount) external virtual onlyOwner {
-        _snapshot();
         _burn(to, amount);
         // @dev we only remove from the totalHolders if they do not have tokens after burning
         removeHolder(to);
+        _snapshot();
     }
 }
