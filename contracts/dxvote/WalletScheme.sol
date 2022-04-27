@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
-pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -412,7 +412,7 @@ contract WalletScheme {
     function mintReputation(
         uint256 _amount,
         address _beneficiary,
-        bytes32 _proposalId
+        bytes32
     ) external onlyVotingMachine returns (bool) {
         // return ControllerInterface(avatar.owner()).mintReputation(_amount, _beneficiary, address(avatar));
         return
@@ -433,7 +433,7 @@ contract WalletScheme {
     function burnReputation(
         uint256 _amount,
         address _beneficiary,
-        bytes32 _proposalId
+        bytes32
     ) external onlyVotingMachine returns (bool) {
         // return ControllerInterface(avatar.owner()).burnReputation(_amount, _beneficiary, address(avatar));
         return
@@ -455,7 +455,7 @@ contract WalletScheme {
         IERC20 _stakingToken,
         address _beneficiary,
         uint256 _amount,
-        bytes32 _proposalId
+        bytes32
     ) external onlyVotingMachine returns (bool) {
         // return ControllerInterface(avatar.owner()).externalTokenTransfer(_stakingToken, _beneficiary, _amount, avatar);
         return
@@ -498,7 +498,7 @@ contract WalletScheme {
             );
     }
 
-    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns (uint256) {
+    function balanceOfStakingToken(IERC20 _stakingToken, bytes32) external view returns (uint256) {
         return _stakingToken.balanceOf(address(avatar));
     }
 

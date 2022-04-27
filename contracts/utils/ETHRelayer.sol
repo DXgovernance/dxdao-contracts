@@ -10,7 +10,7 @@ pragma solidity ^0.8.8;
 contract ETHRelayer {
     address payable public receiver;
 
-    constructor(address payable _receiver) public {
+    constructor(address payable _receiver) {
         receiver = _receiver;
     }
 
