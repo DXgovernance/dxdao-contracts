@@ -1,8 +1,16 @@
 require("@nomiclabs/hardhat-web3");
 
+const { deploy } = require("../../scripts/deploy-dxvote-develop");
+
 contract("DXvote develop deployment", function () {
-  it("Deploy DXvote", async function () {
+  it.only("Deploy DXvote", function (done) {
     this.timeout(300000);
-    await hre.run("deploy-dxvote-develop");
+    deploy()
+      .then(function () {
+        done();
+      })
+      .catch(function (error) {
+        throw error;
+      });
   });
 });

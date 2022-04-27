@@ -28,6 +28,12 @@ jobs:
       - name: Install Dependencies
         run: yarn
 
+      - name: Compile contracts
+        run: yarn compile
+
+      - name: Deploy develop
+        run: yarn hardhat deploy-dxvote-develop
+
       - name: Solidity Tests
         run: yarn coverage
 
