@@ -39,7 +39,7 @@ export async function deployGuilds(deploymentConfig, tokens, guildRegistry) {
       );
       if (guildToDeploy.contractName === "SnapshotRepERC20Guild")
         await tokens[guildToDeploy.token].transferOwnership(newGuild.address);
-      await guildRegistry.addGuild(guildRegistry);
+      await guildRegistry.addGuild(newGuild.address);
       guilds[guildToDeploy.name] = newGuild;
       addresses[guildToDeploy.name] = newGuild.address;
       proposals[guildToDeploy.name] = [];

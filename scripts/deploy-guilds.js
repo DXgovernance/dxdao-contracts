@@ -19,7 +19,8 @@ const { deployGuilds } = require("./utils/deploy-guilds");
 task("deploy-guilds", "Deploy guilds")
   .addParam("deployconfig", "The deploy config json in string format")
   .setAction(async ({ deployconfig }) => {
-    console.log("Entered script");
+    const GuildRegistry = await hre.artifacts.require("GuildRegistry");
+
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -80,12 +81,12 @@ task("deploy-guilds", "Deploy guilds")
     networkContracts.permissionRegistry = permissionRegistry.address;
     addresses["PermissionRegstry"] = permissionRegistry.address;
     await waitBlocks(1);
-
+    console.log(deploymentConfig.guildRegistry);
     // Deploy Guilds
     await deployGuilds(
       deploymentConfig,
       tokens,
-      deploymentConfig.guildRegistry
+      await GuildRegistry.at(deploymentConfig.guildRegistry)
     );
 
     // Increase time to local time
