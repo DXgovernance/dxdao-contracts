@@ -218,7 +218,6 @@ module.exports = {
   dependencyCompiler: {
     keep: true,
     paths: [
-      "@realitio/realitio-contracts/truffle/contracts/Realitio.sol",
       "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol",
       "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
     ],

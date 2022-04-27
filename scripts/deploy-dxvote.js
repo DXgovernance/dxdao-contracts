@@ -461,22 +461,22 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       addresses[schemeConfiguration.name] = newScheme.address;
     }
 
-    // Deploy ERC721Factory
-    let erc721Factory;
+    // Deploy dxDaoNFT
+    let dxDaoNFT;
     console.log("Deploying ERC721Factory...");
-    erc721Factory = await ERC721Factory.new("DXdao NFT", "DXNFT");
-    networkContracts.utils.erc721Factory = erc721Factory.address;
-    addresses["ERC721Factory"] = erc721Factory.address;
+    dxDaoNFT = await ERC721Factory.new("DX DAO NFT", "DXDNFT");
+    networkContracts.utils.dxDaoNFT = dxDaoNFT.address;
+    addresses["ERC721Factory"] = dxDaoNFT.address;
 
     // Deploy ERC20VestingFactory
-    let erc20VestingFactory;
-    console.log("Deploying erc20VestingFactory...");
-    erc20VestingFactory = await ERC20VestingFactory.new(
+    let dxdVestingFactory;
+    console.log("Deploying ERC20VestingFactory...");
+    dxdVestingFactory = await ERC20VestingFactory.new(
       networkContracts.votingMachines[votingMachine.address].token,
       avatar.address
     );
-    networkContracts.utils.erc20VestingFactory = erc20VestingFactory.address;
-    addresses["ERC20VestingFactory"] = erc20VestingFactory.address;
+    networkContracts.utils.dxdVestingFactory = dxdVestingFactory.address;
+    addresses["ERC20VestingFactory"] = dxdVestingFactory.address;
 
     // Transfer all ownership and power to the dao
     console.log("Transfering ownership...");

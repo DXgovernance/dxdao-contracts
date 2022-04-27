@@ -13,7 +13,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
  * The registry allows setting "wildcard" permissions for recipients and functions, this means that permissions like
  * this contract can call any contract, this contract can call this function to any contract or this contract call
  * call any function in this contract can be set.
- * The smart contracts permissions are stored  using the asset 0x0 and stores the `from` address, `to` address,
+ * The smart contracts permissions are stored using the asset 0x0 and stores the `from` address, `to` address,
  *   `value` uint256 and `fromTime` uint256, if `fromTime` is zero it means the function is not allowed.
  * The ERC20 transfer permissions are stored using the asset of the ERC20 and stores the `from` address, `to` address,
  *   `value` uint256 and `fromTime` uint256, if `fromTime` is zero it means the function is not allowed.
@@ -165,13 +165,13 @@ contract PermissionRegistry is OwnableUpgradeable {
     }
 
     /**
-     * @dev Sets the value transferred in a a permission on the actual block and checks the allowed timestamp.
+     * @dev Sets the value transferred in a permission on the actual block and checks the allowed timestamp.
      *      It also checks that the value does not go over the permission other global limits.
      * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
      * @param from The address from which the call will be executed
      * @param to The address that will be called
      * @param functionSignature The signature of the function to be executed
-     * @param valueTransferred The value to be transfered
+     * @param valueTransferred The value to be transferred
      */
     function setPermissionUsed(
         address asset,
@@ -224,7 +224,7 @@ contract PermissionRegistry is OwnableUpgradeable {
     /**
      * @dev Sets the value transferred in a a permission on the actual block.
      * @param permission The permission to add the value transferred
-     * @param valueTransferred The value to be transfered
+     * @param valueTransferred The value to be transferred
      */
     function _setValueTransferred(Permission storage permission, uint256 valueTransferred) internal {
         if (permission.valueTransferedOnBlock < block.number) {

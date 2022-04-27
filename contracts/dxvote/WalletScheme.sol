@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
-pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -16,7 +16,7 @@ import "../utils/PermissionRegistry.sol";
  * the permissions will be checked using the avatar address as sender, if not the scheme address will be used as
  * sender.
  * The permissions for [asset][SCHEME_ADDRESS][ANY_SIGNATURE] are used for global transfer limit, if it is set,
- * it wont allowed a higher total value transfered in the proposal higher to the one set there.
+ * it wont allowed a higher total value transferred in the proposal higher to the one set there.
  */
 contract WalletScheme {
     using SafeMath for uint256;
@@ -70,11 +70,11 @@ contract WalletScheme {
     /**
      * @dev initialize
      * @param _avatar the avatar address
-     * @param _votingMachine the voting machines address to
-     * @param _doAvatarGenericCalls is the scheme will do generic calls form the avatar
+     * @param _votingMachine the voting machine address
+     * @param _doAvatarGenericCalls will the scheme do generic calls from the avatar
      * @param _controller The controller address
      * @param _permissionRegistry The address of the permission registry contract
-     * @param _maxSecondsForExecution The maximum amount of time in seconds  for a proposal without executed since
+     * @param _maxSecondsForExecution The maximum amount of time in seconds for a proposal without executed since
      * submitted time
      * @param _maxRepPercentageChange The maximum percentage allowed to be changed in REP total supply after proposal
      * execution
@@ -166,7 +166,7 @@ contract WalletScheme {
                 _callDataFuncSignature = this.getFuncSignature(proposal.callData[i]);
                 _to = proposal.to[i];
                 _value = proposal.value[i];
-                // Checks that thte value tha is transfered (in ETH or ERC20) is lower or equal to the one that is
+                // Checks that the value tha is transferred (in ETH or ERC20) is lower or equal to the one that is
                 // allowed for the function that wants to be executed
                 if (
                     ERC20_TRANSFER_SIGNATURE == _callDataFuncSignature ||
@@ -186,7 +186,7 @@ contract WalletScheme {
                         _value
                     );
 
-                // If controller address is set the code needs to be encoded to generiCall function
+                // If controller address is set the code needs to be encoded to genericCall function
                 if (doAvatarGenericCalls && proposal.to[i] != address(controller)) {
                     bytes memory genericCallData = abi.encodeWithSignature(
                         "genericCall(address,bytes,address,uint256)",
@@ -239,6 +239,7 @@ contract WalletScheme {
      * @param _to - The addresses to call
      * @param _callData - The abi encode data for the calls
      * @param _value value(ETH) to transfer with the calls
+     * @param title title of proposal
      * @param _descriptionHash proposal description hash
      * @return an id which represents the proposal
      */
@@ -366,7 +367,7 @@ contract WalletScheme {
      * @dev Decodes abi encoded data with selector for "transfer(address,uint256)".
      * @param _data ERC20 address and value encoded data.
      * @return to The account to receive the tokens
-     * @return value The value of tokens to be transfered/approved
+     * @return value The value of tokens to be transferred/approved
      */
     function erc20TransferOrApproveDecode(bytes calldata _data) public pure returns (address to, uint256 value) {
         (to, value) = abi.decode(_data[4:], (address, uint256));
@@ -412,7 +413,7 @@ contract WalletScheme {
     function mintReputation(
         uint256 _amount,
         address _beneficiary,
-        bytes32 _proposalId
+        bytes32
     ) external onlyVotingMachine returns (bool) {
         // return ControllerInterface(avatar.owner()).mintReputation(_amount, _beneficiary, address(avatar));
         return
@@ -433,7 +434,7 @@ contract WalletScheme {
     function burnReputation(
         uint256 _amount,
         address _beneficiary,
-        bytes32 _proposalId
+        bytes32
     ) external onlyVotingMachine returns (bool) {
         // return ControllerInterface(avatar.owner()).burnReputation(_amount, _beneficiary, address(avatar));
         return
@@ -455,7 +456,7 @@ contract WalletScheme {
         IERC20 _stakingToken,
         address _beneficiary,
         uint256 _amount,
-        bytes32 _proposalId
+        bytes32
     ) external onlyVotingMachine returns (bool) {
         // return ControllerInterface(avatar.owner()).externalTokenTransfer(_stakingToken, _beneficiary, _amount, avatar);
         return
@@ -498,7 +499,7 @@ contract WalletScheme {
             );
     }
 
-    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns (uint256) {
+    function balanceOfStakingToken(IERC20 _stakingToken, bytes32) external view returns (uint256) {
         return _stakingToken.balanceOf(address(avatar));
     }
 

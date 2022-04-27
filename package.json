@@ -13,7 +13,6 @@
   ],
   "scripts": {
     "test": "npx hardhat test",
-    "posttest": "rm -r contracts/hardhat-dependency-compiler",
     "coverage": "./scripts/coverage.sh",
     "compile": "rm -rf artifacts cache contracts/hardhat-dependency-compiler && npx hardhat compile",
     "deploy": "node scripts/deploy.js",
@@ -83,7 +82,6 @@
     "@openzeppelin/contracts": "4.4.0",
     "@openzeppelin/contracts-upgradeable": "4.4.0",
     "@openzeppelin/test-helpers": "^0.5.15",
-    "@realitio/realitio-contracts": ">=0.0.0",
     "@truffle/hdwallet-provider": "^1.4.0",
     "arb-ethers-web3-bridge": "^0.7.3",
     "chai": "^4.2.0",
@@ -101,8 +99,7 @@
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,md,sol}": [
       "yarn format",
-      "yarn solidity-linter",
-      "git add"
+      "yarn solidity-linter"
     ]
   }
 }
