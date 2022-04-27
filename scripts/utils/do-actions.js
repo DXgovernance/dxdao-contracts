@@ -21,7 +21,8 @@ export async function doActions(
   let proposals = {
     dxvote: [],
   };
-  actions.forEach(async action => {
+  for (const i in actions) {
+    const action = actions[i];
     console.log({ proposals });
     if (action.time)
       await network.provider.send("evm_increaseTime", [action.time]);
@@ -139,6 +140,7 @@ export async function doActions(
           contentHash.fromIpfs(guildProposalDescriptionHash).toString(),
           { from: action.from }
         );
+        console.log(guildProposalCreationTx.receipt.logs[0].args.proposalId);
         proposals[action.data.guildName].push(
           guildProposalCreationTx.receipt.logs[0].args.proposalId
         );
@@ -154,7 +156,6 @@ export async function doActions(
         });
         break;
       case "guild-voteProposal":
-        console.log(proposals);
         await guilds[action.data.guildName].setVote(
           proposals[action.data.guildName][action.data.proposal],
           action.data.action,
@@ -170,5 +171,5 @@ export async function doActions(
       default:
         break;
     }
-  });
+  }
 }

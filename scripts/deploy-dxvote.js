@@ -482,7 +482,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     console.log("Transfering ownership...");
     // Set the in the permission registry
     await permissionRegistry.transferOwnership(avatar.address);
-    await erc721Factory.transferOwnership(avatar.address);
+    await dxDaoNFT.transferOwnership(avatar.address);
     await controller.unregisterScheme(accounts[0], avatar.address);
 
     // Deploy Guilds
@@ -491,7 +491,14 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
 
     // Do actions
     console.log("Doing actions");
-    doActions(deploymentConfig.actions, tokens, addresses, avatar, [], ipfs);
+    await doActions(
+      deploymentConfig.actions,
+      tokens,
+      addresses,
+      avatar,
+      [],
+      ipfs
+    );
 
     // Increase time to local time
     await hre.network.provider.request({

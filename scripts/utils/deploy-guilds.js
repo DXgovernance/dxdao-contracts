@@ -70,7 +70,7 @@ export async function deployGuilds(
   // });
   console.log("Doing guild actions");
   // Execute a set of actions once all contracts are deployed
-  doActions(
+  await doActions(
     deploymentConfig.guildActions,
     tokens,
     addresses,
