@@ -159,7 +159,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
 
     receive() external payable {}
 
-    // @dev Initilizer
+    // @dev Initializer
     // @param _token The ERC20 token that will be used as source of voting power
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     // @param _timeForExecution The amount of time in seconds that a proposal action will have to execute successfully
@@ -200,7 +200,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         );
     }
 
-    // @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initilized
+    // @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initialized
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     // @param _timeForExecution The amount of time in seconds that a proposal action will have to execute successfully
     // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
@@ -509,7 +509,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                     uint256 _value = proposals[proposalId].value[i];
 
                     // If the call is an ERC20 transfer or approve the asset is the address called
-                    // and the to and value are the decoded ERC20 receiver and value transfered
+                    // and the to and value are the decoded ERC20 receiver and value transferred
                     if (
                         ERC20_TRANSFER_SIGNATURE == callDataFuncSignature ||
                         ERC20_APPROVE_SIGNATURE == callDataFuncSignature
@@ -534,7 +534,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
                         }
 
                     isExecutingProposal = true;
-                    // We use isExecutingProposal varibale to avoid reentrancy in proposal execution
+                    // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
                     // slither-disable-next-line all
                     (bool success, ) = proposals[proposalId].to[i].call{value: proposals[proposalId].value[i]}(
                         proposals[proposalId].data[i]
@@ -854,7 +854,7 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     //@dev Decodes abi encoded data with selector for "transfer(address,uint256)".
     //@param _data ERC20 address and value encoded data.
     //@return to The account to receive the tokens
-    //@return value The value of tokens to be transfered/approved
+    //@return value The value of tokens to be transferred/approved
     function erc20TransferOrApproveDecode(bytes memory _data) public pure returns (address to, uint256 value) {
         assembly {
             to := mload(add(_data, 36))

@@ -7,7 +7,7 @@ import "../daostack/votingMachines/GenesisProtocol.sol";
  *
  * New Features:
  *  - Payable Votes: Any organization can send funds and configure the gas and maxGasPrice to be refunded per vote.
- *  - Signed Votes: Votes can be signed for this or any voting machine, they can shared on this voting machine and
+ *  - Signed Votes: Votes can be signed for this or any voting machine, they can be shared on this voting machine and
  *    execute votes signed for this voting machine.
  *  - Signal Votes: Voters can signal their decisions with near 50k gas, the signaled votes can be executed on
  *    chain by anyone.
@@ -76,8 +76,8 @@ contract DXDVotingMachine is GenesisProtocol {
 
     /**
      * @dev Config the vote refund for each organization
-     * @param _voteGas the amoung of gas that will be used as vote cost
-     * @param _maxGasPrice the maximun amount of gas price to be paid, if the gas used is higehr than this value only a
+     * @param _voteGas the amount of gas that will be used as vote cost
+     * @param _maxGasPrice the maximum amount of gas price to be paid, if the gas used is higher than this value only a
      * portion of the total gas would be refunded
      */
     function setOrganizationRefund(uint256 _voteGas, uint256 _maxGasPrice) external {
@@ -99,9 +99,9 @@ contract DXDVotingMachine is GenesisProtocol {
     }
 
     /**
-     * @dev Config the requried % of votes needed in a boosted proposal in a scheme, only callable by the avatar
-     * @param _scheme the scheme address that wants to be configured
-     * @param _paramsHash the paramemeters configuration hashed of the scheme
+     * @dev Config the required % of votes needed in a boosted proposal in a scheme, only callable by the avatar
+     * @param _scheme the scheme address to be configured
+     * @param _paramsHash the parameters configuration hashed of the scheme
      * @param _boostedVotePeriodLimit the required % of votes needed in a boosted proposal to be executed on that scheme
      */
     function setBoostedVoteRequiredPercentage(
@@ -285,8 +285,8 @@ contract DXDVotingMachine is GenesisProtocol {
         require(stakingToken.transferFrom(_staker, address(this), amount), "fail transfer from staker");
         proposal.totalStakes = proposal.totalStakes.add(amount); //update totalRedeemableStakes
         staker.amount = staker.amount.add(amount);
-        //This is to prevent average downstakes calculation overflow
-        //Note that any how GEN cap is 100000000 ether.
+        // This is to prevent average downstakes calculation overflow
+        // Note that GEN cap is 100000000 ether.
         require(staker.amount <= 0x100000000000000000000000000000000, "staking amount is too high");
         require(
             proposal.totalStakes <= uint256(0x100000000000000000000000000000000).sub(proposal.daoBountyRemain),
@@ -522,10 +522,10 @@ contract DXDVotingMachine is GenesisProtocol {
     }
 
     /**
-     * @dev Get the requried % of votes needed in a boosted proposal in a scheme
+     * @dev Get the required % of votes needed in a boosted proposal in a scheme
      * @param avatar the avatar address
      * @param scheme the scheme address
-     * @param paramsHash the paramemeters configuration hashed of the scheme
+     * @param paramsHash the parameters configuration hashed of the scheme
      */
     function getBoostedVoteRequiredPercentage(
         address avatar,
