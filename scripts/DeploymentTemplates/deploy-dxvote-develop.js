@@ -381,7 +381,9 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
             amount: "0",
           },
         },
+      ],
 
+      guildActions: [
         {
           type: "approve",
           from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",

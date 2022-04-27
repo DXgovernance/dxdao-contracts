@@ -3,6 +3,8 @@ require("@nomiclabs/hardhat-web3");
 
 const contentHash = require("content-hash");
 const IPFS = require("ipfs-core");
+const moment = require("moment");
+const { default: BigNumber } = require("bignumber.js");
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 const MAX_UINT_256 =
@@ -10,11 +12,9 @@ const MAX_UINT_256 =
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
 const { encodePermission } = require("../test/helpers/permissions");
-const deployTokens = require("./utils/deploy-tokens");
-const moment = require("moment");
-const { default: BigNumber } = require("bignumber.js");
+const { deployTokens } = require("./utils/deploy-tokens");
 const { deployGuilds } = require("./utils/deploy-guilds");
-
+const { doActions } = require("./utils/do-actions");
 task("deploy-dxvote", "Deploy dxvote in localhost network")
   .addParam("deployconfig", "The deploy config json in string format")
   .setAction(async ({ deployconfig }) => {
@@ -22,7 +22,6 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    console.log("yo");
     let addresses = {};
 
     // Parse string json config to json object
@@ -106,7 +105,8 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
 
     // Deploy Tokens
     const { tokens, addresses: tokenAddresses } = await deployTokens(
-      deploymentConfig
+      deploymentConfig,
+      accounts
     );
     addresses = Object.assign(addresses, tokenAddresses);
 
@@ -461,12 +461,12 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       addresses[schemeConfiguration.name] = newScheme.address;
     }
 
-    // Deploy dxDaoNFT
+    // Deploy ERC721Factory
     let erc721Factory;
-    console.log("Deploying DXdaoNFT...");
-    erc721Factory = await ERC721Factory.new();
+    console.log("Deploying ERC721Factory...");
+    erc721Factory = await ERC721Factory.new("DXdao NFT", "DXNFT");
     networkContracts.utils.erc721Factory = erc721Factory.address;
-    addresses["erc721Factory"] = erc721Factory.address;
+    addresses["ERC721Factory"] = erc721Factory.address;
 
     // Deploy ERC20VestingFactory
     let erc20VestingFactory;
@@ -482,13 +482,16 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     console.log("Transfering ownership...");
     // Set the in the permission registry
     await permissionRegistry.transferOwnership(avatar.address);
-    await dxDaoNFT.transferOwnership(avatar.address);
+    await erc721Factory.transferOwnership(avatar.address);
     await controller.unregisterScheme(accounts[0], avatar.address);
 
     // Deploy Guilds
-
     const guildRegistry = await GuildRegistry.new();
-    await deployGuilds(deploymentTokens, tokens, guildRegistry);
+    await deployGuilds(deploymentConfig, tokens, guildRegistry);
+
+    // Do actions
+    console.log("Doing actions");
+    doActions(deploymentConfig.actions, tokens, addresses, avatar);
 
     // Increase time to local time
     await hre.network.provider.request({
