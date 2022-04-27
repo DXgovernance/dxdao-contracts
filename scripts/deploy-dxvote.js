@@ -41,8 +41,10 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     const ERC20Mock = await hre.artifacts.require("ERC20Mock");
     const ERC20SnapshotRep = await hre.artifacts.require("ERC20SnapshotRep");
     const Multicall = await hre.artifacts.require("Multicall");
-    const DXdaoNFT = await hre.artifacts.require("DXdaoNFT");
-    const DXDVestingFactory = await hre.artifacts.require("DXDVestingFactory");
+    const ERC721Factory = await hre.artifacts.require("ERC721Factory");
+    const ERC20VestingFactory = await hre.artifacts.require(
+      "ERC20VestingFactory"
+    );
     const GuildRegistry = await hre.artifacts.require("GuildRegistry");
 
     async function waitBlocks(blocks) {
@@ -502,20 +504,20 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
 
     // Deploy dxDaoNFT
     let dxDaoNFT;
-    console.log("Deploying DXdaoNFT...");
-    dxDaoNFT = await DXdaoNFT.new();
+    console.log("Deploying ERC721Factory...");
+    dxDaoNFT = await ERC721Factory.new("DX DAO NFT", "DXDNFT");
     networkContracts.utils.dxDaoNFT = dxDaoNFT.address;
-    addresses["DXdaoNFT"] = dxDaoNFT.address;
+    addresses["ERC721Factory"] = dxDaoNFT.address;
 
-    // Deploy DXDVestingFactory
+    // Deploy ERC20VestingFactory
     let dxdVestingFactory;
-    console.log("Deploying DXDVestingFactory...");
-    dxdVestingFactory = await DXDVestingFactory.new(
+    console.log("Deploying ERC20VestingFactory...");
+    dxdVestingFactory = await ERC20VestingFactory.new(
       networkContracts.votingMachines[votingMachine.address].token,
       avatar.address
     );
     networkContracts.utils.dxdVestingFactory = dxdVestingFactory.address;
-    addresses["DXDVestingFactory"] = dxdVestingFactory.address;
+    addresses["ERC20VestingFactory"] = dxdVestingFactory.address;
 
     // Transfer all ownership and power to the dao
     console.log("Transfering ownership...");
