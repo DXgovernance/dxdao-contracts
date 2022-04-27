@@ -12,7 +12,12 @@ const MAX_UINT_256 =
   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
-export async function deployGuilds(deploymentConfig, tokens, guildRegistry) {
+export async function deployGuilds(
+  deploymentConfig,
+  tokens,
+  guildRegistry,
+  ipfs
+) {
   // Deploy Guilds
   let guilds = {};
   let proposals = {
@@ -72,6 +77,7 @@ export async function deployGuilds(deploymentConfig, tokens, guildRegistry) {
     {
       address: "0x0",
     },
-    guilds
+    guilds,
+    ipfs
   );
 }

@@ -3,17 +3,26 @@ require("@nomiclabs/hardhat-web3");
 const { default: BigNumber } = require("bignumber.js");
 
 const contentHash = require("content-hash");
-const IPFS = require("ipfs-core");
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 const MAX_UINT_256 =
   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
-export async function doActions(actions, tokens, addresses, avatar, guilds) {
+export async function doActions(
+  actions,
+  tokens,
+  addresses,
+  avatar,
+  guilds,
+  ipfs
+) {
   // Execute a set of actions once all contracts are deployed
-  const ipfs = await IPFS.create({ repo: "ok" + Math.random() });
+  let proposals = {
+    dxvote: [],
+  };
   actions.forEach(async action => {
+    console.log({ proposals });
     if (action.time)
       await network.provider.send("evm_increaseTime", [action.time]);
     console.log("Executing action:", action);

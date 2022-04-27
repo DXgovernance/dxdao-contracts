@@ -1,6 +1,7 @@
 /* eslint-disable no-case-declarations */
 require("@nomiclabs/hardhat-web3");
 
+const IPFS = require("ipfs-core");
 const moment = require("moment");
 const { default: BigNumber } = require("bignumber.js");
 
@@ -19,6 +20,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
+    const ipfs = await IPFS.create();
 
     let addresses = {};
 
@@ -485,11 +487,11 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
 
     // Deploy Guilds
     const guildRegistry = await GuildRegistry.new();
-    await deployGuilds(deploymentConfig, tokens, guildRegistry);
+    await deployGuilds(deploymentConfig, tokens, guildRegistry, ipfs);
 
     // Do actions
     console.log("Doing actions");
-    doActions(deploymentConfig.actions, tokens, addresses, avatar, []);
+    doActions(deploymentConfig.actions, tokens, addresses, avatar, [], ipfs);
 
     // Increase time to local time
     await hre.network.provider.request({

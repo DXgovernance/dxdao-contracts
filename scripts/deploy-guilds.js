@@ -24,6 +24,7 @@ task("deploy-guilds", "Deploy guilds")
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
+    const ipfs = await IPFS.create();
 
     let addresses = {};
 
@@ -81,12 +82,12 @@ task("deploy-guilds", "Deploy guilds")
     networkContracts.permissionRegistry = permissionRegistry.address;
     addresses["PermissionRegstry"] = permissionRegistry.address;
     await waitBlocks(1);
-    console.log(deploymentConfig.guildRegistry);
     // Deploy Guilds
     await deployGuilds(
       deploymentConfig,
       tokens,
-      await GuildRegistry.at(deploymentConfig.guildRegistry)
+      await GuildRegistry.at(deploymentConfig.guildRegistry),
+      ipfs
     );
 
     // Increase time to local time
