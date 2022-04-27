@@ -18,7 +18,7 @@ export const ERC20_TRANSFER_SIGNATURE = "0xa9059cbb";
 export const SOME_TOKEN_URI =
   "http://www.someTokenImplementation.com/tokens/19";
 
-export const WalletSchemeProposalState = {
+export const WALLET_SCHEME_PROPOSAL_STATES = {
   none: 0,
   submitted: 1,
   rejected: 2,
@@ -26,7 +26,7 @@ export const WalletSchemeProposalState = {
   executionTimeout: 4,
 };
 
-export const GuildProposalState = {
+export const GUILD_PROPOSAL_STATES = {
   None: 0,
   Submitted: 1,
   Rejected: 2,

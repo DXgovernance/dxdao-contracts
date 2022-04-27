@@ -133,7 +133,7 @@ contract DXDVotingMachine is GenesisProtocol {
         Parameters memory params = parameters[proposal.paramsHash];
         address voter;
         if (params.voteOnBehalf != address(0)) {
-            require(msg.sender == params.voteOnBehalf, "cannot vote on behalf");
+            require(msg.sender == params.voteOnBehalf, "address not allowed to vote on behalf");
             voter = _voter;
         } else {
             voter = msg.sender;

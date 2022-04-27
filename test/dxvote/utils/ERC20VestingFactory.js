@@ -1,23 +1,15 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
-import { assert, expect } from "chai";
+import { expect } from "chai";
 
-const {
-  BN,
-  expectEvent,
-  expectRevert,
-  balance,
-  send,
-  ether,
-  time,
-} = require("@openzeppelin/test-helpers");
+const { expectRevert, time } = require("@openzeppelin/test-helpers");
 
-const DXDVestingFactory = artifacts.require("DXDVestingFactory.sol");
+const ERC20VestingFactory = artifacts.require("ERC20VestingFactory.sol");
 const TokenVesting = artifacts.require("TokenVesting.sol");
 const ERC20Mock = artifacts.require("ERC20Mock.sol");
 
 require("chai").should();
 
-contract("DXDVestingFactory", function (accounts) {
+contract("ERC20VestingFactory", function (accounts) {
   const dao = accounts[0];
   const contributor = accounts[1];
   let dxdTokenMock, vestingFactory;
@@ -25,7 +17,7 @@ contract("DXDVestingFactory", function (accounts) {
   describe("Create Vesting Contracts", function () {
     beforeEach(async function () {
       dxdTokenMock = await ERC20Mock.new(dao, 1000);
-      vestingFactory = await DXDVestingFactory.new(dxdTokenMock.address, dao);
+      vestingFactory = await ERC20VestingFactory.new(dxdTokenMock.address, dao);
     });
 
     it("Can transfer ownership", async function () {

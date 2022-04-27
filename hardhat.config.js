@@ -15,7 +15,7 @@ require("./scripts/create2");
 require("./scripts/deploy-dxvote");
 require("./scripts/DeploymentTemplates/deploy-dxvote-develop");
 require("./scripts/deploy-guilds");
-require("./scripts/DeploymentTemplates/deploy-guilds-develop");
+require("./scripts/DeploymentTemplates/deploy-guilds-larp");
 
 const moment = require("moment");
 

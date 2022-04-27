@@ -1,22 +1,15 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert } from "chai";
-import { func } from "fast-check";
 import * as helpers from "../../helpers";
-const { fixSignature, toEthSignedMessageHash } = require("../../helpers/sign");
 const {
-  createDAO,
   createAndSetupGuildToken,
   createProposal,
-  setAllVotesOnProposal,
+  setVotesOnProposal,
 } = require("../../helpers/guild");
 
 const {
-  BN,
   expectEvent,
   expectRevert,
-  balance,
-  send,
-  ether,
   time,
 } = require("@openzeppelin/test-helpers");
 
@@ -27,12 +20,8 @@ require("chai").should();
 
 contract("SnapshotERC20Guild", function (accounts) {
   const constants = helpers.constants;
-  const ZERO = new BN("0");
-  const VOTE_GAS = new BN(90000); // 90k
-  const MAX_GAS_PRICE = new BN(8000000000); // 8 gwei
-  const REAL_GAS_PRICE = new BN(constants.GAS_PRICE); // 10 gwei (check config)
 
-  let guildToken, tokenVault, erc20Guild, permissionRegistry, genericProposal;
+  let guildToken, tokenVault, erc20Guild, permissionRegistry;
 
   beforeEach(async function () {
     guildToken = await createAndSetupGuildToken(
@@ -85,7 +74,7 @@ contract("SnapshotERC20Guild", function (accounts) {
       ],
       account: accounts[1],
     });
-    await setAllVotesOnProposal({
+    await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setGlobaLPermissionProposal,
       action: 1,
@@ -171,6 +160,7 @@ contract("SnapshotERC20Guild", function (accounts) {
         await erc20Guild.votingPowerOfAt(accounts[5], guildProposalIdSnapshot),
         "0"
       );
+      assert.equal(await erc20Guild.getTotalMembers(), 5);
 
       // Cant vote because it locked tokens after proposal
       await expectRevert(
@@ -178,7 +168,7 @@ contract("SnapshotERC20Guild", function (accounts) {
         "SnapshotERC20Guild: Invalid votingPower amount"
       );
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
         action: 1,
@@ -197,6 +187,37 @@ contract("SnapshotERC20Guild", function (accounts) {
         proposalId: guildProposalId,
         newState: "3",
       });
+    });
+    it("Can withdraw tokens after time limit", async function () {
+      // move past the time lock period
+      await time.increase(60 + 1);
+
+      // Cant transfer because all user tokens are locked
+      await expectRevert(
+        guildToken.transfer(accounts[0], 50, { from: accounts[1] }),
+        "ERC20: transfer amount exceeds balance"
+      );
+
+      // try to release more than locked and fail
+      await expectRevert(
+        erc20Guild.withdrawTokens(50001, { from: accounts[1] }),
+        "ERC20Guild: Unable to withdraw more tokens than locked"
+      );
+
+      const txRelease = await erc20Guild.withdrawTokens(50000, {
+        from: accounts[1],
+      });
+
+      const withdrawEvent = helpers.logDecoder.decodeLogs(
+        txRelease.receipt.rawLogs
+      )[1];
+      assert.equal(withdrawEvent.name, "TokensWithdrawn");
+      assert.equal(withdrawEvent.args[0], accounts[1]);
+      assert.equal(withdrawEvent.args[1], 50000);
+      assert.equal(await erc20Guild.getTotalMembers(), 1);
+
+      const votes = await erc20Guild.votingPowerOf(accounts[1]);
+      votes.should.be.bignumber.equal("0");
     });
   });
 });

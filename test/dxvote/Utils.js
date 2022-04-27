@@ -5,11 +5,9 @@ const moment = require("moment");
 
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
-const DaoCreator = artifacts.require("./DaoCreator.sol");
-const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
-const DXdaoNFT = artifacts.require("./DXdaoNFT.sol");
-const DXDVestingFactory = artifacts.require("./DXDVestingFactory.sol");
+const ERC721Factory = artifacts.require("./ERC721Factory.sol");
+const ERC20VestingFactory = artifacts.require("./ERC20VestingFactory.sol");
 const TokenVesting = artifacts.require("./TokenVesting.sol");
 
 contract("Dxvote Utils", function (accounts) {
@@ -17,7 +15,6 @@ contract("Dxvote Utils", function (accounts) {
     permissionRegistry,
     masterWalletScheme,
     quickWalletScheme,
-    daoCreator,
     org,
     votingMachine,
     nftMinter,
@@ -31,20 +28,12 @@ contract("Dxvote Utils", function (accounts) {
       accounts[1],
       web3.utils.toWei("100")
     );
-    const controllerCreator = await DxControllerCreator.new({
-      gas: constants.GAS_LIMIT,
-    });
-    daoCreator = await DaoCreator.new(controllerCreator.address, {
-      gas: constants.GAS_LIMIT,
-    });
-    org = await helpers.setupOrganizationWithArrays(
-      daoCreator,
+    org = await helpers.setupOrganization(
       [accounts[0], accounts[1], accounts[2]],
       [1000, 1000, 1000],
       [20000, 10000, 70000]
     );
-    votingMachine = await helpers.setupGenesisProtocol(
-      accounts,
+    votingMachine = await helpers.setUpVotingMachine(
       standardTokenMock.address,
       "dxd"
     );
@@ -109,14 +98,16 @@ contract("Dxvote Utils", function (accounts) {
 
     await time.increase(30);
 
-    nftMinter = await DXdaoNFT.new();
+    nftMinter = await ERC721Factory.new("DXDAO NFT", "DXNFT", {
+      from: accounts[0],
+    });
     await nftMinter.transferOwnership(org.avatar.address);
-    vestingFactory = await DXDVestingFactory.new(
+    vestingFactory = await ERC20VestingFactory.new(
       standardTokenMock.address,
       org.avatar.address
     );
 
-    await daoCreator.setSchemes(
+    await org.daoCreator.setSchemes(
       org.avatar.address,
       [masterWalletScheme.address, quickWalletScheme.address],
       [votingMachine.params, votingMachine.params],
