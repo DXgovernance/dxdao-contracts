@@ -10,13 +10,10 @@ const MAX_UINT_256 =
   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
-export async function doActions(actions, tokens, addresses, avatar) {
+export async function doActions(actions, tokens, addresses, avatar, guilds) {
   // Execute a set of actions once all contracts are deployed
-  console.log({ actions });
-  console.log(actions.length);
-  for (let i = 0; i < actions.length; i++) {
-    const action = actions[i];
-    console.log(i);
+  const ipfs = await IPFS.create({ repo: "ok" + Math.random() });
+  actions.forEach(async action => {
     if (action.time)
       await network.provider.send("evm_increaseTime", [action.time]);
     console.log("Executing action:", action);
@@ -164,5 +161,5 @@ export async function doActions(actions, tokens, addresses, avatar) {
       default:
         break;
     }
-  }
+  });
 }

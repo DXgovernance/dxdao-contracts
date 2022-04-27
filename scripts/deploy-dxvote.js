@@ -1,8 +1,6 @@
 /* eslint-disable no-case-declarations */
 require("@nomiclabs/hardhat-web3");
 
-const contentHash = require("content-hash");
-const IPFS = require("ipfs-core");
 const moment = require("moment");
 const { default: BigNumber } = require("bignumber.js");
 
@@ -491,7 +489,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
 
     // Do actions
     console.log("Doing actions");
-    doActions(deploymentConfig.actions, tokens, addresses, avatar);
+    doActions(deploymentConfig.actions, tokens, addresses, avatar, []);
 
     // Increase time to local time
     await hre.network.provider.request({

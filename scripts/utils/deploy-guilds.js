@@ -65,7 +65,13 @@ export async function deployGuilds(deploymentConfig, tokens, guildRegistry) {
   // });
   console.log("Doing guild actions");
   // Execute a set of actions once all contracts are deployed
-  doActions(deploymentConfig.guildActions, tokens, addresses, {
-    address: "0x0",
-  });
+  doActions(
+    deploymentConfig.guildActions,
+    tokens,
+    addresses,
+    {
+      address: "0x0",
+    },
+    guilds
+  );
 }
