@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.5.4;
 
 import "openzeppelin-solidity/contracts/drafts/TokenVesting.sol";
