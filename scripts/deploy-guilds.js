@@ -1,20 +1,11 @@
 /* eslint-disable no-case-declarations */
 require("@nomiclabs/hardhat-web3");
-// const hre = require("hardhat");
+const IPFS = require("ipfs-core");
 
 const { deployTokens } = require("./utils/deploy-tokens");
 const moment = require("moment");
 const { default: BigNumber } = require("bignumber.js");
 const { deployGuilds } = require("./utils/deploy-guilds");
-
-// const ERC20Guild = hre.artifacts.require("ERC20Guild");
-
-// const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-// const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
-// // const MAX_UINT_256 =
-// //   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-// const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
-// const web3 = hre.web3;
 
 task("deploy-guilds", "Deploy guilds")
   .addParam("deployconfig", "The deploy config json in string format")
@@ -82,6 +73,7 @@ task("deploy-guilds", "Deploy guilds")
     networkContracts.permissionRegistry = permissionRegistry.address;
     addresses["PermissionRegstry"] = permissionRegistry.address;
     await waitBlocks(1);
+
     // Deploy Guilds
     await deployGuilds(
       deploymentConfig,

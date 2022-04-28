@@ -51,7 +51,12 @@ export async function deployGuilds(
       );
       if (guildToDeploy.contractName === "SnapshotRepERC20Guild")
         await tokens[guildToDeploy.token].transferOwnership(newGuild.address);
-      await guildRegistry.addGuild(newGuild.address);
+      try {
+        await guildRegistry.addGuild(newGuild.address);
+      } catch (e) {
+        // Likely not owner of registry
+        console.log("Failed to add guild to registry", e);
+      }
       guilds[guildToDeploy.name] = newGuild;
       addresses[guildToDeploy.name] = newGuild.address;
       proposals[guildToDeploy.name] = [];

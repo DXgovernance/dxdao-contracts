@@ -80,12 +80,12 @@ const moment = require("moment");
 // # Account #19: 0x5a485c203d9537095a6be2acc5a7ad83805d301d (10000 ETH)
 // # Private Key: 0xb86f3287c11a77c7317c2484be2bd386816876ead8ceaf86971b7b7c1afbb12b
 
-const INFURA_PROJECT_ID = process.env.KEY_INFURA_API_KEY;
+const INFURA_PROJECT_ID = "5730f284ad6741b183c921ebb0509880";
 const MNEMONIC =
   process.env.KEY_MNEMONIC ||
   "dxdao dxdao dxdao dxdao dxdao dxdao dxdao dxdao dxdao dxdao dxdao dxdao";
 const ETHERSCAN_API_KEY = process.env.KEY_ETHERSCAN;
-
+console.log({ MNEMONIC });
 const hardharNetworks = process.env.CI
   ? {
       hardhat: {
@@ -124,7 +124,7 @@ const hardharNetworks = process.env.CI
         url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
         accounts: { mnemonic: MNEMONIC },
         gasLimit: 10000000,
-        gasPrice: 1000000000, // 1 gwei
+        gasPrice: 200000000000, // 50 gwei
         timeout: 60000,
       },
       xdai: {
