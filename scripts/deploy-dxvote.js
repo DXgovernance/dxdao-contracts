@@ -14,6 +14,7 @@ const { encodePermission } = require("../test/helpers/permissions");
 const { deployTokens } = require("./utils/deploy-tokens");
 const { deployGuilds } = require("./utils/deploy-guilds");
 const { doActions } = require("./utils/do-actions");
+const { waitBlocks } = require("./utils/wait");
 task("deploy-dxvote", "Deploy dxvote in localhost network")
   .addParam("deployconfig", "The deploy config json in string format")
   .setAction(async ({ deployconfig }) => {
@@ -46,14 +47,6 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       "ERC20VestingFactory"
     );
     const GuildRegistry = await hre.artifacts.require("GuildRegistry");
-
-    async function waitBlocks(blocks) {
-      const toBlock = (await web3.eth.getBlock("latest")).number + blocks;
-      while ((await web3.eth.getBlock("latest")).number < toBlock) {
-        await sleep(500);
-      }
-      return;
-    }
 
     // Get ETH accounts to be used
     const accounts = await web3.eth.getAccounts();

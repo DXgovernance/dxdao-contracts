@@ -123,9 +123,6 @@ const hardharNetworks = process.env.CI
       rinkeby: {
         url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
         accounts: { mnemonic: MNEMONIC },
-        gasLimit: 10000000,
-        gasPrice: 200000000000, // 50 gwei
-        timeout: 60000,
       },
       xdai: {
         url: "https://rpc.xdaichain.com/",

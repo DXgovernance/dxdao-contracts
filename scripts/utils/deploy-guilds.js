@@ -49,10 +49,12 @@ export async function deployGuilds(
         guildToDeploy.lockTime,
         permissionRegistry.address
       );
+      await waitBlocks(1);
       if (guildToDeploy.contractName === "SnapshotRepERC20Guild")
         await tokens[guildToDeploy.token].transferOwnership(newGuild.address);
       try {
         await guildRegistry.addGuild(newGuild.address);
+        await waitBlocks(1);
       } catch (e) {
         // Likely not owner of registry
         console.log("Failed to add guild to registry", e);

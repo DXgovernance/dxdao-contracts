@@ -6,6 +6,7 @@ const { deployTokens } = require("./utils/deploy-tokens");
 const moment = require("moment");
 const { default: BigNumber } = require("bignumber.js");
 const { deployGuilds } = require("./utils/deploy-guilds");
+const { waitBlocks } = require("./utils/wait");
 
 task("deploy-guilds", "Deploy guilds")
   .addParam("deployconfig", "The deploy config json in string format")
@@ -26,14 +27,6 @@ task("deploy-guilds", "Deploy guilds")
     const PermissionRegistry = await hre.artifacts.require(
       "PermissionRegistry"
     );
-
-    async function waitBlocks(blocks) {
-      const toBlock = (await web3.eth.getBlock("latest")).number + blocks;
-      while ((await web3.eth.getBlock("latest")).number < toBlock) {
-        await sleep(500);
-      }
-      return;
-    }
 
     // Get ETH accounts to be used
     const accounts = await web3.eth.getAccounts();
