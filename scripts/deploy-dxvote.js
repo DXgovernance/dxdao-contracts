@@ -139,11 +139,12 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
                 from: accounts[0],
               }
             );
-            await tokenToDeploy.distribution.map(async tokenHolder => {
+            for (i in tokenToDeploy.distribution) {
+              const tokenHolder = tokenToDeploy.distribution[i];
               await newToken.mint(tokenHolder.address, tokenHolder.amount, {
                 from: accounts[0],
               });
-            });
+            }
             break;
         }
         tokens[tokenToDeploy.symbol] = newToken;
