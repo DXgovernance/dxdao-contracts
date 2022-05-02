@@ -613,16 +613,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         return tokensLocked[account].amount;
     }
 
-    // @dev Get the voting power of multiple addresses
-    // @param accounts The addresses of the accounts
-    function votingPowerOfMultiple(address[] memory accounts) external view virtual returns (uint256[] memory) {
-        uint256[] memory votes = new uint256[](accounts.length);
-        for (uint256 i = 0; i < accounts.length; i++) {
-            votes[i] = votingPowerOf(accounts[i]);
-        }
-        return votes;
-    }
-
     // @dev Get the address of the ERC20Token used for voting
     function getToken() external view returns (address) {
         return address(token);
