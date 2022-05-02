@@ -158,21 +158,21 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
         require(
-            votingPower > proposals[proposalId].votes[voter].votingPower,
+            votingPower > proposalVotes[proposalId][voter].votingPower,
             "SnapshotERC20Guild: Cant decrease votingPower in vote"
         );
         require(
-            proposals[proposalId].votes[voter].action == 0 || proposals[proposalId].votes[voter].action == action,
+            proposalVotes[proposalId][voter].action == 0 || proposalVotes[proposalId][voter].action == action,
             "SnapshotERC20Guild: Cant change action voted, only increase votingPower"
         );
 
         proposals[proposalId].totalVotes[action] = proposals[proposalId]
             .totalVotes[action]
-            .sub(proposals[proposalId].votes[voter].votingPower)
+            .sub(proposalVotes[proposalId][voter].votingPower)
             .add(votingPower);
 
-        proposals[proposalId].votes[voter].action = action;
-        proposals[proposalId].votes[voter].votingPower = votingPower;
+        proposalVotes[proposalId][voter].action = action;
+        proposalVotes[proposalId][voter].votingPower = votingPower;
 
         emit VoteAdded(proposalId, action, voter, votingPower);
 
