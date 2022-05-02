@@ -24,10 +24,11 @@ const TransparentUpgradeableProxy = artifacts.require(
 );
 const Create2Deployer = artifacts.require("Create2Deployer.sol");
 const ERC20Guild = artifacts.require("ERC20Guild.sol");
-const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const IERC20Guild = artifacts.require("IERC20Guild.sol");
+const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
 const ERC20Mock = artifacts.require("ERC20Mock.sol");
+const Multicall = artifacts.require("Multicall.sol");
 
 require("chai").should();
 
@@ -43,11 +44,13 @@ contract("ERC20Guild", function (accounts) {
     actionMockB,
     erc20Guild,
     permissionRegistry,
-    genericProposal;
+    genericProposal,
+    multicall;
 
   beforeEach(async function () {
     const proxyAdmin = await ProxyAdmin.new({ from: accounts[0] });
 
+    multicall = await Multicall.new();
     const erc20GuildDeployer = await Create2Deployer.new();
     const erc20GuildAddress = helpers.create2Address(
       erc20GuildDeployer.address,
@@ -1434,18 +1437,21 @@ contract("ERC20Guild", function (accounts) {
         endTime,
         to,
         data,
+        value,
         title,
         contentHash,
         state,
+        totalVotes,
       } = await erc20Guild.getProposal(guildProposalId);
 
       const callsTo = [],
         callsData = [],
         callsValue = [];
+
       genericProposal.actions.map(action => {
         action.to.map(to => callsTo.push(to));
         action.data.map(data => callsData.push(data));
-        action.value.map(value => callsValue.push(value));
+        action.value.map(value => callsValue.push(value.toString()));
       });
 
       assert.equal(creator, accounts[3]);
@@ -1454,10 +1460,10 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(endTime.toString(), now.add(new BN("30")).toString());
       assert.deepEqual(to, callsTo);
       assert.deepEqual(data, callsData);
-      // assert.equal(value, callsValue);
+      assert.deepEqual(value, callsValue);
       assert.equal(title, "Awesome Proposal Title");
       assert.equal(contentHash, constants.SOME_HASH);
-      // assert.equal(totalVotes, [new BN("0"), new BN("0")]);
+      assert.equal(totalVotes.length, 4);
       assert.equal(state, "1");
     });
 
@@ -1467,12 +1473,25 @@ contract("ERC20Guild", function (accounts) {
     });
 
     it("can read votingPowerOf multiple accounts", async function () {
-      const res = await erc20Guild.votingPowerOfMultiple([
-        accounts[2],
-        accounts[5],
-      ]);
-      res[0].should.be.bignumber.equal("50000");
-      res[1].should.be.bignumber.equal("200000");
+      const calls = await Promise.all(
+        [accounts[2], accounts[5]].map(async account => {
+          return [
+            erc20Guild.address,
+            await new web3.eth.Contract(ERC20Guild.abi).methods
+              .votingPowerOf(account)
+              .encodeABI(),
+          ];
+        })
+      );
+
+      const votingPowersCall = await multicall.aggregate.call(calls);
+
+      web3.eth.abi
+        .decodeParameter("uint256", votingPowersCall.returnData[0])
+        .should.equal("50000");
+      web3.eth.abi
+        .decodeParameter("uint256", votingPowersCall.returnData[1])
+        .should.equal("200000");
     });
   });
 
@@ -1807,7 +1826,7 @@ contract("ERC20Guild", function (accounts) {
     });
 
     it("can set setVotes more efficient than multiple setVote", async function () {
-      // Forwarding ~10 votes is 18% less effective than 10 setVote functions
+      // Forwarding ~10 votes is 24% less effective than 10 setVote functions
       const getSignature = async function (proposalId, account) {
         const hash = await erc20Guild.hashVote(account, proposalId, 1, 10);
         return fixSignature(await web3.eth.sign(hash, account));
@@ -1827,17 +1846,27 @@ contract("ERC20Guild", function (accounts) {
         voters.push(accounts[1]);
         signatures.push(await getSignature(guildProposalId, accounts[1]));
       }
-      const txVote3 = await erc20Guild.setSignedVotes(
-        proposalIds,
-        actions,
-        votes,
-        voters,
-        signatures,
-        { from: accounts[4] }
+      const calls = await Promise.all(
+        proposalIds.map(async (proposalId, i) => {
+          return [
+            erc20Guild.address,
+            await new web3.eth.Contract(ERC20Guild.abi).methods
+              .setSignedVote(
+                proposalId,
+                actions[i],
+                votes[i],
+                voters[i],
+                signatures[i]
+              )
+              .encodeABI(),
+          ];
+        })
       );
 
+      const txVote3 = await multicall.aggregate(calls, { from: accounts[4] });
+
       if (constants.GAS_PRICE > 1)
-        expect(txVote3.receipt.gasUsed / (VOTE_GAS * 10)).to.be.below(1.21);
+        expect(txVote3.receipt.gasUsed / (VOTE_GAS * 10)).to.be.below(1.24);
     });
 
     it("cannot set a signed vote twice", async function () {
