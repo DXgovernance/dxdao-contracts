@@ -591,6 +591,22 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
         }
     }
 
+    // @dev Get the information of a proposal
+    // @param proposalId The id of the proposal to get the information
+    // @return creator The address that created the proposal
+    // @return startTime The time at the proposal was created
+    // @return endTime The time at the proposal will end
+    // @return to The receiver addresses of each call to be executed
+    // @return data The data to be executed on each call to be executed
+    // @return value The ETH value to be sent on each call to be executed
+    // @return title The title of the proposal
+    // @return contentHash The content hash of the content reference of the proposal
+    // @return state If the proposal state
+    // @return totalVotes The total votes of the proposal
+    function getProposal(bytes32 proposalId) external view virtual returns (Proposal memory) {
+        return (proposals[proposalId]);
+    }
+
     // @dev Get the voting power of an account
     // @param account The address of the account
     function votingPowerOf(address account) public view virtual returns (uint256) {
@@ -670,53 +686,6 @@ contract ERC20Guild is Initializable, IERC1271Upgradeable {
     // @dev Get the proposalsIds array
     function getProposalsIds() external view returns (bytes32[] memory) {
         return proposalsIds;
-    }
-
-    // @dev Get the information of a proposal
-    // @param proposalId The id of the proposal to get the information
-    // @return creator The address that created the proposal
-    // @return startTime The time at the proposal was created
-    // @return endTime The time at the proposal will end
-    // @return to The receiver addresses of each call to be executed
-    // @return data The data to be executed on each call to be executed
-    // @return value The ETH value to be sent on each call to be executed
-    // @return totalActions The amount of actions that can be voted on
-    // @return title The title of the proposal
-    // @return contentHash The content hash of the content reference of the proposal
-    // @return state If the proposal state
-    // @return totalVotes The total votes of the proposal
-    function getProposal(bytes32 proposalId)
-        external
-        view
-        virtual
-        returns (
-            address creator,
-            uint256 startTime,
-            uint256 endTime,
-            address[] memory to,
-            bytes[] memory data,
-            uint256[] memory value,
-            uint256 totalActions,
-            string memory title,
-            string memory contentHash,
-            ProposalState state,
-            uint256[] memory totalVotes
-        )
-    {
-        Proposal storage proposal = proposals[proposalId];
-        return (
-            proposal.creator,
-            proposal.startTime,
-            proposal.endTime,
-            proposal.to,
-            proposal.data,
-            proposal.value,
-            proposal.totalVotes.length.sub(1),
-            proposal.title,
-            proposal.contentHash,
-            proposal.state,
-            proposal.totalVotes
-        );
     }
 
     // @dev Get the votes of a voter in a proposal
