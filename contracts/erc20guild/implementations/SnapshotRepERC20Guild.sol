@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "../ERC20Guild.sol";
+import "../ERC20GuildUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
@@ -14,7 +14,7 @@ import "../../utils/ERC20/ERC20SnapshotRep.sol";
   When a proposal is created it saves the snapshot if at the moment of creation,
   the voters can vote only with the voting power they had at that time.
 */
-contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
+contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;

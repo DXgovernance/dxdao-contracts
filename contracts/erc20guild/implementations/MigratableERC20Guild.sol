@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "../BaseERC20Guild.sol";
+import "../ERC20Guild.sol";
 
 /*
   @title MigratableERC20Guild
   @author github:AugustoL
   @dev An ERC20Guild that can migrate from one ERC20 voting token to another by changing token vault
 */
-contract MigratableERC20Guild is BaseERC20Guild {
+contract MigratableERC20Guild is ERC20Guild {
     using SafeMathUpgradeable for uint256;
 
     // The tokens locked indexed by token holder address.
@@ -37,52 +37,17 @@ contract MigratableERC20Guild is BaseERC20Guild {
         string memory _name,
         uint256 _lockTime,
         address _permissionRegistry
-    ) {
-        require(address(_token) != address(0), "ERC20Guild: token cant be zero address");
-        require(_proposalTime > 0, "ERC20Guild: proposal time has to be more tha 0");
-        require(_lockTime >= _proposalTime, "ERC20Guild: lockTime has to be higher or equal to proposalTime");
-        require(_votingPowerForProposalExecution > 0, "ERC20Guild: voting power for execution has to be more than 0");
-        name = _name;
-        token = IERC20Upgradeable(_token);
-        tokenVault = new TokenVault();
-        tokenVault.initialize(address(token), address(this));
-        proposalTime = _proposalTime;
-        votingPowerForProposalExecution = _votingPowerForProposalExecution;
-        votingPowerForProposalCreation = _votingPowerForProposalCreation;
-        lockTime = _lockTime;
-        permissionRegistry = PermissionRegistry(_permissionRegistry);
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            address(this),
-            bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")),
-            0,
-            true
-        );
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            address(this),
-            bytes4(keccak256("setPermission(address[],address[],bytes4[],uint256[],bool[])")),
-            0,
-            true
-        );
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            address(this),
-            bytes4(keccak256("setPermissionDelay(uint256)")),
-            0,
-            true
-        );
-
-        // This variables are set initially to default values cause the constructor throws stack too deep error
-        // They can be changed later by calling the setConfig function
-        timeForExecution = 30 days;
-        voteGas = 0;
-        maxGasPrice = 0;
-        maxActiveProposals = 5;
-    }
+    )
+        ERC20Guild(
+            _token,
+            _proposalTime,
+            _votingPowerForProposalExecution,
+            _votingPowerForProposalCreation,
+            _name,
+            _lockTime,
+            _permissionRegistry
+        )
+    {}
 
     // @dev Change the token vault used, this will change the voting token too.
     // The token vault admin has to be the guild.

@@ -23,7 +23,7 @@ const TransparentUpgradeableProxy = artifacts.require(
   "TransparentUpgradeableProxy.sol"
 );
 const Create2Deployer = artifacts.require("Create2Deployer.sol");
-const ERC20Guild = artifacts.require("ERC20Guild.sol");
+const ERC20Guild = artifacts.require("ERC20GuildUpgradeable.sol");
 const IERC20Guild = artifacts.require("IERC20Guild.sol");
 const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const ActionMock = artifacts.require("ActionMock.sol");

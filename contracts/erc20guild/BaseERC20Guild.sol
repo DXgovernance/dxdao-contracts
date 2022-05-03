@@ -12,7 +12,7 @@ import "../utils/PermissionRegistry.sol";
 import "../utils/TokenVault.sol";
 
 /*
-  @title ERC20Guild
+  @title BaseERC20Guild
   @author github:AugustoL
   @dev Extends an ERC20 functionality into a Guild, adding a simple governance system over an ERC20 token.
   An ERC20Guild is a simple organization that execute arbitrary calls if a minimum amount of votes is reached in a 

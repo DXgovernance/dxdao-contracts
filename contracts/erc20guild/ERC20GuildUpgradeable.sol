@@ -1,32 +1,46 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
-import "../ERC20GuildUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "../utils/PermissionRegistry.sol";
+import "../utils/TokenVault.sol";
+import "./BaseERC20Guild.sol";
 
 /*
-  @title ERC20GuildWithERC1271
+  @title ERC20GuildUpgradeable
   @author github:AugustoL
-  @dev The guild can sign EIP1271 messages, to do this the guild needs to call itself and allow the signature to be verified 
-    with and extra signature of any account with voting power.
+  @dev Extends an ERC20 functionality into a Guild, adding a simple governance system over an ERC20 token.
+  An ERC20Guild is a simple organization that execute arbitrary calls if a minimum amount of votes is reached in a 
+  proposal action while the proposal is active.
+  The token used for voting needs to be locked for a minimum period of time in order to be used as voting power.
+  Every time tokens are locked the timestamp of the lock is updated and increased the lock time seconds.
+  Once the lock time passed the voter can withdraw his tokens.
+  Each proposal has actions, the voter can vote only once per proposal and cant change the chosen action, only
+  increase the voting power of his vote.
+  A proposal ends when the minimum amount of total voting power is reached on a proposal action before the proposal
+  finish.
+  When a proposal ends successfully it executes the calls of the winning action.
+  The winning action has a certain amount of time to be executed successfully if that time passes and the action didn't
+  executed successfully, it is marked as failed.
+  The guild can execute only allowed functions, if a function is not allowed it will need to set the allowance for it.
+  The allowed functions have a timestamp that marks from what time the function can be executed.
+  A limit to a maximum amount of active proposals can be set, an active proposal is a proposal that is in Active state.
+  Gas can be refunded to the account executing the vote, for this to happen the voteGas and maxGasPrice values need to
+  be set.
+  Signed votes can be executed in behalf of other users, to sign a vote the voter needs to hash it with the function
+  hashVote, after signing the hash teh voter can share it to other account to be executed.
+  Multiple votes and signed votes can be executed in one transaction.
 */
-contract ERC20GuildWithERC1271 is ERC20GuildUpgradeable, IERC1271Upgradeable {
-    using SafeMathUpgradeable for uint256;
-    using ECDSAUpgradeable for bytes32;
-
-    // The EIP1271 hashes that were signed by the ERC20Guild
-    // Once a hash is signed by the guild it can be verified with a signature from any voter with balance
-    mapping(bytes32 => bool) public EIP1271SignedHashes;
-
-    // @dev Initilizer
+contract ERC20GuildUpgradeable is BaseERC20Guild, Initializable {
+    // @dev Initializer
     // @param _token The ERC20 token that will be used as source of voting power
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     // @param _timeForExecution The amount of time in seconds that a proposal action will have to execute successfully
     // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // action
     // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // @param _name The name of the ERC20Guild
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
@@ -44,17 +58,11 @@ contract ERC20GuildWithERC1271 is ERC20GuildUpgradeable, IERC1271Upgradeable {
         uint256 _maxActiveProposals,
         uint256 _lockTime,
         address _permissionRegistry
-    ) public override initializer {
-        require(address(_token) != address(0), "ERC20GuildWithERC1271: token cant be zero address");
-        require(_proposalTime > 0, "ERC20GuildWithERC1271: proposal time has to be more tha 0");
-        require(
-            _lockTime >= _proposalTime,
-            "ERC20GuildWithERC1271: lockTime has to be higher or equal to proposalTime"
-        );
-        require(
-            _votingPowerForProposalExecution > 0,
-            "ERC20GuildWithERC1271: voting power for execution has to be more than 0"
-        );
+    ) public virtual initializer {
+        require(address(_token) != address(0), "ERC20Guild: token cant be zero address");
+        require(_proposalTime > 0, "ERC20Guild: proposal time has to be more tha 0");
+        require(_lockTime >= _proposalTime, "ERC20Guild: lockTime has to be higher or equal to proposalTime");
+        require(_votingPowerForProposalExecution > 0, "ERC20Guild: voting power for execution has to be more than 0");
         name = _name;
         token = IERC20Upgradeable(_token);
         tokenVault = new TokenVault();
@@ -92,35 +100,5 @@ contract ERC20GuildWithERC1271 is ERC20GuildUpgradeable, IERC1271Upgradeable {
             0,
             true
         );
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            address(this),
-            bytes4(keccak256("setEIP1271SignedHash(bytes32,bool)")),
-            0,
-            true
-        );
-    }
-
-    // @dev Set a hash of an call to be validated using EIP1271
-    // @param _hash The EIP1271 hash to be added or removed
-    // @param isValid If the hash is valid or not
-    function setEIP1271SignedHash(bytes32 _hash, bool isValid) external virtual {
-        require(msg.sender == address(this), "ERC20GuildWithERC1271: Only callable by the guild");
-        EIP1271SignedHashes[_hash] = isValid;
-    }
-
-    // @dev Gets the validity of a EIP1271 hash
-    // @param _hash The EIP1271 hash
-    function getEIP1271SignedHash(bytes32 _hash) external view virtual returns (bool) {
-        return EIP1271SignedHashes[_hash];
-    }
-
-    // @dev Get if the hash and signature are valid EIP1271 signatures
-    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue) {
-        return
-            ((votingPowerOf(hash.recover(signature)) > 0) && EIP1271SignedHashes[hash])
-                ? this.isValidSignature.selector
-                : bytes4(0);
     }
 }

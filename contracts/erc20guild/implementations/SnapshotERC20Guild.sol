@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "../ERC20Guild.sol";
+import "../ERC20GuildUpgradeable.sol";
 import "../../utils/Arrays.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
@@ -10,10 +10,10 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
   @title SnapshotERC20Guild
   @author github:AugustoL
   @dev An ERC20Guild designed to work with a snapshotted locked tokens.
-  It is an extension over the ERC20Guild where the voters can vote with the voting power used at the moment of the 
+  It is an extension over the ERC20GuildUpgradeable where the voters can vote with the voting power used at the moment of the 
   proposal creation.
 */
-contract SnapshotERC20Guild is ERC20Guild {
+contract SnapshotERC20Guild is ERC20GuildUpgradeable {
     using SafeMathUpgradeable for uint256;
     using Arrays for uint256[];
     using ECDSAUpgradeable for bytes32;
