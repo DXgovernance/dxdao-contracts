@@ -401,23 +401,6 @@ contract BaseERC20Guild {
         _setVote(msg.sender, proposalId, action, votingPower);
     }
 
-    // @dev Set the voting power to vote in multiple proposals
-    // @param proposalIds The ids of the proposals to set the vote
-    // @param actions The proposal actions to be voted
-    // @param votingPowers The votingPower to use as voting for each proposals
-    function setVotes(
-        bytes32[] memory proposalIds,
-        uint256[] memory actions,
-        uint256[] memory votingPowers
-    ) external virtual {
-        require(
-            (proposalIds.length == votingPowers.length) && (proposalIds.length == actions.length),
-            "ERC20Guild: Wrong length of proposalIds, actions or votingPowers"
-        );
-        for (uint256 i = 0; i < proposalIds.length; i++)
-            _setVote(msg.sender, proposalIds[i], actions[i], votingPowers[i]);
-    }
-
     // @dev Set the voting power to vote in a proposal using a signed vote
     // @param proposalId The id of the proposal to set the vote
     // @param action The proposal action to be voted
