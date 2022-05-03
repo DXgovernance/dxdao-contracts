@@ -13,9 +13,6 @@ task("deploy-guilds", "Deploy guilds")
   .setAction(async ({ deployconfig }) => {
     const GuildRegistry = await hre.artifacts.require("GuildRegistry");
 
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
     const ipfs = await IPFS.create();
 
     let addresses = {};
