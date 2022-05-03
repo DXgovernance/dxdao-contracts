@@ -239,7 +239,7 @@ contract WalletScheme {
      * @param _to - The addresses to call
      * @param _callData - The abi encode data for the calls
      * @param _value value(ETH) to transfer with the calls
-     * @param title title of proposal
+     * @param _title title of proposal
      * @param _descriptionHash proposal description hash
      * @return an id which represents the proposal
      */

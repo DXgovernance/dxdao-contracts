@@ -54,21 +54,21 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           distribution: [
             {
               address: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
-              amount: web3.utils.toWei("220"),
+              amount: 1000,
             },
             {
               address: "0xc73480525e9d1198d448ece4a01daea851f72a9d",
-              amount: web3.utils.toWei("50"),
+              amount: 4000,
             },
             {
               address: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
-              amount: web3.utils.toWei("10"),
+              amount: 10000,
             },
           ],
         },
       ],
 
-      permissionRegistryDelay: moment.duration(10, "seconds").asSeconds(),
+      permissionRegistryDelay: moment.duration(10, "minutes").asSeconds(),
 
       contributionReward: {
         queuedVoteRequiredPercentage: 50,
