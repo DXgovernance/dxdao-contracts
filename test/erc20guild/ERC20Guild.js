@@ -1,7 +1,7 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert } from "chai";
 import * as helpers from "../helpers";
-const { fixSignature, toEthSignedMessageHash } = require("../helpers/sign");
+const { fixSignature } = require("../helpers/sign");
 const {
   createAndSetupGuildToken,
   createProposal,
@@ -183,97 +183,6 @@ contract("ERC20Guild", function (accounts) {
     await time.increase(30);
     await erc20Guild.endProposal(setPermissionToActionMockA);
   };
-
-  describe("EIP1271", function () {
-    beforeEach(async function () {
-      await lockTokens();
-      await allowActionMockA();
-    });
-
-    it("Can validate an EIP1271 Signature", async function () {
-      const guildProposalId = await createProposal({
-        guild: erc20Guild,
-        actions: [
-          {
-            to: [erc20Guild.address],
-            data: [
-              await new web3.eth.Contract(ERC20Guild.abi).methods
-                .setEIP1271SignedHash(
-                  toEthSignedMessageHash(constants.SOME_HASH),
-                  true
-                )
-                .encodeABI(),
-            ],
-            value: [0],
-          },
-        ],
-        account: accounts[3],
-      });
-      await setVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        action: 1,
-        account: accounts[3],
-      });
-
-      const txVote = await setVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        action: 1,
-        account: accounts[5],
-      });
-
-      if (constants.GAS_PRICE > 1)
-        expect(txVote.receipt.gasUsed).to.be.below(VOTE_GAS.toNumber());
-
-      const voteEvent = helpers.logDecoder.decodeLogs(
-        txVote.receipt.rawLogs
-      )[0];
-      assert.equal(voteEvent.name, "VoteAdded");
-      assert.equal(voteEvent.args[0], guildProposalId);
-      assert.equal(voteEvent.args[1], 1);
-      assert.equal(voteEvent.args[2], accounts[5]);
-      assert.equal(voteEvent.args[3], 200000);
-
-      await time.increase(time.duration.seconds(31));
-      const receipt = await erc20Guild.endProposal(guildProposalId);
-      expectEvent(receipt, "ProposalStateChanged", {
-        proposalId: guildProposalId,
-        newState: "3",
-      });
-      assert.equal(
-        await erc20Guild.getEIP1271SignedHash(
-          toEthSignedMessageHash(constants.SOME_HASH)
-        ),
-        true
-      );
-
-      const validSignature = await web3.eth.sign(
-        constants.SOME_HASH,
-        accounts[5]
-      );
-      const invalidSignature = await web3.eth.sign(
-        constants.SOME_HASH,
-        accounts[10]
-      );
-
-      assert.equal(
-        await erc20Guild.isValidSignature(
-          toEthSignedMessageHash(constants.SOME_HASH),
-          validSignature
-        ),
-        web3.eth.abi.encodeFunctionSignature("isValidSignature(bytes32,bytes)")
-      );
-
-      assert.equal(
-        await erc20Guild.isValidSignature(
-          toEthSignedMessageHash(constants.SOME_HASH),
-          invalidSignature
-        ),
-        "0x00000000"
-      );
-    });
-  });
 
   describe("initialization", function () {
     it("initial values are correct", async function () {
