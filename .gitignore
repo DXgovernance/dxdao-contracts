@@ -21,3 +21,8 @@ cache/
 *.swo
 .bash_hist*
 tags
+.temp
+.log/
+yarn-error.log
+venv/
+contracts/hardhat-dependency-compiler

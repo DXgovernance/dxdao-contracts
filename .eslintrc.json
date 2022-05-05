@@ -1,14 +1,16 @@
 {
   "extends": "eslint:recommended",
-  "parser": "babel-eslint",
+  "parser": "@babel/eslint-parser",
   "parserOptions": {
     "ecmaVersion": 6,
     "sourceType": "module",
+    "requireConfigFile": false,
     "ecmaFeatures": {
       "jsx": true
     }
   },
   "rules": {
+    "no-console": "off",
     "semi": 2,
     "no-undef": "off",
     "eol-last": 2,
@@ -18,9 +20,9 @@
     "comma-spacing": "error",
     "brace-style": "error",
     "function-paren-newline": ["error", "consistent"],
-    "max-len": ["warning", 120],
+    "max-len": ["warn", 120],
     "key-spacing": "error",
-    "quotes": ["warning", "double"],
+    "quotes": ["warn", "double"],
     "space-infix-ops": "error"
   }
 }

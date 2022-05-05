@@ -1,3 +1,7 @@
 {
-  "extends": "solhint:default"
+  "extends": "solhint:default",
+  "plugins": ["prettier"],
+  "rules": {
+    "prettier/prettier": "warning"
+  }
 }

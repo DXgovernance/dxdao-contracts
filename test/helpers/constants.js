@@ -9,13 +9,16 @@ export const SOME_HASH =
   "0x1000000000000000000000000000000000000000000000000000000000000000";
 export const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 export const SOME_ADDRESS = "0x1000000000000000000000000000000000000000";
+export const SOME_OTHER_ADDRESS = "0x1100000000000000000000000000000000000000";
 export const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
 export const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 export const TEST_VALUE = 666;
 export const TEST_TITLE = "Awesome Proposal Title";
 export const ERC20_TRANSFER_SIGNATURE = "0xa9059cbb";
+export const SOME_TOKEN_URI =
+  "http://www.someTokenImplementation.com/tokens/19";
 
-export const WalletSchemeProposalState = {
+export const WALLET_SCHEME_PROPOSAL_STATES = {
   none: 0,
   submitted: 1,
   rejected: 2,
@@ -23,7 +26,7 @@ export const WalletSchemeProposalState = {
   executionTimeout: 4,
 };
 
-export const GuildProposalState = {
+export const GUILD_PROPOSAL_STATES = {
   None: 0,
   Submitted: 1,
   Rejected: 2,

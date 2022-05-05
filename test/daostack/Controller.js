@@ -597,7 +597,7 @@ contract("Controller", accounts => {
       0
     );
     assert.equal(
-      helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[0].values._success,
+      helpers.logDecoder.decodeLogs(tx.receipt.rawLogs)[0].args._success,
       true
     );
   });

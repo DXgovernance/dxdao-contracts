@@ -1,87 +1,69 @@
-const hre = require("hardhat");
-const fs = require("fs");
-const web3 = hre.web3;
-let moment = require("moment");
-const { encodePermission } = require("../test/helpers/permissions");
-const wrapProvider = require("arb-ethers-web3-bridge").wrapProvider;
-const HDWalletProvider = require("@truffle/hdwallet-provider");
-const { getDeploymentConfig } = require("./deployment-config.js");
-const BN = web3.utils.BN;
+/* eslint-disable no-case-declarations */
+require("@nomiclabs/hardhat-web3");
+
+const contentHash = require("content-hash");
+const IPFS = require("ipfs-core");
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 const MAX_UINT_256 =
   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
-// Import Contracts
-const DxAvatar = artifacts.require("DxAvatar");
-const DxReputation = artifacts.require("DxReputation");
-const DxController = artifacts.require("DxController");
-const WalletScheme = artifacts.require("WalletScheme");
-const PermissionRegistry = artifacts.require("PermissionRegistry");
-const DXDVotingMachine = artifacts.require("DXDVotingMachine");
-const ERC20Mock = artifacts.require("ERC20Mock");
-const Multicall = artifacts.require("Multicall");
-const DXdaoNFT = artifacts.require("DXdaoNFT");
-const DXDVestingFactory = artifacts.require("DXDVestingFactory");
+const { encodePermission } = require("../test/helpers/permissions");
+const moment = require("moment");
+const { default: BigNumber } = require("bignumber.js");
 
-async function main() {
-  const contractsFile = fs.existsSync(".contracts.json")
-    ? JSON.parse(fs.readFileSync(".contracts.json"))
-    : {};
-  const networkName = hre.network.name;
-
-  function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  async function waitBlocks(blocks) {
-    const toBlock = (await web3.eth.getBlock("latest")).number + blocks;
-    while ((await web3.eth.getBlock("latest")).number < toBlock) {
-      console.log("Waiting to block", toBlock, "...");
-      await sleep(3000);
+task("deploy-dxvote", "Deploy dxvote in localhost network")
+  .addParam("deployconfig", "The deploy config json in string format")
+  .setAction(async ({ deployconfig }) => {
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     }
-    return;
-  }
 
-  function saveContractsFile(contractsFile) {
-    if (networkName !== "hardhat")
-      fs.writeFileSync(
-        ".contracts.json",
-        JSON.stringify(contractsFile, null, 2),
-        { encoding: "utf8", flag: "w" }
-      );
-    else return;
-  }
+    let addresses = {};
 
-  const deploymentConfig = getDeploymentConfig(networkName);
+    // Parse string json config to json object
+    const deploymentConfig = JSON.parse(deployconfig);
 
-  // Get initial REP holders
-  let founders = [],
-    initialRep = [],
-    initialTokens = [];
-  deploymentConfig.reputation.validAddresses.map(initialRepHolder => {
-    founders.push(initialRepHolder.address);
-    initialRep.push(initialRepHolder.amount);
-    initialTokens.push(0);
-  });
+    // Import contracts
+    const DxAvatar = await hre.artifacts.require("DxAvatar");
+    const DxReputation = await hre.artifacts.require("DxReputation");
+    const DxController = await hre.artifacts.require("DxController");
+    const ContributionReward = await hre.artifacts.require(
+      "ContributionReward"
+    );
+    const Redeemer = await hre.artifacts.require("Redeemer");
+    const WalletScheme = await hre.artifacts.require("WalletScheme");
+    const PermissionRegistry = await hre.artifacts.require(
+      "PermissionRegistry"
+    );
+    const DXDVotingMachine = await hre.artifacts.require("DXDVotingMachine");
+    const ERC20Mock = await hre.artifacts.require("ERC20Mock");
+    const ERC20SnapshotRep = await hre.artifacts.require("ERC20SnapshotRep");
+    const Multicall = await hre.artifacts.require("Multicall");
+    const ERC721Factory = await hre.artifacts.require("ERC721Factory");
+    const ERC20VestingFactory = await hre.artifacts.require(
+      "ERC20VestingFactory"
+    );
+    const GuildRegistry = await hre.artifacts.require("GuildRegistry");
 
-  deploymentConfig.extraRep.map(extraRepHolder => {
-    const extraRepHolderIndex = founders.indexOf(extraRepHolder.address);
-    if (extraRepHolderIndex < 0) {
-      founders.push(extraRepHolder.address);
-      initialRep.push(extraRepHolder.amount);
-      initialTokens.push(0);
-    } else {
-      initialRep[extraRepHolderIndex] = new BN(initialRep[extraRepHolderIndex])
-        .add(new BN(extraRepHolder.amount))
-        .toString();
+    async function waitBlocks(blocks) {
+      const toBlock = (await web3.eth.getBlock("latest")).number + blocks;
+      while ((await web3.eth.getBlock("latest")).number < toBlock) {
+        await sleep(500);
+      }
+      return;
     }
-  });
 
-  if (!contractsFile[networkName] || networkName === "hardhat")
-    contractsFile[networkName] = {
-      fromBlock: 0,
+    // Get ETH accounts to be used
+    const accounts = await web3.eth.getAccounts();
+
+    // Get fromBlock for network contracts
+    const fromBlock = (await web3.eth.getBlock("latest")).number;
+
+    // Set networkContracts object that will store the contracts deployed
+    let networkContracts = {
+      fromBlock: fromBlock,
       avatar: null,
       reputation: null,
       token: null,
@@ -89,291 +71,333 @@ async function main() {
       permissionRegistry: null,
       schemes: {},
       utils: {},
-      votingMachines: {
-        dxd: {},
-      },
+      votingMachines: {},
     };
 
-  if (networkName === "arbitrumTestnet" || networkName === "arbitrum") {
-    hre.network.provider = wrapProvider(
-      new HDWalletProvider(
-        hre.network.config.accounts.mnemonic,
-        hre.network.config.url
-      )
-    );
-  }
+    // Get initial REP holders
+    let founders = [],
+      initialRep = [];
+    deploymentConfig.reputation.map(initialRepHolder => {
+      founders.push(initialRepHolder.address);
+      initialRep.push(initialRepHolder.amount.toString());
+    });
 
-  const accounts = await web3.eth.getAccounts();
-  const fromBlock = (await web3.eth.getBlock("latest")).number;
-
-  // Deploy Multicall
-  let multicall;
-  if (contractsFile[networkName].utils.multicall) {
-    console.log(
-      "Using Multicall already deployed on",
-      contractsFile[networkName].utils.multicall
-    );
-    multicall = await Multicall.at(contractsFile[networkName].utils.multicall);
-  } else {
+    // Deploy Multicall
+    let multicall;
     console.log("Deploying Multicall...");
     multicall = await Multicall.new();
     console.log("Multicall deployed to:", multicall.address);
     await waitBlocks(1);
-  }
-  contractsFile[networkName].utils.multicall = multicall.address;
-  saveContractsFile(contractsFile);
+    networkContracts.utils.multicall = multicall.address;
 
-  // Deploy and mint reputation
-  let dxReputation;
-  if (contractsFile[networkName].reputation) {
-    console.log(
-      "Using DxReputation already deployed on",
-      contractsFile[networkName].reputation
-    );
-    dxReputation = await DxReputation.at(contractsFile[networkName].reputation);
-  } else {
+    // Deploy Reputation
+    let reputation;
     console.log("Deploying DxReputation...");
-    dxReputation = await DxReputation.new();
-    console.log("DX Reputation deployed to:", dxReputation.address);
+    reputation = await DxReputation.new();
+    console.log("DX Reputation deployed to:", reputation.address);
+    networkContracts.reputation = reputation.address;
+    addresses["Reputation"] = reputation.address;
     await waitBlocks(1);
 
-    let addressesMints = [],
-      amountMints = [];
-    if (networkName === "arbitrumTestnet" || networkName === "arbitrum") {
-      console.log(
-        "Doing mint of " + founders.length + " initial REP holders..."
-      );
-      await dxReputation.mintMultiple(founders, initialRep);
-    } else {
-      while (founders.length > 0) {
-        addressesMints.push(founders.splice(0, 100));
-        amountMints.push(initialRep.splice(0, 100));
-      }
-      for (let i = 0; i < addressesMints.length; i++) {
+    // Mint DXvote REP
+    await reputation.mintMultiple(founders, initialRep);
+    await waitBlocks(1);
+
+    // Deploy Tokens
+    let tokens = {};
+    await Promise.all(
+      deploymentConfig.tokens.map(async tokenToDeploy => {
         console.log(
-          "Doing mint " +
-            i +
-            " of " +
-            (addressesMints.length - 1) +
-            " of initial REP minting..."
+          "Deploying token",
+          tokenToDeploy.name,
+          tokenToDeploy.symbol
         );
-        await dxReputation.mintMultiple(addressesMints[i], amountMints[i]);
-        await waitBlocks(1);
-      }
-    }
-    contractsFile[networkName].fromBlock = fromBlock;
-    contractsFile[networkName].reputation = dxReputation.address;
-    saveContractsFile(contractsFile);
-  }
+        const totalSupply = tokenToDeploy.distribution.reduce(function (
+          prev,
+          cur
+        ) {
+          return new BigNumber(prev).plus(cur.amount.toString());
+        },
+        0);
 
-  // Deploy DXD
-  let votingMachineToken;
-  if (!deploymentConfig.votingMachineToken) {
-    console.log("Creating new voting machine token...");
-    votingMachineToken = await ERC20Mock.new(
-      accounts[0],
-      web3.utils.toWei("101000000")
+        let newToken;
+        switch (tokenToDeploy.type) {
+          case "ERC20":
+            newToken = await ERC20Mock.new(accounts[0], totalSupply.toString());
+            await tokenToDeploy.distribution.map(async tokenHolder => {
+              await newToken.transfer(tokenHolder.address, tokenHolder.amount, {
+                from: accounts[0],
+              });
+            });
+            break;
+          case "ERC20SnapshotRep":
+            newToken = await ERC20SnapshotRep.new();
+            await newToken.initialize(
+              tokenToDeploy.name,
+              tokenToDeploy.symbol,
+              {
+                from: accounts[0],
+              }
+            );
+            for (i in tokenToDeploy.distribution) {
+              const tokenHolder = tokenToDeploy.distribution[i];
+              await newToken.mint(tokenHolder.address, tokenHolder.amount, {
+                from: accounts[0],
+              });
+            }
+            break;
+        }
+        tokens[tokenToDeploy.symbol] = newToken;
+        addresses[tokenToDeploy.symbol] = newToken.address;
+      })
     );
-    console.log(
-      "Voting machine token deployed to:",
-      votingMachineToken.address
-    );
-  } else {
-    votingMachineToken = await ERC20Mock.at(
-      deploymentConfig.votingMachineToken.address
-    );
-    console.log(
-      "Using pre configured voting machine token:",
-      votingMachineToken.address
-    );
-  }
-  contractsFile[networkName].votingMachines.dxd.token =
-    votingMachineToken.address;
-  saveContractsFile(contractsFile);
 
-  // Deploy DXAvatar
-  let dxAvatar;
-  if (contractsFile[networkName].avatar) {
-    console.log(
-      "Using DxAvatar already deployed on",
-      contractsFile[networkName].avatar
-    );
-    dxAvatar = await DxAvatar.at(contractsFile[networkName].avatar);
-  } else {
+    // Deploy Avatar
+    let avatar;
     console.log(
       "Deploying DxAvatar...",
-      votingMachineToken.address,
-      dxReputation.address
+      tokens.DXD.address,
+      reputation.address
     );
-    dxAvatar = await DxAvatar.new(
+    avatar = await DxAvatar.new(
       "DXdao",
-      votingMachineToken.address,
-      dxReputation.address
+      tokens.DXD.address,
+      reputation.address
     );
-    if (
-      (await votingMachineToken.balanceOf(accounts[0], {
-        from: accounts[0],
-        gasPrice: 0,
-      })) > web3.utils.toWei("100000000")
-    )
-      await votingMachineToken.transfer(
-        dxAvatar.address,
-        web3.utils.toWei("100000000")
-      );
-    console.log("DXdao Avatar deployed to:", dxAvatar.address);
-    contractsFile[networkName].avatar = dxAvatar.address;
-    contractsFile[networkName].token = votingMachineToken.address;
-    saveContractsFile(contractsFile);
+    console.log("DXdao Avatar deployed to:", avatar.address);
+    networkContracts.avatar = avatar.address;
+    networkContracts.token = addresses["DXD"];
+    addresses["Avatar"] = avatar.address;
     await waitBlocks(1);
-  }
 
-  // Deploy DXcontroller and transfer avatar to controller
-  let dxController;
-  if (contractsFile[networkName].controller) {
-    console.log(
-      "Using DxController already deployed on",
-      contractsFile[networkName].controller
-    );
-    dxController = await DxController.at(contractsFile[networkName].controller);
-  } else {
+    // Deploy Controller and transfer avatar to controller
+    let controller;
     console.log("Deploying DxController...");
-    dxController = await DxController.new(dxAvatar.address);
-    console.log("DXdao Controller deployed to:", dxController.address);
-    await dxAvatar.transferOwnership(dxController.address);
-    await dxReputation.transferOwnership(dxController.address);
-    contractsFile[networkName].controller = dxController.address;
-    saveContractsFile(contractsFile);
+    controller = await DxController.new(avatar.address);
+    console.log("DXdao Controller deployed to:", controller.address);
+    await avatar.transferOwnership(controller.address);
+    await reputation.transferOwnership(controller.address);
+    networkContracts.controller = controller.address;
+    addresses["Controller"] = controller.address;
     await waitBlocks(1);
-  }
 
-  // Deploy DXDVotingMachine
-  let votingMachine;
-  if (contractsFile[networkName].votingMachines.dxd.address) {
-    console.log(
-      "Using DXDVotingMachine already deployed on",
-      contractsFile[networkName].votingMachines.dxd.address
-    );
-    votingMachine = await DXDVotingMachine.at(
-      contractsFile[networkName].votingMachines.dxd.address
-    );
-  } else {
+    // Deploy DXDVotingMachine
+    let votingMachine;
     console.log("Deploying DXDVotingMachine...");
-    votingMachine = await DXDVotingMachine.new(votingMachineToken.address);
+    votingMachine = await DXDVotingMachine.new(tokens.DXD.address);
     console.log("DXDVotingMachine deployed to:", votingMachine.address);
-    contractsFile[networkName].votingMachines.dxd.address =
-      votingMachine.address;
-    contractsFile[networkName].votingMachines.dxd.token =
-      votingMachineToken.address;
-    saveContractsFile(contractsFile);
+    networkContracts.votingMachines[votingMachine.address] = {
+      type: "DXDVotingMachine",
+      token: tokens.DXD.address,
+    };
     await waitBlocks(1);
-  }
+    await tokens.DXD.approve(votingMachine.address, MAX_UINT_256, {
+      from: accounts[0],
+    });
+    await tokens.DXD.approve(votingMachine.address, MAX_UINT_256, {
+      from: accounts[1],
+    });
+    await tokens.DXD.approve(votingMachine.address, MAX_UINT_256, {
+      from: accounts[2],
+    });
+    addresses["DXDVotingMachine"] = votingMachine.address;
 
-  // Deploy PermissionRegistry
-  let permissionRegistry;
-  if (contractsFile[networkName].permissionRegistry) {
-    console.log(
-      "Using PermissionRegistry already deployed on",
-      contractsFile[networkName].permissionRegistry
-    );
-    permissionRegistry = await PermissionRegistry.at(
-      contractsFile[networkName].permissionRegistry
-    );
-  } else {
+    // Deploy PermissionRegistry to be used by WalletSchemes
+    let permissionRegistry;
     console.log("Deploying PermissionRegistry...");
-    permissionRegistry = await PermissionRegistry.new(accounts[0], 1);
+    permissionRegistry = await PermissionRegistry.new();
+    await permissionRegistry.initialize();
+    addresses["PermissionRegistry"] = permissionRegistry.address;
 
     // Only allow the functions mintReputation, burnReputation, genericCall, registerScheme and unregisterScheme to be
     // called to in the controller contract from a scheme that calls the controller.
     // This permissions makes the other functions inaccessible
     const notAllowedControllerFunctions = [
-      dxController.contract._jsonInterface.find(
+      controller.contract._jsonInterface.find(
         method => method.name === "mintTokens"
       ).signature,
-      dxController.contract._jsonInterface.find(
+      controller.contract._jsonInterface.find(
         method => method.name === "unregisterSelf"
       ).signature,
-      dxController.contract._jsonInterface.find(
+      controller.contract._jsonInterface.find(
         method => method.name === "addGlobalConstraint"
       ).signature,
-      dxController.contract._jsonInterface.find(
+      controller.contract._jsonInterface.find(
         method => method.name === "removeGlobalConstraint"
       ).signature,
-      dxController.contract._jsonInterface.find(
+      controller.contract._jsonInterface.find(
         method => method.name === "upgradeController"
       ).signature,
-      dxController.contract._jsonInterface.find(
+      controller.contract._jsonInterface.find(
         method => method.name === "sendEther"
       ).signature,
-      dxController.contract._jsonInterface.find(
+      controller.contract._jsonInterface.find(
         method => method.name === "externalTokenTransfer"
       ).signature,
-      dxController.contract._jsonInterface.find(
+      controller.contract._jsonInterface.find(
         method => method.name === "externalTokenTransferFrom"
       ).signature,
-      dxController.contract._jsonInterface.find(
+      controller.contract._jsonInterface.find(
         method => method.name === "externalTokenApproval"
       ).signature,
-      dxController.contract._jsonInterface.find(
+      controller.contract._jsonInterface.find(
         method => method.name === "metaData"
       ).signature,
     ];
     for (var i = 0; i < notAllowedControllerFunctions.length; i++) {
-      await permissionRegistry.setAdminPermission(
+      await permissionRegistry.setPermission(
         NULL_ADDRESS,
-        dxAvatar.address,
-        dxController.address,
+        avatar.address,
+        controller.address,
         notAllowedControllerFunctions[i],
         MAX_UINT_256,
         false
       );
     }
 
-    await permissionRegistry.setAdminPermission(
+    await permissionRegistry.setPermission(
       NULL_ADDRESS,
-      dxAvatar.address,
-      dxController.address,
+      avatar.address,
+      controller.address,
       ANY_FUNC_SIGNATURE,
       0,
       true
     );
 
     console.log("Permission Registry deployed to:", permissionRegistry.address);
-    contractsFile[networkName].permissionRegistry = permissionRegistry.address;
-    saveContractsFile(contractsFile);
+    networkContracts.permissionRegistry = permissionRegistry.address;
+    addresses["PermissionRegstry"] = permissionRegistry.address;
     await waitBlocks(1);
-  }
 
-  // Deploy Schemes
-  for (var s = 0; s < deploymentConfig.schemes.length; s++) {
-    const schemeConfiguration = deploymentConfig.schemes[s];
+    // Deploy ContributionReward Scheme
+    console.log("Deploying ContributionReward scheme");
+    const contributionReward = await ContributionReward.new();
+    const redeemer = await Redeemer.new();
 
-    if (contractsFile[networkName].schemes[schemeConfiguration.name]) {
-      console.log(
-        `Scheme ${schemeConfiguration.name} already deployed on ${
-          contractsFile[networkName].schemes[schemeConfiguration.name]
-        }`
+    // The ContributionReward scheme was designed by DAOstack to be used as an universal scheme,
+    // which means that index the voting params used in the voting machine hash by voting machine
+    // So the voting parameters are set in the voting machine, and that voting parameters hash is registered in the ContributionReward
+    // And then other voting parameter hash is calculated for that voting machine and contribution reward, and that is the one used in the controller
+    const contributionRewardParamsHash = await votingMachine.getParametersHash(
+      [
+        deploymentConfig.contributionReward.queuedVoteRequiredPercentage.toString(),
+        deploymentConfig.contributionReward.queuedVotePeriodLimit.toString(),
+        deploymentConfig.contributionReward.boostedVotePeriodLimit.toString(),
+        deploymentConfig.contributionReward.preBoostedVotePeriodLimit.toString(),
+        deploymentConfig.contributionReward.thresholdConst.toString(),
+        deploymentConfig.contributionReward.quietEndingPeriod.toString(),
+        deploymentConfig.contributionReward.proposingRepReward.toString(),
+        deploymentConfig.contributionReward.votersReputationLossRatio.toString(),
+        deploymentConfig.contributionReward.minimumDaoBounty.toString(),
+        deploymentConfig.contributionReward.daoBountyConst.toString(),
+        0,
+      ],
+      NULL_ADDRESS,
+      { from: accounts[0], gasPrice: 0 }
+    );
+    await votingMachine.setParameters(
+      [
+        deploymentConfig.contributionReward.queuedVoteRequiredPercentage.toString(),
+        deploymentConfig.contributionReward.queuedVotePeriodLimit.toString(),
+        deploymentConfig.contributionReward.boostedVotePeriodLimit.toString(),
+        deploymentConfig.contributionReward.preBoostedVotePeriodLimit.toString(),
+        deploymentConfig.contributionReward.thresholdConst.toString(),
+        deploymentConfig.contributionReward.quietEndingPeriod.toString(),
+        deploymentConfig.contributionReward.proposingRepReward.toString(),
+        deploymentConfig.contributionReward.votersReputationLossRatio.toString(),
+        deploymentConfig.contributionReward.minimumDaoBounty.toString(),
+        deploymentConfig.contributionReward.daoBountyConst.toString(),
+        0,
+      ],
+      NULL_ADDRESS
+    );
+    await contributionReward.setParameters(
+      contributionRewardParamsHash,
+      votingMachine.address
+    );
+    const contributionRewardVotingmachineParamsHash =
+      await contributionReward.getParametersHash(
+        contributionRewardParamsHash,
+        votingMachine.address
       );
-    } else {
+    await controller.registerScheme(
+      contributionReward.address,
+      contributionRewardVotingmachineParamsHash,
+      encodePermission({
+        canGenericCall: true,
+        canUpgrade: false,
+        canRegisterSchemes: false,
+      }),
+      avatar.address
+    );
+
+    networkContracts.daostack = {
+      [contributionReward.address]: {
+        contractToCall: controller.address,
+        creationLogEncoding: [
+          [
+            {
+              name: "_descriptionHash",
+              type: "string",
+            },
+            {
+              name: "_reputationChange",
+              type: "int256",
+            },
+            {
+              name: "_rewards",
+              type: "uint256[5]",
+            },
+            {
+              name: "_externalToken",
+              type: "address",
+            },
+            {
+              name: "_beneficiary",
+              type: "address",
+            },
+          ],
+        ],
+        name: "ContributionReward",
+        newProposalTopics: [
+          [
+            "0xcbdcbf9aaeb1e9eff0f75d74e1c1e044bc87110164baec7d18d825b0450d97df",
+            "0x000000000000000000000000519b70055af55a007110b4ff99b0ea33071c720a",
+          ],
+        ],
+        redeemer: redeemer.address,
+        supported: true,
+        type: "ContributionReward",
+        voteParams: contributionRewardVotingmachineParamsHash,
+        votingMachine: votingMachine.address,
+      },
+    };
+    addresses["ContributionReward"] = contributionReward.address;
+
+    // Deploy Wallet Schemes
+    for (var s = 0; s < deploymentConfig.walletSchemes.length; s++) {
+      const schemeConfiguration = deploymentConfig.walletSchemes[s];
+
       console.log(`Deploying ${schemeConfiguration.name}...`);
       const newScheme = await WalletScheme.new();
       console.log(
         `${schemeConfiguration.name} deployed to: ${newScheme.address}`
       );
 
-      const timeNow = moment().unix();
+      // This is simpler than the ContributionReward, just register the params in the VotingMachine and use that ones for the schem registration
       let schemeParamsHash = await votingMachine.getParametersHash(
         [
-          schemeConfiguration.queuedVoteRequiredPercentage,
-          schemeConfiguration.queuedVotePeriodLimit,
-          schemeConfiguration.boostedVotePeriodLimit,
-          schemeConfiguration.preBoostedVotePeriodLimit,
-          schemeConfiguration.thresholdConst,
-          schemeConfiguration.quietEndingPeriod,
-          schemeConfiguration.proposingRepReward,
-          schemeConfiguration.votersReputationLossRatio,
-          schemeConfiguration.minimumDaoBounty,
-          schemeConfiguration.daoBountyConst,
-          timeNow,
+          schemeConfiguration.queuedVoteRequiredPercentage.toString(),
+          schemeConfiguration.queuedVotePeriodLimit.toString(),
+          schemeConfiguration.boostedVotePeriodLimit.toString(),
+          schemeConfiguration.preBoostedVotePeriodLimit.toString(),
+          schemeConfiguration.thresholdConst.toString(),
+          schemeConfiguration.quietEndingPeriod.toString(),
+          schemeConfiguration.proposingRepReward.toString(),
+          schemeConfiguration.votersReputationLossRatio.toString(),
+          schemeConfiguration.minimumDaoBounty.toString(),
+          schemeConfiguration.daoBountyConst.toString(),
+          0,
         ],
         NULL_ADDRESS,
         { from: accounts[0], gasPrice: 0 }
@@ -381,64 +405,60 @@ async function main() {
 
       await votingMachine.setParameters(
         [
-          schemeConfiguration.queuedVoteRequiredPercentage,
-          schemeConfiguration.queuedVotePeriodLimit,
-          schemeConfiguration.boostedVotePeriodLimit,
-          schemeConfiguration.preBoostedVotePeriodLimit,
-          schemeConfiguration.thresholdConst,
-          schemeConfiguration.quietEndingPeriod,
-          schemeConfiguration.proposingRepReward,
-          schemeConfiguration.votersReputationLossRatio,
-          schemeConfiguration.minimumDaoBounty,
-          schemeConfiguration.daoBountyConst,
-          timeNow,
+          schemeConfiguration.queuedVoteRequiredPercentage.toString(),
+          schemeConfiguration.queuedVotePeriodLimit.toString(),
+          schemeConfiguration.boostedVotePeriodLimit.toString(),
+          schemeConfiguration.preBoostedVotePeriodLimit.toString(),
+          schemeConfiguration.thresholdConst.toString(),
+          schemeConfiguration.quietEndingPeriod.toString(),
+          schemeConfiguration.proposingRepReward.toString(),
+          schemeConfiguration.votersReputationLossRatio.toString(),
+          schemeConfiguration.minimumDaoBounty.toString(),
+          schemeConfiguration.daoBountyConst.toString(),
+          0,
         ],
         NULL_ADDRESS
       );
 
+      // The Wallet scheme has to be initialized right after being created
       console.log("Initializing scheme...");
       await newScheme.initialize(
-        dxAvatar.address,
+        avatar.address,
         votingMachine.address,
-        schemeParamsHash,
-        schemeConfiguration.callToController
-          ? dxController.address
-          : NULL_ADDRESS,
+        schemeConfiguration.doAvatarGenericCalls,
+        controller.address,
         permissionRegistry.address,
         schemeConfiguration.name,
-        Math.max(86400, schemeConfiguration.maxSecondsForExecution),
+        schemeConfiguration.maxSecondsForExecution,
         schemeConfiguration.maxRepPercentageChange
       );
 
+      // Set the initial permissions in the WalletScheme
       console.log("Setting scheme permissions...");
       for (var p = 0; p < schemeConfiguration.permissions.length; p++) {
         const permission = schemeConfiguration.permissions[p];
-        if (
-          contractsFile[networkName].schemes &&
-          contractsFile[networkName].schemes[permission.to]
-        )
-          permission.to = contractsFile[networkName].schemes[permission.to];
-        else if (permission.to === "ITSELF") permission.to = newScheme.address;
-        else if (permission.to === "DXDVotingMachine")
-          permission.to = contractsFile[networkName].votingMachines.dxd.address;
+        if (permission.to === "ITSELF") permission.to = newScheme.address;
+        else if (addresses[permission.to])
+          permission.to = addresses[permission.to];
 
-        await permissionRegistry.setAdminPermission(
-          permission.asset,
-          schemeConfiguration.callToController
-            ? dxAvatar.address
+        await permissionRegistry.setPermission(
+          addresses[permission.asset] || permission.asset,
+          schemeConfiguration.doAvatarGenericCalls
+            ? avatar.address
             : newScheme.address,
-          permission.to,
+          addresses[permission.to] || permission.to,
           permission.functionSignature,
-          permission.value,
+          permission.value.toString(),
           permission.allowed
         );
       }
 
+      // Set the boostedVoteRequiredPercentage
       if (schemeConfiguration.boostedVoteRequiredPercentage > 0) {
         console.log(
           "Setting boosted vote required percentage in voting machine..."
         );
-        await dxController.genericCall(
+        await controller.genericCall(
           votingMachine.address,
           web3.eth.abi.encodeFunctionCall(
             {
@@ -465,202 +485,269 @@ async function main() {
               schemeConfiguration.boostedVoteRequiredPercentage,
             ]
           ),
-          dxAvatar.address,
+          avatar.address,
           0
         );
       }
 
+      // Finally the scheme is configured and ready to be registered
       console.log("Registering scheme in controller...");
-      await dxController.registerScheme(
+      await controller.registerScheme(
         newScheme.address,
         schemeParamsHash,
         encodePermission(schemeConfiguration.controllerPermissions),
-        dxAvatar.address
+        avatar.address
       );
 
-      contractsFile[networkName].schemes[schemeConfiguration.name] =
-        newScheme.address;
-      saveContractsFile(contractsFile);
+      networkContracts.schemes[schemeConfiguration.name] = newScheme.address;
+      addresses[schemeConfiguration.name] = newScheme.address;
     }
-  }
 
-  // Deploy dxDaoNFT if it is not set
-  let dxDaoNFT;
-  if (!contractsFile[networkName].utils.dxDaoNFT) {
-    console.log("Deploying DXdaoNFT...");
-    dxDaoNFT = await DXdaoNFT.new();
-    contractsFile[networkName].utils.dxDaoNFT = dxDaoNFT.address;
-  } else {
-    console.log(
-      "Using DXdaoNFT deployed on",
-      contractsFile[networkName].utils.dxDaoNFT
+    // Deploy dxDaoNFT
+    let dxDaoNFT;
+    console.log("Deploying ERC721Factory...");
+    dxDaoNFT = await ERC721Factory.new("DX DAO NFT", "DXDNFT");
+    networkContracts.utils.dxDaoNFT = dxDaoNFT.address;
+    addresses["ERC721Factory"] = dxDaoNFT.address;
+
+    // Deploy ERC20VestingFactory
+    let dxdVestingFactory;
+    console.log("Deploying ERC20VestingFactory...");
+    dxdVestingFactory = await ERC20VestingFactory.new(
+      networkContracts.votingMachines[votingMachine.address].token,
+      avatar.address
     );
-  }
-  saveContractsFile(contractsFile);
+    networkContracts.utils.dxdVestingFactory = dxdVestingFactory.address;
+    addresses["ERC20VestingFactory"] = dxdVestingFactory.address;
 
-  // Deploy DXDVestingFactory if it is not set
-  let dxdVestingFactory;
-  if (!contractsFile[networkName].utils.dxdVestingFactory) {
-    console.log("Deploying DXDVestingFactory...");
-    dxdVestingFactory = await DXDVestingFactory.new(
-      contractsFile[networkName].votingMachines.dxd.token
+    // Transfer all ownership and power to the dao
+    console.log("Transfering ownership...");
+    // Set the in the permission registry
+    await permissionRegistry.transferOwnership(avatar.address);
+    await dxDaoNFT.transferOwnership(avatar.address);
+    await controller.unregisterScheme(accounts[0], avatar.address);
+
+    // Deploy Guilds
+    let guilds = {};
+    let proposals = {
+      dxvote: [],
+    };
+    const guildRegistry = await GuildRegistry.new();
+
+    // Each guild is created and initialized and use a previously deployed token or specific token address
+    await Promise.all(
+      deploymentConfig.guilds.map(async guildToDeploy => {
+        console.log("Deploying guild", guildToDeploy.name);
+        const GuildContract = await hre.artifacts.require(
+          guildToDeploy.contractName
+        );
+        const newGuild = await GuildContract.new();
+        await newGuild.initialize(
+          tokens[guildToDeploy.token].address,
+          guildToDeploy.proposalTime,
+          guildToDeploy.timeForExecution,
+          guildToDeploy.votingPowerForProposalExecution,
+          guildToDeploy.votingPowerForProposalCreation,
+          guildToDeploy.name,
+          guildToDeploy.voteGas,
+          guildToDeploy.maxGasPrice,
+          guildToDeploy.maxActiveProposals,
+          guildToDeploy.lockTime,
+          permissionRegistry.address
+        );
+        if (guildToDeploy.contractName === "SnapshotRepERC20Guild")
+          await tokens[guildToDeploy.token].transferOwnership(
+            newGuild.address,
+            {
+              from: accounts[0],
+            }
+          );
+        await guildRegistry.addGuild(newGuild.address);
+        guilds[guildToDeploy.name] = newGuild;
+        addresses[guildToDeploy.name] = newGuild.address;
+        proposals[guildToDeploy.name] = [];
+        addresses[guildToDeploy.name + "-vault"] =
+          await newGuild.getTokenVault();
+      })
     );
-    contractsFile[networkName].utils.dxdVestingFactory =
-      dxdVestingFactory.address;
-  } else {
-    console.log(
-      "Using DXDVestingFactory deployed on",
-      contractsFile[networkName].utils.dxdVestingFactory
-    );
-  }
-  saveContractsFile(contractsFile);
 
-  // Transfer all ownership and power to the dao
-  console.log("Transfering ownership...");
-  try {
-    // Set the permission delay in the permission registry
-    await permissionRegistry.setTimeDelay(
-      deploymentConfig.permissionRegistryDelay
-    );
-    await permissionRegistry.transferOwnership(dxAvatar.address);
-    await dxDaoNFT.transferOwnership(dxAvatar.address);
-    await dxController.unregisterScheme(accounts[0], dxAvatar.address);
-  } catch (e) {
-    console.error("Error transfering ownership", e);
-    // contractsFile[networkName] = {}
-    // saveContractsFile(contractsFile);
-  }
+    await guildRegistry.transferOwnership(avatar.address);
+    networkContracts.utils.guildRegistry = guildRegistry.address;
 
-  // Deployment Finished
-  console.log("Contracts deployed:", contractsFile);
+    console.log("Contracts deployed:", networkContracts);
 
-  // Verifying smart contracts if possible
-  console.log("Verifying contracts...");
-  try {
-    await hre.run("verify:verify", {
-      address: dxReputation.address,
-      contract: `${DxReputation._hArtifact.sourceName}:${DxReputation._hArtifact.contractName}`,
-      constructorArguments: [],
-    });
-    console.error("DxReputation verified", dxReputation.address);
-  } catch (e) {
-    console.error("Couldnt verify DxReputation", dxReputation.address);
-  }
-  try {
-    await hre.run("verify:verify", {
-      address: votingMachineToken.address,
-      contract: `${ERC20Mock._hArtifact.sourceName}:${ERC20Mock._hArtifact.contractName}`,
-      constructorArguments: ["DXD", "DXdao", 18],
-    });
-    console.error("DxToken verified", votingMachineToken.address);
-  } catch (e) {
-    console.error("Couldnt verify DxToken", votingMachineToken.address);
-  }
-  try {
-    await hre.run("verify:verify", {
-      address: dxAvatar.address,
-      contract: `${DxAvatar._hArtifact.sourceName}:${DxAvatar._hArtifact.contractName}`,
-      constructorArguments: [
-        "DXdao",
-        dxReputation.address,
-        votingMachineToken.address,
-      ],
-    });
-    console.error("DxAvatar verified", dxAvatar.address);
-  } catch (e) {
-    console.error("Couldnt verify DxAvatar", dxAvatar.address);
-  }
-  try {
-    await hre.run("verify:verify", {
-      address: dxController.address,
-      contract: `${DxController._hArtifact.sourceName}:${DxController._hArtifact.contractName}`,
-      constructorArguments: [dxAvatar.address],
-    });
-    console.error("DxController verified", dxController.address);
-  } catch (e) {
-    console.error("Couldnt verify DxController", dxController.address);
-  }
-  try {
-    await hre.run("verify:verify", {
-      address: votingMachine.address,
-      contract: `${DXDVotingMachine._hArtifact.sourceName}:${DXDVotingMachine._hArtifact.contractName}`,
-      constructorArguments: [
-        contractsFile[networkName].votingMachines.dxd.token,
-      ],
-    });
-    console.error("DXDVotingMachine verified", votingMachine.address);
-  } catch (e) {
-    console.error("Couldnt verify DXDVotingMachine", votingMachine.address);
-  }
-  try {
-    await hre.run("verify:verify", {
-      address: permissionRegistry.address,
-      contract: `${PermissionRegistry._hArtifact.sourceName}:${PermissionRegistry._hArtifact.contractName}`,
-      constructorArguments: [accounts[0], 1],
-    });
-    console.error("PermissionRegistry verified", permissionRegistry.address);
-  } catch (e) {
-    console.error(
-      "Couldnt verify PermissionRegistry",
-      permissionRegistry.address
-    );
-  }
+    const startTime = deploymentConfig.startTimestampForActions;
 
-  await Promise.all(
-    Object.keys(contractsFile[networkName].schemes).map(async schemeAddress => {
-      try {
-        await hre.run("verify:verify", {
-          address: schemeAddress,
-          contract: `${WalletScheme._hArtifact.sourceName}:${WalletScheme._hArtifact.contractName}`,
-          constructorArguments: [],
-        });
-        console.error("WalletScheme verified", schemeAddress);
-      } catch (e) {
-        console.error("Couldnt verify WalletScheme", schemeAddress);
+    // Increase time to start time for actions
+    await hre.network.provider.request({
+      method: "evm_increaseTime",
+      params: [startTime - (await web3.eth.getBlock("latest")).timestamp],
+    });
+
+    const ipfs = await IPFS.create();
+
+    // Execute a set of actions once all contracts are deployed
+    for (let i = 0; i < deploymentConfig.actions.length; i++) {
+      const action = deploymentConfig.actions[i];
+
+      if (action.time)
+        await network.provider.send("evm_increaseTime", [action.time]);
+      console.log("Executing action:", action);
+
+      switch (action.type) {
+        case "approve":
+          await tokens[action.data.asset].approve(
+            addresses[action.data.address] || action.data.address,
+            action.data.amount,
+            { from: action.from }
+          );
+          break;
+
+        case "transfer":
+          action.data.asset === NULL_ADDRESS
+            ? await web3.eth.sendTransaction({
+                to: addresses[action.data.address] || action.data.address,
+                value: action.data.amount,
+                from: action.from,
+              })
+            : await tokens[action.data.asset].transfer(
+                addresses[action.data.address] || action.data.address,
+                action.data.amount,
+                { from: action.from }
+              );
+          break;
+
+        case "proposal":
+          const proposalDescriptionHash = (
+            await ipfs.add(
+              JSON.stringify({
+                description: action.data.description,
+                title: action.data.title,
+                tags: action.data.tags,
+                url: "",
+              })
+            )
+          ).cid.toString();
+          const proposalCreationTx =
+            action.data.scheme === "ContributionReward"
+              ? await (
+                  await ContributionReward.at(contributionReward.address)
+                ).proposeContributionReward(
+                  avatar.address,
+                  contentHash.fromIpfs(proposalDescriptionHash),
+                  action.data.reputationChange,
+                  action.data.rewards,
+                  action.data.externalToken,
+                  action.data.beneficiary,
+                  { from: action.from }
+                )
+              : await (
+                  await WalletScheme.at(addresses[action.data.scheme])
+                ).proposeCalls(
+                  action.data.to.map(_to => addresses[_to] || _to),
+                  action.data.callData,
+                  action.data.value,
+                  action.data.title,
+                  contentHash.fromIpfs(proposalDescriptionHash),
+                  { from: action.from }
+                );
+          proposals.dxvote.push(
+            proposalCreationTx.receipt.logs[0].args._proposalId
+          );
+          break;
+        case "vote":
+          await votingMachine.vote(
+            proposals.dxvote[action.data.proposal],
+            action.data.decision,
+            action.data.amount,
+            action.from,
+            { from: action.from }
+          );
+          break;
+        case "stake":
+          await votingMachine.stake(
+            proposals.dxvote[action.data.proposal],
+            action.data.decision,
+            action.data.amount,
+            { from: action.from }
+          );
+          break;
+        case "execute":
+          try {
+            await votingMachine.execute(
+              proposals.dxvote[action.data.proposal],
+              {
+                from: action.from,
+                gas: 9000000,
+              }
+            );
+          } catch (error) {
+            console.log("Execution of proposal failed", error);
+          }
+          break;
+        case "redeem":
+          await votingMachine.redeem(
+            proposals.dxvote[action.data.proposal],
+            action.from,
+            { from: action.from }
+          );
+          break;
+        case "guild-createProposal":
+          const guildProposalDescriptionHash = (
+            await ipfs.add(
+              JSON.stringify({ description: action.data.proposalBody, url: "" })
+            )
+          ).cid.toString();
+          const guildProposalCreationTx = await guilds[
+            action.data.guildName
+          ].createProposal(
+            action.data.to.map(_to => addresses[_to] || _to),
+            action.data.callData,
+            action.data.value,
+            action.data.totalActions,
+            action.data.title,
+            contentHash.fromIpfs(guildProposalDescriptionHash).toString(),
+            { from: action.from }
+          );
+          proposals[action.data.guildName].push(
+            guildProposalCreationTx.receipt.logs[0].args.proposalId
+          );
+          break;
+        case "guild-lockTokens":
+          await guilds[action.data.guildName].lockTokens(action.data.amount, {
+            from: action.from,
+          });
+          break;
+        case "guild-withdrawTokens":
+          await guilds[action.data.guildName].withdrawTokens(
+            action.data.amount,
+            { from: action.from }
+          );
+          break;
+        case "guild-voteProposal":
+          console.log(proposals);
+          await guilds[action.data.guildName].setVote(
+            proposals[action.data.guildName][action.data.proposal],
+            action.data.action,
+            action.data.votingPower
+          );
+          break;
+        case "guild-endProposal":
+          await guilds[action.data.guildName].endProposal(
+            proposals[action.data.guildName][action.data.proposal],
+            { from: action.from }
+          );
+          break;
+        default:
+          break;
       }
-    })
-  );
+    }
 
-  try {
-    await hre.run("verify:verify", {
-      address: contractsFile[networkName].utils.dxDaoNFT,
-      contract: `${DXdaoNFT._hArtifact.sourceName}:${DXdaoNFT._hArtifact.contractName}`,
-      constructorArguments: [],
+    // Increase time to local time
+    await hre.network.provider.request({
+      method: "evm_increaseTime",
+      params: [moment().unix() - (await web3.eth.getBlock("latest")).timestamp],
     });
-    console.error(
-      "DXdaoNFT verified",
-      contractsFile[networkName].utils.dxDaoNFT
-    );
-  } catch (e) {
-    console.error(
-      "Couldnt verify DXdaoNFT",
-      contractsFile[networkName].utils.dxDaoNFT
-    );
-  }
 
-  try {
-    await hre.run("verify:verify", {
-      address: contractsFile[networkName].utils.dxdVestingFactory,
-      contract: `${DXDVestingFactory._hArtifact.sourceName}:${DXDVestingFactory._hArtifact.contractName}`,
-      constructorArguments: [
-        contractsFile[networkName].votingMachines.dxd.token,
-      ],
-    });
-    console.error(
-      "DXDVestingFactory verified",
-      contractsFile[networkName].utils.dxdVestingFactory
-    );
-  } catch (e) {
-    console.error(
-      "Couldnt verify DXDVestingFactory",
-      contractsFile[networkName].utils.dxdVestingFactory
-    );
-  }
-}
-
-main()
-  .then(() => process.exit(0))
-  .catch(error => {
-    console.error(error);
-    process.exit(1);
+    return { networkContracts, addresses };
   });

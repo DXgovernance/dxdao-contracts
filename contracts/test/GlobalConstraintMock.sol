@@ -1,7 +1,11 @@
 pragma solidity 0.5.17;
 
 contract GlobalConstraintInterface {
-    enum CallPhase {Pre, Post, PreAndPost}
+    enum CallPhase {
+        Pre,
+        Post,
+        PreAndPost
+    }
 
     function pre(
         address _scheme,

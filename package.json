@@ -1,6 +1,6 @@
 {
   "name": "dxdao-contracts",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "DXdao smart contracts",
   "files": [
     "contracts/",
@@ -14,16 +14,19 @@
   "scripts": {
     "test": "npx hardhat test",
     "coverage": "./scripts/coverage.sh",
-    "compile": "rm -rf artifacts cache && npx hardhat compile",
+    "compile": "rm -rf artifacts cache contracts/hardhat-dependency-compiler && npx hardhat compile",
     "deploy": "node scripts/deploy.js",
     "solidity-linter": "./scripts/solhint.sh",
+    "solidity-contract-size": "yarn hardhat size-contracts",
     "lint": "eslint .",
     "lint --fix": "eslint --fix .",
-    "format": "prettier --write \"test/**/*.{js,jsx,ts,tsx,json,md}\"",
-    "format-check": "prettier --check \"test/**/*.{js,jsx,ts,tsx,json,md}\""
+    "format": "prettier --write \"test/**/*.{js,jsx,ts,tsx,json,md}\" \"contracts/**/*.sol\"",
+    "format-check": "prettier --check \"test/**/*.{js,jsx,ts,tsx,json,md}\" \"contracts/**/*.sol\"",
+    "pre-commit": "lint-staged"
   },
   "devDependencies": {
     "@babel/cli": "^7.10.1",
+    "@babel/eslint-parser": "^7.17.0",
     "@nomiclabs/buidler": "^1.4.8",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.1",
@@ -32,7 +35,6 @@
     "@openzeppelin/contract-loader": "^0.6.1",
     "@openzeppelin/hardhat-upgrades": "^1.6.0",
     "@truffle/contract": "^4.2.21",
-    "babel-eslint": "^10.1.0",
     "babel-plugin-syntax-async-functions": "^6.13.0",
     "babel-polyfill": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
@@ -47,19 +49,23 @@
     "eslint-plugin-import": "^2.20.2",
     "eslint-plugin-node": "^5.2.1",
     "eslint-plugin-promise": "^3.6.0",
-    "eslint-plugin-react": "^7.20.0",
+    "eslint-plugin-react": "^7.20.3",
     "eslint-plugin-standard": "^3.0.1",
     "ethereumjs-abi": "^0.6.5",
     "ethers": "^5.1.0",
-    "hardhat": "^2.2.0",
+    "hardhat": "^2.6.8",
+    "hardhat-contract-sizer": "^2.5.1",
     "hardhat-dependency-compiler": "^1.1.1",
     "hardhat-gas-reporter": "^1.0.4",
+    "husky": "^7.0.4",
+    "lint-staged": "^12.3.4",
     "pm2": "^2.9.3",
     "promisify": "^0.0.3",
     "pug": "^2.0.0-rc.4",
     "rimraf": "^2.6.2",
     "run-with-ganache": "^0.1.1",
     "solhint": "^3.3.5",
+    "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.16",
     "truffle": "^5.1.28",
     "truffle-hdwallet-provider": "^1.0.17",
@@ -74,23 +80,28 @@
   },
   "license": "AGPL-3.0",
   "dependencies": {
-    "@daostack/infra": "0.0.1-rc.19",
-    "@maticnetwork/eth-decoder": "0.0.2",
-    "@openzeppelin/contracts": "3.4.0",
-    "@openzeppelin/contracts-upgradeable": "3.4.0",
-    "@openzeppelin/test-helpers": "^0.5.11",
-    "@realitio/realitio-contracts": ">=0.0.0",
+    "@maticnetwork/eth-decoder": "^0.0.4",
+    "@openzeppelin/contracts": "4.4.0",
+    "@openzeppelin/contracts-upgradeable": "4.4.0",
+    "@openzeppelin/test-helpers": "^0.5.15",
     "@truffle/hdwallet-provider": "^1.4.0",
     "arb-ethers-web3-bridge": "^0.7.3",
     "chai": "^4.2.0",
+    "ipfs-core": "^0.14.1",
     "math": "0.0.3",
     "moment": "^2.27.0",
     "openzeppelin-solidity": "2.4.0",
     "prettier": "^2.0.5",
-    "prettier-plugin-solidity": "^1.0.0-alpha.55",
+    "prettier-plugin-solidity": "^1.0.0-beta.19",
     "truffle-flattener": "^1.4.4"
   },
   "peerDependencies": {
     "ganache-cli": "^6.4.1"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,sol}": [
+      "yarn format",
+      "yarn solidity-linter"
+    ]
   }
 }

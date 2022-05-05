@@ -6,9 +6,7 @@ import * as helpers from "../helpers";
 const constants = require("../helpers/constants");
 const SchemeRegistrar = artifacts.require("./SchemeRegistrar.sol");
 const ERC20Mock = artifacts.require("./test/ERC20Mock.sol");
-const DaoCreator = artifacts.require("./DaoCreator.sol");
 const Controller = artifacts.require("./DxController.sol");
-const ControllerCreator = artifacts.require("./DxControllerCreator.sol");
 
 const setupSchemeRegistrarParams = async function (schemeRegistrar) {
   const votingMachine = await helpers.setupAbsoluteVote(
@@ -33,15 +31,8 @@ const setup = async function (accounts) {
   const fee = 10;
   const standardTokenMock = await ERC20Mock.new(accounts[1], 100);
   const schemeRegistrar = await SchemeRegistrar.new();
-  const controllerCreator = await ControllerCreator.new({
-    gas: constants.GAS_LIMIT,
-  });
-  const daoCreator = await DaoCreator.new(controllerCreator.address, {
-    gas: constants.GAS_LIMIT,
-  });
   const reputationArray = [20, 40, 70];
-  const org = await helpers.setupOrganizationWithArrays(
-    daoCreator,
+  const org = await helpers.setupOrganization(
     [accounts[0], accounts[1], accounts[2]],
     [1000, 0, 0],
     reputationArray
@@ -50,7 +41,7 @@ const setup = async function (accounts) {
     schemeRegistrar
   );
   const permissions = "0x0000001F";
-  await daoCreator.setSchemes(
+  await org.daoCreator.setSchemes(
     org.avatar.address,
     [schemeRegistrar.address],
     [schemeRegistrarParams.paramsHash],
@@ -363,10 +354,11 @@ contract("SchemeRegistrar", accounts => {
     );
     var proposalId = await helpers.getValueFromLogs(tx, "_proposalId", 1);
     //check organizationsProposals before execution
-    var organizationProposal = await testSetup.schemeRegistrar.organizationsProposals(
-      testSetup.org.avatar.address,
-      proposalId
-    );
+    var organizationProposal =
+      await testSetup.schemeRegistrar.organizationsProposals(
+        testSetup.org.avatar.address,
+        proposalId
+      );
     assert.equal(organizationProposal[1], true); //proposalType
 
     //Vote with reputation to trigger execution
@@ -387,10 +379,11 @@ contract("SchemeRegistrar", accounts => {
       false
     );
     //check organizationsProposals after execution
-    organizationProposal = await testSetup.schemeRegistrar.organizationsProposals(
-      testSetup.org.avatar.address,
-      proposalId
-    );
+    organizationProposal =
+      await testSetup.schemeRegistrar.organizationsProposals(
+        testSetup.org.avatar.address,
+        proposalId
+      );
     assert.equal(organizationProposal[2], 0); //proposalType
   });
 
@@ -427,10 +420,11 @@ contract("SchemeRegistrar", accounts => {
       false
     );
     //check organizationsProposals after execution
-    var organizationProposal = await testSetup.schemeRegistrar.organizationsProposals(
-      testSetup.org.avatar.address,
-      proposalId
-    );
+    var organizationProposal =
+      await testSetup.schemeRegistrar.organizationsProposals(
+        testSetup.org.avatar.address,
+        proposalId
+      );
     assert.equal(organizationProposal[2], 0); //proposalType
   });
 

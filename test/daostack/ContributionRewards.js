@@ -7,8 +7,6 @@ const constants = require("../helpers/constants");
 
 const ContributionReward = artifacts.require("./ContributionReward.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
-const DaoCreator = artifacts.require("./DaoCreator.sol");
-const ControllerCreator = artifacts.require("./DxControllerCreator.sol");
 const Avatar = artifacts.require("./DxAvatar.sol");
 const Redeemer = artifacts.require("./Redeemer.sol");
 const ETHRelayer = artifacts.require("./ETHRelayer.sol");
@@ -109,11 +107,7 @@ const setupContributionRewardParams = async function (
 ) {
   let votingMachine, paramsHash;
   if (votingMachineType !== "none") {
-    votingMachine = await helpers.setupGenesisProtocol(
-      accounts,
-      token,
-      votingMachineType
-    );
+    votingMachine = await helpers.setUpVotingMachine(token);
     await contributionReward.setParameters(
       votingMachine.params,
       votingMachine.address
@@ -143,16 +137,9 @@ const setup = async function (
 ) {
   const standardTokenMock = await ERC20Mock.new(accounts[1], 100);
   const contributionReward = await ContributionReward.new();
-  const controllerCreator = await ControllerCreator.new({
-    gas: constants.GAS_LIMIT,
-  });
-  const daoCreator = await DaoCreator.new(controllerCreator.address, {
-    gas: constants.GAS_LIMIT,
-  });
   const reputationArray =
     votingMachineType !== "none" ? [1000, 100, 0] : [2000, 4000, 7000];
-  const org = await helpers.setupOrganizationWithArrays(
-    daoCreator,
+  const org = await helpers.setupOrganization(
     [accounts[0], accounts[1], accounts[2]],
     [1000, 0, 0],
     reputationArray
@@ -165,7 +152,7 @@ const setup = async function (
     org.avatar
   );
   var permissions = "0x00000000";
-  await daoCreator.setSchemes(
+  await org.daoCreator.setSchemes(
     org.avatar.address,
     [contributionReward.address],
     [contributionRewardParams.paramsHash],
@@ -175,7 +162,6 @@ const setup = async function (
   return {
     standardTokenMock,
     contributionReward,
-    daoCreator,
     reputationArray,
     org,
     contributionRewardParams,
@@ -278,10 +264,11 @@ contract("ContributionReward", accounts => {
       constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
-    var organizationProposal = await testSetup.contributionReward.organizationsProposals(
-      testSetup.org.avatar.address,
-      proposalId
-    );
+    var organizationProposal =
+      await testSetup.contributionReward.organizationsProposals(
+        testSetup.org.avatar.address,
+        proposalId
+      );
     assert.notEqual(organizationProposal[8], 0); //executionTime
   });
 
@@ -583,10 +570,11 @@ contract("ContributionReward", accounts => {
     );
     //Vote with reputation to trigger execution
     var proposalId = await helpers.getValueFromLogs(tx, "_proposalId", 1);
-    var organizationProposal = await testSetup.contributionReward.organizationsProposals(
-      testSetup.org.avatar.address,
-      proposalId
-    );
+    var organizationProposal =
+      await testSetup.contributionReward.organizationsProposals(
+        testSetup.org.avatar.address,
+        proposalId
+      );
     assert.equal(organizationProposal[5], otherAvatar.address); //beneficiary
     await testSetup.contributionRewardParams.votingMachine.contract.vote(
       proposalId,
@@ -969,22 +957,24 @@ contract("ContributionReward", accounts => {
       1000,
       { from: accounts[0] }
     );
-    const stakeTx = await testSetup.contributionRewardParams.votingMachine.contract.stake(
-      proposalId,
-      1,
-      1000,
-      { from: accounts[0] }
-    );
+    const stakeTx =
+      await testSetup.contributionRewardParams.votingMachine.contract.stake(
+        proposalId,
+        1,
+        1000,
+        { from: accounts[0] }
+      );
     expectEvent(stakeTx.receipt, "StateChange", {
       _proposalId: proposalId,
       _proposalState: "4",
     });
 
     await time.increase(3600 + 1);
-    const boostTx = await testSetup.contributionRewardParams.votingMachine.contract.execute(
-      proposalId,
-      { from: accounts[0] }
-    );
+    const boostTx =
+      await testSetup.contributionRewardParams.votingMachine.contract.execute(
+        proposalId,
+        { from: accounts[0] }
+      );
     expectEvent(boostTx.receipt, "StateChange", {
       _proposalId: proposalId,
       _proposalState: "5",
@@ -1080,12 +1070,13 @@ contract("ContributionReward", accounts => {
       1000,
       { from: accounts[0] }
     );
-    const stakeTx = await testSetup.contributionRewardParams.votingMachine.contract.stake(
-      proposalId,
-      1,
-      1000,
-      { from: accounts[0] }
-    );
+    const stakeTx =
+      await testSetup.contributionRewardParams.votingMachine.contract.stake(
+        proposalId,
+        1,
+        1000,
+        { from: accounts[0] }
+      );
 
     // Check it change to pre-boosted
     expectEvent(stakeTx.receipt, "StateChange", {
@@ -1248,9 +1239,10 @@ contract("ContributionReward", accounts => {
       testSetup.org.avatar.address,
       accounts[1]
     );
-    var proposal = await testSetup.contributionRewardParams.votingMachine.contract.proposals(
-      proposalId
-    );
+    var proposal =
+      await testSetup.contributionRewardParams.votingMachine.contract.proposals(
+        proposalId
+      );
     assert.equal(proposal.state, 1); //ExpiredInQueue
     var reputation = await testSetup.org.reputation.balanceOf(accounts[1]);
     //accounts[1] redeems its deposit rep.

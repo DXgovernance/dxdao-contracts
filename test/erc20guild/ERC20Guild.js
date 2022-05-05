@@ -1,10 +1,11 @@
+import { web3 } from "@openzeppelin/test-helpers/src/setup";
+import { assert } from "chai";
 import * as helpers from "../helpers";
 const { fixSignature } = require("../helpers/sign");
 const {
-  createDAO,
   createAndSetupGuildToken,
   createProposal,
-  setAllVotesOnProposal,
+  setVotesOnProposal,
 } = require("../helpers/guild");
 
 const {
@@ -17,132 +18,247 @@ const {
   time,
 } = require("@openzeppelin/test-helpers");
 
-const ERC20Guild = artifacts.require("ERC20Guild.sol");
+const ProxyAdmin = artifacts.require("ProxyAdmin.sol");
+const TransparentUpgradeableProxy = artifacts.require(
+  "TransparentUpgradeableProxy.sol"
+);
+const Create2Deployer = artifacts.require("Create2Deployer.sol");
+const ERC20Guild = artifacts.require("ERC20GuildUpgradeable.sol");
 const IERC20Guild = artifacts.require("IERC20Guild.sol");
+const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
+const ERC20Mock = artifacts.require("ERC20Mock.sol");
+const Multicall = artifacts.require("Multicall.sol");
 
 require("chai").should();
 
 contract("ERC20Guild", function (accounts) {
   const constants = helpers.constants;
   const ZERO = new BN("0");
-  const TIMELOCK = new BN("60");
-  const VOTE_GAS = new BN("50000"); // 50k
-  const MAX_GAS_PRICE = new BN("8000000000"); // 8 gwei
-  const REAL_GAS_PRICE = new BN(constants.GAS_PRICE); // 8 gwei (check config)
+  const VOTE_GAS = new BN(91100); // ~90k gwei
+  const MAX_GAS_PRICE = new BN(8000000000); // 8 gwei
+  const REAL_GAS_PRICE = new BN(constants.GAS_PRICE); // 10 gwei (check config)
 
-  let walletScheme,
-    org,
-    actionMock,
-    votingMachine,
-    guildToken,
+  let guildToken,
+    actionMockA,
+    actionMockB,
     erc20Guild,
-    tokenVault,
-    genericCallData,
-    walletSchemeProposalId,
-    walletSchemeProposalData,
-    genericProposal;
+    permissionRegistry,
+    genericProposal,
+    multicall;
 
   beforeEach(async function () {
-    guildToken = await createAndSetupGuildToken(accounts.slice(0, 6), [
-      1000,
-      50,
-      100,
-      100,
-      100,
-      200,
-    ]);
+    const proxyAdmin = await ProxyAdmin.new({ from: accounts[0] });
 
-    erc20Guild = await ERC20Guild.new();
-    await erc20Guild.initialize(
-      guildToken.address,
-      30,
-      30,
-      200,
-      100,
-      "TestGuild",
-      0,
-      0,
-      TIMELOCK,
-      1
-    );
-    erc20Guild = await IERC20Guild.at(erc20Guild.address);
-    tokenVault = await erc20Guild.tokenVault();
-
-    await guildToken.approve(tokenVault, 100, { from: accounts[2] });
-    await guildToken.approve(tokenVault, 100, { from: accounts[3] });
-    await guildToken.approve(tokenVault, 100, { from: accounts[4] });
-    await guildToken.approve(tokenVault, 200, { from: accounts[5] });
-
-    await erc20Guild.lockTokens(100, { from: accounts[2] });
-    await erc20Guild.lockTokens(100, { from: accounts[3] });
-    await erc20Guild.lockTokens(100, { from: accounts[4] });
-    await erc20Guild.lockTokens(200, { from: accounts[5] });
-
-    const createDaoResult = await createDAO(erc20Guild, accounts);
-    walletScheme = createDaoResult.walletScheme;
-    votingMachine = createDaoResult.votingMachine;
-    org = createDaoResult.org;
-    actionMock = await ActionMock.new();
-    tokenVault = await erc20Guild.tokenVault();
-
-    const allowVotingMachineProposalId = await createProposal({
-      guild: erc20Guild,
-      to: [erc20Guild.address],
-      data: [
-        await new web3.eth.Contract(ERC20Guild.abi).methods
-          .setAllowance([votingMachine.address], ["0x359afa49"], [true])
-          .encodeABI(),
-      ],
-      value: [0],
-      description: "Allow vote in voting machine",
-      contentHash: constants.NULL_ADDRESS,
-      account: accounts[3],
-    });
-    await setAllVotesOnProposal({
-      guild: erc20Guild,
-      proposalId: allowVotingMachineProposalId,
-      account: accounts[3],
-    });
-    await setAllVotesOnProposal({
-      guild: erc20Guild,
-      proposalId: allowVotingMachineProposalId,
-      account: accounts[5],
-    });
-    await time.increase(time.duration.seconds(31));
-    await erc20Guild.endProposal(allowVotingMachineProposalId);
-
-    walletSchemeProposalData = helpers.encodeGenericCallData(
-      org.avatar.address,
-      actionMock.address,
-      helpers.testCallFrom(org.avatar.address),
-      0
-    );
-    const tx = await walletScheme.proposeCalls(
-      [org.controller.address],
-      [walletSchemeProposalData],
-      [0],
-      "Test Title",
+    multicall = await Multicall.new();
+    const erc20GuildDeployer = await Create2Deployer.new();
+    const erc20GuildAddress = helpers.create2Address(
+      erc20GuildDeployer.address,
+      ERC20Guild.bytecode,
       constants.SOME_HASH
     );
-    walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    genericCallData = await new web3.eth.Contract(
-      votingMachine.contract.abi
+    await erc20GuildDeployer.deploy(ERC20Guild.bytecode, constants.SOME_HASH);
+
+    guildToken = await createAndSetupGuildToken(
+      accounts.slice(0, 6),
+      [0, 50000, 50000, 100000, 100000, 200000]
+    );
+    permissionRegistry = await PermissionRegistry.new();
+    await permissionRegistry.initialize();
+
+    const erc20GuildInitializeData = await new web3.eth.Contract(
+      ERC20Guild.abi
     ).methods
-      .vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS)
+      .initialize(
+        guildToken.address,
+        30,
+        30,
+        5000,
+        100,
+        "TestGuild",
+        0,
+        0,
+        10,
+        60,
+        permissionRegistry.address
+      )
       .encodeABI();
+
+    const erc20GuildProxy = await TransparentUpgradeableProxy.new(
+      erc20GuildAddress,
+      proxyAdmin.address,
+      erc20GuildInitializeData
+    );
+
+    erc20Guild = await IERC20Guild.at(erc20GuildProxy.address);
+
+    actionMockA = await ActionMock.new();
+    actionMockB = await ActionMock.new();
     genericProposal = {
       guild: erc20Guild,
-      to: [votingMachine.address],
-      data: [genericCallData],
-      value: [0],
-      description: "Guild Test Proposal",
-      contentHash: constants.NULL_ADDRESS,
+      actions: [
+        {
+          to: [actionMockA.address, actionMockA.address],
+          data: [
+            helpers.testCallFrom(erc20Guild.address),
+            helpers.testCallFrom(erc20Guild.address, 666),
+          ],
+          value: [new BN("0"), new BN("0")],
+        },
+        {
+          to: [actionMockA.address, constants.NULL_ADDRESS],
+          data: [helpers.testCallFrom(erc20Guild.address), "0x00"],
+          value: [new BN("101"), new BN("0")],
+        },
+        {
+          to: [actionMockB.address, constants.NULL_ADDRESS],
+          data: [helpers.testCallFrom(erc20Guild.address, 666), "0x00"],
+          value: [new BN("10"), new BN("0")],
+        },
+      ],
       account: accounts[3],
     };
   });
 
-  describe("Initialization", function () {
+  const lockTokens = async function () {
+    const tokenVault = await erc20Guild.getTokenVault();
+    await guildToken.approve(tokenVault, 50000, { from: accounts[1] });
+    await guildToken.approve(tokenVault, 50000, { from: accounts[2] });
+    await guildToken.approve(tokenVault, 100000, { from: accounts[3] });
+    await guildToken.approve(tokenVault, 100000, { from: accounts[4] });
+    await guildToken.approve(tokenVault, 200000, { from: accounts[5] });
+    await erc20Guild.lockTokens(50000, { from: accounts[1] });
+    await erc20Guild.lockTokens(50000, { from: accounts[2] });
+    await erc20Guild.lockTokens(100000, { from: accounts[3] });
+    await erc20Guild.lockTokens(100000, { from: accounts[4] });
+    await erc20Guild.lockTokens(200000, { from: accounts[5] });
+  };
+
+  const allowActionMockA = async function () {
+    const setPermissionToActionMockA = await createProposal({
+      guild: erc20Guild,
+      actions: [
+        {
+          to: [erc20Guild.address],
+          data: [
+            await new web3.eth.Contract(ERC20Guild.abi).methods
+              .setPermission(
+                [
+                  constants.NULL_ADDRESS,
+                  constants.NULL_ADDRESS,
+                  constants.NULL_ADDRESS,
+                ],
+                [
+                  constants.ANY_ADDRESS,
+                  actionMockA.address,
+                  actionMockA.address,
+                ],
+                [
+                  constants.ANY_FUNC_SIGNATURE,
+                  constants.ANY_FUNC_SIGNATURE,
+                  helpers.testCallFrom(erc20Guild.address).substring(0, 10),
+                ],
+                [200, 100, 50],
+                [true, true, true]
+              )
+              .encodeABI(),
+          ],
+          value: [0],
+        },
+      ],
+      account: accounts[1],
+    });
+    await setVotesOnProposal({
+      guild: erc20Guild,
+      proposalId: setPermissionToActionMockA,
+      action: 1,
+      account: accounts[4],
+    });
+    await setVotesOnProposal({
+      guild: erc20Guild,
+      proposalId: setPermissionToActionMockA,
+      action: 1,
+      account: accounts[5],
+    });
+    await time.increase(30);
+    await erc20Guild.endProposal(setPermissionToActionMockA);
+  };
+
+  describe("initialization", function () {
+    it("initial values are correct", async function () {
+      assert.equal(await erc20Guild.getToken(), guildToken.address);
+      assert.equal(
+        await erc20Guild.getPermissionRegistry(),
+        permissionRegistry.address
+      );
+      assert.equal(await erc20Guild.getName(), "TestGuild");
+      assert.equal(await erc20Guild.getTotalProposals(), 0);
+      assert.equal(await erc20Guild.getActiveProposalsNow(), 0);
+      assert.equal(await erc20Guild.getProposalsIdsLength(), 0);
+      assert.equal(await erc20Guild.getTotalMembers(), 0);
+      assert.deepEqual(await erc20Guild.getProposalsIds(), []);
+    });
+
+    it("cannot initialize with zero token", async function () {
+      erc20Guild = await ERC20Guild.new();
+      await expectRevert(
+        erc20Guild.initialize(
+          constants.NULL_ADDRESS,
+          30,
+          30,
+          5000,
+          100,
+          "TestGuild",
+          0,
+          0,
+          3,
+          60,
+          permissionRegistry.address
+        ),
+        "ERC20Guild: token cant be zero address"
+      );
+    });
+
+    it("cannot initialize with zero proposalTime", async function () {
+      erc20Guild = await ERC20Guild.new();
+      await expectRevert(
+        erc20Guild.initialize(
+          guildToken.address,
+          0,
+          30,
+          5000,
+          100,
+          "TestGuild",
+          0,
+          0,
+          3,
+          60,
+          permissionRegistry.address
+        ),
+        "ERC20Guild: proposal time has to be more tha 0"
+      );
+    });
+
+    it("cannot initialize with lockTime lower than proposalTime", async function () {
+      erc20Guild = await ERC20Guild.new();
+      await expectRevert(
+        erc20Guild.initialize(
+          guildToken.address,
+          30,
+          30,
+          5000,
+          100,
+          "TestGuild",
+          0,
+          0,
+          3,
+          29,
+          permissionRegistry.address
+        ),
+        "ERC20Guild: lockTime has to be higher or equal to proposalTime"
+      );
+    });
+
     it("cannot initialize with zero locktime", async function () {
       erc20Guild = await ERC20Guild.new();
       await expectRevert(
@@ -150,15 +266,16 @@ contract("ERC20Guild", function (accounts) {
           guildToken.address,
           30,
           30,
-          200,
+          0,
           100,
           "TestGuild",
           0,
           0,
-          0,
-          1
+          3,
+          60,
+          permissionRegistry.address
         ),
-        "ERC20Guild: lockTime should be higher than zero"
+        "ERC20Guild: voting power for execution has to be more than 0"
       );
     });
 
@@ -169,13 +286,14 @@ contract("ERC20Guild", function (accounts) {
           guildToken.address,
           30,
           30,
-          200,
+          5000,
           100,
           "TestGuild",
           0,
           0,
-          1,
-          1
+          3,
+          60,
+          permissionRegistry.address
         ),
         "Initializable: contract is already initialized"
       );
@@ -183,157 +301,143 @@ contract("ERC20Guild", function (accounts) {
   });
 
   describe("setConfig", function () {
-    it("cannot setConfig with zero locktime", async function () {
-      const guildProposalId = await createProposal({
-        guild: erc20Guild,
-        to: [erc20Guild.address],
-        data: [
-          await new web3.eth.Contract(ERC20Guild.abi).methods
-            .setConfig(15, 15, 100, 50, 0, 0, 0)
-            .encodeABI(),
-        ],
-        value: [0],
-        description: "Test description",
-        contentHash: constants.NULL_ADDRESS,
-        account: accounts[3],
-      });
-      await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[3],
-      });
-
-      const txVote = await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[5],
-      });
-
-      if (constants.GAS_PRICE > 1)
-        expect(txVote.receipt.gasUsed).to.be.below(80000);
-
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
-
-      await time.increase(time.duration.seconds(31));
-      await expectRevert(
-        erc20Guild.endProposal(guildProposalId),
-        "ERC20Guild: Proposal call failed"
-      );
-
-      assert.equal(await erc20Guild.proposalTime(), 30);
-      assert.equal(await erc20Guild.votingPowerForProposalCreation(), 100);
-      assert.equal(await erc20Guild.votingPowerForProposalExecution(), 200);
-      assert.equal(await erc20Guild.lockTime(), 60);
-    });
-
-    it("not execute an ERC20guild setConfig proposal on the guild", async function () {
-      const guildProposalId = await createProposal({
-        guild: erc20Guild,
-        to: [erc20Guild.address],
-        data: [
-          await new web3.eth.Contract(ERC20Guild.abi).methods
-            .setConfig(15, 15, 100, 50, 0, 0, 10)
-            .encodeABI(),
-        ],
-        value: [0],
-        description: "Test description",
-        contentHash: constants.NULL_ADDRESS,
-        account: accounts[3],
-      });
-      await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[3],
-      });
-
-      await time.increase(time.duration.seconds(31));
-      await erc20Guild.endProposal(guildProposalId);
-
-      assert.equal(await erc20Guild.proposalTime(), 30);
-      assert.equal(await erc20Guild.votingPowerForProposalCreation(), 100);
-      assert.equal(await erc20Guild.votingPowerForProposalExecution(), 200);
-      assert.equal(await erc20Guild.lockTime(), 60);
+    beforeEach(async function () {
+      await lockTokens();
     });
 
     it("execute an ERC20Guild setConfig proposal on the guild", async function () {
+      const guildTokenTotalSupply = await guildToken.totalSupply();
+
+      assert.equal(await erc20Guild.getProposalTime(), 30);
+      assert.equal(await erc20Guild.getTimeForExecution(), 30);
+      assert.equal(
+        (await erc20Guild.getVotingPowerForProposalExecution()).toString(),
+        guildTokenTotalSupply
+          .mul(new BN("5000"))
+          .div(new BN("10000"))
+          .toString()
+      );
+      assert.equal(
+        (await erc20Guild.getVotingPowerForProposalCreation()).toString(),
+        guildTokenTotalSupply.mul(new BN("100")).div(new BN("10000")).toString()
+      );
+      assert.equal(await erc20Guild.getVoteGas(), 0);
+      assert.equal(await erc20Guild.getMaxGasPrice(), 0);
+      assert.equal(await erc20Guild.getMaxActiveProposals(), 10);
+      assert.equal(await erc20Guild.getLockTime(), 60);
+
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        to: [erc20Guild.address],
-        data: [
-          await new web3.eth.Contract(ERC20Guild.abi).methods
-            .setConfig(15, 15, 100, 50, 0, 0, 10)
-            .encodeABI(),
+        actions: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setConfig("15", "30", "5001", "1001", "1", "10", "4", "61")
+                .encodeABI(),
+            ],
+            value: [0],
+          },
         ],
-        value: [0],
-        description: "Test description",
-        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
         account: accounts[3],
       });
 
-      const txVote = await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
         account: accounts[5],
       });
 
-      if (constants.GAS_PRICE > 1)
-        expect(txVote.receipt.gasUsed).to.be.below(80000);
-
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
-
       await time.increase(time.duration.seconds(31));
       const receipt = await erc20Guild.endProposal(guildProposalId);
-      expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
 
-      assert.equal(await erc20Guild.proposalTime(), 15);
-      assert.equal(await erc20Guild.votingPowerForProposalCreation(), 50);
-      assert.equal(await erc20Guild.votingPowerForProposalExecution(), 100);
-      assert.equal(await erc20Guild.lockTime(), 10);
+      assert.equal(await erc20Guild.getProposalTime(), 15);
+      assert.equal(await erc20Guild.getTimeForExecution(), 30);
+      assert.equal(
+        (await erc20Guild.getVotingPowerForProposalExecution()).toString(),
+        guildTokenTotalSupply
+          .mul(new BN("5001"))
+          .div(new BN("10000"))
+          .toString()
+      );
+      assert.equal(
+        (await erc20Guild.getVotingPowerForProposalCreation()).toString(),
+        guildTokenTotalSupply
+          .mul(new BN("1001"))
+          .div(new BN("10000"))
+          .toString()
+      );
+      assert.equal(await erc20Guild.getVoteGas(), 1);
+      assert.equal(await erc20Guild.getMaxGasPrice(), 10);
+      assert.equal(await erc20Guild.getMaxActiveProposals(), 4);
+      assert.equal(await erc20Guild.getLockTime(), 61);
     });
   });
 
-  describe("setAllowance", function () {
+  describe("setPermission", function () {
+    beforeEach(async function () {
+      await lockTokens();
+    });
+
     it("Reverts when not called by guild", async function () {
       await expectRevert(
-        erc20Guild.setAllowance([], [], []),
+        erc20Guild.setPermission(
+          [constants.NULL_ADDRESS],
+          [actionMockA.address],
+          ["0x0"],
+          [1],
+          [true]
+        ),
         "ERC20Guild: Only callable by ERC20guild itself"
       );
     });
 
-    it("Reverts when proposal exec calls setAllowance with invalid params", async function () {
-      const setConfigSignature = web3.eth.abi.encodeFunctionSignature(
-        "setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"
-      );
-
-      const setAllowanceEncoded = await new web3.eth.Contract(
+    it("Reverts when proposal exec calls setPermission with invalid params", async function () {
+      const setPermissionEncoded = await new web3.eth.Contract(
         ERC20Guild.abi
       ).methods
-        .setAllowance([erc20Guild.address], [setConfigSignature], [])
+        .setPermission(
+          [constants.NULL_ADDRESS],
+          [actionMockB.address],
+          [helpers.testCallFrom(erc20Guild.address).substring(0, 10)],
+          [],
+          [true]
+        )
         .encodeABI();
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        to: [erc20Guild.address],
-        data: [setAllowanceEncoded],
-        value: ["0"],
-        description: "Update config",
-        contentHash: constants.NULL_ADDRESS,
+        actions: [
+          {
+            to: [erc20Guild.address],
+            data: [setPermissionEncoded],
+            value: [0],
+          },
+        ],
         account: accounts[2],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
         account: accounts[2],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
         account: accounts[5],
       });
 
@@ -345,31 +449,41 @@ contract("ERC20Guild", function (accounts) {
       );
     });
 
-    it("Proposal for setting new method with empty signature allowance for guild shoudl fail", async function () {
-      const setAllowanceEncoded = await new web3.eth.Contract(
+    it("Proposal for setting new method with empty signature allowance for guild should fail", async function () {
+      const setPermissionEncoded = await new web3.eth.Contract(
         ERC20Guild.abi
       ).methods
-        .setAllowance([actionMock.address], ["0x0"], [true])
+        .setPermission(
+          [constants.NULL_ADDRESS],
+          [actionMockB.address],
+          ["0x0"],
+          [0],
+          [true]
+        )
         .encodeABI();
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        to: [erc20Guild.address],
-        data: [setAllowanceEncoded],
-        value: ["0"],
-        description: "Set empty allowance",
-        contentHash: constants.NULL_ADDRESS,
+        actions: [
+          {
+            to: [erc20Guild.address],
+            data: [setPermissionEncoded],
+            value: [0],
+          },
+        ],
         account: accounts[2],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
         account: accounts[2],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
         account: accounts[5],
       });
 
@@ -378,33 +492,87 @@ contract("ERC20Guild", function (accounts) {
         erc20Guild.endProposal(guildProposalId),
         "ERC20Guild: Proposal call failed"
       );
-      (
-        await erc20Guild.getCallPermission(actionMock.address, "0x0")
-      ).should.equal(false);
+      assert.equal(
+        await permissionRegistry.getPermissionTime(
+          constants.NULL_ADDRESS,
+          erc20Guild.address,
+          actionMockA.address,
+          "0x0"
+        ),
+        "0"
+      );
+    });
+
+    it("Proposal for setting permission delay should succeed", async function () {
+      assert.equal(
+        await permissionRegistry.getPermissionDelay(erc20Guild.address),
+        "0"
+      );
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setPermissionDelay(120)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[4],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId),
+        assert.equal(
+          await permissionRegistry.getPermissionDelay(erc20Guild.address),
+          "120"
+        );
     });
   });
 
   describe("createProposal", function () {
+    beforeEach(async function () {
+      await lockTokens();
+    });
+
     it("cannot create a proposal without enough creation votes", async function () {
       await expectRevert(
         erc20Guild.createProposal(
-          [votingMachine.address],
-          [genericCallData],
-          [0],
+          [actionMockA.address],
+          ["0x00"],
+          [1],
+          1,
           "Guild Test Proposal",
-          constants.NULL_ADDRESS,
+          constants.SOME_HASH,
           { from: accounts[9] }
         ),
-        "ERC20Guild: Not enough tokens to create proposal"
+        "ERC20Guild: Not enough votes to create proposal"
       );
     });
 
     it("cannot create a proposal with uneven _to and _data arrays", async function () {
       await expectRevert(
         erc20Guild.createProposal(
-          [votingMachine.address],
+          [actionMockA.address],
           [],
           [0],
+          1,
           "Guild Test Proposal",
           constants.NULL_ADDRESS,
           { from: accounts[3] }
@@ -416,9 +584,10 @@ contract("ERC20Guild", function (accounts) {
     it("cannot create a proposal with uneven _to and _value arrays", async function () {
       await expectRevert(
         erc20Guild.createProposal(
-          [votingMachine.address],
-          [genericCallData],
+          [actionMockA.address],
+          ["0x0"],
           [],
+          1,
           "Guild Test Proposal",
           constants.NULL_ADDRESS,
           { from: accounts[3] }
@@ -433,6 +602,7 @@ contract("ERC20Guild", function (accounts) {
           [],
           [],
           [],
+          1,
           "Guild Test Proposal",
           constants.NULL_ADDRESS,
           { from: accounts[3] }
@@ -441,7 +611,74 @@ contract("ERC20Guild", function (accounts) {
       );
     });
 
-    it("cannot create proposal with an unauthorized function", async function () {
+    it("cannot create a proposal if the max amount of active proposals is reached", async function () {
+      const firstProposalId = await createProposal(genericProposal);
+      assert.equal(await erc20Guild.getActiveProposalsNow(), "1");
+      await time.increase(10);
+
+      // Create 9 more proposals and have 10 active proposals
+      for (let i = 0; i < 9; i++) await createProposal(genericProposal);
+
+      assert.equal(await erc20Guild.getActiveProposalsNow(), "10");
+
+      // Cant create because maxActiveProposals limit reached
+      await expectRevert(
+        createProposal(genericProposal),
+        "ERC20Guild: Maximum amount of active proposals reached"
+      );
+
+      // Finish one proposal and can create another
+      await time.increase(20);
+      await erc20Guild.endProposal(firstProposalId);
+      assert.equal(await erc20Guild.getActiveProposalsNow(), "9");
+
+      await createProposal(genericProposal);
+    });
+  });
+
+  describe("endProposal", function () {
+    beforeEach(async function () {
+      await lockTokens();
+    });
+
+    it("cannot execute as proposal not ended yet", async function () {
+      const guildProposalId = await createProposal(genericProposal);
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "ERC20Guild: Proposal hasn't ended yet"
+      );
+    });
+
+    it("proposal rejected as not enough tokens to execute proposal when proposal ends", async function () {
+      const guildProposalId = await createProposal(genericProposal);
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[3],
+      });
+      await time.increase(time.duration.seconds(61));
+
+      await erc20Guild.endProposal(guildProposalId);
+      const { state } = await erc20Guild.getProposal(guildProposalId);
+      assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.rejected);
+    });
+
+    it("cannot end proposal with an unauthorized function", async function () {
       const testWithNoargsEncoded = await new web3.eth.Contract(
         ActionMock.abi
       ).methods
@@ -450,22 +687,26 @@ contract("ERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        to: [actionMock.address],
-        data: [testWithNoargsEncoded],
-        value: ["0"],
-        description: "random function call",
-        contentHash: constants.NULL_ADDRESS,
+        actions: [
+          {
+            to: [actionMockA.address],
+            data: [testWithNoargsEncoded],
+            value: [0],
+          },
+        ],
         account: accounts[2],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
         account: accounts[2],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
         account: accounts[5],
       });
 
@@ -473,420 +714,467 @@ contract("ERC20Guild", function (accounts) {
 
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "ERC20Guild: Not allowed call"
+        "PermissionRegistry: Call not allowed"
       );
     });
-  });
 
-  describe("endProposal", function () {
-    it("cannot execute as proposal not ended yet", async function () {
-      const customProposal = Object.assign({}, genericProposal);
-      const guildProposalId = await createProposal(customProposal);
-      await setAllVotesOnProposal({
+    it("proposal fail because it run out of time to execute", async function () {
+      const guildProposalId = await createProposal(genericProposal);
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        account: accounts[3],
+        action: 2,
+        account: accounts[2],
       });
-      const txVote = await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 2,
         account: accounts[5],
       });
-      if (constants.GAS_PRICE > 1)
-        expect(txVote.receipt.gasUsed).to.be.below(80000);
 
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
-
+      await time.increase(time.duration.seconds(30));
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "ERC20Guild: Proposal hasnt ended yet"
+        "PermissionRegistry: Call not allowed"
       );
-    });
 
-    it("proposal rejected as not enough tokens to execute proposal when proposal ends", async function () {
-      const guildProposalId = await createProposal(genericProposal);
-      await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[3],
-      });
-      await time.increase(time.duration.seconds(61));
-
+      await time.increase(time.duration.seconds(30));
       await erc20Guild.endProposal(guildProposalId);
-      const { state } = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(state, constants.WalletSchemeProposalState.rejected);
+      assert.equal((await erc20Guild.getProposal(guildProposalId)).state, 4);
     });
   });
 
-  it("cannot set multiple votes with uneven arrays", async function () {
-    const callDataNegativeVote = await new web3.eth.Contract(
-      votingMachine.contract.abi
-    ).methods
-      .vote(walletSchemeProposalId, 2, 0, constants.NULL_ADDRESS)
-      .encodeABI();
+  describe("permission registry checks", function () {
+    let testToken;
 
-    const customProposal = Object.assign({}, genericProposal);
-    customProposal.data = [callDataNegativeVote];
-    const guildProposalId = await createProposal(genericProposal);
-    await setAllVotesOnProposal({
-      guild: erc20Guild,
-      proposalId: guildProposalId,
-      account: accounts[3],
+    beforeEach(async function () {
+      await lockTokens();
+      await allowActionMockA();
+
+      testToken = await ERC20Mock.new(accounts[1], 1000);
+      await testToken.transfer(erc20Guild.address, 300, { from: accounts[1] });
+
+      const setTestPermissions = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setPermission(
+                  [
+                    constants.NULL_ADDRESS,
+                    testToken.address,
+                    testToken.address,
+                  ],
+                  [actionMockB.address, constants.ANY_ADDRESS, accounts[2]],
+                  [
+                    constants.ANY_FUNC_SIGNATURE,
+                    constants.ANY_FUNC_SIGNATURE,
+                    constants.ANY_FUNC_SIGNATURE,
+                  ],
+                  [0, 200, 100],
+                  [false, true, true]
+                )
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[1],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: setTestPermissions,
+        action: 1,
+        account: accounts[4],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: setTestPermissions,
+        action: 1,
+        account: accounts[5],
+      });
+      await time.increase(30);
+      await erc20Guild.endProposal(setTestPermissions);
     });
-    const newGuildProposalId = await createProposal(customProposal);
-    await setAllVotesOnProposal({
-      guild: erc20Guild,
-      proposalId: newGuildProposalId,
-      account: accounts[3],
-    });
 
-    await expectRevert(
-      erc20Guild.setVotes([guildProposalId, newGuildProposalId], [10], {
-        from: accounts[5],
-      }),
-      "ERC20Guild: Wrong length of proposalIds or votingPowers"
-    );
-  });
+    it("fail to execute a not allowed proposal to a contract from the guild", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
 
-  describe("setVotes", function () {
-    it("can set multiple votes", async function () {
-      const tx = await walletScheme.proposeCalls(
-        [org.controller.address],
-        [genericCallData],
-        [0],
-        "Test title",
-        constants.SOME_HASH
-      );
-      const walletSchemeProposalId = await helpers.getValueFromLogs(
-        tx,
-        "_proposalId"
-      );
-
-      const callDataVote = await new web3.eth.Contract(
-        votingMachine.contract.abi
-      ).methods
-        .vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS)
-        .encodeABI();
-
-      const customProposal = Object.assign({}, genericProposal);
-      customProposal.data = [callDataVote];
-      const guildProposalId = await createProposal(customProposal);
-      await setAllVotesOnProposal({
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [actionMockB.address],
+            data: [helpers.testCallFrom(erc20Guild.address)],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
         account: accounts[3],
       });
 
-      const txVote = await erc20Guild.setVotes(
-        [guildProposalId, guildProposalId],
-        [10, 10],
-        { from: accounts[5] }
-      );
-
-      if (constants.GAS_PRICE > 1)
-        expect(txVote.receipt.gasUsed).to.be.below(80000);
-
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
-      expectEvent(txVote, "VoteRemoved", { proposalId: guildProposalId });
-    });
-
-    it("cannot set votes once executed", async function () {
-      const guildProposalId = await createProposal(genericProposal);
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "PermissionRegistry: Call not allowed"
+      );
+    });
+
+    it("fail to execute a transfer over global transfer limits", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [accounts[8], accounts[7], actionMockA.address],
+            data: ["0x00", "0x00", helpers.testCallFrom(erc20Guild.address)],
+            value: [100, 51, 50],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
         account: accounts[3],
       });
 
-      const txVote = await erc20Guild.setVote(guildProposalId, 200, {
-        from: accounts[5],
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "PermissionRegistry: Value limit reached"
+      );
+    });
+
+    it("fail to execute an ERC20 transfer over global transfer limits", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
       });
 
-      if (constants.GAS_PRICE > 1)
-        expect(txVote.receipt.gasUsed).to.be.below(80000);
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [testToken.address, testToken.address],
+            data: [
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[2], 100)
+                .encodeABI(),
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .approve(accounts[3], 101)
+                .encodeABI(),
+            ],
+            value: [0, 0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[3],
+      });
 
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "PermissionRegistry: Value limit reached"
+      );
+    });
 
+    it("fail to execute an ERC20 transfer over transfer limit", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [testToken.address],
+            data: [
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[2], 101)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "PermissionRegistry: Value limit reached"
+      );
+    });
+
+    it("execute ERC20 transfers withing the transfer limit", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [testToken.address, testToken.address],
+            data: [
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .approve(accounts[2], 100)
+                .encodeABI(),
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[3], 99)
+                .encodeABI(),
+            ],
+            value: [0, 0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
       await time.increase(time.duration.seconds(31));
       const receipt = await erc20Guild.endProposal(guildProposalId);
-      expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
-
-      const { state } = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(state, constants.WalletSchemeProposalState.executionSuccedd);
-
-      await expectRevert(
-        erc20Guild.setVote(guildProposalId, 100, { from: accounts[3] }),
-        "ERC20Guild: Proposal already executed"
-      );
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
     });
 
-    it("cannot set votes exceeded your voting balance", async function () {
-      const guildProposalId = await createProposal(genericProposal);
-      await setAllVotesOnProposal({
+    it("fail to execute a transfer exceeding the allowed on a call", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [actionMockA.address, actionMockA.address],
+            data: [
+              helpers.testCallFrom(erc20Guild.address),
+              helpers.testCallFrom(erc20Guild.address),
+            ],
+            value: [25, 26],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
         account: accounts[3],
       });
 
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
       await expectRevert(
-        erc20Guild.setVote(guildProposalId, 10000, { from: accounts[5] }),
-        "ERC20Guild: Invalid votingPower amount"
+        erc20Guild.endProposal(guildProposalId),
+        "PermissionRegistry: Value limit reached"
       );
     });
 
-    it("can reduce the total votes on a proposal", async function () {
-      const guildProposalId = await createProposal(genericProposal);
-      await setAllVotesOnProposal({
+    it("fail to execute a transfer exceeding the allowed on a wildcard permission call", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [actionMockA.address, actionMockA.address],
+            data: ["0x00", "0x00"],
+            value: [50, 51],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
         account: accounts[3],
       });
 
-      const txVoteAdd = await erc20Guild.setVote(guildProposalId, 200, {
-        from: accounts[5],
-      });
-
-      if (constants.GAS_PRICE > 1)
-        expect(txVoteAdd.receipt.gasUsed).to.be.below(80000);
-
-      expectEvent(txVoteAdd, "VoteAdded", {
+      await setVotesOnProposal({
+        guild: erc20Guild,
         proposalId: guildProposalId,
-        voter: accounts[5],
-        votingPower: "200",
+        action: 1,
+        account: accounts[5],
       });
-      let totalVotes = await erc20Guild.getProposalVotesOfVoter(
-        guildProposalId,
-        accounts[5]
+
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "PermissionRegistry: Value limit reached'"
       );
-      totalVotes.should.be.bignumber.equal("200");
-
-      const txVoteRemove = await erc20Guild.setVote(guildProposalId, 100, {
-        from: accounts[5],
-      });
-
-      if (constants.GAS_PRICE > 1)
-        expect(txVoteRemove.receipt.gasUsed).to.be.below(80000);
-
-      expectEvent(txVoteRemove, "VoteRemoved", {
-        proposalId: guildProposalId,
-        voter: accounts[5],
-        votingPower: "100",
-      });
-      totalVotes = await erc20Guild.getProposalVotesOfVoter(
-        guildProposalId,
-        accounts[5]
-      );
-      totalVotes.should.be.bignumber.equal("100");
     });
   });
 
   describe("complete proposal process", function () {
-    it("execute a proposal in walletScheme from the guild", async function () {
-      const guildProposalId = await createProposal({
-        guild: erc20Guild,
-        to: [votingMachine.address],
-        data: [genericCallData],
-        value: [0],
-        description: "Test description",
-        contentHash: constants.NULL_ADDRESS,
-        account: accounts[3],
-      });
-      await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[3],
-      });
-
-      const txVote = await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[5],
-      });
-
-      if (constants.GAS_PRICE > 1)
-        expect(txVote.receipt.gasUsed).to.be.below(80000);
-
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
-
-      await time.increase(time.duration.seconds(31));
-      const receipt = await erc20Guild.endProposal(guildProposalId);
-      expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
-
-      const organizationProposal = await walletScheme.getOrganizationProposal(
-        walletSchemeProposalId
-      );
-      assert.equal(
-        organizationProposal.state,
-        constants.WalletSchemeProposalState.executionSuccedd
-      );
-      assert.equal(organizationProposal.callData[0], walletSchemeProposalData);
-      assert.equal(organizationProposal.to[0], org.controller.address);
-      assert.equal(organizationProposal.value[0], 0);
+    beforeEach(async function () {
+      await lockTokens();
+      await allowActionMockA();
     });
 
     it("execute a proposal to a contract from the guild", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 10,
+        from: accounts[0],
+      });
+
       const allowActionMock = await createProposal({
         guild: erc20Guild,
-        to: [erc20Guild.address],
-        data: [
-          await new web3.eth.Contract(ERC20Guild.abi).methods
-            .setAllowance(
-              [actionMock.address],
-              [helpers.testCallFrom(erc20Guild.address).substring(0, 10)],
-              [true]
-            )
-            .encodeABI(),
+        actions: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setPermission(
+                  [constants.NULL_ADDRESS],
+                  [actionMockB.address],
+                  [helpers.testCallFrom(erc20Guild.address).substring(0, 10)],
+                  [10],
+                  [true]
+                )
+                .encodeABI(),
+            ],
+            value: [0],
+          },
         ],
-        value: [0],
-        description: "Allow vote in voting machine",
-        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: allowActionMock,
+        action: 1,
         account: accounts[3],
       });
 
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: allowActionMock,
+        action: 1,
         account: accounts[5],
       });
       await time.increase(time.duration.seconds(31));
       await erc20Guild.endProposal(allowActionMock);
 
-      const guildProposalId = await createProposal({
-        guild: erc20Guild,
-        to: [actionMock.address],
-        data: [helpers.testCallFrom(erc20Guild.address)],
-        value: [0],
-        description: "Test description",
-        contentHash: constants.NULL_ADDRESS,
-        account: accounts[3],
-      });
-      await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[3],
-      });
-
-      const txVote = await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[5],
-      });
-
-      if (constants.GAS_PRICE > 1)
-        expect(txVote.receipt.gasUsed).to.be.below(80000);
-
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
-
-      await time.increase(time.duration.seconds(31));
-      const receipt = await erc20Guild.endProposal(guildProposalId);
-      expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
-      expectEvent.inTransaction(receipt.tx, actionMock, "ReceivedEther");
-    });
-
-    it("fail to execute a not allowed proposal to a contract from the guild", async function () {
-      const guildProposalId = await createProposal({
-        guild: erc20Guild,
-        to: [actionMock.address],
-        data: [helpers.testCallFrom(erc20Guild.address)],
-        value: [0],
-        description: "Test description",
-        contentHash: constants.NULL_ADDRESS,
-        account: accounts[3],
-      });
-      await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[3],
-      });
-
-      const txVote = await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[5],
-      });
-
-      if (constants.GAS_PRICE > 1)
-        expect(txVote.receipt.gasUsed).to.be.below(80000);
-
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
-
-      await time.increase(time.duration.seconds(31));
-      await expectRevert(
-        erc20Guild.endProposal(guildProposalId),
-        "ERC20Guild: Not allowed call"
-      );
-    });
-
-    it("execute a positive vote on the voting machine from the guild", async function () {
       const guildProposalId = await createProposal(genericProposal);
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 3,
         account: accounts[3],
       });
 
-      const txVote = await setAllVotesOnProposal({
+      const txVote = await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 3,
         account: accounts[5],
       });
 
       if (constants.GAS_PRICE > 1)
-        expect(txVote.receipt.gasUsed).to.be.below(80000);
-
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
-      await time.increase(time.duration.seconds(31));
-      const receipt = await erc20Guild.endProposal(guildProposalId);
-      expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
-      const proposalInfo = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(
-        proposalInfo.state,
-        constants.WalletSchemeProposalState.executionSuccedd
-      );
-      assert.equal(proposalInfo.data[0], genericCallData);
-      assert.equal(proposalInfo.to[0], votingMachine.address);
-      assert.equal(proposalInfo.value[0], 0);
-    });
-
-    it("cannot execute a positive vote on the voting machine from the guild twice", async function () {
-      const guildProposalId = await createProposal(genericProposal);
-      await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[3],
-      });
-
-      const txVote = await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[5],
-      });
-      if (constants.GAS_PRICE > 1)
-        expect(txVote.receipt.gasUsed).to.be.below(80000);
-
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
+        expect(txVote.receipt.gasUsed).to.be.below(VOTE_GAS.toNumber());
 
       await time.increase(time.duration.seconds(31));
       const receipt = await erc20Guild.endProposal(guildProposalId);
-      expectEvent(receipt, "ProposalExecuted", { proposalId: guildProposalId });
-
-      const { state } = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(state, constants.WalletSchemeProposalState.executionSuccedd);
-
-      await expectRevert(
-        erc20Guild.endProposal(guildProposalId),
-        "ERC20Guild: Proposal already executed"
-      );
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+      expectEvent.inTransaction(receipt.tx, actionMockB, "ReceivedEther", {
+        _sender: erc20Guild.address,
+        _value: "10",
+      });
+      expectEvent.inTransaction(receipt.tx, actionMockB, "LogNumber", {
+        number: "666",
+      });
     });
-  });
 
-  describe("public view", function () {
-    it("can read proposal details of in-flight proposal", async function () {
+    it("can read proposal details of proposal", async function () {
       const guildProposalId = await createProposal(genericProposal);
 
       const {
@@ -896,327 +1184,176 @@ contract("ERC20Guild", function (accounts) {
         to,
         data,
         value,
-        description,
+        title,
         contentHash,
-        totalVotes,
         state,
+        totalVotes,
       } = await erc20Guild.getProposal(guildProposalId);
+
+      const callsTo = [],
+        callsData = [],
+        callsValue = [];
+
+      genericProposal.actions.map(action => {
+        action.to.map(to => callsTo.push(to));
+        action.data.map(data => callsData.push(data));
+        action.value.map(value => callsValue.push(value.toString()));
+      });
+
       assert.equal(creator, accounts[3]);
       const now = await time.latest();
       assert.equal(startTime.toString(), now.toString());
-      assert.equal(endTime.toString(), now.add(new BN("30")).toString()); // proposalTime and extra time are 0
-      assert.deepEqual(to, [votingMachine.address]);
-      assert.deepEqual(data, [genericCallData]);
-      assert.deepEqual(
-        value.map(bn => bn.toString()),
-        ["0"]
-      );
-      assert.equal(description, "Guild Test Proposal");
-      assert.equal(contentHash, constants.NULL_ADDRESS);
-      totalVotes.should.be.bignumber.equal("0");
-      assert.equal(state, constants.WalletSchemeProposalState.submitted);
+      assert.equal(endTime.toString(), now.add(new BN("30")).toString());
+      assert.deepEqual(to, callsTo);
+      assert.deepEqual(data, callsData);
+      assert.deepEqual(value, callsValue);
+      assert.equal(title, "Awesome Proposal Title");
+      assert.equal(contentHash, constants.SOME_HASH);
+      assert.equal(totalVotes.length, 4);
+      assert.equal(state, "1");
     });
 
     it("can read votingPowerOf single accounts", async function () {
       const votes = await erc20Guild.votingPowerOf(accounts[2]);
-      votes.should.be.bignumber.equal("100");
+      votes.should.be.bignumber.equal("50000");
     });
 
     it("can read votingPowerOf multiple accounts", async function () {
-      const res = await erc20Guild.votingPowerOfMultiple([
-        accounts[2],
-        accounts[5],
-      ]);
-      res[0].should.be.bignumber.equal("100");
-      res[1].should.be.bignumber.equal("200");
+      const calls = await Promise.all(
+        [accounts[2], accounts[5]].map(async account => {
+          return [
+            erc20Guild.address,
+            await new web3.eth.Contract(ERC20Guild.abi).methods
+              .votingPowerOf(account)
+              .encodeABI(),
+          ];
+        })
+      );
+
+      const votingPowersCall = await multicall.aggregate.call(calls);
+
+      web3.eth.abi
+        .decodeParameter("uint256", votingPowersCall.returnData[0])
+        .should.equal("50000");
+      web3.eth.abi
+        .decodeParameter("uint256", votingPowersCall.returnData[1])
+        .should.equal("200000");
     });
   });
 
   describe("lock/release tokens", function () {
-    it("can lock tokens", async function () {
-      // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(tokenVault, 50, { from: accounts[1] });
+    it("can lock/release tokens", async function () {
+      const tokenVault = await erc20Guild.getTokenVault();
+      const TIMELOCK = new BN("60");
 
-      const tx = await erc20Guild.lockTokens(50, { from: accounts[1] });
-      expectEvent(tx, "TokensLocked", { voter: accounts[1], value: "50" });
+      // approve lockable guild to "transfer in" tokens to lock
+      await guildToken.approve(tokenVault, 50000, { from: accounts[1] });
+      assert.equal(await erc20Guild.getTotalMembers(), 0);
+
+      const txLock = await erc20Guild.lockTokens(50000, { from: accounts[1] });
+      const lockEvent = helpers.logDecoder.decodeLogs(
+        txLock.receipt.rawLogs
+      )[2];
+      assert.equal(lockEvent.name, "TokensLocked");
+      assert.equal(lockEvent.args[0], accounts[1]);
+      assert.equal(lockEvent.args[1], 50000);
+      assert.equal(await erc20Guild.getTotalMembers(), 1);
 
       const now = await time.latest();
-      const { amount, timestamp } = await erc20Guild.tokensLocked(accounts[1]);
-      amount.should.be.bignumber.equal("50");
-      timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
+      let voterLockTimestamp = await erc20Guild.getVoterLockTimestamp(
+        accounts[1]
+      );
+      voterLockTimestamp.should.be.bignumber.equal(now.add(TIMELOCK));
 
-      const votes = await erc20Guild.votingPowerOf(accounts[1]);
-      votes.should.be.bignumber.equal("50");
-
-      const totalLocked = await erc20Guild.totalLocked();
-      totalLocked.should.be.bignumber.equal("550");
-    });
-
-    it("can release tokens", async function () {
-      // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(tokenVault, 50, { from: accounts[1] });
-
-      const txLock = await erc20Guild.lockTokens(50, { from: accounts[1] });
-      expectEvent(txLock, "TokensLocked", { voter: accounts[1], value: "50" });
+      let voterLocked = await erc20Guild.votingPowerOf(accounts[1]);
+      voterLocked.should.be.bignumber.equal("50000");
 
       let votes = await erc20Guild.votingPowerOf(accounts[1]);
-      votes.should.be.bignumber.equal("50");
+      votes.should.be.bignumber.equal("50000");
 
-      let totalLocked = await erc20Guild.totalLocked();
-      totalLocked.should.be.bignumber.equal("550");
+      let totalLocked = await erc20Guild.getTotalLocked();
+      totalLocked.should.be.bignumber.equal("50000");
 
-      // move past the time lock period
-      await time.latest();
-      await time.increase(TIMELOCK.add(new BN("1")));
-
-      const txRelease = await erc20Guild.releaseTokens(50, {
-        from: accounts[1],
-      });
-      expectEvent(txRelease, "TokensReleased", {
-        voter: accounts[1],
-        value: "50",
-      });
-
-      votes = await erc20Guild.votingPowerOf(accounts[1]);
-      votes.should.be.bignumber.equal("0");
-
-      totalLocked = await erc20Guild.totalLocked();
-      totalLocked.should.be.bignumber.equal("500");
-    });
-
-    it("cannot release more token than locked", async function () {
-      // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(tokenVault, 50, { from: accounts[1] });
-
-      const txLock = await erc20Guild.lockTokens(50, { from: accounts[1] });
-      expectEvent(txLock, "TokensLocked", { voter: accounts[1], value: "50" });
-
-      // move past the time lock period
-      await time.latest();
-      await time.increase(TIMELOCK.add(new BN("1")));
-
+      // try lo release before time and fail
+      await time.increase(time.duration.seconds(31));
       await expectRevert(
-        erc20Guild.releaseTokens(100, { from: accounts[1] }),
-        "ERC20Guild: Unable to release more tokens than locked"
-      );
-    });
-
-    it("cannot release before end of timelock", async function () {
-      // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(tokenVault, 50, { from: accounts[1] });
-
-      const txLock = await erc20Guild.lockTokens(50, { from: accounts[1] });
-      expectEvent(txLock, "TokensLocked", { voter: accounts[1], value: "50" });
-
-      await expectRevert(
-        erc20Guild.releaseTokens(25, { from: accounts[1] }),
+        erc20Guild.withdrawTokens(1, { from: accounts[1] }),
         "ERC20Guild: Tokens still locked"
       );
-    });
 
-    it("cannot transfer locked tokens", async function () {
-      let bal = await guildToken.balanceOf(accounts[1]);
-      bal.should.be.bignumber.equal("50");
+      // move past the time lock period
+      await time.increase(TIMELOCK.add(new BN("1")));
 
-      // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(tokenVault, 50, { from: accounts[1] });
-
-      const txLock = await erc20Guild.lockTokens(50, { from: accounts[1] });
-      expectEvent(txLock, "TokensLocked", { voter: accounts[1], value: "50" });
-
-      bal = await guildToken.balanceOf(accounts[1]);
-      bal.should.be.bignumber.equal("0");
-
+      // Cant transfer because all user tokens are locked
       await expectRevert(
         guildToken.transfer(accounts[0], 50, { from: accounts[1] }),
         "ERC20: transfer amount exceeds balance"
       );
-    });
 
-    it("can lock tokens and check snapshot", async function () {
-      // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(tokenVault, 50, { from: accounts[1] });
-
-      const tx = await erc20Guild.lockTokens(50, { from: accounts[1] });
-      expectEvent(tx, "TokensLocked", {
-        voter: accounts[1],
-        value: "50",
-      });
-
-      const now = await time.latest();
-      const { amount, timestamp } = await erc20Guild.tokensLocked(accounts[1]);
-      amount.should.be.bignumber.equal(new BN("50"));
-      timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
-
-      const votes = await erc20Guild.votingPowerOf(accounts[1]);
-      votes.should.be.bignumber.equal(new BN("50"));
-
-      const totalLocked = await erc20Guild.totalLocked();
-      totalLocked.should.be.bignumber.equal(new BN("550"));
-    });
-
-    it("can lock tokens for multiple accounts and check snapshot", async function () {
-      await createProposal({
-        guild: erc20Guild,
-        to: [votingMachine.address],
-        data: [genericCallData],
-        value: [0],
-        description: "Test description",
-        contentHash: constants.NULL_ADDRESS,
-        account: accounts[2],
-      });
-      await createProposal({
-        guild: erc20Guild,
-        to: [votingMachine.address],
-        data: [genericCallData],
-        value: [0],
-        description: "Test description",
-        contentHash: constants.NULL_ADDRESS,
-        account: accounts[3],
-      });
-
-      const res = await erc20Guild.votingPowerOfMultipleAt(
-        [accounts[2], accounts[3]],
-        [1, 2]
-      );
-      res[0].should.be.bignumber.equal(new BN("100"));
-      res[1].should.be.bignumber.equal(new BN("100"));
-    });
-
-    it("can lock tokens and release tokens", async function () {
-      // approve lockable guild to "transfer in" tokens to lock
-      await guildToken.approve(tokenVault, 50, { from: accounts[1] });
-
-      const tx = await erc20Guild.lockTokens(50, { from: accounts[1] });
-      expectEvent(tx, "TokensLocked", { voter: accounts[1], value: "50" });
-
-      const now = await time.latest();
-      const { amount, timestamp } = await erc20Guild.tokensLocked(accounts[1]);
-      amount.should.be.bignumber.equal(new BN("50"));
-      timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
-
-      const votes = await erc20Guild.votingPowerOf(accounts[1]);
-      votes.should.be.bignumber.equal(new BN("50"));
-
-      (await erc20Guild.totalLocked()).should.be.bignumber.equal(new BN("550"));
-
-      await time.latest();
-      await time.increase(TIMELOCK.add(new BN("1")));
-
-      await erc20Guild.releaseTokens(50, { from: accounts[1] });
-      (await erc20Guild.totalLocked()).should.be.bignumber.equal(new BN("500"));
-    });
-
-    it("can lock tokens and create proposal", async function () {
-      const { amount } = await erc20Guild.tokensLocked(accounts[2]);
-      amount.should.be.bignumber.equal(new BN("100"));
-      // timestamp.should.be.bignumber.equal(now.add(TIMELOCK));
-
-      const votes = await erc20Guild.votingPowerOf(accounts[2]);
-      votes.should.be.bignumber.equal(new BN("100"));
-
-      await erc20Guild.createProposal(
-        [votingMachine.address],
-        [genericCallData],
-        [0],
-        "Guild Test Proposal",
-        constants.NULL_ADDRESS,
-        { from: accounts[2] }
-      );
-
-      const totalLockedAt = await erc20Guild.totalLockedAt(1);
-      totalLockedAt.should.be.bignumber.equal(new BN("500"));
-
-      const votingPowerOfAt = await erc20Guild.methods[
-        "votingPowerOfAt(address,uint256)"
-      ](accounts[2], 1);
-      votingPowerOfAt.should.be.bignumber.equal(new BN("100"));
-    });
-
-    it("can not lock tokens, create proposal and setVote", async function () {
-      const { amount } = await erc20Guild.tokensLocked(accounts[2]);
-      amount.should.be.bignumber.equal(new BN("100"));
-
-      const votes = await erc20Guild.votingPowerOf(accounts[2]);
-      votes.should.be.bignumber.equal(new BN("100"));
-
-      const txGuild = await erc20Guild.createProposal(
-        [votingMachine.address],
-        [genericCallData],
-        [0],
-        "Guild Test Proposal",
-        constants.NULL_ADDRESS,
-        { from: accounts[2] }
-      );
-      const guildProposalId = await helpers.getValueFromLogs(
-        txGuild,
-        "proposalId",
-        "ProposalCreated"
-      );
-
-      await setAllVotesOnProposal({
-        guild: erc20Guild,
-        proposalId: guildProposalId,
-        account: accounts[2],
-      });
-
-      const totalLockedAt = await erc20Guild.totalLockedAt(1);
-      totalLockedAt.should.be.bignumber.equal(new BN("500"));
-
-      const votingPowerOfAt = await erc20Guild.votingPowerOfAt(accounts[2], 1);
-      votingPowerOfAt.should.be.bignumber.equal(new BN("100"));
-
-      const txVote = await erc20Guild.setVote(guildProposalId, 10, {
-        from: accounts[2],
-      });
-      expectEvent(txVote, "VoteRemoved", { proposalId: guildProposalId });
-    });
-
-    it("can not check votingPowerOfAt for invalid nonexistent ID", async function () {
-      await erc20Guild.createProposal(
-        [votingMachine.address],
-        [genericCallData],
-        [0],
-        "Guild Test Proposal",
-        constants.NULL_ADDRESS,
-        { from: accounts[2] }
-      );
-
+      // try to release more than locked and fail
       await expectRevert(
-        erc20Guild.methods["votingPowerOfAt(address,uint256)"](accounts[2], 3),
-        "ERC20Guild: nonexistent id"
+        erc20Guild.withdrawTokens(50001, { from: accounts[1] }),
+        "ERC20Guild: Unable to withdraw more tokens than locked"
       );
+
+      const txRelease = await erc20Guild.withdrawTokens(50000, {
+        from: accounts[1],
+      });
+      assert.equal(await erc20Guild.getTotalMembers(), 0);
+
+      const withdrawEvent = helpers.logDecoder.decodeLogs(
+        txRelease.receipt.rawLogs
+      )[1];
+      assert.equal(withdrawEvent.name, "TokensWithdrawn");
+      assert.equal(withdrawEvent.args[0], accounts[1]);
+      assert.equal(withdrawEvent.args[1], 50000);
+
+      votes = await erc20Guild.votingPowerOf(accounts[1]);
+      votes.should.be.bignumber.equal("0");
+
+      totalLocked = await erc20Guild.getTotalLocked();
+      totalLocked.should.be.bignumber.equal("0");
     });
 
-    it("can check votingPowerOfAt for invalid ID", async function () {
-      await expectRevert(
-        erc20Guild.methods["votingPowerOfAt(address,uint256)"](accounts[2], 0),
-        "ERC20Guild: id is 0"
-      );
-    });
+    it("can lock tokens and check snapshot", async function () {});
   });
   describe("refund votes", function () {
     beforeEach(async function () {
+      await lockTokens();
+
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        to: [erc20Guild.address],
-        data: [
-          await new web3.eth.Contract(ERC20Guild.abi).methods
-            .setConfig(30, 30, 200, 100, VOTE_GAS, MAX_GAS_PRICE, 1)
-            .encodeABI(),
+        actions: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setConfig(30, 30, 200, 100, VOTE_GAS, MAX_GAS_PRICE, 3, 60)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
         ],
-        value: [0],
-        description: "Guild Test Proposal",
-        contentHash: constants.NULL_ADDRESS,
         account: accounts[3],
       });
-      await setAllVotesOnProposal({
+      await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
+        action: 1,
+        account: accounts[4],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
         account: accounts[5],
       });
       await time.increase(time.duration.seconds(31));
       await erc20Guild.endProposal(guildProposalId);
+      (await erc20Guild.getVoteGas()).should.be.bignumber.equal(VOTE_GAS);
+      (await erc20Guild.getMaxGasPrice()).should.be.bignumber.equal(
+        MAX_GAS_PRICE
+      );
     });
 
     describe("with high gas vote setting (above cost) and standard gas price", function () {
@@ -1247,11 +1384,18 @@ contract("ERC20Guild", function (accounts) {
 
         const tracker = await balance.tracker(accounts[2]);
 
-        const txVote = await erc20Guild.setVote(guildProposalId, 100, {
+        const txVote = await erc20Guild.setVote(guildProposalId, 1, 100, {
           from: accounts[2],
           gasPrice: REAL_GAS_PRICE,
         });
-        expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
+        const voteEvent = helpers.logDecoder.decodeLogs(
+          txVote.receipt.rawLogs
+        )[0];
+        assert.equal(voteEvent.name, "VoteAdded");
+        assert.equal(voteEvent.args[0], guildProposalId);
+        assert.equal(voteEvent.args[1], 1);
+        assert.equal(voteEvent.args[2], accounts[2]);
+        assert.equal(voteEvent.args[3], 100);
 
         if (constants.GAS_PRICE > 1) {
           const txGasUsed = txVote.receipt.gasUsed;
@@ -1284,11 +1428,19 @@ contract("ERC20Guild", function (accounts) {
 
         const tracker = await balance.tracker(accounts[2]);
 
-        const txVote = await erc20Guild.setVote(guildProposalId, 100, {
+        const txVote = await erc20Guild.setVote(guildProposalId, 1, 100, {
           from: accounts[2],
           gasPrice: REAL_GAS_PRICE,
         });
-        expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
+
+        const voteEvent = helpers.logDecoder.decodeLogs(
+          txVote.receipt.rawLogs
+        )[0];
+        assert.equal(voteEvent.name, "VoteAdded");
+        assert.equal(voteEvent.args[0], guildProposalId);
+        assert.equal(voteEvent.args[1], 1);
+        assert.equal(voteEvent.args[2], accounts[2]);
+        assert.equal(voteEvent.args[3], 100);
 
         if (constants.GAS_PRICE > 1) {
           const txGasUsed = txVote.receipt.gasUsed;
@@ -1303,78 +1455,6 @@ contract("ERC20Guild", function (accounts) {
             new BN(txGasUsed).mul(REAL_GAS_PRICE).neg()
           );
         }
-      });
-
-      it("execute a proposal in walletScheme from the guild", async function () {
-        walletSchemeProposalData = helpers.encodeGenericCallData(
-          org.avatar.address,
-          actionMock.address,
-          helpers.testCallFrom(org.avatar.address),
-          0
-        );
-        const tx = await walletScheme.proposeCalls(
-          [org.controller.address],
-          [walletSchemeProposalData],
-          [0],
-          "Test title",
-          constants.SOME_HASH
-        );
-        const walletSchemeProposalId = await helpers.getValueFromLogs(
-          tx,
-          "_proposalId"
-        );
-
-        const genericCallData = await new web3.eth.Contract(
-          votingMachine.contract.abi
-        ).methods
-          .vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS)
-          .encodeABI();
-
-        const guildProposalId = await createProposal({
-          guild: erc20Guild,
-          to: [votingMachine.address],
-          data: [genericCallData],
-          value: [0],
-          description: "Guild Test Proposal",
-          contentHash: constants.NULL_ADDRESS,
-          account: accounts[3],
-        });
-        await setAllVotesOnProposal({
-          guild: erc20Guild,
-          proposalId: guildProposalId,
-          account: accounts[3],
-        });
-
-        const txVote = await setAllVotesOnProposal({
-          guild: erc20Guild,
-          proposalId: guildProposalId,
-          account: accounts[5],
-        });
-
-        if (constants.GAS_PRICE > 1)
-          expect(txVote.receipt.gasUsed).to.be.below(80000);
-
-        expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
-
-        await time.increase(time.duration.seconds(31));
-        const receipt = await erc20Guild.endProposal(guildProposalId);
-        expectEvent(receipt, "ProposalExecuted", {
-          proposalId: guildProposalId,
-        });
-
-        const organizationProposal = await walletScheme.getOrganizationProposal(
-          walletSchemeProposalId
-        );
-        assert.equal(
-          organizationProposal.state,
-          constants.WalletSchemeProposalState.executionSuccedd
-        );
-        assert.equal(
-          organizationProposal.callData[0],
-          walletSchemeProposalData
-        );
-        assert.equal(organizationProposal.to[0], org.controller.address);
-        assert.equal(organizationProposal.value[0], 0);
       });
     });
 
@@ -1392,11 +1472,18 @@ contract("ERC20Guild", function (accounts) {
 
       const tracker = await balance.tracker(accounts[2]);
 
-      const txVote = await erc20Guild.setVote(guildProposalId, 100, {
+      const txVote = await erc20Guild.setVote(guildProposalId, 1, 100, {
         from: accounts[2],
         gasPrice: MAX_GAS_PRICE.add(new BN("50")),
       });
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
+      const voteEvent = helpers.logDecoder.decodeLogs(
+        txVote.receipt.rawLogs
+      )[0];
+      assert.equal(voteEvent.name, "VoteAdded");
+      assert.equal(voteEvent.args[0], guildProposalId);
+      assert.equal(voteEvent.args[1], 1);
+      assert.equal(voteEvent.args[2], accounts[2]);
+      assert.equal(voteEvent.args[3], 100);
 
       if (constants.GAS_PRICE > 1) {
         const txGasUsed = txVote.receipt.gasUsed;
@@ -1421,36 +1508,40 @@ contract("ERC20Guild", function (accounts) {
   });
 
   describe("Signed votes", function () {
+    beforeEach(async function () {
+      const tokenVault = await erc20Guild.getTokenVault();
+      await guildToken.approve(tokenVault, 50000, { from: accounts[1] });
+      await guildToken.approve(tokenVault, 50000, { from: accounts[2] });
+      await guildToken.approve(tokenVault, 100000, { from: accounts[3] });
+      await guildToken.approve(tokenVault, 100000, { from: accounts[4] });
+      await guildToken.approve(tokenVault, 200000, { from: accounts[5] });
+      await erc20Guild.lockTokens(50000, { from: accounts[1] });
+      await erc20Guild.lockTokens(50000, { from: accounts[2] });
+      await erc20Guild.lockTokens(100000, { from: accounts[3] });
+      await erc20Guild.lockTokens(100000, { from: accounts[4] });
+      await erc20Guild.lockTokens(200000, { from: accounts[5] });
+    });
+
     it("can hash a vote", async function () {
       const hashedVote = await erc20Guild.hashVote(
         accounts[1],
         web3.utils.asciiToHex("abc123"),
+        1,
         50
       );
       hashedVote.should.exist;
     });
 
-    it("can set a vote", async function () {
-      const txGuild = await erc20Guild.createProposal(
-        [votingMachine.address],
-        [genericCallData],
-        [0],
-        "Guild Test Proposal",
-        constants.NULL_ADDRESS,
-        { from: accounts[3] }
-      );
+    it("can set a signed vote", async function () {
+      const guildProposalId = await createProposal(genericProposal);
 
-      const guildProposalId = await helpers.getValueFromLogs(
-        txGuild,
-        "proposalId",
-        "ProposalCreated"
-      );
       const hashedVote = await erc20Guild.hashVote(
         accounts[2],
         guildProposalId,
+        1,
         50
       );
-      (await erc20Guild.signedVotes(hashedVote)).should.be.equal(false);
+      (await erc20Guild.getSignedVote(hashedVote)).should.be.equal(false);
 
       const signature = fixSignature(
         await web3.eth.sign(hashedVote, accounts[2])
@@ -1461,89 +1552,79 @@ contract("ERC20Guild", function (accounts) {
 
       const txVote = await erc20Guild.setSignedVote(
         guildProposalId,
+        1,
         50,
         accounts[2],
         signature,
         { from: accounts[3] }
       );
 
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
+      const voteEvent = helpers.logDecoder.decodeLogs(
+        txVote.receipt.rawLogs
+      )[0];
+      assert.equal(voteEvent.name, "VoteAdded");
+      assert.equal(voteEvent.args[0], guildProposalId);
+      assert.equal(voteEvent.args[1], 1);
+      assert.equal(voteEvent.args[2], accounts[2]);
+      assert.equal(voteEvent.args[3], 50);
 
-      (await erc20Guild.signedVotes(hashedVote)).should.be.equal(true);
+      (await erc20Guild.getSignedVote(hashedVote)).should.be.equal(true);
     });
 
-    it("can set multiple votes", async function () {
-      const txGuild = await erc20Guild.createProposal(
-        [votingMachine.address],
-        [genericCallData],
-        [0],
-        "Guild Test Proposal",
-        constants.NULL_ADDRESS,
-        { from: accounts[4] }
+    it("can set setVotes more efficient than multiple setVote", async function () {
+      // Forwarding ~10 votes is 24% less effective than 10 setVote functions
+      const getSignature = async function (proposalId, account) {
+        const hash = await erc20Guild.hashVote(account, proposalId, 1, 10);
+        return fixSignature(await web3.eth.sign(hash, account));
+      };
+
+      let proposalIds = [],
+        actions = [],
+        votes = [],
+        voters = [],
+        signatures = [];
+
+      for (let i = 0; i < 10; i++) {
+        const guildProposalId = await createProposal(genericProposal);
+        proposalIds.push(guildProposalId);
+        actions.push(1);
+        votes.push(10);
+        voters.push(accounts[1]);
+        signatures.push(await getSignature(guildProposalId, accounts[1]));
+      }
+      const calls = await Promise.all(
+        proposalIds.map(async (proposalId, i) => {
+          return [
+            erc20Guild.address,
+            await new web3.eth.Contract(ERC20Guild.abi).methods
+              .setSignedVote(
+                proposalId,
+                actions[i],
+                votes[i],
+                voters[i],
+                signatures[i]
+              )
+              .encodeABI(),
+          ];
+        })
       );
 
-      const guildProposalId = await helpers.getValueFromLogs(
-        txGuild,
-        "proposalId",
-        "ProposalCreated"
-      );
+      const txVote3 = await multicall.aggregate(calls, { from: accounts[4] });
 
-      const hashedVote1 = await erc20Guild.hashVote(
-        accounts[2],
-        guildProposalId,
-        50
-      );
-      const hashedVote2 = await erc20Guild.hashVote(
-        accounts[3],
-        guildProposalId,
-        50
-      );
-
-      const signature1 = fixSignature(
-        await web3.eth.sign(hashedVote1, accounts[2])
-      );
-      const signature2 = fixSignature(
-        await web3.eth.sign(hashedVote2, accounts[3])
-      );
-
-      const txVote = await erc20Guild.methods[
-        "setSignedVotes(bytes32[],uint256[],address[],bytes[])"
-      ](
-        [guildProposalId, guildProposalId],
-        [50, 50],
-        [accounts[2], accounts[3]],
-        [signature1, signature2],
-        { from: accounts[4] }
-      );
-
-      const addedEvents = txVote.logs.filter(evt => evt.event === "VoteAdded");
-      addedEvents.length.should.be.equal(2);
-
-      (await erc20Guild.signedVotes(hashedVote1)).should.be.equal(true);
-      (await erc20Guild.signedVotes(hashedVote2)).should.be.equal(true);
+      if (constants.GAS_PRICE > 1)
+        expect(txVote3.receipt.gasUsed / (VOTE_GAS * 10)).to.be.below(1.24);
     });
 
     it("cannot set a signed vote twice", async function () {
-      const txGuild = await erc20Guild.createProposal(
-        [votingMachine.address],
-        [genericCallData],
-        [0],
-        "Guild Test Proposal",
-        constants.NULL_ADDRESS,
-        { from: accounts[3] }
-      );
+      const guildProposalId = await createProposal(genericProposal);
 
-      const guildProposalId = await helpers.getValueFromLogs(
-        txGuild,
-        "proposalId",
-        "ProposalCreated"
-      );
       const hashedVote = await erc20Guild.hashVote(
         accounts[2],
         guildProposalId,
+        1,
         50
       );
-      (await erc20Guild.signedVotes(hashedVote)).should.be.equal(false);
+      (await erc20Guild.getSignedVote(hashedVote)).should.be.equal(false);
 
       const signature = fixSignature(
         await web3.eth.sign(hashedVote, accounts[2])
@@ -1554,43 +1635,49 @@ contract("ERC20Guild", function (accounts) {
 
       const txVote = await erc20Guild.setSignedVote(
         guildProposalId,
+        1,
         50,
         accounts[2],
         signature,
         { from: accounts[3] }
       );
-      expectEvent(txVote, "VoteAdded", { proposalId: guildProposalId });
-      (await erc20Guild.signedVotes(hashedVote)).should.be.equal(true);
+
+      const voteEvent = helpers.logDecoder.decodeLogs(
+        txVote.receipt.rawLogs
+      )[0];
+      assert.equal(voteEvent.name, "VoteAdded");
+      assert.equal(voteEvent.args[0], guildProposalId);
+      assert.equal(voteEvent.args[1], 1);
+      assert.equal(voteEvent.args[2], accounts[2]);
+      assert.equal(voteEvent.args[3], 50);
+
+      (await erc20Guild.getSignedVote(hashedVote)).should.be.equal(true);
 
       await expectRevert(
-        erc20Guild.setSignedVote(guildProposalId, 50, accounts[2], signature, {
-          from: accounts[3],
-        }),
+        erc20Guild.setSignedVote(
+          guildProposalId,
+          1,
+          50,
+          accounts[2],
+          signature,
+          {
+            from: accounts[3],
+          }
+        ),
         "ERC20Guild: Already voted"
       );
     });
 
     it("cannot set a vote if wrong signer", async function () {
-      const txGuild = await erc20Guild.createProposal(
-        [votingMachine.address],
-        [genericCallData],
-        [0],
-        "Guild Test Proposal",
-        constants.NULL_ADDRESS,
-        { from: accounts[3] }
-      );
+      const guildProposalId = await createProposal(genericProposal);
 
-      const guildProposalId = await helpers.getValueFromLogs(
-        txGuild,
-        "proposalId",
-        "ProposalCreated"
-      );
       const hashedVote = await erc20Guild.hashVote(
         accounts[1],
         guildProposalId,
+        1,
         50
       );
-      (await erc20Guild.signedVotes(hashedVote)).should.be.equal(false);
+      (await erc20Guild.getSignedVote(hashedVote)).should.be.equal(false);
 
       const signature = fixSignature(
         await web3.eth.sign(hashedVote, accounts[0])
@@ -1601,9 +1688,16 @@ contract("ERC20Guild", function (accounts) {
 
       // now call from different account aka accounts[1]
       await expectRevert(
-        erc20Guild.setSignedVote(guildProposalId, 50, accounts[1], signature, {
-          from: accounts[1],
-        }),
+        erc20Guild.setSignedVote(
+          guildProposalId,
+          1,
+          50,
+          accounts[1],
+          signature,
+          {
+            from: accounts[1],
+          }
+        ),
         "ERC20Guild: Wrong signer"
       );
     });
