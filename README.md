@@ -74,9 +74,9 @@ Example:
 
 ### DXvote contracts Deployment
 
-This script will get deploy DXvote with the configuration set in the scripts/deployment-config.js file.
+This script will deploy dxvote for develop testing in the localhost network.
 
-`yarn hardhat run --network NETWORK scripts/deploy-dxvote.js`
+`yarn hardhat run --network localhost deploy-dxvote-develop`
 
 ## Contracts
 
