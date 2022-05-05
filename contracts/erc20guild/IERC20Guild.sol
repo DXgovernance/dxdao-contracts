@@ -6,6 +6,32 @@ interface IERC20Guild {
     event VoteAdded(bytes32 indexed proposalId, address voter, uint256 votingPower);
     event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
 
+    enum ProposalState {
+        None,
+        Active,
+        Rejected,
+        Executed,
+        Failed
+    }
+
+    struct Vote {
+        uint256 action;
+        uint256 votingPower;
+    }
+
+    struct Proposal {
+        address creator;
+        uint256 startTime;
+        uint256 endTime;
+        address[] to;
+        bytes[] data;
+        uint256[] value;
+        string title;
+        string contentHash;
+        ProposalState state;
+        uint256[] totalVotes;
+    }
+
     fallback() external payable;
 
     receive() external payable;
@@ -127,22 +153,7 @@ interface IERC20Guild {
 
     function getVoterLockTimestamp(address voter) external view returns (uint256);
 
-    function getProposal(bytes32 proposalId)
-        external
-        view
-        returns (
-            address creator,
-            uint256 startTime,
-            uint256 endTime,
-            address[] memory to,
-            bytes[] memory data,
-            uint256[] memory value,
-            uint256 totalActions,
-            string memory title,
-            string memory contentHash,
-            uint256 state,
-            uint256[] memory totalVotes
-        );
+    function getProposal(bytes32 proposalId) external view returns (Proposal memory);
 
     function getProposalVotesOfVoter(bytes32 proposalId, address voter)
         external

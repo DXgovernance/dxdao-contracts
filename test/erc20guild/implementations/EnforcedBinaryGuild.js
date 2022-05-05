@@ -76,7 +76,7 @@ contract("EnforcedBinaryGuild", function (accounts) {
       assert.equal(createdProposal.to.length, 2);
       assert.equal(createdProposal.data.length, 2);
       assert.equal(createdProposal.value.length, 2);
-      assert.equal(createdProposal.totalActions, 2);
+      assert.equal(createdProposal.totalVotes.length, 3);
 
       assert.equal(createdProposal.to[0], accounts[1]);
       assert.equal(createdProposal.data[0], "0x00");
@@ -107,7 +107,7 @@ contract("EnforcedBinaryGuild", function (accounts) {
       assert.equal(createdProposal.to.length, 6);
       assert.equal(createdProposal.data.length, 6);
       assert.equal(createdProposal.value.length, 6);
-      assert.equal(createdProposal.totalActions, 2);
+      assert.equal(createdProposal.totalVotes.length, 3);
 
       assert.equal(createdProposal.to[0], accounts[1]);
       assert.equal(createdProposal.data[0], "0x00");

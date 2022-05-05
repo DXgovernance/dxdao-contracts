@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "../ERC20Guild.sol";
+import "../ERC20GuildUpgradeable.sol";
 import "../../utils/Arrays.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
@@ -10,10 +10,10 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
   @title SnapshotERC20Guild
   @author github:AugustoL
   @dev An ERC20Guild designed to work with a snapshotted locked tokens.
-  It is an extension over the ERC20Guild where the voters can vote with the voting power used at the moment of the 
+  It is an extension over the ERC20GuildUpgradeable where the voters can vote with the voting power used at the moment of the 
   proposal creation.
 */
-contract SnapshotERC20Guild is ERC20Guild {
+contract SnapshotERC20Guild is ERC20GuildUpgradeable {
     using SafeMathUpgradeable for uint256;
     using Arrays for uint256[];
     using ECDSAUpgradeable for bytes32;
@@ -160,20 +160,27 @@ contract SnapshotERC20Guild is ERC20Guild {
 
             for (i; i < endCall; i++) {
                 if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
-                    bytes4 callDataFuncSignature = getFuncSignature(proposals[proposalId].data[i]);
+                    bytes4 callDataFuncSignature;
                     address asset = address(0);
                     address _to = proposals[proposalId].to[i];
                     uint256 _value = proposals[proposalId].value[i];
+                    bytes memory _data = proposals[proposalId].data[i];
+                    assembly {
+                        callDataFuncSignature := mload(add(_data, 32))
+                    }
 
                     // If the call is an ERC20 transfer or approve the asset is the address called
-                    // and the to and value are the decoded ERC20 receiver and value transfered
+                    // and the to and value are the decoded ERC20 receiver and value transferred
                     if (
                         ERC20_TRANSFER_SIGNATURE == callDataFuncSignature ||
                         ERC20_APPROVE_SIGNATURE == callDataFuncSignature
                     ) {
                         asset = proposals[proposalId].to[i];
                         callDataFuncSignature = ANY_SIGNATURE;
-                        (_to, _value) = erc20TransferOrApproveDecode(proposals[proposalId].data[i]);
+                        assembly {
+                            _to := mload(add(_data, 36))
+                            _value := mload(add(_data, 68))
+                        }
                     }
 
                     // The permission registry keeps track of all value transferred and checks call permission

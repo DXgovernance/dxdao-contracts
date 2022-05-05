@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "../ERC20Guild.sol";
+import "../ERC20GuildUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
@@ -14,7 +14,7 @@ import "../../utils/ERC20/ERC20SnapshotRep.sol";
   When a proposal is created it saves the snapshot if at the moment of creation,
   the voters can vote only with the voting power they had at that time.
 */
-contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
+contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
@@ -112,12 +112,12 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
     }
 
     // @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild
-    function lockTokens(uint256 tokenAmount) external virtual override {
+    function lockTokens(uint256) external virtual override {
         revert("SnapshotERC20Guild: token vault disabled");
     }
 
     // @dev Override and disable withdraw of tokens, not needed in SnapshotRepERC20Guild
-    function withdrawTokens(uint256 tokenAmount) external virtual override {
+    function withdrawTokens(uint256) external virtual override {
         revert("SnapshotERC20Guild: token vault disabled");
     }
 
@@ -158,21 +158,21 @@ contract SnapshotRepERC20Guild is ERC20Guild, OwnableUpgradeable {
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
         require(
-            votingPower > proposals[proposalId].votes[voter].votingPower,
+            votingPower > proposalVotes[proposalId][voter].votingPower,
             "SnapshotERC20Guild: Cant decrease votingPower in vote"
         );
         require(
-            proposals[proposalId].votes[voter].action == 0 || proposals[proposalId].votes[voter].action == action,
+            proposalVotes[proposalId][voter].action == 0 || proposalVotes[proposalId][voter].action == action,
             "SnapshotERC20Guild: Cant change action voted, only increase votingPower"
         );
 
         proposals[proposalId].totalVotes[action] = proposals[proposalId]
             .totalVotes[action]
-            .sub(proposals[proposalId].votes[voter].votingPower)
+            .sub(proposalVotes[proposalId][voter].votingPower)
             .add(votingPower);
 
-        proposals[proposalId].votes[voter].action = action;
-        proposals[proposalId].votes[voter].votingPower = votingPower;
+        proposalVotes[proposalId][voter].action = action;
+        proposalVotes[proposalId][voter].votingPower = votingPower;
 
         emit VoteAdded(proposalId, action, voter, votingPower);
 

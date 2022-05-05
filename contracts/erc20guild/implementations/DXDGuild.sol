@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "../ERC20Guild.sol";
+import "../ERC20GuildUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 /*
   @title DXDGuild
   @author github:AugustoL
-  @dev An ERC20Guild for the DXD token designed to execute votes on Genesis Protocol Voting Machine.
+  @dev An ERC20GuildUpgradeable for the DXD token designed to execute votes on Genesis Protocol Voting Machine.
 */
-contract DXDGuild is ERC20Guild, OwnableUpgradeable {
+contract DXDGuild is ERC20GuildUpgradeable, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
     // @dev Initilizer
