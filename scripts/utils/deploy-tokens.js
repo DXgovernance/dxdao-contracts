@@ -1,5 +1,3 @@
-import { waitBlocks } from "./wait";
-
 require("@nomiclabs/hardhat-web3");
 const { default: BigNumber } = require("bignumber.js");
 

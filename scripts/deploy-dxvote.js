@@ -2,7 +2,6 @@
 require("@nomiclabs/hardhat-web3");
 
 const moment = require("moment");
-const { default: BigNumber } = require("bignumber.js");
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 const MAX_UINT_256 =
@@ -14,13 +13,10 @@ const { deployTokens } = require("./utils/deploy-tokens");
 const { deployGuilds } = require("./utils/deploy-guilds");
 const { doActions } = require("./utils/do-actions");
 const { waitBlocks } = require("./utils/wait");
+
 task("deploy-dxvote", "Deploy dxvote in localhost network")
   .addParam("deployconfig", "The deploy config json in string format")
   .setAction(async ({ deployconfig }) => {
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
     let addresses = {};
 
     // Parse string json config to json object

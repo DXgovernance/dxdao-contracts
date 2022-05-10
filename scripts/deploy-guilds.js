@@ -1,10 +1,8 @@
 /* eslint-disable no-case-declarations */
 require("@nomiclabs/hardhat-web3");
-const IPFS = require("ipfs-core");
 
 const { deployTokens } = require("./utils/deploy-tokens");
 const moment = require("moment");
-const { default: BigNumber } = require("bignumber.js");
 const { deployGuilds } = require("./utils/deploy-guilds");
 const { waitBlocks } = require("./utils/wait");
 const { doActions } = require("./utils/do-actions");
@@ -13,8 +11,6 @@ task("deploy-guilds", "Deploy guilds")
   .addParam("deployconfig", "The deploy config json in string format")
   .setAction(async ({ deployconfig }) => {
     const GuildRegistry = await hre.artifacts.require("GuildRegistry");
-
-    const ipfs = await IPFS.create();
 
     let addresses = {};
 
@@ -69,8 +65,7 @@ task("deploy-guilds", "Deploy guilds")
     const guildsDeployment = await deployGuilds(
       deploymentConfig,
       tokens,
-      await GuildRegistry.at(deploymentConfig.guildRegistry),
-      ipfs
+      await GuildRegistry.at(deploymentConfig.guildRegistry)
     );
 
     // Do actions

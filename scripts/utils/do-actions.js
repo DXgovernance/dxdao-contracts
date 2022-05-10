@@ -187,4 +187,18 @@ export async function doActions(actions, tokens, addresses) {
         break;
     }
   }
+
+  const stop = async () => {
+    try {
+      await ipfs.stop();
+    } catch (e) {
+      console.log(e.message);
+    }
+    process.exit();
+  };
+
+  process.on("SIGTERM", stop);
+  process.on("SIGINT", stop);
+  process.on("SIGHUP", stop);
+  process.on("uncaughtException", stop);
 }

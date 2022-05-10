@@ -1,17 +1,7 @@
 import { waitBlocks } from "./wait";
-import { doActions } from "./do-actions";
 
 /* eslint-disable no-case-declarations */
 require("@nomiclabs/hardhat-web3");
-const { default: BigNumber } = require("bignumber.js");
-
-const contentHash = require("content-hash");
-const IPFS = require("ipfs-core");
-
-const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-const MAX_UINT_256 =
-  "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
 export async function deployGuilds(deploymentConfig, tokens, guildRegistry) {
   // Deploy Guilds
