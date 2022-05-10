@@ -32,6 +32,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           name: "DXDao on localhost",
           symbol: "DXD",
           type: "ERC20",
+          decimals: 18,
           distribution: [
             {
               address: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
@@ -51,6 +52,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           name: "REPGuildToken",
           symbol: "RGT",
           type: "ERC20SnapshotRep",
+          decimals: 18,
           distribution: [
             {
               address: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
@@ -230,10 +232,9 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         },
       ],
 
-      startTimestampForActions: moment().subtract(10, "minutes").unix(),
-
       actions: [
         {
+          timestamp: moment().subtract(30, "minutes").unix(),
           type: "transfer",
           from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
           data: {
@@ -316,7 +317,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         },
         {
           type: "vote",
-          time: moment.duration(1, "minutes").asSeconds(),
+          increaseTime: moment.duration(1, "minutes").asSeconds(),
           from: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
           data: {
             proposal: "0",
@@ -326,7 +327,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         },
         {
           type: "execute",
-          time: moment.duration(3, "minutes").asSeconds(),
+          increaseTime: moment.duration(3, "minutes").asSeconds(),
           from: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
           data: {
             proposal: "0",
@@ -364,7 +365,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         },
         {
           type: "vote",
-          time: moment.duration(1, "minutes").asSeconds(),
+          increaseTime: moment.duration(1, "minutes").asSeconds(),
           from: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
           data: {
             proposal: "1",
@@ -408,7 +409,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
             guildName: "DXDGuild",
             amount: web3.utils.toWei("10"),
           },
-          time: moment.duration(10, "minutes").asSeconds() + 1,
+          increaseTime: moment.duration(10, "minutes").asSeconds() + 1,
         },
         {
           type: "guild-createProposal",
@@ -445,7 +446,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           },
         },
         {
-          time: moment.duration(10, "minutes").asSeconds(),
+          increaseTime: moment.duration(10, "minutes").asSeconds(),
           type: "guild-endProposal",
           from: "0xc73480525e9d1198d448ece4a01daea851f72a9d",
           data: {

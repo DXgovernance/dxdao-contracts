@@ -1,6 +1,5 @@
 import { waitBlocks } from "./wait";
 
-/* eslint-disable no-case-declarations */
 require("@nomiclabs/hardhat-web3");
 const { default: BigNumber } = require("bignumber.js");
 
@@ -10,13 +9,8 @@ export async function deployTokens(deploymentConfig, accounts) {
 
   let tokens = {};
   let addresses = {};
-  // await Promise.all(
-  // deploymentConfig.tokens.map(async tokenToDeploy => {
 
-  // for (i in deploymentConfig.token) {
-  console.log({ deploymentConfig });
   for (const tokenToDeploy of deploymentConfig.tokens) {
-    console.log({ tokenToDeploy });
     console.log("Deploying token", tokenToDeploy.name, tokenToDeploy.symbol);
     const totalSupply = tokenToDeploy.distribution.reduce(function (
       previous,
@@ -25,15 +19,16 @@ export async function deployTokens(deploymentConfig, accounts) {
       return new BigNumber(previous).plus(current.amount.toString());
     },
     0);
-    console.log({ totalSupply });
-    console.log(totalSupply.toString());
 
     let newToken;
     switch (tokenToDeploy.type) {
       case "ERC20":
         newToken = await ERC20Mock.new(
+          accounts[0],
+          totalSupply,
           tokenToDeploy.name,
-          tokenToDeploy.symbol
+          tokenToDeploy.symbol,
+          tokenToDeploy.decimals
         );
         // await waitBlocks(1);
         for (const tokenHolder of tokenToDeploy.distribution) {
@@ -56,7 +51,6 @@ export async function deployTokens(deploymentConfig, accounts) {
     tokens[tokenToDeploy.symbol] = newToken;
     addresses[tokenToDeploy.symbol] = newToken.address;
   }
-  // );
 
   return { tokens, addresses };
 }

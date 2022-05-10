@@ -1,30 +1,33 @@
 /* eslint-disable no-case-declarations */
 require("@nomiclabs/hardhat-web3");
-const { default: BigNumber } = require("bignumber.js");
 
+const IPFS = require("ipfs-core");
 const contentHash = require("content-hash");
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-const MAX_UINT_256 =
-  "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
-export async function doActions(
-  actions,
-  tokens,
-  addresses,
-  avatar,
-  guilds,
-  ipfs
-) {
+export async function doActions(actions, tokens, addresses) {
+  const ipfs = await IPFS.create();
+
+  const ContributionReward = await hre.artifacts.require("ContributionReward");
+  const WalletScheme = await hre.artifacts.require("WalletScheme");
+  const DXDVotingMachine = await hre.artifacts.require("DXDVotingMachine");
+  const ERC20Guild = await hre.artifacts.require("ERC20Guild");
+
   // Execute a set of actions once all contracts are deployed
   let proposals = {
     dxvote: [],
   };
   for (const i in actions) {
     const action = actions[i];
-    if (action.time)
-      await network.provider.send("evm_increaseTime", [action.time]);
+    if (action.timestamp)
+      await hre.network.provider.request({
+        method: "evm_increaseTime",
+        params: [action.time - (await web3.eth.getBlock("latest")).timestamp],
+      });
+    else if (action.increaseTime)
+      await network.provider.send("evm_increaseTime", [action.increaseTime]);
+
     console.log("Executing action:", action);
 
     switch (action.type) {
@@ -66,7 +69,7 @@ export async function doActions(
             ? await (
                 await ContributionReward.at(contributionReward.address)
               ).proposeContributionReward(
-                avatar.address,
+                addresses["AVATAR"],
                 contentHash.fromIpfs(proposalDescriptionHash),
                 action.data.reputationChange,
                 action.data.rewards,
@@ -89,7 +92,9 @@ export async function doActions(
         );
         break;
       case "vote":
-        await votingMachine.vote(
+        await (
+          await DXDVotingMachine.at(addresses["DXDVotingMachine"])
+        ).vote(
           proposals.dxvote[action.data.proposal],
           action.data.decision,
           action.data.amount,
@@ -98,7 +103,9 @@ export async function doActions(
         );
         break;
       case "stake":
-        await votingMachine.stake(
+        await (
+          await DXDVotingMachine.at(addresses["DXDVotingMachine"])
+        ).stake(
           proposals.dxvote[action.data.proposal],
           action.data.decision,
           action.data.amount,
@@ -107,7 +114,9 @@ export async function doActions(
         break;
       case "execute":
         try {
-          await votingMachine.execute(proposals.dxvote[action.data.proposal], {
+          await (
+            await DXDVotingMachine.at(addresses["DXDVotingMachine"])
+          ).execute(proposals.dxvote[action.data.proposal], {
             from: action.from,
             gas: 9000000,
           });
@@ -116,11 +125,11 @@ export async function doActions(
         }
         break;
       case "redeem":
-        await votingMachine.redeem(
-          proposals.dxvote[action.data.proposal],
-          action.from,
-          { from: action.from }
-        );
+        await (
+          await DXDVotingMachine.at(addresses["DXDVotingMachine"])
+        ).redeem(proposals.dxvote[action.data.proposal], action.from, {
+          from: action.from,
+        });
         break;
       case "guild-createProposal":
         const guildProposalDescriptionHash = (
@@ -128,9 +137,9 @@ export async function doActions(
             JSON.stringify({ description: action.data.proposalBody, url: "" })
           )
         ).cid.toString();
-        const guildProposalCreationTx = await guilds[
-          action.data.guildName
-        ].createProposal(
+        const guildProposalCreationTx = await ERC20Guild.at(
+          addresses[action.data.guildName]
+        ).createProposal(
           action.data.to.map(_to => addresses[_to] || _to),
           action.data.callData,
           action.data.value,
@@ -139,29 +148,37 @@ export async function doActions(
           contentHash.fromIpfs(guildProposalDescriptionHash).toString(),
           { from: action.from }
         );
+        if (!proposals[action.data.guildName])
+          proposals[action.data.guildName] = [];
         proposals[action.data.guildName].push(
           guildProposalCreationTx.receipt.logs[0].args.proposalId
         );
         break;
       case "guild-lockTokens":
-        await guilds[action.data.guildName].lockTokens(action.data.amount, {
-          from: action.from,
-        });
+        await ERC20Guild.at(addresses[action.data.guildName]).lockTokens(
+          action.data.amount,
+          {
+            from: action.from,
+          }
+        );
         break;
       case "guild-withdrawTokens":
-        await guilds[action.data.guildName].withdrawTokens(action.data.amount, {
-          from: action.from,
-        });
+        await ERC20Guild.at(addresses[action.data.guildName]).withdrawTokens(
+          action.data.amount,
+          {
+            from: action.from,
+          }
+        );
         break;
       case "guild-voteProposal":
-        await guilds[action.data.guildName].setVote(
+        await ERC20Guild.at(addresses[action.data.guildName]).setVote(
           proposals[action.data.guildName][action.data.proposal],
           action.data.action,
           action.data.votingPower
         );
         break;
       case "guild-endProposal":
-        await guilds[action.data.guildName].endProposal(
+        await ERC20Guild.at(addresses[action.data.guildName]).endProposal(
           proposals[action.data.guildName][action.data.proposal],
           { from: action.from }
         );

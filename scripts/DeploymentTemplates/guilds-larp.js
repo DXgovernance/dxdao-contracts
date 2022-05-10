@@ -11,6 +11,7 @@ task("deploy-guilds-larp", "Deploy dxvote with develop config")
           name: "SWPR on rinkeby",
           symbol: "SWPR",
           type: "ERC20",
+          decimals: "18",
           distribution: [
             {
               address: "0xA678B50F66d212d127491F5ee82776bdeF763841",
@@ -62,6 +63,7 @@ task("deploy-guilds-larp", "Deploy dxvote with develop config")
           name: "Multisig1",
           symbol: "REP",
           type: "ERC20SnapshotRep",
+          decimals: "18",
           distribution: [
             {
               address: "0xA678B50F66d212d127491F5ee82776bdeF763841",
@@ -152,5 +154,3 @@ task("deploy-guilds-larp", "Deploy dxvote with develop config")
       deployconfig: JSON.stringify(deployconfig),
     });
   });
-
-module.exports = {};

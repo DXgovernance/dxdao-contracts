@@ -1,3 +1,4 @@
+import { waitBlocks } from "./wait";
 import { doActions } from "./do-actions";
 
 /* eslint-disable no-case-declarations */
@@ -12,12 +13,7 @@ const MAX_UINT_256 =
   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
-export async function deployGuilds(
-  deploymentConfig,
-  tokens,
-  guildRegistry,
-  ipfs
-) {
+export async function deployGuilds(deploymentConfig, tokens, guildRegistry) {
   // Deploy Guilds
   let guilds = {};
   let proposals = {
@@ -68,23 +64,5 @@ export async function deployGuilds(
 
   console.log("Contracts deployed:", networkContracts);
 
-  // const startTime = deploymentConfig.startTimestampForActions;
-
-  // Increase time to start time for actions
-  // await hre.network.provider.request({
-  //   method: "evm_increaseTime",
-  //   params: [startTime - (await web3.eth.getBlock("latest")).timestamp],
-  // });
-  console.log("Doing guild actions");
-  // Execute a set of actions once all contracts are deployed
-  await doActions(
-    deploymentConfig.guildActions,
-    tokens,
-    addresses,
-    {
-      address: "0x0",
-    },
-    guilds,
-    ipfs
-  );
+  return { networkContracts, addresses };
 }

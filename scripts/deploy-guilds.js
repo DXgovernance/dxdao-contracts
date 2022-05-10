@@ -7,6 +7,7 @@ const moment = require("moment");
 const { default: BigNumber } = require("bignumber.js");
 const { deployGuilds } = require("./utils/deploy-guilds");
 const { waitBlocks } = require("./utils/wait");
+const { doActions } = require("./utils/do-actions");
 
 task("deploy-guilds", "Deploy guilds")
   .addParam("deployconfig", "The deploy config json in string format")
@@ -65,11 +66,19 @@ task("deploy-guilds", "Deploy guilds")
     await waitBlocks(1);
 
     // Deploy Guilds
-    await deployGuilds(
+    const guildsDeployment = await deployGuilds(
       deploymentConfig,
       tokens,
       await GuildRegistry.at(deploymentConfig.guildRegistry),
       ipfs
+    );
+
+    // Do actions
+    console.log("Doing actions");
+    await doActions(
+      deploymentConfig.actions,
+      tokens,
+      guildsDeployment.addresses
     );
 
     // Increase time to local time
@@ -80,5 +89,3 @@ task("deploy-guilds", "Deploy guilds")
 
     return { networkContracts, addresses };
   });
-
-module.exports = {};
