@@ -43,17 +43,12 @@ contract("MigratableERC20Guild", function (accounts) {
     permissionRegistry = await PermissionRegistry.new();
     await permissionRegistry.initialize();
 
-    erc20Guild = await MigratableERC20Guild.new();
-    await erc20Guild.initialize(
+    erc20Guild = await MigratableERC20Guild.new(
       guildTokenA.address,
-      30,
       30,
       5000,
       100,
-      "TestGuild",
-      0,
-      0,
-      10,
+      "MigrateableGuild",
       60,
       permissionRegistry.address
     );

@@ -19,6 +19,36 @@ contract MigratableERC20Guild is ERC20Guild {
 
     uint256 public lastMigrationTimestamp;
 
+    // @dev Constructor
+    // @param _token The ERC20 token that will be used as source of voting power
+    // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
+    // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
+    // action
+    // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // @param _name The name of the ERC20Guild
+    // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
+    // @param _lockTime The minimum amount of seconds that the tokens would be locked
+    // @param _permissionRegistry The address of the permission registry contract to be used
+    constructor(
+        address _token,
+        uint256 _proposalTime,
+        uint256 _votingPowerForProposalExecution,
+        uint256 _votingPowerForProposalCreation,
+        string memory _name,
+        uint256 _lockTime,
+        address _permissionRegistry
+    )
+        ERC20Guild(
+            _token,
+            _proposalTime,
+            _votingPowerForProposalExecution,
+            _votingPowerForProposalCreation,
+            _name,
+            _lockTime,
+            _permissionRegistry
+        )
+    {}
+
     // @dev Change the token vault used, this will change the voting token too.
     // The token vault admin has to be the guild.
     // @param newTokenVault The address of the new token vault
@@ -132,16 +162,5 @@ contract MigratableERC20Guild is ERC20Guild {
     // @dev Get the totalLocked
     function getTotalLocked() public view virtual override returns (uint256) {
         return totalLockedByVault[address(tokenVault)];
-    }
-
-    // @dev Get the code of an address
-    function getCodeAt(address _addr) internal view returns (bytes memory o_code) {
-        assembly {
-            let size := extcodesize(_addr)
-            o_code := mload(0x40)
-            mstore(0x40, add(o_code, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-            mstore(o_code, size)
-            extcodecopy(_addr, add(o_code, 0x20), 0, size)
-        }
     }
 }

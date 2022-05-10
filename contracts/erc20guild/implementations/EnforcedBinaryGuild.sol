@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "../ERC20Guild.sol";
+import "../ERC20GuildUpgradeable.sol";
 import "../../utils/Arrays.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
@@ -9,9 +9,9 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 /*
   @title EnforcedBinaryGuild
   @author github:mprasanjith
-  @dev An ERC20Guild which enforces all proposals to have a "No" action (which does nothing).
+  @dev An ERC20GuildUpgradeable which enforces all proposals to have a "No" action (which does nothing).
 */
-contract EnforcedBinaryGuild is ERC20Guild {
+contract EnforcedBinaryGuild is ERC20GuildUpgradeable {
     using SafeMathUpgradeable for uint256;
     using Arrays for uint256[];
 

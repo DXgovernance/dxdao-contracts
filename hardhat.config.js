@@ -10,6 +10,7 @@ require("solidity-coverage");
 require("@openzeppelin/hardhat-upgrades");
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-dependency-compiler");
+require("hardhat-contract-sizer");
 
 require("./scripts/create2");
 require("./scripts/deploy-dxvote");

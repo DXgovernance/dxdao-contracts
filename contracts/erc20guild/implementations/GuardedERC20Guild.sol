@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "../ERC20Guild.sol";
+import "../ERC20GuildUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 /*
   @title GuardedERC20Guild
   @author github:AugustoL
-  @dev An ERC20Guild with a guardian, the proposal time can be extended an extra time for the guardian to end the
+  @dev An ERC20GuildUpgradeable with a guardian, the proposal time can be extended an extra time for the guardian to end the
   proposal like it would happen normally from a base ERC20Guild or reject it directly.
 */
-contract GuardedERC20Guild is ERC20Guild, OwnableUpgradeable {
+contract GuardedERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
     address public guildGuardian;
