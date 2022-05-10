@@ -40,7 +40,10 @@ contract("DXDVotingMachine", function (accounts) {
     actionMock = await ActionMock.new();
     const standardTokenMock = await ERC20Mock.new(
       accounts[1],
-      constants.MAX_UINT_256
+      constants.MAX_UINT_256,
+      "",
+      "",
+      "18"
     );
     await standardTokenMock.transfer(accounts[0], 2000, { from: accounts[1] });
     org = await helpers.setupOrganization(

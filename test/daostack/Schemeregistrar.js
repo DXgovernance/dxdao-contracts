@@ -29,7 +29,7 @@ const setupSchemeRegistrarParams = async function (schemeRegistrar) {
 
 const setup = async function (accounts) {
   const fee = 10;
-  const standardTokenMock = await ERC20Mock.new(accounts[1], 100);
+  const standardTokenMock = await ERC20Mock.new(accounts[1], 100, "", "", "18");
   const schemeRegistrar = await SchemeRegistrar.new();
   const reputationArray = [20, 40, 70];
   const org = await helpers.setupOrganization(

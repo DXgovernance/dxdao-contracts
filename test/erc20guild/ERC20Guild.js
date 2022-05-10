@@ -1003,7 +1003,13 @@ contract("ERC20Guild", function (accounts) {
       await lockTokens();
       await allowActionMockA();
 
-      testToken = await ERC20Mock.new(accounts[1], 1000);
+      testToken = await ERC20Mock.new(
+        accounts[1],
+        1000,
+        "TestToken",
+        "TTT",
+        "18"
+      );
       await testToken.transfer(erc20Guild.address, 300, { from: accounts[1] });
 
       const setTestPermissions = await createProposal({
