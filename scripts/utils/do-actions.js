@@ -6,7 +6,7 @@ const contentHash = require("content-hash");
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-export async function doActions(actions, addresses) {
+export async function doActions(actions, networkContracts) {
   const ipfs = await IPFS.create();
 
   const ContributionReward = await hre.artifacts.require("ContributionReward");
@@ -36,9 +36,10 @@ export async function doActions(actions, addresses) {
     switch (action.type) {
       case "approve":
         await (
-          await ERC20.at(addresses[action.data.asset])
+          await ERC20.at(networkContracts.addresses[action.data.asset])
         ).approve(
-          addresses[action.data.address] || action.data.address,
+          networkContracts.addresses[action.data.address] ||
+            action.data.address,
           action.data.amount,
           { from: action.from }
         );
@@ -47,14 +48,17 @@ export async function doActions(actions, addresses) {
       case "transfer":
         action.data.asset === NULL_ADDRESS
           ? await web3.eth.sendTransaction({
-              to: addresses[action.data.address] || action.data.address,
+              to:
+                networkContracts.addresses[action.data.address] ||
+                action.data.address,
               value: action.data.amount,
               from: action.from,
             })
           : await (
-              await ERC20.at(addresses[action.data.asset])
+              await ERC20.at(networkContracts.addresses[action.data.asset])
             ).transfer(
-              addresses[action.data.address] || action.data.address,
+              networkContracts.addresses[action.data.address] ||
+                action.data.address,
               action.data.amount,
               { from: action.from }
             );
@@ -76,7 +80,7 @@ export async function doActions(actions, addresses) {
             ? await (
                 await ContributionReward.at(contributionReward.address)
               ).proposeContributionReward(
-                addresses["AVATAR"],
+                networkContracts.addresses["AVATAR"],
                 contentHash.fromIpfs(proposalDescriptionHash),
                 action.data.reputationChange,
                 action.data.rewards,
@@ -85,9 +89,13 @@ export async function doActions(actions, addresses) {
                 { from: action.from }
               )
             : await (
-                await WalletScheme.at(addresses[action.data.scheme])
+                await WalletScheme.at(
+                  networkContracts.addresses[action.data.scheme]
+                )
               ).proposeCalls(
-                action.data.to.map(_to => addresses[_to] || _to),
+                action.data.to.map(
+                  _to => networkContracts.addresses[_to] || _to
+                ),
                 action.data.callData,
                 action.data.value,
                 action.data.title,
@@ -100,7 +108,9 @@ export async function doActions(actions, addresses) {
         break;
       case "vote":
         await (
-          await DXDVotingMachine.at(addresses["DXDVotingMachine"])
+          await DXDVotingMachine.at(
+            networkContracts.addresses["DXDVotingMachine"]
+          )
         ).vote(
           proposals.dxvote[action.data.proposal],
           action.data.decision,
@@ -111,7 +121,9 @@ export async function doActions(actions, addresses) {
         break;
       case "stake":
         await (
-          await DXDVotingMachine.at(addresses["DXDVotingMachine"])
+          await DXDVotingMachine.at(
+            networkContracts.addresses["DXDVotingMachine"]
+          )
         ).stake(
           proposals.dxvote[action.data.proposal],
           action.data.decision,
@@ -122,7 +134,9 @@ export async function doActions(actions, addresses) {
       case "execute":
         try {
           await (
-            await DXDVotingMachine.at(addresses["DXDVotingMachine"])
+            await DXDVotingMachine.at(
+              networkContracts.addresses["DXDVotingMachine"]
+            )
           ).execute(proposals.dxvote[action.data.proposal], {
             from: action.from,
             gas: 9000000,
@@ -133,7 +147,9 @@ export async function doActions(actions, addresses) {
         break;
       case "redeem":
         await (
-          await DXDVotingMachine.at(addresses["DXDVotingMachine"])
+          await DXDVotingMachine.at(
+            networkContracts.addresses["DXDVotingMachine"]
+          )
         ).redeem(proposals.dxvote[action.data.proposal], action.from, {
           from: action.from,
         });
@@ -145,9 +161,9 @@ export async function doActions(actions, addresses) {
           )
         ).cid.toString();
         const guildProposalCreationTx = await (
-          await ERC20Guild.at(addresses[action.data.guildName])
+          await ERC20Guild.at(networkContracts.addresses[action.data.guildName])
         ).createProposal(
-          action.data.to.map(_to => addresses[_to] || _to),
+          action.data.to.map(_to => networkContracts.addresses[_to] || _to),
           action.data.callData,
           action.data.value,
           action.data.totalActions,
@@ -163,21 +179,21 @@ export async function doActions(actions, addresses) {
         break;
       case "guild-lockTokens":
         await (
-          await ERC20Guild.at(addresses[action.data.guildName])
+          await ERC20Guild.at(networkContracts.addresses[action.data.guildName])
         ).lockTokens(action.data.amount, {
           from: action.from,
         });
         break;
       case "guild-withdrawTokens":
         await (
-          await ERC20Guild.at(addresses[action.data.guildName])
+          await ERC20Guild.at(networkContracts.addresses[action.data.guildName])
         ).withdrawTokens(action.data.amount, {
           from: action.from,
         });
         break;
       case "guild-voteProposal":
         await (
-          await ERC20Guild.at(addresses[action.data.guildName])
+          await ERC20Guild.at(networkContracts.addresses[action.data.guildName])
         ).setVote(
           proposals[action.data.guildName][action.data.proposal],
           action.data.action,
@@ -186,7 +202,7 @@ export async function doActions(actions, addresses) {
         break;
       case "guild-endProposal":
         await (
-          await ERC20Guild.at(addresses[action.data.guildName])
+          await ERC20Guild.at(networkContracts.addresses[action.data.guildName])
         ).endProposal(proposals[action.data.guildName][action.data.proposal], {
           from: action.from,
         });
@@ -209,4 +225,6 @@ export async function doActions(actions, addresses) {
   process.on("SIGINT", stop);
   process.on("SIGHUP", stop);
   process.on("uncaughtException", stop);
+
+  return networkContracts;
 }

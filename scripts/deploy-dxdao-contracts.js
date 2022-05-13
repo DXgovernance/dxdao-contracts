@@ -11,34 +11,46 @@ const { doActions } = require("./utils/do-actions");
 task("deploy-dxdao-contracts", "Deploy dxdao-contracts")
   .addParam("deployconfig", "The deploy config json in string format")
   .setAction(async ({ deployconfig }) => {
-    let addresses = {};
+    // Set networkContracts object that will store the contracts deployed
+    let networkContracts = {
+      fromBlock: (await web3.eth.getBlock("latest")).number,
+      avatar: null,
+      reputation: null,
+      token: null,
+      controller: null,
+      permissionRegistry: null,
+      schemes: {},
+      utils: {},
+      votingMachines: {},
+      addresses: {},
+    };
 
     // Parse string json config to json object
     const deploymentConfig = JSON.parse(deployconfig);
 
     if (deploymentConfig.tokens) {
-      const tokensDeployment = await deployTokens(
-        deploymentConfig.tokens,
-        addresses
+      networkContracts = Object.assign(
+        await deployTokens(deploymentConfig.tokens, networkContracts),
+        networkContracts
       );
-      addresses = Object.assign(tokensDeployment.addresses, addresses);
     }
 
     if (deploymentConfig.dao) {
-      const daoDeployment = await deployDao(deploymentConfig.dao, addresses);
-      addresses = Object.assign(daoDeployment.addresses, addresses);
+      networkContracts = Object.assign(
+        await deployDao(deploymentConfig.dao, networkContracts),
+        networkContracts
+      );
     }
 
     if (deploymentConfig.guilds) {
-      const guildsDeployment = await deployGuilds(
-        deploymentConfig.guilds,
-        addresses
+      networkContracts = Object.assign(
+        await deployGuilds(deploymentConfig.guilds, networkContracts),
+        networkContracts
       );
-      addresses = Object.assign(guildsDeployment.addresses, addresses);
     }
 
     // Do actions
-    await doActions(deploymentConfig.actions, addresses);
+    await doActions(deploymentConfig.actions, networkContracts);
 
     // Increase time to local time
     await hre.network.provider.request({
@@ -46,5 +58,5 @@ task("deploy-dxdao-contracts", "Deploy dxdao-contracts")
       params: [moment().unix() - (await web3.eth.getBlock("latest")).timestamp],
     });
 
-    return { addresses };
+    return networkContracts;
   });

@@ -3,8 +3,7 @@ import { waitBlocks } from "./wait";
 /* eslint-disable no-case-declarations */
 require("@nomiclabs/hardhat-web3");
 
-export async function deployGuilds(guilds, addresses) {
-  const networkContracts = {};
+export async function deployGuilds(guilds, networkContracts) {
   const PermissionRegistry = await hre.artifacts.require("PermissionRegistry");
   const permissionRegistry = await PermissionRegistry.new();
 
@@ -17,7 +16,7 @@ export async function deployGuilds(guilds, addresses) {
       );
       const newGuild = await GuildContract.new();
       await newGuild.initialize(
-        addresses[guildToDeploy.token],
+        networkContracts.addresses[guildToDeploy.token],
         guildToDeploy.proposalTime,
         guildToDeploy.timeForExecution,
         guildToDeploy.votingPowerForProposalExecution,
@@ -34,12 +33,13 @@ export async function deployGuilds(guilds, addresses) {
       if (guildToDeploy.contractName === "SnapshotRepERC20Guild")
         await newGuild.transferOwnership(newGuild.address);
 
-      addresses[guildToDeploy.name] = newGuild.address;
-      addresses[guildToDeploy.name + "-vault"] = await newGuild.getTokenVault();
+      networkContracts.addresses[guildToDeploy.name] = newGuild.address;
+      networkContracts.addresses[guildToDeploy.name + "-vault"] =
+        await newGuild.getTokenVault();
     })
   );
 
   console.log("Contracts deployed:", networkContracts);
 
-  return { networkContracts, addresses };
+  return networkContracts;
 }

@@ -1,13 +1,11 @@
 require("@nomiclabs/hardhat-web3");
 const { default: BigNumber } = require("bignumber.js");
 
-export async function deployTokens(tokens) {
+export async function deployTokens(tokens, networkContracts) {
   const ERC20Mock = await hre.artifacts.require("ERC20Mock");
   const ERC20SnapshotRep = await hre.artifacts.require("ERC20SnapshotRep");
 
   const accounts = await web3.eth.getAccounts();
-
-  let addresses = {};
 
   for (const tokenToDeploy of tokens) {
     console.log("Deploying token", tokenToDeploy.name, tokenToDeploy.symbol);
@@ -42,8 +40,8 @@ export async function deployTokens(tokens) {
         }
         break;
     }
-    addresses[tokenToDeploy.symbol] = newToken.address;
+    networkContracts.addresses[tokenToDeploy.symbol] = newToken.address;
   }
 
-  return { addresses };
+  return networkContracts;
 }

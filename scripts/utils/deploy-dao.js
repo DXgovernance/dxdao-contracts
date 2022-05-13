@@ -10,7 +10,7 @@ const { encodePermission } = require("../../test/helpers/permissions");
 
 const { waitBlocks } = require("../utils/wait");
 
-export async function deployDao(daoConfig, addresses) {
+export async function deployDao(daoConfig, networkContracts) {
   // Import contracts
   const DxAvatar = await hre.artifacts.require("DxAvatar");
   const DxReputation = await hre.artifacts.require("DxReputation");
@@ -28,22 +28,6 @@ export async function deployDao(daoConfig, addresses) {
 
   // Get ETH accounts to be used
   const accounts = await web3.eth.getAccounts();
-
-  // Get fromBlock for network contracts
-  const fromBlock = (await web3.eth.getBlock("latest")).number;
-
-  // Set networkContracts object that will store the contracts deployed
-  let networkContracts = {
-    fromBlock: fromBlock,
-    avatar: null,
-    reputation: null,
-    token: null,
-    controller: null,
-    permissionRegistry: null,
-    schemes: {},
-    utils: {},
-    votingMachines: {},
-  };
 
   // Get initial REP holders
   let founders = [],
@@ -67,7 +51,7 @@ export async function deployDao(daoConfig, addresses) {
   reputation = await DxReputation.new();
   console.log("DX Reputation deployed to:", reputation.address);
   networkContracts.reputation = reputation.address;
-  addresses["Reputation"] = reputation.address;
+  networkContracts.addresses["Reputation"] = reputation.address;
   await waitBlocks(1);
 
   // Mint DXvote REP
@@ -76,12 +60,20 @@ export async function deployDao(daoConfig, addresses) {
 
   // Deploy Avatar
   let avatar;
-  console.log("Deploying DxAvatar...", addresses["DXD"], reputation.address);
-  avatar = await DxAvatar.new("DXdao", addresses["DXD"], reputation.address);
+  console.log(
+    "Deploying DxAvatar...",
+    networkContracts.addresses["DXD"],
+    reputation.address
+  );
+  avatar = await DxAvatar.new(
+    "DXdao",
+    networkContracts.addresses["DXD"],
+    reputation.address
+  );
   console.log("DXdao Avatar deployed to:", avatar.address);
   networkContracts.avatar = avatar.address;
-  networkContracts.token = addresses["DXD"];
-  addresses["Avatar"] = avatar.address;
+  networkContracts.token = networkContracts.addresses["DXD"];
+  networkContracts.addresses["Avatar"] = avatar.address;
   await waitBlocks(1);
 
   // Deploy Controller and transfer avatar to controller
@@ -92,27 +84,27 @@ export async function deployDao(daoConfig, addresses) {
   await avatar.transferOwnership(controller.address);
   await reputation.transferOwnership(controller.address);
   networkContracts.controller = controller.address;
-  addresses["Controller"] = controller.address;
+  networkContracts.addresses["Controller"] = controller.address;
   await waitBlocks(1);
 
   // Deploy DXDVotingMachine
   let votingMachine;
   console.log("Deploying DXDVotingMachine...");
-  votingMachine = await DXDVotingMachine.new(addresses["DXD"]);
+  votingMachine = await DXDVotingMachine.new(networkContracts.addresses["DXD"]);
   console.log("DXDVotingMachine deployed to:", votingMachine.address);
   networkContracts.votingMachines[votingMachine.address] = {
     type: "DXDVotingMachine",
-    token: addresses["DXD"],
+    token: networkContracts.addresses["DXD"],
   };
   await waitBlocks(1);
-  addresses["DXDVotingMachine"] = votingMachine.address;
+  networkContracts.addresses["DXDVotingMachine"] = votingMachine.address;
 
   // Deploy PermissionRegistry to be used by WalletSchemes
   let permissionRegistry;
   console.log("Deploying PermissionRegistry...");
   permissionRegistry = await PermissionRegistry.new();
   await permissionRegistry.initialize();
-  addresses["PermissionRegistry"] = permissionRegistry.address;
+  networkContracts.addresses["PermissionRegistry"] = permissionRegistry.address;
 
   // Only allow the functions mintReputation, burnReputation, genericCall, registerScheme and unregisterScheme to be
   // called to in the controller contract from a scheme that calls the controller.
@@ -171,7 +163,7 @@ export async function deployDao(daoConfig, addresses) {
 
   console.log("Permission Registry deployed to:", permissionRegistry.address);
   networkContracts.permissionRegistry = permissionRegistry.address;
-  addresses["PermissionRegstry"] = permissionRegistry.address;
+  networkContracts.addresses["PermissionRegstry"] = permissionRegistry.address;
   await waitBlocks(1);
 
   // Deploy ContributionReward Scheme
@@ -277,7 +269,7 @@ export async function deployDao(daoConfig, addresses) {
       votingMachine: votingMachine.address,
     },
   };
-  addresses["ContributionReward"] = contributionReward.address;
+  networkContracts.addresses["ContributionReward"] = contributionReward.address;
 
   // Deploy Wallet Schemes
   for (var s = 0; s < daoConfig.walletSchemes.length; s++) {
@@ -343,15 +335,15 @@ export async function deployDao(daoConfig, addresses) {
     for (var p = 0; p < schemeConfiguration.permissions.length; p++) {
       const permission = schemeConfiguration.permissions[p];
       if (permission.to === "ITSELF") permission.to = newScheme.address;
-      else if (addresses[permission.to])
-        permission.to = addresses[permission.to];
+      else if (networkContracts.addresses[permission.to])
+        permission.to = networkContracts.addresses[permission.to];
 
       await permissionRegistry.setPermission(
-        addresses[permission.asset] || permission.asset,
+        networkContracts.addresses[permission.asset] || permission.asset,
         schemeConfiguration.doAvatarGenericCalls
           ? avatar.address
           : newScheme.address,
-        addresses[permission.to] || permission.to,
+        networkContracts.addresses[permission.to] || permission.to,
         permission.functionSignature,
         permission.value.toString(),
         permission.allowed
@@ -405,7 +397,7 @@ export async function deployDao(daoConfig, addresses) {
     );
 
     networkContracts.schemes[schemeConfiguration.name] = newScheme.address;
-    addresses[schemeConfiguration.name] = newScheme.address;
+    networkContracts.addresses[schemeConfiguration.name] = newScheme.address;
   }
 
   // Deploy dxDaoNFT
@@ -413,7 +405,7 @@ export async function deployDao(daoConfig, addresses) {
   console.log("Deploying ERC721Factory...");
   dxDaoNFT = await ERC721Factory.new("DX DAO NFT", "DXDNFT");
   networkContracts.utils.dxDaoNFT = dxDaoNFT.address;
-  addresses["ERC721Factory"] = dxDaoNFT.address;
+  networkContracts.addresses["ERC721Factory"] = dxDaoNFT.address;
 
   // Deploy ERC20VestingFactory
   let dxdVestingFactory;
@@ -423,7 +415,7 @@ export async function deployDao(daoConfig, addresses) {
     avatar.address
   );
   networkContracts.utils.dxdVestingFactory = dxdVestingFactory.address;
-  addresses["ERC20VestingFactory"] = dxdVestingFactory.address;
+  networkContracts.addresses["ERC20VestingFactory"] = dxdVestingFactory.address;
 
   // Transfer all ownership and power to the dao
   console.log("Transfering ownership...");
@@ -432,5 +424,5 @@ export async function deployDao(daoConfig, addresses) {
   await dxDaoNFT.transferOwnership(avatar.address);
   await controller.unregisterScheme(accounts[0], avatar.address);
 
-  return { networkContracts, addresses };
+  return networkContracts;
 }
