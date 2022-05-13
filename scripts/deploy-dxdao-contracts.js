@@ -8,7 +8,7 @@ const { deployDao } = require("./utils/deploy-dao");
 const { deployGuilds } = require("./utils/deploy-guilds");
 const { doActions } = require("./utils/do-actions");
 
-task("deploy-dxvote", "Deploy dxvote in localhost network")
+task("deploy-dxdao-contracts", "Deploy dxdao-contracts")
   .addParam("deployconfig", "The deploy config json in string format")
   .setAction(async ({ deployconfig }) => {
     let addresses = {};

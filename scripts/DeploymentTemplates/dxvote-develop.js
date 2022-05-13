@@ -466,7 +466,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
       ],
     };
 
-    await hre.run("deploy-dxvote", {
+    await hre.run("deploy-dxdao-contracts", {
       deployconfig: JSON.stringify(deployconfig),
     });
   }
