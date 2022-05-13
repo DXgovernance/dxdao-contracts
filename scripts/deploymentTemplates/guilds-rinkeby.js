@@ -1,5 +1,6 @@
 require("@nomiclabs/hardhat-web3");
 const moment = require("moment");
+const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 task(
   "deploy-guilds-rinkeby",
@@ -112,6 +113,14 @@ task(
         ],
       },
     ],
+
+    permissionRegistry: {
+      address: NULL_ADDRESS,
+    },
+
+    guildRegistry: {
+      address: NULL_ADDRESS,
+    },
 
     guilds: [
       {

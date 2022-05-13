@@ -14,8 +14,8 @@ require("hardhat-contract-sizer");
 
 require("./scripts/create2");
 require("./scripts/deploy-dxdao-contracts");
-require("./scripts/DeploymentTemplates/dxvote-develop");
-require("./scripts/DeploymentTemplates/guilds-rinkeby");
+require("./scripts/deploymentTemplates/dxvote-develop");
+require("./scripts/deploymentTemplates/guilds-rinkeby");
 
 const moment = require("moment");
 

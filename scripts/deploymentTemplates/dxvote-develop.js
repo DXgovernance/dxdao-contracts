@@ -163,6 +163,11 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         ],
       },
 
+      guildRegistry: {
+        address: NULL_ADDRESS,
+        owner: "Avatar",
+      },
+
       tokens: [
         {
           name: "DXDao on localhost",

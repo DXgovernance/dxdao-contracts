@@ -4,6 +4,10 @@ require("@nomiclabs/hardhat-web3");
 const moment = require("moment");
 
 const { deployTokens } = require("./utils/deploy-tokens");
+const {
+  deployPermissionRegistry,
+} = require("./utils/deploy-permissionRegistry");
+const { deployGuildRegistry } = require("./utils/deploy-guildRegistry");
 const { deployDao } = require("./utils/deploy-dao");
 const { deployGuilds } = require("./utils/deploy-guilds");
 const { doActions } = require("./utils/do-actions");
@@ -35,9 +39,29 @@ task("deploy-dxdao-contracts", "Deploy dxdao-contracts")
       );
     }
 
+    if (deploymentConfig.permissionRegistry) {
+      networkContracts = Object.assign(
+        await deployPermissionRegistry(
+          deploymentConfig.permissionRegistry,
+          networkContracts
+        ),
+        networkContracts
+      );
+    }
+
     if (deploymentConfig.dao) {
       networkContracts = Object.assign(
         await deployDao(deploymentConfig.dao, networkContracts),
+        networkContracts
+      );
+    }
+
+    if (deploymentConfig.guildRegistry) {
+      networkContracts = Object.assign(
+        await deployGuildRegistry(
+          deploymentConfig.guildRegistry,
+          networkContracts
+        ),
         networkContracts
       );
     }
