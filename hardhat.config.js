@@ -15,7 +15,6 @@ require("hardhat-contract-sizer");
 require("./scripts/create2");
 require("./scripts/deploy-dxvote");
 require("./scripts/DeploymentTemplates/dxvote-develop");
-require("./scripts/deploy-guilds");
 require("./scripts/DeploymentTemplates/guilds-larp");
 
 const moment = require("moment");
@@ -124,7 +123,8 @@ const hardharNetworks = process.env.CI
       rinkeby: {
         url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
         accounts: { mnemonic: MNEMONIC },
-        gasMultiplier: 2,
+        gasMultiplier: 5,
+        timeout: 600000, // 10 minutes
       },
       xdai: {
         url: "https://rpc.xdaichain.com/",

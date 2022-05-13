@@ -6,13 +6,14 @@ const contentHash = require("content-hash");
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-export async function doActions(actions, tokens, addresses) {
+export async function doActions(actions, addresses) {
   const ipfs = await IPFS.create();
 
   const ContributionReward = await hre.artifacts.require("ContributionReward");
   const WalletScheme = await hre.artifacts.require("WalletScheme");
   const DXDVotingMachine = await hre.artifacts.require("DXDVotingMachine");
   const ERC20Guild = await hre.artifacts.require("ERC20Guild");
+  const ERC20 = await hre.artifacts.require("ERC20");
 
   // Execute a set of actions once all contracts are deployed
   let proposals = {
@@ -30,9 +31,13 @@ export async function doActions(actions, tokens, addresses) {
 
     console.log("Executing action:", action);
 
+    // TO DO: Add guildRegistry actions
+
     switch (action.type) {
       case "approve":
-        await tokens[action.data.asset].approve(
+        await (
+          await ERC20.at(addresses[action.data.asset])
+        ).approve(
           addresses[action.data.address] || action.data.address,
           action.data.amount,
           { from: action.from }
@@ -46,7 +51,9 @@ export async function doActions(actions, tokens, addresses) {
               value: action.data.amount,
               from: action.from,
             })
-          : await tokens[action.data.asset].transfer(
+          : await (
+              await ERC20.at(addresses[action.data.asset])
+            ).transfer(
               addresses[action.data.address] || action.data.address,
               action.data.amount,
               { from: action.from }
@@ -137,8 +144,8 @@ export async function doActions(actions, tokens, addresses) {
             JSON.stringify({ description: action.data.proposalBody, url: "" })
           )
         ).cid.toString();
-        const guildProposalCreationTx = await ERC20Guild.at(
-          addresses[action.data.guildName]
+        const guildProposalCreationTx = await (
+          await ERC20Guild.at(addresses[action.data.guildName])
         ).createProposal(
           action.data.to.map(_to => addresses[_to] || _to),
           action.data.callData,
@@ -155,33 +162,34 @@ export async function doActions(actions, tokens, addresses) {
         );
         break;
       case "guild-lockTokens":
-        await ERC20Guild.at(addresses[action.data.guildName]).lockTokens(
-          action.data.amount,
-          {
-            from: action.from,
-          }
-        );
+        await (
+          await ERC20Guild.at(addresses[action.data.guildName])
+        ).lockTokens(action.data.amount, {
+          from: action.from,
+        });
         break;
       case "guild-withdrawTokens":
-        await ERC20Guild.at(addresses[action.data.guildName]).withdrawTokens(
-          action.data.amount,
-          {
-            from: action.from,
-          }
-        );
+        await (
+          await ERC20Guild.at(addresses[action.data.guildName])
+        ).withdrawTokens(action.data.amount, {
+          from: action.from,
+        });
         break;
       case "guild-voteProposal":
-        await ERC20Guild.at(addresses[action.data.guildName]).setVote(
+        await (
+          await ERC20Guild.at(addresses[action.data.guildName])
+        ).setVote(
           proposals[action.data.guildName][action.data.proposal],
           action.data.action,
           action.data.votingPower
         );
         break;
       case "guild-endProposal":
-        await ERC20Guild.at(addresses[action.data.guildName]).endProposal(
-          proposals[action.data.guildName][action.data.proposal],
-          { from: action.from }
-        );
+        await (
+          await ERC20Guild.at(addresses[action.data.guildName])
+        ).endProposal(proposals[action.data.guildName][action.data.proposal], {
+          from: action.from,
+        });
         break;
       default:
         break;

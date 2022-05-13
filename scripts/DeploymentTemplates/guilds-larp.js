@@ -1,11 +1,11 @@
 require("@nomiclabs/hardhat-web3");
 const moment = require("moment");
 
-task("deploy-guilds-larp", "Deploy dxvote with develop config")
-  .addParam("registry", "The registry for the given network")
-  .setAction(async ({ registry }) => {
-    const GuildRegistry = await hre.artifacts.require("GuildRegistry");
+task("deploy-guilds-larp", "Deploy dxvote with develop config").setAction(
+  async () => {
     const deployconfig = {
+      permissionRegistryDelay: moment.duration(10, "minutes").asSeconds(),
+
       tokens: [
         {
           name: "SWPR on rinkeby",
@@ -113,9 +113,6 @@ task("deploy-guilds-larp", "Deploy dxvote with develop config")
         },
       ],
 
-      permissionRegistryDelay: moment.duration(10, "minutes").asSeconds(),
-      guildRegistry:
-        registry === "0x0" ? (await GuildRegistry.new()).address : registry,
       guilds: [
         {
           token: "SWPR",
@@ -145,12 +142,11 @@ task("deploy-guilds-larp", "Deploy dxvote with develop config")
         },
       ],
 
-      startTimestampForActions: moment().subtract(10, "minutes").unix(),
-
       actions: [],
     };
 
-    await hre.run("deploy-guilds", {
+    await hre.run("deploy-dxvote", {
       deployconfig: JSON.stringify(deployconfig),
     });
-  });
+  }
+);
