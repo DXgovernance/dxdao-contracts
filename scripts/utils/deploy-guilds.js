@@ -1,9 +1,9 @@
-import { waitBlocks } from "./wait";
+const { waitBlocks } = require("./wait");
 
 /* eslint-disable no-case-declarations */
 require("@nomiclabs/hardhat-web3");
 
-export async function deployGuilds(guilds, networkContracts) {
+const deployGuilds = async function (guilds, networkContracts) {
   const PermissionRegistry = await hre.artifacts.require("PermissionRegistry");
   const permissionRegistry = await PermissionRegistry.new();
 
@@ -42,4 +42,8 @@ export async function deployGuilds(guilds, networkContracts) {
   console.log("Contracts deployed:", networkContracts);
 
   return networkContracts;
-}
+};
+
+module.exports = {
+  deployGuilds,
+};

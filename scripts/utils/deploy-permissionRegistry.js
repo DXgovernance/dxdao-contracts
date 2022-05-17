@@ -1,7 +1,7 @@
 require("@nomiclabs/hardhat-web3");
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-export async function deployPermissionRegistry(
+const deployPermissionRegistry = async function (
   permissionRegistryConfig,
   networkContracts
 ) {
@@ -21,4 +21,8 @@ export async function deployPermissionRegistry(
   networkContracts.addresses["PermissionRegistry"] = permissionRegistry.address;
 
   return networkContracts;
-}
+};
+
+module.exports = {
+  deployPermissionRegistry,
+};

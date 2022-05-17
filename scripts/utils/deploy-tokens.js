@@ -1,7 +1,7 @@
 require("@nomiclabs/hardhat-web3");
 const { default: BigNumber } = require("bignumber.js");
 
-export async function deployTokens(tokens, networkContracts) {
+const deployTokens = async function (tokens, networkContracts) {
   const ERC20Mock = await hre.artifacts.require("ERC20Mock");
   const ERC20SnapshotRep = await hre.artifacts.require("ERC20SnapshotRep");
 
@@ -44,4 +44,8 @@ export async function deployTokens(tokens, networkContracts) {
   }
 
   return networkContracts;
-}
+};
+
+module.exports = {
+  deployTokens,
+};

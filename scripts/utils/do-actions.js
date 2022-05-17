@@ -6,7 +6,7 @@ const contentHash = require("content-hash");
 
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-export async function doActions(actions, networkContracts) {
+const doActions = async function (actions, networkContracts) {
   const ipfs = await IPFS.create();
 
   const ContributionReward = await hre.artifacts.require("ContributionReward");
@@ -17,17 +17,22 @@ export async function doActions(actions, networkContracts) {
 
   // Execute a set of actions once all contracts are deployed
   let proposals = {
-    dxvote: [],
+    dao: [],
   };
   for (const i in actions) {
     const action = actions[i];
     if (action.timestamp)
       await hre.network.provider.request({
         method: "evm_increaseTime",
-        params: [action.time - (await web3.eth.getBlock("latest")).timestamp],
+        params: [
+          action.timestamp - (await web3.eth.getBlock("latest")).timestamp,
+        ],
       });
     else if (action.increaseTime)
-      await network.provider.send("evm_increaseTime", [action.increaseTime]);
+      await network.provider.request({
+        method: "evm_increaseTime",
+        params: [action.increaseTime],
+      });
 
     console.log("Executing action:", action);
 
@@ -102,9 +107,7 @@ export async function doActions(actions, networkContracts) {
                 contentHash.fromIpfs(proposalDescriptionHash),
                 { from: action.from }
               );
-        proposals.dxvote.push(
-          proposalCreationTx.receipt.logs[0].args._proposalId
-        );
+        proposals.dao.push(proposalCreationTx.receipt.logs[0].args._proposalId);
         break;
       case "vote":
         await (
@@ -112,7 +115,7 @@ export async function doActions(actions, networkContracts) {
             networkContracts.addresses["DXDVotingMachine"]
           )
         ).vote(
-          proposals.dxvote[action.data.proposal],
+          proposals.dao[action.data.proposal],
           action.data.decision,
           action.data.amount,
           action.from,
@@ -125,7 +128,7 @@ export async function doActions(actions, networkContracts) {
             networkContracts.addresses["DXDVotingMachine"]
           )
         ).stake(
-          proposals.dxvote[action.data.proposal],
+          proposals.dao[action.data.proposal],
           action.data.decision,
           action.data.amount,
           { from: action.from }
@@ -137,7 +140,7 @@ export async function doActions(actions, networkContracts) {
             await DXDVotingMachine.at(
               networkContracts.addresses["DXDVotingMachine"]
             )
-          ).execute(proposals.dxvote[action.data.proposal], {
+          ).execute(proposals.dao[action.data.proposal], {
             from: action.from,
             gas: 9000000,
           });
@@ -150,7 +153,7 @@ export async function doActions(actions, networkContracts) {
           await DXDVotingMachine.at(
             networkContracts.addresses["DXDVotingMachine"]
           )
-        ).redeem(proposals.dxvote[action.data.proposal], action.from, {
+        ).redeem(proposals.dao[action.data.proposal], action.from, {
           from: action.from,
         });
         break;
@@ -227,4 +230,8 @@ export async function doActions(actions, networkContracts) {
   process.on("uncaughtException", stop);
 
   return networkContracts;
-}
+};
+
+module.exports = {
+  doActions,
+};

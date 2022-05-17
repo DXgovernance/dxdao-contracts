@@ -1,7 +1,7 @@
 require("@nomiclabs/hardhat-web3");
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-export async function deployGuildRegistry(
+const deployGuildRegistry = async function (
   guildRegistryConfig,
   networkContracts
 ) {
@@ -22,4 +22,8 @@ export async function deployGuildRegistry(
   networkContracts.guildRegistry = guildRegistry.address;
 
   return networkContracts;
-}
+};
+
+module.exports = {
+  deployGuildRegistry,
+};

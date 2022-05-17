@@ -10,7 +10,7 @@ const { encodePermission } = require("../../test/helpers/permissions");
 
 const { waitBlocks } = require("../utils/wait");
 
-export async function deployDao(daoConfig, networkContracts) {
+const deployDao = async function (daoConfig, networkContracts) {
   // Import contracts
   const DxAvatar = await hre.artifacts.require("DxAvatar");
   const DxReputation = await hre.artifacts.require("DxReputation");
@@ -425,4 +425,8 @@ export async function deployDao(daoConfig, networkContracts) {
   await controller.unregisterScheme(accounts[0], avatar.address);
 
   return networkContracts;
-}
+};
+
+module.exports = {
+  deployDao,
+};
