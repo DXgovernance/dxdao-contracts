@@ -39,6 +39,10 @@ const doActions = async function (actions, networkContracts) {
     // TO DO: Add guildRegistry actions
 
     switch (action.type) {
+      case "raw":
+        await web3.eth.sendTransaction(action.transaction);
+        break;
+
       case "approve":
         await (
           await ERC20.at(networkContracts.addresses[action.data.asset])
@@ -229,7 +233,7 @@ const doActions = async function (actions, networkContracts) {
   process.on("SIGHUP", stop);
   process.on("uncaughtException", stop);
 
-  return networkContracts;
+  return;
 };
 
 module.exports = {

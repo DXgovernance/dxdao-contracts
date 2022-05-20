@@ -13,6 +13,7 @@ require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
 
 require("./scripts/create2");
+require("./scripts/actions-dxdao-contracts");
 require("./scripts/deploy-dxdao-contracts");
 require("./scripts/deploymentTemplates/dxvote-develop");
 require("./scripts/deploymentTemplates/guilds-rinkeby");

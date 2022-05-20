@@ -11,6 +11,8 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
     );
     const ERC20Guild = await hre.artifacts.require("ERC20Guild");
 
+    const accounts = await web3.eth.getAccounts();
+
     const deployconfig = {
       dao: {
         reputation: [
@@ -239,8 +241,23 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           lockTime: moment.duration(5, "minutes").asSeconds(),
         },
       ],
+    };
 
-      actions: [
+    const networkContracts = await hre.run("deploy-dxdao-contracts", {
+      deployconfig: JSON.stringify(deployconfig),
+    });
+    await hre.run("actions-dxdao-contracts", {
+      actions: JSON.stringify([
+        {
+          type: "raw",
+          transaction: {
+            to: networkContracts.addresses.RGT,
+            from: accounts[0],
+            data: new web3.eth.Contract(PermissionRegistry.abi).methods
+              .transferOwnership(networkContracts.addresses.REPGuild)
+              .encodeABI(),
+          },
+        },
         {
           timestamp: moment().subtract(30, "minutes").unix(),
           type: "transfer",
@@ -468,11 +485,8 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
             proposal: 0,
           },
         },
-      ],
-    };
-
-    await hre.run("deploy-dxdao-contracts", {
-      deployconfig: JSON.stringify(deployconfig),
+      ]),
+      networkContracts: JSON.stringify(networkContracts),
     });
   }
 );

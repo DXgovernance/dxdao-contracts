@@ -73,14 +73,7 @@ task("deploy-dxdao-contracts", "Deploy dxdao-contracts")
       );
     }
 
-    // Do actions
-    await doActions(deploymentConfig.actions, networkContracts);
-
-    // Increase time to local time
-    await hre.network.provider.request({
-      method: "evm_increaseTime",
-      params: [moment().unix() - (await web3.eth.getBlock("latest")).timestamp],
-    });
+    console.log("Contracts deployed:", networkContracts);
 
     return networkContracts;
   });
