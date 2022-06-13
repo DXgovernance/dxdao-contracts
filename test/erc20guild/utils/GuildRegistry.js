@@ -57,7 +57,7 @@ contract("GuildRegistry", accounts => {
       );
     });
 
-    it.only("should remove the right guild address in the array", async () => {
+    it("should remove the right guild address in the array", async () => {
       guildRegistry.addGuild(SOME_ADDRESS, { from: accounts[0] });
       guildRegistry.addGuild(SOME_OTHER_ADDRESS, { from: accounts[0] });
       guildRegistry.addGuild(ANY_ADDRESS, { from: accounts[0] });
@@ -85,6 +85,13 @@ contract("GuildRegistry", accounts => {
       await guildRegistry.addGuild(SOME_OTHER_ADDRESS, { from: accounts[0] });
       const getGuildsAddresses = await guildRegistry.getGuildsAddresses();
       assert.equal(getGuildsAddresses.length, 2);
+    });
+
+    it("should return a guild index", async () => {
+      await guildRegistry.addGuild(SOME_ADDRESS, { from: accounts[0] });
+      await guildRegistry.addGuild(SOME_OTHER_ADDRESS, { from: accounts[0] });
+      const guildIndex = await guildRegistry.getGuildIndex(SOME_ADDRESS);
+      assert.equal(guildIndex, 0);
     });
   });
 });
