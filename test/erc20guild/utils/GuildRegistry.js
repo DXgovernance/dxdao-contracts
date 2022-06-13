@@ -1,6 +1,10 @@
 import { assert } from "chai";
 import { artifacts, contract } from "hardhat";
-import { SOME_ADDRESS, SOME_OTHER_ADDRESS } from "../../helpers/constants";
+import {
+  ANY_ADDRESS,
+  SOME_ADDRESS,
+  SOME_OTHER_ADDRESS,
+} from "../../helpers/constants";
 import { expectRevert, expectEvent } from "@openzeppelin/test-helpers";
 
 const GuildRegistry = artifacts.require("GuildRegistry.sol");
@@ -53,16 +57,27 @@ contract("GuildRegistry", accounts => {
       );
     });
 
-    it("should remove the right guild address in the array", async () => {
+    it.only("should remove the right guild address in the array", async () => {
       guildRegistry.addGuild(SOME_ADDRESS, { from: accounts[0] });
       guildRegistry.addGuild(SOME_OTHER_ADDRESS, { from: accounts[0] });
-
-      const removeGuild = await guildRegistry.removeGuild(SOME_OTHER_ADDRESS, {
+      guildRegistry.addGuild(ANY_ADDRESS, { from: accounts[0] });
+      const removeGuild = await guildRegistry.removeGuild(SOME_ADDRESS, {
         from: accounts[0],
       });
-      const getGuildsAddresses = await guildRegistry.getGuildsAddresses();
-      assert.deepEqual(getGuildsAddresses, [SOME_ADDRESS]);
+      const getGuildsAddresses1 = await guildRegistry.getGuildsAddresses();
+      assert.deepEqual(getGuildsAddresses1, [ANY_ADDRESS, SOME_OTHER_ADDRESS]);
       await expectEvent(removeGuild, "RemoveGuild");
+      await guildRegistry.removeGuild(ANY_ADDRESS, {
+        from: accounts[0],
+      });
+      const getGuildsAddresses2 = await guildRegistry.getGuildsAddresses();
+      assert.deepEqual(getGuildsAddresses2, [SOME_OTHER_ADDRESS]);
+
+      await guildRegistry.removeGuild(SOME_OTHER_ADDRESS, {
+        from: accounts[0],
+      });
+      const getGuildsAddresses3 = await guildRegistry.getGuildsAddresses();
+      assert.deepEqual(getGuildsAddresses3, []);
     });
 
     it("should return all guild addresses", async () => {

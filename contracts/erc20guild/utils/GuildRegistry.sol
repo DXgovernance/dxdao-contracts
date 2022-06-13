@@ -3,6 +3,7 @@ pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "hardhat/console.sol";
 
 /*
   @title GuildRegistry
@@ -34,7 +35,7 @@ contract GuildRegistry is Ownable {
         uint256 guildIndexToDelete = guildsByAddress[guildAddress];
         address guildAddressToMove = guilds[guilds.length - 1];
         guilds[guildIndexToDelete] = guildAddressToMove;
-        guildsByAddress[guildAddress] = guildIndexToDelete;
+        guildsByAddress[guildAddressToMove] = guildIndexToDelete;
         guilds.pop();
         index.decrement();
         emit RemoveGuild(guildAddress);
@@ -42,5 +43,9 @@ contract GuildRegistry is Ownable {
 
     function getGuildsAddresses() external view returns (address[] memory) {
         return guilds;
+    }
+
+    function getGuildIndex(address guildAddress) external view returns (uint256) {
+        return guildsByAddress[guildAddress];
     }
 }
