@@ -86,12 +86,5 @@ contract("GuildRegistry", accounts => {
       const getGuildsAddresses = await guildRegistry.getGuildsAddresses();
       assert.equal(getGuildsAddresses.length, 2);
     });
-
-    it("should return a guild index", async () => {
-      await guildRegistry.addGuild(SOME_ADDRESS, { from: accounts[0] });
-      await guildRegistry.addGuild(SOME_OTHER_ADDRESS, { from: accounts[0] });
-      const guildIndex = await guildRegistry.getGuildIndex(SOME_ADDRESS);
-      assert.equal(guildIndex, 0);
-    });
   });
 });

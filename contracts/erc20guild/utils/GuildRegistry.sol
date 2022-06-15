@@ -43,8 +43,4 @@ contract GuildRegistry is Ownable {
     function getGuildsAddresses() external view returns (address[] memory) {
         return guilds;
     }
-
-    function getGuildIndex(address guildAddress) external view returns (uint256) {
-        return guildsByAddress[guildAddress];
-    }
 }
