@@ -438,6 +438,7 @@ contract BaseERC20Guild {
     function withdrawTokens(uint256 tokenAmount) external virtual {
         require(votingPowerOf(msg.sender) >= tokenAmount, "ERC20Guild: Unable to withdraw more tokens than locked");
         require(tokensLocked[msg.sender].timestamp < block.timestamp, "ERC20Guild: Tokens still locked");
+        require(tokenAmount > 0, "ERC20Guild: amount of tokens to withdraw must be greater than 0");
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(tokenAmount);
         totalLocked = totalLocked.sub(tokenAmount);
         tokenVault.withdraw(msg.sender, tokenAmount);
