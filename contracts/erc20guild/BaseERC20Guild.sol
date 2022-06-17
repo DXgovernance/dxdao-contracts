@@ -312,12 +312,17 @@ contract BaseERC20Guild {
         require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
         require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
         uint256 winningAction = 0;
+        uint256 maxVotes = proposals[proposalId].totalVotes[0];
         uint256 i = 1;
         for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
-            if (
-                proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution() &&
-                proposals[proposalId].totalVotes[i] > proposals[proposalId].totalVotes[winningAction]
-            ) winningAction = i;
+            if (proposals[proposalId].totalVotes[i] < getVotingPowerForProposalExecution()) {
+                continue;
+            }
+            if (proposals[proposalId].totalVotes[i] == maxVotes) winningAction = 0;
+            else if (proposals[proposalId].totalVotes[i] > maxVotes) {
+                winningAction = i;
+                maxVotes = proposals[proposalId].totalVotes[i];
+            }
         }
 
         if (winningAction == 0) {
