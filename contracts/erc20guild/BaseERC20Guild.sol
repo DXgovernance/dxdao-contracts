@@ -153,7 +153,7 @@ contract BaseERC20Guild {
     bool internal isExecutingProposal;
 
     // @dev Allows the voting machine to receive ether to be used to refund voting costs
-    receive() external payable {}
+    fallback() external payable {}
 
     // @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initialized
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
