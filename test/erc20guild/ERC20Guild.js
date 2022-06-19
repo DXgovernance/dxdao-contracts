@@ -1,5 +1,5 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
-import { assert } from "chai";
+import { assert, expect } from "chai";
 import * as helpers from "../helpers";
 const { fixSignature } = require("../helpers/sign");
 const {
@@ -333,7 +333,17 @@ contract("ERC20Guild", function (accounts) {
             to: [erc20Guild.address],
             data: [
               await new web3.eth.Contract(ERC20Guild.abi).methods
-                .setConfig("15", "30", "5001", "1001", "1", "10", "4", "61")
+                .setConfig(
+                  "15",
+                  "30",
+                  "5001",
+                  "1001",
+                  "1",
+                  "10",
+                  "4",
+                  "61",
+                  "0"
+                )
                 .encodeABI(),
             ],
             value: [0],
@@ -549,6 +559,84 @@ contract("ERC20Guild", function (accounts) {
   describe("createProposal", function () {
     beforeEach(async function () {
       await lockTokens();
+    });
+
+    it("should not create proposal without enough members", async function () {
+      const MINIMUM_MEMBERS = 3;
+
+      assert.equal(await erc20Guild.getTotalMembers(), 5);
+
+      // Create a proposal to execute setConfig with minimum 3 members to create proposal.
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setConfig(
+                  "15",
+                  "30",
+                  "5001",
+                  "1001",
+                  "1",
+                  "10",
+                  "4",
+                  "61",
+                  MINIMUM_MEMBERS
+                )
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+
+      // execute setConfig proposal
+      await erc20Guild.endProposal(guildProposalId);
+
+      await time.increase(new BN("62"));
+
+      // withdraw 3 members tokens.
+      await erc20Guild.withdrawTokens(50000, { from: accounts[1] });
+      await erc20Guild.withdrawTokens(50000, { from: accounts[2] });
+      await erc20Guild.withdrawTokens(100000, { from: accounts[3] });
+
+      assert.equal(await erc20Guild.getTotalMembers(), 2);
+
+      // Expect new proposal to be rejected with only 2 members.
+      await expectRevert(
+        createProposal(genericProposal),
+        "ERC20Guild: Not enough members to create a proposal"
+      );
+
+      // withdraw remaining members tokens.
+      await erc20Guild.withdrawTokens(100000, { from: accounts[4] });
+      await erc20Guild.withdrawTokens(200000, { from: accounts[5] });
+      assert.equal(await erc20Guild.getTotalMembers(), 0);
+
+      // Expect new proposal to be rejected with only 0.
+      await expectRevert(
+        createProposal(genericProposal),
+        "ERC20Guild: Not enough members to create a proposal"
+      );
     });
 
     it("cannot create a proposal without enough creation votes", async function () {
@@ -1419,6 +1507,7 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(withdrawEvent.args[1], 50000);
     });
   });
+
   describe("refund votes", function () {
     beforeEach(async function () {
       await lockTokens();
@@ -1430,7 +1519,7 @@ contract("ERC20Guild", function (accounts) {
             to: [erc20Guild.address],
             data: [
               await new web3.eth.Contract(ERC20Guild.abi).methods
-                .setConfig(30, 30, 200, 100, VOTE_GAS, MAX_GAS_PRICE, 3, 60)
+                .setConfig(30, 30, 200, 100, VOTE_GAS, MAX_GAS_PRICE, 3, 60, 0)
                 .encodeABI(),
             ],
             value: [0],
