@@ -1296,6 +1296,12 @@ contract("ERC20Guild", function (accounts) {
         "ERC20: transfer amount exceeds balance"
       );
 
+      // Cant lock zero tokens
+      await expectRevert(
+        erc20Guild.lockTokens(0, { from: accounts[1] }),
+        "ERC20Guild: Tokens to lock should be higher than 0"
+      );
+
       // try to release more than locked and fail
       await expectRevert(
         erc20Guild.withdrawTokens(50001, { from: accounts[1] }),
