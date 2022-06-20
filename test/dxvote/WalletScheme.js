@@ -26,8 +26,8 @@ contract("WalletScheme", function (accounts) {
 
   beforeEach(async function () {
     actionMock = await ActionMock.new();
-    testToken = await ERC20Mock.new(accounts[1], 1000);
-    standardTokenMock = await ERC20Mock.new(accounts[1], 1000);
+    testToken = await ERC20Mock.new(accounts[1], 1000, "", "", "18");
+    standardTokenMock = await ERC20Mock.new(accounts[1], 1000, "", "", "18");
     org = await helpers.setupOrganization(
       [accounts[0], accounts[1], accounts[2]],
       [1000, 1000, 1000],

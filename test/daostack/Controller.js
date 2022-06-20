@@ -644,7 +644,7 @@ contract("Controller", accounts => {
   it("externalTokenTransfer", async () => {
     //External transfer token from avatar contract to other address
     controller = await setup(accounts);
-    var standardToken = await ERC20Mock.new(avatar.address, 100);
+    var standardToken = await ERC20Mock.new(avatar.address, 100, "", "", "18");
     let balanceAvatar = await standardToken.balanceOf(avatar.address);
     assert.equal(balanceAvatar, 100);
     await avatar.transferOwnership(controller.address);
@@ -673,7 +673,7 @@ contract("Controller", accounts => {
     var tx;
     var to = accounts[1];
     controller = await setup(accounts);
-    var standardToken = await ERC20Mock.new(avatar.address, 100);
+    var standardToken = await ERC20Mock.new(avatar.address, 100, "", "", "18");
     await avatar.transferOwnership(controller.address);
     tx = await controller.externalTokenApproval(
       standardToken.address,
@@ -914,7 +914,7 @@ contract("Controller", accounts => {
   it("globalConstraints externalTokenTransfer add & remove", async () => {
     controller = await setup(accounts);
     var globalConstraints = await constraint("externalTokenTransfer");
-    var standardToken = await ERC20Mock.new(avatar.address, 100);
+    var standardToken = await ERC20Mock.new(avatar.address, 100, "", "", "18");
     let balanceAvatar = await standardToken.balanceOf(avatar.address);
     assert.equal(balanceAvatar, 100);
     await avatar.transferOwnership(controller.address);
@@ -973,7 +973,7 @@ contract("Controller", accounts => {
     var to = accounts[1];
     controller = await setup(accounts);
     var globalConstraints = await constraint("externalTokenApproval");
-    var standardToken = await ERC20Mock.new(avatar.address, 100);
+    var standardToken = await ERC20Mock.new(avatar.address, 100, "", "", "18");
     await avatar.transferOwnership(controller.address);
 
     try {

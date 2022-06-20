@@ -62,7 +62,7 @@ This hardhat task runs on the selected network, it receives the name of the cont
 
 Example for ERC20Token:
 
-`yarn hardhat create2 --network arbitrumTestnet --contract ERC20Token --salt 2 --initializer "DXGovTestToken,DXGTT,0xC4B60a931929d3ed0AC423F9Ea80e5962726dA73,100000000000000000000000"`
+`yarn hardhat create2 --network arbitrumTestnet --contract ERC20Token --salt 2 --initializer "DXGovTestToken,DXGTT,0xC4B60a931929d3ed0AC423F9Ea80e5962726dA73,1000000000000000000000000"`
 
 ## Sourcify
 

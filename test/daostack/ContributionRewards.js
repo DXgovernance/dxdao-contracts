@@ -135,7 +135,7 @@ const setup = async function (
   votingMachineType = "none",
   tokenAddress = "0x0000000000000000000000000000000000000000"
 ) {
-  const standardTokenMock = await ERC20Mock.new(accounts[1], 100);
+  const standardTokenMock = await ERC20Mock.new(accounts[1], 100, "", "", "18");
   const contributionReward = await ContributionReward.new();
   const reputationArray =
     votingMachineType !== "none" ? [1000, 100, 0] : [2000, 4000, 7000];
@@ -832,7 +832,13 @@ contract("ContributionReward", accounts => {
   });
 
   it("execute proposeContributionReward via genesisProtocol voting machine and redeem using Redeemer", async function () {
-    var standardTokenMock = await ERC20Mock.new(accounts[0], 1000);
+    var standardTokenMock = await ERC20Mock.new(
+      accounts[0],
+      1000,
+      "",
+      "",
+      "18"
+    );
     var testSetup = await setup(accounts, "gen", standardTokenMock.address);
     var reputationReward = 12;
     var nativeTokenReward = 12;
@@ -916,7 +922,13 @@ contract("ContributionReward", accounts => {
   });
 
   it("execute proposeContributionReward via genesisProtocol voting machine and redeem using Redeemer for un executed boosted proposal", async function () {
-    var standardTokenMock = await ERC20Mock.new(accounts[0], 1000);
+    var standardTokenMock = await ERC20Mock.new(
+      accounts[0],
+      1000,
+      "",
+      "",
+      "18"
+    );
     var testSetup = await setup(accounts, "gen", standardTokenMock.address);
     var reputationReward = 12;
     var nativeTokenReward = 12;
@@ -1029,7 +1041,13 @@ contract("ContributionReward", accounts => {
   });
 
   it("execute proposeContributionReward via dxd voting machine and redeem using Redeemer for un executed boosted proposal", async function () {
-    var standardTokenMock = await ERC20Mock.new(accounts[0], 1000);
+    var standardTokenMock = await ERC20Mock.new(
+      accounts[0],
+      1000,
+      "",
+      "",
+      "18"
+    );
     var testSetup = await setup(accounts, "dxd", standardTokenMock.address);
     var reputationReward = 12;
     var nativeTokenReward = 12;
@@ -1148,7 +1166,13 @@ contract("ContributionReward", accounts => {
   });
 
   it("execute proposeContributionReward via genesisProtocol voting machine and redeem using Redeemer for negative proposal", async function () {
-    var standardTokenMock = await ERC20Mock.new(accounts[0], 1000);
+    var standardTokenMock = await ERC20Mock.new(
+      accounts[0],
+      1000,
+      "",
+      "",
+      "18"
+    );
     var testSetup = await setup(accounts, "gen", standardTokenMock.address);
     var reputationReward = 12;
     var nativeTokenReward = 12;
@@ -1206,7 +1230,13 @@ contract("ContributionReward", accounts => {
   });
 
   it("execute proposeContributionReward via genesisProtocol voting machine and redeem using Redeemer ExpiredInQueue", async function () {
-    var standardTokenMock = await ERC20Mock.new(accounts[0], 1000);
+    var standardTokenMock = await ERC20Mock.new(
+      accounts[0],
+      1000,
+      "",
+      "",
+      "18"
+    );
     var testSetup = await setup(accounts, "gen", standardTokenMock.address);
     var reputationReward = 12;
     var nativeTokenReward = 12;

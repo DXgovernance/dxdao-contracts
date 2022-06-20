@@ -41,7 +41,13 @@ contract("DXDGuild", function (accounts) {
     );
     dxdGuild = await DXDGuild.new();
 
-    const votingMachineToken = await ERC20Mock.new(accounts[0], 0);
+    const votingMachineToken = await ERC20Mock.new(
+      accounts[0],
+      0,
+      "Test Token",
+      "TT",
+      "18"
+    );
 
     votingMachine = await helpers.setUpVotingMachine(
       votingMachineToken.address,

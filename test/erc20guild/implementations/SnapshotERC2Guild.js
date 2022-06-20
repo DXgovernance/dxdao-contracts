@@ -162,6 +162,12 @@ contract("SnapshotERC20Guild", function (accounts) {
       );
       assert.equal(await erc20Guild.getTotalMembers(), 5);
 
+      // Cant lock zero tokens
+      await expectRevert(
+        erc20Guild.lockTokens(0, { from: accounts[1] }),
+        "SnapshotERC20Guild: Tokens to lock should be higher than 0"
+      );
+
       // Cant vote because it locked tokens after proposal
       await expectRevert(
         erc20Guild.setVote(guildProposalId, 1, 10, { from: accounts[4] }),
