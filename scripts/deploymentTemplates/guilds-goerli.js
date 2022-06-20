@@ -3,8 +3,8 @@ const moment = require("moment");
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 task(
-  "deploy-guilds-rinkeby",
-  "Deploy SWPR and MREP guilds in rinkeby network"
+  "deploy-guilds-goerli",
+  "Deploy SWPR and MREP guilds in goerli network"
 ).setAction(async () => {
   const deployconfig = {
     tokens: [

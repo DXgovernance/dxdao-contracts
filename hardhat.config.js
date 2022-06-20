@@ -16,7 +16,7 @@ require("./scripts/create2");
 require("./scripts/actions-dxdao-contracts");
 require("./scripts/deploy-dxdao-contracts");
 require("./scripts/deploymentTemplates/dxvote-develop");
-require("./scripts/deploymentTemplates/guilds-rinkeby");
+require("./scripts/deploymentTemplates/guilds-goerli");
 
 const moment = require("moment");
 
@@ -92,19 +92,22 @@ const hardharNetworks = process.env.CI
       mainnet: {
         url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
         accounts: { mnemonic: MNEMONIC },
+        chainId: 1,
         gasLimit: 9000000,
         gasPrice: 100000000000, // 100 gwei
         timeout: 60000,
       },
-      rinkeby: {
-        url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
+      goerli: {
+        url: `https://goerli.infura.io/v3/${INFURA_PROJECT_ID}`,
         accounts: { mnemonic: MNEMONIC },
-        gasMultiplier: 5,
+        chainId: 5,
+        gasMultiplier: 10,
         timeout: 600000, // 10 minutes
       },
       xdai: {
         url: "https://rpc.xdaichain.com/",
         accounts: { mnemonic: MNEMONIC },
+        chainId: 100,
         gasLimit: 17000000,
         gasPrice: 2000000000, // 2 gwei
         timeout: 60000,
