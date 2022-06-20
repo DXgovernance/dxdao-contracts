@@ -6,7 +6,13 @@ export async function createAndSetupGuildToken(accounts, balances) {
   const [firstAccount, ...restOfAccounts] = accounts;
   const [, ...restOfBalances] = balances;
   const totalSupply = balances.reduce((a, b) => a + b, 0);
-  const guildToken = await ERC20Mock.new(firstAccount, totalSupply);
+  const guildToken = await ERC20Mock.new(
+    firstAccount,
+    totalSupply,
+    "Test Token",
+    "TT",
+    "18"
+  );
 
   await Promise.all(
     restOfAccounts.map((account, idx) => {

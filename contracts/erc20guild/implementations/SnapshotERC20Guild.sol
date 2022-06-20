@@ -79,6 +79,7 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
     // @dev Lock tokens in the guild to be used as voting power
     // @param tokenAmount The amount of tokens to be locked
     function lockTokens(uint256 tokenAmount) external virtual override {
+        require(tokenAmount > 0, "SnapshotERC20Guild: Tokens to lock should be higher than 0");
         if (tokensLocked[msg.sender].amount == 0) totalMembers = totalMembers.add(1);
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();

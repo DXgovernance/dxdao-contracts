@@ -14,7 +14,13 @@ contract("DXdao", function (accounts) {
   const constants = helpers.constants;
 
   it("Wallet - execute proposeVote -positive decision - check action - with DXDVotingMachine", async function () {
-    const votingMachineToken = await ERC20Mock.new(accounts[0], 1000);
+    const votingMachineToken = await ERC20Mock.new(
+      accounts[0],
+      1000,
+      "",
+      "",
+      "18"
+    );
     const masterWalletScheme = await WalletScheme.new();
     const controllerCreator = await DxControllerCreator.new({
       gas: constants.GAS_LIMIT,

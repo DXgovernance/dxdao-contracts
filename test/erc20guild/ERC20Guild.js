@@ -904,7 +904,13 @@ contract("ERC20Guild", function (accounts) {
       await lockTokens();
       await allowActionMockA();
 
-      testToken = await ERC20Mock.new(accounts[1], 1000);
+      testToken = await ERC20Mock.new(
+        accounts[1],
+        1000,
+        "TestToken",
+        "TTT",
+        "18"
+      );
       await testToken.transfer(erc20Guild.address, 300, { from: accounts[1] });
 
       const setTestPermissions = await createProposal({
@@ -1440,6 +1446,12 @@ contract("ERC20Guild", function (accounts) {
       await expectRevert(
         guildToken.transfer(accounts[0], 50, { from: accounts[1] }),
         "ERC20: transfer amount exceeds balance"
+      );
+
+      // Cant lock zero tokens
+      await expectRevert(
+        erc20Guild.lockTokens(0, { from: accounts[1] }),
+        "ERC20Guild: Tokens to lock should be higher than 0"
       );
 
       // try to release more than locked and fail

@@ -34,7 +34,7 @@ contract GuildRegistry is Ownable {
         uint256 guildIndexToDelete = guildsByAddress[guildAddress];
         address guildAddressToMove = guilds[guilds.length - 1];
         guilds[guildIndexToDelete] = guildAddressToMove;
-        guildsByAddress[guildAddress] = guildIndexToDelete;
+        guildsByAddress[guildAddressToMove] = guildIndexToDelete;
         guilds.pop();
         index.decrement();
         emit RemoveGuild(guildAddress);

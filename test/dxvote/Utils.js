@@ -26,7 +26,10 @@ contract("Dxvote Utils", function (accounts) {
   beforeEach(async function () {
     standardTokenMock = await ERC20Mock.new(
       accounts[1],
-      web3.utils.toWei("100")
+      web3.utils.toWei("100"),
+      "",
+      "",
+      "18"
     );
     org = await helpers.setupOrganization(
       [accounts[0], accounts[1], accounts[2]],
