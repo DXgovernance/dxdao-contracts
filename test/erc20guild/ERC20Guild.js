@@ -120,8 +120,13 @@ contract("ERC20Guild", function (accounts) {
     };
   });
 
-  const lockTokens = async function () {
+  const lockTokens = async function (acc, tokens) {
     const tokenVault = await erc20Guild.getTokenVault();
+    if (acc && tokens) {
+      await guildToken.approve(tokenVault, tokens, { from: acc });
+      await erc20Guild.lockTokens(tokens, { from: acc });
+      return;
+    }
     await guildToken.approve(tokenVault, 50000, { from: accounts[1] });
     await guildToken.approve(tokenVault, 50000, { from: accounts[2] });
     await guildToken.approve(tokenVault, 100000, { from: accounts[3] });
@@ -132,6 +137,15 @@ contract("ERC20Guild", function (accounts) {
     await erc20Guild.lockTokens(100000, { from: accounts[3] });
     await erc20Guild.lockTokens(100000, { from: accounts[4] });
     await erc20Guild.lockTokens(200000, { from: accounts[5] });
+  };
+
+  const withdrawTokens = async function (acc = null, tokens = 50000) {
+    if (acc) return await erc20Guild.withdrawTokens(tokens, { from: acc });
+    await erc20Guild.withdrawTokens(50000, { from: accounts[1] });
+    await erc20Guild.withdrawTokens(50000, { from: accounts[2] });
+    await erc20Guild.withdrawTokens(100000, { from: accounts[3] });
+    await erc20Guild.withdrawTokens(100000, { from: accounts[4] });
+    await erc20Guild.withdrawTokens(200000, { from: accounts[5] });
   };
 
   const allowActionMockA = async function () {
@@ -325,6 +339,11 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(await erc20Guild.getMaxGasPrice(), 0);
       assert.equal(await erc20Guild.getMaxActiveProposals(), 10);
       assert.equal(await erc20Guild.getLockTime(), 60);
+      assert.equal(await erc20Guild.getMinimumMembersForProposalCreation(), 0);
+      assert.equal(
+        await erc20Guild.getMinimumTokensLockedForProposalCreation(),
+        0
+      );
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
@@ -342,7 +361,8 @@ contract("ERC20Guild", function (accounts) {
                   "10",
                   "4",
                   "61",
-                  "0"
+                  "5",
+                  "50000"
                 )
                 .encodeABI(),
             ],
@@ -392,6 +412,11 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(await erc20Guild.getMaxGasPrice(), 10);
       assert.equal(await erc20Guild.getMaxActiveProposals(), 4);
       assert.equal(await erc20Guild.getLockTime(), 61);
+      assert.equal(await erc20Guild.getMinimumMembersForProposalCreation(), 5);
+      assert.equal(
+        await erc20Guild.getMinimumTokensLockedForProposalCreation(),
+        50000
+      );
     });
   });
 
@@ -548,17 +573,100 @@ contract("ERC20Guild", function (accounts) {
       });
 
       await time.increase(time.duration.seconds(31));
-      await erc20Guild.endProposal(guildProposalId),
-        assert.equal(
-          await permissionRegistry.getPermissionDelay(erc20Guild.address),
-          "120"
-        );
+      await erc20Guild.endProposal(guildProposalId);
+      assert.equal(
+        await permissionRegistry.getPermissionDelay(erc20Guild.address),
+        "120"
+      );
     });
   });
 
   describe("createProposal", function () {
     beforeEach(async function () {
       await lockTokens();
+    });
+
+    it("should not create proposal without enough tokens locked", async function () {
+      const MINIMUM_TOKENS_LOCKED = 3000;
+
+      assert.equal(await erc20Guild.getTotalMembers(), 5);
+
+      // Create a proposal to execute setConfig with minimum tokens locked 3000 for proposal creation
+      const setConfigProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setConfig(
+                  "15",
+                  "30",
+                  "5001",
+                  "1001",
+                  "1",
+                  "10",
+                  "4",
+                  "61",
+                  "0",
+                  MINIMUM_TOKENS_LOCKED
+                )
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: setConfigProposalId,
+        action: 1,
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: setConfigProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+
+      // wait for proposal to end and execute setConfig proposal
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(setConfigProposalId);
+
+      assert.equal(
+        await erc20Guild.getMinimumTokensLockedForProposalCreation(),
+        MINIMUM_TOKENS_LOCKED
+      );
+
+      // wait to unlock tokens and withdraw all members tokens
+      await time.increase(new BN("62"));
+      await withdrawTokens();
+      assert.equal(await erc20Guild.getTotalMembers(), 0);
+      assert.equal(await erc20Guild.getTotalLocked(), 0);
+
+      // Expect new proposal to be rejected with 0 tokens locked.
+      await expectRevert(
+        createProposal(genericProposal),
+        "ERC20Guild: Not enough tokens locked to create a proposal"
+      );
+
+      // Lock new tokens but not enough for minimum required to pass
+      await lockTokens(accounts[1], MINIMUM_TOKENS_LOCKED - 1);
+      assert.equal(await erc20Guild.getTotalMembers(), 1);
+      assert.equal(
+        await erc20Guild.getTotalLocked(),
+        MINIMUM_TOKENS_LOCKED - 1
+      );
+
+      // Expect new proposal to be rejected with only 2999 tokens locked.
+      await expectRevert(
+        createProposal(genericProposal),
+        "ERC20Guild: Not enough tokens locked to create a proposal"
+      );
     });
 
     it("should not create proposal without enough members", async function () {
@@ -583,7 +691,8 @@ contract("ERC20Guild", function (accounts) {
                   "10",
                   "4",
                   "61",
-                  MINIMUM_MEMBERS
+                  MINIMUM_MEMBERS,
+                  "0"
                 )
                 .encodeABI(),
             ],
@@ -607,14 +716,17 @@ contract("ERC20Guild", function (accounts) {
         account: accounts[5],
       });
 
+      // wait for proposal to end and execute setConfig proposal
       await time.increase(time.duration.seconds(31));
-
-      // execute setConfig proposal
       await erc20Guild.endProposal(guildProposalId);
 
-      await time.increase(new BN("62"));
+      assert.equal(
+        await erc20Guild.getMinimumMembersForProposalCreation(),
+        MINIMUM_MEMBERS
+      );
 
-      // withdraw 3 members tokens.
+      // wait to unlock tokens and withdraw 3 members tokens.
+      await time.increase(new BN("62"));
       await erc20Guild.withdrawTokens(50000, { from: accounts[1] });
       await erc20Guild.withdrawTokens(50000, { from: accounts[2] });
       await erc20Guild.withdrawTokens(100000, { from: accounts[3] });
@@ -1519,7 +1631,18 @@ contract("ERC20Guild", function (accounts) {
             to: [erc20Guild.address],
             data: [
               await new web3.eth.Contract(ERC20Guild.abi).methods
-                .setConfig(30, 30, 200, 100, VOTE_GAS, MAX_GAS_PRICE, 3, 60, 0)
+                .setConfig(
+                  30,
+                  30,
+                  200,
+                  100,
+                  VOTE_GAS,
+                  MAX_GAS_PRICE,
+                  3,
+                  60,
+                  0,
+                  0
+                )
                 .encodeABI(),
             ],
             value: [0],

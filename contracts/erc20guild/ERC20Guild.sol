@@ -45,7 +45,9 @@ contract ERC20Guild is BaseERC20Guild {
             address(0),
             address(this),
             address(this),
-            bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")),
+            bytes4(
+                keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")
+            ),
             0,
             true
         );
@@ -72,5 +74,7 @@ contract ERC20Guild is BaseERC20Guild {
         voteGas = 0;
         maxGasPrice = 0;
         maxActiveProposals = 5;
+        minimumMembersForProposalCreation = 0;
+        minimumTokensLockedForProposalCreation = 0;
     }
 }
