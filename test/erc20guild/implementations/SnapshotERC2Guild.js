@@ -204,6 +204,12 @@ contract("SnapshotERC20Guild", function (accounts) {
         "ERC20: transfer amount exceeds balance"
       );
 
+      // Cannot withdraw zero tokens
+      await expectRevert(
+        erc20Guild.withdrawTokens(0, { from: accounts[1] }),
+        "SnapshotERC20Guild: amount of tokens to withdraw must be greater than 0"
+      );
+
       // try to release more than locked and fail
       await expectRevert(
         erc20Guild.withdrawTokens(50001, { from: accounts[1] }),
