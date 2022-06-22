@@ -577,7 +577,7 @@ contract("WalletScheme", function (accounts) {
     );
   });
 
-  it("MasterWalletScheme - proposal to change max proposal time - positive decision - proposal executed", async function () {
+  it("MasterWalletScheme - proposal to change max proposal time - positive decision - proposal executed", async () => {
     const setMaxSecondsForExecutionData = web3.eth.abi.encodeFunctionCall(
       {
         name: "setMaxSecondsForExecution",
@@ -636,8 +636,8 @@ contract("WalletScheme", function (accounts) {
       executionTimeout + 666
     );
   });
-
-  it("MasterWalletScheme - proposal to change max proposal time fails- positive decision - proposal fails", async function () {
+  // eslint-disable-next-line max-len
+  it("MasterWalletScheme - proposal to change max proposal time fails- positive decision - proposal fails", async () => {
     const setMaxSecondsForExecutionData = web3.eth.abi.encodeFunctionCall(
       {
         name: "setMaxSecondsForExecution",
@@ -760,7 +760,7 @@ contract("WalletScheme", function (accounts) {
     );
   });
 
-  it("MasterWalletScheme - proposing proposal to 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa address fail", async function () {
+  it("MasterWalletScheme - proposing proposal to 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa address fail", async () => {
     expectRevert(
       masterWalletScheme.proposeCalls(
         ["0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"],
@@ -864,7 +864,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.value[0], 0);
   });
 
-  it("MasterWalletScheme - proposal with value to gnosisSafe - positive decision - proposal executed", async function () {
+  it("MasterWalletScheme - proposal with value to gnosisSafe - positive decision - proposal executed", async () => {
     await web3.eth.sendTransaction({
       from: accounts[0],
       to: org.avatar.address,
@@ -1170,6 +1170,7 @@ contract("WalletScheme", function (accounts) {
     );
   });
 
+  // eslint-disable-next-line max-len
   it("MasterWalletScheme - positive decision - proposal executed - not allowed value by permission registry in multiple calls", async function () {
     await web3.eth.sendTransaction({
       from: accounts[0],
@@ -1224,7 +1225,8 @@ contract("WalletScheme", function (accounts) {
     );
   });
 
-  it("MasterWalletScheme - positive decision - proposal executed - allowed by permission registry from scheme", async function () {
+  // eslint-disable-next-line max-len
+  it("MasterWalletScheme - positive decision - proposal executed - allowed by permission registry from scheme", async () => {
     const callData = helpers.testCallFrom(org.avatar.address);
 
     assert.notEqual(
@@ -1345,6 +1347,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.value[0], 0);
   });
 
+  // eslint-disable-next-line max-len
   it("MasterWalletScheme - positive decision - proposal executed - allowed any func signature by permission registry from scheme", async function () {
     await web3.eth.sendTransaction({
       from: accounts[0],
@@ -1377,7 +1380,10 @@ contract("WalletScheme", function (accounts) {
       0
     );
 
-    // Since the permission was set and cant be disabled it has to be changed ot the minimal value allowed to be sent to any contract
+    /* 
+    Since the permission was set and cant be disabled it has to be changed 
+    to the minimal value allowed to be sent to any contract
+    */
     await permissionRegistry.setPermission(
       constants.NULL_ADDRESS,
       org.avatar.address,
@@ -1836,6 +1842,7 @@ contract("WalletScheme", function (accounts) {
     );
   });
 
+  // eslint-disable-next-line max-len
   it("MasterWalletScheme - proposals adding/removing schemes - execute registerScheme & removeScheme fails", async function () {
     const callDataRegisterScheme = await org.controller.contract.methods
       .registerScheme(
@@ -2124,6 +2131,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.value[0], 0);
   });
 
+  // eslint-disable-next-line max-len
   it("QuickWalletScheme - proposal with data - positive decision - proposal executed with multiple calls and value", async function () {
     var wallet = await Wallet.new();
     await web3.eth.sendTransaction({
@@ -2180,7 +2188,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.value[1], 0);
   });
 
-  it("QuickWalletScheme - proposal with data - positive decision - proposal execution fail and timeout", async function () {
+  it("QuickWalletScheme - proposal with data - positive decision - proposal execution fail and timeout", async () => {
     const callData = helpers.testCallFrom(constants.NULL_ADDRESS);
 
     let tx = await quickWalletScheme.proposeCalls(
@@ -2220,6 +2228,7 @@ contract("WalletScheme", function (accounts) {
     );
   });
 
+  // eslint-disable-next-line max-len
   it("QuickWalletScheme - proposal with data - positive decision - proposal executed without return value", async function () {
     const callData = helpers.testCallWithoutReturnValueFrom(
       quickWalletScheme.address
@@ -2304,6 +2313,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
   });
 
+  // eslint-disable-next-line max-len
   it("QuickWalletScheme - proposals adding/removing schemes - should fail on registerScheme & removeScheme", async function () {
     const callDataRegisterScheme = await org.controller.contract.methods
       .registerScheme(
@@ -2414,6 +2424,7 @@ contract("WalletScheme", function (accounts) {
     );
   });
 
+  // eslint-disable-next-line max-len
   it("QuickWalletScheme - positive decision - proposal executed - allowed by permission registry from scheme", async function () {
     const callData = helpers.testCallFrom(quickWalletScheme.address);
 
@@ -2636,6 +2647,7 @@ contract("WalletScheme", function (accounts) {
   });
 
   describe("ERC20 Transfers", async function () {
+    // eslint-disable-next-line max-len
     it("MasterWalletScheme - positive decision - proposal executed - ERC20 transfer allowed by permission registry from scheme", async function () {
       await testToken.transfer(org.avatar.address, 200, { from: accounts[1] });
 
@@ -2728,6 +2740,7 @@ contract("WalletScheme", function (accounts) {
       assert.equal(organizationProposal.value[0], 0);
     });
 
+    // eslint-disable-next-line max-len
     it("MasterWalletScheme - positive decision - proposal executed - not allowed ERC20 value by permission registry in multiple calls", async function () {
       await testToken.transfer(org.avatar.address, 200, { from: accounts[1] });
 
@@ -2782,7 +2795,8 @@ contract("WalletScheme", function (accounts) {
       );
     });
 
-    it("MasterWalletScheme - positive decision - proposal executed - not allowed ERC20 transfer with value", async function () {
+    // eslint-disable-next-line max-len
+    it("MasterWalletScheme - positive decision - proposal executed - not allowed ERC20 transfer with value", async () => {
       await permissionRegistry.setPermission(
         testToken.address,
         org.avatar.address,
@@ -2808,6 +2822,7 @@ contract("WalletScheme", function (accounts) {
       );
     });
 
+    // eslint-disable-next-line max-len
     it("QuickWalletScheme - positive decision - proposal executed - ERC20 transfer allowed by permission registry from scheme", async function () {
       await testToken.transfer(quickWalletScheme.address, 200, {
         from: accounts[1],
