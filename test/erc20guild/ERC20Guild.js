@@ -1474,7 +1474,12 @@ contract("ERC20Guild", function (accounts) {
         }
       });
 
-      it.only("cannot empty contract if voteGas is incorrectly set", async function () {
+      it("cannot empty contract if voteGas is incorrectly set", async function () {
+        // send ether to cover gas
+        await send.ether(accounts[0], erc20Guild.address, ether("10"), {
+          from: accounts[0],
+        });
+
         let incorrectVoteGas = new BN(220000);
         const guildProposalIncorrectVoteGas = await createProposal({
           guild: erc20Guild,
@@ -1513,110 +1518,24 @@ contract("ERC20Guild", function (accounts) {
           account: accounts[5],
         });
         await time.increase(time.duration.seconds(31));
-        await erc20Guild.endProposal(guildProposalIncorrectVoteGas);
-
-        (await erc20Guild.getVoteGas()).should.be.bignumber.equal(
-          incorrectVoteGas
+        await expectRevert(
+          erc20Guild.endProposal(guildProposalIncorrectVoteGas),
+          "ERC20Guild: Proposal call failed"
         );
-
-        // send ether to cover gas
-        await send.ether(accounts[0], erc20Guild.address, ether("10"), {
-          from: accounts[0],
-        });
 
         const newProposal = await createProposal(genericProposal);
         const accountBalanceTracker = await balance.tracker(accounts[1]);
 
-        let txVote = await setVotesOnProposal({
+        await setVotesOnProposal({
           guild: erc20Guild,
           proposalId: newProposal,
           action: 1,
           account: accounts[1],
         });
 
-        console.log(txVote.receipt);
-
+        // Checks that the voter spent more than it got refunded
         let accountBalance = await accountBalanceTracker.delta();
         accountBalance.negative.should.be.equal(1); // The variation in balance is negative
-      });
-
-      it.only("a user cannot modify maxGasPrice to exploit it", async function () {
-        // send ether to cover gas
-        await send.ether(accounts[0], erc20Guild.address, ether("10"), {
-          from: accounts[0],
-        });
-
-        await time.increase(time.duration.seconds(31));
-        await erc20Guild.withdrawTokens(50000, { from: accounts[2] });
-        await erc20Guild.withdrawTokens(100000, { from: accounts[3] });
-        await erc20Guild.withdrawTokens(100000, { from: accounts[4] });
-        await erc20Guild.withdrawTokens(200000, { from: accounts[5] });
-
-        let highMaxGasPrice = new BN(20000000000000); // 20.000 gwei
-        const proposalWithHighMaxGasPrice = await createProposal({
-          guild: erc20Guild,
-          actions: [
-            {
-              to: [erc20Guild.address],
-              data: [
-                await new web3.eth.Contract(ERC20Guild.abi).methods
-                  .setConfig(30, 30, 200, 100, VOTE_GAS, highMaxGasPrice, 3, 60)
-                  .encodeABI(),
-              ],
-              value: [0],
-            },
-          ],
-          account: accounts[1],
-        });
-        await setVotesOnProposal({
-          guild: erc20Guild,
-          proposalId: proposalWithHighMaxGasPrice,
-          action: 1,
-          account: accounts[1],
-        });
-        await time.increase(time.duration.seconds(31));
-        await erc20Guild.endProposal(proposalWithHighMaxGasPrice);
-
-        const txGasPriceExploitProposal = await createProposal({
-          guild: erc20Guild,
-          actions: [
-            {
-              to: [accounts[1]],
-              data: [helpers.testCallFrom(erc20Guild.address)],
-              value: [1],
-            },
-          ],
-          account: accounts[1],
-        });
-
-        const accountBalanceTracker = await balance.tracker(accounts[1]);
-        let exploitVote = await erc20Guild.setVote(
-          txGasPriceExploitProposal,
-          1,
-          100,
-          {
-            from: accounts[1],
-            gasPrice: highMaxGasPrice,
-          }
-        );
-
-        let actualGasPaid = web3.utils.hexToNumber(
-          exploitVote.receipt.effectiveGasPrice
-        );
-        let totalSpent = exploitVote.receipt.gasUsed * actualGasPaid;
-        console.log(
-          "",
-          web3.utils.fromWei(totalSpent.toString(), "ether"),
-          " eth cost of the transaction"
-        );
-
-        let accountBalance = await accountBalanceTracker.delta();
-        const etherValue = web3.utils.fromWei(
-          accountBalance.toString(),
-          "ether"
-        );
-
-        console.log(await etherValue, " eth lost on the wallet");
       });
     });
 
