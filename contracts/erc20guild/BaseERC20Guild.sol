@@ -478,7 +478,11 @@ contract BaseERC20Guild {
         emit VoteAdded(proposalId, action, voter, votingPower);
 
         if (voteGas > 0) {
-            uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
+            // Set upper limit on amount of gas refund based on the amount of gas used
+            // 100.000 ~= 85% * 117.760 (gas used)
+            uint256 amountOfGasRefunded = voteGas.min(100000);
+            uint256 gasRefund = amountOfGasRefunded.mul(tx.gasprice.min(maxGasPrice));
+
             if (address(this).balance >= gasRefund && !address(msg.sender).isContract()) {
                 (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
                 require(success, "Failed to refund gas");
