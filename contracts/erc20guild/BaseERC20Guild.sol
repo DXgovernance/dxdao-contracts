@@ -161,7 +161,7 @@ contract BaseERC20Guild {
     // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // action
     // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
-    // @param _voteGas The amount of gas in wei unit used for vote refunds
+    // @param _voteGas The amount of gas in wei unit used for vote refunds. Can't be higher than 85% of the gas used by setVote (100000)
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
     // @param _lockTime The minimum amount of seconds that the tokens would be locked
@@ -176,9 +176,10 @@ contract BaseERC20Guild {
         uint256 _lockTime
     ) external virtual {
         require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself when initialized");
-        require(_proposalTime > 0, "ERC20Guild: proposal time has to be more tha 0");
+        require(_proposalTime > 0, "ERC20Guild: proposal time has to be more than 0");
         require(_lockTime >= _proposalTime, "ERC20Guild: lockTime has to be higher or equal to proposalTime");
         require(_votingPowerForProposalExecution > 0, "ERC20Guild: voting power for execution has to be more than 0");
+        require(_voteGas <= 100000, "ERC20Guild: vote gas has to be equal or lower than 100.000"); // 100.000 is 85% of the gas amount to execute setVote
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerForProposalExecution = _votingPowerForProposalExecution;
@@ -478,10 +479,7 @@ contract BaseERC20Guild {
         emit VoteAdded(proposalId, action, voter, votingPower);
 
         if (voteGas > 0) {
-            // Set upper limit on amount of gas refund based on the amount of gas used
-            // 100.000 ~= 85% * 117.760 (gas used)
-            uint256 amountOfGasRefunded = voteGas.min(100000);
-            uint256 gasRefund = amountOfGasRefunded.mul(tx.gasprice.min(maxGasPrice));
+            uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
 
             if (address(this).balance >= gasRefund && !address(msg.sender).isContract()) {
                 (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
