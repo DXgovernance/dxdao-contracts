@@ -1332,8 +1332,32 @@ contract("ERC20Guild", function (accounts) {
       totalLocked.should.be.bignumber.equal("0");
     });
 
-    it("can lock tokens and check snapshot", async function () {});
+    it("cannot withdraw tokens to lower amount of voting power needed for execution", async function () {
+      await lockTokens();
+
+      const guildProposalId = await createProposal(genericProposal);
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[4],
+      });
+
+      await time.increase(time.duration.seconds(61));
+      await erc20Guild.withdrawTokens(100000, { from: accounts[3] });
+
+      await erc20Guild.endProposal(guildProposalId);
+      const { state } = await erc20Guild.getProposal(guildProposalId);
+      assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.rejected);
+    });
   });
+
   describe("refund votes", function () {
     beforeEach(async function () {
       await lockTokens();
