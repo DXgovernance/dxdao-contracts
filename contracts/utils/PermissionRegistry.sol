@@ -49,8 +49,6 @@ contract PermissionRegistry is OwnableUpgradeable {
     // asset address => from address => to address => function call signature allowed => Permission
     mapping(address => mapping(address => mapping(address => mapping(bytes4 => Permission)))) public permissions;
 
-    Permission emptyPermission = Permission(0, 0, 0, 0, false);
-
     /**
      * @dev initializer
      */
@@ -88,7 +86,7 @@ contract PermissionRegistry is OwnableUpgradeable {
         if (msg.sender != owner()) {
             require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
         }
-        require(to != address(this), "PermissionRegistry: Cant set permissions to PermissionRegistry");
+        require(to != address(this), "PermissionRegistry: Can't set permissions to PermissionRegistry");
         if (allowed) {
             permissions[asset][from][to][functionSignature].fromTime = block.timestamp.add(permissionDelay[from]);
             permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
@@ -144,11 +142,11 @@ contract PermissionRegistry is OwnableUpgradeable {
 
             // If the asset is ETH check if there is an allowance to any address and function signature
         } else {
-            // Check is there an allowance to the implementation address with the function signature
+            // Check if there is an allowance to the implementation address with the function signature
             if (permissions[asset][from][to][functionSignature].isSet) {
                 permission = permissions[asset][from][to][functionSignature];
             }
-            // Check is there an allowance to the implementation address for any function signature
+            // Check if there is an allowance to the implementation address for any function signature
             else if (permissions[asset][from][to][ANY_SIGNATURE].isSet) {
                 permission = permissions[asset][from][to][ANY_SIGNATURE];
             }

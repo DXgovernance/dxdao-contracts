@@ -46,7 +46,7 @@ contract ERC20GuildWithERC1271 is ERC20GuildUpgradeable, IERC1271Upgradeable {
         address _permissionRegistry
     ) public override initializer {
         require(address(_token) != address(0), "ERC20GuildWithERC1271: token cant be zero address");
-        require(_proposalTime > 0, "ERC20GuildWithERC1271: proposal time has to be more tha 0");
+        require(_proposalTime > 0, "ERC20GuildWithERC1271: proposal time has to be more than 0");
         require(
             _lockTime >= _proposalTime,
             "ERC20GuildWithERC1271: lockTime has to be higher or equal to proposalTime"

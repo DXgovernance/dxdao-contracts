@@ -22,7 +22,7 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
     // Proposal id => Snapshot id
     mapping(bytes32 => uint256) public proposalsSnapshots;
 
-    // @dev Initilizer
+    // @dev Initializer
     // @param _token The ERC20 token that will be used as source of voting power
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     // @param _timeForExecution The amount of time in seconds that a proposal action will have to execute successfully
@@ -106,20 +106,20 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         bytes memory signature
     ) public virtual override {
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
-        require(!signedVotes[hashedVote], "SnapshotERC20Guild: Already voted");
-        require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "SnapshotERC20Guild: Wrong signer");
+        require(!signedVotes[hashedVote], "SnapshotRepERC20Guild: Already voted");
+        require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "SnapshotRepERC20Guild: Wrong signer");
         signedVotes[hashedVote] = true;
         _setSnapshottedVote(voter, proposalId, action, votingPower);
     }
 
     // @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild
     function lockTokens(uint256) external virtual override {
-        revert("SnapshotERC20Guild: token vault disabled");
+        revert("SnapshotRepERC20Guild: token vault disabled");
     }
 
     // @dev Override and disable withdraw of tokens, not needed in SnapshotRepERC20Guild
     function withdrawTokens(uint256) external virtual override {
-        revert("SnapshotERC20Guild: token vault disabled");
+        revert("SnapshotRepERC20Guild: token vault disabled");
     }
 
     // @dev Create a proposal with an static call data and extra information
@@ -153,19 +153,22 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         uint256 action,
         uint256 votingPower
     ) internal {
-        require(proposals[proposalId].endTime > block.timestamp, "SnapshotERC20Guild: Proposal ended, cant be voted");
+        require(
+            proposals[proposalId].endTime > block.timestamp,
+            "SnapshotRepERC20Guild: Proposal ended, cant be voted"
+        );
         require(
             votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >= votingPower,
-            "SnapshotERC20Guild: Invalid votingPower amount"
+            "SnapshotRepERC20Guild: Invalid votingPower amount"
         );
         require(
             votingPower > proposalVotes[proposalId][voter].votingPower,
-            "SnapshotERC20Guild: Cant decrease votingPower in vote"
+            "SnapshotRepERC20Guild: Cant decrease votingPower in vote"
         );
         require(
             (proposalVotes[proposalId][voter].action == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
                 proposalVotes[proposalId][voter].action == action,
-            "SnapshotERC20Guild: Cant change action voted, only increase votingPower"
+            "SnapshotRepERC20Guild: Cant change action voted, only increase votingPower"
         );
 
         proposals[proposalId].totalVotes[action] = proposals[proposalId]

@@ -37,7 +37,7 @@ contract TokenVault is Initializable {
 
     // @dev Deposit the tokens from the user to the vault from the admin contract
     function deposit(address user, uint256 amount) external isInitialized {
-        require(msg.sender == admin);
+        require(msg.sender == admin, "TokenVault: Deposit must be sent through admin");
         token.safeTransferFrom(user, address(this), amount);
         balances[user] = balances[user].add(amount);
     }
