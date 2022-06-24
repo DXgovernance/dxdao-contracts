@@ -134,6 +134,7 @@ contract BaseERC20Guild {
         string contentHash;
         ProposalState state;
         uint256[] totalVotes;
+        uint256 votingPowerForProposalExecution;
     }
 
     // Mapping of proposal votes
@@ -298,6 +299,7 @@ contract BaseERC20Guild {
         newProposal.contentHash = contentHash;
         newProposal.totalVotes = new uint256[](totalActions.add(1));
         newProposal.state = ProposalState.Active;
+        newProposal.votingPowerForProposalExecution = getVotingPowerForProposalExecution();
 
         activeProposalsNow = activeProposalsNow.add(1);
         emit ProposalStateChanged(proposalId, uint256(ProposalState.Active));
@@ -315,7 +317,7 @@ contract BaseERC20Guild {
         uint256 i = 1;
         for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
             if (
-                proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution() &&
+                proposals[proposalId].totalVotes[i] >= proposals[proposalId].votingPowerForProposalExecution &&
                 proposals[proposalId].totalVotes[i] > proposals[proposalId].totalVotes[winningAction]
             ) winningAction = i;
         }
