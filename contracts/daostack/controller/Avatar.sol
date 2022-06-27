@@ -70,7 +70,7 @@ contract Avatar is Ownable {
      * @return bool which represents success
      */
     function sendEther(uint256 _amountInWei, address payable _to) public onlyOwner returns (bool) {
-        _to.transfer(_amountInWei);
+        _to.call.value(_amountInWei)("");
         emit SendEther(_amountInWei, _to);
         return true;
     }
