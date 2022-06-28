@@ -750,7 +750,6 @@ contract("ERC20Guild", function (accounts) {
 
     beforeEach(async function () {
       await lockTokens();
-      // await allowActionMockA();
 
       // decrease amount of voting power for proposal execution
       // so more tests cases can be done
