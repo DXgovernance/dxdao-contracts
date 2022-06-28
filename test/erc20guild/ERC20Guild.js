@@ -979,6 +979,44 @@ contract("ERC20Guild", function (accounts) {
       const { state } = await erc20Guild.getProposal(guildProposalId);
       assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.rejected);
     });
+
+    it("when there is a winning action in the middle of two tied actions, execute", async function () {
+      const guildProposalId = await createProposal(proposalWithThreeOptions);
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[1],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 2,
+        account: accounts[5],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 3,
+        account: accounts[3],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId);
+
+      const { state } = await erc20Guild.getProposal(guildProposalId);
+      assert.equal(
+        state,
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+      );
+    });
   });
 
   describe("permission registry checks", function () {
