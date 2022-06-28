@@ -238,7 +238,7 @@ contract("SnapshotERC20Guild", function (accounts) {
       await expectRevert(
         erc20Guild.votingPowerOfMultipleAt(
           [accounts[1], accounts[2]],
-          [1, 2, 3]
+          [1, 2, 3, 4]
         ),
         "SnapshotERC20Guild: SnapshotIds and accounts must have the same length"
       );
