@@ -243,5 +243,13 @@ contract("SnapshotERC20Guild", function (accounts) {
         "SnapshotERC20Guild: SnapshotIds and accounts must have the same length"
       );
     });
+    it("should pass if accounts and snapshotIds have the same length", async () => {
+      const votes = await erc20Guild.votingPowerOfMultipleAt(
+        [accounts[1], accounts[2]],
+        [1, 2]
+      );
+      votes[0].should.be.bignumber.equal("0");
+      votes[1].should.be.bignumber.equal("50000");
+    });
   });
 });
