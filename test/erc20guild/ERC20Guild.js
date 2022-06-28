@@ -1678,7 +1678,9 @@ contract("ERC20Guild", function (accounts) {
       );
 
       const timestampAfterOriginalTimeLock = await time.latest();
-      const timeTillVoteTimeLock = voterLockTimestampAfterVote.sub(timestampAfterOriginalTimeLock);
+      const timeTillVoteTimeLock = voterLockTimestampAfterVote.sub(
+        timestampAfterOriginalTimeLock
+      );
       await time.increase(timeTillVoteTimeLock);
       const txRelease = await erc20Guild.withdrawTokens(50000, {
         from: accounts[3],
