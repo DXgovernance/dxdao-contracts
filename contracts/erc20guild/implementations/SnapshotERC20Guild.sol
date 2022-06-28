@@ -98,6 +98,7 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
             "SnapshotERC20Guild: Unable to withdraw more tokens than locked"
         );
         require(tokensLocked[msg.sender].timestamp < block.timestamp, "SnapshotERC20Guild: Tokens still locked");
+        require(tokenAmount > 0, "SnapshotERC20Guild: amount of tokens to withdraw must be greater than 0");
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(tokenAmount);

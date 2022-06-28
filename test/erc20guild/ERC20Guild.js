@@ -1570,6 +1570,11 @@ contract("ERC20Guild", function (accounts) {
         "ERC20: transfer amount exceeds balance"
       );
 
+      // Cannot withdraw zero tokens
+      await expectRevert(
+        erc20Guild.withdrawTokens(0, { from: accounts[1] }),
+        "ERC20Guild: amount of tokens to withdraw must be greater than 0"
+      );
       // Cant lock zero tokens
       await expectRevert(
         erc20Guild.lockTokens(0, { from: accounts[1] }),
@@ -1602,6 +1607,91 @@ contract("ERC20Guild", function (accounts) {
     });
 
     it("can lock tokens and check snapshot", async function () {});
+
+    it("increases lock time to at least proposal end time after voting", async function () {
+      const tokenVault = await erc20Guild.getTokenVault();
+      const TIMELOCK = new BN("60");
+
+      // approve lockable guild to "transfer in" tokens to lock
+      await guildToken.approve(tokenVault, 50000, { from: accounts[3] });
+      assert.equal(await erc20Guild.getTotalMembers(), 0);
+
+      // Lock tokens
+      const txLock = await erc20Guild.lockTokens(50000, { from: accounts[3] });
+      const lockEvent = helpers.logDecoder.decodeLogs(
+        txLock.receipt.rawLogs
+      )[2];
+      assert.equal(lockEvent.name, "TokensLocked");
+      assert.equal(lockEvent.args[0], accounts[3]);
+      assert.equal(lockEvent.args[1], 50000);
+      assert.equal(await erc20Guild.getTotalMembers(), 1);
+
+      // Ensure tokens have been locked
+      const timestampOnLock = await time.latest();
+      let voterLockTimestampAtLockTime = await erc20Guild.getVoterLockTimestamp(
+        accounts[3]
+      );
+      voterLockTimestampAtLockTime.should.be.bignumber.equal(
+        timestampOnLock.add(TIMELOCK)
+      );
+
+      // Increase time
+      const proposalDelay = new BN("40");
+      await time.increase(proposalDelay);
+
+      // Create a new proposal and vote on it
+      const guildProposalId = await createProposal(genericProposal);
+      const { endTime: proposalEndTime } = await erc20Guild.getProposal(
+        guildProposalId
+      );
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 3,
+        account: accounts[3],
+      });
+
+      // Ensure tokens lock has been extended
+      let voterLockTimestampAfterVote = await erc20Guild.getVoterLockTimestamp(
+        accounts[3]
+      );
+      voterLockTimestampAfterVote.should.not.be.bignumber.equal(
+        voterLockTimestampAtLockTime
+      );
+      voterLockTimestampAfterVote.should.be.bignumber.equal(proposalEndTime);
+
+      // try lo release and fail
+      await expectRevert(
+        erc20Guild.withdrawTokens(1, { from: accounts[3] }),
+        "ERC20Guild: Tokens still locked"
+      );
+      const timestampAfterVote = await time.latest();
+
+      // move past the original time lock period and try to redeem and fail
+      const timeTillOriginalTimeLock =
+        voterLockTimestampAtLockTime.sub(timestampAfterVote);
+      await time.increase(timeTillOriginalTimeLock);
+      await expectRevert(
+        erc20Guild.withdrawTokens(1, { from: accounts[3] }),
+        "ERC20Guild: Tokens still locked"
+      );
+
+      const timestampAfterOriginalTimeLock = await time.latest();
+      const timeTillVoteTimeLock = voterLockTimestampAfterVote.sub(timestampAfterOriginalTimeLock);
+      await time.increase(timeTillVoteTimeLock);
+      const txRelease = await erc20Guild.withdrawTokens(50000, {
+        from: accounts[3],
+      });
+      assert.equal(await erc20Guild.getTotalMembers(), 0);
+
+      const withdrawEvent = helpers.logDecoder.decodeLogs(
+        txRelease.receipt.rawLogs
+      )[1];
+      assert.equal(withdrawEvent.name, "TokensWithdrawn");
+      assert.equal(withdrawEvent.args[0], accounts[3]);
+      assert.equal(withdrawEvent.args[1], 50000);
+    });
   });
   describe("refund votes", function () {
     beforeEach(async function () {

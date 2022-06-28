@@ -22,7 +22,7 @@ KEY_ETHERSCAN="xxx"
 
 
 
-// Required for get reputation script
+// Required to run getReputation script
 
 REP_FROM_BLOCK=7850172
 
@@ -42,7 +42,7 @@ REP_TO_BLOCK=12212988
 
 ### Gas Report
 
-It will run the tests and report the gas cost of each function executed in every smart contract in the tests.
+Will run the tests and report the gas cost for each function executed in every smart contract during the tests.
 
 `REPORT_GAS=true yarn test`
 
@@ -98,9 +98,9 @@ Code taken from: https://github.com/gnosis/dx-daostack.
 
 The smart contracts used in DXdao gov 1.x dapp. It consist of the DXDVotingMachine, PermissionRegsitry and WalletScheme contracts, this are used with the existent DXdao daostack contracts deployed on mainnet.
 
-The Wallet Scheme creates and register the proposals in the Voting Machine, the voting machine receives the votes and stakes, the state of a proposal will be changing over time (depending of the votes and stakes over it). When a proposal is approved the Wallet Scheme will check that the calls to be executed are allowed in the Permission Registry, if the check passes the proposal is executed successfully.
+The Wallet Scheme creates and registers the proposals in the Voting Machine, the voting machine receives the votes and stakes, the state of a proposal will be changing over time (depending of the votes and stakes on it). When a proposal is approved the Wallet Scheme will check that the calls to be executed are allowed in the Permission Registry, if the check passes the proposal is executed successfully.
 
-There can be multiple Wallet Schemes being used at the same time and each of them will have their own configuration and permissions, allowing DXdao to distribute funds and configure the access to them.
+M ultiple Wallet Schemes may be used at the same time and each will have its own configuration and permissions, allowing DXdao to distribute funds and configure access to them.
 
 ![DXdao Gov 1-x-schemes](assets/DXdao%20Gov%201-x.png)
 
@@ -116,15 +116,15 @@ The Quick Wallet scheme will have access to funds held by the scheme itself, wit
 
   - **name**: The name of the scheme, this will be used to identify the scheme by name in DXvote dapp.
 
-  - **callToController**: If the scheme make calls to the controller or not. A Scheme that makes calls to a controller will make calls from the dxdao avatar (which gives access to the dxdao funds) and a scheme that do not call the controller will make call directly from itself, which means that it will have access only to the funds held in the scheme address.
+  - **callToController**: If the scheme make calls to the controller or not. A Scheme that makes calls to a controller will make calls from the dxdao avatar (which gives access to the dxdao funds) and a scheme that does not call the controller will make calls directly from itself, which means that it will have access only to the funds held in the scheme address.
 
   - **maxSecondsForExecution**: This is the amount of time that a proposal has to be executed in the scheme, this is useful to "clean" proposals that weren't successful or weren't able to be executed for some reason. This means that if a proposal passes in 3 days in the voting machine and the `maxSecondsForExecution` are 6 days it will have 3 days to be executed, after that it will be marked in `ExecutionTimeout` state and wont be able to be executed again, reaching a state of termination.
 
-  - **maxRepPercentageToMint**: This is the maximum amount of rep in percentage allowed to be minted by proposal, the value can be between 0-100, if a proposal execution mints 5% of REP and the `maxRepPercentageToMint` equals 3, it will fail.
+  - **maxRepPercentageToMint**: This is the maximum amount of rep in percentage allowed to be minted by proposal, the value can be between 0-100. If a proposal execution attempts to mint 5% of REP and the `maxRepPercentageToMint` equals 3, it will fail.
 
-- **Controller Permissions**: This are four values that determine what the scheme can do in the dxdao controller contract, the most powerful contract in the stack, the only two values that we use from it are `canRegisterSchemes` and `canGenericCall`. `canRegisterSchemes` allows the addition/removal of schemes and the `canGenericCall` allows the execution of calls in the avatar contract.
+- **Controller Permissions**: There are four values that determine what the scheme can do in the dxdao controller contract, the core contract in the stack. The two values that we use from it are `canRegisterSchemes` and `canGenericCall`. `canRegisterSchemes` allows the addition/removal of schemes and the `canGenericCall` allows the execution of calls in the avatar contract.
 
-- **Permission Registry Permissions**: This permissions are checked before a proposal execution to check that the total value transferred by asset and the functions to be called are allowed. If a scheme make calls to the controller the permissions are checked from the avatar address.
+- **Permission Registry Permissions**: These permissions are checked before a proposal execution to check that the total value transferred by asset and the functions to be called are allowed. If a scheme makes calls to the controller the permissions are checked from the avatar address.
 
   The permissions are set by asset, specifying the sender and receiver addresses, the signature of the function to be used and the value to be transferred.
 
@@ -158,7 +158,7 @@ The Quick Wallet scheme will have access to funds held by the scheme itself, wit
 
 #### DXD Voting Machine
 
-The DXD Voting Machine is a fork of the the Genesis Protocol (GEN token voting machine) with new very cool features:
+The DXD Voting Machine is a fork of the the Genesis Protocol (GEN token voting machine) with additional functionality:
 
 - Use of DXD as staking token.
 
@@ -176,7 +176,7 @@ The DXD Voting Machine is a fork of the the Genesis Protocol (GEN token voting m
 
 ### ERC20Guild
 
-The smart contracts to add a very basic, efficient and flexible governance layer over an ERC20 token.
+Smart contracts to add a very basic, efficient and flexible governance layer over an ERC20 token.
 
 The guild **executes previously authorized functions** to smart contracts after a proposal action to execute that function reaches the **minimum amount of votes** using **locked tokens as voting power** after a **period of time**.
 
@@ -184,7 +184,7 @@ The guild **executes previously authorized functions** to smart contracts after 
 
 - A guild proposal can have none or multiple actions, each proposal action is a list of ethereum calls, that can execute functions and transfer value.
 
-- The voter can set his vote on a decision only once, the action voted cant be changed, only the voting power can be increased.
+- The voter can set his vote on a decision only once, the action voted can't be changed, only the voting power can be increased.
 
 - The voting power in the guild is based on the ERC20 token balance **locked by the voter**, that means that the tokens need to be locked for a minimum period of time in order to be used as voting power.
 
@@ -196,9 +196,9 @@ The guild **executes previously authorized functions** to smart contracts after 
 
 - The voter can sign a vote that can be executed by other account on his behalf.
 
-- When a proposal is created it enters the voting period. Once the voting period passes if the is no proposal action with enough votes to execute, it will be rejected. If it has enough votes to execute and executes successfully during a the execution period of time, it will be finished successfully. If during that execution period of time the proposal action cant be executed it will be set as failed and wont be able to be executed again once the execution time ends.
+- When a proposal is created it enters the voting period. Once the voting period passes if there is no proposal action with enough votes to execute, it will be rejected. If it has enough votes to execute and executes successfully during a the execution period of time, it will be finished successfully. If during that execution period of time the proposal action can't be executed it will be set as failed and won't be able to be executed again once the execution time ends.
 
-- The guild can be configured to automatically pay the voting costs back to the voter, for this the vote gas a max gas price to be use for vote refund needs to be set.
+- The guild can be configured to automatically pay the voting costs back to the voter, for this the  max gas price to be used for voting needs to be set.
 
 - Each proposal has a title and a content hash that can be used to refer off-chain information.
 
