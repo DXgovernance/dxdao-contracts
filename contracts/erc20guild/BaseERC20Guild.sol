@@ -315,7 +315,10 @@ contract BaseERC20Guild {
         uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
         uint256 i = 1;
         for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
-            if (proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution()) {
+            if (
+                proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution() &&
+                proposals[proposalId].totalVotes[i] >= highestVoteAmount
+            ) {
                 if (proposals[proposalId].totalVotes[i] == highestVoteAmount) winningAction = 0;
                 else {
                     winningAction = i;
