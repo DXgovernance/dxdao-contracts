@@ -476,6 +476,11 @@ contract BaseERC20Guild {
         proposalVotes[proposalId][voter].action = action;
         proposalVotes[proposalId][voter].votingPower = votingPower;
 
+        // Make sure tokens don't get unlocked before the proposal ends, to prevent double voting.
+        if (tokensLocked[voter].timestamp < proposals[proposalId].endTime) {
+            tokensLocked[voter].timestamp = proposals[proposalId].endTime;
+        }
+
         emit VoteAdded(proposalId, action, voter, votingPower);
 
         if (voteGas > 0) {
