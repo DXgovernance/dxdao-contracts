@@ -225,6 +225,10 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         virtual
         returns (uint256[] memory)
     {
+        require(
+            accounts.length == snapshotIds.length,
+            "SnapshotshotERC20Guild: SnapshotIds and accounts must have the same length"
+        );
         uint256[] memory votes = new uint256[](accounts.length);
         for (uint256 i = 0; i < accounts.length; i++) votes[i] = votingPowerOfAt(accounts[i], snapshotIds[i]);
         return votes;
