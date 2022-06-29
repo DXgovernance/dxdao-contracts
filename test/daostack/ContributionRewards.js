@@ -388,6 +388,7 @@ contract("ContributionReward", accounts => {
     assert.equal(eth, ethReward);
   });
 
+  // eslint-disable-next-line max-len
   it("execute proposeContributionReward to expensive receiver fallback function will fail in redeem", async function () {
     // skip if it is in coverage
     if (constants.GAS_LIMIT === "0xfffffffffff") return;
@@ -831,6 +832,7 @@ contract("ContributionReward", accounts => {
     await checkRedeemedPeriodsLeft(testSetup, proposalId, 0, 0, 0, 0);
   });
 
+  // eslint-disable-next-line max-len
   it("execute proposeContributionReward via genesisProtocol voting machine and redeem using Redeemer", async function () {
     var standardTokenMock = await ERC20Mock.new(
       accounts[0],
@@ -921,6 +923,7 @@ contract("ContributionReward", accounts => {
     );
   });
 
+  // eslint-disable-next-line max-len
   it("execute proposeContributionReward via genesisProtocol voting machine and redeem using Redeemer for un executed boosted proposal", async function () {
     var standardTokenMock = await ERC20Mock.new(
       accounts[0],
@@ -1040,6 +1043,7 @@ contract("ContributionReward", accounts => {
     );
   });
 
+  // eslint-disable-next-line max-len
   it("execute proposeContributionReward via dxd voting machine and redeem using Redeemer for un executed boosted proposal", async function () {
     var standardTokenMock = await ERC20Mock.new(
       accounts[0],
@@ -1165,6 +1169,7 @@ contract("ContributionReward", accounts => {
     );
   });
 
+  // eslint-disable-next-line max-len
   it("execute proposeContributionReward via genesisProtocol voting machine and redeem using Redeemer for negative proposal", async function () {
     var standardTokenMock = await ERC20Mock.new(
       accounts[0],
@@ -1229,6 +1234,7 @@ contract("ContributionReward", accounts => {
     assert.equal(reputation, 1000);
   });
 
+  // eslint-disable-next-line max-len
   it("execute proposeContributionReward via genesisProtocol voting machine and redeem using Redeemer ExpiredInQueue", async function () {
     var standardTokenMock = await ERC20Mock.new(
       accounts[0],

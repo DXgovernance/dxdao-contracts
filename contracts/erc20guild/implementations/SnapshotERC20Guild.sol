@@ -10,8 +10,8 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
   @title SnapshotERC20Guild
   @author github:AugustoL
   @dev An ERC20Guild designed to work with a snapshotted locked tokens.
-  It is an extension over the ERC20GuildUpgradeable where the voters can vote with the voting power used at the moment of the 
-  proposal creation.
+  It is an extension over the ERC20GuildUpgradeable where the voters can vote 
+  with the voting power used at the moment of the proposal creation.
 */
 contract SnapshotERC20Guild is ERC20GuildUpgradeable {
     using SafeMathUpgradeable for uint256;
