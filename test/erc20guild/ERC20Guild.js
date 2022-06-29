@@ -663,7 +663,7 @@ contract("ERC20Guild", function (accounts) {
       );
     });
 
-    it("proposal rejected as not enough tokens to execute proposal when proposal ends", async function () {
+    it("proposal rejected if not enough votes to execute proposal when proposal ends", async function () {
       const guildProposalId = await createProposal(genericProposal);
       await setVotesOnProposal({
         guild: erc20Guild,
@@ -676,6 +676,52 @@ contract("ERC20Guild", function (accounts) {
       await erc20Guild.endProposal(guildProposalId);
       const { state } = await erc20Guild.getProposal(guildProposalId);
       assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.rejected);
+    });
+
+    it("Proposals are marked as rejected if voted on action 0", async function () {
+      const proposalId = await createProposal(genericProposal);
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: proposalId,
+        action: 0,
+        account: accounts[2],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: proposalId,
+        action: 0,
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: proposalId,
+        action: 0,
+        account: accounts[4],
+      });
+
+      await expectRevert(
+        erc20Guild.endProposal(proposalId),
+        "ERC20Guild: Proposal hasn't ended yet"
+      );
+
+      await time.increase(time.duration.seconds(31));
+
+      const receipt = await erc20Guild.endProposal(proposalId);
+
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: proposalId,
+        newState: "2",
+      });
+      await expectRevert(
+        erc20Guild.endProposal(proposalId),
+        "ERC20Guild: Proposal already executed"
+      );
+
+      const proposalInfo = await erc20Guild.getProposal(proposalId);
+      assert.equal(proposalInfo.state, constants.GUILD_PROPOSAL_STATES.Rejected);
     });
 
     it("cannot end proposal with an unauthorized function", async function () {
@@ -1419,6 +1465,7 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(withdrawEvent.args[1], 50000);
     });
   });
+  
   describe("refund votes", function () {
     beforeEach(async function () {
       await lockTokens();
