@@ -102,9 +102,5 @@ contract ERC20GuildUpgradeable is BaseERC20Guild, Initializable {
             0,
             true
         );
-
-        // Set default values for baseERC20Guild
-        minimumMembersForProposalCreation = 0;
-        minimumTokensLockedForProposalCreation = 0;
     }
 }

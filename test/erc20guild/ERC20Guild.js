@@ -211,6 +211,11 @@ contract("ERC20Guild", function (accounts) {
       assert.equal(await erc20Guild.getProposalsIdsLength(), 0);
       assert.equal(await erc20Guild.getTotalMembers(), 0);
       assert.deepEqual(await erc20Guild.getProposalsIds(), []);
+      assert.equal(await erc20Guild.getMinimumMembersForProposalCreation(), 0);
+      assert.equal(
+        await erc20Guild.getMinimumTokensLockedForProposalCreation(),
+        0
+      );
     });
 
     it("cannot initialize with zero token", async function () {
