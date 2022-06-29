@@ -26,16 +26,14 @@ contract PermissionRegistry is OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
 
     mapping(address => uint256) public permissionDelay;
-    address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
-    bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
 
     event PermissionSet(
-        address asset,
         address from,
         address to,
         bytes4 functionSignature,
         uint256 fromTime,
-        uint256 value
+        uint256 value,
+        bool removed
     );
 
     struct Permission {
@@ -46,8 +44,8 @@ contract PermissionRegistry is OwnableUpgradeable {
         bool isSet;
     }
 
-    // asset address => from address => to address => function call signature allowed => Permission
-    mapping(address => mapping(address => mapping(address => mapping(bytes4 => Permission)))) public permissions;
+    // from address => to address => function call signature allowed => Permission
+    mapping(address => mapping(address => mapping(bytes4 => Permission))) public ethPermissions;
 
     Permission emptyPermission = Permission(0, 0, 0, 0, false);
 
@@ -62,48 +60,53 @@ contract PermissionRegistry is OwnableUpgradeable {
      * @dev Set the time delay for a call to show as allowed
      * @param _timeDelay The amount of time that has to pass after permission addition to allow execution
      */
-    function setPermissionDelay(uint256 _timeDelay) public {
-        permissionDelay[msg.sender] = _timeDelay;
+    function setPermissionDelay(address from, uint256 _timeDelay) public {
+        if (msg.sender != owner()) {
+            require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
+        }
+        permissionDelay[from] = _timeDelay;
     }
-
-    // TO DO: Add removePermission function that will set the value isSet in the permissions to false and trigger PermissionRemoved event
 
     /**
      * @dev Sets the time from which the function can be executed from a contract to another a with which value.
-     * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
      * @param from The address that will execute the call
      * @param to The address that will be called
      * @param functionSignature The signature of the function to be executed
      * @param valueAllowed The amount of value allowed of the asset to be sent
      * @param allowed If the function is allowed or not.
+     * @param remove If the permission should be removed
      */
     function setPermission(
-        address asset,
         address from,
         address to,
         bytes4 functionSignature,
         uint256 valueAllowed,
-        bool allowed
+        bool allowed,
+        bool remove
     ) public {
         if (msg.sender != owner()) {
             require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
         }
-        require(to != address(this), "PermissionRegistry: Cant set permissions to PermissionRegistry");
-        if (allowed) {
-            permissions[asset][from][to][functionSignature].fromTime = block.timestamp.add(permissionDelay[from]);
-            permissions[asset][from][to][functionSignature].valueAllowed = valueAllowed;
+        require(to != address(this), "PermissionRegistry: Cant set ethPermissions to PermissionRegistry");
+        if (remove) {
+            ethPermissions[from][to][functionSignature].fromTime = 0;
+            ethPermissions[from][to][functionSignature].valueAllowed = 0;
+            ethPermissions[from][to][functionSignature].isSet = false;
+        } else if (allowed) {
+            ethPermissions[from][to][functionSignature].fromTime = block.timestamp.add(permissionDelay[from]);
+            ethPermissions[from][to][functionSignature].valueAllowed = valueAllowed;
         } else {
-            permissions[asset][from][to][functionSignature].fromTime = 0;
-            permissions[asset][from][to][functionSignature].valueAllowed = 0;
+            ethPermissions[from][to][functionSignature].fromTime = 0;
+            ethPermissions[from][to][functionSignature].valueAllowed = 0;
         }
-        permissions[asset][from][to][functionSignature].isSet = true;
+        ethPermissions[from][to][functionSignature].isSet = true;
         emit PermissionSet(
-            asset,
             from,
             to,
             functionSignature,
-            permissions[asset][from][to][functionSignature].fromTime,
-            permissions[asset][from][to][functionSignature].valueAllowed
+            ethPermissions[from][to][functionSignature].fromTime,
+            ethPermissions[from][to][functionSignature].valueAllowed,
+            remove
         );
     }
 
@@ -118,107 +121,55 @@ contract PermissionRegistry is OwnableUpgradeable {
     /**
      * @dev Gets the time from which the function can be executed from a contract to another and with which value.
      * In case of now being allowed to do the call it returns zero in both values
-     * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
      * @param from The address from which the call will be executed
      * @param to The address that will be called
      * @param functionSignature The signature of the function to be executed
      */
     function getPermission(
-        address asset,
         address from,
         address to,
         bytes4 functionSignature
-    ) public view returns (uint256 valueAllowed, uint256 fromTime) {
-        Permission memory permission;
-
-        // If the asset is an ERC20 token check the value allowed to be transferred
-        if (asset != address(0)) {
-            // Check if there is a value allowed specifically to the `to` address
-            if (permissions[asset][from][to][ANY_SIGNATURE].isSet) {
-                permission = permissions[asset][from][to][ANY_SIGNATURE];
-            }
-            // Check if there is a value allowed to any address
-            else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
-                permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
-            }
-
-            // If the asset is ETH check if there is an allowance to any address and function signature
-        } else {
-            // Check is there an allowance to the implementation address with the function signature
-            if (permissions[asset][from][to][functionSignature].isSet) {
-                permission = permissions[asset][from][to][functionSignature];
-            }
-            // Check is there an allowance to the implementation address for any function signature
-            else if (permissions[asset][from][to][ANY_SIGNATURE].isSet) {
-                permission = permissions[asset][from][to][ANY_SIGNATURE];
-            }
-            // Check if there is there is an allowance to any address with the function signature
-            else if (permissions[asset][from][ANY_ADDRESS][functionSignature].isSet) {
-                permission = permissions[asset][from][ANY_ADDRESS][functionSignature];
-            }
-            // Check if there is there is an allowance to any address and any function
-            else if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
-                permission = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE];
-            }
-        }
-        return (permission.valueAllowed, permission.fromTime);
+    )
+        public
+        view
+        returns (
+            uint256 valueAllowed,
+            uint256 fromTime,
+            bool isSet
+        )
+    {
+        return (
+            ethPermissions[from][to][functionSignature].valueAllowed,
+            ethPermissions[from][to][functionSignature].fromTime,
+            ethPermissions[from][to][functionSignature].isSet
+        );
     }
 
     /**
      * @dev Sets the value transferred in a permission on the actual block and checks the allowed timestamp.
      *      It also checks that the value does not go over the permission other global limits.
-     * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
      * @param from The address from which the call will be executed
      * @param to The address that will be called
      * @param functionSignature The signature of the function to be executed
      * @param valueTransferred The value to be transferred
      */
     function setPermissionUsed(
-        address asset,
         address from,
         address to,
         bytes4 functionSignature,
         uint256 valueTransferred
     ) public {
-        uint256 fromTime = 0;
-
         // If the asset is an ERC20 token check the value allowed to be transferred, no signature used
-        if (asset != address(0)) {
-            // Check if there is a value allowed to any address
-            if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
-                fromTime = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].fromTime;
-                _setValueTransferred(permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE], valueTransferred);
-            }
-            // Check if there is a value allowed specifically to the `to` address
-            if (permissions[asset][from][to][ANY_SIGNATURE].isSet) {
-                fromTime = permissions[asset][from][to][ANY_SIGNATURE].fromTime;
-                _setValueTransferred(permissions[asset][from][to][ANY_SIGNATURE], valueTransferred);
-            }
-
-            // If the asset is ETH check if there is an allowance to any address and function signature
+        if (ethPermissions[from][to][functionSignature].isSet) {
+            _setValueTransferred(ethPermissions[from][to][functionSignature], valueTransferred);
+            require(
+                ethPermissions[from][to][functionSignature].fromTime > 0 &&
+                    ethPermissions[from][to][functionSignature].fromTime < block.timestamp,
+                "PermissionRegistry: Call not allowed"
+            );
         } else {
-            // Check if there is there is an allowance to any address and any function
-            if (permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].isSet) {
-                fromTime = permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE].fromTime;
-                _setValueTransferred(permissions[asset][from][ANY_ADDRESS][ANY_SIGNATURE], valueTransferred);
-            }
-            // Check if there is there is an allowance to any address with the function signature
-            if (permissions[asset][from][ANY_ADDRESS][functionSignature].isSet) {
-                fromTime = permissions[asset][from][ANY_ADDRESS][functionSignature].fromTime;
-                _setValueTransferred(permissions[asset][from][ANY_ADDRESS][functionSignature], valueTransferred);
-            }
-            // Check is there an allowance to the implementation address for any function signature
-            if (permissions[asset][from][to][ANY_SIGNATURE].isSet) {
-                fromTime = permissions[asset][from][to][ANY_SIGNATURE].fromTime;
-                _setValueTransferred(permissions[asset][from][to][ANY_SIGNATURE], valueTransferred);
-            }
-            // Check is there an allowance to the implementation address with the function signature
-            if (permissions[asset][from][to][functionSignature].isSet) {
-                fromTime = permissions[asset][from][to][functionSignature].fromTime;
-                _setValueTransferred(permissions[asset][from][to][functionSignature], valueTransferred);
-            }
+            revert("PermissionRegistry: Permission not set");
         }
-        require(fromTime > 0 && fromTime < block.timestamp, "PermissionRegistry: Call not allowed");
     }
 
     /**
@@ -234,41 +185,5 @@ contract PermissionRegistry is OwnableUpgradeable {
             permission.valueTransferred = permission.valueTransferred.add(valueTransferred);
         }
         require(permission.valueTransferred <= permission.valueAllowed, "PermissionRegistry: Value limit reached");
-    }
-
-    /**
-     * @dev Gets the time from which the function can be executed from a contract to another.
-     * In case of now being allowed to do the call it returns zero in both values
-     * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
-     * @param from The address from which the call will be executed
-     * @param to The address that will be called
-     * @param functionSignature The signature of the function to be executed
-     */
-    function getPermissionTime(
-        address asset,
-        address from,
-        address to,
-        bytes4 functionSignature
-    ) public view returns (uint256) {
-        (, uint256 fromTime) = getPermission(asset, from, to, functionSignature);
-        return fromTime;
-    }
-
-    /**
-     * @dev Gets the value allowed from which the function can be executed from a contract to another.
-     * In case of now being allowed to do the call it returns zero in both values
-     * @param asset The asset to be used for the permission address(0) for ETH and other address for ERC20
-     * @param from The address from which the call will be executed
-     * @param to The address that will be called
-     * @param functionSignature The signature of the function to be executed
-     */
-    function getPermissionValue(
-        address asset,
-        address from,
-        address to,
-        bytes4 functionSignature
-    ) public view returns (uint256) {
-        (uint256 valueAllowed, ) = getPermission(asset, from, to, functionSignature);
-        return valueAllowed;
     }
 }
