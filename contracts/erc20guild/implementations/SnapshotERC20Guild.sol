@@ -159,48 +159,40 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
             i = callsPerAction.mul(winningAction.sub(1));
             uint256 endCall = i.add(callsPerAction);
 
+            permissionRegistry.setERC20Balances();
+
             for (i; i < endCall; i++) {
                 if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
-                    bytes4 callDataFuncSignature;
-                    address asset = address(0);
-                    address _to = proposals[proposalId].to[i];
-                    uint256 _value = proposals[proposalId].value[i];
                     bytes memory _data = proposals[proposalId].data[i];
+                    bytes4 callDataFuncSignature;
                     assembly {
                         callDataFuncSignature := mload(add(_data, 32))
                     }
-
-                    // If the call is an ERC20 transfer or approve the asset is the address called
-                    // and the to and value are the decoded ERC20 receiver and value transferred
-                    if (
-                        ERC20_TRANSFER_SIGNATURE == callDataFuncSignature ||
-                        ERC20_APPROVE_SIGNATURE == callDataFuncSignature
-                    ) {
-                        asset = proposals[proposalId].to[i];
-                        callDataFuncSignature = ANY_SIGNATURE;
-                        assembly {
-                            _to := mload(add(_data, 36))
-                            _value := mload(add(_data, 68))
-                        }
-                    }
-
                     // The permission registry keeps track of all value transferred and checks call permission
                     try
-                        permissionRegistry.setPermissionUsed(asset, address(this), _to, callDataFuncSignature, _value)
+                        permissionRegistry.setETHPermissionUsed(
+                            address(this),
+                            proposals[proposalId].to[i],
+                            bytes4(callDataFuncSignature),
+                            proposals[proposalId].value[i]
+                        )
                     {} catch Error(string memory reason) {
                         revert(reason);
                     }
 
                     isExecutingProposal = true;
-                    // We use isExecutingProposal varibale to avoid reentrancy in proposal execution
+                    // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
                     // slither-disable-next-line all
                     (bool success, ) = proposals[proposalId].to[i].call{value: proposals[proposalId].value[i]}(
                         proposals[proposalId].data[i]
                     );
-                    require(success, "SnapshotERC20Guild: Proposal call failed");
+                    require(success, "ERC20Guild: Proposal call failed");
                     isExecutingProposal = false;
                 }
             }
+
+            permissionRegistry.checkERC20Limits(address(this));
+
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
         activeProposalsNow = activeProposalsNow.sub(1);

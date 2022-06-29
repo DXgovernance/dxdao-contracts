@@ -15,8 +15,6 @@ import "../utils/PermissionRegistry.sol";
  * The scheme can only execute calls allowed to in the permission registry, if the controller address is set
  * the permissions will be checked using the avatar address as sender, if not the scheme address will be used as
  * sender.
- * The permissions for [asset][SCHEME_ADDRESS][ANY_SIGNATURE] are used for global transfer limit, if it is set,
- * it wont allowed a higher total value transferred in the proposal higher to the one set there.
  */
 contract WalletScheme {
     using SafeMath for uint256;
@@ -27,8 +25,6 @@ contract WalletScheme {
     bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
     bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
         bytes4(keccak256("setMaxSecondsForExecution(uint256)"));
-    bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
-    address public constant ANY_ADDRESS = address(0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa);
 
     enum ProposalState {
         None,
@@ -161,25 +157,17 @@ contract WalletScheme {
             bytes4 _callDataFuncSignature;
             uint256 _value;
 
+            permissionRegistry.setERC20Balances();
+
             for (uint256 i = 0; i < proposal.to.length; i++) {
                 _asset = address(0);
                 _callDataFuncSignature = this.getFuncSignature(proposal.callData[i]);
                 _to = proposal.to[i];
                 _value = proposal.value[i];
-                // Checks that the value tha is transferred (in ETH or ERC20) is lower or equal to the one that is
-                // allowed for the function that wants to be executed
-                if (
-                    ERC20_TRANSFER_SIGNATURE == _callDataFuncSignature ||
-                    ERC20_APPROVE_SIGNATURE == _callDataFuncSignature
-                ) {
-                    _asset = proposal.to[i];
-                    (_to, _value) = this.erc20TransferOrApproveDecode(proposal.callData[i]);
-                }
 
                 // The permission registry keeps track of all value transferred and checks call permission
                 if (_to != address(permissionRegistry))
-                    permissionRegistry.setPermissionUsed(
-                        _asset,
+                    permissionRegistry.setETHPermissionUsed(
                         doAvatarGenericCalls ? avatar : address(this),
                         _to,
                         _callDataFuncSignature,
@@ -220,6 +208,8 @@ contract WalletScheme {
                 "WalletScheme: maxRepPercentageChange passed"
             );
 
+            permissionRegistry.checkERC20Limits(address(this));
+
             proposal.state = ProposalState.ExecutionSucceeded;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
             emit ExecutionResults(_proposalId, callsSucessResult, callsDataResult);
@@ -253,15 +243,6 @@ contract WalletScheme {
         // Check the proposal calls
         for (uint256 i = 0; i < _to.length; i++) {
             bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
-            // Check that no proposals are submitted to wildcard address and function signature
-            require(
-                _to[i] != ANY_ADDRESS,
-                "WalletScheme: cant propose calls to 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa address"
-            );
-            require(
-                callDataFuncSignature != ANY_SIGNATURE,
-                "WalletScheme: cant propose calls with 0xaaaaaaaa signature"
-            );
 
             // Only allow proposing calls to this address to call setMaxSecondsForExecution function
             require(
@@ -361,16 +342,6 @@ contract WalletScheme {
         )
     {
         return getOrganizationProposal(proposalsList[proposalIndex]);
-    }
-
-    /**
-     * @dev Decodes abi encoded data with selector for "transfer(address,uint256)".
-     * @param _data ERC20 address and value encoded data.
-     * @return to The account to receive the tokens
-     * @return value The value of tokens to be transferred/approved
-     */
-    function erc20TransferOrApproveDecode(bytes calldata _data) public pure returns (address to, uint256 value) {
-        (to, value) = abi.decode(_data[4:], (address, uint256));
     }
 
     /**

@@ -57,14 +57,6 @@ contract GuardedERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
             _lockTime,
             _permissionRegistry
         );
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            address(this),
-            bytes4(keccak256("setGuardianConfig(address,uint256)")),
-            0,
-            true
-        );
     }
 
     // @dev Executes a proposal that is not votable anymore and can be finished

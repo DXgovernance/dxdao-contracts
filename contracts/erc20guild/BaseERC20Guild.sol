@@ -189,74 +189,6 @@ contract BaseERC20Guild {
         lockTime = _lockTime;
     }
 
-    // @dev Set the allowance of a call to be executed by the guild
-    // @param asset The asset to be used for the permission, 0x0 is ETH
-    // @param to The address to be called
-    // @param functionSignature The signature of the function
-    // @param valueAllowed The ETH value in wei allowed to be transferred
-    // @param allowance If the function is allowed to be called or not
-    function setPermission(
-        address[] memory asset,
-        address[] memory to,
-        bytes4[] memory functionSignature,
-        uint256[] memory valueAllowed,
-        bool[] memory allowance
-    ) external virtual {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
-        require(
-            (to.length == functionSignature.length) &&
-                (to.length == valueAllowed.length) &&
-                (to.length == allowance.length) &&
-                (to.length == asset.length),
-            "ERC20Guild: Wrong length of asset, to, functionSignature or allowance arrays"
-        );
-        for (uint256 i = 0; i < to.length; i++) {
-            require(functionSignature[i] != bytes4(0), "ERC20Guild: Empty signatures not allowed");
-            permissionRegistry.setPermission(
-                asset[i],
-                address(this),
-                to[i],
-                functionSignature[i],
-                valueAllowed[i],
-                allowance[i]
-            );
-        }
-        require(
-            permissionRegistry.getPermissionTime(
-                address(0),
-                address(this),
-                address(this),
-                bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
-            ) > 0,
-            "ERC20Guild: setConfig function allowance cant be turned off"
-        );
-        require(
-            permissionRegistry.getPermissionTime(
-                address(0),
-                address(this),
-                address(this),
-                bytes4(keccak256("setPermission(address[],address[],bytes4[],uint256[],bool[])"))
-            ) > 0,
-            "ERC20Guild: setPermission function allowance cant be turned off"
-        );
-        require(
-            permissionRegistry.getPermissionTime(
-                address(0),
-                address(this),
-                address(this),
-                bytes4(keccak256("setPermissionDelay(uint256)"))
-            ) > 0,
-            "ERC20Guild: setPermissionDelay function allowance cant be turned off"
-        );
-    }
-
-    // @dev Set the permission delay in the permission registry
-    // @param allowance If the function is allowed to be called or not
-    function setPermissionDelay(uint256 permissionDelay) external virtual {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
-        permissionRegistry.setPermissionDelay(permissionDelay);
-    }
-
     // @dev Create a proposal with an static call data and extra information
     // @param to The receiver addresses of each call to be executed
     // @param data The data to be executed on each call to be executed
@@ -311,6 +243,7 @@ contract BaseERC20Guild {
         require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
         require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
         require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
+
         uint256 winningAction = 0;
         uint256 i = 1;
         for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
@@ -335,44 +268,26 @@ contract BaseERC20Guild {
             i = callsPerAction.mul(winningAction.sub(1));
             uint256 endCall = i.add(callsPerAction);
 
+            permissionRegistry.setERC20Balances();
+
             for (i; i < endCall; i++) {
                 if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
-                    bytes4 callDataFuncSignature;
-                    address asset = address(0);
-                    address _to = proposals[proposalId].to[i];
-                    uint256 _value = proposals[proposalId].value[i];
                     bytes memory _data = proposals[proposalId].data[i];
+                    bytes4 callDataFuncSignature;
                     assembly {
                         callDataFuncSignature := mload(add(_data, 32))
                     }
-
-                    // If the call is an ERC20 transfer or approve the asset is the address called
-                    // and the to and value are the decoded ERC20 receiver and value transferred
-                    if (
-                        ERC20_TRANSFER_SIGNATURE == callDataFuncSignature ||
-                        ERC20_APPROVE_SIGNATURE == callDataFuncSignature
-                    ) {
-                        asset = proposals[proposalId].to[i];
-                        callDataFuncSignature = ANY_SIGNATURE;
-                        assembly {
-                            _to := mload(add(_data, 36))
-                            _value := mload(add(_data, 68))
-                        }
-                    }
-
                     // The permission registry keeps track of all value transferred and checks call permission
-                    if (_to != address(permissionRegistry))
-                        try
-                            permissionRegistry.setPermissionUsed(
-                                asset,
-                                address(this),
-                                _to,
-                                callDataFuncSignature,
-                                _value
-                            )
-                        {} catch Error(string memory reason) {
-                            revert(reason);
-                        }
+                    try
+                        permissionRegistry.setETHPermissionUsed(
+                            address(this),
+                            proposals[proposalId].to[i],
+                            bytes4(callDataFuncSignature),
+                            proposals[proposalId].value[i]
+                        )
+                    {} catch Error(string memory reason) {
+                        revert(reason);
+                    }
 
                     isExecutingProposal = true;
                     // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
@@ -384,6 +299,9 @@ contract BaseERC20Guild {
                     isExecutingProposal = false;
                 }
             }
+
+            permissionRegistry.checkERC20Limits(address(this));
+
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
         activeProposalsNow = activeProposalsNow.sub(1);
