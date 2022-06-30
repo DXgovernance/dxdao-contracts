@@ -152,8 +152,7 @@ contract BaseERC20Guild {
 
     bool internal isExecutingProposal;
 
-    // @dev Allows the voting machine to receive ether to be used to refund voting costs
-    receive() external payable {}
+    fallback() external payable {}
 
     // @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initialized
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
@@ -311,10 +310,11 @@ contract BaseERC20Guild {
         require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
         require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
         require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
+
         uint256 winningAction = 0;
         uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
-        uint256 i = 1;
-        for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
+        uint256 i = 0;
+        for (i = 0; i < proposals[proposalId].totalVotes.length; i++) {
             if (
                 proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution() &&
                 proposals[proposalId].totalVotes[i] >= highestVoteAmount
@@ -471,7 +471,8 @@ contract BaseERC20Guild {
             "ERC20Guild: Invalid votingPower amount"
         );
         require(
-            proposalVotes[proposalId][voter].action == 0 || proposalVotes[proposalId][voter].action == action,
+            (proposalVotes[proposalId][voter].action == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
+                proposalVotes[proposalId][voter].action == action,
             "ERC20Guild: Cant change action voted, only increase votingPower"
         );
 

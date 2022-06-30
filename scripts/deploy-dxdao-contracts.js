@@ -1,8 +1,6 @@
 /* eslint-disable no-case-declarations */
 require("@nomiclabs/hardhat-web3");
 
-const moment = require("moment");
-
 const { deployTokens } = require("./utils/deploy-tokens");
 const {
   deployPermissionRegistry,
@@ -10,7 +8,6 @@ const {
 const { deployGuildRegistry } = require("./utils/deploy-guildRegistry");
 const { deployDao } = require("./utils/deploy-dao");
 const { deployGuilds } = require("./utils/deploy-guilds");
-const { doActions } = require("./utils/do-actions");
 
 task("deploy-dxdao-contracts", "Deploy dxdao-contracts")
   .addParam("deployconfig", "The deploy config json in string format")

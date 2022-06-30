@@ -171,10 +171,13 @@ const deployDao = async function (daoConfig, networkContracts) {
   const contributionReward = await ContributionReward.new();
   const redeemer = await Redeemer.new();
 
-  // The ContributionReward scheme was designed by DAOstack to be used as an universal scheme,
-  // which means that index the voting params used in the voting machine hash by voting machine
-  // So the voting parameters are set in the voting machine, and that voting parameters hash is registered in the ContributionReward
-  // And then other voting parameter hash is calculated for that voting machine and contribution reward, and that is the one used in the controller
+  /* 
+  The ContributionReward scheme was designed by DAOstack to be used as an universal scheme,
+  which means that index the voting params used in the voting machine hash by voting machine
+  So the voting parameters are set in the voting machine, and that voting parameters hash is 
+  registered in the ContributionReward and then other voting parameter hash is calculated 
+  for that voting machine and contribution reward, and that is the one used in the controller
+  */
   const contributionRewardParamsHash = await votingMachine.getParametersHash(
     [
       daoConfig.contributionReward.queuedVoteRequiredPercentage.toString(),
@@ -281,7 +284,8 @@ const deployDao = async function (daoConfig, networkContracts) {
       `${schemeConfiguration.name} deployed to: ${newScheme.address}`
     );
 
-    // This is simpler than the ContributionReward, just register the params in the VotingMachine and use that ones for the schem registration
+    /* This is simpler than the ContributionReward, just register the params in the 
+    VotingMachine and use that ones for the schem registration */
     let schemeParamsHash = await votingMachine.getParametersHash(
       [
         schemeConfiguration.queuedVoteRequiredPercentage.toString(),
