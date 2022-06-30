@@ -179,7 +179,7 @@ contract BaseERC20Guild {
         require(_proposalTime > 0, "ERC20Guild: proposal time has to be more than 0");
         require(_lockTime >= _proposalTime, "ERC20Guild: lockTime has to be higher or equal to proposalTime");
         require(_votingPowerForProposalExecution > 0, "ERC20Guild: voting power for execution has to be more than 0");
-        require(_voteGas <= 117000, "ERC20Guild: vote gas has to be equal or lower than 117.000");
+        require(_voteGas <= 117000, "ERC20Guild: vote gas has to be equal or lower than 117000");
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerForProposalExecution = _votingPowerForProposalExecution;
