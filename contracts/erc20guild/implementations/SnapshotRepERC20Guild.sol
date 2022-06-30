@@ -163,7 +163,8 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
             "SnapshotERC20Guild: Cant decrease votingPower in vote"
         );
         require(
-            proposalVotes[proposalId][voter].action == 0 || proposalVotes[proposalId][voter].action == action,
+            (proposalVotes[proposalId][voter].action == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
+                proposalVotes[proposalId][voter].action == action,
             "SnapshotERC20Guild: Cant change action voted, only increase votingPower"
         );
 

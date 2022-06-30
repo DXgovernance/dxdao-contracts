@@ -136,8 +136,8 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         require(proposals[proposalId].state == ProposalState.Active, "SnapshotERC20Guild: Proposal already executed");
         require(proposals[proposalId].endTime < block.timestamp, "SnapshotERC20Guild: Proposal hasn't ended yet");
         uint256 winningAction = 0;
-        uint256 i = 1;
-        for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
+        uint256 i = 0;
+        for (i = 0; i < proposals[proposalId].totalVotes.length; i++) {
             if (
                 proposals[proposalId].totalVotes[i] >=
                 getVotingPowerForProposalExecution(proposalsSnapshots[proposalId]) &&
