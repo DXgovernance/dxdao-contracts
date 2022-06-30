@@ -696,7 +696,7 @@ contract("ERC20Guild", function (accounts) {
           guild: erc20Guild,
           proposalId: guildProposalId,
           action: 1,
-          account: accounts[3]
+          account: accounts[3],
         }),
         "ERC20Guild: Cant change action voted, only increase votingPower"
       );
