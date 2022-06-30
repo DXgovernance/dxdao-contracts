@@ -636,7 +636,7 @@ contract("ERC20Guild", function (accounts) {
     });
   });
 
-  describe.only("setVote", function () {
+  describe("setVote", function () {
     beforeEach(async function () {
       await lockTokens();
     });
