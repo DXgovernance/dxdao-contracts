@@ -80,7 +80,9 @@ contract ERC20GuildUpgradeable is BaseERC20Guild, Initializable {
             address(0),
             address(this),
             address(this),
-            bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")),
+            bytes4(
+                keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")
+            ),
             0,
             true
         );

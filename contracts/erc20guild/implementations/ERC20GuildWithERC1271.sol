@@ -9,8 +9,8 @@ import "../ERC20GuildUpgradeable.sol";
 /*
   @title ERC20GuildWithERC1271
   @author github:AugustoL
-  @dev The guild can sign EIP1271 messages, to do this the guild needs to call itself 
-    and allow the signature to be verified with and extra signature of any account with voting power.
+  @dev The guild can sign EIP1271 messages, to do this the guild needs to call itself and allow 
+    the signature to be verified with and extra signature of any account with voting power.
 */
 contract ERC20GuildWithERC1271 is ERC20GuildUpgradeable, IERC1271Upgradeable {
     using SafeMathUpgradeable for uint256;
@@ -72,7 +72,9 @@ contract ERC20GuildWithERC1271 is ERC20GuildUpgradeable, IERC1271Upgradeable {
             address(0),
             address(this),
             address(this),
-            bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")),
+            bytes4(
+                keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")
+            ),
             0,
             true
         );

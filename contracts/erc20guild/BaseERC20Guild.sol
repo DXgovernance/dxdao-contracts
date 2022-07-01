@@ -103,6 +103,12 @@ contract BaseERC20Guild {
     // The total amount of tokens locked
     uint256 public totalLocked;
 
+    // The number of minimum guild members to be able to create a proposal
+    uint256 public minimumMembersForProposalCreation;
+
+    // The number of minimum tokens locked to be able to create a proposal
+    uint256 public minimumTokensLockedForProposalCreation;
+
     // The address of the Token Vault contract, where tokens are being held for the users
     TokenVault public tokenVault;
 
@@ -172,7 +178,9 @@ contract BaseERC20Guild {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
-        uint256 _lockTime
+        uint256 _lockTime,
+        uint256 _minimumMembersForProposalCreation,
+        uint256 _minimumTokensLockedForProposalCreation
     ) external virtual {
         require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself when initialized");
         require(_proposalTime > 0, "ERC20Guild: proposal time has to be more tha 0");
@@ -186,6 +194,8 @@ contract BaseERC20Guild {
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
         lockTime = _lockTime;
+        minimumMembersForProposalCreation = _minimumMembersForProposalCreation;
+        minimumTokensLockedForProposalCreation = _minimumTokensLockedForProposalCreation;
     }
 
     // @dev Set the allowance of a call to be executed by the guild
@@ -225,7 +235,11 @@ contract BaseERC20Guild {
                 address(0),
                 address(this),
                 address(this),
-                bytes4(keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))
+                bytes4(
+                    keccak256(
+                        "setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)"
+                    )
+                )
             ) > 0,
             "ERC20Guild: setConfig function allowance cant be turned off"
         );
@@ -271,6 +285,16 @@ contract BaseERC20Guild {
         string memory title,
         string memory contentHash
     ) public virtual returns (bytes32) {
+        require(
+            totalLocked >= minimumTokensLockedForProposalCreation,
+            "ERC20Guild: Not enough tokens locked to create a proposal"
+        );
+
+        require(
+            totalMembers >= minimumMembersForProposalCreation,
+            "ERC20Guild: Not enough members to create a proposal"
+        );
+
         require(activeProposalsNow < getMaxActiveProposals(), "ERC20Guild: Maximum amount of active proposals reached");
         require(
             votingPowerOf(msg.sender) >= getVotingPowerForProposalCreation(),
@@ -567,6 +591,14 @@ contract BaseERC20Guild {
     // @dev Get the activeProposalsNow
     function getActiveProposalsNow() external view returns (uint256) {
         return activeProposalsNow;
+    }
+
+    function getMinimumMembersForProposalCreation() external view returns (uint256) {
+        return minimumMembersForProposalCreation;
+    }
+
+    function getMinimumTokensLockedForProposalCreation() external view returns (uint256) {
+        return minimumTokensLockedForProposalCreation;
     }
 
     // @dev Get if a signed vote has been executed or not
