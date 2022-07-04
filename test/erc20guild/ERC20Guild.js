@@ -1081,7 +1081,18 @@ contract("ERC20Guild", function (accounts) {
             to: [erc20Guild.address],
             data: [
               await new web3.eth.Contract(ERC20Guild.abi).methods
-                .setConfig(30, 30, 200, 100, VOTE_GAS, MAX_GAS_PRICE, 3, 60)
+                .setConfig(
+                  30,
+                  30,
+                  200,
+                  100,
+                  VOTE_GAS,
+                  MAX_GAS_PRICE,
+                  3,
+                  60,
+                  0,
+                  0
+                )
                 .encodeABI(),
             ],
             value: [0],
@@ -2190,7 +2201,9 @@ contract("ERC20Guild", function (accounts) {
                     incorrectVoteGas,
                     REAL_GAS_PRICE,
                     3,
-                    60
+                    60,
+                    0,
+                    0
                   )
                   .encodeABI(),
               ],
