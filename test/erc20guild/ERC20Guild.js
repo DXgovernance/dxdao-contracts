@@ -1794,7 +1794,7 @@ contract("ERC20Guild", function (accounts) {
     });
 
     describe("with high gas vote setting (above cost) and standard gas price", function () {
-      it("can pay ETH to the guild (ot cover votes)", async function () {
+      it("can pay ETH to the guild (to cover votes)", async function () {
         const tracker = await balance.tracker(erc20Guild.address);
         let guildBalance = await tracker.delta();
         guildBalance.should.be.bignumber.equal(ZERO); // empty
@@ -1893,9 +1893,73 @@ contract("ERC20Guild", function (accounts) {
           );
         }
       });
+
+      it("cannot empty contract if voteGas is incorrectly set", async function () {
+        // send ether to cover gas
+        await send.ether(accounts[0], erc20Guild.address, ether("10"), {
+          from: accounts[0],
+        });
+
+        let incorrectVoteGas = new BN(220000);
+        const guildProposalIncorrectVoteGas = await createProposal({
+          guild: erc20Guild,
+          actions: [
+            {
+              to: [erc20Guild.address],
+              data: [
+                await new web3.eth.Contract(ERC20Guild.abi).methods
+                  .setConfig(
+                    30,
+                    30,
+                    200,
+                    100,
+                    incorrectVoteGas,
+                    REAL_GAS_PRICE,
+                    3,
+                    60
+                  )
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          account: accounts[3],
+        });
+        await setVotesOnProposal({
+          guild: erc20Guild,
+          proposalId: guildProposalIncorrectVoteGas,
+          action: 1,
+          account: accounts[4],
+        });
+        await setVotesOnProposal({
+          guild: erc20Guild,
+          proposalId: guildProposalIncorrectVoteGas,
+          action: 1,
+          account: accounts[5],
+        });
+        await time.increase(time.duration.seconds(31));
+        await expectRevert(
+          erc20Guild.endProposal(guildProposalIncorrectVoteGas),
+          "ERC20Guild: Proposal call failed"
+        );
+
+        const newProposal = await createProposal(genericProposal);
+        const accountBalanceTracker = await balance.tracker(accounts[1]);
+
+        await setVotesOnProposal({
+          guild: erc20Guild,
+          proposalId: newProposal,
+          action: 1,
+          account: accounts[1],
+        });
+
+        // Checks that the voter spent more than it got refunded
+        let accountBalance = await accountBalanceTracker.delta();
+        accountBalance.negative.should.be.equal(1); // The variation in balance is negative
+      });
     });
 
-    it("only refunds upto max gas price", async function () {
+    it("only refunds up to max gas price", async function () {
       const guildProposalId = await createProposal(genericProposal);
 
       const guildTracker = await balance.tracker(erc20Guild.address);
