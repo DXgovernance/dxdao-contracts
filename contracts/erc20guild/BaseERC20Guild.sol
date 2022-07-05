@@ -103,6 +103,12 @@ contract BaseERC20Guild {
     // The total amount of tokens locked
     uint256 public totalLocked;
 
+    // The number of minimum guild members to be able to create a proposal
+    uint256 public minimumMembersForProposalCreation;
+
+    // The number of minimum tokens locked to be able to create a proposal
+    uint256 public minimumTokensLockedForProposalCreation;
+
     // The address of the Token Vault contract, where tokens are being held for the users
     TokenVault public tokenVault;
 
@@ -152,8 +158,7 @@ contract BaseERC20Guild {
 
     bool internal isExecutingProposal;
 
-    // @dev Allows the voting machine to receive ether to be used to refund voting costs
-    receive() external payable {}
+    fallback() external payable {}
 
     // @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initialized
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
@@ -161,7 +166,7 @@ contract BaseERC20Guild {
     // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // action
     // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
-    // @param _voteGas The amount of gas in wei unit used for vote refunds
+    // @param _voteGas The amount of gas in wei unit used for vote refunds. Can't be higher than the gas used by setVote (117000)
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
     // @param _lockTime The minimum amount of seconds that the tokens would be locked
@@ -173,12 +178,15 @@ contract BaseERC20Guild {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
-        uint256 _lockTime
+        uint256 _lockTime,
+        uint256 _minimumMembersForProposalCreation,
+        uint256 _minimumTokensLockedForProposalCreation
     ) external virtual {
         require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself when initialized");
-        require(_proposalTime > 0, "ERC20Guild: proposal time has to be more tha 0");
+        require(_proposalTime > 0, "ERC20Guild: proposal time has to be more than 0");
         require(_lockTime >= _proposalTime, "ERC20Guild: lockTime has to be higher or equal to proposalTime");
         require(_votingPowerForProposalExecution > 0, "ERC20Guild: voting power for execution has to be more than 0");
+        require(_voteGas <= 117000, "ERC20Guild: vote gas has to be equal or lower than 117000");
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerForProposalExecution = _votingPowerForProposalExecution;
@@ -187,6 +195,8 @@ contract BaseERC20Guild {
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
         lockTime = _lockTime;
+        minimumMembersForProposalCreation = _minimumMembersForProposalCreation;
+        minimumTokensLockedForProposalCreation = _minimumTokensLockedForProposalCreation;
     }
 
     // @dev Create a proposal with an static call data and extra information
@@ -204,6 +214,16 @@ contract BaseERC20Guild {
         string memory title,
         string memory contentHash
     ) public virtual returns (bytes32) {
+        require(
+            totalLocked >= minimumTokensLockedForProposalCreation,
+            "ERC20Guild: Not enough tokens locked to create a proposal"
+        );
+
+        require(
+            totalMembers >= minimumMembersForProposalCreation,
+            "ERC20Guild: Not enough members to create a proposal"
+        );
+
         require(activeProposalsNow < getMaxActiveProposals(), "ERC20Guild: Maximum amount of active proposals reached");
         require(
             votingPowerOf(msg.sender) >= getVotingPowerForProposalCreation(),
@@ -245,8 +265,8 @@ contract BaseERC20Guild {
         require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
 
         uint256 winningAction = 0;
-        uint256 i = 1;
-        for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
+        uint256 i = 0;
+        for (i = 0; i < proposals[proposalId].totalVotes.length; i++) {
             if (
                 proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution() &&
                 proposals[proposalId].totalVotes[i] > proposals[proposalId].totalVotes[winningAction]
@@ -356,6 +376,7 @@ contract BaseERC20Guild {
     function withdrawTokens(uint256 tokenAmount) external virtual {
         require(votingPowerOf(msg.sender) >= tokenAmount, "ERC20Guild: Unable to withdraw more tokens than locked");
         require(tokensLocked[msg.sender].timestamp < block.timestamp, "ERC20Guild: Tokens still locked");
+        require(tokenAmount > 0, "ERC20Guild: amount of tokens to withdraw must be greater than 0");
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(tokenAmount);
         totalLocked = totalLocked.sub(tokenAmount);
         tokenVault.withdraw(msg.sender, tokenAmount);
@@ -380,7 +401,8 @@ contract BaseERC20Guild {
             "ERC20Guild: Invalid votingPower amount"
         );
         require(
-            proposalVotes[proposalId][voter].action == 0 || proposalVotes[proposalId][voter].action == action,
+            (proposalVotes[proposalId][voter].action == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
+                proposalVotes[proposalId][voter].action == action,
             "ERC20Guild: Cant change action voted, only increase votingPower"
         );
 
@@ -392,10 +414,16 @@ contract BaseERC20Guild {
         proposalVotes[proposalId][voter].action = action;
         proposalVotes[proposalId][voter].votingPower = votingPower;
 
+        // Make sure tokens don't get unlocked before the proposal ends, to prevent double voting.
+        if (tokensLocked[voter].timestamp < proposals[proposalId].endTime) {
+            tokensLocked[voter].timestamp = proposals[proposalId].endTime;
+        }
+
         emit VoteAdded(proposalId, action, voter, votingPower);
 
         if (voteGas > 0) {
             uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
+
             if (address(this).balance >= gasRefund && !address(msg.sender).isContract()) {
                 (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
                 require(success, "Failed to refund gas");
@@ -478,6 +506,14 @@ contract BaseERC20Guild {
     // @dev Get the activeProposalsNow
     function getActiveProposalsNow() external view returns (uint256) {
         return activeProposalsNow;
+    }
+
+    function getMinimumMembersForProposalCreation() external view returns (uint256) {
+        return minimumMembersForProposalCreation;
+    }
+
+    function getMinimumTokensLockedForProposalCreation() external view returns (uint256) {
+        return minimumTokensLockedForProposalCreation;
     }
 
     // @dev Get if a signed vote has been executed or not

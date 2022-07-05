@@ -204,6 +204,12 @@ contract("SnapshotERC20Guild", function (accounts) {
         "ERC20: transfer amount exceeds balance"
       );
 
+      // Cannot withdraw zero tokens
+      await expectRevert(
+        erc20Guild.withdrawTokens(0, { from: accounts[1] }),
+        "SnapshotERC20Guild: amount of tokens to withdraw must be greater than 0"
+      );
+
       // try to release more than locked and fail
       await expectRevert(
         erc20Guild.withdrawTokens(50001, { from: accounts[1] }),
@@ -224,6 +230,26 @@ contract("SnapshotERC20Guild", function (accounts) {
 
       const votes = await erc20Guild.votingPowerOf(accounts[1]);
       votes.should.be.bignumber.equal("0");
+    });
+  });
+
+  describe("votingPowerOfMultipleAt", () => {
+    it("should revert if accounts and snapshotIds don't have the same length", async () => {
+      await expectRevert(
+        erc20Guild.votingPowerOfMultipleAt(
+          [accounts[1], accounts[2]],
+          [1, 2, 3, 4]
+        ),
+        "SnapshotERC20Guild: SnapshotIds and accounts must have the same length"
+      );
+    });
+    it("should pass if accounts and snapshotIds have the same length", async () => {
+      const votes = await erc20Guild.votingPowerOfMultipleAt(
+        [accounts[1], accounts[2]],
+        [1, 2]
+      );
+      votes[0].should.be.bignumber.equal("0");
+      votes[1].should.be.bignumber.equal("50000");
     });
   });
 });

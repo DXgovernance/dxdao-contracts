@@ -141,6 +141,10 @@ interface IERC20Guild {
 
     function getActiveProposalsNow() external view returns (uint256);
 
+    function getMinimumMembersForProposalCreation() external view returns (uint256);
+
+    function getMinimumTokensLockedForProposalCreation() external view returns (uint256);
+
     function getSignedVote(bytes32 signedVoteHash) external view returns (bool);
 
     function getProposalsIds() external view returns (bytes32[] memory);

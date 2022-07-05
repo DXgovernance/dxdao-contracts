@@ -429,7 +429,6 @@ contract WalletScheme {
         uint256 _amount,
         bytes32
     ) external onlyVotingMachine returns (bool) {
-        // return ControllerInterface(avatar.owner()).externalTokenTransfer(_stakingToken, _beneficiary, _amount, avatar);
         return
             abi.decode(
                 controller.functionCall(

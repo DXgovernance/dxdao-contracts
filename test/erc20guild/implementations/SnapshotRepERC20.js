@@ -188,7 +188,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       );
     });
 
-    it("Should fail if user has voted before with larger amount of votingPower and try to decrease it on new vote", async () => {
+    it("Should fail if user voted before and vote again with less votingPower", async () => {
       const account = accounts[2];
       const action = 0;
       const votingPower = new BN(1000);
@@ -236,12 +236,9 @@ contract("SnapshotRepERC20Guild", function (accounts) {
   });
 
   describe("setSignedVote", () => {
-    let proposalId, snapshotId;
+    let proposalId;
     beforeEach(async () => {
       proposalId = await createProposal(createGenericProposal());
-      snapshotId = new BN(
-        await snapshotRepErc20Guild.getProposalSnapshotId(proposalId)
-      );
     });
 
     it("Should fail if user has voted", async () => {
