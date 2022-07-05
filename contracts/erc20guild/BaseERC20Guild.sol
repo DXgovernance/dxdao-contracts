@@ -337,12 +337,20 @@ contract BaseERC20Guild {
         require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
 
         uint256 winningAction = 0;
-        uint256 i = 0;
-        for (i = 0; i < proposals[proposalId].totalVotes.length; i++) {
+        uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
+        uint256 i = 1;
+        for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
             if (
                 proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution() &&
-                proposals[proposalId].totalVotes[i] > proposals[proposalId].totalVotes[winningAction]
-            ) winningAction = i;
+                proposals[proposalId].totalVotes[i] >= highestVoteAmount
+            ) {
+                if (proposals[proposalId].totalVotes[i] == highestVoteAmount) {
+                    winningAction = 0;
+                } else {
+                    winningAction = i;
+                    highestVoteAmount = proposals[proposalId].totalVotes[i];
+                }
+            }
         }
 
         if (winningAction == 0) {
