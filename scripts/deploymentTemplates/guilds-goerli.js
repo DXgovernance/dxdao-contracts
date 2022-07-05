@@ -125,7 +125,7 @@ task(
     guilds: [
       {
         token: "SWPR",
-        contractName: "EnforcedBinarySnapshotERC20Guild",
+        contractName: "ERC20GuildUpgradeable",
         name: "SWPRGuild",
         proposalTime: moment.duration(10, "minutes").asSeconds(),
         timeForExecution: moment.duration(5, "minutes").asSeconds(),
