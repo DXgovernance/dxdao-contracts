@@ -254,7 +254,7 @@ contract("ERC20Guild", function (accounts) {
           60,
           permissionRegistry.address
         ),
-        "ERC20Guild: proposal time has to be more tha 0"
+        "ERC20Guild: proposal time has to be more than 0"
       );
     });
 
@@ -756,6 +756,22 @@ contract("ERC20Guild", function (accounts) {
       );
     });
 
+    it("cannot create a proposal with invalid totalActions", async function () {
+      const invalidTotalActions = 3;
+      await expectRevert(
+        erc20Guild.createProposal(
+          [actionMockA.address, actionMockA.address],
+          ["0x00", "0x00"],
+          [1, 1],
+          invalidTotalActions,
+          "Guild Test Proposal",
+          constants.SOME_HASH,
+          { from: accounts[2] }
+        ),
+        "ERC20Guild: Invalid totalActions or action calls length"
+      );
+    });
+
     it("cannot create a proposal without enough creation votes", async function () {
       await expectRevert(
         erc20Guild.createProposal(
@@ -903,7 +919,7 @@ contract("ERC20Guild", function (accounts) {
           action: 1,
           account: accounts[3],
         }),
-        "ERC20Guild: Cant change action voted, only increase votingPower"
+        "ERC20Guild: Cannot change action voted, only increase votingPower"
       );
     });
   });

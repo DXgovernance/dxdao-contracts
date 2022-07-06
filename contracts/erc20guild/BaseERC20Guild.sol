@@ -20,7 +20,7 @@ import "../utils/TokenVault.sol";
   The token used for voting needs to be locked for a minimum period of time in order to be used as voting power.
   Every time tokens are locked the timestamp of the lock is updated and increased the lock time seconds.
   Once the lock time passed the voter can withdraw his tokens.
-  Each proposal has actions, the voter can vote only once per proposal and cant change the chosen action, only
+  Each proposal has actions, the voter can vote only once per proposal and cannot change the chosen action, only
   increase the voting power of his vote.
   A proposal ends when the minimum amount of total voting power is reached on a proposal action before the proposal
   finish.
@@ -166,7 +166,8 @@ contract BaseERC20Guild {
     // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // action
     // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
-    // @param _voteGas The amount of gas in wei unit used for vote refunds. Can't be higher than the gas used by setVote (117000)
+    // @param _voteGas The amount of gas in wei unit used for vote refunds.
+    // Can't be higher than the gas used by setVote (117000)
     // @param _maxGasPrice The maximum gas price used for vote refunds
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
     // @param _lockTime The minimum amount of seconds that the tokens would be locked
@@ -182,7 +183,7 @@ contract BaseERC20Guild {
         uint256 _minimumMembersForProposalCreation,
         uint256 _minimumTokensLockedForProposalCreation
     ) external virtual {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself when initialized");
+        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself or when initialized");
         require(_proposalTime > 0, "ERC20Guild: proposal time has to be more than 0");
         require(_lockTime >= _proposalTime, "ERC20Guild: lockTime has to be higher or equal to proposalTime");
         require(_votingPowerForProposalExecution > 0, "ERC20Guild: voting power for execution has to be more than 0");
@@ -242,7 +243,7 @@ contract BaseERC20Guild {
                     )
                 )
             ) > 0,
-            "ERC20Guild: setConfig function allowance cant be turned off"
+            "ERC20Guild: setConfig function allowance cannot be turned off"
         );
         require(
             permissionRegistry.getPermissionTime(
@@ -251,7 +252,7 @@ contract BaseERC20Guild {
                 address(this),
                 bytes4(keccak256("setPermission(address[],address[],bytes4[],uint256[],bool[])"))
             ) > 0,
-            "ERC20Guild: setPermission function allowance cant be turned off"
+            "ERC20Guild: setPermission function allowance cannot be turned off"
         );
         require(
             permissionRegistry.getPermissionTime(
@@ -260,7 +261,7 @@ contract BaseERC20Guild {
                 address(this),
                 bytes4(keccak256("setPermissionDelay(uint256)"))
             ) > 0,
-            "ERC20Guild: setPermissionDelay function allowance cant be turned off"
+            "ERC20Guild: setPermissionDelay function allowance cannot be turned off"
         );
     }
 
@@ -306,9 +307,15 @@ contract BaseERC20Guild {
             "ERC20Guild: Wrong length of to, data or value arrays"
         );
         require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
+        require(
+            totalActions <= to.length && value.length.mod(totalActions) == 0,
+            "ERC20Guild: Invalid totalActions or action calls length"
+        );
+
         for (uint256 i = 0; i < to.length; i++) {
-            require(to[i] != address(permissionRegistry), "ERC20Guild: Cant call permission registry directly");
+            require(to[i] != address(permissionRegistry), "ERC20Guild: Cannot call permission registry directly");
         }
+
         bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, block.timestamp, totalProposals));
         totalProposals = totalProposals.add(1);
         Proposal storage newProposal = proposals[proposalId];
@@ -490,7 +497,7 @@ contract BaseERC20Guild {
         uint256 action,
         uint256 votingPower
     ) internal {
-        require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cant be voted");
+        require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
         require(
             (votingPowerOf(voter) >= votingPower) && (votingPower > proposalVotes[proposalId][voter].votingPower),
             "ERC20Guild: Invalid votingPower amount"
@@ -498,7 +505,7 @@ contract BaseERC20Guild {
         require(
             (proposalVotes[proposalId][voter].action == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
                 proposalVotes[proposalId][voter].action == action,
-            "ERC20Guild: Cant change action voted, only increase votingPower"
+            "ERC20Guild: Cannot change action voted, only increase votingPower"
         );
 
         proposals[proposalId].totalVotes[action] = proposals[proposalId]

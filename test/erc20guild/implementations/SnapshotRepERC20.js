@@ -165,7 +165,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       });
       await expectRevert(
         voteTrigger,
-        "SnapshotERC20Guild: Proposal ended, cant be voted"
+        "SnapshotRepERC20Guild: Proposal ended, cant be voted"
       );
     });
 
@@ -184,7 +184,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       );
       await expectRevert(
         voteTrigger,
-        "SnapshotERC20Guild: Invalid votingPower amount"
+        "SnapshotRepERC20Guild: Invalid votingPower amount"
       );
     });
 
@@ -206,7 +206,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotERC20Guild: Cant decrease votingPower in vote"
+        "SnapshotRepERC20Guild: Cant decrease votingPower in vote"
       );
     });
 
@@ -230,7 +230,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotERC20Guild: Cant change action voted, only increase votingPower"
+        "SnapshotRepERC20Guild: Cant change action voted, only increase votingPower"
       );
     });
   });
@@ -277,7 +277,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotERC20Guild: Already voted"
+        "SnapshotRepERC20Guild: Already voted"
       );
     });
 
@@ -308,7 +308,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotERC20Guild: Wrong signer"
+        "SnapshotRepERC20Guild: Wrong signer"
       );
     });
   });
@@ -316,7 +316,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     it("Should revert action", async () => {
       await expectRevert(
         snapshotRepErc20Guild.lockTokens(new BN("100")),
-        "SnapshotERC20Guild: token vault disabled"
+        "SnapshotRepERC20Guild: token vault disabled"
       );
     });
   });
@@ -325,7 +325,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     it("Should revert action", async () => {
       await expectRevert(
         snapshotRepErc20Guild.withdrawTokens(new BN("100")),
-        "SnapshotERC20Guild: token vault disabled"
+        "SnapshotRepERC20Guild: token vault disabled"
       );
     });
   });
