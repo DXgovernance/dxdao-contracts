@@ -94,8 +94,9 @@ contract DXDVotingMachine is GenesisProtocol {
             "DXDVotingMachine: Address not registered in organizationRefounds"
         );
         require(organizationRefunds[msg.sender].balance > 0, "DXDVotingMachine: Organization refund balance is zero");
-        msg.sender.transfer(organizationRefunds[msg.sender].balance);
+        uint256 organizationBalance = organizationRefunds[msg.sender].balance;
         organizationRefunds[msg.sender].balance = 0;
+        msg.sender.transfer(organizationBalance);
     }
 
     /**
