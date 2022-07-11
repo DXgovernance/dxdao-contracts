@@ -157,7 +157,19 @@ contract WalletScheme {
             bytes4 _callDataFuncSignature;
             uint256 _value;
 
-            permissionRegistry.setERC20Balances();
+            if (doAvatarGenericCalls) {
+                address(controller).call(
+                    abi.encodeWithSignature(
+                        "genericCall(address,bytes,address,uint256)",
+                        address(permissionRegistry),
+                        abi.encodeWithSignature("setERC20Balances()"),
+                        avatar,
+                        0
+                    )
+                );
+            } else {
+                permissionRegistry.setERC20Balances();
+            }
 
             for (uint256 i = 0; i < proposal.to.length; i++) {
                 _asset = address(0);
@@ -208,7 +220,7 @@ contract WalletScheme {
                 "WalletScheme: maxRepPercentageChange passed"
             );
 
-            permissionRegistry.checkERC20Limits(address(this));
+            require(permissionRegistry.checkERC20Limits(doAvatarGenericCalls ? avatar : address(this)));
 
             proposal.state = ProposalState.ExecutionSucceeded;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
