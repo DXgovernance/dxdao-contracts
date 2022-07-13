@@ -24,10 +24,7 @@ const votingPowerForProposalExecution = 5000;
 const votingPowerForProposalCreation = 100;
 
 contract("SnapshotRepERC20Guild", function (accounts) {
-  let guildToken,
-    snapshotRepErc20Guild,
-    permissionRegistry,
-    createGenericProposal;
+  let guildToken, snapshotRepErc20Guild, permissionRegistry, genericProposal;
 
   beforeEach(async function () {
     const repHolders = accounts.slice(0, 6);
@@ -63,39 +60,32 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
     await guildToken.transferOwnership(snapshotRepErc20Guild.address);
 
-    createGenericProposal = (config = {}) =>
-      Object.assign(
-        {
-          guild: snapshotRepErc20Guild,
-          actions: [
-            {
-              to: [constants.ANY_ADDRESS, constants.ANY_ADDRESS],
-              data: ["0x00", "0x00"],
-              value: [new BN("0"), new BN("1")],
-            },
-          ],
-          account: accounts[1],
-        },
-        config
-      );
-
     const setGlobaLPermissionProposal = await createProposal({
       guild: snapshotRepErc20Guild,
       actions: [
         {
-          to: [snapshotRepErc20Guild.address],
+          to: [permissionRegistry.address, permissionRegistry.address],
           data: [
-            await new web3.eth.Contract(SnapshotRepERC20Guild.abi).methods
-              .setPermission(
-                [constants.NULL_ADDRESS],
-                [constants.ANY_ADDRESS],
-                [constants.ANY_FUNC_SIGNATURE],
-                [100],
-                [true]
+            await new web3.eth.Contract(PermissionRegistry.abi).methods
+              .setETHPermission(
+                snapshotRepErc20Guild.address,
+                constants.NULL_ADDRESS,
+                constants.NULL_SIGNATURE,
+                100,
+                true
+              )
+              .encodeABI(),
+            await new web3.eth.Contract(PermissionRegistry.abi).methods
+              .setETHPermission(
+                snapshotRepErc20Guild.address,
+                accounts[1],
+                constants.NULL_SIGNATURE,
+                100,
+                true
               )
               .encodeABI(),
           ],
-          value: [0],
+          value: [0, 0],
         },
       ],
       account: accounts[1],
@@ -108,16 +98,30 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     });
     await time.increase(proposalTime); // wait for proposal to end
     await snapshotRepErc20Guild.endProposal(setGlobaLPermissionProposal);
+
+    genericProposal = {
+      guild: snapshotRepErc20Guild,
+      actions: [
+        {
+          to: [accounts[1]],
+          data: ["0x00"],
+          value: [new BN("1")],
+        },
+      ],
+      account: accounts[1],
+    };
   });
 
   describe("setVote", () => {
     let proposalId, snapshotId;
+
     beforeEach(async () => {
-      proposalId = await createProposal(createGenericProposal());
+      proposalId = await createProposal(genericProposal);
       snapshotId = new BN(
         await snapshotRepErc20Guild.getProposalSnapshotId(proposalId)
       );
     });
+
     it("Should Vote", async () => {
       const account = accounts[2];
       const action = new BN(0);
@@ -136,6 +140,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
         votingPower.toNumber()
       );
     });
+
     it("Should emmit VoteAdded Event", async () => {
       const account = accounts[2];
       const action = new BN(0);
@@ -238,7 +243,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
   describe("setSignedVote", () => {
     let proposalId;
     beforeEach(async () => {
-      proposalId = await createProposal(createGenericProposal());
+      proposalId = await createProposal(genericProposal);
     });
 
     it("Should fail if user has voted", async () => {
@@ -334,7 +339,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     it("Should return correct voting power", async () => {
       const account2 = accounts[2];
       const account4 = accounts[4];
-      const proposalId = await createProposal(createGenericProposal());
+      const proposalId = await createProposal(genericProposal);
 
       const snapshotId1 = new BN(
         await snapshotRepErc20Guild.getProposalSnapshotId(proposalId)
@@ -358,7 +363,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       const account = accounts[2];
       const initialVotingPowerAcc = new BN(balances[2]);
 
-      const proposalId1 = await createProposal(createGenericProposal());
+      const proposalId1 = await createProposal(genericProposal);
       const snapshotId1 = new BN(
         await snapshotRepErc20Guild.getProposalSnapshotId(proposalId1)
       );
@@ -399,7 +404,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       // execute burn proposal
       await snapshotRepErc20Guild.endProposal(burnProposalId);
 
-      const proposalId2 = await createProposal(createGenericProposal());
+      const proposalId2 = await createProposal(genericProposal);
       const snapshotId2 = new BN(
         await snapshotRepErc20Guild.getProposalSnapshotId(proposalId2)
       );

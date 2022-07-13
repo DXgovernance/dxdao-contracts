@@ -108,11 +108,12 @@ contract("PermissionRegistry", function (accounts) {
   });
 
   it("transfer ownerhip and set time delay", async function () {
-    await permissionRegistry.setPermission(
-      constants.NULL_ADDRESS,
+    const callData = helpers.testCallFrom(quickWalletScheme.address);
+
+    await permissionRegistry.setETHPermission(
       org.avatar.address,
-      constants.ANY_ADDRESS,
-      constants.ANY_FUNC_SIGNATURE,
+      actionMock.address,
+      callData.substring(0, 10),
       constants.MAX_UINT_256,
       false
     );
@@ -124,19 +125,16 @@ contract("PermissionRegistry", function (accounts) {
       "Ownable: caller is not the owner"
     );
 
-    const setPermissionDelayData = new web3.eth.Contract(
+    const setETHPermissionDelayData = new web3.eth.Contract(
       PermissionRegistry.abi
     ).methods
-      .setPermissionDelay(60)
+      .setETHPermissionDelay(quickWalletScheme.address, 60)
       .encodeABI();
 
-    const callData = helpers.testCallFrom(quickWalletScheme.address);
-
-    const setPermissionData = new web3.eth.Contract(
+    const setETHPermissionData = new web3.eth.Contract(
       PermissionRegistry.abi
     ).methods
-      .setPermission(
-        constants.NULL_ADDRESS,
+      .setETHPermission(
         quickWalletScheme.address,
         actionMock.address,
         callData.substring(0, 10),
@@ -147,17 +145,16 @@ contract("PermissionRegistry", function (accounts) {
 
     const tx = await masterWalletScheme.proposeCalls(
       [permissionRegistry.address, permissionRegistry.address],
-      [setPermissionData, setPermissionDelayData],
+      [setETHPermissionDelayData, setETHPermissionData],
       [0, 0],
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId1 = await helpers.getValueFromLogs(tx, "_proposalId");
 
     assert.equal(
       (
-        await permissionRegistry.getPermission(
-          constants.NULL_ADDRESS,
+        await permissionRegistry.getETHPermission(
           quickWalletScheme.address,
           actionMock.address,
           callData.substring(0, 10)
@@ -167,33 +164,31 @@ contract("PermissionRegistry", function (accounts) {
     );
 
     await votingMachine.contract.vote(
-      proposalId,
+      proposalId1,
       1,
       0,
       constants.NULL_ADDRESS,
       { from: accounts[2] }
     );
-    // const testCallAllowedFromTime = (
-    //   await permissionRegistry.getPermission(
-    //     constants.NULL_ADDRESS,
-    //     quickWalletScheme.address,
-    //     actionMock.address,
-    //     callData.substring(0, 10)
-    //   )
-    // ).fromTime;
-
-    // assert.equal(
-    //   testCallAllowedFromTime.toNumber(),
-    //   (await time.latest()).toNumber() + 60
-    // );
 
     assert.equal(
-      await permissionRegistry.getPermissionDelay(org.avatar.address),
+      (
+        await permissionRegistry.getETHPermission(
+          quickWalletScheme.address,
+          actionMock.address,
+          callData.substring(0, 10)
+        )
+      ).fromTime.toString(),
+      (await time.latest()).toNumber() + 60
+    );
+
+    assert.equal(
+      await permissionRegistry.getETHPermissionDelay(quickWalletScheme.address),
       60
     );
 
     assert.equal(
-      (await masterWalletScheme.getOrganizationProposal(proposalId)).state,
+      (await masterWalletScheme.getOrganizationProposal(proposalId1)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
 
@@ -206,16 +201,16 @@ contract("PermissionRegistry", function (accounts) {
     );
     const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
 
-    // The call to execute is not allowed YET, because we change the delay time to 30 seconds
-    // await expectRevert(
-    //   votingMachine.contract.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
-    //     from: accounts[2],
-    //   }),
-    //   "call not allowed"
-    // );
+    // The call to execute is not allowed YET, because we change the delay time to 60 seconds
+    await expectRevert(
+      votingMachine.contract.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
+        from: accounts[2],
+      }),
+      "PermissionRegistry: Call not allowed yet"
+    );
 
     // After increasing the time it will allow the proposal execution
-    await time.increase(30);
+    await time.increase(60);
     await votingMachine.contract.vote(
       proposalId2,
       1,
@@ -238,8 +233,7 @@ contract("PermissionRegistry", function (accounts) {
   it("remove permission from quickwallet", async function () {
     const callData = helpers.testCallFrom(quickWalletScheme.address);
 
-    await permissionRegistry.setPermission(
-      constants.NULL_ADDRESS,
+    await permissionRegistry.setETHPermission(
       quickWalletScheme.address,
       actionMock.address,
       callData.substring(0, 10),
@@ -247,17 +241,16 @@ contract("PermissionRegistry", function (accounts) {
       true
     );
 
-    const setPermissionDelayData = new web3.eth.Contract(
+    const setETHPermissionDelayData = new web3.eth.Contract(
       PermissionRegistry.abi
     ).methods
-      .setPermissionDelay(60)
+      .setETHPermissionDelay(quickWalletScheme.address, 60)
       .encodeABI();
 
-    const setPermissionData = new web3.eth.Contract(
+    const setETHPermissionData = new web3.eth.Contract(
       PermissionRegistry.abi
     ).methods
-      .setPermission(
-        constants.NULL_ADDRESS,
+      .setETHPermission(
         quickWalletScheme.address,
         actionMock.address,
         callData.substring(0, 10),
@@ -270,7 +263,7 @@ contract("PermissionRegistry", function (accounts) {
 
     const tx = await quickWalletScheme.proposeCalls(
       [permissionRegistry.address, permissionRegistry.address],
-      [setPermissionDelayData, setPermissionData],
+      [setETHPermissionDelayData, setETHPermissionData],
       [0, 0],
       constants.TEST_TITLE,
       constants.SOME_HASH
@@ -279,8 +272,7 @@ contract("PermissionRegistry", function (accounts) {
 
     assert.notEqual(
       (
-        await permissionRegistry.getPermission(
-          constants.NULL_ADDRESS,
+        await permissionRegistry.getETHPermission(
           quickWalletScheme.address,
           actionMock.address,
           callData.substring(0, 10)
@@ -291,8 +283,7 @@ contract("PermissionRegistry", function (accounts) {
 
     assert.equal(
       (
-        await permissionRegistry.getPermission(
-          constants.NULL_ADDRESS,
+        await permissionRegistry.getETHPermission(
           quickWalletScheme.address,
           actionMock.address,
           callData.substring(0, 10)
@@ -318,8 +309,7 @@ contract("PermissionRegistry", function (accounts) {
 
     assert.equal(
       (
-        await permissionRegistry.getPermission(
-          constants.NULL_ADDRESS,
+        await permissionRegistry.getETHPermission(
           quickWalletScheme.address,
           actionMock.address,
           callData.substring(0, 10)
@@ -330,8 +320,7 @@ contract("PermissionRegistry", function (accounts) {
 
     assert.equal(
       (
-        await permissionRegistry.getPermission(
-          constants.NULL_ADDRESS,
+        await permissionRegistry.getETHPermission(
           quickWalletScheme.address,
           actionMock.address,
           callData.substring(0, 10)

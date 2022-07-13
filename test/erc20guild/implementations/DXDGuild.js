@@ -31,8 +31,7 @@ contract("DXDGuild", function (accounts) {
     guildToken,
     dxdGuild,
     tokenVault,
-    walletSchemeProposalId,
-    walletSchemeProposalData;
+    walletSchemeProposalId;
 
   beforeEach(async function () {
     guildToken = await createAndSetupGuildToken(
@@ -76,15 +75,6 @@ contract("DXDGuild", function (accounts) {
       5
     );
 
-    await permissionRegistry.setPermission(
-      constants.NULL_ADDRESS,
-      org.avatar.address,
-      constants.ANY_ADDRESS,
-      constants.ANY_FUNC_SIGNATURE,
-      constants.MAX_UINT_256,
-      true
-    );
-
     await org.daoCreator.setSchemes(
       org.avatar.address,
       [walletScheme.address],
@@ -98,6 +88,12 @@ contract("DXDGuild", function (accounts) {
         }),
       ],
       "metaData"
+    );
+
+    await helpers.setDefaultControllerPermissions(
+      permissionRegistry,
+      org.avatar.address,
+      org.controller
     );
 
     actionMock = await ActionMock.new();
@@ -131,15 +127,17 @@ contract("DXDGuild", function (accounts) {
     await dxdGuild.lockTokens(100, { from: accounts[3] });
     await dxdGuild.lockTokens(250, { from: accounts[4] });
 
-    walletSchemeProposalData = helpers.encodeGenericCallData(
+    await permissionRegistry.setETHPermission(
       org.avatar.address,
       actionMock.address,
-      helpers.testCallFrom(org.avatar.address),
-      0
+      helpers.testCallFrom(org.avatar.address).substring(0, 10),
+      0,
+      true
     );
+
     const tx = await walletScheme.proposeCalls(
-      [org.controller.address],
-      [walletSchemeProposalData],
+      [actionMock.address],
+      [helpers.testCallFrom(org.avatar.address)],
       [0],
       "Test Title",
       constants.SOME_HASH
@@ -214,7 +212,10 @@ contract("DXDGuild", function (accounts) {
 
       expectEvent(txVote, "VoteAdded", { proposalId: proposalId });
       await time.increase(time.duration.seconds(31));
+      console.log("yeah");
       const receipt = await dxdGuild.endProposal(proposalId);
+      console.log("yeah");
+
       expectEvent(receipt, "ProposalStateChanged", {
         proposalId: proposalId,
         newState: "3",
