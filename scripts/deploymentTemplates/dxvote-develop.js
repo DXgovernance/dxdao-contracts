@@ -1,5 +1,6 @@
 require("@nomiclabs/hardhat-web3");
 const moment = require("moment");
+const { NULL_SIGNATURE } = require("../../test/helpers/constants");
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
@@ -314,11 +315,10 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
             to: ["PermissionRegistry"],
             callData: [
               new web3.eth.Contract(PermissionRegistry.abi).methods
-                .setPermission(
-                  NULL_ADDRESS,
+                .setETHPermission(
                   "0xE0FC07f3aC4F6AF1463De20eb60Cf1A764E259db",
                   "0x1A0370A6f5b6cE96B1386B208a8519552eb714D9",
-                  ANY_FUNC_SIGNATURE,
+                  NULL_SIGNATURE,
                   web3.utils.toWei("10"),
                   true
                 )
@@ -447,15 +447,15 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           from: "0x9578e973bbA0Cc33BDbc93C7f77bb3fe6D47d68a",
           data: {
             guildName: "DXDGuild",
-            to: ["DXDGuild"],
+            to: ["PermissionRegistry"],
             callData: [
-              new web3.eth.Contract(ERC20Guild.abi).methods
-                .setPermission(
-                  [NULL_ADDRESS],
-                  [ANY_ADDRESS],
-                  [ANY_FUNC_SIGNATURE],
-                  [web3.utils.toWei("5").toString()],
-                  [true]
+              new web3.eth.Contract(PermissionRegistry.abi).methods
+                .setETHPermission(
+                  networkContracts.addresses.DXDGuild,
+                  NULL_ADDRESS,
+                  NULL_SIGNATURE,
+                  web3.utils.toWei("5").toString(),
+                  true
                 )
                 .encodeABI(),
             ],

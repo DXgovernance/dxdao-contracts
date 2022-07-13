@@ -4,9 +4,6 @@ const { waitBlocks } = require("./wait");
 require("@nomiclabs/hardhat-web3");
 
 const deployGuilds = async function (guilds, networkContracts) {
-  const PermissionRegistry = await hre.artifacts.require("PermissionRegistry");
-  const permissionRegistry = await PermissionRegistry.new();
-
   // Each guild is created and initialized and use a previously deployed token or specific token address
 
   for (let i = 0; i < guilds.length; i++) {
@@ -27,7 +24,7 @@ const deployGuilds = async function (guilds, networkContracts) {
       guildToDeploy.maxGasPrice,
       guildToDeploy.maxActiveProposals,
       guildToDeploy.lockTime,
-      permissionRegistry.address
+      networkContracts.addresses.PermissionRegistry
     );
     await waitBlocks(1);
 

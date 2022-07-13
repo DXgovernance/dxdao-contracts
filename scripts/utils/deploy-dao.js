@@ -142,8 +142,7 @@ const deployDao = async function (daoConfig, networkContracts) {
     ).signature,
   ];
   for (var i = 0; i < notAllowedControllerFunctions.length; i++) {
-    await permissionRegistry.setPermission(
-      NULL_ADDRESS,
+    await permissionRegistry.setETHPermission(
       avatar.address,
       controller.address,
       notAllowedControllerFunctions[i],
@@ -152,8 +151,7 @@ const deployDao = async function (daoConfig, networkContracts) {
     );
   }
 
-  await permissionRegistry.setPermission(
-    NULL_ADDRESS,
+  await permissionRegistry.setETHPermission(
     avatar.address,
     controller.address,
     ANY_FUNC_SIGNATURE,
@@ -163,7 +161,7 @@ const deployDao = async function (daoConfig, networkContracts) {
 
   console.log("Permission Registry deployed to:", permissionRegistry.address);
   networkContracts.permissionRegistry = permissionRegistry.address;
-  networkContracts.addresses["PermissionRegstry"] = permissionRegistry.address;
+  networkContracts.addresses["PermissionRegistry"] = permissionRegistry.address;
   await waitBlocks(1);
 
   // Deploy ContributionReward Scheme
@@ -342,16 +340,16 @@ const deployDao = async function (daoConfig, networkContracts) {
       else if (networkContracts.addresses[permission.to])
         permission.to = networkContracts.addresses[permission.to];
 
-      await permissionRegistry.setPermission(
-        networkContracts.addresses[permission.asset] || permission.asset,
-        schemeConfiguration.doAvatarGenericCalls
-          ? avatar.address
-          : newScheme.address,
-        networkContracts.addresses[permission.to] || permission.to,
-        permission.functionSignature,
-        permission.value.toString(),
-        permission.allowed
-      );
+      if (permission.asset === NULL_ADDRESS)
+        await permissionRegistry.setETHPermission(
+          schemeConfiguration.doAvatarGenericCalls
+            ? avatar.address
+            : newScheme.address,
+          networkContracts.addresses[permission.to] || permission.to,
+          permission.functionSignature,
+          permission.value.toString(),
+          permission.allowed
+        );
     }
 
     // Set the boostedVoteRequiredPercentage
