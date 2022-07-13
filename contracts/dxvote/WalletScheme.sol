@@ -178,13 +178,12 @@ contract WalletScheme {
                 _value = proposal.value[i];
 
                 // The permission registry keeps track of all value transferred and checks call permission
-                if (_to != address(permissionRegistry))
-                    permissionRegistry.setETHPermissionUsed(
-                        doAvatarGenericCalls ? avatar : address(this),
-                        _to,
-                        _callDataFuncSignature,
-                        _value
-                    );
+                permissionRegistry.setETHPermissionUsed(
+                    doAvatarGenericCalls ? avatar : address(this),
+                    _to,
+                    _callDataFuncSignature,
+                    _value
+                );
 
                 // If controller address is set the code needs to be encoded to genericCall function
                 if (doAvatarGenericCalls && proposal.to[i] != address(controller)) {
