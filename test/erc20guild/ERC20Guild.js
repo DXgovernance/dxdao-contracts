@@ -264,7 +264,7 @@ contract("ERC20Guild", function (accounts) {
           60,
           permissionRegistry.address
         ),
-        "ERC20Guild: proposal time has to be more tha 0"
+        "ERC20Guild: proposal time has to be more than 0"
       );
     });
 
@@ -653,6 +653,22 @@ contract("ERC20Guild", function (accounts) {
       );
     });
 
+    it("cannot create a proposal with invalid totalActions", async function () {
+      const invalidTotalActions = 3;
+      await expectRevert(
+        erc20Guild.createProposal(
+          [actionMockA.address, actionMockA.address],
+          ["0x00", "0x00"],
+          [1, 1],
+          invalidTotalActions,
+          "Guild Test Proposal",
+          constants.SOME_HASH,
+          { from: accounts[2] }
+        ),
+        "ERC20Guild: Invalid totalActions or action calls length"
+      );
+    });
+
     it("cannot create a proposal without enough creation votes", async function () {
       await expectRevert(
         erc20Guild.createProposal(
@@ -800,7 +816,7 @@ contract("ERC20Guild", function (accounts) {
           action: 1,
           account: accounts[3],
         }),
-        "ERC20Guild: Cant change action voted, only increase votingPower"
+        "ERC20Guild: Cannot change action voted, only increase votingPower"
       );
     });
   });
@@ -973,6 +989,279 @@ contract("ERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(30));
       await erc20Guild.endProposal(guildProposalId);
       assert.equal((await erc20Guild.getProposal(guildProposalId)).state, 4);
+    });
+  });
+
+  describe("action votes tie checks", async function () {
+    let proposalWithThreeOptions;
+
+    beforeEach(async function () {
+      await lockTokens();
+
+      // decrease amount of voting power for proposal execution
+      // so more tests cases can be done
+      const decreaseVotingPowerNeeded = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setConfig(
+                  30,
+                  30,
+                  200,
+                  100,
+                  VOTE_GAS,
+                  MAX_GAS_PRICE,
+                  3,
+                  60,
+                  0,
+                  0
+                )
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: decreaseVotingPowerNeeded,
+        action: 1,
+        account: accounts[4],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: decreaseVotingPowerNeeded,
+        action: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(decreaseVotingPowerNeeded);
+
+      proposalWithThreeOptions = {
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [actionMockA.address, actionMockA.address],
+            data: [
+              helpers.testCallFrom(erc20Guild.address),
+              helpers.testCallFrom(erc20Guild.address, 666),
+            ],
+            value: [new BN("0"), new BN("0")],
+          },
+          {
+            to: [actionMockA.address, actionMockA.address],
+            data: [
+              helpers.testCallFrom(erc20Guild.address),
+              helpers.testCallFrom(erc20Guild.address, 666),
+            ],
+            value: [new BN("0"), new BN("0")],
+          },
+          {
+            to: [actionMockA.address, actionMockA.address],
+            data: [
+              helpers.testCallFrom(erc20Guild.address),
+              helpers.testCallFrom(erc20Guild.address, 666),
+            ],
+            value: [new BN("0"), new BN("0")],
+          },
+        ],
+        account: accounts[3],
+      };
+
+      const allowAllActionsMock = async function () {
+        const setPermissionToActionMockA = await createProposal({
+          guild: erc20Guild,
+          actions: [
+            {
+              to: [permissionRegistry.address],
+              data: [
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .setETHPermission(
+                    erc20Guild.address,
+                    actionMockA.address,
+                    helpers.testCallFrom(erc20Guild.address).substring(0, 10),
+                    1000,
+                    true
+                  )
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          account: accounts[1],
+        });
+        await setVotesOnProposal({
+          guild: erc20Guild,
+          proposalId: setPermissionToActionMockA,
+          action: 1,
+          account: accounts[4],
+        });
+        await setVotesOnProposal({
+          guild: erc20Guild,
+          proposalId: setPermissionToActionMockA,
+          action: 1,
+          account: accounts[5],
+        });
+        await time.increase(30);
+        await erc20Guild.endProposal(setPermissionToActionMockA);
+      };
+
+      await allowAllActionsMock();
+    });
+
+    it("if there is a tie between winning actions, reject", async function () {
+      const guildProposalId = await createProposal(proposalWithThreeOptions);
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[1],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 3,
+        account: accounts[2],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId);
+
+      const { state } = await erc20Guild.getProposal(guildProposalId);
+      assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.rejected);
+    });
+
+    it("when there are two tied losing actions and one winning action, execute", async function () {
+      const guildProposalId = await createProposal(proposalWithThreeOptions);
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[1],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 2,
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 3,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId);
+
+      const { state } = await erc20Guild.getProposal(guildProposalId);
+      assert.equal(
+        state,
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+      );
+    });
+
+    it("when there is a tie between an action and no action, reject", async function () {
+      const guildProposalId = await createProposal(proposalWithThreeOptions);
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 0,
+        account: accounts[1],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[2],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId);
+
+      const { state } = await erc20Guild.getProposal(guildProposalId);
+      assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.rejected);
+    });
+
+    it("when there is a tie between more than two actions, reject", async function () {
+      const guildProposalId = await createProposal(proposalWithThreeOptions);
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[1],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 2,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 3,
+        account: accounts[4],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId);
+
+      const { state } = await erc20Guild.getProposal(guildProposalId);
+      assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.rejected);
+    });
+
+    it("when there is a winning action in the middle of two tied actions, execute", async function () {
+      const guildProposalId = await createProposal(proposalWithThreeOptions);
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[1],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 2,
+        account: accounts[5],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 3,
+        account: accounts[3],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId);
+
+      const { state } = await erc20Guild.getProposal(guildProposalId);
+      assert.equal(
+        state,
+        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+      );
     });
   });
 

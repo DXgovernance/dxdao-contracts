@@ -60,7 +60,7 @@ contract ERC20GuildUpgradeable is BaseERC20Guild, Initializable {
         address _permissionRegistry
     ) public virtual initializer {
         require(address(_token) != address(0), "ERC20Guild: token cant be zero address");
-        require(_proposalTime > 0, "ERC20Guild: proposal time has to be more tha 0");
+        require(_proposalTime > 0, "ERC20Guild: proposal time has to be more than 0");
         require(_lockTime >= _proposalTime, "ERC20Guild: lockTime has to be higher or equal to proposalTime");
         require(_votingPowerForProposalExecution > 0, "ERC20Guild: voting power for execution has to be more than 0");
         name = _name;
