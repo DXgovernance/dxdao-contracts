@@ -186,11 +186,10 @@ contract PermissionRegistry is OwnableUpgradeable {
             _setValueTransferred(ethPermissions[from][address(0)][bytes4(0)], valueTransferred);
         }
 
-        if (ethPermissions[from][to][functionSignature].fromTime > 0) {
-            require(
-                ethPermissions[from][to][functionSignature].fromTime < block.timestamp,
-                "PermissionRegistry: Call not allowed yet"
-            );
+        (, uint256 fromTime) = getETHPermission(from, to, functionSignature);
+
+        if (fromTime > 0) {
+            require(fromTime < block.timestamp, "PermissionRegistry: Call not allowed yet");
             _setValueTransferred(ethPermissions[from][to][functionSignature], valueTransferred);
         } else if (functionSignature != bytes4(0)) {
             revert("PermissionRegistry: Call not allowed");
