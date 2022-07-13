@@ -234,9 +234,7 @@ contract BaseERC20Guild {
             "ERC20Guild: Wrong length of to, data or value arrays"
         );
         require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
-        for (uint256 i = 0; i < to.length; i++) {
-            require(to[i] != address(permissionRegistry), "ERC20Guild: Cant call permission registry directly");
-        }
+
         bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, block.timestamp, totalProposals));
         totalProposals = totalProposals.add(1);
         Proposal storage newProposal = proposals[proposalId];
