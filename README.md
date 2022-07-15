@@ -198,7 +198,7 @@ The guild **executes previously authorized functions** to smart contracts after 
 
 - When a proposal is created it enters the voting period. Once the voting period passes if there is no proposal action with enough votes to execute, it will be rejected. If it has enough votes to execute and executes successfully during a the execution period of time, it will be finished successfully. If during that execution period of time the proposal action can't be executed it will be set as failed and won't be able to be executed again once the execution time ends.
 
-- The guild can be configured to automatically pay the voting costs back to the voter, for this the  max gas price to be used for voting needs to be set.
+- The guild can be configured to automatically pay the voting costs back to the voter, for this the max gas price to be used for voting needs to be set.
 
 - Each proposal has a title and a content hash that can be used to refer off-chain information.
 

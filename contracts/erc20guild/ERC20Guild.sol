@@ -41,32 +41,6 @@ contract ERC20Guild is BaseERC20Guild {
         votingPowerForProposalCreation = _votingPowerForProposalCreation;
         lockTime = _lockTime;
         permissionRegistry = PermissionRegistry(_permissionRegistry);
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            address(this),
-            bytes4(
-                keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")
-            ),
-            0,
-            true
-        );
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            address(this),
-            bytes4(keccak256("setPermission(address[],address[],bytes4[],uint256[],bool[])")),
-            0,
-            true
-        );
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            address(this),
-            bytes4(keccak256("setPermissionDelay(uint256)")),
-            0,
-            true
-        );
 
         // This variables are set initially to default values cause the constructor throws stack too deep error
         // They can be changed later by calling the setConfig function

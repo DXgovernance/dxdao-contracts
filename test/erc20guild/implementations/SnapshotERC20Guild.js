@@ -57,15 +57,15 @@ contract("SnapshotERC20Guild", function (accounts) {
       guild: erc20Guild,
       actions: [
         {
-          to: [erc20Guild.address],
+          to: [permissionRegistry.address],
           data: [
-            await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
-              .setPermission(
-                [constants.NULL_ADDRESS],
-                [constants.ANY_ADDRESS],
-                [constants.ANY_FUNC_SIGNATURE],
-                [100],
-                [true]
+            await new web3.eth.Contract(PermissionRegistry.abi).methods
+              .setETHPermission(
+                erc20Guild.address,
+                constants.NULL_ADDRESS,
+                constants.NULL_SIGNATURE,
+                100,
+                true
               )
               .encodeABI(),
           ],

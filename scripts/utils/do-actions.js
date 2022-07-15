@@ -57,20 +57,20 @@ const doActions = async function (actions, networkContracts) {
       case "transfer":
         action.data.asset === NULL_ADDRESS
           ? await web3.eth.sendTransaction({
-            to:
+              to:
                 networkContracts.addresses[action.data.address] ||
                 action.data.address,
-            value: action.data.amount,
-            from: action.from,
-          })
+              value: action.data.amount,
+              from: action.from,
+            })
           : await (
-            await ERC20.at(networkContracts.addresses[action.data.asset])
-          ).transfer(
-            networkContracts.addresses[action.data.address] ||
+              await ERC20.at(networkContracts.addresses[action.data.asset])
+            ).transfer(
+              networkContracts.addresses[action.data.address] ||
                 action.data.address,
-            action.data.amount,
-            { from: action.from }
-          );
+              action.data.amount,
+              { from: action.from }
+            );
         break;
 
       case "proposal":
@@ -87,30 +87,30 @@ const doActions = async function (actions, networkContracts) {
         const proposalCreationTx =
           action.data.scheme === "ContributionReward"
             ? await (
-              await ContributionReward.at(contributionReward.address)
-            ).proposeContributionReward(
-              networkContracts.addresses["AVATAR"],
-              contentHash.fromIpfs(proposalDescriptionHash),
-              action.data.reputationChange,
-              action.data.rewards,
-              action.data.externalToken,
-              action.data.beneficiary,
-              { from: action.from }
-            )
-            : await (
-              await WalletScheme.at(
-                networkContracts.addresses[action.data.scheme]
+                await ContributionReward.at(contributionReward.address)
+              ).proposeContributionReward(
+                networkContracts.addresses["AVATAR"],
+                contentHash.fromIpfs(proposalDescriptionHash),
+                action.data.reputationChange,
+                action.data.rewards,
+                action.data.externalToken,
+                action.data.beneficiary,
+                { from: action.from }
               )
-            ).proposeCalls(
-              action.data.to.map(
-                _to => networkContracts.addresses[_to] || _to
-              ),
-              action.data.callData,
-              action.data.value,
-              action.data.title,
-              contentHash.fromIpfs(proposalDescriptionHash),
-              { from: action.from }
-            );
+            : await (
+                await WalletScheme.at(
+                  networkContracts.addresses[action.data.scheme]
+                )
+              ).proposeCalls(
+                action.data.to.map(
+                  _to => networkContracts.addresses[_to] || _to
+                ),
+                action.data.callData,
+                action.data.value,
+                action.data.title,
+                contentHash.fromIpfs(proposalDescriptionHash),
+                { from: action.from }
+              );
         proposals.dao.push(proposalCreationTx.receipt.logs[0].args._proposalId);
         break;
       case "vote":

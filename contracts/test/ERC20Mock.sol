@@ -14,4 +14,8 @@ contract ERC20Mock is ERC20, ERC20Detailed {
     ) public ERC20Detailed(symbol, name, decimals) {
         _mint(initialAccount, initialBalance);
     }
+
+    function nonStandardTransfer(address recipient, uint256 amount) public returns (bool success) {
+        return transfer(recipient, amount);
+    }
 }

@@ -318,4 +318,81 @@ export function getEventFromTx(tx, eventName) {
   return logs.find(event => event.name === eventName);
 }
 
+export async function setDefaultControllerPermissions(
+  permissionRegistry,
+  from,
+  controller
+) {
+  await Promise.all(
+    [
+      controller.contract._jsonInterface.find(
+        method => method.name === "genericCall"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "mintTokens"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "unregisterSelf"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "addGlobalConstraint"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "removeGlobalConstraint"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "upgradeController"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "sendEther"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "externalTokenTransfer"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "externalTokenTransferFrom"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "externalTokenApproval"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "metaData"
+      ).signature,
+    ].map(async funcSignature => {
+      await permissionRegistry.setETHPermission(
+        from,
+        controller.address,
+        funcSignature,
+        0,
+        false
+      );
+    })
+  );
+
+  await Promise.all(
+    [
+      controller.contract._jsonInterface.find(
+        method => method.name === "mintReputation"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "burnReputation"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "registerScheme"
+      ).signature,
+      controller.contract._jsonInterface.find(
+        method => method.name === "unregisterScheme"
+      ).signature,
+    ].map(async funcSignature => {
+      await permissionRegistry.setETHPermission(
+        from,
+        controller.address,
+        funcSignature,
+        0,
+        true
+      );
+    })
+  );
+}
+
 export { encodePermission, decodePermission, constants };

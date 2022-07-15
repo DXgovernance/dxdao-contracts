@@ -14,7 +14,6 @@ contract("Dxvote Utils", function (accounts) {
   let standardTokenMock,
     permissionRegistry,
     masterWalletScheme,
-    quickWalletScheme,
     org,
     votingMachine,
     nftMinter,
@@ -60,46 +59,11 @@ contract("Dxvote Utils", function (accounts) {
       5
     );
 
-    quickWalletScheme = await WalletScheme.new();
-    await quickWalletScheme.initialize(
+    await helpers.setDefaultControllerPermissions(
+      permissionRegistry,
       org.avatar.address,
-      votingMachine.address,
-      false,
-      org.controller.address,
-      permissionRegistry.address,
-      "Quick Wallet",
-      executionTimeout,
-      0
+      org.controller
     );
-
-    await permissionRegistry.setPermission(
-      constants.NULL_ADDRESS,
-      org.avatar.address,
-      constants.ANY_ADDRESS,
-      constants.ANY_FUNC_SIGNATURE,
-      constants.MAX_UINT_256,
-      true
-    );
-
-    await permissionRegistry.setPermission(
-      standardTokenMock.address,
-      org.avatar.address,
-      constants.ANY_ADDRESS,
-      constants.ANY_FUNC_SIGNATURE,
-      constants.MAX_UINT_256,
-      true
-    );
-
-    await permissionRegistry.setPermission(
-      constants.NULL_ADDRESS,
-      quickWalletScheme.address,
-      constants.ANY_ADDRESS,
-      constants.ANY_FUNC_SIGNATURE,
-      constants.MAX_UINT_256,
-      true
-    );
-
-    await time.increase(30);
 
     nftMinter = await ERC721Factory.new("DXDAO NFT", "DXNFT", {
       from: accounts[0],
@@ -112,20 +76,14 @@ contract("Dxvote Utils", function (accounts) {
 
     await org.daoCreator.setSchemes(
       org.avatar.address,
-      [masterWalletScheme.address, quickWalletScheme.address],
-      [votingMachine.params, votingMachine.params],
+      [masterWalletScheme.address],
+      [votingMachine.params],
       [
         helpers.encodePermission({
           canGenericCall: true,
           canUpgrade: true,
           canChangeConstraints: true,
           canRegisterSchemes: true,
-        }),
-        helpers.encodePermission({
-          canGenericCall: false,
-          canUpgrade: false,
-          canChangeConstraints: false,
-          canRegisterSchemes: false,
         }),
       ],
       "metaData"
@@ -149,6 +107,39 @@ contract("Dxvote Utils", function (accounts) {
     const mintNFTData = nftMinter.contract.methods
       .mint(accounts[3], "tokenURIHere")
       .encodeABI();
+
+    await permissionRegistry.addERC20Limit(
+      org.avatar.address,
+      standardTokenMock.address,
+      constants.MAX_UINT_256,
+      0
+    );
+
+    await permissionRegistry.setETHPermission(
+      org.avatar.address,
+      standardTokenMock.address,
+      approveToVestingFactoryData.substring(0, 10),
+      0,
+      true
+    );
+
+    await permissionRegistry.setETHPermission(
+      org.avatar.address,
+      vestingFactory.address,
+      createVestingData.substring(0, 10),
+      0,
+      true
+    );
+
+    await permissionRegistry.setETHPermission(
+      org.avatar.address,
+      nftMinter.address,
+      mintNFTData.substring(0, 10),
+      0,
+      true
+    );
+
+    await time.increase(30);
 
     const tx = await masterWalletScheme.proposeCalls(
       [standardTokenMock.address, vestingFactory.address, nftMinter.address],

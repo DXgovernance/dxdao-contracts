@@ -68,40 +68,6 @@ contract ERC20GuildWithERC1271 is ERC20GuildUpgradeable, IERC1271Upgradeable {
         maxActiveProposals = _maxActiveProposals;
         lockTime = _lockTime;
         permissionRegistry = PermissionRegistry(_permissionRegistry);
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            address(this),
-            bytes4(
-                keccak256("setConfig(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")
-            ),
-            0,
-            true
-        );
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            address(this),
-            bytes4(keccak256("setPermission(address[],address[],bytes4[],uint256[],bool[])")),
-            0,
-            true
-        );
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            address(this),
-            bytes4(keccak256("setPermissionDelay(uint256)")),
-            0,
-            true
-        );
-        permissionRegistry.setPermission(
-            address(0),
-            address(this),
-            address(this),
-            bytes4(keccak256("setEIP1271SignedHash(bytes32,bool)")),
-            0,
-            true
-        );
     }
 
     // @dev Set a hash of an call to be validated using EIP1271

@@ -64,68 +64,68 @@ const ETHERSCAN_API_KEY = process.env.KEY_ETHERSCAN;
 
 const hardharNetworks = process.env.CI
   ? {
-    hardhat: {
-      accounts: { mnemonic: MNEMONIC },
-      throwOnTransactionFailures: true,
-      throwOnCallFailures: true,
-      allowUnlimitedContractSize: true,
-      gasLimit: 9000000,
-      gasPrice: 10000000000, // 10 gwei
-      timeout: 60000,
-    },
-  }
-  : {
-    hardhat: {
-      accounts: { mnemonic: MNEMONIC },
-      throwOnTransactionFailures: true,
-      throwOnCallFailures: true,
-      allowUnlimitedContractSize: true,
-      gasLimit: 9000000,
-      gasPrice: 10000000000, // 10 gwei
-      timeout: 60000,
-      initialDate: moment.unix(0).toDate().toString(),
-      mining: {
-        auto: true,
-        interval: 1000,
+      hardhat: {
+        accounts: { mnemonic: MNEMONIC },
+        throwOnTransactionFailures: true,
+        throwOnCallFailures: true,
+        allowUnlimitedContractSize: true,
+        gasLimit: 9000000,
+        gasPrice: 10000000000, // 10 gwei
+        timeout: 60000,
       },
-    },
-    mainnet: {
-      url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: { mnemonic: MNEMONIC },
-      chainId: 1,
-      gasLimit: 9000000,
-      gasPrice: 100000000000, // 100 gwei
-      timeout: 60000,
-    },
-    goerli: {
-      url: `https://goerli.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: { mnemonic: MNEMONIC },
-      chainId: 5,
-      gasMultiplier: 10,
-      timeout: 600000, // 10 minutes
-    },
-    xdai: {
-      url: "https://rpc.xdaichain.com/",
-      accounts: { mnemonic: MNEMONIC },
-      chainId: 100,
-      gasLimit: 17000000,
-      gasPrice: 2000000000, // 2 gwei
-      timeout: 60000,
-    },
-    arbitrum: {
-      url: "https://arb1.arbitrum.io/rpc",
-      accounts: { mnemonic: MNEMONIC },
-      gasPrice: 1000000000, // 1 gwei
-      chainId: 42161,
-      timeout: 600000, // 10 minutes
-    },
-    arbitrumTestnet: {
-      url: "https://rinkeby.arbitrum.io/rpc",
-      accounts: { mnemonic: MNEMONIC },
-      chainId: 421611,
-      timeout: 60000,
-    },
-  };
+    }
+  : {
+      hardhat: {
+        accounts: { mnemonic: MNEMONIC },
+        throwOnTransactionFailures: true,
+        throwOnCallFailures: true,
+        allowUnlimitedContractSize: true,
+        gasLimit: 9000000,
+        gasPrice: 10000000000, // 10 gwei
+        timeout: 60000,
+        initialDate: moment.unix(0).toDate().toString(),
+        mining: {
+          auto: true,
+          interval: 1000,
+        },
+      },
+      mainnet: {
+        url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
+        accounts: { mnemonic: MNEMONIC },
+        chainId: 1,
+        gasLimit: 9000000,
+        gasPrice: 100000000000, // 100 gwei
+        timeout: 60000,
+      },
+      goerli: {
+        url: `https://goerli.infura.io/v3/${INFURA_PROJECT_ID}`,
+        accounts: { mnemonic: MNEMONIC },
+        chainId: 5,
+        gasMultiplier: 10,
+        timeout: 600000, // 10 minutes
+      },
+      xdai: {
+        url: "https://rpc.xdaichain.com/",
+        accounts: { mnemonic: MNEMONIC },
+        chainId: 100,
+        gasLimit: 17000000,
+        gasPrice: 2000000000, // 2 gwei
+        timeout: 60000,
+      },
+      arbitrum: {
+        url: "https://arb1.arbitrum.io/rpc",
+        accounts: { mnemonic: MNEMONIC },
+        gasPrice: 1000000000, // 1 gwei
+        chainId: 42161,
+        timeout: 600000, // 10 minutes
+      },
+      arbitrumTestnet: {
+        url: "https://rinkeby.arbitrum.io/rpc",
+        accounts: { mnemonic: MNEMONIC },
+        chainId: 421611,
+        timeout: 60000,
+      },
+    };
 
 module.exports = {
   solidity: {

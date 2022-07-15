@@ -21,8 +21,6 @@ const TokenVaultThief = artifacts.require("TokenVaultThief.sol");
 require("chai").should();
 
 contract("MigratableERC20Guild", function (accounts) {
-  const constants = helpers.constants;
-
   let guildTokenA,
     guildTokenB,
     tokenVaultA,
@@ -67,46 +65,6 @@ contract("MigratableERC20Guild", function (accounts) {
 
     tokenVaultB = await TokenVault.new();
     await tokenVaultB.initialize(guildTokenB.address, erc20Guild.address);
-
-    const setPermissionToChangeTokenVault = await createProposal({
-      guild: erc20Guild,
-      actions: [
-        {
-          to: [erc20Guild.address],
-          data: [
-            await new web3.eth.Contract(MigratableERC20Guild.abi).methods
-              .setPermission(
-                [constants.NULL_ADDRESS],
-                [erc20Guild.address],
-                [
-                  web3.eth.abi.encodeFunctionSignature(
-                    "changeTokenVault(address)"
-                  ),
-                ],
-                [0],
-                [true]
-              )
-              .encodeABI(),
-          ],
-          value: [0],
-        },
-      ],
-      account: accounts[1],
-    });
-    await setVotesOnProposal({
-      guild: erc20Guild,
-      proposalId: setPermissionToChangeTokenVault,
-      action: 1,
-      account: accounts[4],
-    });
-    await setVotesOnProposal({
-      guild: erc20Guild,
-      proposalId: setPermissionToChangeTokenVault,
-      action: 1,
-      account: accounts[5],
-    });
-    await time.increase(30);
-    await erc20Guild.endProposal(setPermissionToChangeTokenVault);
   });
 
   describe("migrate", function () {
