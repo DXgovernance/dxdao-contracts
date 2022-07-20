@@ -167,7 +167,7 @@ contract("DXDGuild", function (accounts) {
           constants.SOME_HASH,
           { from: accounts[1] }
         ),
-        "ERC20Guild: Not enough votes to create proposal"
+        "ERC20Guild: Not enough votingPower to create proposal"
       );
       const tx = await dxdGuild.createProposal(
         [votingMachine.address, votingMachine.address],

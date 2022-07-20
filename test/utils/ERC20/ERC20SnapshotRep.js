@@ -1,57 +1,136 @@
 import { assert } from "chai";
 import { artifacts, contract } from "hardhat";
-import { SOME_ADDRESS } from "../../helpers/constants";
 
-const ERC20SnapshotRepMock = artifacts.require(
-  "./test/ERC20SnapshotRepMock.sol"
-);
+const ERC20SnapshotRep = artifacts.require("ERC20SnapshotRep.sol");
 
 contract("ERC20SnapshotRep", accounts => {
-  let ERC20SnapshotRep;
+  let ERC20SnapshotRepToken;
 
   beforeEach(async () => {
-    ERC20SnapshotRep = await ERC20SnapshotRepMock.new({
+    ERC20SnapshotRepToken = await ERC20SnapshotRep.new({
       from: accounts[0],
     });
-    await ERC20SnapshotRep.initialize("DXdao", "DXD");
-    await ERC20SnapshotRep._addHolder(SOME_ADDRESS, { from: accounts[0] });
+    await ERC20SnapshotRepToken.initialize("DXdao", "DXD");
+    await ERC20SnapshotRepToken.mint(accounts[1], 100, { from: accounts[0] });
+  });
+
+  describe("snapshot balances", () => {
+    it("should show right snapshot balances at any time", async () => {
+      assert.equal(await ERC20SnapshotRepToken.balanceOf(accounts[1]), "100");
+      assert.equal(await ERC20SnapshotRepToken.getCurrentSnapshotId(), "1");
+
+      await ERC20SnapshotRepToken.mint(accounts[2], 50, { from: accounts[0] });
+      assert.equal(await ERC20SnapshotRepToken.getCurrentSnapshotId(), "2");
+
+      assert.equal(await ERC20SnapshotRepToken.balanceOf(accounts[1]), "100");
+      assert.equal(await ERC20SnapshotRepToken.balanceOf(accounts[2]), "50");
+
+      await ERC20SnapshotRepToken.mint(accounts[2], 25, { from: accounts[0] });
+      await ERC20SnapshotRepToken.mint(accounts[3], 50, { from: accounts[0] });
+      await ERC20SnapshotRepToken.burn(accounts[1], 90, { from: accounts[0] });
+      assert.equal(await ERC20SnapshotRepToken.getCurrentSnapshotId(), "5");
+
+      assert.equal(await ERC20SnapshotRepToken.balanceOf(accounts[1]), "10");
+      assert.equal(await ERC20SnapshotRepToken.balanceOf(accounts[2]), "75");
+      assert.equal(await ERC20SnapshotRepToken.balanceOf(accounts[3]), "50");
+
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[1], 1),
+        "100"
+      );
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[1], 2),
+        "100"
+      );
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[1], 3),
+        "100"
+      );
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[1], 4),
+        "100"
+      );
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[1], 5),
+        "10"
+      );
+
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[2], 1),
+        "0"
+      );
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[2], 2),
+        "50"
+      );
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[2], 3),
+        "75"
+      );
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[2], 4),
+        "75"
+      );
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[2], 5),
+        "75"
+      );
+
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[3], 1),
+        "0"
+      );
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[3], 2),
+        "0"
+      );
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[3], 3),
+        "0"
+      );
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[3], 4),
+        "50"
+      );
+      assert.equal(
+        await ERC20SnapshotRepToken.balanceOfAt(accounts[3], 5),
+        "50"
+      );
+    });
   });
 
   describe("Add and remove totalHolders", () => {
     it("should return one totalHolder", async () => {
-      const totalHolders = await ERC20SnapshotRep.getTotalHolders();
+      const totalHolders = await ERC20SnapshotRepToken.getTotalHolders();
       assert.equal(totalHolders, 1);
     });
 
     it("should add totalHolders", async () => {
-      await ERC20SnapshotRep._addHolder(SOME_ADDRESS, { from: accounts[0] });
-      const totalHolders = await ERC20SnapshotRep.getTotalHolders();
+      await ERC20SnapshotRepToken.mint(accounts[2], 100, { from: accounts[0] });
+      const totalHolders = await ERC20SnapshotRepToken.getTotalHolders();
       assert.equal(totalHolders, 2);
     });
     it("should subtract totalHolders", async () => {
-      await ERC20SnapshotRep._removeHolder(SOME_ADDRESS, {
-        from: accounts[0],
-      });
-      const totalHolders = await ERC20SnapshotRep.getTotalHolders();
+      await ERC20SnapshotRepToken.burn(accounts[1], 100, { from: accounts[0] });
+
+      const totalHolders = await ERC20SnapshotRepToken.getTotalHolders();
       assert.equal(totalHolders, 0);
     });
 
     it("should not add totalHolders if address has balance", async () => {
-      await ERC20SnapshotRep.mint(SOME_ADDRESS, 100, {
-        from: accounts[0],
-      });
-      await ERC20SnapshotRep.mint(SOME_ADDRESS, 100, { from: accounts[0] });
-      const totalHolders = await ERC20SnapshotRep.getTotalHolders();
+      await ERC20SnapshotRepToken.mint(accounts[2], 100, { from: accounts[0] });
+      await ERC20SnapshotRepToken.mint(accounts[3], 100, { from: accounts[0] });
+      await ERC20SnapshotRepToken.burn(accounts[1], 100, { from: accounts[0] });
+      const totalHolders = await ERC20SnapshotRepToken.getTotalHolders();
       assert.equal(totalHolders, 2);
     });
   });
 
   it("should not subtract totalHolders if address has balance", async () => {
-    await ERC20SnapshotRep.mint(SOME_ADDRESS, 100, {
-      from: accounts[0],
-    });
-    await ERC20SnapshotRep.burn(SOME_ADDRESS, 50, { from: accounts[0] });
-    const totalHolders = await ERC20SnapshotRep.getTotalHolders();
-    assert.equal(totalHolders, 2);
+    await ERC20SnapshotRepToken.mint(accounts[2], 1, { from: accounts[0] });
+    await ERC20SnapshotRepToken.mint(accounts[3], 1, { from: accounts[0] });
+    await ERC20SnapshotRepToken.burn(accounts[1], 99, { from: accounts[0] });
+    const totalHolders = await ERC20SnapshotRepToken.getTotalHolders();
+    assert.equal(totalHolders, 3);
   });
 });

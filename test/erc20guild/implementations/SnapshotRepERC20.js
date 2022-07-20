@@ -170,7 +170,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       });
       await expectRevert(
         voteTrigger,
-        "SnapshotRepERC20Guild: Proposal ended, cant be voted"
+        "SnapshotRepERC20Guild: Proposal ended, cannot be voted"
       );
     });
 
@@ -211,7 +211,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotRepERC20Guild: Cant decrease votingPower in vote"
+        "SnapshotRepERC20Guild: Cannot change action voted, only increase votingPower"
       );
     });
 
@@ -235,7 +235,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotRepERC20Guild: Cant change action voted, only increase votingPower"
+        "SnapshotRepERC20Guild: Cannot change action voted, only increase votingPower"
       );
     });
   });

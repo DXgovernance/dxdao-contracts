@@ -680,7 +680,7 @@ contract("ERC20Guild", function (accounts) {
           constants.SOME_HASH,
           { from: accounts[9] }
         ),
-        "ERC20Guild: Not enough votes to create proposal"
+        "ERC20Guild: Not enough votingPower to create proposal"
       );
     });
 
