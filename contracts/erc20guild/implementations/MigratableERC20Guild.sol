@@ -155,7 +155,7 @@ contract MigratableERC20Guild is ERC20Guild {
     }
 
     // @dev Get the locked timestamp of a voter tokens
-    function getVoterLockTimestamp(address voter) external view virtual override returns (uint256) {
+    function getVoterLockTimestamp(address voter) public view virtual override returns (uint256) {
         return tokensLockedByVault[address(tokenVault)][voter].timestamp;
     }
 
