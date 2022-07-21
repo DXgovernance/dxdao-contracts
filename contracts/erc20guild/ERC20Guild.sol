@@ -34,8 +34,7 @@ contract ERC20Guild is BaseERC20Guild {
         require(_votingPowerForProposalExecution > 0, "ERC20Guild: voting power for execution has to be more than 0");
         name = _name;
         token = IERC20Upgradeable(_token);
-        tokenVault = new TokenVault();
-        tokenVault.initialize(address(token), address(this));
+        tokenVault = new TokenVault(address(token), address(this));
         proposalTime = _proposalTime;
         votingPowerForProposalExecution = _votingPowerForProposalExecution;
         votingPowerForProposalCreation = _votingPowerForProposalCreation;
