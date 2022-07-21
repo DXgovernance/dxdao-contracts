@@ -44,9 +44,9 @@ contract BaseERC20Guild {
     using ECDSAUpgradeable for bytes32;
     using AddressUpgradeable for address;
 
-    bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
-    bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
-    bytes4 public constant ANY_SIGNATURE = bytes4(0xaaaaaaaa);
+    // This configuration value is defined as constant to be protected against a malicious proposal
+    // changing it.
+    uint8 public constant MAX_ACTIONS_PER_PROPOSAL = 10;
 
     enum ProposalState {
         None,
@@ -239,6 +239,7 @@ contract BaseERC20Guild {
             totalActions <= to.length && value.length.mod(totalActions) == 0,
             "ERC20Guild: Invalid totalActions or action calls length"
         );
+        require(totalActions <= MAX_ACTIONS_PER_PROPOSAL, "ERC20Guild: Maximum amount of actions per proposal reached");
 
         bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, block.timestamp, totalProposals));
         totalProposals = totalProposals.add(1);
