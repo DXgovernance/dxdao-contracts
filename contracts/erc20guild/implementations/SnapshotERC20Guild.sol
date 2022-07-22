@@ -44,11 +44,19 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         uint256 action,
         uint256 votingPower
     ) public virtual override {
+        require(proposals[proposalId].endTime > block.timestamp, "SnapshotERC20Guild: Proposal ended, cannot be voted");
         require(
             votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >= votingPower,
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
-        super.setVote(proposalId, action, votingPower);
+        require(
+            (proposalVotes[proposalId][msg.sender].action == 0 &&
+                proposalVotes[proposalId][msg.sender].votingPower == 0) ||
+                (proposalVotes[proposalId][msg.sender].action == action &&
+                    proposalVotes[proposalId][msg.sender].votingPower < votingPower),
+            "SnapshotERC20Guild: Cannot change action voted, only increase votingPower"
+        );
+        _setVote(msg.sender, proposalId, action, votingPower);
     }
 
     // @dev Set the voting power to vote in a proposal using a signed vote
@@ -64,16 +72,23 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         address voter,
         bytes memory signature
     ) public virtual override {
+        require(proposals[proposalId].endTime > block.timestamp, "SnapshotERC20Guild: Proposal ended, cannot be voted");
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "SnapshotERC20Guild: Already voted");
         require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "SnapshotERC20Guild: Wrong signer");
+        signedVotes[hashedVote] = true;
         require(
-            votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >= votingPower,
+            (votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >= votingPower) &&
+                (votingPower > proposalVotes[proposalId][voter].votingPower),
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
-        // slither-disable-next-line all
-        super.setSignedVote(proposalId, action, votingPower, voter, signature);
-        signedVotes[hashedVote] = true;
+        require(
+            (proposalVotes[proposalId][voter].action == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
+                (proposalVotes[proposalId][voter].action == action &&
+                    proposalVotes[proposalId][voter].votingPower < votingPower),
+            "SnapshotERC20Guild: Cannot change action voted, only increase votingPower"
+        );
+        _setVote(voter, proposalId, action, votingPower);
     }
 
     // @dev Lock tokens in the guild to be used as voting power
@@ -257,20 +272,6 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         require(snapshotId > 0, "SnapshotERC20Guild: id is 0");
         // solhint-disable-next-line max-line-length
         require(snapshotId <= _currentSnapshotId, "SnapshotERC20Guild: nonexistent id");
-
-        // When a valid snapshot is queried, there are three possibilities:
-        //  a) The queried value was not modified after the snapshot was taken. Therefore, a snapshot entry was never
-        //  created for this id, and all stored snapshot ids are smaller than the requested one. The value that
-        //  corresponds to this id is the current one.
-        //  b) The queried value was modified after the snapshot was taken. Therefore, there will be an entry with the
-        //  requested id, and its value is the one to return.
-        //  c) More snapshots were created after the requested one, and the queried value was later modified. There will
-        //  be no entry for the requested id: the value that corresponds to it is that of the smallest snapshot id that
-        //  is larger than the requested one.
-        //
-        // In summary, we need to find an element in an array, returning the index of the smallest value that is larger
-        // if it is not found, unless said value doesn't exist (e.g. when all values are smaller). Arrays.findUpperBound
-        // does exactly this.
 
         uint256 index = snapshots.ids.findUpperBound(snapshotId);
 

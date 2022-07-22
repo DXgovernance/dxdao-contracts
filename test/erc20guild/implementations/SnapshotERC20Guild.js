@@ -74,6 +74,7 @@ contract("SnapshotERC20Guild", function (accounts) {
       ],
       account: accounts[1],
     });
+
     await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setGlobaLPermissionProposal,
@@ -194,6 +195,58 @@ contract("SnapshotERC20Guild", function (accounts) {
         newState: "3",
       });
     });
+
+    it("Can vote with tokens locked when proposal created but removed after that", async function () {
+      await guildToken.approve(tokenVault, 100000, { from: accounts[3] });
+      await erc20Guild.lockTokens(100000, { from: accounts[3] });
+
+      await time.increase(60 + 1);
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [accounts[1]],
+            data: ["0x0"],
+            value: [10],
+          },
+        ],
+        account: accounts[2],
+      });
+
+      await erc20Guild.withdrawTokens(100000, { from: accounts[3] });
+
+      await guildToken.approve(tokenVault, 100000, { from: accounts[4] });
+      await guildToken.approve(tokenVault, 200000, { from: accounts[5] });
+      await erc20Guild.lockTokens(100000, { from: accounts[4] });
+      await erc20Guild.lockTokens(200000, { from: accounts[5] });
+
+      // Cant vote because it locked tokens after proposal
+      await expectRevert(
+        erc20Guild.setVote(guildProposalId, 1, 10, { from: accounts[4] }),
+        "SnapshotERC20Guild: Invalid votingPower amount"
+      );
+
+      // Can vote because tokens has been withdrawn after proposal creation
+      await erc20Guild.setVote(guildProposalId, 1, 100000, {
+        from: accounts[3],
+      });
+
+      assert.equal(await erc20Guild.votingPowerOf(accounts[1]), "50000");
+      assert.equal(await erc20Guild.votingPowerOf(accounts[2]), "50000");
+      assert.equal(await erc20Guild.votingPowerOf(accounts[3]), "0");
+      assert.equal(await erc20Guild.votingPowerOf(accounts[4]), "100000");
+      assert.equal(await erc20Guild.votingPowerOf(accounts[5]), "200000");
+
+      await time.increase(time.duration.seconds(31));
+
+      const receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+    });
+
     it("Can withdraw tokens after time limit", async function () {
       // move past the time lock period
       await time.increase(60 + 1);
@@ -243,6 +296,7 @@ contract("SnapshotERC20Guild", function (accounts) {
         "SnapshotERC20Guild: SnapshotIds and accounts must have the same length"
       );
     });
+
     it("should pass if accounts and snapshotIds have the same length", async () => {
       const votes = await erc20Guild.votingPowerOfMultipleAt(
         [accounts[1], accounts[2]],

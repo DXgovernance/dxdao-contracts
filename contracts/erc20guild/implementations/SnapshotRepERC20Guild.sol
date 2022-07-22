@@ -75,7 +75,22 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         uint256 action,
         uint256 votingPower
     ) public virtual override {
-        _setSnapshottedVote(msg.sender, proposalId, action, votingPower);
+        require(
+            proposals[proposalId].endTime > block.timestamp,
+            "SnapshotRepERC20Guild: Proposal ended, cannot be voted"
+        );
+        require(
+            votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >= votingPower,
+            "SnapshotRepERC20Guild: Invalid votingPower amount"
+        );
+        require(
+            (proposalVotes[proposalId][msg.sender].action == 0 &&
+                proposalVotes[proposalId][msg.sender].votingPower == 0) ||
+                (proposalVotes[proposalId][msg.sender].action == action &&
+                    proposalVotes[proposalId][msg.sender].votingPower < votingPower),
+            "SnapshotRepERC20Guild: Cannot change action voted, only increase votingPower"
+        );
+        _setVote(msg.sender, proposalId, action, votingPower);
     }
 
     // @dev Set the voting power to vote in a proposal using a signed vote
@@ -91,11 +106,26 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         address voter,
         bytes memory signature
     ) public virtual override {
+        require(
+            proposals[proposalId].endTime > block.timestamp,
+            "SnapshotRepERC20Guild: Proposal ended, cannot be voted"
+        );
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "SnapshotRepERC20Guild: Already voted");
         require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "SnapshotRepERC20Guild: Wrong signer");
         signedVotes[hashedVote] = true;
-        _setSnapshottedVote(voter, proposalId, action, votingPower);
+        require(
+            (votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >= votingPower) &&
+                (votingPower > proposalVotes[proposalId][voter].votingPower),
+            "SnapshotRepERC20Guild: Invalid votingPower amount"
+        );
+        require(
+            (proposalVotes[proposalId][voter].action == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
+                (proposalVotes[proposalId][voter].action == action &&
+                    proposalVotes[proposalId][voter].votingPower < votingPower),
+            "SnapshotRepERC20Guild: Cannot change action voted, only increase votingPower"
+        );
+        _setVote(voter, proposalId, action, votingPower);
     }
 
     // @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild
@@ -126,54 +156,6 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         bytes32 proposalId = super.createProposal(to, data, value, totalActions, title, contentHash);
         proposalsSnapshots[proposalId] = ERC20SnapshotRep(address(token)).getCurrentSnapshotId();
         return proposalId;
-    }
-
-    // @dev Internal function to set the amount of votingPower to vote in a proposal based on the proposal snapshot
-    // @param voter The address of the voter
-    // @param proposalId The id of the proposal to set the vote
-    // @param action The proposal action to be voted
-    // @param votingPower The amount of votingPower to use as voting for the proposal
-    function _setSnapshottedVote(
-        address voter,
-        bytes32 proposalId,
-        uint256 action,
-        uint256 votingPower
-    ) internal {
-        require(
-            proposals[proposalId].endTime > block.timestamp,
-            "SnapshotRepERC20Guild: Proposal ended, cant be voted"
-        );
-        require(
-            votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >= votingPower,
-            "SnapshotRepERC20Guild: Invalid votingPower amount"
-        );
-        require(
-            votingPower > proposalVotes[proposalId][voter].votingPower,
-            "SnapshotRepERC20Guild: Cant decrease votingPower in vote"
-        );
-        require(
-            (proposalVotes[proposalId][voter].action == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
-                proposalVotes[proposalId][voter].action == action,
-            "SnapshotRepERC20Guild: Cant change action voted, only increase votingPower"
-        );
-
-        proposals[proposalId].totalVotes[action] = proposals[proposalId]
-            .totalVotes[action]
-            .sub(proposalVotes[proposalId][voter].votingPower)
-            .add(votingPower);
-
-        proposalVotes[proposalId][voter].action = action;
-        proposalVotes[proposalId][voter].votingPower = votingPower;
-
-        emit VoteAdded(proposalId, action, voter, votingPower);
-
-        if (voteGas > 0) {
-            uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
-            if (address(this).balance >= gasRefund) {
-                (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
-                require(success, "Failed to refund gas");
-            }
-        }
     }
 
     // @dev Get the voting power of multiple addresses at a certain snapshotId

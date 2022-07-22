@@ -228,7 +228,7 @@ contract BaseERC20Guild {
         require(activeProposalsNow < getMaxActiveProposals(), "ERC20Guild: Maximum amount of active proposals reached");
         require(
             votingPowerOf(msg.sender) >= getVotingPowerForProposalCreation(),
-            "ERC20Guild: Not enough votes to create proposal"
+            "ERC20Guild: Not enough votingPower to create proposal"
         );
         require(
             (to.length == data.length) && (to.length == value.length),
@@ -347,6 +347,19 @@ contract BaseERC20Guild {
         uint256 action,
         uint256 votingPower
     ) public virtual {
+        require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
+        require(
+            (votingPowerOf(msg.sender) >= votingPower) &&
+                (votingPower > proposalVotes[proposalId][msg.sender].votingPower),
+            "ERC20Guild: Invalid votingPower amount"
+        );
+        require(
+            (proposalVotes[proposalId][msg.sender].action == 0 &&
+                proposalVotes[proposalId][msg.sender].votingPower == 0) ||
+                (proposalVotes[proposalId][msg.sender].action == action &&
+                    proposalVotes[proposalId][msg.sender].votingPower < votingPower),
+            "ERC20Guild: Cannot change action voted, only increase votingPower"
+        );
         _setVote(msg.sender, proposalId, action, votingPower);
     }
 
@@ -363,10 +376,21 @@ contract BaseERC20Guild {
         address voter,
         bytes memory signature
     ) public virtual {
+        require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
         bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
         require(!signedVotes[hashedVote], "ERC20Guild: Already voted");
         require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "ERC20Guild: Wrong signer");
         signedVotes[hashedVote] = true;
+        require(
+            (votingPowerOf(voter) >= votingPower) && (votingPower > proposalVotes[proposalId][voter].votingPower),
+            "ERC20Guild: Invalid votingPower amount"
+        );
+        require(
+            (proposalVotes[proposalId][voter].action == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
+                (proposalVotes[proposalId][voter].action == action &&
+                    proposalVotes[proposalId][voter].votingPower < votingPower),
+            "ERC20Guild: Cannot change action voted, only increase votingPower"
+        );
         _setVote(voter, proposalId, action, votingPower);
     }
 
@@ -374,11 +398,14 @@ contract BaseERC20Guild {
     // @param tokenAmount The amount of tokens to be locked
     function lockTokens(uint256 tokenAmount) external virtual {
         require(tokenAmount > 0, "ERC20Guild: Tokens to lock should be higher than 0");
-        if (tokensLocked[msg.sender].amount == 0) totalMembers = totalMembers.add(1);
+
+        if (votingPowerOf(msg.sender) == 0) totalMembers = totalMembers.add(1);
+
         tokenVault.deposit(msg.sender, tokenAmount);
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(tokenAmount);
         tokensLocked[msg.sender].timestamp = block.timestamp.add(lockTime);
         totalLocked = totalLocked.add(tokenAmount);
+
         emit TokensLocked(msg.sender, tokenAmount);
     }
 
@@ -386,12 +413,15 @@ contract BaseERC20Guild {
     // @param tokenAmount The amount of tokens to be withdrawn
     function withdrawTokens(uint256 tokenAmount) external virtual {
         require(votingPowerOf(msg.sender) >= tokenAmount, "ERC20Guild: Unable to withdraw more tokens than locked");
-        require(tokensLocked[msg.sender].timestamp < block.timestamp, "ERC20Guild: Tokens still locked");
+        require(getVoterLockTimestamp(msg.sender) < block.timestamp, "ERC20Guild: Tokens still locked");
         require(tokenAmount > 0, "ERC20Guild: amount of tokens to withdraw must be greater than 0");
+
         tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(tokenAmount);
         totalLocked = totalLocked.sub(tokenAmount);
         tokenVault.withdraw(msg.sender, tokenAmount);
-        if (tokensLocked[msg.sender].amount == 0) totalMembers = totalMembers.sub(1);
+
+        if (votingPowerOf(msg.sender) == 0) totalMembers = totalMembers.sub(1);
+
         emit TokensWithdrawn(msg.sender, tokenAmount);
     }
 
@@ -406,17 +436,6 @@ contract BaseERC20Guild {
         uint256 action,
         uint256 votingPower
     ) internal {
-        require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
-        require(
-            (votingPowerOf(voter) >= votingPower) && (votingPower > proposalVotes[proposalId][voter].votingPower),
-            "ERC20Guild: Invalid votingPower amount"
-        );
-        require(
-            (proposalVotes[proposalId][voter].action == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
-                proposalVotes[proposalId][voter].action == action,
-            "ERC20Guild: Cannot change action voted, only increase votingPower"
-        );
-
         proposals[proposalId].totalVotes[action] = proposals[proposalId]
             .totalVotes[action]
             .sub(proposalVotes[proposalId][voter].votingPower)
@@ -426,7 +445,7 @@ contract BaseERC20Guild {
         proposalVotes[proposalId][voter].votingPower = votingPower;
 
         // Make sure tokens don't get unlocked before the proposal ends, to prevent double voting.
-        if (tokensLocked[voter].timestamp < proposals[proposalId].endTime) {
+        if (getVoterLockTimestamp(voter) < proposals[proposalId].endTime) {
             tokensLocked[voter].timestamp = proposals[proposalId].endTime;
         }
 
@@ -582,7 +601,7 @@ contract BaseERC20Guild {
     }
 
     // @dev Get the locked timestamp of a voter tokens
-    function getVoterLockTimestamp(address voter) external view virtual returns (uint256) {
+    function getVoterLockTimestamp(address voter) public view virtual returns (uint256) {
         return tokensLocked[voter].timestamp;
     }
 
