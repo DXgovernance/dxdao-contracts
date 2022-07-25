@@ -63,8 +63,7 @@ contract("MigratableERC20Guild", function (accounts) {
     await erc20Guild.lockTokens(100000, { from: accounts[4] });
     await erc20Guild.lockTokens(200000, { from: accounts[5] });
 
-    tokenVaultB = await TokenVault.new();
-    await tokenVaultB.initialize(guildTokenB.address, erc20Guild.address);
+    tokenVaultB = await TokenVault.new(guildTokenB.address, erc20Guild.address);
   });
 
   describe("migrate", function () {
@@ -139,8 +138,10 @@ contract("MigratableERC20Guild", function (accounts) {
   });
 
   it("Cant migrate to a invalid new vault", async function () {
-    tokenVaultB = await TokenVaultThief.new();
-    await tokenVaultB.initialize(guildTokenB.address, erc20Guild.address);
+    tokenVaultB = await TokenVaultThief.new(
+      guildTokenB.address,
+      erc20Guild.address
+    );
 
     await guildTokenB.approve(tokenVaultB.address, 500000, {
       from: accounts[1],

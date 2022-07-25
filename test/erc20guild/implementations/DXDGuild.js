@@ -212,9 +212,7 @@ contract("DXDGuild", function (accounts) {
 
       expectEvent(txVote, "VoteAdded", { proposalId: proposalId });
       await time.increase(time.duration.seconds(31));
-      console.log("yeah");
       const receipt = await dxdGuild.endProposal(proposalId);
-      console.log("yeah");
 
       expectEvent(receipt, "ProposalStateChanged", {
         proposalId: proposalId,
