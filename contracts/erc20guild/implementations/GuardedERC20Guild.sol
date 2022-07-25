@@ -60,10 +60,10 @@ contract GuardedERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
     }
 
     // @dev Executes a proposal that is not votable anymore and can be finished
-    // If this function is called by the guild guardian the proposal can end sooner after proposal endTime
-    // If this function is not called by the guild guardian the proposal can end sooner after proposal endTime plus
+    // If this function is called by the guild guardian the proposal can end after proposal endTime
+    // If this function is not called by the guild guardian the proposal can end after proposal endTime plus
     // the extraTimeForGuardian
-    // @param proposalId The id of the proposal to be executed
+    // @param proposalId The id of the proposal to be ended
     function endProposal(bytes32 proposalId) public virtual override {
         require(proposals[proposalId].state == ProposalState.Active, "GuardedERC20Guild: Proposal already executed");
         if (msg.sender == guildGuardian)
@@ -80,7 +80,7 @@ contract GuardedERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
     }
 
     // @dev Rejects a proposal directly without execution, only callable by the guardian
-    // @param proposalId The id of the proposal to be executed
+    // @param proposalId The id of the proposal to be rejected
     function rejectProposal(bytes32 proposalId) external {
         require(proposals[proposalId].state == ProposalState.Active, "GuardedERC20Guild: Proposal already executed");
         require((msg.sender == guildGuardian), "GuardedERC20Guild: Proposal can be rejected only by guardian");

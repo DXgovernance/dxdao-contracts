@@ -752,6 +752,29 @@ contract("ERC20Guild", function (accounts) {
 
       await createProposal(genericProposal);
     });
+
+    it("cannot create a proposal with more actions to the ones allowed", async function () {
+      await expectRevert(
+        createProposal({
+          guild: erc20Guild,
+          actions: [
+            { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
+            { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
+            { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
+            { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
+            { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
+            { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
+            { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
+            { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
+            { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
+            { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
+            { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
+          ],
+          account: accounts[3],
+        }),
+        "ERC20Guild: Maximum amount of actions per proposal reached"
+      );
+    });
   });
 
   describe("setVote", function () {
