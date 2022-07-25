@@ -119,7 +119,9 @@ contract("SnapshotERC20Guild", function (accounts) {
       await guildToken.approve(tokenVault, 100000, { from: accounts[4] });
       await guildToken.approve(tokenVault, 200000, { from: accounts[5] });
       await erc20Guild.lockTokens(100000, { from: accounts[4] });
+      assert.equal(await erc20Guild.votingPowerOf(accounts[4]), "100000");
       await erc20Guild.lockTokens(200000, { from: accounts[5] });
+      assert.equal(await erc20Guild.votingPowerOf(accounts[5]), "200000");
 
       assert.equal(
         await erc20Guild.votingPowerOfAt(accounts[1], snapshotIdBeforeProposal),
@@ -237,6 +239,55 @@ contract("SnapshotERC20Guild", function (accounts) {
       assert.equal(await erc20Guild.votingPowerOf(accounts[3]), "0");
       assert.equal(await erc20Guild.votingPowerOf(accounts[4]), "100000");
       assert.equal(await erc20Guild.votingPowerOf(accounts[5]), "200000");
+
+      await time.increase(time.duration.seconds(31));
+
+      const receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+    });
+
+    it("failed on try to use tokens for double vote", async function () {
+      await guildToken.approve(tokenVault, 100000, { from: accounts[3] });
+      await erc20Guild.lockTokens(100000, { from: accounts[3] });
+
+      await time.increase(60 + 1);
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [accounts[1]],
+            data: ["0x0"],
+            value: [10],
+          },
+        ],
+        account: accounts[2],
+      });
+
+      // Withdraw tokens, transferred them to a new account and lock again to try to double vote
+      await erc20Guild.withdrawTokens(100000, { from: accounts[3] });
+      await guildToken.transfer(accounts[6], 100000, { from: accounts[3] });
+      await guildToken.approve(tokenVault, 100000, { from: accounts[6] });
+      await erc20Guild.lockTokens(100000, { from: accounts[6] });
+
+      // Cant vote because it locked tokens after proposal
+      await expectRevert(
+        erc20Guild.setVote(guildProposalId, 1, 10, { from: accounts[6] }),
+        "SnapshotERC20Guild: Invalid votingPower amount"
+      );
+
+      // Can vote because tokens has been withdrawn after proposal creation
+      await erc20Guild.setVote(guildProposalId, 1, 100000, {
+        from: accounts[3],
+      });
+
+      assert.equal(await erc20Guild.votingPowerOf(accounts[1]), "50000");
+      assert.equal(await erc20Guild.votingPowerOf(accounts[2]), "50000");
+      assert.equal(await erc20Guild.votingPowerOf(accounts[3]), "0");
+      assert.equal(await erc20Guild.votingPowerOf(accounts[6]), "100000");
 
       await time.increase(time.duration.seconds(31));
 
