@@ -104,6 +104,13 @@ const hardharNetworks = process.env.CI
         gasLimit: 10000000,
         gasPrice: 1000000000, // 1 gwei
         timeout: 60000,
+        goerli: {
+          url: `https://goerli.infura.io/v3/${INFURA_PROJECT_ID}`,
+          accounts: { mnemonic: MNEMONIC },
+          gasLimit: 9000000,
+          gasPrice: 1000000000, // 1 gwei
+          timeout: 600000,
+        },
       },
       xdai: {
         url: "https://rpc.xdaichain.com/",
@@ -124,6 +131,13 @@ const hardharNetworks = process.env.CI
         accounts: { mnemonic: MNEMONIC },
         chainId: 421611,
         timeout: 60000,
+        arbitrumNitroTestnet: {
+          url: "https://goerli-rollup.arbitrum.io/rpc",
+          accounts: { mnemonic: MNEMONIC },
+          gasPrice: 1000000000, // 1 gwei
+          chainId: 421613,
+          timeout: 600000, // 10 minutes
+        },
       },
     };
 
