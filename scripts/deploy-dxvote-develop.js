@@ -1,6 +1,8 @@
 require("@nomiclabs/hardhat-web3");
 const moment = require("moment");
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
+const MAX_UINT_256 =
+  "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
@@ -14,15 +16,15 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
     const deployconfig = {
       reputation: [
         {
-          address: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
+          address: "0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a",
           amount: 6000,
         },
         {
-          address: "0xc73480525e9d1198d448ece4a01daea851f72a9d",
+          address: "0xc5b20ade9c9cd5e0cc087c62b26b815a4bc1881f",
           amount: 4000,
         },
         {
-          address: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
+          address: "0xaf8eb8c3a5d9d900aa0b98e3df0bcc17d3c5f698",
           amount: 1000,
         },
       ],
@@ -34,15 +36,15 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           type: "ERC20",
           distribution: [
             {
-              address: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
+              address: "0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a",
               amount: web3.utils.toWei("220"),
             },
             {
-              address: "0xc73480525e9d1198d448ece4a01daea851f72a9d",
+              address: "0xc5b20ade9c9cd5e0cc087c62b26b815a4bc1881f",
               amount: web3.utils.toWei("50"),
             },
             {
-              address: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
+              address: "0xaf8eb8c3a5d9d900aa0b98e3df0bcc17d3c5f698",
               amount: web3.utils.toWei("10"),
             },
           ],
@@ -53,15 +55,15 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           type: "ERC20SnapshotRep",
           distribution: [
             {
-              address: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
+              address: "0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a",
               amount: web3.utils.toWei("220"),
             },
             {
-              address: "0xc73480525e9d1198d448ece4a01daea851f72a9d",
+              address: "0xc5b20ade9c9cd5e0cc087c62b26b815a4bc1881f",
               amount: web3.utils.toWei("50"),
             },
             {
-              address: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
+              address: "0xaf8eb8c3a5d9d900aa0b98e3df0bcc17d3c5f698",
               amount: web3.utils.toWei("10"),
             },
           ],
@@ -235,7 +237,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
       actions: [
         {
           type: "transfer",
-          from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
+          from: "0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a",
           data: {
             asset: NULL_ADDRESS,
             address: "Avatar",
@@ -244,7 +246,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         },
         {
           type: "transfer",
-          from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
+          from: "0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a",
           data: {
             asset: "DXD",
             address: "Avatar",
@@ -254,7 +256,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
 
         {
           type: "transfer",
-          from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
+          from: "0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a",
           data: {
             asset: NULL_ADDRESS,
             address: "DXDGuild",
@@ -263,7 +265,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         },
         {
           type: "transfer",
-          from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
+          from: "0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a",
           data: {
             asset: "DXD",
             address: "DXDGuild",
@@ -273,7 +275,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
 
         {
           type: "transfer",
-          from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
+          from: "0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a",
           data: {
             asset: NULL_ADDRESS,
             address: "REPGuild",
@@ -283,7 +285,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
 
         {
           type: "proposal",
-          from: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
+          from: "0xaf8eb8c3a5d9d900aa0b98e3df0bcc17d3c5f698",
           data: {
             to: ["PermissionRegistry"],
             callData: [
@@ -306,8 +308,17 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           },
         },
         {
+          type: "approve",
+          from: "0xaf8eb8c3a5d9d900aa0b98e3df0bcc17d3c5f698",
+          data: {
+            asset: "DXD",
+            address: "DXDVotingMachine",
+            amount: MAX_UINT_256,
+          },
+        },
+        {
           type: "stake",
-          from: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
+          from: "0xaf8eb8c3a5d9d900aa0b98e3df0bcc17d3c5f698",
           data: {
             proposal: "0",
             decision: "1",
@@ -317,7 +328,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         {
           type: "vote",
           time: moment.duration(1, "minutes").asSeconds(),
-          from: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
+          from: "0xaf8eb8c3a5d9d900aa0b98e3df0bcc17d3c5f698",
           data: {
             proposal: "0",
             decision: "1",
@@ -327,14 +338,14 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         {
           type: "execute",
           time: moment.duration(3, "minutes").asSeconds(),
-          from: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
+          from: "0xaf8eb8c3a5d9d900aa0b98e3df0bcc17d3c5f698",
           data: {
             proposal: "0",
           },
         },
         {
           type: "redeem",
-          from: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
+          from: "0xaf8eb8c3a5d9d900aa0b98e3df0bcc17d3c5f698",
           data: {
             proposal: "0",
           },
@@ -342,7 +353,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
 
         {
           type: "proposal",
-          from: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
+          from: "0xaf8eb8c3a5d9d900aa0b98e3df0bcc17d3c5f698",
           data: {
             to: ["0xdE0A2DFE54721526Aa05BE76F825Ef94CD8F585a"],
             callData: ["0x0"],
@@ -355,7 +366,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         },
         {
           type: "stake",
-          from: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
+          from: "0xaf8eb8c3a5d9d900aa0b98e3df0bcc17d3c5f698",
           data: {
             proposal: "1",
             decision: "1",
@@ -365,7 +376,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         {
           type: "vote",
           time: moment.duration(1, "minutes").asSeconds(),
-          from: "0x3f943f38b2fbe1ee5daf0516cecfe4e0f8734351",
+          from: "0xaf8eb8c3a5d9d900aa0b98e3df0bcc17d3c5f698",
           data: {
             proposal: "1",
             decision: "1",
@@ -374,7 +385,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         },
         {
           type: "vote",
-          from: "0xc73480525e9d1198d448ece4a01daea851f72a9d",
+          from: "0xc5b20ade9c9cd5e0cc087c62b26b815a4bc1881f",
           data: {
             proposal: "1",
             decision: "2",
@@ -384,7 +395,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
 
         {
           type: "approve",
-          from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
+          from: "0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a",
           data: {
             asset: "DXD",
             address: "DXDGuild-vault",
@@ -393,7 +404,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         },
         {
           type: "guild-lockTokens",
-          from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
+          from: "0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a",
           data: {
             guildName: "DXDGuild",
             amount: web3.utils.toWei("100"),
@@ -401,7 +412,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         },
         {
           type: "guild-withdrawTokens",
-          from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
+          from: "0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a",
           data: {
             guildName: "DXDGuild",
             amount: web3.utils.toWei("10"),
@@ -410,7 +421,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         },
         {
           type: "guild-createProposal",
-          from: "0x79706c8e413cdaee9e63f282507287b9ea9c0928",
+          from: "0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a",
           data: {
             guildName: "DXDGuild",
             to: ["DXDGuild"],
@@ -434,7 +445,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         },
         {
           type: "guild-voteProposal",
-          from: "0xc73480525e9d1198d448ece4a01daea851f72a9d",
+          from: "0xc5b20ade9c9cd5e0cc087c62b26b815a4bc1881f",
           data: {
             guildName: "DXDGuild",
             proposal: 0,
@@ -445,7 +456,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
         {
           time: moment.duration(10, "minutes").asSeconds(),
           type: "guild-endProposal",
-          from: "0xc73480525e9d1198d448ece4a01daea851f72a9d",
+          from: "0xc5b20ade9c9cd5e0cc087c62b26b815a4bc1881f",
           data: {
             guildName: "DXDGuild",
             proposal: 0,
