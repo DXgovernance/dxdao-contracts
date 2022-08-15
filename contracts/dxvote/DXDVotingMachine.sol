@@ -1,7 +1,122 @@
 pragma solidity ^0.5.11;
 
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/Math.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-solidity/contracts/utils/Address.sol";
 import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
-import "../daostack/votingMachines/GenesisProtocolLogic.sol";
+
+interface ProposalExecuteInterface {
+    function executeProposal(bytes32 _proposalId, int256 _decision) external returns (bool);
+}
+
+interface VotingMachineCallbacksInterface {
+    function mintReputation(
+        uint256 _amount,
+        address _beneficiary,
+        bytes32 _proposalId
+    ) external returns (bool);
+
+    function burnReputation(
+        uint256 _amount,
+        address _owner,
+        bytes32 _proposalId
+    ) external returns (bool);
+
+    function stakingTokenTransfer(
+        IERC20 _stakingToken,
+        address _beneficiary,
+        uint256 _amount,
+        bytes32 _proposalId
+    ) external returns (bool);
+
+    function getTotalReputationSupply(bytes32 _proposalId) external view returns (uint256);
+
+    function reputationOf(address _owner, bytes32 _proposalId) external view returns (uint256);
+
+    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns (uint256);
+}
+
+/**
+ * RealMath: fixed-point math library, based on fractional and integer parts.
+ * Using uint256 as real216x40, which isn't in Solidity yet.
+ * Internally uses the wider uint256 for some math.
+ *
+ * Note that for addition, subtraction, and mod (%), you should just use the
+ * built-in Solidity operators. Functions for these operations are not provided.
+ *
+ */
+
+library RealMath {
+    /**
+     * How many total bits are there?
+     */
+    uint256 private constant REAL_BITS = 256;
+
+    /**
+     * How many fractional bits are there?
+     */
+    uint256 private constant REAL_FBITS = 40;
+
+    /**
+     * What's the first non-fractional bit
+     */
+    uint256 private constant REAL_ONE = uint256(1) << REAL_FBITS;
+
+    /**
+     * Raise a real number to any positive integer power
+     */
+    function pow(uint256 realBase, uint256 exponent) internal pure returns (uint256) {
+        uint256 tempRealBase = realBase;
+        uint256 tempExponent = exponent;
+
+        // Start with the 0th power
+        uint256 realResult = REAL_ONE;
+        while (tempExponent != 0) {
+            // While there are still bits set
+            if ((tempExponent & 0x1) == 0x1) {
+                // If the low bit is set, multiply in the (many-times-squared) base
+                realResult = mul(realResult, tempRealBase);
+            }
+            // Shift off the low bit
+            tempExponent = tempExponent >> 1;
+            if (tempExponent != 0) {
+                // Do the squaring
+                tempRealBase = mul(tempRealBase, tempRealBase);
+            }
+        }
+
+        // Return the final result.
+        return realResult;
+    }
+
+    /**
+     * Create a real from a rational fraction.
+     */
+    function fraction(uint216 numerator, uint216 denominator) internal pure returns (uint256) {
+        return div(uint256(numerator) * REAL_ONE, uint256(denominator) * REAL_ONE);
+    }
+
+    /**
+     * Multiply one real by another. Truncates overflows.
+     */
+    function mul(uint256 realA, uint256 realB) private pure returns (uint256) {
+        // When multiplying fixed point in x.y and z.w formats we get (x+z).(y+w) format.
+        // So we just have to clip off the extra REAL_FBITS fractional bits.
+        uint256 res = realA * realB;
+        require(res / realA == realB, "RealMath mul overflow");
+        return (res >> REAL_FBITS);
+    }
+
+    /**
+     * Divide one real by another real. Truncates overflows.
+     */
+    function div(uint256 realNumerator, uint256 realDenominator) private pure returns (uint256) {
+        // We use the reverse of the multiplication trick: convert numerator from
+        // x.y to (x+z).(y+w) fixed point, then divide by denom in z.w fixed point.
+        return uint256((uint256(realNumerator) * REAL_ONE) / uint256(realDenominator));
+    }
+}
 
 /**
  * @title GenesisProtocol implementation designed for DXdao
@@ -13,9 +128,172 @@ import "../daostack/votingMachines/GenesisProtocolLogic.sol";
  *  - Signal Votes: Voters can signal their decisions with near 50k gas, the signaled votes can be executed on
  *    chain by anyone.
  */
-contract DXDVotingMachine is IntVoteInterface, GenesisProtocolLogic {
-    uint256 private constant MAX_BOOSTED_PROPOSALS = 4096;
+contract DXDVotingMachine {
     using ECDSA for bytes32;
+
+    using SafeMath for uint256;
+    using Math for uint256;
+    using RealMath for uint216;
+    using RealMath for uint256;
+    using Address for address;
+
+    enum ProposalState {
+        None,
+        ExpiredInQueue,
+        Executed,
+        Queued,
+        PreBoosted,
+        Boosted,
+        QuietEndingPeriod
+    }
+    enum ExecutionState {
+        None,
+        QueueBarCrossed,
+        QueueTimeOut,
+        PreBoostedBarCrossed,
+        BoostedTimeOut,
+        BoostedBarCrossed
+    }
+
+    //Organization's parameters
+    struct Parameters {
+        uint256 queuedVoteRequiredPercentage; // the absolute vote percentages bar.
+        uint256 queuedVotePeriodLimit; //the time limit for a proposal to be in an absolute voting mode.
+        uint256 boostedVotePeriodLimit; //the time limit for a proposal to be in boost mode.
+        uint256 preBoostedVotePeriodLimit; //the time limit for a proposal
+        //to be in an preparation state (stable) before boosted.
+        uint256 thresholdConst; //constant  for threshold calculation .
+        //threshold =thresholdConst ** (numberOfBoostedProposals)
+        uint256 limitExponentValue; // an upper limit for numberOfBoostedProposals
+        //in the threshold calculation to prevent overflow
+        uint256 quietEndingPeriod; //quite ending period
+        uint256 proposingRepReward; //proposer reputation reward.
+        uint256 votersReputationLossRatio; //Unsuccessful pre booster
+        //voters lose votersReputationLossRatio% of their reputation.
+        uint256 minimumDaoBounty;
+        uint256 daoBountyConst; //The DAO downstake for each proposal is calculate according to the formula
+        //(daoBountyConst * averageBoostDownstakes)/100 .
+        uint256 activationTime; //the point in time after which proposals can be created.
+        //if this address is set so only this address is allowed to vote of behalf of someone else.
+        address voteOnBehalf;
+    }
+
+    struct Voter {
+        uint256 vote; // YES(1) ,NO(2)
+        uint256 reputation; // amount of voter's reputation
+        bool preBoosted;
+    }
+
+    struct Staker {
+        uint256 vote; // YES(1) ,NO(2)
+        uint256 amount; // amount of staker's stake
+        uint256 amount4Bounty; // amount of staker's stake used for bounty reward calculation.
+    }
+
+    struct Proposal {
+        bytes32 organizationId; // the organization unique identifier the proposal is target to.
+        address callbacks; // should fulfill voting callbacks interface.
+        ProposalState state;
+        uint256 winningVote; //the winning vote.
+        address proposer;
+        //the proposal boosted period limit . it is updated for the case of quiteWindow mode.
+        uint256 currentBoostedVotePeriodLimit;
+        bytes32 paramsHash;
+        uint256 daoBountyRemain; //use for checking sum zero bounty claims.it is set at the proposing time.
+        uint256 daoBounty;
+        uint256 totalStakes; // Total number of tokens staked which can be redeemable by stakers.
+        uint256 confidenceThreshold;
+        uint256 secondsFromTimeOutTillExecuteBoosted;
+        uint256[3] times; //times[0] - submittedTime
+        //times[1] - boostedPhaseTime
+        //times[2] -preBoostedPhaseTime;
+        bool daoRedeemItsWinnings;
+        //      vote      reputation
+        mapping(uint256 => uint256) votes;
+        //      vote      reputation
+        mapping(uint256 => uint256) preBoostedVotes;
+        //      address     voter
+        mapping(address => Voter) voters;
+        //      vote        stakes
+        mapping(uint256 => uint256) stakes;
+        //      address  staker
+        mapping(address => Staker) stakers;
+    }
+
+    event NewProposal(
+        bytes32 indexed _proposalId,
+        address indexed _organization,
+        uint256 _numOfChoices,
+        address _proposer,
+        bytes32 _paramsHash
+    );
+
+    event ExecuteProposal(
+        bytes32 indexed _proposalId,
+        address indexed _organization,
+        uint256 _decision,
+        uint256 _totalReputation
+    );
+
+    event VoteProposal(
+        bytes32 indexed _proposalId,
+        address indexed _organization,
+        address indexed _voter,
+        uint256 _vote,
+        uint256 _reputation
+    );
+
+    event CancelProposal(bytes32 indexed _proposalId, address indexed _organization);
+    event CancelVoting(bytes32 indexed _proposalId, address indexed _organization, address indexed _voter);
+
+    event Stake(
+        bytes32 indexed _proposalId,
+        address indexed _organization,
+        address indexed _staker,
+        uint256 _vote,
+        uint256 _amount
+    );
+
+    event Redeem(
+        bytes32 indexed _proposalId,
+        address indexed _organization,
+        address indexed _beneficiary,
+        uint256 _amount
+    );
+
+    event RedeemDaoBounty(
+        bytes32 indexed _proposalId,
+        address indexed _organization,
+        address indexed _beneficiary,
+        uint256 _amount
+    );
+
+    event RedeemReputation(
+        bytes32 indexed _proposalId,
+        address indexed _organization,
+        address indexed _beneficiary,
+        uint256 _amount
+    );
+
+    event StateChange(bytes32 indexed _proposalId, ProposalState _proposalState);
+    event GPExecuteProposal(bytes32 indexed _proposalId, ExecutionState _executionState);
+    event ExpirationCallBounty(bytes32 indexed _proposalId, address indexed _beneficiary, uint256 _amount);
+    event ConfidenceLevelChange(bytes32 indexed _proposalId, uint256 _confidenceThreshold);
+
+    mapping(bytes32 => Parameters) public parameters; // A mapping from hashes to parameters
+    mapping(bytes32 => Proposal) public proposals; // Mapping from the ID of the proposal to the proposal itself.
+    mapping(bytes32 => uint256) public orgBoostedProposalsCnt;
+    //organizationId => organization
+    mapping(bytes32 => address) public organizations;
+    //organizationId => averageBoostDownstakes
+    mapping(bytes32 => uint256) public averagesDownstakesOfBoosted;
+    uint256 public constant NUM_OF_CHOICES = 2;
+    uint256 public constant NO = 2;
+    uint256 public constant YES = 1;
+    uint256 public proposalsCnt; // Total number of proposals
+    IERC20 public stakingToken;
+    address private constant GEN_TOKEN_ADDRESS = 0x543Ff227F64Aa17eA132Bf9886cAb5DB55DCAddf;
+    uint256 private constant MAX_BOOSTED_PROPOSALS = 4096;
 
     // Digest describing the data the user signs according EIP 712.
     // Needs to match what is passed to Metamask.
@@ -67,6 +345,25 @@ contract DXDVotingMachine is IntVoteInterface, GenesisProtocolLogic {
     // Event used to signal votes to be executed on chain
     event VoteSignaled(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount);
 
+    //When implementing this interface please do not only override function and modifier,
+    //but also to keep the modifiers on the overridden functions.
+    // ! Unused?
+    modifier onlyProposalOwner(bytes32 _proposalId) {
+        revert();
+        _;
+    }
+
+    /**
+     * @dev Check that the proposal is votable
+     * a proposal is votable if it is in one of the following states:
+     *  PreBoosted,Boosted,QuietEndingPeriod or Queued
+     */
+    modifier votable(bytes32 _proposalId) {
+        // revert()  // ! => check utility with Augusto
+        require(_isVotable(_proposalId));
+        _;
+    }
+
     modifier validDecision(bytes32 proposalId, uint256 decision) {
         require(decision <= getNumberOfChoices(proposalId) && decision > 0, "wrong decision value");
         _;
@@ -75,9 +372,19 @@ contract DXDVotingMachine is IntVoteInterface, GenesisProtocolLogic {
     /**
      * @dev Constructor
      */
-    constructor(IERC20 _stakingToken) public GenesisProtocolLogic(_stakingToken) {
+    constructor(IERC20 _stakingToken) public {
+        //The GEN token (staking token) address is hard coded in the contract by GEN_TOKEN_ADDRESS .
+        //This will work for a network which already hosted the GEN token on this address (e.g mainnet).
+        //If such contract address does not exist in the network (e.g ganache)
+        //the contract will use the _stakingToken param as the
+        //staking token address.
+
         require(address(_stakingToken) != address(0), "wrong _stakingToken");
-        stakingToken = _stakingToken;
+        if (address(GEN_TOKEN_ADDRESS).isContract()) {
+            stakingToken = IERC20(GEN_TOKEN_ADDRESS);
+        } else {
+            stakingToken = _stakingToken;
+        }
     }
 
     /**
@@ -89,6 +396,333 @@ contract DXDVotingMachine is IntVoteInterface, GenesisProtocolLogic {
             "DXDVotingMachine: Address not registered in organizationRefounds"
         );
         organizationRefunds[msg.sender].balance = organizationRefunds[msg.sender].balance.add(msg.value);
+    }
+
+    /**
+     * @dev executeBoosted try to execute a boosted or QuietEndingPeriod proposal if it is expired
+     * it rewards the msg.sender with P % of the proposal's upstakes upon a successful call to this function.
+     * P = t/150, where t is the number of seconds passed since the the proposal's timeout.
+     * P is capped by 10%.
+     * @param _proposalId the id of the proposal
+     * @return uint256 expirationCallBounty the bounty amount for the expiration call
+     */
+    function executeBoosted(bytes32 _proposalId) external returns (uint256 expirationCallBounty) {
+        Proposal storage proposal = proposals[_proposalId];
+        require(
+            proposal.state == ProposalState.Boosted || proposal.state == ProposalState.QuietEndingPeriod,
+            "proposal state in not Boosted nor QuietEndingPeriod"
+        );
+        require(_execute(_proposalId), "proposal need to expire");
+
+        proposal.secondsFromTimeOutTillExecuteBoosted = now.sub( // solhint-disable-next-line not-rely-on-time
+            proposal.currentBoostedVotePeriodLimit.add(proposal.times[1])
+        );
+
+        expirationCallBounty = calcExecuteCallBounty(_proposalId);
+        proposal.totalStakes = proposal.totalStakes.sub(expirationCallBounty);
+        require(stakingToken.transfer(msg.sender, expirationCallBounty), "transfer to msg.sender failed");
+        emit ExpirationCallBounty(_proposalId, msg.sender, expirationCallBounty);
+    }
+
+    /**
+     * @dev hash the parameters, save them if necessary, and return the hash value
+     * @param _params a parameters array
+     *    _params[0] - _queuedVoteRequiredPercentage,
+     *    _params[1] - _queuedVotePeriodLimit, //the time limit for a proposal to be in an absolute voting mode.
+     *    _params[2] - _boostedVotePeriodLimit, //the time limit for a proposal to be in an relative voting mode.
+     *    _params[3] - _preBoostedVotePeriodLimit, //the time limit for a proposal to be in an preparation
+     *                  state (stable) before boosted.
+     *    _params[4] -_thresholdConst
+     *    _params[5] -_quietEndingPeriod
+     *    _params[6] -_proposingRepReward
+     *    _params[7] -_votersReputationLossRatio
+     *    _params[8] -_minimumDaoBounty
+     *    _params[9] -_daoBountyConst
+     *    _params[10] -_activationTime
+     * @param _voteOnBehalf - authorized to vote on behalf of others.
+     */
+    function setParameters(
+        uint256[11] calldata _params, //use array here due to stack too deep issue.
+        address _voteOnBehalf
+    ) external returns (bytes32) {
+        require(_params[0] <= 100 && _params[0] >= 50, "50 <= queuedVoteRequiredPercentage <= 100");
+        require(_params[4] <= 16000 && _params[4] > 1000, "1000 < thresholdConst <= 16000");
+        require(_params[7] <= 100, "votersReputationLossRatio <= 100");
+        require(_params[2] >= _params[5], "boostedVotePeriodLimit >= quietEndingPeriod");
+        require(_params[8] > 0, "minimumDaoBounty should be > 0");
+        require(_params[9] > 0, "daoBountyConst should be > 0");
+
+        bytes32 paramsHash = getParametersHash(_params, _voteOnBehalf);
+        //set a limit for power for a given alpha to prevent overflow
+        uint256 limitExponent = 172; //for alpha less or equal 2
+        uint256 j = 2;
+        for (uint256 i = 2000; i < 16000; i = i * 2) {
+            if ((_params[4] > i) && (_params[4] <= i * 2)) {
+                limitExponent = limitExponent / j;
+                break;
+            }
+            j++;
+        }
+
+        parameters[paramsHash] = Parameters({
+            queuedVoteRequiredPercentage: _params[0],
+            queuedVotePeriodLimit: _params[1],
+            boostedVotePeriodLimit: _params[2],
+            preBoostedVotePeriodLimit: _params[3],
+            thresholdConst: uint216(_params[4]).fraction(uint216(1000)),
+            limitExponentValue: limitExponent,
+            quietEndingPeriod: _params[5],
+            proposingRepReward: _params[6],
+            votersReputationLossRatio: _params[7],
+            minimumDaoBounty: _params[8],
+            daoBountyConst: _params[9],
+            activationTime: _params[10],
+            voteOnBehalf: _voteOnBehalf
+        });
+        return paramsHash;
+    }
+
+    /**
+     * @dev redeem a reward for a successful stake, vote or proposing.
+     * The function use a beneficiary address as a parameter (and not msg.sender) to enable
+     * users to redeem on behalf of someone else.
+     * @param _proposalId the ID of the proposal
+     * @param _beneficiary - the beneficiary address
+     * @return rewards -
+     *           [0] stakerTokenReward
+     *           [1] voterReputationReward
+     *           [2] proposerReputationReward
+     */
+    // solhint-disable-next-line function-max-lines,code-complexity
+    function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint256[3] memory rewards) {
+        Proposal storage proposal = proposals[_proposalId];
+        require(
+            (proposal.state == ProposalState.Executed) || (proposal.state == ProposalState.ExpiredInQueue),
+            "Proposal should be Executed or ExpiredInQueue"
+        );
+        Parameters memory params = parameters[proposal.paramsHash];
+        //as staker
+        Staker storage staker = proposal.stakers[_beneficiary];
+        uint256 totalWinningStakes = proposal.stakes[proposal.winningVote];
+        uint256 totalStakesLeftAfterCallBounty = proposal.stakes[NO].add(proposal.stakes[YES]).sub(
+            calcExecuteCallBounty(_proposalId)
+        );
+        if (staker.amount > 0) {
+            if (proposal.state == ProposalState.ExpiredInQueue) {
+                //Stakes of a proposal that expires in Queue are sent back to stakers
+                rewards[0] = staker.amount;
+            } else if (staker.vote == proposal.winningVote) {
+                if (staker.vote == YES) {
+                    if (proposal.daoBounty < totalStakesLeftAfterCallBounty) {
+                        uint256 _totalStakes = totalStakesLeftAfterCallBounty.sub(proposal.daoBounty);
+                        rewards[0] = (staker.amount.mul(_totalStakes)) / totalWinningStakes;
+                    }
+                } else {
+                    rewards[0] = (staker.amount.mul(totalStakesLeftAfterCallBounty)) / totalWinningStakes;
+                }
+            }
+            staker.amount = 0;
+        }
+        //dao redeem its winnings
+        if (
+            proposal.daoRedeemItsWinnings == false &&
+            _beneficiary == organizations[proposal.organizationId] &&
+            proposal.state != ProposalState.ExpiredInQueue &&
+            proposal.winningVote == NO
+        ) {
+            rewards[0] = rewards[0]
+                .add((proposal.daoBounty.mul(totalStakesLeftAfterCallBounty)) / totalWinningStakes)
+                .sub(proposal.daoBounty);
+            proposal.daoRedeemItsWinnings = true;
+        }
+
+        //as voter
+        Voter storage voter = proposal.voters[_beneficiary];
+        if ((voter.reputation != 0) && (voter.preBoosted)) {
+            if (proposal.state == ProposalState.ExpiredInQueue) {
+                //give back reputation for the voter
+                rewards[1] = ((voter.reputation.mul(params.votersReputationLossRatio)) / 100);
+            } else if (proposal.winningVote == voter.vote) {
+                uint256 lostReputation;
+                if (proposal.winningVote == YES) {
+                    lostReputation = proposal.preBoostedVotes[NO];
+                } else {
+                    lostReputation = proposal.preBoostedVotes[YES];
+                }
+                lostReputation = (lostReputation.mul(params.votersReputationLossRatio)) / 100;
+                rewards[1] = ((voter.reputation.mul(params.votersReputationLossRatio)) / 100).add(
+                    (voter.reputation.mul(lostReputation)) / proposal.preBoostedVotes[proposal.winningVote]
+                );
+            }
+            voter.reputation = 0;
+        }
+        //as proposer
+        if ((proposal.proposer == _beneficiary) && (proposal.winningVote == YES) && (proposal.proposer != address(0))) {
+            rewards[2] = params.proposingRepReward;
+            proposal.proposer = address(0);
+        }
+        if (rewards[0] != 0) {
+            proposal.totalStakes = proposal.totalStakes.sub(rewards[0]);
+            require(stakingToken.transfer(_beneficiary, rewards[0]), "transfer to beneficiary failed");
+            emit Redeem(_proposalId, organizations[proposal.organizationId], _beneficiary, rewards[0]);
+        }
+        if (rewards[1].add(rewards[2]) != 0) {
+            VotingMachineCallbacksInterface(proposal.callbacks).mintReputation(
+                rewards[1].add(rewards[2]),
+                _beneficiary,
+                _proposalId
+            );
+            emit RedeemReputation(
+                _proposalId,
+                organizations[proposal.organizationId],
+                _beneficiary,
+                rewards[1].add(rewards[2])
+            );
+        }
+    }
+
+    /**
+     * @dev redeemDaoBounty a reward for a successful stake.
+     * The function use a beneficiary address as a parameter (and not msg.sender) to enable
+     * users to redeem on behalf of someone else.
+     * @param _proposalId the ID of the proposal
+     * @param _beneficiary - the beneficiary address
+     * @return redeemedAmount - redeem token amount
+     * @return potentialAmount - potential redeem token amount(if there is enough tokens bounty at the organization )
+     */
+    function redeemDaoBounty(bytes32 _proposalId, address _beneficiary)
+        public
+        returns (uint256 redeemedAmount, uint256 potentialAmount)
+    {
+        Proposal storage proposal = proposals[_proposalId];
+        require(proposal.state == ProposalState.Executed);
+        uint256 totalWinningStakes = proposal.stakes[proposal.winningVote];
+        Staker storage staker = proposal.stakers[_beneficiary];
+        if (
+            (staker.amount4Bounty > 0) &&
+            (staker.vote == proposal.winningVote) &&
+            (proposal.winningVote == YES) &&
+            (totalWinningStakes != 0)
+        ) {
+            //as staker
+            potentialAmount = (staker.amount4Bounty * proposal.daoBounty) / totalWinningStakes;
+        }
+        if (
+            (potentialAmount != 0) &&
+            (VotingMachineCallbacksInterface(proposal.callbacks).balanceOfStakingToken(stakingToken, _proposalId) >=
+                potentialAmount)
+        ) {
+            staker.amount4Bounty = 0;
+            proposal.daoBountyRemain = proposal.daoBountyRemain.sub(potentialAmount);
+            require(
+                VotingMachineCallbacksInterface(proposal.callbacks).stakingTokenTransfer(
+                    stakingToken,
+                    _beneficiary,
+                    potentialAmount,
+                    _proposalId
+                )
+            );
+            redeemedAmount = potentialAmount;
+            emit RedeemDaoBounty(_proposalId, organizations[proposal.organizationId], _beneficiary, redeemedAmount);
+        }
+    }
+
+    /**
+     * @dev calcExecuteCallBounty calculate the execute boosted call bounty
+     * @param _proposalId the ID of the proposal
+     * @return uint256 executeCallBounty
+     */
+    function calcExecuteCallBounty(bytes32 _proposalId) public view returns (uint256) {
+        uint256 maxRewardSeconds = 1500;
+        uint256 rewardSeconds = uint256(maxRewardSeconds).min(
+            proposals[_proposalId].secondsFromTimeOutTillExecuteBoosted
+        );
+        return rewardSeconds.mul(proposals[_proposalId].stakes[YES]).div(maxRewardSeconds * 10);
+    }
+
+    /**
+     * @dev shouldBoost check if a proposal should be shifted to boosted phase.
+     * @param _proposalId the ID of the proposal
+     * @return bool true or false.
+     */
+    function shouldBoost(bytes32 _proposalId) public view returns (bool) {
+        Proposal memory proposal = proposals[_proposalId];
+        return (_score(_proposalId) > threshold(proposal.paramsHash, proposal.organizationId));
+    }
+
+    /**
+     * @dev threshold return the organization's score threshold which required by
+     * a proposal to shift to boosted state.
+     * This threshold is dynamically set and it depend on the number of boosted proposal.
+     * @param _organizationId the organization identifier
+     * @param _paramsHash the organization parameters hash
+     * @return uint256 organization's score threshold as real number.
+     */
+    function threshold(bytes32 _paramsHash, bytes32 _organizationId) public view returns (uint256) {
+        uint256 power = orgBoostedProposalsCnt[_organizationId];
+        Parameters storage params = parameters[_paramsHash];
+
+        if (power > params.limitExponentValue) {
+            power = params.limitExponentValue;
+        }
+
+        return params.thresholdConst.pow(power);
+    }
+
+    /**
+     * @dev hashParameters returns a hash of the given parameters
+     */
+    function getParametersHash(
+        uint256[11] memory _params, //use array here due to stack too deep issue.
+        address _voteOnBehalf
+    ) public pure returns (bytes32) {
+        //double call to keccak256 to avoid deep stack issue when call with too many params.
+        return
+            keccak256(
+                abi.encodePacked(
+                    keccak256(
+                        abi.encodePacked(
+                            _params[0],
+                            _params[1],
+                            _params[2],
+                            _params[3],
+                            _params[4],
+                            _params[5],
+                            _params[6],
+                            _params[7],
+                            _params[8],
+                            _params[9],
+                            _params[10]
+                        )
+                    ),
+                    _voteOnBehalf
+                )
+            );
+    }
+
+    /**
+     * @dev _score return the proposal score (Confidence level)
+     * For dual choice proposal S = (S+)/(S-)
+     * @param _proposalId the ID of the proposal
+     * @return uint256 proposal score as real number.
+     */
+    function _score(bytes32 _proposalId) internal view returns (uint256) {
+        Proposal storage proposal = proposals[_proposalId];
+        //proposal.stakes[NO] cannot be zero as the dao downstake > 0 for each proposal.
+        return uint216(proposal.stakes[YES]).fraction(uint216(proposal.stakes[NO]));
+    }
+
+    /**
+     * @dev _isVotable check if the proposal is votable
+     * @param _proposalId the ID of the proposal
+     * @return bool true or false
+     */
+    function _isVotable(bytes32 _proposalId) internal view returns (bool) {
+        ProposalState pState = proposals[_proposalId].state;
+        return ((pState == ProposalState.PreBoosted) ||
+            (pState == ProposalState.Boosted) ||
+            (pState == ProposalState.QuietEndingPeriod) ||
+            (pState == ProposalState.Queued));
     }
 
     /**
