@@ -18,7 +18,7 @@ contract DXAvatar is OwnableUpgradeable {
         super.transferOwnership(_owner);
     }
 
-    fallback() external payable {}
+    receive() external payable {}
 
     /**
      * @dev Perform a call to an arbitrary contract
@@ -29,10 +29,10 @@ contract DXAvatar is OwnableUpgradeable {
      */
     function executeCall(
         address _to,
-        bytes _data,
+        bytes memory _data,
         uint256 _value
     ) public onlyOwner returns (bool) {
-        (bool success, bytes memory data) = _to.call{value: _value}(_data);
+        (bool success, ) = _to.call{value: _value}(_data);
         emit CallExecuted(_to, _data, _value, success);
         return success;
     }
