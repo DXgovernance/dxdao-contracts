@@ -7,11 +7,12 @@ import "@openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.
 
 /**
  * @title Reputation system
+ * @author github:Kenny-Gin1
  * @dev A DAO has Reputation System which allows peers to rate other peers in order to build trust .
- * A reputation is use to assign influence measure to a DAO'S peers.
+ * Reputation is used to assign influence metric to a DAO's peers.
  * Reputation is similar to regular tokens but with one crucial difference: It is non-transferable.
- * The Reputation contract maintain a map of address to reputation value.
- * It provides an onlyOwner functions to mint and burn reputation _to (or _from) a specific address.
+ * This contract uses the ERC20SnapshotUpgradeable extension methods' under the hood to mint and burn reputation tokens.
+ * It uses snapshots to keep track of the total reputation of each peer.
  */
 contract Reputation is Initializable, OwnableUpgradeable, ERC20SnapshotUpgradeable {
     event Mint(address indexed _to, uint256 _amount);
