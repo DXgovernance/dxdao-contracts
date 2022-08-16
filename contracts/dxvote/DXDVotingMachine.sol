@@ -414,7 +414,8 @@ contract DXDVotingMachine {
         );
         require(_execute(_proposalId), "proposal need to expire");
 
-        proposal.secondsFromTimeOutTillExecuteBoosted = now.sub( // solhint-disable-next-line not-rely-on-time
+        proposal.secondsFromTimeOutTillExecuteBoosted = block.timestamp.sub(
+            // solhint-disable-next-line not-rely-on-time
             proposal.currentBoostedVotePeriodLimit.add(proposal.times[1])
         );
 
@@ -806,7 +807,7 @@ contract DXDVotingMachine {
         require(organizationRefunds[msg.sender].balance > 0, "DXDVotingMachine: Organization refund balance is zero");
         uint256 organizationBalance = organizationRefunds[msg.sender].balance;
         organizationRefunds[msg.sender].balance = 0;
-        msg.sender.transfer(organizationBalance);
+        payable(msg.sender).transfer(organizationBalance);
     }
 
     /**
@@ -1090,7 +1091,7 @@ contract DXDVotingMachine {
     ) internal returns (bytes32) {
         require(_choicesAmount >= NUM_OF_CHOICES);
         // solhint-disable-next-line not-rely-on-time
-        require(now > parameters[_paramsHash].activationTime, "not active yet");
+        require(block.timestamp > parameters[_paramsHash].activationTime, "not active yet");
         //Check parameters existence.
         require(parameters[_paramsHash].queuedVoteRequiredPercentage >= 50);
         // Generate a unique ID:
@@ -1103,7 +1104,7 @@ contract DXDVotingMachine {
 
         proposal.state = ProposalState.Queued;
         // solhint-disable-next-line not-rely-on-time
-        proposal.times[0] = now; //submitted time
+        proposal.times[0] = block.timestamp; //submitted time
         proposal.currentBoostedVotePeriodLimit = parameters[_paramsHash].boostedVotePeriodLimit;
         proposal.proposer = _proposer;
         proposal.winningVote = NO;
@@ -1175,7 +1176,8 @@ contract DXDVotingMachine {
         ) {
             if (
                 (proposal.state == ProposalState.Boosted &&
-                    ((now - proposal.times[1]) >= (params.boostedVotePeriodLimit - params.quietEndingPeriod))) ||
+                    ((block.timestamp - proposal.times[1]) >=
+                        (params.boostedVotePeriodLimit - params.quietEndingPeriod))) ||
                 // solhint-disable-next-line not-rely-on-time
                 proposal.state == ProposalState.QuietEndingPeriod
             ) {
@@ -1186,7 +1188,7 @@ contract DXDVotingMachine {
                     emit StateChange(_proposalId, proposal.state);
                 }
                 // solhint-disable-next-line not-rely-on-time
-                proposal.times[1] = now;
+                proposal.times[1] = block.timestamp;
             }
             proposal.winningVote = _vote;
         }
@@ -1236,7 +1238,7 @@ contract DXDVotingMachine {
             );
             if (organizationRefunds[orgAddress].balance >= gasRefund) {
                 organizationRefunds[orgAddress].balance = organizationRefunds[orgAddress].balance.sub(gasRefund);
-                msg.sender.transfer(gasRefund);
+                payable(msg.sender).transfer(gasRefund);
             }
         }
     }
@@ -1452,7 +1454,7 @@ contract DXDVotingMachine {
         } else {
             if (proposal.state == ProposalState.Queued) {
                 // solhint-disable-next-line not-rely-on-time
-                if ((now - proposal.times[0]) >= params.queuedVotePeriodLimit) {
+                if ((block.timestamp - proposal.times[0]) >= params.queuedVotePeriodLimit) {
                     proposal.state = ProposalState.ExpiredInQueue;
                     proposal.winningVote = NO;
                     executionState = ExecutionState.QueueTimeOut;
@@ -1462,7 +1464,7 @@ contract DXDVotingMachine {
                         //change proposal mode to PreBoosted mode.
                         proposal.state = ProposalState.PreBoosted;
                         // solhint-disable-next-line not-rely-on-time
-                        proposal.times[2] = now;
+                        proposal.times[2] = block.timestamp;
                         proposal.confidenceThreshold = confidenceThreshold;
                     }
                 }
@@ -1471,7 +1473,7 @@ contract DXDVotingMachine {
             if (proposal.state == ProposalState.PreBoosted) {
                 confidenceThreshold = threshold(proposal.paramsHash, proposal.organizationId);
                 // solhint-disable-next-line not-rely-on-time
-                if ((now - proposal.times[2]) >= params.preBoostedVotePeriodLimit) {
+                if ((block.timestamp - proposal.times[2]) >= params.preBoostedVotePeriodLimit) {
                     if (_score(_proposalId) > confidenceThreshold) {
                         if (orgBoostedProposalsCnt[proposal.organizationId] < MAX_BOOSTED_PROPOSALS) {
                             //change proposal mode to Boosted mode.
@@ -1508,7 +1510,7 @@ contract DXDVotingMachine {
 
         if ((proposal.state == ProposalState.Boosted) || (proposal.state == ProposalState.QuietEndingPeriod)) {
             // solhint-disable-next-line not-rely-on-time
-            if ((now - proposal.times[1]) >= proposal.currentBoostedVotePeriodLimit) {
+            if ((block.timestamp - proposal.times[1]) >= proposal.currentBoostedVotePeriodLimit) {
                 if (proposal.votes[proposal.winningVote] >= boostedExecutionBar) {
                     proposal.state = ProposalState.Executed;
                     executionState = ExecutionState.BoostedBarCrossed;
