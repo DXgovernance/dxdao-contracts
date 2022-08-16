@@ -13,16 +13,20 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  * It provides an onlyOwner functions to mint and burn reputation _to (or _from) a specific address.
  */
 contract Reputation is Ownable, Initializable, ERC20SnapshotUpgradeable {
+    event Mint(address indexed _to, uint256 _amount);
+    // Event indicating burning of reputation for an address.
+    event Burn(address indexed _from, uint256 _amount);
+
     function initialize(string memory name, string memory symbol) public initializer {
         _ERC20_init(name, symbol);
         _Ownable_init();
     }
 
-    function mint (address memory  _user, uint256 memory _amount) public onlyOwner {
-        require(token.balanceOf(msg.sender) >= _amount);
-        token.transfer(msg.sender, _amount);
-        token.transfer(_to, _amount);
+    function mint(address memory _user, uint256 memory _amount) public onlyOwner returns (bool) {
+        _mint(_user, _amount);
+        _snapshot();
         emit Mint(_to, _amount);
+        return true;
     }
 
     // @notice Generates `_amount` reputation that are assigned to `_owner`
@@ -31,12 +35,8 @@ contract Reputation is Ownable, Initializable, ERC20SnapshotUpgradeable {
     // @return True if the reputation are generated correctly
     function mintMultiple(address[] memory _user, uint256[] memory _amount) public onlyOwner returns (bool) {
         for (uint256 i = 0; i < _user.length; i++) {
-            uint256 curTotalSupply = totalSupply();
-            require(curTotalSupply + _amount[i] >= curTotalSupply); // Check for overflow
-            uint256 previousBalanceTo = balanceOf(_user[i]);
-            require(previousBalanceTo + _amount[i] >= previousBalanceTo); // Check for overflow
-            updateValueAtNow(totalSupplyHistory, curTotalSupply + _amount[i]);
-            updateValueAtNow(balances[_user[i]], previousBalanceTo + _amount[i]);
+            _mint(_user[i], _amount[i]);
+            _snapshot();
             emit Mint(_user[i], _amount[i]);
         }
         return true;
@@ -47,29 +47,17 @@ contract Reputation is Ownable, Initializable, ERC20SnapshotUpgradeable {
     // @param _amount The quantity of reputation to burn
     // @return True if the reputation are burned correctly
     function burn(address _user, uint256 _amount) public onlyOwner returns (bool) {
-        uint256 curTotalSupply = totalSupply();
-        uint256 amountBurned = _amount;
-        uint256 previousBalanceFrom = balanceOf(_user);
-        if (previousBalanceFrom < amountBurned) {
-            amountBurned = previousBalanceFrom;
-        }
-        updateValueAtNow(totalSupplyHistory, curTotalSupply - amountBurned);
-        updateValueAtNow(balances[_user], previousBalanceFrom - amountBurned);
-        emit Burn(_user, amountBurned);
+        _burn(_user, _amount);
+        _snapshot();
+        emit Burn(_user, amount);
         return true;
     }
 
     function burnMultiplie(address[] memory _user, uint256 _amount) public onlyOwner returns (bool) {
         for (uint256 i = 0; i < _user.length; i++) {
-            uint256 curTotalSupply = totalSupply();
-            uint256 amountBurned = _amount;
-            uint256 previousBalanceFrom = balanceOf(_user[i]);
-            if (previousBalanceFrom < amountBurned) {
-                amountBurned = previousBalanceFrom;
-            }
-            updateValueAtNow(totalSupplyHistory, curTotalSupply - amountBurned);
-            updateValueAtNow(balances[_user[i]], previousBalanceFrom - amountBurned);
-            emit Burn(_user[i], amountBurned);
+            _burn(_user[i], _amount);
+            _snapshot();
+            emit Burn(_user[i], amount);
         }
         return true;
     }
