@@ -390,7 +390,7 @@ contract DXDVotingMachine {
     /**
      * @dev Allows the voting machine to receive ether to be used to refund voting costs
      */
-    function() external payable {
+    receive() external payable {
         require(
             organizationRefunds[msg.sender].voteGas > 0,
             "DXDVotingMachine: Address not registered in organizationRefounds"
