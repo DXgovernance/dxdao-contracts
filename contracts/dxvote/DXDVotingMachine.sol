@@ -1,10 +1,11 @@
-pragma solidity ^0.5.11;
+// SPDX-License-Identifier: AGPL-3.0
+pragma solidity ^0.8.8;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/math/Math.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-solidity/contracts/utils/Address.sol";
-import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ProposalExecuteInterface {
     function executeProposal(bytes32 _proposalId, int256 _decision) external returns (bool);
@@ -130,7 +131,6 @@ library RealMath {
  */
 contract DXDVotingMachine {
     using ECDSA for bytes32;
-
     using SafeMath for uint256;
     using Math for uint256;
     using RealMath for uint216;
@@ -404,7 +404,7 @@ contract DXDVotingMachine {
      * P = t/150, where t is the number of seconds passed since the the proposal's timeout.
      * P is capped by 10%.
      * @param _proposalId the id of the proposal
-     * @return uint256 expirationCallBounty the bounty amount for the expiration call
+     * @return expirationCallBounty the bounty amount for the expiration call
      */
     function executeBoosted(bytes32 _proposalId) external returns (uint256 expirationCallBounty) {
         Proposal storage proposal = proposals[_proposalId];
@@ -877,7 +877,7 @@ contract DXDVotingMachine {
     /**
      * @dev getProposalTimes returns proposals times variables.
      * @param _proposalId id of the proposal
-     * @return proposals times array
+     * @return times times array
      */
     function getProposalTimes(bytes32 _proposalId) external view returns (uint256[3] memory times) {
         return proposals[_proposalId].times;
