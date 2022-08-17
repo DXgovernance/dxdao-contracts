@@ -2,7 +2,7 @@ const helpers = require("../helpers");
 
 const DxController = artifacts.require("./DxController.sol");
 const DxReputation = artifacts.require("./DxReputation.sol");
-const DXAvatar = artifacts.require("./DXAvatar.sol");
+const DxAvatar = artifacts.require("./DXAvatar.sol");
 const DxToken = artifacts.require("./DxToken.sol");
 const GlobalConstraintMock = artifacts.require(
   "./test/GlobalConstraintMock.sol"
@@ -25,7 +25,7 @@ const setup = async function (
   // set up a reputation system
   reputation = await DxReputation.new();
 
-  avatar = await DXAvatar.new("name", token.address, reputation.address);
+  avatar = await DxAvatar.new("name", token.address, reputation.address);
   var sender = accounts[0];
   if (permission !== "0") {
     sender = accounts[1];
@@ -604,7 +604,7 @@ contract("Controller", accounts => {
 
   it("sendEther", async () => {
     controller = await setup(accounts);
-    let otherAvatar = await DXAvatar.new(
+    let otherAvatar = await DxAvatar.new(
       "otheravatar",
       constants.NULL_ADDRESS,
       avatar.address
@@ -857,7 +857,7 @@ contract("Controller", accounts => {
   it("globalConstraints sendEther  add & remove", async () => {
     controller = await setup(accounts);
     var globalConstraints = await constraint("sendEther");
-    let otherAvatar = await DXAvatar.new(
+    let otherAvatar = await DxAvatar.new(
       "otheravatar",
       constants.NULL_ADDRESS,
       avatar.address

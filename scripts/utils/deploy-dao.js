@@ -12,7 +12,7 @@ const { waitBlocks } = require("../utils/wait");
 
 const deployDao = async function (daoConfig, networkContracts) {
   // Import contracts
-  const DXAvatar = await hre.artifacts.require("DXAvatar");
+  const DxAvatar = await hre.artifacts.require("DXAvatar");
   const DxReputation = await hre.artifacts.require("DxReputation");
   const DxController = await hre.artifacts.require("DxController");
   const ContributionReward = await hre.artifacts.require("ContributionReward");
@@ -61,11 +61,11 @@ const deployDao = async function (daoConfig, networkContracts) {
   // Deploy Avatar
   let avatar;
   console.log(
-    "Deploying DXAvatar...",
+    "Deploying DxAvatar...",
     networkContracts.addresses["DXD"],
     reputation.address
   );
-  avatar = await DXAvatar.new(
+  avatar = await DxAvatar.new(
     "DXdao",
     networkContracts.addresses["DXD"],
     reputation.address
