@@ -25,7 +25,7 @@ contract DxController {
         bool canMakeAvatarCalls;
     }
 
-    address[] schemesAddreses;
+    address[] schemesAddresses;
 
     mapping(address => Scheme) public schemes;
 
@@ -35,9 +35,6 @@ contract DxController {
     // newController will point to the new controller after the present controller is upgraded
     address public newController;
     
-    event MintReputation(address indexed _sender, address indexed _to, uint256 _amount);
-    event BurnReputation(address indexed _sender, address indexed _from, uint256 _amount);
-    event MintTokens(address indexed _sender, address indexed _beneficiary, uint256 _amount);
     event RegisterScheme(address indexed _sender, address indexed _scheme);
     event UnregisterScheme(address indexed _sender, address indexed _scheme);
     event UpgradeController(address indexed _oldController, address _newController);
@@ -95,51 +92,6 @@ contract DxController {
     modifier isAvatarValid(address _avatar) {
         require(_avatar == address(avatar));
         _;
-    }
-
-    /**
-     * @dev Mint `_amount` of reputation that are assigned to `_to` .
-     * @param  _amount amount of reputation to mint
-     * @param _to beneficiary address
-     * @return bool which represents a success
-     */
-    function mintReputation(
-        uint256 _amount,
-        address _to,
-        address _avatar
-    ) external onlyRegisteredScheme isAvatarValid(_avatar) returns (bool) {
-        emit MintReputation(msg.sender, _to, _amount);
-        return nativeReputation.mint(_to, _amount);
-    }
-
-    /**
-     * @dev Burns `_amount` of reputation from `_from`
-     * @param _amount amount of reputation to burn
-     * @param _from The address that will lose the reputation
-     * @return bool which represents a success
-     */
-    function burnReputation(
-        uint256 _amount,
-        address _from,
-        address _avatar
-    ) external onlyRegisteredScheme isAvatarValid(_avatar) returns (bool) {
-        emit BurnReputation(msg.sender, _from, _amount);
-        return nativeReputation.burn(_from, _amount);
-    }
-
-    /**
-     * @dev mint tokens .
-     * @param  _amount amount of token to mint
-     * @param _beneficiary beneficiary address
-     * @return bool which represents a success
-     */
-    function mintTokens(
-        uint256 _amount,
-        address _beneficiary,
-        address _avatar
-    ) external onlyRegisteredScheme isAvatarValid(_avatar) returns (bool) {
-        emit MintTokens(msg.sender, _beneficiary, _amount);
-        return nativeToken.mint(_beneficiary, _amount);
     }
 
     /**
@@ -262,117 +214,6 @@ contract DxController {
         returns (bool, bytes memory)
     {
         return avatar.genericCall(_contract, _data, _value);
-    }
-
-    /**
-     * @dev send some ether
-     * @param _amountInWei the amount of ether (in Wei) to send
-     * @param _to address of the beneficiary
-     * @return bool which represents a success
-     */
-    function sendEther(
-        uint256 _amountInWei,
-        address payable _to,
-        Avatar _avatar
-    )
-        external
-        onlyRegisteredScheme
-        isAvatarValid(address(_avatar))
-        returns (bool)
-    {
-        return avatar.sendEther(_amountInWei, _to);
-    }
-
-    /**
-     * @dev send some amount of arbitrary ERC20 Tokens
-     * @param _externalToken the address of the Token Contract
-     * @param _to address of the beneficiary
-     * @param _value the amount of ether (in Wei) to send
-     * @return bool which represents a success
-     */
-    function externalTokenTransfer(
-        IERC20 _externalToken,
-        address _to,
-        uint256 _value,
-        Avatar _avatar
-    )
-        external
-        onlyRegisteredScheme
-        isAvatarValid(address(_avatar))
-        returns (bool)
-    {
-        return avatar.externalTokenTransfer(_externalToken, _to, _value);
-    }
-
-    /**
-     * @dev transfer token "from" address "to" address
-     *      One must to approve the amount of tokens which can be spend from the
-     *      "from" account.This can be done using externalTokenApprove.
-     * @param _externalToken the address of the Token Contract
-     * @param _from address of the account to send from
-     * @param _to address of the beneficiary
-     * @param _value the amount of ether (in Wei) to send
-     * @return bool which represents a success
-     */
-    function externalTokenTransferFrom(
-        IERC20 _externalToken,
-        address _from,
-        address _to,
-        uint256 _value,
-        Avatar _avatar
-    )
-        external
-        onlyRegisteredScheme
-        isAvatarValid(address(_avatar))
-        returns (bool)
-    {
-        return avatar.externalTokenTransferFrom(_externalToken, _from, _to, _value);
-    }
-
-    /**
-     * @dev externalTokenApproval approve the spender address to spend a specified amount of tokens
-     *      on behalf of msg.sender.
-     * @param _externalToken the address of the Token Contract
-     * @param _spender address
-     * @param _value the amount of ether (in Wei) which the approval is referring to.
-     * @return bool which represents a success
-     */
-    function externalTokenApproval(
-        IERC20 _externalToken,
-        address _spender,
-        uint256 _value,
-        Avatar _avatar
-    )
-        external
-        onlyRegisteredScheme
-        isAvatarValid(address(_avatar))
-        returns (bool)
-    {
-        return avatar.externalTokenApproval(_externalToken, _spender, _value);
-    }
-
-    /**
-     * @dev metaData emits an event with a string, should contain the hash of some meta data.
-     * @param _metaData a string representing a hash of the meta data
-     * @param _avatar Avatar
-     * @return bool which represents a success
-     */
-    function metaData(string calldata _metaData, Avatar _avatar)
-        external
-        onlyMetaDataScheme
-        isAvatarValid(address(_avatar))
-        returns (bool)
-    {
-        return avatar.metaData(_metaData);
-    }
-
-    /**
-     * @dev getNativeReputation
-     * @param _avatar the organization avatar.
-     * @return organization native reputation
-     */
-    function getNativeReputation(address _avatar) external view isAvatarValid(_avatar) returns (address) {
-        return address(nativeReputation);
     }
 
     function isSchemeRegistered(address _scheme, address _avatar) external view isAvatarValid(_avatar) returns (bool) {

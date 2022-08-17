@@ -55,14 +55,16 @@ contract DaoCreator {
         for (uint256 i = 0; i < _founders.length; i++) {
             require(_founders[i] != address(0));
             if (_foundersTokenAmount[i] > 0) {
-                DxController(_avatar.owner()).mintTokens(_foundersTokenAmount[i], _founders[i], address(_avatar));
+                // TODO: Fix
+                // DxController(_avatar.owner()).mintTokens(_foundersTokenAmount[i], _founders[i], address(_avatar));
             }
             if (_foundersReputationAmount[i] > 0) {
-                DxController(_avatar.owner()).mintReputation(
-                    _foundersReputationAmount[i],
-                    _founders[i],
-                    address(_avatar)
-                );
+                // TODO: Fix
+                // DxController(_avatar.owner()).mintReputation(
+                //     _foundersReputationAmount[i],
+                //     _founders[i],
+                //     address(_avatar)
+                // );
             }
         }
         return true;
@@ -126,7 +128,8 @@ contract DaoCreator {
         for (uint256 i = 0; i < _schemes.length; i++) {
             controller.registerScheme(_schemes[i], _params[i], _permissions[i], address(_avatar));
         }
-        controller.metaData(_metaData, _avatar);
+        // TODO: Fix
+        // controller.metaData(_metaData, _avatar);
         // Unregister self:
         controller.unregisterScheme(address(this), address(_avatar));
         // Remove lock:
