@@ -7,7 +7,7 @@ const constants = require("../helpers/constants");
 
 const ContributionReward = artifacts.require("./ContributionReward.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
-const Avatar = artifacts.require("./DxAvatar.sol");
+const Avatar = artifacts.require("./DXAvatar.sol");
 const Redeemer = artifacts.require("./Redeemer.sol");
 const ETHRelayer = artifacts.require("./ETHRelayer.sol");
 const GnosisProxy = artifacts.require("./GnosisProxy.sol");

@@ -3,7 +3,7 @@ import * as helpers from "../helpers";
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const DxController = artifacts.require("./DxController.sol");
-const DxAvatar = artifacts.require("./DxAvatar.sol");
+const DXAvatar = artifacts.require("./DXAvatar.sol");
 const DxToken = artifacts.require("./DxToken.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
@@ -44,7 +44,7 @@ contract("DXdao", function (accounts) {
     );
     assert.equal(tx.logs.length, 1);
     assert.equal(tx.logs[0].event, "NewOrg");
-    const avatar = await DxAvatar.at(tx.logs[0].args._avatar);
+    const avatar = await DXAvatar.at(tx.logs[0].args._avatar);
     const token = await DxToken.at(await avatar.nativeToken());
     const controller = await DxController.at(await avatar.owner());
 

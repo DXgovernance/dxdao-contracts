@@ -5,8 +5,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
   @title DXAvatar
-  @author 
-  @dev 
+  @author github:miltontulli
+  @dev An Avatar holds tokens, reputation and ether for a controller
 */
 
 contract DXAvatar is OwnableUpgradeable {
@@ -14,11 +14,8 @@ contract DXAvatar is OwnableUpgradeable {
 
     function initialize(address _owner) public initializer {
         __Ownable_init();
-        // By default ownable init process assign sender as owner so we transfer the ownership to the received _owner
         super.transferOwnership(_owner);
     }
-
-    receive() external payable {}
 
     /**
      * @dev Perform a call to an arbitrary contract
