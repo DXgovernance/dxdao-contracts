@@ -14,7 +14,7 @@ contract DXAvatar is OwnableUpgradeable {
 
     function initialize(address _owner) public initializer {
         __Ownable_init();
-        super.transferOwnership(_owner);
+        transferOwnership(_owner);
     }
 
     /**
