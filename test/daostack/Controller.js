@@ -24,7 +24,7 @@ const setup = async function (
   token = await DxToken.new("TEST", "TST", 0);
   // set up a reputation system
   reputation = await DxReputation.new();
-
+  await reputation.initialize("REPUTATION", "REP");
   avatar = await DxAvatar.new("name", token.address, reputation.address);
   var sender = accounts[0];
   if (permission !== "0") {
