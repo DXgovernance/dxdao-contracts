@@ -209,16 +209,27 @@ contract DXDVotingMachine {
         //times[2] -preBoostedPhaseTime;
         bool daoRedeemItsWinnings;
         //      vote      reputation
-        mapping(uint256 => uint256) votes;
+        // mapping(uint256 => uint256) votes;
         //      vote      reputation
-        mapping(uint256 => uint256) preBoostedVotes;
+        // mapping(uint256 => uint256) preBoostedVotes;
         //      address     voter
-        mapping(address => Voter) voters;
+        // mapping(address => Voter) voters;
         //      vote        stakes
-        mapping(uint256 => uint256) stakes;
+        // mapping(uint256 => uint256) stakes;
         //      address  staker
-        mapping(address => Staker) stakers;
+        // mapping(address => Staker) stakers;
     }
+
+    //      proposalId         vote       reputation
+    mapping(bytes32 => mapping(uint256 => uint256)) proposalVotes;
+    //      proposalId         vote       reputation
+    mapping(bytes32 => mapping(uint256 => uint256)) proposalPreBoostedVotes;
+    //      proposalId         address    voter
+    mapping(bytes32 => mapping(address => Voter)) proposalVoters;
+    //      proposalId         address    stakes
+    mapping(bytes32 => mapping(uint256 => uint256)) proposalStakes;
+    //      proposalId         address    staker
+    mapping(bytes32 => mapping(address => Staker)) proposalStakers;
 
     event NewProposal(
         bytes32 indexed _proposalId,
@@ -372,7 +383,7 @@ contract DXDVotingMachine {
     /**
      * @dev Constructor
      */
-    constructor(IERC20 _stakingToken) public {
+    constructor(IERC20 _stakingToken) {
         //The GEN token (staking token) address is hard coded in the contract by GEN_TOKEN_ADDRESS .
         //This will work for a network which already hosted the GEN token on this address (e.g mainnet).
         //If such contract address does not exist in the network (e.g ganache)
@@ -503,11 +514,11 @@ contract DXDVotingMachine {
         );
         Parameters memory params = parameters[proposal.paramsHash];
         //as staker
-        Staker storage staker = proposal.stakers[_beneficiary];
-        uint256 totalWinningStakes = proposal.stakes[proposal.winningVote];
-        uint256 totalStakesLeftAfterCallBounty = proposal.stakes[NO].add(proposal.stakes[YES]).sub(
-            calcExecuteCallBounty(_proposalId)
-        );
+        Staker storage staker = proposalStakers[_proposalId][_beneficiary];
+        uint256 totalWinningStakes = proposalStakes[_proposalId][proposal.winningVote];
+        uint256 totalStakesLeftAfterCallBounty = proposalStakes[_proposalId][NO]
+            .add(proposalStakes[_proposalId][YES])
+            .sub(calcExecuteCallBounty(_proposalId));
         if (staker.amount > 0) {
             if (proposal.state == ProposalState.ExpiredInQueue) {
                 //Stakes of a proposal that expires in Queue are sent back to stakers
@@ -538,7 +549,7 @@ contract DXDVotingMachine {
         }
 
         //as voter
-        Voter storage voter = proposal.voters[_beneficiary];
+        Voter storage voter = proposalVoters[_proposalId][_beneficiary];
         if ((voter.reputation != 0) && (voter.preBoosted)) {
             if (proposal.state == ProposalState.ExpiredInQueue) {
                 //give back reputation for the voter
@@ -546,13 +557,13 @@ contract DXDVotingMachine {
             } else if (proposal.winningVote == voter.vote) {
                 uint256 lostReputation;
                 if (proposal.winningVote == YES) {
-                    lostReputation = proposal.preBoostedVotes[NO];
+                    lostReputation = proposalPreBoostedVotes[_proposalId][NO];
                 } else {
-                    lostReputation = proposal.preBoostedVotes[YES];
+                    lostReputation = proposalPreBoostedVotes[_proposalId][YES];
                 }
                 lostReputation = (lostReputation.mul(params.votersReputationLossRatio)) / 100;
                 rewards[1] = ((voter.reputation.mul(params.votersReputationLossRatio)) / 100).add(
-                    (voter.reputation.mul(lostReputation)) / proposal.preBoostedVotes[proposal.winningVote]
+                    (voter.reputation.mul(lostReputation)) / proposalPreBoostedVotes[_proposalId][proposal.winningVote]
                 );
             }
             voter.reputation = 0;
@@ -597,8 +608,8 @@ contract DXDVotingMachine {
     {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.state == ProposalState.Executed);
-        uint256 totalWinningStakes = proposal.stakes[proposal.winningVote];
-        Staker storage staker = proposal.stakers[_beneficiary];
+        uint256 totalWinningStakes = proposalStakes[_proposalId][proposal.winningVote];
+        Staker storage staker = proposalStakers[_proposalId][_beneficiary];
         if (
             (staker.amount4Bounty > 0) &&
             (staker.vote == proposal.winningVote) &&
@@ -638,7 +649,7 @@ contract DXDVotingMachine {
         uint256 rewardSeconds = uint256(maxRewardSeconds).min(
             proposals[_proposalId].secondsFromTimeOutTillExecuteBoosted
         );
-        return rewardSeconds.mul(proposals[_proposalId].stakes[YES]).div(maxRewardSeconds * 10);
+        return rewardSeconds.mul(proposalStakes[_proposalId][YES]).div(maxRewardSeconds * 10);
     }
 
     /**
@@ -708,9 +719,8 @@ contract DXDVotingMachine {
      * @return uint256 proposal score as real number.
      */
     function _score(bytes32 _proposalId) internal view returns (uint256) {
-        Proposal storage proposal = proposals[_proposalId];
         //proposal.stakes[NO] cannot be zero as the dao downstake > 0 for each proposal.
-        return uint216(proposal.stakes[YES]).fraction(uint216(proposal.stakes[NO]));
+        return uint216(proposalStakes[_proposalId][YES]).fraction(uint216(proposalStakes[_proposalId][NO]));
     }
 
     /**
@@ -860,7 +870,7 @@ contract DXDVotingMachine {
      * cancel vote is not allow in genesisProtocol so this function doing nothing.
      * This function is here in order to comply to the IntVoteInterface .
      */
-    function cancelVote(bytes32 _proposalId) external votable(_proposalId) {
+    function cancelVote(bytes32 _proposalId) external view votable(_proposalId) {
         //this is not allowed
         return;
     }
@@ -892,7 +902,7 @@ contract DXDVotingMachine {
      *        uint256 reputation - amount of reputation committed by _voter to _proposalId
      */
     function voteInfo(bytes32 _proposalId, address _voter) external view returns (uint256, uint256) {
-        Voter memory voter = proposals[_proposalId].voters[_voter];
+        Voter memory voter = proposalVoters[_proposalId][_voter];
         return (voter.vote, voter.reputation);
     }
 
@@ -903,7 +913,7 @@ contract DXDVotingMachine {
      * @return voted reputation for the given choice
      */
     function voteStatus(bytes32 _proposalId, uint256 _choice) external view returns (uint256) {
-        return proposals[_proposalId].votes[_choice];
+        return proposalVotes[_proposalId][_choice];
     }
 
     /**
@@ -1048,7 +1058,7 @@ contract DXDVotingMachine {
         }
 
         // enable to increase stake only on the previous stake vote
-        Staker storage staker = proposal.stakers[_staker];
+        Staker storage staker = proposalStakers[_proposalId][_staker];
         if ((staker.amount > 0) && (staker.vote != _vote)) {
             return false;
         }
@@ -1070,7 +1080,7 @@ contract DXDVotingMachine {
         }
         staker.vote = _vote;
 
-        proposal.stakes[_vote] = amount.add(proposal.stakes[_vote]);
+        proposalStakes[_proposalId][_vote] = amount.add(proposalStakes[_proposalId][_vote]);
         emit Stake(_proposalId, organizations[proposal.organizationId], _staker, _vote, _amount);
         return _execute(_proposalId);
     }
@@ -1123,7 +1133,7 @@ contract DXDVotingMachine {
             .div(100);
         proposal.daoBountyRemain = daoBounty.max(parameters[_paramsHash].minimumDaoBounty);
         proposals[proposalId] = proposal;
-        proposals[proposalId].stakes[NO] = proposal.daoBountyRemain; //dao downstake on the proposal
+        proposalStakes[proposalId][NO] = proposal.daoBountyRemain; //dao downstake on the proposal
         numOfChoices[proposalId] = _choicesAmount;
         emit NewProposal(proposalId, organizations[proposal.organizationId], _choicesAmount, _proposer, _paramsHash);
         return proposalId;
@@ -1163,16 +1173,17 @@ contract DXDVotingMachine {
             rep = reputation;
         }
         // If this voter has already voted, return false.
-        if (proposal.voters[_voter].reputation != 0) {
+        if (proposalVoters[_proposalId][_voter].reputation != 0) {
             return false;
         }
         // The voting itself:
-        proposal.votes[_vote] = rep.add(proposal.votes[_vote]);
+        proposalVotes[_proposalId][_vote] = rep.add(proposalVotes[_proposalId][_vote]);
         //check if the current winningVote changed or there is a tie.
         //for the case there is a tie the current winningVote set to NO.
         if (
-            (proposal.votes[_vote] > proposal.votes[proposal.winningVote]) ||
-            ((proposal.votes[NO] == proposal.votes[proposal.winningVote]) && proposal.winningVote == YES)
+            (proposalVotes[_proposalId][_vote] > proposalVotes[_proposalId][proposal.winningVote]) ||
+            ((proposalVotes[_proposalId][NO] == proposalVotes[_proposalId][proposal.winningVote]) &&
+                proposal.winningVote == YES)
         ) {
             if (
                 (proposal.state == ProposalState.Boosted &&
@@ -1192,13 +1203,13 @@ contract DXDVotingMachine {
             }
             proposal.winningVote = _vote;
         }
-        proposal.voters[_voter] = Voter({
+        proposalVoters[_proposalId][_voter] = Voter({
             reputation: rep,
             vote: _vote,
             preBoosted: ((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued))
         });
         if ((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued)) {
-            proposal.preBoostedVotes[_vote] = rep.add(proposal.preBoostedVotes[_vote]);
+            proposalPreBoostedVotes[_proposalId][_vote] = rep.add(proposalPreBoostedVotes[_proposalId][_vote]);
             uint256 reputationDeposit = (params.votersReputationLossRatio.mul(rep)) / 100;
             VotingMachineCallbacksInterface(proposal.callbacks).burnReputation(reputationDeposit, _voter, _proposalId);
         }
@@ -1281,10 +1292,10 @@ contract DXDVotingMachine {
         )
     {
         return (
-            proposals[_proposalId].preBoostedVotes[YES],
-            proposals[_proposalId].preBoostedVotes[NO],
-            proposals[_proposalId].stakes[YES],
-            proposals[_proposalId].stakes[NO]
+            proposalPreBoostedVotes[_proposalId][YES],
+            proposalPreBoostedVotes[_proposalId][NO],
+            proposalStakes[_proposalId][YES],
+            proposalStakes[_proposalId][NO]
         );
     }
 
@@ -1311,12 +1322,12 @@ contract DXDVotingMachine {
         )
     {
         return (
-            proposals[_proposalId].votes[YES],
-            proposals[_proposalId].votes[NO],
-            proposals[_proposalId].preBoostedVotes[YES],
-            proposals[_proposalId].preBoostedVotes[NO],
-            proposals[_proposalId].stakes[YES],
-            proposals[_proposalId].stakes[NO]
+            proposalVotes[_proposalId][YES],
+            proposalVotes[_proposalId][NO],
+            proposalPreBoostedVotes[_proposalId][YES],
+            proposalPreBoostedVotes[_proposalId][NO],
+            proposalStakes[_proposalId][YES],
+            proposalStakes[_proposalId][NO]
         );
     }
 
@@ -1337,7 +1348,7 @@ contract DXDVotingMachine {
      * @return uint256 amount
      */
     function getStaker(bytes32 _proposalId, address _staker) external view returns (uint256, uint256) {
-        return (proposals[_proposalId].stakers[_staker].vote, proposals[_proposalId].stakers[_staker].amount);
+        return (proposalStakers[_proposalId][_staker].vote, proposalStakers[_proposalId][_staker].amount);
     }
 
     /**
@@ -1347,7 +1358,7 @@ contract DXDVotingMachine {
      * @return uint256 stake amount
      */
     function voteStake(bytes32 _proposalId, uint256 _vote) external view returns (uint256) {
-        return proposals[_proposalId].stakes[_vote];
+        return proposalStakes[_proposalId][_vote];
     }
 
     /**
@@ -1417,6 +1428,15 @@ contract DXDVotingMachine {
         return numOfChoices[_proposalId];
     }
 
+    struct ExecuteParams {
+        uint256 totalReputation;
+        uint256 executionBar;
+        uint256 _boostedVoteRequiredPercentage;
+        uint256 boostedExecutionBar;
+        uint256 averageDownstakesOfBoosted;
+        uint256 confidenceThreshold;
+    }
+
     /**
      * @dev execute check if the proposal has been decided, and if so, execute the proposal
      * @param _proposalId the id of the proposal
@@ -1428,20 +1448,23 @@ contract DXDVotingMachine {
         Proposal storage proposal = proposals[_proposalId];
         Parameters memory params = parameters[proposal.paramsHash];
         Proposal memory tmpProposal = proposal;
-        uint256 totalReputation = VotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(
+        ExecuteParams memory executeParams;
+        executeParams.totalReputation = VotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(
             _proposalId
         );
         //first divide by 100 to prevent overflow
-        uint256 executionBar = (totalReputation / 100) * params.queuedVoteRequiredPercentage;
-        uint256 _boostedVoteRequiredPercentage = boostedVoteRequiredPercentage[proposal.organizationId][
+        executeParams.executionBar = (executeParams.totalReputation / 100) * params.queuedVoteRequiredPercentage;
+        executeParams._boostedVoteRequiredPercentage = boostedVoteRequiredPercentage[proposal.organizationId][
             proposal.paramsHash
         ];
-        uint256 boostedExecutionBar = (totalReputation / 10000) * _boostedVoteRequiredPercentage;
+        executeParams.boostedExecutionBar =
+            (executeParams.totalReputation / 10000) *
+            executeParams._boostedVoteRequiredPercentage;
         ExecutionState executionState = ExecutionState.None;
-        uint256 averageDownstakesOfBoosted;
-        uint256 confidenceThreshold;
+        executeParams.averageDownstakesOfBoosted;
+        executeParams.confidenceThreshold;
 
-        if (proposal.votes[proposal.winningVote] > executionBar) {
+        if (proposalVotes[_proposalId][proposal.winningVote] > executeParams.executionBar) {
             // someone crossed the absolute vote execution bar.
             if (proposal.state == ProposalState.Queued) {
                 executionState = ExecutionState.QueueBarCrossed;
@@ -1459,22 +1482,22 @@ contract DXDVotingMachine {
                     proposal.winningVote = NO;
                     executionState = ExecutionState.QueueTimeOut;
                 } else {
-                    confidenceThreshold = threshold(proposal.paramsHash, proposal.organizationId);
-                    if (_score(_proposalId) > confidenceThreshold) {
+                    executeParams.confidenceThreshold = threshold(proposal.paramsHash, proposal.organizationId);
+                    if (_score(_proposalId) > executeParams.confidenceThreshold) {
                         //change proposal mode to PreBoosted mode.
                         proposal.state = ProposalState.PreBoosted;
                         // solhint-disable-next-line not-rely-on-time
                         proposal.times[2] = block.timestamp;
-                        proposal.confidenceThreshold = confidenceThreshold;
+                        proposal.confidenceThreshold = executeParams.confidenceThreshold;
                     }
                 }
             }
 
             if (proposal.state == ProposalState.PreBoosted) {
-                confidenceThreshold = threshold(proposal.paramsHash, proposal.organizationId);
+                executeParams.confidenceThreshold = threshold(proposal.paramsHash, proposal.organizationId);
                 // solhint-disable-next-line not-rely-on-time
                 if ((block.timestamp - proposal.times[2]) >= params.preBoostedVotePeriodLimit) {
-                    if (_score(_proposalId) > confidenceThreshold) {
+                    if (_score(_proposalId) > executeParams.confidenceThreshold) {
                         if (orgBoostedProposalsCnt[proposal.organizationId] < MAX_BOOSTED_PROPOSALS) {
                             //change proposal mode to Boosted mode.
                             proposal.state = ProposalState.Boosted;
@@ -1484,11 +1507,14 @@ contract DXDVotingMachine {
 
                             orgBoostedProposalsCnt[proposal.organizationId]++;
                             //add a value to average -> average = average + ((value - average) / nbValues)
-                            averageDownstakesOfBoosted = averagesDownstakesOfBoosted[proposal.organizationId];
+                            executeParams.averageDownstakesOfBoosted = averagesDownstakesOfBoosted[
+                                proposal.organizationId
+                            ];
                             // solium-disable-next-line indentation
                             averagesDownstakesOfBoosted[proposal.organizationId] = uint256(
-                                int256(averageDownstakesOfBoosted) +
-                                    ((int256(proposal.stakes[NO]) - int256(averageDownstakesOfBoosted)) /
+                                int256(executeParams.averageDownstakesOfBoosted) +
+                                    ((int256(proposalStakes[_proposalId][NO]) -
+                                        int256(executeParams.averageDownstakesOfBoosted)) /
                                         int256(orgBoostedProposalsCnt[proposal.organizationId]))
                             );
                         }
@@ -1498,11 +1524,11 @@ contract DXDVotingMachine {
                 } else {
                     //check the Confidence level is stable
                     uint256 proposalScore = _score(_proposalId);
-                    if (proposalScore <= proposal.confidenceThreshold.min(confidenceThreshold)) {
+                    if (proposalScore <= proposal.confidenceThreshold.min(executeParams.confidenceThreshold)) {
                         proposal.state = ProposalState.Queued;
                     } else if (proposal.confidenceThreshold > proposalScore) {
-                        proposal.confidenceThreshold = confidenceThreshold;
-                        emit ConfidenceLevelChange(_proposalId, confidenceThreshold);
+                        proposal.confidenceThreshold = executeParams.confidenceThreshold;
+                        emit ConfidenceLevelChange(_proposalId, executeParams.confidenceThreshold);
                     }
                 }
             }
@@ -1511,7 +1537,7 @@ contract DXDVotingMachine {
         if ((proposal.state == ProposalState.Boosted) || (proposal.state == ProposalState.QuietEndingPeriod)) {
             // solhint-disable-next-line not-rely-on-time
             if ((block.timestamp - proposal.times[1]) >= proposal.currentBoostedVotePeriodLimit) {
-                if (proposal.votes[proposal.winningVote] >= boostedExecutionBar) {
+                if (proposalVotes[_proposalId][proposal.winningVote] >= executeParams.boostedExecutionBar) {
                     proposal.state = ProposalState.Executed;
                     executionState = ExecutionState.BoostedBarCrossed;
                 } else {
@@ -1534,9 +1560,13 @@ contract DXDVotingMachine {
                 if (boostedProposals == 0) {
                     averagesDownstakesOfBoosted[proposal.organizationId] = 0;
                 } else {
-                    averageDownstakesOfBoosted = averagesDownstakesOfBoosted[proposal.organizationId];
+                    executeParams.averageDownstakesOfBoosted = averagesDownstakesOfBoosted[proposal.organizationId];
                     averagesDownstakesOfBoosted[proposal.organizationId] =
-                        (averageDownstakesOfBoosted.mul(boostedProposals + 1).sub(proposal.stakes[NO])) /
+                        (
+                            executeParams.averageDownstakesOfBoosted.mul(boostedProposals + 1).sub(
+                                proposalStakes[_proposalId][NO]
+                            )
+                        ) /
                         boostedProposals;
                 }
             }
@@ -1544,7 +1574,7 @@ contract DXDVotingMachine {
                 _proposalId,
                 organizations[proposal.organizationId],
                 proposal.winningVote,
-                totalReputation
+                executeParams.totalReputation
             );
             emit GPExecuteProposal(_proposalId, executionState);
             proposal.daoBounty = proposal.daoBountyRemain;
