@@ -14,7 +14,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  * This contract uses the ERC20SnapshotUpgradeable extension methods' under the hood to mint and burn reputation tokens.
  * It uses snapshots to keep track of the total reputation of each peer.
  */
-contract Reputation is Initializable, OwnableUpgradeable, ERC20SnapshotUpgradeable {
+contract DxReputation is Initializable, OwnableUpgradeable, ERC20SnapshotUpgradeable {
     event Mint(address indexed _to, uint256 _amount);
     event Burn(address indexed _from, uint256 _amount);
 
