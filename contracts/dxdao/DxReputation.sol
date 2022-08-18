@@ -3,7 +3,6 @@ pragma solidity 0.8.8;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
  * @title Reputation system
@@ -14,11 +13,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  * This contract uses the ERC20SnapshotUpgradeable extension methods' under the hood to mint and burn reputation tokens.
  * It uses snapshots to keep track of the total reputation of each peer.
  */
-contract DxReputation is Initializable, OwnableUpgradeable, ERC20SnapshotUpgradeable {
+contract DxReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     event Mint(address indexed _to, uint256 _amount);
     event Burn(address indexed _from, uint256 _amount);
 
-    function initialize(string memory name, string memory symbol) public initializer {
+    function initialize(string memory name, string memory symbol) external initializer {
         __ERC20_init(name, symbol);
         __Ownable_init();
     }
@@ -27,14 +26,14 @@ contract DxReputation is Initializable, OwnableUpgradeable, ERC20SnapshotUpgrade
     // @param _user The address that will be assigned the new reputation
     // @param _amount The quantity of reputation generated
     // @return True if the reputation are generated correctly
-    function mint(address _user, uint256 _amount) public onlyOwner returns (bool) {
+    function mint(address _user, uint256 _amount) external onlyOwner returns (bool) {
         _mint(_user, _amount);
         _snapshot();
         emit Mint(_user, _amount);
         return true;
     }
 
-    function mintMultiple(address[] memory _user, uint256[] memory _amount) public onlyOwner returns (bool) {
+    function mintMultiple(address[] memory _user, uint256[] memory _amount) external onlyOwner returns (bool) {
         for (uint256 i = 0; i < _user.length; i++) {
             _mint(_user[i], _amount[i]);
             _snapshot();
@@ -47,14 +46,14 @@ contract DxReputation is Initializable, OwnableUpgradeable, ERC20SnapshotUpgrade
     // @param _user The address that will lose the reputation
     // @param _amount The quantity of reputation to burn
     // @return True if the reputation are burned correctly
-    function burn(address _user, uint256 _amount) public onlyOwner returns (bool) {
+    function burn(address _user, uint256 _amount) external onlyOwner returns (bool) {
         _burn(_user, _amount);
         _snapshot();
         emit Burn(_user, _amount);
         return true;
     }
 
-    function burnMultiple(address[] memory _user, uint256 _amount) public onlyOwner returns (bool) {
+    function burnMultiple(address[] memory _user, uint256 _amount) external onlyOwner returns (bool) {
         for (uint256 i = 0; i < _user.length; i++) {
             _burn(_user[i], _amount);
             _snapshot();
