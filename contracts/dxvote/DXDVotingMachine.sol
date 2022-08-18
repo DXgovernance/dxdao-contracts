@@ -48,6 +48,7 @@ interface VotingMachineCallbacksInterface {
  *
  */
 
+// ! Not neccessary anymore?
 library RealMath {
     /**
      * How many total bits are there?
@@ -208,28 +209,27 @@ contract DXDVotingMachine {
         //times[1] - boostedPhaseTime
         //times[2] -preBoostedPhaseTime;
         bool daoRedeemItsWinnings;
-        //      vote      reputation
-        // mapping(uint256 => uint256) votes;
-        //      vote      reputation
-        // mapping(uint256 => uint256) preBoostedVotes;
-        //      address     voter
-        // mapping(address => Voter) voters;
-        //      vote        stakes
-        // mapping(uint256 => uint256) stakes;
-        //      address  staker
-        // mapping(address => Staker) stakers;
     }
 
-    //      proposalId         vote       reputation
-    mapping(bytes32 => mapping(uint256 => uint256)) proposalVotes;
-    //      proposalId         vote       reputation
-    mapping(bytes32 => mapping(uint256 => uint256)) proposalPreBoostedVotes;
-    //      proposalId         address    voter
-    mapping(bytes32 => mapping(address => Voter)) proposalVoters;
-    //      proposalId         address    stakes
-    mapping(bytes32 => mapping(uint256 => uint256)) proposalStakes;
-    //      proposalId         address    staker
-    mapping(bytes32 => mapping(address => Staker)) proposalStakers;
+    struct OrganizationRefunds {
+        uint256 balance;
+        uint256 voteGas;
+        uint256 maxGasPrice;
+    }
+
+    struct VoteDecision {
+        uint256 voteDecision;
+        uint256 amount;
+    }
+
+    struct ExecuteFunctionParams {
+        uint256 totalReputation;
+        uint256 executionBar;
+        uint256 _boostedVoteRequiredPercentage;
+        uint256 boostedExecutionBar;
+        uint256 averageDownstakesOfBoosted;
+        uint256 confidenceThreshold;
+    }
 
     event NewProposal(
         bytes32 indexed _proposalId,
@@ -286,10 +286,34 @@ contract DXDVotingMachine {
         uint256 _amount
     );
 
+    event VoteSigned(
+        address votingMachine,
+        bytes32 proposalId,
+        address voter,
+        uint256 voteDecision,
+        uint256 amount,
+        bytes signature
+    );
+
     event StateChange(bytes32 indexed _proposalId, ProposalState _proposalState);
     event GPExecuteProposal(bytes32 indexed _proposalId, ExecutionState _executionState);
     event ExpirationCallBounty(bytes32 indexed _proposalId, address indexed _beneficiary, uint256 _amount);
     event ConfidenceLevelChange(bytes32 indexed _proposalId, uint256 _confidenceThreshold);
+
+    // Event used to signal votes to be executed on chain
+    event VoteSignaled(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount);
+
+    // Mappings of a proposal various properties
+    //      proposalId         vote       reputation
+    mapping(bytes32 => mapping(uint256 => uint256)) proposalVotes;
+    //      proposalId         vote       reputation
+    mapping(bytes32 => mapping(uint256 => uint256)) proposalPreBoostedVotes;
+    //      proposalId         address    voter
+    mapping(bytes32 => mapping(address => Voter)) proposalVoters;
+    //      proposalId         address    stakes
+    mapping(bytes32 => mapping(uint256 => uint256)) proposalStakes;
+    //      proposalId         address    staker
+    mapping(bytes32 => mapping(address => Staker)) proposalStakers;
 
     mapping(bytes32 => Parameters) public parameters; // A mapping from hashes to parameters
     mapping(bytes32 => Proposal) public proposals; // Mapping from the ID of the proposal to the proposal itself.
@@ -325,40 +349,16 @@ contract DXDVotingMachine {
     // 100 == 1%, 2500 == 25%.
     mapping(bytes32 => mapping(bytes32 => uint256)) public boostedVoteRequiredPercentage;
 
-    struct OrganizationRefunds {
-        uint256 balance;
-        uint256 voteGas;
-        uint256 maxGasPrice;
-    }
-
     mapping(address => OrganizationRefunds) public organizationRefunds;
 
     // Event used to share vote signatures on chain
-    event VoteSigned(
-        address votingMachine,
-        bytes32 proposalId,
-        address voter,
-        uint256 voteDecision,
-        uint256 amount,
-        bytes signature
-    );
-
-    struct VoteDecision {
-        uint256 voteDecision;
-        uint256 amount;
-    }
-
     mapping(bytes32 => mapping(address => VoteDecision)) public votesSignaled;
 
     // The number of choices of each proposal
     mapping(bytes32 => uint256) internal numOfChoices;
 
-    // Event used to signal votes to be executed on chain
-    event VoteSignaled(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount);
-
     //When implementing this interface please do not only override function and modifier,
     //but also to keep the modifiers on the overridden functions.
-    // ! Unused?
     modifier onlyProposalOwner(bytes32 _proposalId) {
         revert();
         _;
@@ -370,7 +370,6 @@ contract DXDVotingMachine {
      *  PreBoosted,Boosted,QuietEndingPeriod or Queued
      */
     modifier votable(bytes32 _proposalId) {
-        // revert()  // ! => check utility with Augusto
         require(_isVotable(_proposalId));
         _;
     }
@@ -682,61 +681,6 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev hashParameters returns a hash of the given parameters
-     */
-    function getParametersHash(
-        uint256[11] memory _params, //use array here due to stack too deep issue.
-        address _voteOnBehalf
-    ) public pure returns (bytes32) {
-        //double call to keccak256 to avoid deep stack issue when call with too many params.
-        return
-            keccak256(
-                abi.encodePacked(
-                    keccak256(
-                        abi.encodePacked(
-                            _params[0],
-                            _params[1],
-                            _params[2],
-                            _params[3],
-                            _params[4],
-                            _params[5],
-                            _params[6],
-                            _params[7],
-                            _params[8],
-                            _params[9],
-                            _params[10]
-                        )
-                    ),
-                    _voteOnBehalf
-                )
-            );
-    }
-
-    /**
-     * @dev _score return the proposal score (Confidence level)
-     * For dual choice proposal S = (S+)/(S-)
-     * @param _proposalId the ID of the proposal
-     * @return uint256 proposal score as real number.
-     */
-    function _score(bytes32 _proposalId) internal view returns (uint256) {
-        //proposal.stakes[NO] cannot be zero as the dao downstake > 0 for each proposal.
-        return uint216(proposalStakes[_proposalId][YES]).fraction(uint216(proposalStakes[_proposalId][NO]));
-    }
-
-    /**
-     * @dev _isVotable check if the proposal is votable
-     * @param _proposalId the ID of the proposal
-     * @return bool true or false
-     */
-    function _isVotable(bytes32 _proposalId) internal view returns (bool) {
-        ProposalState pState = proposals[_proposalId].state;
-        return ((pState == ProposalState.PreBoosted) ||
-            (pState == ProposalState.Boosted) ||
-            (pState == ProposalState.QuietEndingPeriod) ||
-            (pState == ProposalState.Queued));
-    }
-
-    /**
      * @dev staking function
      * @param _proposalId id of the proposal
      * @param _vote  NO(2) or YES(1).
@@ -886,15 +830,6 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev getProposalTimes returns proposals times variables.
-     * @param _proposalId id of the proposal
-     * @return times times array
-     */
-    function getProposalTimes(bytes32 _proposalId) external view returns (uint256[3] memory times) {
-        return proposals[_proposalId].times;
-    }
-
-    /**
      * @dev voteInfo returns the vote and the amount of reputation of the user committed to this proposal
      * @param _proposalId the ID of the proposal
      * @param _voter the address of the voter
@@ -1032,114 +967,6 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev staking function
-     * @param _proposalId id of the proposal
-     * @param _vote  NO(2) or YES(1).
-     * @param _amount the betting amount
-     * @return bool true - the proposal has been executed
-     *              false - otherwise.
-     */
-    function _stake(
-        bytes32 _proposalId,
-        uint256 _vote,
-        uint256 _amount,
-        address _staker
-    ) internal validDecision(_proposalId, _vote) returns (bool) {
-        // 0 is not a valid vote.
-        require(_amount > 0, "staking amount should be >0");
-
-        if (_execute(_proposalId)) {
-            return true;
-        }
-        Proposal storage proposal = proposals[_proposalId];
-
-        if ((proposal.state != ProposalState.PreBoosted) && (proposal.state != ProposalState.Queued)) {
-            return false;
-        }
-
-        // enable to increase stake only on the previous stake vote
-        Staker storage staker = proposalStakers[_proposalId][_staker];
-        if ((staker.amount > 0) && (staker.vote != _vote)) {
-            return false;
-        }
-
-        uint256 amount = _amount;
-        require(stakingToken.transferFrom(_staker, address(this), amount), "fail transfer from staker");
-        proposal.totalStakes = proposal.totalStakes.add(amount); //update totalRedeemableStakes
-        staker.amount = staker.amount.add(amount);
-        // This is to prevent average downstakes calculation overflow
-        // Note that GEN cap is 100000000 ether.
-        require(staker.amount <= 0x100000000000000000000000000000000, "staking amount is too high");
-        require(
-            proposal.totalStakes <= uint256(0x100000000000000000000000000000000).sub(proposal.daoBountyRemain),
-            "total stakes is too high"
-        );
-
-        if (_vote == YES) {
-            staker.amount4Bounty = staker.amount4Bounty.add(amount);
-        }
-        staker.vote = _vote;
-
-        proposalStakes[_proposalId][_vote] = amount.add(proposalStakes[_proposalId][_vote]);
-        emit Stake(_proposalId, organizations[proposal.organizationId], _staker, _vote, _amount);
-        return _execute(_proposalId);
-    }
-
-    /**
-     * @dev register a new proposal with the given parameters. Every proposal has a unique ID which is being
-     * generated by calculating keccak256 of a incremented counter.
-     * @param _choicesAmount the total amount of choices for the proposal
-     * @param _paramsHash parameters hash
-     * @param _proposer address
-     * @param _organization address
-     */
-    function _propose(
-        uint256 _choicesAmount,
-        bytes32 _paramsHash,
-        address _proposer,
-        address _organization
-    ) internal returns (bytes32) {
-        require(_choicesAmount >= NUM_OF_CHOICES);
-        // solhint-disable-next-line not-rely-on-time
-        require(block.timestamp > parameters[_paramsHash].activationTime, "not active yet");
-        //Check parameters existence.
-        require(parameters[_paramsHash].queuedVoteRequiredPercentage >= 50);
-        // Generate a unique ID:
-        bytes32 proposalId = keccak256(abi.encodePacked(this, proposalsCnt));
-        proposalsCnt = proposalsCnt.add(1);
-        // Open proposal:
-        Proposal memory proposal;
-        proposal.callbacks = msg.sender;
-        proposal.organizationId = keccak256(abi.encodePacked(msg.sender, _organization));
-
-        proposal.state = ProposalState.Queued;
-        // solhint-disable-next-line not-rely-on-time
-        proposal.times[0] = block.timestamp; //submitted time
-        proposal.currentBoostedVotePeriodLimit = parameters[_paramsHash].boostedVotePeriodLimit;
-        proposal.proposer = _proposer;
-        proposal.winningVote = NO;
-        proposal.paramsHash = _paramsHash;
-        if (organizations[proposal.organizationId] == address(0)) {
-            if (_organization == address(0)) {
-                organizations[proposal.organizationId] = msg.sender;
-            } else {
-                organizations[proposal.organizationId] = _organization;
-            }
-        }
-        //calc dao bounty
-        uint256 daoBounty = parameters[_paramsHash]
-            .daoBountyConst
-            .mul(averagesDownstakesOfBoosted[proposal.organizationId])
-            .div(100);
-        proposal.daoBountyRemain = daoBounty.max(parameters[_paramsHash].minimumDaoBounty);
-        proposals[proposalId] = proposal;
-        proposalStakes[proposalId][NO] = proposal.daoBountyRemain; //dao downstake on the proposal
-        numOfChoices[proposalId] = _choicesAmount;
-        emit NewProposal(proposalId, organizations[proposal.organizationId], _choicesAmount, _proposer, _paramsHash);
-        return proposalId;
-    }
-
-    /**
      * @dev Vote for a proposal, if the voter already voted, cancel the last vote and set a new one instead
      * @param _proposalId id of the proposal
      * @param _voter used in case the vote is cast for someone else
@@ -1237,24 +1064,6 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Refund a vote gas cost to an address
-     *
-     * @param organizationId the id of the organization that should do the refund
-     */
-    function _refundVote(bytes32 organizationId) internal {
-        address orgAddress = organizations[organizationId];
-        if (organizationRefunds[orgAddress].voteGas > 0) {
-            uint256 gasRefund = organizationRefunds[orgAddress].voteGas.mul(
-                tx.gasprice.min(organizationRefunds[orgAddress].maxGasPrice)
-            );
-            if (organizationRefunds[orgAddress].balance >= gasRefund) {
-                organizationRefunds[orgAddress].balance = organizationRefunds[orgAddress].balance.sub(gasRefund);
-                payable(msg.sender).transfer(gasRefund);
-            }
-        }
-    }
-
-    /**
      * @dev Hash the vote data that is used for signatures
      *
      * @param votingMachine the voting machine address
@@ -1274,167 +1083,12 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev proposalStatus return the total votes and stakes for a given proposal
-     * @param _proposalId the ID of the proposal
-     * @return uint256 preBoostedVotes YES
-     * @return uint256 preBoostedVotes NO
-     * @return uint256 total stakes YES
-     * @return uint256 total stakes NO
-     */
-    function proposalStatus(bytes32 _proposalId)
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        return (
-            proposalPreBoostedVotes[_proposalId][YES],
-            proposalPreBoostedVotes[_proposalId][NO],
-            proposalStakes[_proposalId][YES],
-            proposalStakes[_proposalId][NO]
-        );
-    }
-
-    /**
-     * @dev proposalStatusWithVotes return the total votes, preBoostedVotes and stakes for a given proposal
-     * @param _proposalId the ID of the proposal
-     * @return uint256 votes YES
-     * @return uint256 votes NO
-     * @return uint256 preBoostedVotes YES
-     * @return uint256 preBoostedVotes NO
-     * @return uint256 total stakes YES
-     * @return uint256 total stakes NO
-     */
-    function proposalStatusWithVotes(bytes32 _proposalId)
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        return (
-            proposalVotes[_proposalId][YES],
-            proposalVotes[_proposalId][NO],
-            proposalPreBoostedVotes[_proposalId][YES],
-            proposalPreBoostedVotes[_proposalId][NO],
-            proposalStakes[_proposalId][YES],
-            proposalStakes[_proposalId][NO]
-        );
-    }
-
-    /**
-     * @dev getProposalOrganization return the organizationId for a given proposal
-     * @param _proposalId the ID of the proposal
-     * @return bytes32 organization identifier
-     */
-    function getProposalOrganization(bytes32 _proposalId) external view returns (bytes32) {
-        return (proposals[_proposalId].organizationId);
-    }
-
-    /**
-     * @dev getStaker return the vote and stake amount for a given proposal and staker
-     * @param _proposalId the ID of the proposal
-     * @param _staker staker address
-     * @return uint256 vote
-     * @return uint256 amount
-     */
-    function getStaker(bytes32 _proposalId, address _staker) external view returns (uint256, uint256) {
-        return (proposalStakers[_proposalId][_staker].vote, proposalStakers[_proposalId][_staker].amount);
-    }
-
-    /**
-     * @dev voteStake return the amount stakes for a given proposal and vote
-     * @param _proposalId the ID of the proposal
-     * @param _vote vote number
-     * @return uint256 stake amount
-     */
-    function voteStake(bytes32 _proposalId, uint256 _vote) external view returns (uint256) {
-        return proposalStakes[_proposalId][_vote];
-    }
-
-    /**
-     * @dev winningVote return the winningVote for a given proposal
-     * @param _proposalId the ID of the proposal
-     * @return uint256 winningVote
-     */
-    function winningVote(bytes32 _proposalId) external view returns (uint256) {
-        return proposals[_proposalId].winningVote;
-    }
-
-    /**
-     * @dev state return the state for a given proposal
-     * @param _proposalId the ID of the proposal
-     * @return ProposalState proposal state
-     */
-    function state(bytes32 _proposalId) external view returns (ProposalState) {
-        return proposals[_proposalId].state;
-    }
-
-    /**
-     * @dev isAbstainAllow returns if the voting machine allow abstain (0)
-     * @return bool true or false
-     */
-    function isAbstainAllow() external pure returns (bool) {
-        return false;
-    }
-
-    /**
-     * @dev getAllowedRangeOfChoices returns the allowed range of choices for a voting machine.
-     * @return min - minimum number of choices
-               max - maximum number of choices
-     */
-    function getAllowedRangeOfChoices() external pure returns (uint256 min, uint256 max) {
-        return (YES, NO);
-    }
-
-    /**
      * @dev score return the proposal score
      * @param _proposalId the ID of the proposal
      * @return uint256 proposal score.
      */
     function score(bytes32 _proposalId) public view returns (uint256) {
         return _score(_proposalId);
-    }
-
-    /**
-     * @dev Get the required % of votes needed in a boosted proposal in a scheme
-     * @param avatar the avatar address
-     * @param scheme the scheme address
-     * @param paramsHash the parameters configuration hashed of the scheme
-     */
-    function getBoostedVoteRequiredPercentage(
-        address avatar,
-        address scheme,
-        bytes32 paramsHash
-    ) external view returns (uint256) {
-        return boostedVoteRequiredPercentage[keccak256(abi.encodePacked(scheme, avatar))][paramsHash];
-    }
-
-    /**
-     * @dev getNumberOfChoices returns the number of choices possible in this proposal
-     * @param _proposalId the proposal id
-     * @return uint256 that contains number of choices
-     */
-    function getNumberOfChoices(bytes32 _proposalId) public view returns (uint256) {
-        return numOfChoices[_proposalId];
-    }
-
-    struct ExecuteParams {
-        uint256 totalReputation;
-        uint256 executionBar;
-        uint256 _boostedVoteRequiredPercentage;
-        uint256 boostedExecutionBar;
-        uint256 averageDownstakesOfBoosted;
-        uint256 confidenceThreshold;
     }
 
     /**
@@ -1448,7 +1102,7 @@ contract DXDVotingMachine {
         Proposal storage proposal = proposals[_proposalId];
         Parameters memory params = parameters[proposal.paramsHash];
         Proposal memory tmpProposal = proposal;
-        ExecuteParams memory executeParams;
+        ExecuteFunctionParams memory executeParams;
         executeParams.totalReputation = VotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(
             _proposalId
         );
@@ -1584,5 +1238,341 @@ contract DXDVotingMachine {
             emit StateChange(_proposalId, proposal.state);
         }
         return (executionState != ExecutionState.None);
+    }
+
+    /**
+     * @dev _score return the proposal score (Confidence level)
+     * For dual choice proposal S = (S+)/(S-)
+     * @param _proposalId the ID of the proposal
+     * @return uint256 proposal score as real number.
+     */
+    function _score(bytes32 _proposalId) internal view returns (uint256) {
+        //proposal.stakes[NO] cannot be zero as the dao downstake > 0 for each proposal.
+        return uint216(proposalStakes[_proposalId][YES]).fraction(uint216(proposalStakes[_proposalId][NO]));
+    }
+
+    /**
+     * @dev _isVotable check if the proposal is votable
+     * @param _proposalId the ID of the proposal
+     * @return bool true or false
+     */
+    function _isVotable(bytes32 _proposalId) internal view returns (bool) {
+        ProposalState pState = proposals[_proposalId].state;
+        return ((pState == ProposalState.PreBoosted) ||
+            (pState == ProposalState.Boosted) ||
+            (pState == ProposalState.QuietEndingPeriod) ||
+            (pState == ProposalState.Queued));
+    }
+
+    /**
+     * @dev staking function
+     * @param _proposalId id of the proposal
+     * @param _vote  NO(2) or YES(1).
+     * @param _amount the betting amount
+     * @return bool true - the proposal has been executed
+     *              false - otherwise.
+     */
+    function _stake(
+        bytes32 _proposalId,
+        uint256 _vote,
+        uint256 _amount,
+        address _staker
+    ) internal validDecision(_proposalId, _vote) returns (bool) {
+        // 0 is not a valid vote.
+        require(_amount > 0, "staking amount should be >0");
+
+        if (_execute(_proposalId)) {
+            return true;
+        }
+        Proposal storage proposal = proposals[_proposalId];
+
+        if ((proposal.state != ProposalState.PreBoosted) && (proposal.state != ProposalState.Queued)) {
+            return false;
+        }
+
+        // enable to increase stake only on the previous stake vote
+        Staker storage staker = proposalStakers[_proposalId][_staker];
+        if ((staker.amount > 0) && (staker.vote != _vote)) {
+            return false;
+        }
+
+        uint256 amount = _amount;
+        require(stakingToken.transferFrom(_staker, address(this), amount), "fail transfer from staker");
+        proposal.totalStakes = proposal.totalStakes.add(amount); //update totalRedeemableStakes
+        staker.amount = staker.amount.add(amount);
+        // This is to prevent average downstakes calculation overflow
+        // Note that GEN cap is 100000000 ether.
+        require(staker.amount <= 0x100000000000000000000000000000000, "staking amount is too high");
+        require(
+            proposal.totalStakes <= uint256(0x100000000000000000000000000000000).sub(proposal.daoBountyRemain),
+            "total stakes is too high"
+        );
+
+        if (_vote == YES) {
+            staker.amount4Bounty = staker.amount4Bounty.add(amount);
+        }
+        staker.vote = _vote;
+
+        proposalStakes[_proposalId][_vote] = amount.add(proposalStakes[_proposalId][_vote]);
+        emit Stake(_proposalId, organizations[proposal.organizationId], _staker, _vote, _amount);
+        return _execute(_proposalId);
+    }
+
+    /**
+     * @dev register a new proposal with the given parameters. Every proposal has a unique ID which is being
+     * generated by calculating keccak256 of a incremented counter.
+     * @param _choicesAmount the total amount of choices for the proposal
+     * @param _paramsHash parameters hash
+     * @param _proposer address
+     * @param _organization address
+     */
+    function _propose(
+        uint256 _choicesAmount,
+        bytes32 _paramsHash,
+        address _proposer,
+        address _organization
+    ) internal returns (bytes32) {
+        require(_choicesAmount >= NUM_OF_CHOICES);
+        // solhint-disable-next-line not-rely-on-time
+        require(block.timestamp > parameters[_paramsHash].activationTime, "not active yet");
+        //Check parameters existence.
+        require(parameters[_paramsHash].queuedVoteRequiredPercentage >= 50);
+        // Generate a unique ID:
+        bytes32 proposalId = keccak256(abi.encodePacked(this, proposalsCnt));
+        proposalsCnt = proposalsCnt.add(1);
+        // Open proposal:
+        Proposal memory proposal;
+        proposal.callbacks = msg.sender;
+        proposal.organizationId = keccak256(abi.encodePacked(msg.sender, _organization));
+
+        proposal.state = ProposalState.Queued;
+        // solhint-disable-next-line not-rely-on-time
+        proposal.times[0] = block.timestamp; //submitted time
+        proposal.currentBoostedVotePeriodLimit = parameters[_paramsHash].boostedVotePeriodLimit;
+        proposal.proposer = _proposer;
+        proposal.winningVote = NO;
+        proposal.paramsHash = _paramsHash;
+        if (organizations[proposal.organizationId] == address(0)) {
+            if (_organization == address(0)) {
+                organizations[proposal.organizationId] = msg.sender;
+            } else {
+                organizations[proposal.organizationId] = _organization;
+            }
+        }
+        //calc dao bounty
+        uint256 daoBounty = parameters[_paramsHash]
+            .daoBountyConst
+            .mul(averagesDownstakesOfBoosted[proposal.organizationId])
+            .div(100);
+        proposal.daoBountyRemain = daoBounty.max(parameters[_paramsHash].minimumDaoBounty);
+        proposals[proposalId] = proposal;
+        proposalStakes[proposalId][NO] = proposal.daoBountyRemain; //dao downstake on the proposal
+        numOfChoices[proposalId] = _choicesAmount;
+        emit NewProposal(proposalId, organizations[proposal.organizationId], _choicesAmount, _proposer, _paramsHash);
+        return proposalId;
+    }
+
+    /**
+     * @dev Refund a vote gas cost to an address
+     *
+     * @param organizationId the id of the organization that should do the refund
+     */
+    function _refundVote(bytes32 organizationId) internal {
+        address orgAddress = organizations[organizationId];
+        if (organizationRefunds[orgAddress].voteGas > 0) {
+            uint256 gasRefund = organizationRefunds[orgAddress].voteGas.mul(
+                tx.gasprice.min(organizationRefunds[orgAddress].maxGasPrice)
+            );
+            if (organizationRefunds[orgAddress].balance >= gasRefund) {
+                organizationRefunds[orgAddress].balance = organizationRefunds[orgAddress].balance.sub(gasRefund);
+                payable(msg.sender).transfer(gasRefund);
+            }
+        }
+    }
+
+    /**
+     * @dev hashParameters returns a hash of the given parameters
+     */
+    function getParametersHash(
+        uint256[11] memory _params, //use array here due to stack too deep issue.
+        address _voteOnBehalf
+    ) public pure returns (bytes32) {
+        //double call to keccak256 to avoid deep stack issue when call with too many params.
+        return
+            keccak256(
+                abi.encodePacked(
+                    keccak256(
+                        abi.encodePacked(
+                            _params[0],
+                            _params[1],
+                            _params[2],
+                            _params[3],
+                            _params[4],
+                            _params[5],
+                            _params[6],
+                            _params[7],
+                            _params[8],
+                            _params[9],
+                            _params[10]
+                        )
+                    ),
+                    _voteOnBehalf
+                )
+            );
+    }
+
+    /**
+     * @dev getProposalTimes returns proposals times variables.
+     * @param _proposalId id of the proposal
+     * @return times times array
+     */
+    function getProposalTimes(bytes32 _proposalId) external view returns (uint256[3] memory times) {
+        return proposals[_proposalId].times;
+    }
+
+    /**
+     * @dev getProposalOrganization return the organizationId for a given proposal
+     * @param _proposalId the ID of the proposal
+     * @return bytes32 organization identifier
+     */
+    function getProposalOrganization(bytes32 _proposalId) external view returns (bytes32) {
+        return (proposals[_proposalId].organizationId);
+    }
+
+    /**
+     * @dev getStaker return the vote and stake amount for a given proposal and staker
+     * @param _proposalId the ID of the proposal
+     * @param _staker staker address
+     * @return uint256 vote
+     * @return uint256 amount
+     */
+    function getStaker(bytes32 _proposalId, address _staker) external view returns (uint256, uint256) {
+        return (proposalStakers[_proposalId][_staker].vote, proposalStakers[_proposalId][_staker].amount);
+    }
+
+    /**
+     * @dev getAllowedRangeOfChoices returns the allowed range of choices for a voting machine.
+     * @return min - minimum number of choices
+               max - maximum number of choices
+     */
+    function getAllowedRangeOfChoices() external pure returns (uint256 min, uint256 max) {
+        return (YES, NO);
+    }
+
+    /**
+     * @dev Get the required % of votes needed in a boosted proposal in a scheme
+     * @param avatar the avatar address
+     * @param scheme the scheme address
+     * @param paramsHash the parameters configuration hashed of the scheme
+     */
+    function getBoostedVoteRequiredPercentage(
+        address avatar,
+        address scheme,
+        bytes32 paramsHash
+    ) external view returns (uint256) {
+        return boostedVoteRequiredPercentage[keccak256(abi.encodePacked(scheme, avatar))][paramsHash];
+    }
+
+    /**
+     * @dev getNumberOfChoices returns the number of choices possible in this proposal
+     * @param _proposalId the proposal id
+     * @return uint256 that contains number of choices
+     */
+    function getNumberOfChoices(bytes32 _proposalId) public view returns (uint256) {
+        return numOfChoices[_proposalId];
+    }
+
+    /**
+     * @dev proposalStatus return the total votes and stakes for a given proposal
+     * @param _proposalId the ID of the proposal
+     * @return uint256 preBoostedVotes YES
+     * @return uint256 preBoostedVotes NO
+     * @return uint256 total stakes YES
+     * @return uint256 total stakes NO
+     */
+    function proposalStatus(bytes32 _proposalId)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return (
+            proposalPreBoostedVotes[_proposalId][YES],
+            proposalPreBoostedVotes[_proposalId][NO],
+            proposalStakes[_proposalId][YES],
+            proposalStakes[_proposalId][NO]
+        );
+    }
+
+    /**
+     * @dev proposalStatusWithVotes return the total votes, preBoostedVotes and stakes for a given proposal
+     * @param _proposalId the ID of the proposal
+     * @return uint256 votes YES
+     * @return uint256 votes NO
+     * @return uint256 preBoostedVotes YES
+     * @return uint256 preBoostedVotes NO
+     * @return uint256 total stakes YES
+     * @return uint256 total stakes NO
+     */
+    function proposalStatusWithVotes(bytes32 _proposalId)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return (
+            proposalVotes[_proposalId][YES],
+            proposalVotes[_proposalId][NO],
+            proposalPreBoostedVotes[_proposalId][YES],
+            proposalPreBoostedVotes[_proposalId][NO],
+            proposalStakes[_proposalId][YES],
+            proposalStakes[_proposalId][NO]
+        );
+    }
+
+    /**
+     * @dev voteStake return the amount stakes for a given proposal and vote
+     * @param _proposalId the ID of the proposal
+     * @param _vote vote number
+     * @return uint256 stake amount
+     */
+    function voteStake(bytes32 _proposalId, uint256 _vote) external view returns (uint256) {
+        return proposalStakes[_proposalId][_vote];
+    }
+
+    /**
+     * @dev winningVote return the winningVote for a given proposal
+     * @param _proposalId the ID of the proposal
+     * @return uint256 winningVote
+     */
+    function winningVote(bytes32 _proposalId) external view returns (uint256) {
+        return proposals[_proposalId].winningVote;
+    }
+
+    /**
+     * @dev state return the state for a given proposal
+     * @param _proposalId the ID of the proposal
+     * @return ProposalState proposal state
+     */
+    function state(bytes32 _proposalId) external view returns (ProposalState) {
+        return proposals[_proposalId].state;
+    }
+
+    /**
+     * @dev isAbstainAllow returns if the voting machine allow abstain (0)
+     * @return bool true or false
+     */
+    function isAbstainAllow() external pure returns (bool) {
+        return false;
     }
 }
