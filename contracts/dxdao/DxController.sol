@@ -1,5 +1,6 @@
-pragma solidity ^0.5.4;
+pragma solidity ^0.8.8;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./DxAvatar.sol";
 
 /**
@@ -8,7 +9,7 @@ import "./DxAvatar.sol";
  * It is subject to a set of schemes and constraints that determine its behavior.
  * Each scheme has it own parameters and operation permissions.
  */
-contract DxController {
+contract DxController is Initializable {
     struct Scheme {
         bytes32 paramsHash; // a hash "configuration" of the scheme
         bool isRegistered;
@@ -20,26 +21,20 @@ contract DxController {
     mapping(address => Scheme) public schemes;
     uint256 schemesWithManageSchemesPermission;
 
-    Avatar public avatar;
+    DxAvatar public avatar;
 
     event RegisterScheme(address indexed _sender, address indexed _scheme);
     event UnregisterScheme(address indexed _sender, address indexed _scheme);
 
-    constructor(Avatar _avatar) public {
+    function initialize(DxAvatar _avatar, address _scheme) public initializer {
         avatar = _avatar;
-        schemes[msg.sender] = Scheme({
+        schemes[_scheme] = Scheme({
             paramsHash: bytes32(0),
             isRegistered: true,
             canManageSchemes: true,
             canMakeAvatarCalls: true
         });
         schemesWithManageSchemesPermission = 1;
-    }
-
-    // Do not allow mistaken calls:
-    // solhint-disable-next-line payable-fallback
-    function() external {
-        revert();
     }
 
     // Modifiers:
@@ -122,7 +117,10 @@ contract DxController {
         }
 
         if (scheme.isRegistered && scheme.canManageSchemes) {
-            require(schemesWithManageSchemesPermission > 1, "Cannot unregister last scheme with manage schemes permission");
+            require(
+                schemesWithManageSchemesPermission > 1,
+                "Cannot unregister last scheme with manage schemes permission"
+            );
         }
 
         // Unregister:
@@ -144,10 +142,10 @@ contract DxController {
     function avatarCall(
         address _contract,
         bytes calldata _data,
-        Avatar _avatar,
+        DxAvatar _avatar,
         uint256 _value
     ) external onlyRegisteredScheme onlyAvatarCallScheme isAvatarValid(address(_avatar)) returns (bool, bytes memory) {
-        return avatar.genericCall(_contract, _data, _value);
+        return avatar.executeCall(_contract, _data, _value);
     }
 
     function isSchemeRegistered(address _scheme, address _avatar) external view isAvatarValid(_avatar) returns (bool) {
