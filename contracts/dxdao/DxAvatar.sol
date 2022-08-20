@@ -29,8 +29,8 @@ contract DXAvatar is OwnableUpgradeable {
         bytes memory _data,
         uint256 _value
     ) public onlyOwner returns (bool, bytes memory) {
-        (bool success, bytes memory dataReturened) = _to.call{value: _value}(_data);
+        (bool success, bytes memory dataReturned) = _to.call{value: _value}(_data);
         emit CallExecuted(_to, _data, _value, success);
-        return (success, dataReturened);
+        return (success, dataReturned);
     }
 }
