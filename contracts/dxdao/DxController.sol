@@ -140,7 +140,7 @@ contract DxController is Initializable {
             return false;
         }
 
-        if (schemes[msg.sender].isRegistered && schemes[msg.sender].canManageSchemes) {
+        if (schemes[msg.sender].canManageSchemes) {
             require(
                 schemesWithManageSchemesPermission > 1,
                 "Cannot unregister last scheme with manage schemes permission"
