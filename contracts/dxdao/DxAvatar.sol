@@ -22,15 +22,15 @@ contract DXAvatar is OwnableUpgradeable {
      * @param _to  The contract's address to call
      * @param _data ABI-encoded contract call to call `_to` address.
      * @param _value Value (ETH) to transfer with the transaction
-     * @return bool  Success or fail
+     * @return (bool, bytes) (Success or fail, Call data returned)
      */
     function executeCall(
         address _to,
         bytes memory _data,
         uint256 _value
-    ) public onlyOwner returns (bool) {
-        (bool success, ) = _to.call{value: _value}(_data);
+    ) public onlyOwner returns (bool, bytes memory) {
+        (bool success, bytes memory dataReturened) = _to.call{value: _value}(_data);
         emit CallExecuted(_to, _data, _value, success);
-        return success;
+        return (success, dataReturened);
     }
 }
