@@ -131,6 +131,28 @@ contract DxController is Initializable {
     }
 
     /**
+     * @dev unregister the caller's scheme
+     * @return bool which represents a
+      success
+     */
+    function unregisterSelf(address _avatar) external onlyRegisteredScheme isAvatarValid(_avatar) returns (bool) {
+        if (_isSchemeRegistered(msg.sender) == false) {
+            return false;
+        }
+
+        if (schemes[msg.sender].isRegistered && schemes[msg.sender].canManageSchemes) {
+            require(
+                schemesWithManageSchemesPermission > 1,
+                "Cannot unregister last scheme with manage schemes permission"
+            );
+        }
+        schemes[msg.sender].isRegistered = false;
+
+        emit UnregisterScheme(msg.sender, msg.sender);
+        return true;
+    }
+
+    /**
      * @dev perform a generic call to an arbitrary contract
      * @param _contract  the contract's address to call
      * @param _data ABI-encoded contract call to call `_contract` address.
