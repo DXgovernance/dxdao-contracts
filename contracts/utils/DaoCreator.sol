@@ -8,7 +8,8 @@ import "../dxdao/DxController.sol";
 contract DxControllerCreator {
     function create(Avatar _avatar) public returns (address) {
         DxController controller = new DxController(_avatar);
-        controller.registerScheme(msg.sender, bytes32(0), bytes4(0x0000001f), address(_avatar));
+        // TODO: Fix
+        // controller.registerScheme(msg.sender, bytes32(0), bytes4(0x0000001f), address(_avatar));
         controller.unregisterScheme(address(this), address(_avatar));
         return address(controller);
     }
@@ -126,7 +127,8 @@ contract DaoCreator {
         // register initial schemes:
         DxController controller = DxController(_avatar.owner());
         for (uint256 i = 0; i < _schemes.length; i++) {
-            controller.registerScheme(_schemes[i], _params[i], _permissions[i], address(_avatar));
+            // TODO: Fix
+            // controller.registerScheme(_schemes[i], _params[i], _permissions[i], address(_avatar));
         }
         // TODO: Fix
         // controller.metaData(_metaData, _avatar);

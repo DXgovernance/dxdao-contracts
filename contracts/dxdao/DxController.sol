@@ -1,7 +1,6 @@
 pragma solidity ^0.5.4;
 
-import "../daostack/controller/Avatar.sol";
-import "../daostack/controller/ControllerInterface.sol";
+import "./DxAvatar.sol";
 
 /**
  * @title Controller contract
@@ -12,44 +11,29 @@ import "../daostack/controller/ControllerInterface.sol";
 contract DxController {
     struct Scheme {
         bytes32 paramsHash; // a hash "configuration" of the scheme
-        bytes4 permissions; // A bitwise flags of permissions,
-        // All 0: Not registered,
-        // 1st bit: Flag if the scheme is registered,
-        // 2nd bit: Scheme can register other schemes
-        // 3rd bit: Scheme can add/remove global constraints
-        // 4th bit: Scheme can upgrade the controller
-        // 5th bit: Scheme can call genericCall on behalf of
-        //          the organization avatar
         bool isRegistered;
         bool canManageSchemes;
         bool canMakeAvatarCalls;
     }
 
     address[] schemesAddresses;
-
     mapping(address => Scheme) public schemes;
+    uint256 schemesWithManageSchemesPermission;
 
     Avatar public avatar;
-    DAOToken public nativeToken;
-    Reputation public nativeReputation;
-    // newController will point to the new controller after the present controller is upgraded
-    address public newController;
-    
+
     event RegisterScheme(address indexed _sender, address indexed _scheme);
     event UnregisterScheme(address indexed _sender, address indexed _scheme);
-    event UpgradeController(address indexed _oldController, address _newController);
 
     constructor(Avatar _avatar) public {
         avatar = _avatar;
-        nativeToken = avatar.nativeToken();
-        nativeReputation = avatar.nativeReputation();
         schemes[msg.sender] = Scheme({
             paramsHash: bytes32(0),
-            permissions: bytes4(0x0000001F),
             isRegistered: true,
             canManageSchemes: true,
             canMakeAvatarCalls: true
         });
+        schemesWithManageSchemesPermission = 1;
     }
 
     // Do not allow mistaken calls:
@@ -60,37 +44,22 @@ contract DxController {
 
     // Modifiers:
     modifier onlyRegisteredScheme() {
-        require(schemes[msg.sender].permissions & bytes4(0x00000001) == bytes4(0x00000001));
+        require(schemes[msg.sender].isRegistered, "Sender is not a registered scheme");
         _;
     }
 
     modifier onlyRegisteringSchemes() {
-        require(schemes[msg.sender].permissions & bytes4(0x00000002) == bytes4(0x00000002));
+        require(schemes[msg.sender].canManageSchemes, "Sender cannot manage schemes");
         _;
     }
 
-    modifier onlyGlobalConstraintsScheme() {
-        require(schemes[msg.sender].permissions & bytes4(0x00000004) == bytes4(0x00000004));
-        _;
-    }
-
-    modifier onlyUpgradingScheme() {
-        require(schemes[msg.sender].permissions & bytes4(0x00000008) == bytes4(0x00000008));
-        _;
-    }
-
-    modifier onlyGenericCallScheme() {
-        require(schemes[msg.sender].permissions & bytes4(0x00000010) == bytes4(0x00000010));
-        _;
-    }
-
-    modifier onlyMetaDataScheme() {
-        require(schemes[msg.sender].permissions & bytes4(0x00000010) == bytes4(0x00000010));
+    modifier onlyAvatarCallScheme() {
+        require(schemes[msg.sender].canMakeAvatarCalls, "Sender cannot perform avatar calls");
         _;
     }
 
     modifier isAvatarValid(address _avatar) {
-        require(_avatar == address(avatar));
+        require(_avatar == address(avatar), "Avatar is not valid");
         _;
     }
 
@@ -98,31 +67,37 @@ contract DxController {
      * @dev register a scheme
      * @param _scheme the address of the scheme
      * @param _paramsHash a hashed configuration of the usage of the scheme
-     * @param _permissions the permissions the new scheme will have
+     * @param _canManageSchemes whether the scheme is able to manage schemes
+     * @param _canMakeAvatarCalls whether the scheme is able to make avatar calls
      * @return bool which represents a success
      */
     function registerScheme(
         address _scheme,
         bytes32 _paramsHash,
-        bytes4 _permissions,
+        bool _canManageSchemes,
+        bool _canMakeAvatarCalls,
         address _avatar
-    ) external onlyRegisteringSchemes isAvatarValid(_avatar) returns (bool) {
+    ) external onlyRegisteredScheme onlyRegisteringSchemes isAvatarValid(_avatar) returns (bool) {
         Scheme memory scheme = schemes[_scheme];
 
-        // Check scheme has at least the permissions it is changing, and at least the current permissions:
-        // Implementation is a bit messy. One must recall logic-circuits ^^
-
-        // produces non-zero if sender does not have all of the perms that are changing between old and new
+        // produces non-zero if sender does not have perms that are being updated
         require(
-            bytes4(0x0000001f) & (_permissions ^ scheme.permissions) & (~schemes[msg.sender].permissions) == bytes4(0)
+            (_canMakeAvatarCalls || scheme.canMakeAvatarCalls != _canMakeAvatarCalls)
+                ? schemes[msg.sender].canMakeAvatarCalls
+                : true,
+            "Sender cannot add permissions sender doesn't have to a new scheme"
         );
 
-        // produces non-zero if sender does not have all of the perms in the old scheme
-        require(bytes4(0x0000001f) & (scheme.permissions & (~schemes[msg.sender].permissions)) == bytes4(0));
-
         // Add or change the scheme:
-        schemes[_scheme].paramsHash = _paramsHash;
-        schemes[_scheme].permissions = _permissions | bytes4(0x00000001);
+        if ((!scheme.isRegistered || !scheme.canManageSchemes) && _canManageSchemes) {
+            schemesWithManageSchemesPermission++;
+        }
+        schemes[_scheme] = Scheme({
+            paramsHash: _paramsHash,
+            isRegistered: true,
+            canManageSchemes: _canManageSchemes,
+            canMakeAvatarCalls: _canMakeAvatarCalls
+        });
         emit RegisterScheme(msg.sender, _scheme);
         return true;
     }
@@ -134,62 +109,26 @@ contract DxController {
      */
     function unregisterScheme(address _scheme, address _avatar)
         external
+        onlyRegisteredScheme
         onlyRegisteringSchemes
         isAvatarValid(_avatar)
         returns (bool)
     {
+        Scheme memory scheme = schemes[_scheme];
+
         //check if the scheme is registered
         if (_isSchemeRegistered(_scheme) == false) {
             return false;
         }
-        // Check the unregistering scheme has enough permissions:
-        require(bytes4(0x0000001f) & (schemes[_scheme].permissions & (~schemes[msg.sender].permissions)) == bytes4(0));
+
+        if (scheme.isRegistered && scheme.canManageSchemes) {
+            require(schemesWithManageSchemesPermission > 1, "Cannot unregister last scheme with manage schemes permission");
+        }
 
         // Unregister:
         emit UnregisterScheme(msg.sender, _scheme);
-        delete schemes[_scheme];
-        return true;
-    }
-
-    /**
-     * @dev unregister the caller's scheme
-     * @return bool which represents a success
-     */
-    function unregisterSelf(address _avatar) external isAvatarValid(_avatar) returns (bool) {
-        if (_isSchemeRegistered(msg.sender) == false) {
-            return false;
-        }
-        delete schemes[msg.sender];
-        emit UnregisterScheme(msg.sender, msg.sender);
-        return true;
-    }
-
-    /**
-     * @dev upgrade the Controller
-     *      The function will trigger an event 'UpgradeController'.
-     * @param  _newController the address of the new controller.
-     * @return bool which represents a success
-     */
-    function upgradeController(address _newController, Avatar _avatar)
-        external
-        onlyUpgradingScheme
-        isAvatarValid(address(_avatar))
-        returns (bool)
-    {
-        require(newController == address(0)); // so the upgrade could be done once for a contract.
-        require(_newController != address(0));
-        newController = _newController;
-        avatar.transferOwnership(_newController);
-        require(avatar.owner() == _newController);
-        if (nativeToken.owner() == address(this)) {
-            nativeToken.transferOwnership(_newController);
-            require(nativeToken.owner() == _newController);
-        }
-        if (nativeReputation.owner() == address(this)) {
-            nativeReputation.transferOwnership(_newController);
-            require(nativeReputation.owner() == _newController);
-        }
-        emit UpgradeController(address(this), newController);
+        if (scheme.isRegistered && scheme.canManageSchemes) schemesWithManageSchemesPermission--;
+        schemes[_scheme].isRegistered = false;
         return true;
     }
 
@@ -202,17 +141,12 @@ contract DxController {
      * @return bool -success
      *         bytes  - the return value of the called _contract's function.
      */
-    function genericCall(
+    function avatarCall(
         address _contract,
         bytes calldata _data,
         Avatar _avatar,
         uint256 _value
-    )
-        external
-        onlyGenericCallScheme
-        isAvatarValid(address(_avatar))
-        returns (bool, bytes memory)
-    {
+    ) external onlyRegisteredScheme onlyAvatarCallScheme isAvatarValid(address(_avatar)) returns (bool, bytes memory) {
         return avatar.genericCall(_contract, _data, _value);
     }
 
@@ -229,16 +163,34 @@ contract DxController {
         return schemes[_scheme].paramsHash;
     }
 
-    function getSchemePermissions(address _scheme, address _avatar)
+    function getSchemeCanManageSchemes(address _scheme, address _avatar)
         external
         view
         isAvatarValid(_avatar)
-        returns (bytes4)
+        returns (bool)
     {
-        return schemes[_scheme].permissions;
+        return schemes[_scheme].canManageSchemes;
+    }
+
+    function getSchemeCanMakeAvatarCalls(address _scheme, address _avatar)
+        external
+        view
+        isAvatarValid(_avatar)
+        returns (bool)
+    {
+        return schemes[_scheme].canMakeAvatarCalls;
+    }
+
+    function getSchemesCountWithManageSchemesPermissions(address _avatar)
+        external
+        view
+        isAvatarValid(_avatar)
+        returns (uint256)
+    {
+        return schemesWithManageSchemesPermission;
     }
 
     function _isSchemeRegistered(address _scheme) private view returns (bool) {
-        return (schemes[_scheme].permissions & bytes4(0x00000001) != bytes4(0));
+        return (schemes[_scheme].isRegistered);
     }
 }
