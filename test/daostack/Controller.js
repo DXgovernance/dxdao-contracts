@@ -2,7 +2,7 @@ const helpers = require("../helpers");
 
 const DxController = artifacts.require("./DxController.sol");
 const DxReputation = artifacts.require("./DxReputation.sol");
-const DxAvatar = artifacts.require("./DxAvatar.sol");
+const DxAvatar = artifacts.require("./DXAvatar.sol");
 const DxToken = artifacts.require("./DxToken.sol");
 const GlobalConstraintMock = artifacts.require(
   "./test/GlobalConstraintMock.sol"
