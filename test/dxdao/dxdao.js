@@ -3,7 +3,7 @@ import * as helpers from "../helpers";
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const DxController = artifacts.require("./DxController.sol");
-const DxAvatar = artifacts.require("./DxAvatar.sol");
+const DxAvatar = artifacts.require("./DXAvatar.sol");
 const DxToken = artifacts.require("./DxToken.sol");
 const DaoCreator = artifacts.require("./DaoCreator.sol");
 const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");

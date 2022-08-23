@@ -2,7 +2,7 @@ const helpers = require("../helpers");
 
 const DxController = artifacts.require("./DxController.sol");
 const DxReputation = artifacts.require("./DxReputation.sol");
-const DxAvatar = artifacts.require("./DxAvatar.sol");
+const DxAvatar = artifacts.require("./DXAvatar.sol");
 const DxToken = artifacts.require("./DxToken.sol");
 const GlobalConstraintMock = artifacts.require(
   "./test/GlobalConstraintMock.sol"
@@ -24,7 +24,7 @@ const setup = async function (
   token = await DxToken.new("TEST", "TST", 0);
   // set up a reputation system
   reputation = await DxReputation.new();
-
+  await reputation.initialize("REPUTATION", "REP");
   avatar = await DxAvatar.new("name", token.address, reputation.address);
   var sender = accounts[0];
   if (permission !== "0") {
