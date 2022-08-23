@@ -17,16 +17,16 @@ contract DxController is Initializable {
         bool canMakeAvatarCalls;
     }
 
-    address[] schemesAddresses;
+    address[] public schemesAddresses;
     mapping(address => Scheme) public schemes;
-    uint256 schemesWithManageSchemesPermission;
+    uint256 public schemesWithManageSchemesPermission;
 
-    DxAvatar public avatar;
+    DXAvatar public avatar;
 
     event RegisterScheme(address indexed _sender, address indexed _scheme);
     event UnregisterScheme(address indexed _sender, address indexed _scheme);
 
-    function initialize(DxAvatar _avatar, address _scheme) public initializer {
+    function initialize(DXAvatar _avatar, address _scheme) public initializer {
         avatar = _avatar;
         schemes[_scheme] = Scheme({
             paramsHash: bytes32(0),
@@ -131,28 +131,6 @@ contract DxController is Initializable {
     }
 
     /**
-     * @dev unregister the caller's scheme
-     * @return bool which represents a
-      success
-     */
-    function unregisterSelf(address _avatar) external onlyRegisteredScheme isAvatarValid(_avatar) returns (bool) {
-        if (_isSchemeRegistered(msg.sender) == false) {
-            return false;
-        }
-
-        if (schemes[msg.sender].canManageSchemes) {
-            require(
-                schemesWithManageSchemesPermission > 1,
-                "Cannot unregister last scheme with manage schemes permission"
-            );
-        }
-        schemes[msg.sender].isRegistered = false;
-
-        emit UnregisterScheme(msg.sender, msg.sender);
-        return true;
-    }
-
-    /**
      * @dev perform a generic call to an arbitrary contract
      * @param _contract  the contract's address to call
      * @param _data ABI-encoded contract call to call `_contract` address.
@@ -164,49 +142,29 @@ contract DxController is Initializable {
     function avatarCall(
         address _contract,
         bytes calldata _data,
-        DxAvatar _avatar,
+        DXAvatar _avatar,
         uint256 _value
     ) external onlyRegisteredScheme onlyAvatarCallScheme isAvatarValid(address(_avatar)) returns (bool, bytes memory) {
         return avatar.executeCall(_contract, _data, _value);
     }
 
-    function isSchemeRegistered(address _scheme, address _avatar) external view isAvatarValid(_avatar) returns (bool) {
+    function isSchemeRegistered(address _scheme) external view returns (bool) {
         return _isSchemeRegistered(_scheme);
     }
 
-    function getSchemeParameters(address _scheme, address _avatar)
-        external
-        view
-        isAvatarValid(_avatar)
-        returns (bytes32)
-    {
+    function getSchemeParameters(address _scheme) external view returns (bytes32) {
         return schemes[_scheme].paramsHash;
     }
 
-    function getSchemeCanManageSchemes(address _scheme, address _avatar)
-        external
-        view
-        isAvatarValid(_avatar)
-        returns (bool)
-    {
+    function getSchemeCanManageSchemes(address _scheme) external view returns (bool) {
         return schemes[_scheme].canManageSchemes;
     }
 
-    function getSchemeCanMakeAvatarCalls(address _scheme, address _avatar)
-        external
-        view
-        isAvatarValid(_avatar)
-        returns (bool)
-    {
+    function getSchemeCanMakeAvatarCalls(address _scheme) external view returns (bool) {
         return schemes[_scheme].canMakeAvatarCalls;
     }
 
-    function getSchemesCountWithManageSchemesPermissions(address _avatar)
-        external
-        view
-        isAvatarValid(_avatar)
-        returns (uint256)
-    {
+    function getSchemesCountWithManageSchemesPermissions() external view returns (uint256) {
         return schemesWithManageSchemesPermission;
     }
 
