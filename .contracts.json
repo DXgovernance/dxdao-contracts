@@ -80,7 +80,8 @@
         "name": "DXGovTestRepGuild",
         "address": "0xEc352bAE6352a7cE95bb86c45E791380C48B38aA",
         "token": "0x9d1f784bc0f3E34E6104388116abC703fAa79d8a"
-      },{
+      },
+      {
         "name": "DXGovTestTokenGuild",
         "address": "0x9cDC16b5f95229b856cBA5F38095fD8E00f8edeF",
         "token": "0x698Dd4dDEeda3Cca704Dc4c2Ae4942137edd99D5"
@@ -118,7 +119,8 @@
         "name": "DXGovTestRepGuild",
         "address": "0xEc352bAE6352a7cE95bb86c45E791380C48B38aA",
         "token": "0x9d1f784bc0f3E34E6104388116abC703fAa79d8a"
-      },{
+      },
+      {
         "name": "DXGovTestTokenGuild",
         "address": "0x9cDC16b5f95229b856cBA5F38095fD8E00f8edeF",
         "token": "0x698Dd4dDEeda3Cca704Dc4c2Ae4942137edd99D5"
@@ -147,6 +149,54 @@
       "dxd": {
         "token": "0xC3Ae0333F0F34aa734D5493276223d95B8F9Cb37",
         "address": "0x02F93D46C2B56777e9C82CF40917979375C2c711"
+      }
+    }
+  },
+  "goerli": {
+    "fromBlock": 7307361,
+    "avatar": "0x713808BeA3f9667E6eB97Ae99818FC5bDb621779",
+    "reputation": "0x5Cd3674D6bB4212Ceb0Ac369d04ac7BA89a61781",
+    "token": "0x99e4A3D20A8dAc101FD5f40212EeF579437A8Ead",
+    "controller": "0xf0360621C9D3D08bae8d7C9656A7AbdFd4EC3939",
+    "permissionRegistry": "0x9cE7cD768f4Cdea43977F0b9556AbdA0f9C2f0a3",
+    "schemes": {
+      "RegistrarWalletScheme": "0x76715C6f62fa8E04eD4B802De69270FdF32c8bec",
+      "MasterWalletScheme": "0x6CA9705a9422d74b09b759Ed950641aF54E73e93"
+    },
+    "utils": {
+      "multicall": "0xf32E8c76A8bFb8ED9B7b15F3BE98BEaaA0B651F0",
+      "dxDaoNFT": "0x7F5a85fC539F4efa3D42270db4aeBc2e8cdbCD1a",
+      "dxdVestingFactory": "0x3B7CBafcAC21DF3e4F10ef85dA777d2D8eDd8a5E",
+      "guildRegistry": "0x0F551a428AE1c6fD3cE2C803544Ee669C7779052"
+    },
+    "votingMachines": {
+      "0xC284e9F6aBc7c65C277244895CAae401e643E4b6": {
+        "type": "DXDVotingMachine",
+        "token": "0x99e4A3D20A8dAc101FD5f40212EeF579437A8Ead"
+      }
+    }
+  },
+  "arbitrumNitroTestnet": {
+    "fromBlock": 13211,
+    "avatar": "0x6e2d64953d4A263Aac2d36575AF4Ead8f7FF8010",
+    "reputation": "0xAc1125Be1a2ae12D8d0B6a436cae6979E436D2F6",
+    "token": "0xCEf91E326978fEDbb14825E17DAFCa18508E6232",
+    "controller": "0xb9fb1Bb9a0F1466E63a949Ce30bA87aDE693Ea6D",
+    "permissionRegistry": "0xE901fa2f5D62980aE397dA7Ad8cCa9821a061353",
+    "schemes": {
+      "RegistrarWalletScheme": "0xCDB19c2217254f10f42032617736Ff29Cd7639aF",
+      "MasterWalletScheme": "0xD7C405D9421b43B109A58b1B0c74cA28769fa11F"
+    },
+    "utils": {
+      "multicall": "0x0969AACc3747e6c1fCc9C2b49165695C115cc6D8",
+      "dxDaoNFT": "0x06aD035dC43EAE56FFe1003b780a407F5dA5cbdA",
+      "dxdVestingFactory": "0x968827540b3D78895499C7f5ff3324d9ad8Dc962",
+      "guildRegistry": "0x2C88069D19D7ADEeb1EAF236a9b6c5c90b541D6B"
+    },
+    "votingMachines": {
+      "0x4376E73971612a7C35cc6f9649B99A5a368af5b2": {
+        "type": "DXDVotingMachine",
+        "token": "0xCEf91E326978fEDbb14825E17DAFCa18508E6232"
       }
     }
   }

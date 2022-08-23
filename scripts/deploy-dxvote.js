@@ -20,6 +20,8 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    const networkId = (await web3.eth.net.getId()).toString();
+
     let addresses = {};
 
     // Parse string json config to json object
@@ -100,7 +102,10 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     await waitBlocks(1);
 
     // Mint DXvote REP
-    await reputation.mintMultiple(founders, initialRep);
+    await reputation.mintMultiple(founders, initialRep, {
+      gasLimit: 1000000,
+      from: accounts[0],
+    });
     await waitBlocks(1);
 
     // Deploy Tokens
@@ -124,11 +129,12 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
         switch (tokenToDeploy.type) {
           case "ERC20":
             newToken = await ERC20Mock.new(accounts[0], totalSupply.toString());
-            await tokenToDeploy.distribution.map(async tokenHolder => {
+            for (i in tokenToDeploy.distribution) {
+              const tokenHolder = tokenToDeploy.distribution[i];
               await newToken.transfer(tokenHolder.address, tokenHolder.amount, {
                 from: accounts[0],
               });
-            });
+            }
             break;
           case "ERC20SnapshotRep":
             newToken = await ERC20SnapshotRep.new();
@@ -191,15 +197,6 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
       token: tokens.DXD.address,
     };
     await waitBlocks(1);
-    await tokens.DXD.approve(votingMachine.address, MAX_UINT_256, {
-      from: accounts[0],
-    });
-    await tokens.DXD.approve(votingMachine.address, MAX_UINT_256, {
-      from: accounts[1],
-    });
-    await tokens.DXD.approve(votingMachine.address, MAX_UINT_256, {
-      from: accounts[2],
-    });
     addresses["DXDVotingMachine"] = votingMachine.address;
 
     // Deploy PermissionRegistry to be used by WalletSchemes
@@ -270,109 +267,112 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     await waitBlocks(1);
 
     // Deploy ContributionReward Scheme
-    console.log("Deploying ContributionReward scheme");
-    const contributionReward = await ContributionReward.new();
-    const redeemer = await Redeemer.new();
+    if (deploymentConfig.contributionReward) {
+      console.log("Deploying ContributionReward scheme");
+      const contributionReward = await ContributionReward.new();
+      const redeemer = await Redeemer.new();
 
-    // The ContributionReward scheme was designed by DAOstack to be used as an universal scheme,
-    // which means that index the voting params used in the voting machine hash by voting machine
-    // So the voting parameters are set in the voting machine, and that voting parameters hash is registered in the ContributionReward
-    // And then other voting parameter hash is calculated for that voting machine and contribution reward, and that is the one used in the controller
-    const contributionRewardParamsHash = await votingMachine.getParametersHash(
-      [
-        deploymentConfig.contributionReward.queuedVoteRequiredPercentage.toString(),
-        deploymentConfig.contributionReward.queuedVotePeriodLimit.toString(),
-        deploymentConfig.contributionReward.boostedVotePeriodLimit.toString(),
-        deploymentConfig.contributionReward.preBoostedVotePeriodLimit.toString(),
-        deploymentConfig.contributionReward.thresholdConst.toString(),
-        deploymentConfig.contributionReward.quietEndingPeriod.toString(),
-        deploymentConfig.contributionReward.proposingRepReward.toString(),
-        deploymentConfig.contributionReward.votersReputationLossRatio.toString(),
-        deploymentConfig.contributionReward.minimumDaoBounty.toString(),
-        deploymentConfig.contributionReward.daoBountyConst.toString(),
-        0,
-      ],
-      NULL_ADDRESS,
-      { from: accounts[0], gasPrice: 0 }
-    );
-    await votingMachine.setParameters(
-      [
-        deploymentConfig.contributionReward.queuedVoteRequiredPercentage.toString(),
-        deploymentConfig.contributionReward.queuedVotePeriodLimit.toString(),
-        deploymentConfig.contributionReward.boostedVotePeriodLimit.toString(),
-        deploymentConfig.contributionReward.preBoostedVotePeriodLimit.toString(),
-        deploymentConfig.contributionReward.thresholdConst.toString(),
-        deploymentConfig.contributionReward.quietEndingPeriod.toString(),
-        deploymentConfig.contributionReward.proposingRepReward.toString(),
-        deploymentConfig.contributionReward.votersReputationLossRatio.toString(),
-        deploymentConfig.contributionReward.minimumDaoBounty.toString(),
-        deploymentConfig.contributionReward.daoBountyConst.toString(),
-        0,
-      ],
-      NULL_ADDRESS
-    );
-    await contributionReward.setParameters(
-      contributionRewardParamsHash,
-      votingMachine.address
-    );
-    const contributionRewardVotingmachineParamsHash =
-      await contributionReward.getParametersHash(
+      // The ContributionReward scheme was designed by DAOstack to be used as an universal scheme,
+      // which means that index the voting params used in the voting machine hash by voting machine
+      // So the voting parameters are set in the voting machine, and that voting parameters hash is registered in the ContributionReward
+      // And then other voting parameter hash is calculated for that voting machine and contribution reward, and that is the one used in the controller
+      const contributionRewardParamsHash =
+        await votingMachine.getParametersHash(
+          [
+            deploymentConfig.contributionReward.queuedVoteRequiredPercentage.toString(),
+            deploymentConfig.contributionReward.queuedVotePeriodLimit.toString(),
+            deploymentConfig.contributionReward.boostedVotePeriodLimit.toString(),
+            deploymentConfig.contributionReward.preBoostedVotePeriodLimit.toString(),
+            deploymentConfig.contributionReward.thresholdConst.toString(),
+            deploymentConfig.contributionReward.quietEndingPeriod.toString(),
+            deploymentConfig.contributionReward.proposingRepReward.toString(),
+            deploymentConfig.contributionReward.votersReputationLossRatio.toString(),
+            deploymentConfig.contributionReward.minimumDaoBounty.toString(),
+            deploymentConfig.contributionReward.daoBountyConst.toString(),
+            0,
+          ],
+          NULL_ADDRESS,
+          { from: accounts[0], gasPrice: 0 }
+        );
+      await votingMachine.setParameters(
+        [
+          deploymentConfig.contributionReward.queuedVoteRequiredPercentage.toString(),
+          deploymentConfig.contributionReward.queuedVotePeriodLimit.toString(),
+          deploymentConfig.contributionReward.boostedVotePeriodLimit.toString(),
+          deploymentConfig.contributionReward.preBoostedVotePeriodLimit.toString(),
+          deploymentConfig.contributionReward.thresholdConst.toString(),
+          deploymentConfig.contributionReward.quietEndingPeriod.toString(),
+          deploymentConfig.contributionReward.proposingRepReward.toString(),
+          deploymentConfig.contributionReward.votersReputationLossRatio.toString(),
+          deploymentConfig.contributionReward.minimumDaoBounty.toString(),
+          deploymentConfig.contributionReward.daoBountyConst.toString(),
+          0,
+        ],
+        NULL_ADDRESS
+      );
+      await contributionReward.setParameters(
         contributionRewardParamsHash,
         votingMachine.address
       );
-    await controller.registerScheme(
-      contributionReward.address,
-      contributionRewardVotingmachineParamsHash,
-      encodePermission({
-        canGenericCall: true,
-        canUpgrade: false,
-        canRegisterSchemes: false,
-      }),
-      avatar.address
-    );
+      const contributionRewardVotingmachineParamsHash =
+        await contributionReward.getParametersHash(
+          contributionRewardParamsHash,
+          votingMachine.address
+        );
+      await controller.registerScheme(
+        contributionReward.address,
+        contributionRewardVotingmachineParamsHash,
+        encodePermission({
+          canGenericCall: true,
+          canUpgrade: false,
+          canRegisterSchemes: false,
+        }),
+        avatar.address
+      );
 
-    networkContracts.daostack = {
-      [contributionReward.address]: {
-        contractToCall: controller.address,
-        creationLogEncoding: [
-          [
-            {
-              name: "_descriptionHash",
-              type: "string",
-            },
-            {
-              name: "_reputationChange",
-              type: "int256",
-            },
-            {
-              name: "_rewards",
-              type: "uint256[5]",
-            },
-            {
-              name: "_externalToken",
-              type: "address",
-            },
-            {
-              name: "_beneficiary",
-              type: "address",
-            },
+      networkContracts.daostack = {
+        [contributionReward.address]: {
+          contractToCall: controller.address,
+          creationLogEncoding: [
+            [
+              {
+                name: "_descriptionHash",
+                type: "string",
+              },
+              {
+                name: "_reputationChange",
+                type: "int256",
+              },
+              {
+                name: "_rewards",
+                type: "uint256[5]",
+              },
+              {
+                name: "_externalToken",
+                type: "address",
+              },
+              {
+                name: "_beneficiary",
+                type: "address",
+              },
+            ],
           ],
-        ],
-        name: "ContributionReward",
-        newProposalTopics: [
-          [
-            "0xcbdcbf9aaeb1e9eff0f75d74e1c1e044bc87110164baec7d18d825b0450d97df",
-            "0x000000000000000000000000519b70055af55a007110b4ff99b0ea33071c720a",
+          name: "ContributionReward",
+          newProposalTopics: [
+            [
+              "0xcbdcbf9aaeb1e9eff0f75d74e1c1e044bc87110164baec7d18d825b0450d97df",
+              "0x000000000000000000000000519b70055af55a007110b4ff99b0ea33071c720a",
+            ],
           ],
-        ],
-        redeemer: redeemer.address,
-        supported: true,
-        type: "ContributionReward",
-        voteParams: contributionRewardVotingmachineParamsHash,
-        votingMachine: votingMachine.address,
-      },
-    };
-    addresses["ContributionReward"] = contributionReward.address;
+          redeemer: redeemer.address,
+          supported: true,
+          type: "ContributionReward",
+          voteParams: contributionRewardVotingmachineParamsHash,
+          votingMachine: votingMachine.address,
+        },
+      };
+      addresses["ContributionReward"] = contributionReward.address;
+    }
 
     // Deploy Wallet Schemes
     for (var s = 0; s < deploymentConfig.walletSchemes.length; s++) {
@@ -579,10 +579,12 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     const startTime = deploymentConfig.startTimestampForActions;
 
     // Increase time to start time for actions
-    await hre.network.provider.request({
-      method: "evm_increaseTime",
-      params: [startTime - (await web3.eth.getBlock("latest")).timestamp],
-    });
+    if (networkId === "31337") {
+      await hre.network.provider.request({
+        method: "evm_increaseTime",
+        params: [startTime - (await web3.eth.getBlock("latest")).timestamp],
+      });
+    }
 
     const ipfs = await IPFS.create();
 
@@ -590,7 +592,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     for (let i = 0; i < deploymentConfig.actions.length; i++) {
       const action = deploymentConfig.actions[i];
 
-      if (action.time)
+      if (action.time && networkId === "31337")
         await network.provider.send("evm_increaseTime", [action.time]);
       console.log("Executing action:", action);
 
@@ -631,7 +633,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
           const proposalCreationTx =
             action.data.scheme === "ContributionReward"
               ? await (
-                  await ContributionReward.at(contributionReward.address)
+                  await ContributionReward.at(addresses["ContributionReward"])
                 ).proposeContributionReward(
                   avatar.address,
                   contentHash.fromIpfs(proposalDescriptionHash),
@@ -639,7 +641,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
                   action.data.rewards,
                   action.data.externalToken,
                   action.data.beneficiary,
-                  { from: action.from }
+                  { from: action.from, gasLimit: 1000000 }
                 )
               : await (
                   await WalletScheme.at(addresses[action.data.scheme])
@@ -649,7 +651,7 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
                   action.data.value,
                   action.data.title,
                   contentHash.fromIpfs(proposalDescriptionHash),
-                  { from: action.from }
+                  { from: action.from, gasLimit: 1000000 }
                 );
           proposals.dxvote.push(
             proposalCreationTx.receipt.logs[0].args._proposalId
@@ -678,7 +680,6 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
               proposals.dxvote[action.data.proposal],
               {
                 from: action.from,
-                gas: 9000000,
               }
             );
           } catch (error) {
@@ -744,10 +745,13 @@ task("deploy-dxvote", "Deploy dxvote in localhost network")
     }
 
     // Increase time to local time
-    await hre.network.provider.request({
-      method: "evm_increaseTime",
-      params: [moment().unix() - (await web3.eth.getBlock("latest")).timestamp],
-    });
+    if (networkId === "31337")
+      await hre.network.provider.request({
+        method: "evm_increaseTime",
+        params: [
+          moment().unix() - (await web3.eth.getBlock("latest")).timestamp,
+        ],
+      });
 
     return { networkContracts, addresses };
   });
