@@ -21,13 +21,10 @@ contract DxController is Initializable {
     mapping(address => Scheme) public schemes;
     uint256 public schemesWithManageSchemesPermission;
 
-    DXAvatar public avatar;
-
     event RegisterScheme(address indexed _sender, address indexed _scheme);
     event UnregisterScheme(address indexed _sender, address indexed _scheme);
 
-    function initialize(DXAvatar _avatar, address _scheme) public initializer {
-        avatar = _avatar;
+    function initialize(address _scheme) public initializer {
         schemes[_scheme] = Scheme({
             paramsHash: bytes32(0),
             isRegistered: true,
@@ -53,11 +50,6 @@ contract DxController is Initializable {
         _;
     }
 
-    modifier isAvatarValid(address _avatar) {
-        require(_avatar == address(avatar), "Avatar is not valid");
-        _;
-    }
-
     /**
      * @dev register a scheme
      * @param _scheme the address of the scheme
@@ -70,9 +62,8 @@ contract DxController is Initializable {
         address _scheme,
         bytes32 _paramsHash,
         bool _canManageSchemes,
-        bool _canMakeAvatarCalls,
-        address _avatar
-    ) external onlyRegisteredScheme onlyRegisteringSchemes isAvatarValid(_avatar) returns (bool) {
+        bool _canMakeAvatarCalls
+    ) external onlyRegisteredScheme onlyRegisteringSchemes returns (bool) {
         Scheme memory scheme = schemes[_scheme];
 
         // produces non-zero if sender does not have perms that are being updated
@@ -106,7 +97,6 @@ contract DxController is Initializable {
         external
         onlyRegisteredScheme
         onlyRegisteringSchemes
-        isAvatarValid(_avatar)
         returns (bool)
     {
         Scheme memory scheme = schemes[_scheme];
@@ -144,8 +134,8 @@ contract DxController is Initializable {
         bytes calldata _data,
         DXAvatar _avatar,
         uint256 _value
-    ) external onlyRegisteredScheme onlyAvatarCallScheme isAvatarValid(address(_avatar)) returns (bool, bytes memory) {
-        return avatar.executeCall(_contract, _data, _value);
+    ) external onlyRegisteredScheme onlyAvatarCallScheme returns (bool, bytes memory) {
+        return _avatar.executeCall(_contract, _data, _value);
     }
 
     function isSchemeRegistered(address _scheme) external view returns (bool) {
