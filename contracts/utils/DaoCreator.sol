@@ -1,13 +1,13 @@
 pragma solidity 0.5.17;
 
-import "../daostack/controller/Controller.sol";
+import "../dxdao/DxController.sol";
 
 /**
  * @title DxControllerCreator for creating a single controller.
  */
 contract DxControllerCreator {
     function create(Avatar _avatar) public returns (address) {
-        Controller controller = new Controller(_avatar);
+        DxController controller = new DxController(_avatar);
         controller.registerScheme(msg.sender, bytes32(0), bytes4(0x0000001f), address(_avatar));
         controller.unregisterScheme(address(this), address(_avatar));
         return address(controller);
@@ -55,10 +55,10 @@ contract DaoCreator {
         for (uint256 i = 0; i < _founders.length; i++) {
             require(_founders[i] != address(0));
             if (_foundersTokenAmount[i] > 0) {
-                Controller(_avatar.owner()).mintTokens(_foundersTokenAmount[i], _founders[i], address(_avatar));
+                DxController(_avatar.owner()).mintTokens(_foundersTokenAmount[i], _founders[i], address(_avatar));
             }
             if (_foundersReputationAmount[i] > 0) {
-                Controller(_avatar.owner()).mintReputation(
+                DxController(_avatar.owner()).mintReputation(
                     _foundersReputationAmount[i],
                     _founders[i],
                     address(_avatar)
@@ -122,7 +122,7 @@ contract DaoCreator {
         // for this controller
         require(locks[address(_avatar)] == msg.sender);
         // register initial schemes:
-        Controller controller = Controller(_avatar.owner());
+        DxController controller = DxController(_avatar.owner());
         for (uint256 i = 0; i < _schemes.length; i++) {
             controller.registerScheme(_schemes[i], _params[i], _permissions[i], address(_avatar));
         }
@@ -171,7 +171,7 @@ contract DaoCreator {
             }
         }
 
-        Controller controller = Controller(controllerCreator.create(avatar));
+        DxController controller = DxController(controllerCreator.create(avatar));
 
         // Transfer ownership:
         avatar.transferOwnership(address(controller));
