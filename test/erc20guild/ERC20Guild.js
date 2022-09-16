@@ -157,6 +157,7 @@ contract("ERC20Guild", function (accounts) {
             permissionRegistry.address,
             permissionRegistry.address,
             permissionRegistry.address,
+            permissionRegistry.address,
           ],
           data: [
             await new web3.eth.Contract(PermissionRegistry.abi).methods
@@ -186,8 +187,19 @@ contract("ERC20Guild", function (accounts) {
                 true
               )
               .encodeABI(),
+            await new web3.eth.Contract(PermissionRegistry.abi).methods
+              .setETHPermission(
+                erc20Guild.address,
+                actionMockA.address,
+                web3.eth.abi.encodeFunctionSignature(
+                  "executeCall(address,bytes,uint256)"
+                ),
+                0,
+                true
+              )
+              .encodeABI(),
           ],
-          value: [0, 0, 0],
+          value: [0, 0, 0, 0],
         },
       ],
       account: accounts[1],
@@ -1524,6 +1536,81 @@ contract("ERC20Guild", function (accounts) {
         proposalId: guildProposalId,
         newState: "3",
       });
+    });
+
+    it("try to set eth permission used between calls to avoid checks and fail", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        actions: [
+          {
+            to: [
+              actionMockA.address,
+              actionMockA.address,
+              actionMockA.address,
+              permissionRegistry.address,
+              actionMockA.address,
+            ],
+            data: [
+              "0x0",
+
+              // setETHPermissionUsed from the ActionMock contract by using execute call
+              await new web3.eth.Contract(ActionMock.abi).methods
+                .executeCall(
+                  permissionRegistry.address,
+                  await new web3.eth.Contract(PermissionRegistry.abi).methods
+                    .setETHPermissionUsed(
+                      erc20Guild.address,
+                      actionMockA.address,
+                      "0x0",
+                      0
+                    )
+                    .encodeABI(),
+                  0
+                )
+                .encodeABI(),
+              "0x0",
+
+              // setETHPermissionUsed from the guild directly
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .setETHPermissionUsed(
+                  erc20Guild.address,
+                  actionMockA.address,
+                  "0x0",
+                  0
+                )
+                .encodeABI(),
+              "0x0",
+            ],
+            value: [99, 0, 1, 0, 1],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        action: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "PermissionRegistry: Value limit reached"
+      );
     });
 
     it("fail to execute a transfer exceeding the allowed on a call", async function () {
