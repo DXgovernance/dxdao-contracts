@@ -1,17 +1,20 @@
 pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "./DxAvatar.sol";
 
 /**
  * @title Controller contract
- * @dev A controller controls the organizations tokens, reputation and avatar.
+ * @dev A controller controls the organizations schemes, reputation and avatar.
  * It is subject to a set of schemes and constraints that determine its behavior.
  * Each scheme has it own parameters and operation permissions.
  */
 contract DxController is Initializable {
+    using SafeMathUpgradeable for uint256;
+
     struct Scheme {
-        bytes32 paramsHash; // a hash "configuration" of the scheme
+        bytes32 paramsHash; // a hash voting parameters of the scheme
         bool isRegistered;
         bool canManageSchemes;
         bool canMakeAvatarCalls;
@@ -34,19 +37,18 @@ contract DxController is Initializable {
         schemesWithManageSchemesPermission = 1;
     }
 
-    // Modifiers:
     modifier onlyRegisteredScheme() {
-        require(schemes[msg.sender].isRegistered, "Sender is not a registered scheme");
+        require(schemes[msg.sender].isRegistered, "DxController: Sender is not a registered scheme");
         _;
     }
 
     modifier onlyRegisteringSchemes() {
-        require(schemes[msg.sender].canManageSchemes, "Sender cannot manage schemes");
+        require(schemes[msg.sender].canManageSchemes, "DxController: Sender cannot manage schemes");
         _;
     }
 
     modifier onlyAvatarCallScheme() {
-        require(schemes[msg.sender].canMakeAvatarCalls, "Sender cannot perform avatar calls");
+        require(schemes[msg.sender].canMakeAvatarCalls, "DxController: Sender cannot perform avatar calls");
         _;
     }
 
@@ -56,7 +58,7 @@ contract DxController is Initializable {
      * @param _paramsHash a hashed configuration of the usage of the scheme
      * @param _canManageSchemes whether the scheme is able to manage schemes
      * @param _canMakeAvatarCalls whether the scheme is able to make avatar calls
-     * @return bool which represents a success
+     * @return bool success of the operation
      */
     function registerScheme(
         address _scheme,
@@ -66,32 +68,35 @@ contract DxController is Initializable {
     ) external onlyRegisteredScheme onlyRegisteringSchemes returns (bool) {
         Scheme memory scheme = schemes[_scheme];
 
-        // produces non-zero if sender does not have perms that are being updated
+        // produces non-zero if sender does not have permissions that are being updated
         require(
             (_canMakeAvatarCalls || scheme.canMakeAvatarCalls != _canMakeAvatarCalls)
                 ? schemes[msg.sender].canMakeAvatarCalls
                 : true,
-            "Sender cannot add permissions sender doesn't have to a new scheme"
+            "DxController: Sender cannot add permissions sender doesn't have to a new scheme"
         );
 
         // Add or change the scheme:
         if ((!scheme.isRegistered || !scheme.canManageSchemes) && _canManageSchemes) {
-            schemesWithManageSchemesPermission++;
+            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.add(1);
         }
+
         schemes[_scheme] = Scheme({
             paramsHash: _paramsHash,
             isRegistered: true,
             canManageSchemes: _canManageSchemes,
             canMakeAvatarCalls: _canMakeAvatarCalls
         });
+
         emit RegisterScheme(msg.sender, _scheme);
+
         return true;
     }
 
     /**
      * @dev unregister a scheme
      * @param _scheme the address of the scheme
-     * @return bool which represents a success
+     * @return bool success of the operation
      */
     function unregisterScheme(address _scheme, address _avatar)
         external
@@ -109,14 +114,19 @@ contract DxController is Initializable {
         if (scheme.isRegistered && scheme.canManageSchemes) {
             require(
                 schemesWithManageSchemesPermission > 1,
-                "Cannot unregister last scheme with manage schemes permission"
+                "DxController: Cannot unregister last scheme with manage schemes permission"
             );
+            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.sub(1);
         }
 
-        // Unregister:
         emit UnregisterScheme(msg.sender, _scheme);
-        if (scheme.isRegistered && scheme.canManageSchemes) schemesWithManageSchemesPermission--;
-        schemes[_scheme].isRegistered = false;
+
+        schemes[_scheme] = Scheme({
+            paramsHash: bytes32(0),
+            isRegistered: false,
+            canManageSchemes: false,
+            canMakeAvatarCalls: false
+        });
         return true;
     }
 
@@ -132,7 +142,7 @@ contract DxController is Initializable {
     function avatarCall(
         address _contract,
         bytes calldata _data,
-        DXAvatar _avatar,
+        DxAvatar _avatar,
         uint256 _value
     ) external onlyRegisteredScheme onlyAvatarCallScheme returns (bool, bytes memory) {
         return _avatar.executeCall(_contract, _data, _value);

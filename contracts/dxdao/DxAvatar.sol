@@ -4,17 +4,22 @@ pragma solidity ^0.8.8;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
-  @title DXAvatar
+  @title DxAvatar
   @author github:miltontulli
   @dev An Avatar holds tokens, reputation and ether for a controller
 */
 
-contract DXAvatar is OwnableUpgradeable {
+contract DxAvatar is OwnableUpgradeable {
     event CallExecuted(address indexed _to, bytes _data, uint256 _value, bool _success);
 
-    function initialize(address _owner) public initializer {
+    address public reputationToken;
+
+    receive() external payable {}
+
+    function initialize(address _owner, address _reputationToken) public initializer {
         __Ownable_init();
         transferOwnership(_owner);
+        reputationToken = _reputationToken;
     }
 
     /**

@@ -22,6 +22,15 @@ contract DxReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         __Ownable_init();
     }
 
+    // @dev Not allow the transfer of tokens
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) internal virtual override {
+        revert("DxReputation: Reputation tokens are non-transferable");
+    }
+
     // @notice Generates `_amount` reputation that are assigned to `_user`
     // @param _user The address that will be assigned the new reputation
     // @param _amount The quantity of reputation generated
@@ -60,5 +69,12 @@ contract DxReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
             emit Burn(_user[i], _amount);
         }
         return true;
+    }
+
+    /**
+     * @dev Get the current snapshotId
+     */
+    function getCurrentSnapshotId() public view returns (uint256) {
+        return _getCurrentSnapshotId();
     }
 }

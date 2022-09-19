@@ -1,43 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import {RealMath} from "../utils/RealMath.sol";
+import {RealMath} from "../../utils/RealMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface ProposalExecuteInterface {
-    function executeProposal(bytes32 _proposalId, int256 _decision) external returns (bool);
-}
-
-interface VotingMachineCallbacksInterface {
-    function mintReputation(
-        uint256 _amount,
-        address _beneficiary,
-        bytes32 _proposalId
-    ) external returns (bool);
-
-    function burnReputation(
-        uint256 _amount,
-        address _owner,
-        bytes32 _proposalId
-    ) external returns (bool);
-
-    function stakingTokenTransfer(
-        IERC20 _stakingToken,
-        address _beneficiary,
-        uint256 _amount,
-        bytes32 _proposalId
-    ) external returns (bool);
-
-    function getTotalReputationSupply(bytes32 _proposalId) external view returns (uint256);
-
-    function reputationOf(address _owner, bytes32 _proposalId) external view returns (uint256);
-
-    function balanceOfStakingToken(IERC20 _stakingToken, bytes32 _proposalId) external view returns (uint256);
-}
+import "./DXDVotingMachineCallbacksInterface.sol";
+import "./ProposalExecuteInterface.sol";
 
 /**
  * @title GenesisProtocol implementation designed for DXdao
@@ -497,7 +469,7 @@ contract DXDVotingMachine {
             emit Redeem(_proposalId, organizations[proposal.organizationId], _beneficiary, rewards[0]);
         }
         if (rewards[1].add(rewards[2]) != 0) {
-            VotingMachineCallbacksInterface(proposal.callbacks).mintReputation(
+            DXDVotingMachineCallbacksInterface(proposal.callbacks).mintReputation(
                 rewards[1].add(rewards[2]),
                 _beneficiary,
                 _proposalId
@@ -539,14 +511,16 @@ contract DXDVotingMachine {
         }
         if (
             (potentialAmount != 0) &&
-            (VotingMachineCallbacksInterface(proposal.callbacks).balanceOfStakingToken(stakingToken, _proposalId) >=
-                potentialAmount)
+            (DXDVotingMachineCallbacksInterface(proposal.callbacks).balanceOfStakingToken(
+                address(stakingToken),
+                _proposalId
+            ) >= potentialAmount)
         ) {
             staker.amount4Bounty = 0;
             proposal.daoBountyRemain = proposal.daoBountyRemain.sub(potentialAmount);
             require(
-                VotingMachineCallbacksInterface(proposal.callbacks).stakingTokenTransfer(
-                    stakingToken,
+                DXDVotingMachineCallbacksInterface(proposal.callbacks).stakingTokenTransfer(
+                    address(stakingToken),
                     _beneficiary,
                     potentialAmount,
                     _proposalId
@@ -911,7 +885,7 @@ contract DXDVotingMachine {
         Proposal storage proposal = proposals[_proposalId];
 
         // Check voter has enough reputation:
-        uint256 reputation = VotingMachineCallbacksInterface(proposal.callbacks).reputationOf(_voter, _proposalId);
+        uint256 reputation = DXDVotingMachineCallbacksInterface(proposal.callbacks).reputationOf(_voter, _proposalId);
         require(reputation > 0, "_voter must have reputation");
         require(reputation >= _rep, "reputation >= _rep");
         uint256 rep = _rep;
@@ -957,7 +931,11 @@ contract DXDVotingMachine {
         if ((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued)) {
             proposalPreBoostedVotes[_proposalId][_vote] = rep.add(proposalPreBoostedVotes[_proposalId][_vote]);
             uint256 reputationDeposit = (params.votersReputationLossRatio.mul(rep)) / 100;
-            VotingMachineCallbacksInterface(proposal.callbacks).burnReputation(reputationDeposit, _voter, _proposalId);
+            DXDVotingMachineCallbacksInterface(proposal.callbacks).burnReputation(
+                reputationDeposit,
+                _voter,
+                _proposalId
+            );
         }
         emit VoteProposal(_proposalId, organizations[proposal.organizationId], _voter, _vote, rep);
         return _execute(_proposalId);
@@ -1022,7 +1000,7 @@ contract DXDVotingMachine {
         Parameters memory params = parameters[proposal.paramsHash];
         Proposal memory tmpProposal = proposal;
         ExecuteFunctionParams memory executeParams;
-        executeParams.totalReputation = VotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(
+        executeParams.totalReputation = DXDVotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(
             _proposalId
         );
         //first divide by 100 to prevent overflow
@@ -1151,7 +1129,7 @@ contract DXDVotingMachine {
             );
             emit GPExecuteProposal(_proposalId, executionState);
             proposal.daoBounty = proposal.daoBountyRemain;
-            ProposalExecuteInterface(proposal.callbacks).executeProposal(_proposalId, int256(proposal.winningVote));
+            ProposalExecuteInterface(proposal.callbacks).executeProposal(_proposalId, proposal.winningVote);
         }
         if (tmpProposal.state != proposal.state) {
             emit StateChange(_proposalId, proposal.state);
