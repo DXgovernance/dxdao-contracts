@@ -81,4 +81,3 @@ library RealMath {
         return uint256((uint256(realNumerator) * REAL_ONE) / uint256(realDenominator));
     }
 }
-
