@@ -1,9 +1,9 @@
 import * as helpers from "../helpers";
 const { expectRevert, expectEvent } = require("@openzeppelin/test-helpers");
-const DxAvatar = artifacts.require("./DXAvatar.sol");
+const DxAvatar = artifacts.require("./DxAvatar.sol");
 const BigNumber = require("bignumber.js");
 
-contract("DXAvatar", function (accounts) {
+contract("DxAvatar", function (accounts) {
   it("Should revert call", async function () {
     const owner = accounts[0];
     const avatar = await DxAvatar.new();

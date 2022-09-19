@@ -1,61 +1,39 @@
+import { expectRevert } from "@openzeppelin/test-helpers";
+import { assert } from "chai";
 import * as helpers from "../helpers";
 
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
-const DxController = artifacts.require("./DxController.sol");
-const DxAvatar = artifacts.require("./DXAvatar.sol");
-const DxToken = artifacts.require("./DxToken.sol");
-const DaoCreator = artifacts.require("./DaoCreator.sol");
-const DxControllerCreator = artifacts.require("./DxControllerCreator.sol");
-const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 
 contract("DXdao", function (accounts) {
   const constants = helpers.constants;
+  let dxDao;
+  let proposalId;
 
-  it("Wallet - execute proposeVote -positive decision - check action - with DXDVotingMachine", async function () {
+  beforeEach(async function () {
     const votingMachineToken = await ERC20Mock.new(
       accounts[0],
       1000,
-      "",
-      "",
+      "DXDao",
+      "DXD",
       "18"
     );
-    const masterWalletScheme = await WalletScheme.new();
-    const controllerCreator = await DxControllerCreator.new({
-      gas: constants.GAS_LIMIT,
+
+    dxDao = await helpers.deployDao({
+      owner: accounts[0],
+      votingMachineToken: votingMachineToken.address,
+      repHolders: [
+        { address: accounts[0], amount: 20 },
+        { address: accounts[1], amount: 10 },
+        { address: accounts[2], amount: 70 },
+      ],
     });
-    const daoCreator = await DaoCreator.new(controllerCreator.address, {
-      gas: constants.GAS_LIMIT,
-    });
-    const users = [accounts[0], accounts[1], accounts[2]];
-    const usersTokens = [1000, 1000, 1000];
-    const usersRep = [20, 10, 70];
 
-    var tx = await daoCreator.forgeOrg(
-      "testOrg",
-      "TEST",
-      "TST",
-      users,
-      usersTokens,
-      usersRep,
-      0,
-      { gas: constants.GAS_LIMIT }
-    );
-    assert.equal(tx.logs.length, 1);
-    assert.equal(tx.logs[0].event, "NewOrg");
-    const avatar = await DxAvatar.at(tx.logs[0].args._avatar);
-    const token = await DxToken.at(await avatar.nativeToken());
-    const controller = await DxController.at(await avatar.owner());
-
-    const votingMachine = await helpers.setUpVotingMachine(
-      votingMachineToken.address,
-      "dxd",
-      constants.NULL_ADDRESS
-    );
-
-    const genesisProtocol = await DXDVotingMachine.new(token.address, {
-      gas: constants.GAS_LIMIT,
+    await web3.eth.sendTransaction({
+      to: dxDao.dxAvatar.address,
+      from: accounts[0],
+      value: 100,
     });
 
     // Parameters
@@ -66,13 +44,13 @@ contract("DXdao", function (accounts) {
     const _preBoostedVotePeriodLimit = 0;
     const _thresholdConst = 2000;
     const _quietEndingPeriod = 0;
-    const _proposingRepReward = 60;
+    const _proposingRepReward = 0;
     const _votersReputationLossRatio = 10;
     const _minimumDaoBounty = 15;
     const _daoBountyConst = 10;
     const _activationTime = 0;
 
-    genesisProtocol.setParameters(
+    await dxDao.votingMachine.setParameters(
       [
         _queuedVoteRequiredPercentage,
         _queuedVotePeriodLimit,
@@ -89,33 +67,96 @@ contract("DXdao", function (accounts) {
       voteOnBehalf
     );
 
-    const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
+    const paramsHash = await dxDao.votingMachine.getParametersHash(
+      [
+        _queuedVoteRequiredPercentage,
+        _queuedVotePeriodLimit,
+        _boostedVotePeriodLimit,
+        _preBoostedVotePeriodLimit,
+        _thresholdConst,
+        _quietEndingPeriod,
+        _proposingRepReward,
+        _votersReputationLossRatio,
+        _minimumDaoBounty,
+        _daoBountyConst,
+        _activationTime,
+      ],
+      voteOnBehalf
+    );
+
+    const permissionRegistry = await PermissionRegistry.new(
+      dxDao.dxAvatar.address,
+      10
+    );
     await permissionRegistry.initialize();
 
+    await permissionRegistry.setETHPermission(
+      dxDao.dxAvatar.address,
+      constants.NULL_ADDRESS,
+      constants.NULL_SIGNATURE,
+      10,
+      true
+    );
+
+    const masterWalletScheme = await WalletScheme.new();
+
     await masterWalletScheme.initialize(
-      avatar.address,
-      votingMachine.address,
+      dxDao.dxAvatar.address,
+      dxDao.votingMachine.address,
       true,
-      controller.address,
+      dxDao.dxController.address,
       permissionRegistry.address,
       "Master Scheme",
       86400,
       5
     );
 
-    await daoCreator.setSchemes(
-      avatar.address,
-      [masterWalletScheme.address],
-      [constants.NULL_HASH],
-      [
-        helpers.encodePermission({
-          canGenericCall: true,
-          canUpgrade: true,
-          canChangeConstraints: true,
-          canRegisterSchemes: true,
-        }),
-      ],
-      "metaData"
+    await dxDao.dxController.registerScheme(
+      masterWalletScheme.address,
+      paramsHash,
+      true,
+      true
     );
+
+    const createProposalTx = await masterWalletScheme.proposeCalls(
+      [accounts[1], accounts[1]],
+      ["0x0", "0x0"],
+      [10, 5],
+      2,
+      "Test Proposal",
+      constants.NULL_HASH
+    );
+
+    proposalId = createProposalTx.logs[0].args._proposalId;
+  });
+
+  it("Wallet - execute proposeVote -option 0 - check action - with DXDVotingMachine", async function () {
+    assert.equal(await web3.eth.getBalance(dxDao.dxAvatar.address), "100");
+
+    await expectRevert(
+      dxDao.votingMachine.vote(proposalId, 0, 0, constants.NULL_ADDRESS, {
+        from: accounts[2],
+      }),
+      "wrong decision value"
+    );
+    assert.equal(await web3.eth.getBalance(dxDao.dxAvatar.address), "100");
+  });
+
+  it("Wallet - execute proposeVote -option 1 - check action - with DXDVotingMachine", async function () {
+    assert.equal(await web3.eth.getBalance(dxDao.dxAvatar.address), "100");
+
+    await dxDao.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
+    assert.equal(await web3.eth.getBalance(dxDao.dxAvatar.address), "90");
+  });
+
+  it("Wallet - execute proposeVote -option 2 - check action - with DXDVotingMachine", async function () {
+    assert.equal(await web3.eth.getBalance(dxDao.dxAvatar.address), "100");
+
+    await dxDao.votingMachine.vote(proposalId, 2, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
+    assert.equal(await web3.eth.getBalance(dxDao.dxAvatar.address), "95");
   });
 });
