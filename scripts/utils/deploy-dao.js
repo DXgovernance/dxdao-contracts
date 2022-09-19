@@ -6,8 +6,6 @@ const MAX_UINT_256 =
   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
-const { encodePermission } = require("../../test/helpers/permissions");
-
 const { waitBlocks } = require("../utils/wait");
 
 const deployDao = async function (daoConfig, networkContracts) {
@@ -221,11 +219,7 @@ const deployDao = async function (daoConfig, networkContracts) {
   await controller.registerScheme(
     contributionReward.address,
     contributionRewardVotingmachineParamsHash,
-    encodePermission({
-      canGenericCall: true,
-      canUpgrade: false,
-      canRegisterSchemes: false,
-    }),
+    "0x0",
     avatar.address
   );
 
@@ -394,7 +388,7 @@ const deployDao = async function (daoConfig, networkContracts) {
     await controller.registerScheme(
       newScheme.address,
       schemeParamsHash,
-      encodePermission(schemeConfiguration.controllerPermissions),
+      "0x0",
       avatar.address
     );
 
