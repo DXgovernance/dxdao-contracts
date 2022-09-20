@@ -1,17 +1,17 @@
 pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../DxController.sol";
-import "../DxAvatar.sol";
-import "../DxReputation.sol";
+import "../DAOController.sol";
+import "../DAOAvatar.sol";
+import "../DAOReputation.sol";
 
 contract DXDVotingMachineCallbacks {
     address public votingMachine;
 
-    DxAvatar public avatar;
+    DAOAvatar public avatar;
 
     modifier onlyVotingMachine() {
-        require(msg.sender == address(votingMachine), "only VotingMachine");
+        require(msg.sender == address(votingMachine), "DXDVotingMachineCallbacks: only VotingMachine");
 
         _;
     }
@@ -23,7 +23,7 @@ contract DXDVotingMachineCallbacks {
         address _beneficiary,
         bytes32
     ) external onlyVotingMachine returns (bool success) {
-        (success, ) = DxController(avatar.owner()).avatarCall(
+        (success, ) = DAOController(avatar.owner()).avatarCall(
             address(avatar.reputationToken()),
             abi.encodeWithSignature("mint(address,uint256)", _beneficiary, _amount),
             avatar,
@@ -36,7 +36,7 @@ contract DXDVotingMachineCallbacks {
         address _beneficiary,
         bytes32
     ) external onlyVotingMachine returns (bool success) {
-        (success, ) = DxController(avatar.owner()).avatarCall(
+        (success, ) = DAOController(avatar.owner()).avatarCall(
             address(avatar.reputationToken()),
             abi.encodeWithSignature("burn(address,uint256)", _beneficiary, _amount),
             avatar,
@@ -50,7 +50,7 @@ contract DXDVotingMachineCallbacks {
         uint256 _amount,
         bytes32
     ) external onlyVotingMachine returns (bool success) {
-        (success, ) = DxController(avatar.owner()).avatarCall(
+        (success, ) = DAOController(avatar.owner()).avatarCall(
             address(_stakingToken),
             abi.encodeWithSignature("transferFrom(address,address,uint256)", avatar, _beneficiary, _amount),
             avatar,
@@ -58,8 +58,8 @@ contract DXDVotingMachineCallbacks {
         );
     }
 
-    function getReputation() public view returns (DxReputation) {
-        return DxReputation(avatar.reputationToken());
+    function getReputation() public view returns (DAOReputation) {
+        return DAOReputation(avatar.reputationToken());
     }
 
     function getNativeReputationTotalSupply() public view returns (uint256) {

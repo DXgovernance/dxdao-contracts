@@ -4,12 +4,11 @@ pragma solidity ^0.8.8;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
-  @title DxAvatar
-  @author github:miltontulli
-  @dev An Avatar holds tokens, reputation and ether for a controller
+  @title DAO Avatar
+  @dev The avatar, representing the DAO, owned by the DAO, controls the reputation and funds of the DAO.
 */
 
-contract DxAvatar is OwnableUpgradeable {
+contract DAOAvatar is OwnableUpgradeable {
     event CallExecuted(address indexed _to, bytes _data, uint256 _value, bool _success);
 
     address public reputationToken;

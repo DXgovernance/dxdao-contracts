@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../utils/PermissionRegistry.sol";
-import "../DxReputation.sol";
-import "../DxAvatar.sol";
-import "../DxController.sol";
+import "../DAOReputation.sol";
+import "../DAOAvatar.sol";
+import "../DAOController.sol";
 import "../votingMachine/DXDVotingMachineCallbacks.sol";
 
 /**
@@ -53,7 +53,7 @@ contract WalletScheme is DXDVotingMachineCallbacks {
     bytes32[] public proposalsList;
 
     bool public doAvatarGenericCalls;
-    DxController public controller;
+    DAOController public controller;
     PermissionRegistry public permissionRegistry;
     string public schemeName;
     uint256 public maxSecondsForExecution;
@@ -93,10 +93,10 @@ contract WalletScheme is DXDVotingMachineCallbacks {
             _maxSecondsForExecution >= 86400,
             "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
         );
-        avatar = DxAvatar(_avatar);
+        avatar = DAOAvatar(_avatar);
         votingMachine = _votingMachine;
         doAvatarGenericCalls = _doAvatarGenericCalls;
-        controller = DxController(_controller);
+        controller = DAOController(_controller);
         permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
         maxSecondsForExecution = _maxSecondsForExecution;
@@ -306,7 +306,7 @@ contract WalletScheme is DXDVotingMachineCallbacks {
         });
         // slither-disable-next-line all
         proposalsList.push(proposalId);
-        proposalSnapshots[proposalId] = DxReputation(getReputation()).getCurrentSnapshotId();
+        proposalSnapshots[proposalId] = DAOReputation(getReputation()).getCurrentSnapshotId();
         emit ProposalStateChange(proposalId, uint256(ProposalState.Submitted));
         return proposalId;
     }

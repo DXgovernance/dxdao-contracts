@@ -1,13 +1,17 @@
 import * as helpers from "../helpers";
 const { expectRevert, expectEvent } = require("@openzeppelin/test-helpers");
-const DxAvatar = artifacts.require("./DxAvatar.sol");
+const DAOAvatar = artifacts.require("./DAOAvatar.sol");
+const DAOReputation = artifacts.require("./DAOReputation.sol");
 const BigNumber = require("bignumber.js");
 
-contract("DxAvatar", function (accounts) {
+contract("DAOAvatar", function (accounts) {
   it("Should revert call", async function () {
     const owner = accounts[0];
-    const avatar = await DxAvatar.new();
-    await avatar.initialize(owner);
+    const reputation = await DAOReputation.new();
+    await reputation.initialize("DXDaoReputation", "DXRep");
+
+    const avatar = await DAOAvatar.new();
+    await avatar.initialize(owner, reputation.address);
 
     const callData = helpers.testCallFrom(owner);
     const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
@@ -22,8 +26,14 @@ contract("DxAvatar", function (accounts) {
 
   it("Should transferOwnership on initialize and execute call", async function () {
     const owner = accounts[1];
-    const avatar = await DxAvatar.new();
-    const transferOwnershipTx = await avatar.initialize(owner);
+    const reputation = await DAOReputation.new();
+    await reputation.initialize("DXDaoReputation", "DXRep");
+
+    const avatar = await DAOAvatar.new();
+    const transferOwnershipTx = await avatar.initialize(
+      owner,
+      reputation.address
+    );
 
     await expectEvent(transferOwnershipTx.receipt, "OwnershipTransferred", {
       previousOwner: accounts[0],

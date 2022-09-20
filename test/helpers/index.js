@@ -2,9 +2,9 @@ const constants = require("./constants");
 
 const { LogDecoder } = require("@maticnetwork/eth-decoder");
 
-const DxAvatar = artifacts.require("./DxAvatar.sol");
-const DxController = artifacts.require("./DxController.sol");
-const DxReputation = artifacts.require("./DxReputation.sol");
+const DAOAvatar = artifacts.require("./DAOAvatar.sol");
+const DAOController = artifacts.require("./DAOController.sol");
+const DAOReputation = artifacts.require("./DAOReputation.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
@@ -14,9 +14,9 @@ const ERC721Factory = artifacts.require("./ERC721Factory.sol");
 const ERC20Guild = artifacts.require("./ERC20Guild.sol");
 
 export const logDecoder = new LogDecoder([
-  DxAvatar.abi,
-  DxController.abi,
-  DxReputation.abi,
+  DAOAvatar.abi,
+  DAOController.abi,
+  DAOReputation.abi,
   DXDVotingMachine.abi,
   WalletScheme.abi,
   PermissionRegistry.abi,
@@ -55,13 +55,13 @@ export function getValueFromLogs(tx, arg, eventName, index = 0) {
 }
 
 export const deployDao = async function (deployConfig) {
-  const dxController = await DxController.new();
+  const dxController = await DAOController.new();
   await dxController.initialize(deployConfig.owner);
 
-  const dxReputation = await DxReputation.new();
-  await dxReputation.initialize("DxReputation", "DxRep");
+  const dxReputation = await DAOReputation.new();
+  await dxReputation.initialize("DXDaoReputation", "DXRep");
 
-  const dxAvatar = await DxAvatar.new();
+  const dxAvatar = await DAOAvatar.new();
   await dxAvatar.initialize(dxController.address, dxReputation.address);
 
   for (let i = 0; i < deployConfig.repHolders.length; i++) {

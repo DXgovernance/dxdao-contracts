@@ -2,15 +2,15 @@ pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import "./DxAvatar.sol";
+import "./DAOAvatar.sol";
 
 /**
- * @title Controller contract
- * @dev A controller controls the organizations schemes, reputation and avatar.
- * It is subject to a set of schemes and constraints that determine its behavior.
+ * @title DAO Controller
+ * @dev A controller controls and connect the organizations schemes, reputation and avatar.
+ * The schemes execute proposals through the controller to the avatar.
  * Each scheme has it own parameters and operation permissions.
  */
-contract DxController is Initializable {
+contract DAOController is Initializable {
     using SafeMathUpgradeable for uint256;
 
     struct Scheme {
@@ -38,17 +38,17 @@ contract DxController is Initializable {
     }
 
     modifier onlyRegisteredScheme() {
-        require(schemes[msg.sender].isRegistered, "DxController: Sender is not a registered scheme");
+        require(schemes[msg.sender].isRegistered, "DAOController: Sender is not a registered scheme");
         _;
     }
 
     modifier onlyRegisteringSchemes() {
-        require(schemes[msg.sender].canManageSchemes, "DxController: Sender cannot manage schemes");
+        require(schemes[msg.sender].canManageSchemes, "DAOController: Sender cannot manage schemes");
         _;
     }
 
     modifier onlyAvatarCallScheme() {
-        require(schemes[msg.sender].canMakeAvatarCalls, "DxController: Sender cannot perform avatar calls");
+        require(schemes[msg.sender].canMakeAvatarCalls, "DAOController: Sender cannot perform avatar calls");
         _;
     }
 
@@ -73,7 +73,7 @@ contract DxController is Initializable {
             (_canMakeAvatarCalls || scheme.canMakeAvatarCalls != _canMakeAvatarCalls)
                 ? schemes[msg.sender].canMakeAvatarCalls
                 : true,
-            "DxController: Sender cannot add permissions sender doesn't have to a new scheme"
+            "DAOController: Sender cannot add permissions sender doesn't have to a new scheme"
         );
 
         // Add or change the scheme:
@@ -114,7 +114,7 @@ contract DxController is Initializable {
         if (scheme.isRegistered && scheme.canManageSchemes) {
             require(
                 schemesWithManageSchemesPermission > 1,
-                "DxController: Cannot unregister last scheme with manage schemes permission"
+                "DAOController: Cannot unregister last scheme with manage schemes permission"
             );
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.sub(1);
         }
@@ -142,7 +142,7 @@ contract DxController is Initializable {
     function avatarCall(
         address _contract,
         bytes calldata _data,
-        DxAvatar _avatar,
+        DAOAvatar _avatar,
         uint256 _value
     ) external onlyRegisteredScheme onlyAvatarCallScheme returns (bool, bytes memory) {
         return _avatar.executeCall(_contract, _data, _value);
