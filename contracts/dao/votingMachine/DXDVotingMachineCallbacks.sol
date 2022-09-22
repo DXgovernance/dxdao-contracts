@@ -1,4 +1,5 @@
-pragma solidity ^0.8.8;
+// SPDX-License-Identifier: AGPL-3.0
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../DAOController.sol";

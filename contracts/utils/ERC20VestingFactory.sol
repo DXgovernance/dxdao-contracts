@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.5.4;
+pragma solidity ^0.8.17;
 
-import "openzeppelin-solidity/contracts/drafts/TokenVesting.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
+import "./TokenVesting.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract ERC20VestingFactory {
     using SafeERC20 for IERC20;

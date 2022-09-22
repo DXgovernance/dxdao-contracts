@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.17;
 
 import {RealMath} from "../../utils/RealMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";

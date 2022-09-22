@@ -90,7 +90,6 @@
     "ipfs-core": "^0.14.1",
     "math": "0.0.3",
     "moment": "^2.27.0",
-    "openzeppelin-solidity": "2.4.0",
     "prettier": "^2.0.5",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "truffle-flattener": "^1.4.4",
