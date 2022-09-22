@@ -3,7 +3,7 @@ import { assert } from "chai";
 import * as helpers from "../helpers";
 
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
-const WalletScheme = artifacts.require("./WalletScheme.sol");
+const AvatarScheme = artifacts.require("./AvatarScheme.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 
 contract("DXdao", function (accounts) {
@@ -97,12 +97,11 @@ contract("DXdao", function (accounts) {
       true
     );
 
-    const masterWalletScheme = await WalletScheme.new();
+    const masterWalletScheme = await AvatarScheme.new();
 
     await masterWalletScheme.initialize(
       dxDao.avatar.address,
       dxDao.votingMachine.address,
-      true,
       dxDao.controller.address,
       permissionRegistry.address,
       "Master Scheme",
@@ -129,7 +128,7 @@ contract("DXdao", function (accounts) {
     proposalId = createProposalTx.logs[0].args._proposalId;
   });
 
-  it("Deploy DXvote", function (done) {
+  it.skip("Deploy DXvote", function (done) {
     // TODO: See how this tests can be run in github CI, the use the setTimeout breaks the tests
     if (!process.env.CI) hre.run("deploy-dxvote-develop").then(done);
     else done();

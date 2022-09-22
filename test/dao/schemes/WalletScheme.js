@@ -55,7 +55,6 @@ contract("WalletScheme", function (accounts) {
     await registrarWalletScheme.initialize(
       org.avatar.address,
       votingMachine.address,
-      true,
       org.controller.address,
       permissionRegistry.address,
       "Wallet Scheme Registrar",
@@ -67,7 +66,6 @@ contract("WalletScheme", function (accounts) {
     await masterWalletScheme.initialize(
       org.avatar.address,
       votingMachine.address,
-      true,
       org.controller.address,
       permissionRegistry.address,
       "Master Wallet",
@@ -79,7 +77,6 @@ contract("WalletScheme", function (accounts) {
     await quickWalletScheme.initialize(
       org.avatar.address,
       votingMachine.address,
-      false,
       org.controller.address,
       permissionRegistry.address,
       "Quick Wallet",
@@ -248,7 +245,6 @@ contract("WalletScheme", function (accounts) {
     await newWalletScheme.initialize(
       org.avatar.address,
       votingMachine.address,
-      false,
       org.controller.address,
       permissionRegistry.address,
       "New Wallet",
@@ -1799,7 +1795,6 @@ contract("WalletScheme", function (accounts) {
       unitializedWalletScheme.initialize(
         org.avatar.address,
         accounts[0],
-        false,
         org.controller.address,
         permissionRegistry.address,
         "Master Wallet",
@@ -1812,7 +1807,6 @@ contract("WalletScheme", function (accounts) {
       unitializedWalletScheme.initialize(
         constants.NULL_ADDRESS,
         accounts[0],
-        false,
         org.controller.address,
         permissionRegistry.address,
         "Master Wallet",
@@ -1828,7 +1822,6 @@ contract("WalletScheme", function (accounts) {
       masterWalletScheme.initialize(
         org.avatar.address,
         accounts[0],
-        false,
         org.controller.address,
         permissionRegistry.address,
         "Master Wallet",
