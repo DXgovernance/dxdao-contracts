@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "./Scheme.sol";
 
 /**
- * @title WalletScheme.
- * @dev  A scheme for proposing and executing calls to any contract except itself
+ * @title AvatarScheme.
+ * @dev  A scheme for proposing and executing calls to any contract from the DAO avatar
  * It has a value call controller address, in case of the controller address ot be set the scheme will be doing
  * generic calls to the dao controller. If the controller address is not set it will e executing raw calls form the
  * scheme itself.
@@ -15,14 +15,9 @@ import "./Scheme.sol";
  * the permissions will be checked using the avatar address as sender, if not the scheme address will be used as
  * sender.
  */
-contract WalletScheme is Scheme {
+contract AvatarScheme is Scheme {
     using SafeMath for uint256;
     using Address for address;
-
-    /**
-     * @dev Receive function that allows the wallet to receive ETH when the controller address is not set
-     */
-    receive() external payable {}
 
     /**
      * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
@@ -38,15 +33,15 @@ contract WalletScheme is Scheme {
         returns (bool)
     {
         // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
-        require(!executingProposal, "WalletScheme: proposal execution already running");
+        require(!executingProposal, "AvatarScheme: proposal execution already running");
         executingProposal = true;
 
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.state == ProposalState.Submitted, "WalletScheme: must be a submitted proposal");
+        require(proposal.state == ProposalState.Submitted, "AvatarScheme: must be a submitted proposal");
 
         require(
-            !controller.getSchemeCanMakeAvatarCalls(address(this)),
-            "WalletScheme: scheme cannot make avatar calls"
+            controller.getSchemeCanMakeAvatarCalls(address(this)),
+            "AvatarScheme: scheme have to make avatar calls"
         );
 
         if (_winningOption == 0) {
@@ -66,7 +61,12 @@ contract WalletScheme is Scheme {
             uint256 callIndex = proposal.to.length.div(proposal.totalOptions).mul(_winningOption.sub(1));
             uint256 lastCallIndex = callIndex.add(proposal.to.length.div(proposal.totalOptions));
 
-            permissionRegistry.setERC20Balances();
+            controller.avatarCall(
+                address(permissionRegistry),
+                abi.encodeWithSignature("setERC20Balances()"),
+                avatar,
+                0
+            );
 
             for (callIndex; callIndex < lastCallIndex; callIndex++) {
                 bytes memory _data = proposal.callData[callIndex];
@@ -77,17 +77,27 @@ contract WalletScheme is Scheme {
 
                 bool callsSucessResult = false;
                 // The permission registry keeps track of all value transferred and checks call permission
-                permissionRegistry.setETHPermissionUsed(
-                    address(this),
+                (callsSucessResult, ) = controller.avatarCall(
+                    address(permissionRegistry),
+                    abi.encodeWithSignature(
+                        "setETHPermissionUsed(address,address,bytes4,uint256)",
+                        avatar,
+                        proposal.to[callIndex],
+                        callDataFuncSignature,
+                        proposal.value[callIndex]
+                    ),
+                    avatar,
+                    0
+                );
+                require(callsSucessResult, "AvatarScheme: setETHPermissionUsed failed");
+
+                (callsSucessResult, ) = controller.avatarCall(
                     proposal.to[callIndex],
-                    callDataFuncSignature,
+                    proposal.callData[callIndex],
+                    avatar,
                     proposal.value[callIndex]
                 );
-                (callsSucessResult, ) = proposal.to[callIndex].call{value: proposal.value[callIndex]}(
-                    proposal.callData[callIndex]
-                );
-
-                require(callsSucessResult, "WalletScheme: Proposal call failed");
+                require(callsSucessResult, "AvatarScheme: Proposal call failed");
 
                 proposal.state = ProposalState.ExecutionSucceeded;
             }
@@ -98,10 +108,10 @@ contract WalletScheme is Scheme {
                     getNativeReputationTotalSupply()) &&
                     (oldRepSupply.mul(uint256(100).sub(maxRepPercentageChange)).div(100) <=
                         getNativeReputationTotalSupply()),
-                "WalletScheme: maxRepPercentageChange passed"
+                "AvatarScheme: maxRepPercentageChange passed"
             );
 
-            require(permissionRegistry.checkERC20Limits(address(this)), "WalletScheme: ERC20 limits passed");
+            require(permissionRegistry.checkERC20Limits(address(avatar)), "AvatarScheme: ERC20 limits passed");
 
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
         }
