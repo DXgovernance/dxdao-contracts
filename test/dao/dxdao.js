@@ -97,9 +97,9 @@ contract("DXdao", function (accounts) {
       true
     );
 
-    const masterWalletScheme = await AvatarScheme.new();
+    const avatarScheme = await AvatarScheme.new();
 
-    await masterWalletScheme.initialize(
+    await avatarScheme.initialize(
       dxDao.avatar.address,
       dxDao.votingMachine.address,
       dxDao.controller.address,
@@ -110,13 +110,13 @@ contract("DXdao", function (accounts) {
     );
 
     await dxDao.controller.registerScheme(
-      masterWalletScheme.address,
+      avatarScheme.address,
       paramsHash,
       true,
       true
     );
 
-    const createProposalTx = await masterWalletScheme.proposeCalls(
+    const createProposalTx = await avatarScheme.proposeCalls(
       [accounts[1], accounts[1]],
       ["0x0", "0x0"],
       [10, 5],
