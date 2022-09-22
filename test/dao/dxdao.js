@@ -31,7 +31,7 @@ contract("DXdao", function (accounts) {
     });
 
     await web3.eth.sendTransaction({
-      to: dxDao.dxAvatar.address,
+      to: dxDao.avatar.address,
       from: accounts[0],
       value: 100,
     });
@@ -85,13 +85,13 @@ contract("DXdao", function (accounts) {
     );
 
     const permissionRegistry = await PermissionRegistry.new(
-      dxDao.dxAvatar.address,
+      dxDao.avatar.address,
       10
     );
     await permissionRegistry.initialize();
 
     await permissionRegistry.setETHPermission(
-      dxDao.dxAvatar.address,
+      dxDao.avatar.address,
       constants.NULL_ADDRESS,
       constants.NULL_SIGNATURE,
       10,
@@ -101,17 +101,17 @@ contract("DXdao", function (accounts) {
     const masterWalletScheme = await WalletScheme.new();
 
     await masterWalletScheme.initialize(
-      dxDao.dxAvatar.address,
+      dxDao.avatar.address,
       dxDao.votingMachine.address,
       true,
-      dxDao.dxController.address,
+      dxDao.controller.address,
       permissionRegistry.address,
       "Master Scheme",
       86400,
       5
     );
 
-    await dxDao.dxController.registerScheme(
+    await dxDao.controller.registerScheme(
       masterWalletScheme.address,
       paramsHash,
       true,
@@ -130,8 +130,14 @@ contract("DXdao", function (accounts) {
     proposalId = createProposalTx.logs[0].args._proposalId;
   });
 
+  it("Deploy DXvote", function (done) {
+    // TODO: See how this tests can be run in github CI, the use the setTimeout breaks the tests
+    if (!process.env.CI) hre.run("deploy-dxvote-develop").then(done);
+    else done();
+  });
+
   it("Wallet - execute proposeVote -option 0 - check action - with DXDVotingMachine", async function () {
-    assert.equal(await web3.eth.getBalance(dxDao.dxAvatar.address), "100");
+    assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
 
     await expectRevert(
       dxDao.votingMachine.vote(proposalId, 0, 0, constants.NULL_ADDRESS, {
@@ -139,24 +145,24 @@ contract("DXdao", function (accounts) {
       }),
       "wrong decision value"
     );
-    assert.equal(await web3.eth.getBalance(dxDao.dxAvatar.address), "100");
+    assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
   });
 
   it("Wallet - execute proposeVote -option 1 - check action - with DXDVotingMachine", async function () {
-    assert.equal(await web3.eth.getBalance(dxDao.dxAvatar.address), "100");
+    assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
 
     await dxDao.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
       from: accounts[2],
     });
-    assert.equal(await web3.eth.getBalance(dxDao.dxAvatar.address), "90");
+    assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "90");
   });
 
   it("Wallet - execute proposeVote -option 2 - check action - with DXDVotingMachine", async function () {
-    assert.equal(await web3.eth.getBalance(dxDao.dxAvatar.address), "100");
+    assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
 
     await dxDao.votingMachine.vote(proposalId, 2, 0, constants.NULL_ADDRESS, {
       from: accounts[2],
     });
-    assert.equal(await web3.eth.getBalance(dxDao.dxAvatar.address), "95");
+    assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "95");
   });
 });

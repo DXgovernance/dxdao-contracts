@@ -55,28 +55,28 @@ export function getValueFromLogs(tx, arg, eventName, index = 0) {
 }
 
 export const deployDao = async function (deployConfig) {
-  const dxController = await DAOController.new();
-  await dxController.initialize(deployConfig.owner);
+  const controller = await DAOController.new();
+  await controller.initialize(deployConfig.owner);
 
-  const dxReputation = await DAOReputation.new();
-  await dxReputation.initialize("DXDaoReputation", "DXRep");
+  const reputation = await DAOReputation.new();
+  await reputation.initialize("DXDaoReputation", "DXRep");
 
-  const dxAvatar = await DAOAvatar.new();
-  await dxAvatar.initialize(dxController.address, dxReputation.address);
+  const avatar = await DAOAvatar.new();
+  await avatar.initialize(controller.address, reputation.address);
 
   for (let i = 0; i < deployConfig.repHolders.length; i++) {
-    await dxReputation.mint(
+    await reputation.mint(
       deployConfig.repHolders[i].address,
       deployConfig.repHolders[i].amount
     );
   }
-  await dxReputation.transferOwnership(dxAvatar.address);
+  await reputation.transferOwnership(avatar.address);
 
   const votingMachine = await DXDVotingMachine.new(
     deployConfig.votingMachineToken
   );
 
-  return { dxController, dxAvatar, dxReputation, votingMachine };
+  return { controller, avatar, reputation, votingMachine };
 };
 
 export async function getProposalId(tx, contract, eventName) {

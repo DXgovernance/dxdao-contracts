@@ -1,5 +1,5 @@
 import { artifacts, contract } from "hardhat";
-import { SOME_ADDRESS, SOME_TOKEN_URI } from "../../helpers/constants";
+import { SOME_ADDRESS, SOME_TOKEN_URI } from "../helpers/constants";
 import { expectRevert, expectEvent } from "@openzeppelin/test-helpers";
 
 const ERC721Factory = artifacts.require("ERC721Factory.sol");

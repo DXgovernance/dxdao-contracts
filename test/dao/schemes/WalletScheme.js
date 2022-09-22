@@ -1,6 +1,6 @@
 import { assert } from "chai";
-import * as helpers from "../helpers";
-const { fixSignature } = require("../helpers/sign");
+import * as helpers from "../../helpers";
+const { fixSignature } = require("../../helpers/sign");
 const { time, expectRevert } = require("@openzeppelin/test-helpers");
 
 const WalletScheme = artifacts.require("./WalletScheme.sol");

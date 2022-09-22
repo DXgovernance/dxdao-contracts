@@ -1,5 +1,5 @@
-import * as helpers from "../helpers";
-const { fixSignature } = require("../helpers/sign");
+import * as helpers from "../../helpers";
+const { fixSignature } = require("../../helpers/sign");
 
 const {
   BN,
