@@ -20,13 +20,7 @@ contract("PermissionRegistry", function (accounts) {
 
   beforeEach(async function () {
     actionMock = await ActionMock.new();
-    const standardTokenMock = await ERC20Mock.new(
-      accounts[1],
-      1000,
-      "",
-      "",
-      "18"
-    );
+    const standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
     org = await helpers.setupOrganization(
       [accounts[0], accounts[1], accounts[2]],
       [1000, 1000, 1000],

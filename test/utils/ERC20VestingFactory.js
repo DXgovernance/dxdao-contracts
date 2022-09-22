@@ -16,7 +16,7 @@ contract("ERC20VestingFactory", function (accounts) {
 
   describe("Create Vesting Contracts", function () {
     beforeEach(async function () {
-      dxdTokenMock = await ERC20Mock.new(dao, 1000, "", "", "18");
+      dxdTokenMock = await ERC20Mock.new("", "", 1000, dao);
       vestingFactory = await ERC20VestingFactory.new(dxdTokenMock.address, dao);
     });
 

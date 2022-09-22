@@ -13,7 +13,6 @@ const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
-const Wallet = artifacts.require("./Wallet.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 
 contract("DXDVotingMachine", function (accounts) {
@@ -39,11 +38,10 @@ contract("DXDVotingMachine", function (accounts) {
   beforeEach(async function () {
     actionMock = await ActionMock.new();
     const standardTokenMock = await ERC20Mock.new(
-      accounts[1],
+      "",
+      "",
       constants.MAX_UINT_256,
-      "",
-      "",
-      "18"
+      accounts[1]
     );
     await standardTokenMock.transfer(accounts[0], 2000, { from: accounts[1] });
     org = await helpers.setupOrganization(
@@ -762,16 +760,15 @@ contract("DXDVotingMachine", function (accounts) {
 
     describe("Signed Votes", function () {
       beforeEach(async function () {
-        const wallet = await Wallet.new();
+        const actionMock = await ActionMock.new();
         await web3.eth.sendTransaction({
           from: accounts[0],
           to: org.avatar.address,
           value: constants.TEST_VALUE,
         });
-        await wallet.transferOwnership(org.avatar.address);
 
-        const payCallData = await new web3.eth.Contract(wallet.abi).methods
-          .pay(accounts[1])
+        const payCallData = await new web3.eth.Contract(actionMock.abi).methods
+          .executeCall(accounts[1], "0x0", 10)
           .encodeABI();
 
         const callDataMintRep = await org.controller.contract.methods
@@ -780,21 +777,21 @@ contract("DXDVotingMachine", function (accounts) {
 
         await permissionRegistry.setETHPermission(
           org.avatar.address,
-          wallet.address,
+          actionMock.address,
           payCallData.substring(0, 10),
           0,
           true
         );
         await permissionRegistry.setETHPermission(
           org.avatar.address,
-          wallet.address,
+          actionMock.address,
           constants.NULL_SIGNATURE,
           constants.TEST_VALUE,
           true
         );
 
         const tx = await cheapVoteWalletScheme.proposeCalls(
-          [wallet.address, wallet.address, org.controller.address],
+          [actionMock.address, actionMock.address, org.controller.address],
           ["0x0", payCallData, callDataMintRep],
           [constants.TEST_VALUE, 0, 0],
           constants.TEST_TITLE,

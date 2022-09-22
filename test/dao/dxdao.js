@@ -13,11 +13,10 @@ contract("DXdao", function (accounts) {
 
   beforeEach(async function () {
     const votingMachineToken = await ERC20Mock.new(
-      accounts[0],
-      1000,
       "DXDao",
       "DXD",
-      "18"
+      1000,
+      accounts[0]
     );
 
     dxDao = await helpers.deployDao({
