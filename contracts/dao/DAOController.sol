@@ -85,14 +85,6 @@ contract DAOController is Initializable {
     ) external onlyRegisteredScheme onlyRegisteringSchemes returns (bool) {
         Scheme memory scheme = schemes[_scheme];
 
-        // produces non-zero if sender does not have permissions that are being updated
-        require(
-            (_canMakeAvatarCalls || scheme.canMakeAvatarCalls != _canMakeAvatarCalls)
-                ? schemes[msg.sender].canMakeAvatarCalls
-                : true,
-            "DAOController: Sender cannot add permissions sender doesn't have to a new scheme"
-        );
-
         // Add or change the scheme:
         if ((!scheme.isRegistered || !scheme.canManageSchemes) && _canManageSchemes) {
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.add(1);
