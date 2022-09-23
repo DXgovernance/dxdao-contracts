@@ -49,7 +49,7 @@ contract WalletScheme is Scheme {
             "WalletScheme: scheme cannot make avatar calls"
         );
 
-        if (_winningOption == 0) {
+        if (_winningOption == 2) {
             proposal.state = ProposalState.Rejected;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         } else if (proposal.submittedTime.add(maxSecondsForExecution) < block.timestamp) {

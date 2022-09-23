@@ -44,7 +44,7 @@ contract AvatarScheme is Scheme {
             "AvatarScheme: scheme have to make avatar calls"
         );
 
-        if (_winningOption == 0) {
+        if (_winningOption == 2) {
             proposal.state = ProposalState.Rejected;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         } else if (proposal.submittedTime.add(maxSecondsForExecution) < block.timestamp) {

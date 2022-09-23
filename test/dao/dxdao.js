@@ -156,6 +156,10 @@ contract("DXdao", function (accounts) {
       from: accounts[2],
     });
 
+    assert.equal(
+      (await masterAvatarScheme.getOrganizationProposal(proposalId)).state,
+      3
+    );
     const inactiveProposals = await dxDao.controller.getInactiveProposals();
     assert.equal(inactiveProposals[0].proposalId, proposalId);
     assert.equal(inactiveProposals[0].scheme, masterAvatarScheme.address);
@@ -170,10 +174,14 @@ contract("DXdao", function (accounts) {
       from: accounts[2],
     });
 
+    assert.equal(
+      (await masterAvatarScheme.getOrganizationProposal(proposalId)).state,
+      2
+    );
     const inactiveProposals = await dxDao.controller.getInactiveProposals();
     assert.equal(inactiveProposals[0].proposalId, proposalId);
     assert.equal(inactiveProposals[0].scheme, masterAvatarScheme.address);
     assert.deepEqual(await dxDao.controller.getActiveProposals(), []);
-    assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "95");
+    assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
   });
 });
