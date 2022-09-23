@@ -8,8 +8,7 @@ const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 
 contract("DXdao", function (accounts) {
   const constants = helpers.constants;
-  let dxDao;
-  let proposalId;
+  let dxDao, proposalId, masterAvatarScheme;
 
   beforeEach(async function () {
     const votingMachineToken = await ERC20Mock.new(
@@ -97,9 +96,9 @@ contract("DXdao", function (accounts) {
       true
     );
 
-    const masterWalletScheme = await AvatarScheme.new();
+    masterAvatarScheme = await AvatarScheme.new();
 
-    await masterWalletScheme.initialize(
+    await masterAvatarScheme.initialize(
       dxDao.avatar.address,
       dxDao.votingMachine.address,
       dxDao.controller.address,
@@ -110,13 +109,13 @@ contract("DXdao", function (accounts) {
     );
 
     await dxDao.controller.registerScheme(
-      masterWalletScheme.address,
+      masterAvatarScheme.address,
       paramsHash,
       true,
       true
     );
 
-    const createProposalTx = await masterWalletScheme.proposeCalls(
+    const createProposalTx = await masterAvatarScheme.proposeCalls(
       [accounts[1], accounts[1]],
       ["0x0", "0x0"],
       [10, 5],
@@ -126,6 +125,10 @@ contract("DXdao", function (accounts) {
     );
 
     proposalId = createProposalTx.logs[0].args._proposalId;
+
+    const activeProposals = await dxDao.controller.getActiveProposals();
+    assert.equal(activeProposals[0].proposalId, proposalId);
+    assert.equal(activeProposals[0].scheme, masterAvatarScheme.address);
   });
 
   it.skip("Deploy DXvote", function (done) {
@@ -152,6 +155,11 @@ contract("DXdao", function (accounts) {
     await dxDao.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
       from: accounts[2],
     });
+
+    const inactiveProposals = await dxDao.controller.getInactiveProposals();
+    assert.equal(inactiveProposals[0].proposalId, proposalId);
+    assert.equal(inactiveProposals[0].scheme, masterAvatarScheme.address);
+    assert.deepEqual(await dxDao.controller.getActiveProposals(), []);
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "90");
   });
 
@@ -161,6 +169,11 @@ contract("DXdao", function (accounts) {
     await dxDao.votingMachine.vote(proposalId, 2, 0, constants.NULL_ADDRESS, {
       from: accounts[2],
     });
+
+    const inactiveProposals = await dxDao.controller.getInactiveProposals();
+    assert.equal(inactiveProposals[0].proposalId, proposalId);
+    assert.equal(inactiveProposals[0].scheme, masterAvatarScheme.address);
+    assert.deepEqual(await dxDao.controller.getActiveProposals(), []);
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "95");
   });
 });
