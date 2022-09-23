@@ -690,9 +690,9 @@ contract("WalletScheme", function (accounts) {
 
     expectRevert(
       masterWalletScheme.proposeCalls(
-        [masterWalletScheme.address],
-        [setMaxSecondsForExecutionData],
-        [1],
+        [masterWalletScheme.address, ZERO_ADDRESS],
+        [setMaxSecondsForExecutionData, "0x0"],
+        [1, 0],
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
@@ -700,29 +700,26 @@ contract("WalletScheme", function (accounts) {
     );
 
     const tx = await masterWalletScheme.proposeCalls(
-      [masterWalletScheme.address],
-      [setMaxSecondsForExecutionData],
-      [0],
+      [masterWalletScheme.address, ZERO_ADDRESS],
+      [setMaxSecondsForExecutionData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(
-      votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "call execution failed"
+      "Proposal call failed"
     );
 
     await time.increase(executionTimeout);
 
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     const organizationProposal =
       await masterWalletScheme.getOrganizationProposal(proposalId);
