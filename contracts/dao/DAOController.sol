@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import "./DAOAvatar.sol";
+import "./DAOReputation.sol";
 
 /**
  * @title DAO Controller
@@ -26,6 +27,8 @@ contract DAOController is Initializable {
         address scheme;
     }
 
+    DAOReputation public daoreputation;
+
     struct Scheme {
         bytes32 paramsHash; // a hash voting parameters of the scheme
         bool isRegistered;
@@ -40,7 +43,7 @@ contract DAOController is Initializable {
     event RegisterScheme(address indexed _sender, address indexed _scheme);
     event UnregisterScheme(address indexed _sender, address indexed _scheme);
 
-    function initialize(address _scheme) public initializer {
+    function initialize(address _scheme, address _reputationAddress) public initializer {
         schemes[_scheme] = Scheme({
             paramsHash: bytes32(0),
             isRegistered: true,
@@ -48,6 +51,7 @@ contract DAOController is Initializable {
             canMakeAvatarCalls: true
         });
         schemesWithManageSchemesPermission = 1;
+        daoreputation = DAOReputation(_reputationAddress);
     }
 
     modifier onlyRegisteredScheme() {
@@ -184,6 +188,16 @@ contract DAOController is Initializable {
         inactiveProposals.add(_proposalId);
     }
 
+    function burnReputation(uint256 _amount, address _beneficiary) external onlyRegisteredScheme returns (bool) {
+        bool success = daoreputation.burn(_beneficiary, _amount);
+        return (success);
+    }
+
+    function mintReputation(uint256 _amount, address _beneficiary) external onlyRegisteredScheme returns (bool) {
+        bool success = daoreputation.mint(_beneficiary, _amount);
+        return (success);
+    }
+
     function isSchemeRegistered(address _scheme) external view returns (bool) {
         return _isSchemeRegistered(_scheme);
     }
@@ -224,5 +238,9 @@ contract DAOController is Initializable {
             inactiveProposalsArray[i].scheme = schemeOfProposal[inactiveProposals.at(i)];
         }
         return inactiveProposalsArray;
+    }
+
+    function getDaoReputation() external view returns (DAOReputation) {
+        return daoreputation;
     }
 }

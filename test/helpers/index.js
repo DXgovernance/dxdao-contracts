@@ -55,14 +55,14 @@ export function getValueFromLogs(tx, arg, eventName, index = 0) {
 }
 
 export const deployDao = async function (deployConfig) {
-  const controller = await DAOController.new();
-  await controller.initialize(deployConfig.owner);
-
   const reputation = await DAOReputation.new();
   await reputation.initialize("DXDaoReputation", "DXRep");
 
+  const controller = await DAOController.new();
+  await controller.initialize(deployConfig.owner, reputation.address);
+
   const avatar = await DAOAvatar.new();
-  await avatar.initialize(controller.address, reputation.address);
+  await avatar.initialize(controller.address);
 
   for (let i = 0; i < deployConfig.repHolders.length; i++) {
     await reputation.mint(
@@ -70,7 +70,7 @@ export const deployDao = async function (deployConfig) {
       deployConfig.repHolders[i].amount
     );
   }
-  await reputation.transferOwnership(avatar.address);
+  await reputation.transferOwnership(controller.address);
 
   const votingMachine = await DXDVotingMachine.new(
     deployConfig.votingMachineToken
