@@ -27,7 +27,7 @@ contract DAOController is Initializable {
         address scheme;
     }
 
-    DAOReputation public daoreputation;
+    DAOReputation public reputationToken;
 
     struct Scheme {
         bytes32 paramsHash; // a hash voting parameters of the scheme
@@ -43,7 +43,7 @@ contract DAOController is Initializable {
     event RegisterScheme(address indexed _sender, address indexed _scheme);
     event UnregisterScheme(address indexed _sender, address indexed _scheme);
 
-    function initialize(address _scheme, address _reputationAddress) public initializer {
+    function initialize(address _scheme, address _reputationToken) public initializer {
         schemes[_scheme] = Scheme({
             paramsHash: bytes32(0),
             isRegistered: true,
@@ -51,7 +51,7 @@ contract DAOController is Initializable {
             canMakeAvatarCalls: true
         });
         schemesWithManageSchemesPermission = 1;
-        daoreputation = DAOReputation(_reputationAddress);
+        reputationToken = DAOReputation(_reputationToken);
     }
 
     modifier onlyRegisteredScheme() {
@@ -188,14 +188,22 @@ contract DAOController is Initializable {
         inactiveProposals.add(_proposalId);
     }
 
-    function burnReputation(uint256 _amount, address _beneficiary) external onlyRegisteredScheme returns (bool) {
-        bool success = daoreputation.burn(_beneficiary, _amount);
-        return (success);
+    /**
+     * @dev Burns dao reputation
+     * @param _amount  the amount of reputation to burn
+     * @param _account  the account to burn reputation from
+     */
+    function burnReputation(uint256 _amount, address _account) external onlyRegisteredScheme returns (bool) {
+        return reputationToken.burn(_account, _amount);
     }
 
-    function mintReputation(uint256 _amount, address _beneficiary) external onlyRegisteredScheme returns (bool) {
-        bool success = daoreputation.mint(_beneficiary, _amount);
-        return (success);
+    /**
+     * @dev Mints dao reputation
+     * @param _amount  the amount of reputation to mint
+     * @param _account  the account to mint reputation from
+     */
+    function mintReputation(uint256 _amount, address _account) external onlyRegisteredScheme returns (bool) {
+        return reputationToken.mint(_account, _amount);
     }
 
     function isSchemeRegistered(address _scheme) external view returns (bool) {
@@ -241,6 +249,6 @@ contract DAOController is Initializable {
     }
 
     function getDaoReputation() external view returns (DAOReputation) {
-        return daoreputation;
+        return reputationToken;
     }
 }
