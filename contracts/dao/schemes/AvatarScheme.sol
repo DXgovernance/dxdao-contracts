@@ -44,15 +44,15 @@ contract AvatarScheme is Scheme {
             "AvatarScheme: scheme have to make avatar calls"
         );
 
-        if (_winningOption == 2) {
-            proposal.state = ProposalState.Rejected;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
-        } else if (proposal.submittedTime.add(maxSecondsForExecution) < block.timestamp) {
+        if (proposal.submittedTime.add(maxSecondsForExecution) < block.timestamp) {
             // If the amount of time passed since submission plus max proposal time is lower than block timestamp
             // the proposal timeout execution is reached and proposal cant be executed from now on
 
             proposal.state = ProposalState.ExecutionTimeout;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionTimeout));
+        } else if (_winningOption == 2) {
+            proposal.state = ProposalState.Rejected;
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         } else {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
 
