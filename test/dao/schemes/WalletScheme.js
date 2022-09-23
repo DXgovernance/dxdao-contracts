@@ -1,3 +1,4 @@
+import { ZERO_ADDRESS } from "@openzeppelin/test-helpers/src/constants";
 import { assert } from "chai";
 import * as helpers from "../../helpers";
 const { fixSignature } = require("../../helpers/sign");
@@ -25,27 +26,64 @@ contract("WalletScheme", function (accounts) {
   beforeEach(async function () {
     actionMock = await ActionMock.new();
     testToken = await ERC20Mock.new("", "", 1000, accounts[1]);
-    standardTokenMock = await ERC20Mock.new(accounts[1], 1000, "", "");
-    org = await helpers.setupOrganization(
-      [accounts[0], accounts[1], accounts[2]],
-      [1000, 1000, 1000],
-      [20000, 10000, 70000]
+    standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
+
+    org = await helpers.deployDao({
+      owner: accounts[0],
+      votingMachineToken: standardTokenMock.address,
+      repHolders: [
+        { address: accounts[0], amount: 20000 },
+        { address: accounts[1], amount: 10000 },
+        { address: accounts[2], amount: 70000 },
+      ],
+    });
+
+    // Parameters
+    const voteOnBehalf = constants.NULL_ADDRESS;
+    const _queuedVoteRequiredPercentage = 50;
+    const _queuedVotePeriodLimit = 172800;
+    const _boostedVotePeriodLimit = 86400;
+    const _preBoostedVotePeriodLimit = 3600;
+    const _thresholdConst = 2000;
+    const _quietEndingPeriod = 0;
+    const _proposingRepReward = 0;
+    const _votersReputationLossRatio = 10;
+    const _minimumDaoBounty = 15;
+    const _daoBountyConst = 10;
+    const _activationTime = 0;
+
+    await org.votingMachine.setParameters(
+      [
+        _queuedVoteRequiredPercentage,
+        _queuedVotePeriodLimit,
+        _boostedVotePeriodLimit,
+        _preBoostedVotePeriodLimit,
+        _thresholdConst,
+        _quietEndingPeriod,
+        _proposingRepReward,
+        _votersReputationLossRatio,
+        _minimumDaoBounty,
+        _daoBountyConst,
+        _activationTime,
+      ],
+      voteOnBehalf
     );
-    votingMachine = await helpers.setUpVotingMachine(
-      standardTokenMock.address,
-      "dxd",
-      constants.NULL_ADDRESS, // voteOnBehalf
-      50, // queuedVoteRequiredPercentage
-      172800, // queuedVotePeriodLimit
-      86400, // boostedVotePeriodLimit
-      3600, // preBoostedVotePeriodLimit
-      2000, // thresholdConst
-      0, // quietEndingPeriod
-      0, // proposingRepReward
-      0, // votersReputationLossRatio
-      15, // minimumDaoBounty
-      10, // daoBountyConst
-      0 // activationTime
+
+    const paramsHash = await org.votingMachine.getParametersHash(
+      [
+        _queuedVoteRequiredPercentage,
+        _queuedVotePeriodLimit,
+        _boostedVotePeriodLimit,
+        _preBoostedVotePeriodLimit,
+        _thresholdConst,
+        _quietEndingPeriod,
+        _proposingRepReward,
+        _votersReputationLossRatio,
+        _minimumDaoBounty,
+        _daoBountyConst,
+        _activationTime,
+      ],
+      voteOnBehalf
     );
 
     permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
@@ -54,7 +92,7 @@ contract("WalletScheme", function (accounts) {
     registrarWalletScheme = await WalletScheme.new();
     await registrarWalletScheme.initialize(
       org.avatar.address,
-      votingMachine.address,
+      org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
       "Wallet Scheme Registrar",
@@ -65,7 +103,7 @@ contract("WalletScheme", function (accounts) {
     masterWalletScheme = await WalletScheme.new();
     await masterWalletScheme.initialize(
       org.avatar.address,
-      votingMachine.address,
+      org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
       "Master Wallet",
@@ -76,7 +114,7 @@ contract("WalletScheme", function (accounts) {
     quickWalletScheme = await WalletScheme.new();
     await quickWalletScheme.initialize(
       org.avatar.address,
-      votingMachine.address,
+      org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
       "Quick Wallet",
@@ -98,19 +136,6 @@ contract("WalletScheme", function (accounts) {
       constants.NULL_SIGNATURE,
       constants.MAX_UINT_256,
       true
-    );
-
-    // Only allow genericCall, mintReputation, burnReputation, registerScheme and removeScheme
-    // functions to be called in the controller by Wallet Schemes
-    await helpers.setDefaultControllerPermissions(
-      permissionRegistry,
-      org.avatar.address,
-      org.controller
-    );
-    await helpers.setDefaultControllerPermissions(
-      permissionRegistry,
-      quickWalletScheme.address,
-      org.controller
     );
 
     await permissionRegistry.setETHPermission(
@@ -202,35 +227,11 @@ contract("WalletScheme", function (accounts) {
 
     await time.increase(30);
 
-    await org.daoCreator.setSchemes(
-      org.avatar.address,
-      [
-        registrarWalletScheme.address,
-        masterWalletScheme.address,
-        quickWalletScheme.address,
-      ],
-      [votingMachine.params, votingMachine.params, votingMachine.params],
-      [
-        helpers.encodePermission({
-          canGenericCall: true,
-          canUpgrade: true,
-          canChangeConstraints: true,
-          canRegisterSchemes: true,
-        }),
-        helpers.encodePermission({
-          canGenericCall: true,
-          canUpgrade: false,
-          canChangeConstraints: false,
-          canRegisterSchemes: false,
-        }),
-        helpers.encodePermission({
-          canGenericCall: false,
-          canUpgrade: false,
-          canChangeConstraints: false,
-          canRegisterSchemes: false,
-        }),
-      ],
-      "metaData"
+    await org.controller.registerScheme(
+      masterWalletScheme.address,
+      paramsHash,
+      true,
+      false
     );
   });
 
@@ -244,7 +245,7 @@ contract("WalletScheme", function (accounts) {
     const newWalletScheme = await WalletScheme.new();
     await newWalletScheme.initialize(
       org.avatar.address,
-      votingMachine.address,
+      org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
       "New Wallet",
@@ -629,9 +630,10 @@ contract("WalletScheme", function (accounts) {
 
     expectRevert(
       masterWalletScheme.proposeCalls(
-        [masterWalletScheme.address],
-        [setMaxSecondsForExecutionData],
-        [1],
+        [masterWalletScheme.address, ZERO_ADDRESS],
+        [setMaxSecondsForExecutionData, "0x0"],
+        [1, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
@@ -639,20 +641,18 @@ contract("WalletScheme", function (accounts) {
     );
 
     const tx = await masterWalletScheme.proposeCalls(
-      [masterWalletScheme.address],
-      [setMaxSecondsForExecutionData],
-      [0],
+      [masterWalletScheme.address, ZERO_ADDRESS],
+      [setMaxSecondsForExecutionData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     const organizationProposal =
       await masterWalletScheme.getOrganizationProposal(proposalId);

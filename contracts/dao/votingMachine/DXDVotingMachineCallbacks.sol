@@ -24,10 +24,11 @@ contract DXDVotingMachineCallbacks {
         address _beneficiary,
         bytes32
     ) external onlyVotingMachine returns (bool success) {
-        (success, ) = DAOController(avatar.owner()).avatarCall(
-            address(avatar.reputationToken()),
-            abi.encodeWithSignature("mint(address,uint256)", _beneficiary, _amount),
+        (success, ) = DAOController(avatar.owner()).mintReputation(
             avatar,
+            address(avatar.reputationToken()),
+            _amount,
+            _beneficiary,
             0
         );
     }
@@ -37,10 +38,11 @@ contract DXDVotingMachineCallbacks {
         address _beneficiary,
         bytes32
     ) external onlyVotingMachine returns (bool success) {
-        (success, ) = DAOController(avatar.owner()).avatarCall(
-            address(avatar.reputationToken()),
-            abi.encodeWithSignature("burn(address,uint256)", _beneficiary, _amount),
+        (success, ) = DAOController(avatar.owner()).burnReputation(
             avatar,
+            address(avatar.reputationToken()),
+            _amount,
+            _beneficiary,
             0
         );
     }

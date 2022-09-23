@@ -149,6 +149,36 @@ contract DAOController is Initializable {
         return _avatar.executeCall(_contract, _data, _value);
     }
 
+    function burnReputation(
+        DAOAvatar _avatar,
+        address _contract,
+        uint256 _amount,
+        address _beneficiary,
+        uint256 _value
+    ) external onlyRegisteredScheme returns (bool, bytes memory) {
+        return
+            _avatar.executeCall(
+                _contract,
+                abi.encodeWithSignature("burn(address,uint256)", _beneficiary, _amount),
+                _value
+            );
+    }
+
+    function mintReputation(
+        DAOAvatar _avatar,
+        address _contract,
+        uint256 _amount,
+        address _beneficiary,
+        uint256 _value
+    ) external onlyRegisteredScheme returns (bool, bytes memory) {
+        return
+            _avatar.executeCall(
+                _contract,
+                abi.encodeWithSignature("mint(address,uint256)", _beneficiary, _amount),
+                _value
+            );
+    }
+
     function isSchemeRegistered(address _scheme) external view returns (bool) {
         return _isSchemeRegistered(_scheme);
     }
