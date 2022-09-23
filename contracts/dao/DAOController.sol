@@ -107,12 +107,7 @@ contract DAOController is Initializable {
      * @param _scheme the address of the scheme
      * @return bool success of the operation
      */
-    function unregisterScheme(address _scheme, address _avatar)
-        external
-        onlyRegisteredScheme
-        onlyRegisteringSchemes
-        returns (bool)
-    {
+    function unregisterScheme(address _scheme) external onlyRegisteredScheme onlyRegisteringSchemes returns (bool) {
         Scheme memory scheme = schemes[_scheme];
 
         //check if the scheme is registered
