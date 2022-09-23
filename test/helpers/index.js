@@ -167,4 +167,22 @@ export function getEventFromTx(tx, eventName) {
   return logs.find(event => event.name === eventName);
 }
 
+export function encodeMaxSecondsForExecution(executionTimeout) {
+  const setMaxSecondsForExecutionData = web3.eth.abi.encodeFunctionCall(
+    {
+      name: "setMaxSecondsForExecution",
+      type: "function",
+      inputs: [
+        {
+          type: "uint256",
+          name: "_maxSecondsForExecution",
+        },
+      ],
+    },
+    [executionTimeout]
+  );
+
+  return setMaxSecondsForExecutionData;
+}
+
 export { constants };

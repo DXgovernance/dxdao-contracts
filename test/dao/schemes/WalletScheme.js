@@ -172,6 +172,15 @@ contract("WalletScheme", function (accounts) {
       0,
       true
     );
+
+    // await permissionRegistry.setETHPermission(
+    //   org.controller.address,
+    //   actionMock.address,
+    //   web3.eth.abi.encodeFunctionSignature("test(address,uint256)"),
+    //   0,
+    //   true
+    // );
+
     await permissionRegistry.setETHPermission(
       org.avatar.address,
       actionMock.address,
@@ -614,24 +623,14 @@ contract("WalletScheme", function (accounts) {
   });
 
   it("MasterWalletScheme - proposal to change max proposal time - positive decision - proposal executed", async () => {
-    const setMaxSecondsForExecutionData = web3.eth.abi.encodeFunctionCall(
-      {
-        name: "setMaxSecondsForExecution",
-        type: "function",
-        inputs: [
-          {
-            type: "uint256",
-            name: "_maxSecondsForExecution",
-          },
-        ],
-      },
-      [executionTimeout + 666]
+    const callData = helpers.encodeMaxSecondsForExecution(
+      executionTimeout + 666
     );
 
     expectRevert(
       masterWalletScheme.proposeCalls(
         [masterWalletScheme.address, ZERO_ADDRESS],
-        [setMaxSecondsForExecutionData, "0x0"],
+        [callData, "0x0"],
         [1, 0],
         2,
         constants.TEST_TITLE,
@@ -642,7 +641,7 @@ contract("WalletScheme", function (accounts) {
 
     const tx = await masterWalletScheme.proposeCalls(
       [masterWalletScheme.address, ZERO_ADDRESS],
-      [setMaxSecondsForExecutionData, "0x0"],
+      [callData, "0x0"],
       [0, 0],
       2,
       constants.TEST_TITLE,
@@ -660,10 +659,7 @@ contract("WalletScheme", function (accounts) {
       organizationProposal.state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
-    assert.equal(
-      organizationProposal.callData[0],
-      setMaxSecondsForExecutionData
-    );
+    assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], masterWalletScheme.address);
     assert.equal(organizationProposal.value[0], 0);
     assert.equal(
@@ -674,24 +670,12 @@ contract("WalletScheme", function (accounts) {
 
   // eslint-disable-next-line max-len
   it("MasterWalletScheme - proposal to change max proposal time fails- positive decision - proposal fails", async () => {
-    const setMaxSecondsForExecutionData = web3.eth.abi.encodeFunctionCall(
-      {
-        name: "setMaxSecondsForExecution",
-        type: "function",
-        inputs: [
-          {
-            type: "uint256",
-            name: "_maxSecondsForExecution",
-          },
-        ],
-      },
-      [86400 - 1]
-    );
+    const callData = helpers.encodeMaxSecondsForExecution(86400 - 1);
 
     expectRevert(
       masterWalletScheme.proposeCalls(
         [masterWalletScheme.address, ZERO_ADDRESS],
-        [setMaxSecondsForExecutionData, "0x0"],
+        [callData, "0x0"],
         [1, 0],
         constants.TEST_TITLE,
         constants.SOME_HASH
@@ -701,7 +685,7 @@ contract("WalletScheme", function (accounts) {
 
     const tx = await masterWalletScheme.proposeCalls(
       [masterWalletScheme.address, ZERO_ADDRESS],
-      [setMaxSecondsForExecutionData, "0x0"],
+      [callData, "0x0"],
       [0, 0],
       2,
       constants.TEST_TITLE,
@@ -830,43 +814,45 @@ contract("WalletScheme", function (accounts) {
   });
 
   it("MasterWalletScheme - proposal with data - positive decision - proposal executed", async function () {
-    const callData = helpers.testCallFrom(org.avatar.address);
+    const callData = helpers.encodeMaxSecondsForExecution(
+      executionTimeout + 666
+    );
 
     const tx = await masterWalletScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [masterWalletScheme.address, ZERO_ADDRESS],
+      [callData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     const organizationProposal =
       await masterWalletScheme.getOrganizationProposal(proposalId);
+
     assert.equal(
       organizationProposal.state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
-    assert.equal(organizationProposal.callData[0], callData);
-    assert.equal(organizationProposal.to[0], actionMock.address);
+    // assert.equal(organizationProposal.callData[0], callData);
+    assert.equal(organizationProposal.to[0], masterWalletScheme.address);
     assert.equal(organizationProposal.value[0], 0);
   });
 
   it("MasterWalletScheme - proposal with data - positive decision - proposal executed", async function () {
-    const callData = helpers.testCallFrom(org.avatar.address);
+    const callData = helpers.encodeMaxSecondsForExecution(executionTimeout);
 
     const proposalId1 = helpers.getValueFromLogs(
       await masterWalletScheme.proposeCalls(
-        [actionMock.address],
-        [callData],
-        [0],
+        [actionMock.address, ZERO_ADDRESS],
+        [callData, "0x0"],
+        [0, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
@@ -874,8 +860,8 @@ contract("WalletScheme", function (accounts) {
     );
 
     // Use signed votes to try to execute a proposal inside a proposal execution
-    const voteHash = await votingMachine.contract.hashVote(
-      votingMachine.address,
+    const voteHash = await org.votingMachine.hashVote(
+      org.votingMachine.address,
       proposalId1,
       accounts[2],
       1,
@@ -885,9 +871,9 @@ contract("WalletScheme", function (accounts) {
       await web3.eth.sign(voteHash, accounts[2])
     );
 
-    const executeSignedVoteData = await votingMachine.contract.contract.methods
+    const executeSignedVoteData = await org.votingMachine.contract.methods
       .executeSignedVote(
-        votingMachine.address,
+        org.votingMachine.address,
         proposalId1,
         accounts[2],
         1,
@@ -913,9 +899,10 @@ contract("WalletScheme", function (accounts) {
     // setMaxSecondsForExecution function.
     await expectRevert(
       masterWalletScheme.proposeCalls(
-        [masterWalletScheme.address],
-        [executeSignedVoteData],
-        [0],
+        [masterWalletScheme.address, ZERO_ADDRESS],
+        [executeSignedVoteData, "0x0"],
+        [0, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
@@ -927,9 +914,10 @@ contract("WalletScheme", function (accounts) {
     // executed
     const proposalId2 = await helpers.getValueFromLogs(
       await masterWalletScheme.proposeCalls(
-        [actionMock.address],
-        [actionMockExecuteCallWithRequiredData],
-        [0],
+        [actionMock.address, ZERO_ADDRESS],
+        [actionMockExecuteCallWithRequiredData, "0x0"],
+        [0, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
@@ -937,7 +925,7 @@ contract("WalletScheme", function (accounts) {
     );
 
     await expectRevert(
-      votingMachine.contract.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
+      org.votingMachine.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
       "call execution failed"
