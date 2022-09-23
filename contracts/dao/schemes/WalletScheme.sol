@@ -61,14 +61,11 @@ contract WalletScheme is Scheme {
         } else {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
 
-            // proposal.to.length.div( proposal.totalOptions ) == Calls per option
-            // We dont assign it as variable to avoid hitting stack too deep error
-            uint256 callIndex = proposal.to.length.div(proposal.totalOptions).mul(_winningOption.sub(1));
-            uint256 lastCallIndex = callIndex.add(proposal.to.length.div(proposal.totalOptions));
-
             permissionRegistry.setERC20Balances();
 
-            for (callIndex; callIndex < lastCallIndex; callIndex++) {
+            uint256 callIndex = 0;
+
+            for (callIndex; callIndex < proposal.to.length; callIndex++) {
                 bytes memory _data = proposal.callData[callIndex];
                 bytes4 callDataFuncSignature;
                 assembly {

@@ -168,10 +168,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         }
         require(_to.length == _callData.length, "WalletScheme: invalid _callData length");
         require(_to.length == _value.length, "WalletScheme: invalid _value length");
-        require(
-            _totalOptions <= _to.length && _value.length.mod(_totalOptions) == 0,
-            "WalletScheme: Invalid _totalOptions or action calls length"
-        );
+
         require(_totalOptions == 2, "WalletScheme: The total amount of options should be 2");
 
         bytes32 voteParams = controller.getSchemeParameters(address(this));
