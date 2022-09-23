@@ -105,6 +105,7 @@ contract WalletScheme is Scheme {
 
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
         }
+        controller.endProposal(_proposalId);
         executingProposal = false;
         return true;
     }

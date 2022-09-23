@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import "./DAOAvatar.sol";
 
 /**
@@ -13,6 +14,17 @@ import "./DAOAvatar.sol";
  */
 contract DAOController is Initializable {
     using SafeMathUpgradeable for uint256;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
+
+    EnumerableSetUpgradeable.Bytes32Set private activeProposals;
+    EnumerableSetUpgradeable.Bytes32Set private inactiveProposals;
+    mapping(bytes32 => address) public schemeOfProposal;
+
+    struct ProposalAndScheme {
+        bytes32 proposalId;
+        address scheme;
+    }
 
     struct Scheme {
         bytes32 paramsHash; // a hash voting parameters of the scheme
@@ -149,6 +161,29 @@ contract DAOController is Initializable {
         return _avatar.executeCall(_contract, _data, _value);
     }
 
+    /**
+     * @dev Adds a proposal to the active proposals list
+     * @param _proposalId  the proposalId
+     */
+    function startProposal(bytes32 _proposalId) external onlyRegisteredScheme {
+        activeProposals.add(_proposalId);
+        schemeOfProposal[_proposalId] = msg.sender;
+    }
+
+    /**
+     * @dev Moves a proposal from the active proposals list to the inactive list
+     * @param _proposalId  the proposalId
+     */
+    function endProposal(bytes32 _proposalId) external {
+        require(
+            schemes[msg.sender].isRegistered ||
+                (!schemes[schemeOfProposal[_proposalId]].isRegistered && activeProposals.contains(_proposalId)),
+            "DAOController: Sender is not a registered scheme or proposal is not active"
+        );
+        activeProposals.remove(_proposalId);
+        inactiveProposals.add(_proposalId);
+    }
+
     function isSchemeRegistered(address _scheme) external view returns (bool) {
         return _isSchemeRegistered(_scheme);
     }
@@ -171,5 +206,23 @@ contract DAOController is Initializable {
 
     function _isSchemeRegistered(address _scheme) private view returns (bool) {
         return (schemes[_scheme].isRegistered);
+    }
+
+    function getActiveProposals() external view returns (ProposalAndScheme[] memory activeProposalsArray) {
+        activeProposalsArray = new ProposalAndScheme[](activeProposals.length());
+        for (uint256 i = 0; i < activeProposals.length(); i++) {
+            activeProposalsArray[i].proposalId = activeProposals.at(i);
+            activeProposalsArray[i].scheme = schemeOfProposal[activeProposals.at(i)];
+        }
+        return activeProposalsArray;
+    }
+
+    function getInactiveProposals() external view returns (ProposalAndScheme[] memory inactiveProposalsArray) {
+        inactiveProposalsArray = new ProposalAndScheme[](inactiveProposals.length());
+        for (uint256 i = 0; i < inactiveProposals.length(); i++) {
+            inactiveProposalsArray[i].proposalId = inactiveProposals.at(i);
+            inactiveProposalsArray[i].scheme = schemeOfProposal[inactiveProposals.at(i)];
+        }
+        return inactiveProposalsArray;
     }
 }

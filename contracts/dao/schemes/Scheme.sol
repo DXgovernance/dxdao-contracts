@@ -191,6 +191,8 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             (bytes32)
         );
 
+        controller.startProposal(proposalId);
+
         // Add the proposal to the proposals mapping, proposals list and proposals information mapping
         proposals[proposalId] = Proposal({
             to: _to,
