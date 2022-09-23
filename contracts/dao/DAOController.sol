@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "./DAOAvatar.sol";
+import "./DAOReputation.sol";
 
 /**
  * @title DAO Controller
@@ -13,6 +14,8 @@ import "./DAOAvatar.sol";
  */
 contract DAOController is Initializable {
     using SafeMathUpgradeable for uint256;
+
+    DAOReputation public daoreputation;
 
     struct Scheme {
         bytes32 paramsHash; // a hash voting parameters of the scheme
@@ -28,7 +31,7 @@ contract DAOController is Initializable {
     event RegisterScheme(address indexed _sender, address indexed _scheme);
     event UnregisterScheme(address indexed _sender, address indexed _scheme);
 
-    function initialize(address _scheme) public initializer {
+    function initialize(address _scheme, address _reputationAddress) public initializer {
         schemes[_scheme] = Scheme({
             paramsHash: bytes32(0),
             isRegistered: true,
@@ -36,6 +39,7 @@ contract DAOController is Initializable {
             canMakeAvatarCalls: true
         });
         schemesWithManageSchemesPermission = 1;
+        daoreputation = DAOReputation(_reputationAddress);
     }
 
     modifier onlyRegisteredScheme() {
@@ -149,34 +153,14 @@ contract DAOController is Initializable {
         return _avatar.executeCall(_contract, _data, _value);
     }
 
-    function burnReputation(
-        DAOAvatar _avatar,
-        address _contract,
-        uint256 _amount,
-        address _beneficiary,
-        uint256 _value
-    ) external onlyRegisteredScheme returns (bool, bytes memory) {
-        return
-            _avatar.executeCall(
-                _contract,
-                abi.encodeWithSignature("burn(address,uint256)", _beneficiary, _amount),
-                _value
-            );
+    function burnReputation(uint256 _amount, address _beneficiary) external onlyRegisteredScheme returns (bool) {
+        bool success = daoreputation.burn(_beneficiary, _amount);
+        return (success);
     }
 
-    function mintReputation(
-        DAOAvatar _avatar,
-        address _contract,
-        uint256 _amount,
-        address _beneficiary,
-        uint256 _value
-    ) external onlyRegisteredScheme returns (bool, bytes memory) {
-        return
-            _avatar.executeCall(
-                _contract,
-                abi.encodeWithSignature("mint(address,uint256)", _beneficiary, _amount),
-                _value
-            );
+    function mintReputation(uint256 _amount, address _beneficiary) external onlyRegisteredScheme returns (bool) {
+        bool success = daoreputation.mint(_beneficiary, _amount);
+        return (success);
     }
 
     function isSchemeRegistered(address _scheme) external view returns (bool) {
@@ -201,5 +185,9 @@ contract DAOController is Initializable {
 
     function _isSchemeRegistered(address _scheme) private view returns (bool) {
         return (schemes[_scheme].isRegistered);
+    }
+
+    function getDaoReputation() external view returns (DAOReputation) {
+        return daoreputation;
     }
 }

@@ -11,14 +11,11 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 contract DAOAvatar is OwnableUpgradeable {
     event CallExecuted(address indexed _to, bytes _data, uint256 _value, bool _success);
 
-    address public reputationToken;
-
     receive() external payable {}
 
-    function initialize(address _owner, address _reputationToken) public initializer {
+    function initialize(address _owner) public initializer {
         __Ownable_init();
         transferOwnership(_owner);
-        reputationToken = _reputationToken;
     }
 
     /**

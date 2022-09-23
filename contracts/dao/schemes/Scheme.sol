@@ -105,6 +105,11 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      */
     function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external {
         require(
+            msg.sender == address(votingMachine) || msg.sender == address(this),
+            "WalletScheme: setMaxSecondsForExecution is callable only form the avatar or the scheme"
+        );
+
+        require(
             _maxSecondsForExecution >= 86400,
             "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
         );

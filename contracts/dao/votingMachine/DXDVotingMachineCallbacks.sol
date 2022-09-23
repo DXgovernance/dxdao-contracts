@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../DAOController.sol";
 import "../DAOAvatar.sol";
 import "../DAOReputation.sol";
+import "hardhat/console.sol";
 
 contract DXDVotingMachineCallbacks {
     address public votingMachine;
@@ -24,13 +25,8 @@ contract DXDVotingMachineCallbacks {
         address _beneficiary,
         bytes32
     ) external onlyVotingMachine returns (bool success) {
-        (success, ) = DAOController(avatar.owner()).mintReputation(
-            avatar,
-            address(avatar.reputationToken()),
-            _amount,
-            _beneficiary,
-            0
-        );
+        DAOController(avatar.owner()).mintReputation(_amount, _beneficiary);
+        return success;
     }
 
     function burnReputation(
@@ -38,13 +34,8 @@ contract DXDVotingMachineCallbacks {
         address _beneficiary,
         bytes32
     ) external onlyVotingMachine returns (bool success) {
-        (success, ) = DAOController(avatar.owner()).burnReputation(
-            avatar,
-            address(avatar.reputationToken()),
-            _amount,
-            _beneficiary,
-            0
-        );
+        DAOController(avatar.owner()).burnReputation(_amount, _beneficiary);
+        return success;
     }
 
     function stakingTokenTransfer(
@@ -62,7 +53,7 @@ contract DXDVotingMachineCallbacks {
     }
 
     function getReputation() public view returns (DAOReputation) {
-        return DAOReputation(avatar.reputationToken());
+        return DAOController(avatar.owner()).getDaoReputation();
     }
 
     function getNativeReputationTotalSupply() public view returns (uint256) {
