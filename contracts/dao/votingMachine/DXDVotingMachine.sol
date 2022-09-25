@@ -220,6 +220,7 @@ contract DXDVotingMachine {
     IERC20 public stakingToken;
     address private constant GEN_TOKEN_ADDRESS = 0x543Ff227F64Aa17eA132Bf9886cAb5DB55DCAddf;
     uint256 private constant MAX_BOOSTED_PROPOSALS = 4096;
+    address public avatarOwner;
 
     // Digest describing the data the user signs according EIP 712.
     // Needs to match what is passed to Metamask.
@@ -273,7 +274,7 @@ contract DXDVotingMachine {
     /**
      * @dev Constructor
      */
-    constructor(IERC20 _stakingToken) {
+    constructor(IERC20 _stakingToken, address _avatarOwner) {
         //The GEN token (staking token) address is hard coded in the contract by GEN_TOKEN_ADDRESS .
         //This will work for a network which already hosted the GEN token on this address (e.g mainnet).
         //If such contract address does not exist in the network (e.g ganache)
@@ -286,6 +287,7 @@ contract DXDVotingMachine {
         } else {
             stakingToken = _stakingToken;
         }
+        avatarOwner = _avatarOwner;
     }
 
     /**
@@ -297,6 +299,14 @@ contract DXDVotingMachine {
             "DXDVotingMachine: Address not registered in organizationRefounds"
         );
         organizationRefunds[msg.sender].balance = organizationRefunds[msg.sender].balance.add(msg.value);
+    }
+
+    /**
+     * @dev Allows the avatarOwner to claim staking tokens from the voting machine
+     */
+    function claimStakingTokens() external {
+        require(msg.sender == avatarOwner, "DXDVotingMachine: Only avatar owner can claim staking tokens");
+        stakingToken.transfer(avatarOwner, stakingToken.balanceOf(address(this)));
     }
 
     /**
@@ -509,23 +519,10 @@ contract DXDVotingMachine {
             //as staker
             potentialAmount = (staker.amount4Bounty * proposal.daoBounty) / totalWinningStakes;
         }
-        if (
-            (potentialAmount != 0) &&
-            (DXDVotingMachineCallbacksInterface(proposal.callbacks).balanceOfStakingToken(
-                address(stakingToken),
-                _proposalId
-            ) >= potentialAmount)
-        ) {
+        if ((potentialAmount != 0) && (stakingToken.balanceOf(address(this)) >= potentialAmount)) {
             staker.amount4Bounty = 0;
             proposal.daoBountyRemain = proposal.daoBountyRemain.sub(potentialAmount);
-            require(
-                DXDVotingMachineCallbacksInterface(proposal.callbacks).stakingTokenTransfer(
-                    address(stakingToken),
-                    _beneficiary,
-                    potentialAmount,
-                    _proposalId
-                )
-            );
+            require(stakingToken.transfer(_beneficiary, potentialAmount), "fail transfer of daoBounty");
             redeemedAmount = potentialAmount;
             emit RedeemDaoBounty(_proposalId, organizations[proposal.organizationId], _beneficiary, redeemedAmount);
         }

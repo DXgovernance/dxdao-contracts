@@ -37,30 +37,12 @@ contract DXDVotingMachineCallbacks {
         return success;
     }
 
-    function stakingTokenTransfer(
-        IERC20 _stakingToken,
-        address _beneficiary,
-        uint256 _amount,
-        bytes32
-    ) external onlyVotingMachine returns (bool success) {
-        (success, ) = controller.avatarCall(
-            address(_stakingToken),
-            abi.encodeWithSignature("transferFrom(address,address,uint256)", avatar, _beneficiary, _amount),
-            avatar,
-            0
-        );
-    }
-
     function getReputation() public view returns (DAOReputation) {
         return controller.getDaoReputation();
     }
 
     function getNativeReputationTotalSupply() public view returns (uint256) {
         return getReputation().totalSupply();
-    }
-
-    function balanceOfStakingToken(IERC20 _stakingToken, bytes32) external view returns (uint256) {
-        return _stakingToken.balanceOf(address(avatar));
     }
 
     function getTotalReputationSupply(bytes32 _proposalId) external view returns (uint256) {
