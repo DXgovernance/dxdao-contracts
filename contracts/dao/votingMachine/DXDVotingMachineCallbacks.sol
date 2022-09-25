@@ -3,14 +3,13 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../DAOController.sol";
-import "../DAOAvatar.sol";
 import "../DAOReputation.sol";
 import "hardhat/console.sol";
 
 contract DXDVotingMachineCallbacks {
     address public votingMachine;
 
-    DAOAvatar public avatar;
+    DAOController public controller;
 
     modifier onlyVotingMachine() {
         require(msg.sender == address(votingMachine), "DXDVotingMachineCallbacks: only VotingMachine");
@@ -25,7 +24,7 @@ contract DXDVotingMachineCallbacks {
         address _beneficiary,
         bytes32
     ) external onlyVotingMachine returns (bool success) {
-        DAOController(avatar.owner()).mintReputation(_amount, _beneficiary);
+        controller.mintReputation(_amount, _beneficiary);
         return success;
     }
 
@@ -34,7 +33,7 @@ contract DXDVotingMachineCallbacks {
         address _beneficiary,
         bytes32
     ) external onlyVotingMachine returns (bool success) {
-        DAOController(avatar.owner()).burnReputation(_amount, _beneficiary);
+        controller.burnReputation(_amount, _beneficiary);
         return success;
     }
 
@@ -44,7 +43,7 @@ contract DXDVotingMachineCallbacks {
         uint256 _amount,
         bytes32
     ) external onlyVotingMachine returns (bool success) {
-        (success, ) = DAOController(avatar.owner()).avatarCall(
+        (success, ) = controller.avatarCall(
             address(_stakingToken),
             abi.encodeWithSignature("transferFrom(address,address,uint256)", avatar, _beneficiary, _amount),
             avatar,
@@ -53,7 +52,7 @@ contract DXDVotingMachineCallbacks {
     }
 
     function getReputation() public view returns (DAOReputation) {
-        return DAOController(avatar.owner()).getDaoReputation();
+        return controller.getDaoReputation();
     }
 
     function getNativeReputationTotalSupply() public view returns (uint256) {

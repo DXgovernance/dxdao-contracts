@@ -25,8 +25,23 @@ contract WalletScheme is Scheme {
     receive() external payable {}
 
     /**
+     * @dev Set the max amount of seconds that a proposal has to be executed, only callable from the avatar address
+     * @param _maxSecondsForExecution New max proposal time in seconds to be used
+     */
+    function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external override {
+        require(
+            msg.sender == address(this),
+            "WalletScheme: setMaxSecondsForExecution is callable only from the scheme"
+        );
+        require(
+            _maxSecondsForExecution >= 86400,
+            "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
+        );
+        maxSecondsForExecution = _maxSecondsForExecution;
+    }
+
+    /**
      * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
-        REQUIRE FROM "../daostack/votingMachines/ProposalExecuteInterface.sol" DONT REMOVE
      * @param _proposalId the ID of the voting in the voting machine
      * @param _winningOption The winning option in the voting machine
      * @return bool success
@@ -105,5 +120,12 @@ contract WalletScheme is Scheme {
         controller.endProposal(_proposalId);
         executingProposal = false;
         return true;
+    }
+
+    /**
+     * @dev Get the scheme type
+     */
+    function getSchemeType() external view override returns (string memory) {
+        return "WalletScheme_v1";
     }
 }

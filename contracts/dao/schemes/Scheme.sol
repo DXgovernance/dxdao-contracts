@@ -24,12 +24,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     using SafeMath for uint256;
     using Address for address;
 
-    string public constant SCHEME_TYPE = "Wallet Scheme v1.3";
-    bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
-    bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
-    bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
-        bytes4(keccak256("setMaxSecondsForExecution(uint256)"));
-
     enum ProposalState {
         None,
         Submitted,
@@ -52,7 +46,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     mapping(bytes32 => Proposal) public proposals;
     bytes32[] public proposalsList;
 
-    DAOController public controller;
+    DAOAvatar public avatar;
     PermissionRegistry public permissionRegistry;
     string public schemeName;
     uint256 public maxSecondsForExecution;
@@ -103,12 +97,11 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @dev Set the max amount of seconds that a proposal has to be executed, only callable from the avatar address
      * @param _maxSecondsForExecution New max proposal time in seconds to be used
      */
-    function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external {
+    function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external virtual {
         require(
-            msg.sender == address(votingMachine) || msg.sender == address(this),
-            "WalletScheme: setMaxSecondsForExecution is callable only form the avatar or the scheme"
+            msg.sender == address(avatar) || msg.sender == address(this),
+            "WalletScheme: setMaxSecondsForExecution is callable only from the avatar or the scheme"
         );
-
         require(
             _maxSecondsForExecution >= 86400,
             "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
@@ -118,7 +111,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
 
     /**
      * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
-        REQUIRE FROM "../daostack/votingMachines/ProposalExecuteInterface.sol" DONT REMOVE
      * @param _proposalId the ID of the voting in the voting machine
      * @param _winningOption The winning option in the voting machine
      * @return bool success
@@ -152,17 +144,10 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         for (uint256 i = 0; i < _to.length; i++) {
             bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
 
-            // Only allow proposing calls to this address to call setMaxSecondsForExecution function
-            require(
-                _to[i] != address(this) ||
-                    (callDataFuncSignature == SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE && _value[i] == 0),
-                "WalletScheme: invalid proposal caller"
-            );
-
             // This will fail only when and ERC20 transfer or approve with ETH value is proposed
             require(
-                (callDataFuncSignature != ERC20_TRANSFER_SIGNATURE &&
-                    callDataFuncSignature != ERC20_APPROVE_SIGNATURE) || _value[i] == 0,
+                (callDataFuncSignature != bytes4(keccak256("transfer(address,uint256)")) &&
+                    callDataFuncSignature != bytes4(keccak256("approve(address,uint256)"))) || _value[i] == 0,
                 "WalletScheme: cant propose ERC20 transfers with value"
             );
         }
@@ -221,6 +206,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             bytes[] memory callData,
             uint256[] memory value,
             ProposalState state,
+            uint256 totalOptions,
             string memory title,
             string memory descriptionHash,
             uint256 submittedTime
@@ -231,6 +217,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             proposals[proposalId].callData,
             proposals[proposalId].value,
             proposals[proposalId].state,
+            proposals[proposalId].totalOptions,
             proposals[proposalId].title,
             proposals[proposalId].descriptionHash,
             proposals[proposalId].submittedTime
@@ -249,6 +236,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             bytes[] memory callData,
             uint256[] memory value,
             ProposalState state,
+            uint256 totalOptions,
             string memory title,
             string memory descriptionHash,
             uint256 submittedTime
@@ -282,4 +270,9 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     function getOrganizationProposals() external view returns (bytes32[] memory) {
         return proposalsList;
     }
+
+    /**
+     * @dev Get the scheme type
+     */
+    function getSchemeType() external view virtual returns (string memory) {}
 }
