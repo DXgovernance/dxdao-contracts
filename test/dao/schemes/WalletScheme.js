@@ -455,11 +455,8 @@ contract("WalletScheme", function (accounts) {
       organizationProposal.state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
     );
-    assert.equal(
-      organizationProposal.callData[0],
-      setMaxSecondsForExecutionData
-    );
-    assert.equal(organizationProposal.to[0], avatarScheme.address);
+    assert.equal(organizationProposal.callData[0], callData);
+    assert.equal(organizationProposal.to[0], masterWalletScheme.address);
     assert.equal(organizationProposal.value[0], 0);
     assert.equal(await avatarScheme.maxSecondsForExecution(), executionTimeout);
   });
