@@ -3,55 +3,47 @@ import * as helpers from "../helpers";
 const { time, expectRevert } = require("@openzeppelin/test-helpers");
 
 const WalletScheme = artifacts.require("./WalletScheme.sol");
+const AvatarScheme = artifacts.require("./AvatarScheme.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 
 contract("PermissionRegistry", function (accounts) {
   let permissionRegistry,
-    masterWalletScheme,
+    masterAvatarScheme,
     quickWalletScheme,
-    org,
-    actionMock,
-    votingMachine;
+    dao,
+    actionMock;
 
   const constants = helpers.constants;
   const executionTimeout = 172800 + 86400; // _queuedVotePeriodLimit + _boostedVotePeriodLimit
 
   beforeEach(async function () {
     actionMock = await ActionMock.new();
-    const standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
-    org = await helpers.setupOrganization(
-      [accounts[0], accounts[1], accounts[2]],
-      [1000, 1000, 1000],
-      [20000, 10000, 70000]
-    );
-    votingMachine = await helpers.setUpVotingMachine(
-      standardTokenMock.address,
-      "dxd",
-      constants.NULL_ADDRESS, // voteOnBehalf
-      50, // queuedVoteRequiredPercentage
-      172800, // queuedVotePeriodLimit
-      86400, // boostedVotePeriodLimit
-      3600, // preBoostedVotePeriodLimit
-      2000, // thresholdConst
-      0, // quietEndingPeriod
-      0, // proposingRepReward
-      0, // votersReputationLossRatio
-      15, // minimumDaoBounty
-      10, // daoBountyConst
-      0 // activationTime
+    const votingMachineToken = await ERC20Mock.new("", "", 1000, accounts[1]);
+
+    dao = await helpers.deployDao({
+      owner: accounts[0],
+      votingMachineToken: votingMachineToken.address,
+      repHolders: [
+        { address: accounts[0], amount: 20000 },
+        { address: accounts[1], amount: 10000 },
+        { address: accounts[2], amount: 70000 },
+      ],
+    });
+
+    const defaultParamsHash = await helpers.setDefaultParameters(
+      dao.votingMachine
     );
 
     permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
     await permissionRegistry.initialize();
 
-    masterWalletScheme = await WalletScheme.new();
-    await masterWalletScheme.initialize(
-      org.avatar.address,
-      votingMachine.address,
-      true,
-      org.controller.address,
+    masterAvatarScheme = await AvatarScheme.new();
+    await masterAvatarScheme.initialize(
+      dao.avatar.address,
+      dao.votingMachine.address,
+      dao.controller.address,
       permissionRegistry.address,
       "Master Wallet",
       executionTimeout,
@@ -60,10 +52,9 @@ contract("PermissionRegistry", function (accounts) {
 
     quickWalletScheme = await WalletScheme.new();
     await quickWalletScheme.initialize(
-      org.avatar.address,
-      votingMachine.address,
-      false,
-      org.controller.address,
+      dao.avatar.address,
+      dao.votingMachine.address,
+      dao.controller.address,
       permissionRegistry.address,
       "Quick Wallet",
       executionTimeout,
@@ -72,25 +63,17 @@ contract("PermissionRegistry", function (accounts) {
 
     await time.increase(30);
 
-    await org.daoCreator.setSchemes(
-      org.avatar.address,
-      [masterWalletScheme.address, quickWalletScheme.address],
-      [votingMachine.params, votingMachine.params],
-      [
-        helpers.encodePermission({
-          canGenericCall: true,
-          canUpgrade: true,
-          canChangeConstraints: true,
-          canRegisterSchemes: true,
-        }),
-        helpers.encodePermission({
-          canGenericCall: false,
-          canUpgrade: false,
-          canChangeConstraints: false,
-          canRegisterSchemes: false,
-        }),
-      ],
-      "metaData"
+    await dao.controller.registerScheme(
+      masterAvatarScheme.address,
+      defaultParamsHash,
+      false,
+      true
+    );
+    await dao.controller.registerScheme(
+      quickWalletScheme.address,
+      defaultParamsHash,
+      false,
+      false
     );
   });
 
@@ -105,14 +88,14 @@ contract("PermissionRegistry", function (accounts) {
     const callData = helpers.testCallFrom(quickWalletScheme.address);
 
     await permissionRegistry.setETHPermission(
-      org.avatar.address,
+      dao.avatar.address,
       actionMock.address,
       callData.substring(0, 10),
       constants.MAX_UINT_256,
       false
     );
 
-    await permissionRegistry.transferOwnership(org.avatar.address);
+    await permissionRegistry.transferOwnership(dao.avatar.address);
 
     await expectRevert(
       permissionRegistry.transferOwnership(accounts[0]),
@@ -122,7 +105,7 @@ contract("PermissionRegistry", function (accounts) {
     const setETHPermissionDelayData = new web3.eth.Contract(
       PermissionRegistry.abi
     ).methods
-      .setETHPermissionDelay(quickWalletScheme.address, 60)
+      .setETHPermissionDelay(quickWalletScheme.address, 45)
       .encodeABI();
 
     const setETHPermissionData = new web3.eth.Contract(
@@ -137,10 +120,11 @@ contract("PermissionRegistry", function (accounts) {
       )
       .encodeABI();
 
-    const tx = await masterWalletScheme.proposeCalls(
+    const tx = await masterAvatarScheme.proposeCalls(
       [permissionRegistry.address, permissionRegistry.address],
       [setETHPermissionDelayData, setETHPermissionData],
       [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
@@ -157,13 +141,9 @@ contract("PermissionRegistry", function (accounts) {
       0
     );
 
-    await votingMachine.contract.vote(
-      proposalId1,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await dao.votingMachine.vote(proposalId1, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (
@@ -173,16 +153,16 @@ contract("PermissionRegistry", function (accounts) {
           callData.substring(0, 10)
         )
       ).fromTime.toString(),
-      (await time.latest()).toNumber() + 60
+      (await time.latest()).toNumber() + 45
     );
 
     assert.equal(
       await permissionRegistry.getETHPermissionDelay(quickWalletScheme.address),
-      60
+      45
     );
 
     assert.equal(
-      (await masterWalletScheme.getOrganizationProposal(proposalId1)).state,
+      (await masterAvatarScheme.getOrganizationProposal(proposalId1)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
 
@@ -190,28 +170,25 @@ contract("PermissionRegistry", function (accounts) {
       [actionMock.address],
       [callData],
       [0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
 
-    // The call to execute is not allowed YET, because we change the delay time to 60 seconds
+    // The call to execute is not allowed YET, because we change the delay time to 45 seconds
     await expectRevert(
-      votingMachine.contract.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
+      dao.votingMachine.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
       "PermissionRegistry: Call not allowed yet"
     );
 
     // After increasing the time it will allow the proposal execution
-    await time.increase(60);
-    await votingMachine.contract.vote(
-      proposalId2,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await time.increase(45);
+    await dao.votingMachine.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     const organizationProposal =
       await quickWalletScheme.getOrganizationProposal(proposalId2);
@@ -253,12 +230,13 @@ contract("PermissionRegistry", function (accounts) {
       )
       .encodeABI();
 
-    await permissionRegistry.transferOwnership(org.avatar.address);
+    await permissionRegistry.transferOwnership(dao.avatar.address);
 
     const tx = await quickWalletScheme.proposeCalls(
       [permissionRegistry.address, permissionRegistry.address],
       [setETHPermissionDelayData, setETHPermissionData],
       [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
@@ -286,13 +264,9 @@ contract("PermissionRegistry", function (accounts) {
       "666"
     );
 
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await dao.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (await quickWalletScheme.getOrganizationProposal(proposalId)).state,

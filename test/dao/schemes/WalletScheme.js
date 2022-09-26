@@ -40,52 +40,8 @@ contract("WalletScheme", function (accounts) {
       ],
     });
 
-    // Parameters
-    const voteOnBehalf = constants.NULL_ADDRESS;
-    const _queuedVoteRequiredPercentage = 50;
-    const _queuedVotePeriodLimit = 172800;
-    const _boostedVotePeriodLimit = 86400;
-    const _preBoostedVotePeriodLimit = 3600;
-    const _thresholdConst = 2000;
-    const _quietEndingPeriod = 0;
-    const _proposingRepReward = 0;
-    const _votersReputationLossRatio = 10;
-    const _minimumDaoBounty = 15;
-    const _daoBountyConst = 10;
-    const _activationTime = 0;
-
-    await org.votingMachine.setParameters(
-      [
-        _queuedVoteRequiredPercentage,
-        _queuedVotePeriodLimit,
-        _boostedVotePeriodLimit,
-        _preBoostedVotePeriodLimit,
-        _thresholdConst,
-        _quietEndingPeriod,
-        _proposingRepReward,
-        _votersReputationLossRatio,
-        _minimumDaoBounty,
-        _daoBountyConst,
-        _activationTime,
-      ],
-      voteOnBehalf
-    );
-
-    defaultParamsHash = await org.votingMachine.getParametersHash(
-      [
-        _queuedVoteRequiredPercentage,
-        _queuedVotePeriodLimit,
-        _boostedVotePeriodLimit,
-        _preBoostedVotePeriodLimit,
-        _thresholdConst,
-        _quietEndingPeriod,
-        _proposingRepReward,
-        _votersReputationLossRatio,
-        _minimumDaoBounty,
-        _daoBountyConst,
-        _activationTime,
-      ],
-      voteOnBehalf
+    const defaultParamsHash = await helpers.setDefaultParameters(
+      org.votingMachine
     );
 
     permissionRegistry = await PermissionRegistry.new(accounts[0], 30);

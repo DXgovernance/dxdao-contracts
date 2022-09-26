@@ -15,7 +15,7 @@ const DXDGuild = artifacts.require("DXDGuild.sol");
 const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
 const ERC20Mock = artifacts.require("ERC20Mock.sol");
-const WalletScheme = artifacts.require("WalletScheme.sol");
+const AvatarScheme = artifacts.require("AvatarScheme.sol");
 
 require("chai").should();
 
@@ -70,49 +70,18 @@ contract("DXDGuild", function (accounts) {
     const _daoBountyConst = 10;
     const _activationTime = 0;
 
-    await dxDao.votingMachine.setParameters(
-      [
-        _queuedVoteRequiredPercentage,
-        _queuedVotePeriodLimit,
-        _boostedVotePeriodLimit,
-        _preBoostedVotePeriodLimit,
-        _thresholdConst,
-        _quietEndingPeriod,
-        _proposingRepReward,
-        _votersReputationLossRatio,
-        _minimumDaoBounty,
-        _daoBountyConst,
-        _activationTime,
-      ],
-      voteOnBehalf
-    );
-
-    const paramsHash = await dxDao.votingMachine.getParametersHash(
-      [
-        _queuedVoteRequiredPercentage,
-        _queuedVotePeriodLimit,
-        _boostedVotePeriodLimit,
-        _preBoostedVotePeriodLimit,
-        _thresholdConst,
-        _quietEndingPeriod,
-        _proposingRepReward,
-        _votersReputationLossRatio,
-        _minimumDaoBounty,
-        _daoBountyConst,
-        _activationTime,
-      ],
-      voteOnBehalf
+    const defaultParamsHash = await helpers.setDefaultParameters(
+      dxDao.votingMachine
     );
 
     const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
     await permissionRegistry.initialize();
 
-    const masterWalletScheme = await WalletScheme.new();
+    const masterAvatarScheme = await AvatarScheme.new();
 
-    await masterWalletScheme.initialize(
+    await masterAvatarScheme.initialize(
       dxDao.avatar.address,
       dxDao.votingMachine.address,
-      true,
       dxDao.controller.address,
       permissionRegistry.address,
       "Master Scheme",
@@ -121,8 +90,8 @@ contract("DXDGuild", function (accounts) {
     );
 
     await dxDao.controller.registerScheme(
-      masterWalletScheme.address,
-      paramsHash,
+      masterAvatarScheme.address,
+      defaultParamsHash,
       true,
       true
     );
@@ -166,10 +135,10 @@ contract("DXDGuild", function (accounts) {
       true
     );
 
-    const tx = await masterWalletScheme.proposeCalls(
-      [ZERO_ADDRESS, actionMock.address],
-      ["0x0", helpers.testCallFrom(dxDao.avatar.address)],
-      [0, 0],
+    const tx = await masterAvatarScheme.proposeCalls(
+      [actionMock.address],
+      [helpers.testCallFrom(dxDao.avatar.address)],
+      [0],
       2,
       "Test Title",
       constants.SOME_HASH

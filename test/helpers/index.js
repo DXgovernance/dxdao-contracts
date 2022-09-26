@@ -73,7 +73,8 @@ export const deployDao = async function (deployConfig) {
   await reputation.transferOwnership(controller.address);
 
   const votingMachine = await DXDVotingMachine.new(
-    deployConfig.votingMachineToken
+    deployConfig.votingMachineToken,
+    avatar.address
   );
 
   return { controller, avatar, reputation, votingMachine };
@@ -102,6 +103,48 @@ export function testCallWithoutReturnValueFrom(address) {
     .testWithoutReturnValue(address, 1)
     .encodeABI();
 }
+
+// Parameters
+export const defaultParameters = {
+  voteOnBehalf: constants.NULL_ADDRESS,
+  queuedVoteRequiredPercentage: 50,
+  queuedVotePeriodLimit: 60,
+  boostedVotePeriodLimit: 60,
+  preBoostedVotePeriodLimit: 10,
+  thresholdConst: 2000,
+  quietEndingPeriod: 10,
+  proposingRepReward: 0,
+  votersReputationLossRatio: 15,
+  minimumDaoBounty: 100,
+  daoBountyConst: 10,
+  activationTime: 0,
+};
+
+export const defaultParametersArray = [
+  defaultParameters.queuedVoteRequiredPercentage,
+  defaultParameters.queuedVotePeriodLimit,
+  defaultParameters.boostedVotePeriodLimit,
+  defaultParameters.preBoostedVotePeriodLimit,
+  defaultParameters.thresholdConst,
+  defaultParameters.quietEndingPeriod,
+  defaultParameters.proposingRepReward,
+  defaultParameters.votersReputationLossRatio,
+  defaultParameters.minimumDaoBounty,
+  defaultParameters.daoBountyConst,
+  defaultParameters.activationTime,
+];
+
+export const setDefaultParameters = async function (votingMachine) {
+  await votingMachine.setParameters(
+    defaultParametersArray,
+    defaultParameters.voteOnBehalf
+  );
+
+  return await votingMachine.getParametersHash(
+    defaultParametersArray,
+    defaultParameters.voteOnBehalf
+  );
+};
 
 export function encodeERC20Transfer(to, value) {
   return web3.eth.abi.encodeFunctionCall(
