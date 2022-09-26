@@ -1,4 +1,5 @@
-pragma solidity ^0.5.17;
+// SPDX-License-Identifier: AGPL-3.0
+pragma solidity ^0.8.17;
 
 contract Create2Deployer {
     event Deployed(address addr, uint256 salt);

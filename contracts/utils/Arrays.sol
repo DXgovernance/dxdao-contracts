@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.17;
 
 library Arrays {
     function average(uint256 a, uint256 b) internal pure returns (uint256) {

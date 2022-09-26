@@ -131,44 +131,9 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.4.25",
+        version: "0.8.17",
         settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: "0.5.17",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: "0.6.8",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: "0.7.6",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: "0.8.8",
-        settings: {
+          viaIR: true,
           optimizer: {
             enabled: true,
             runs: 200,
@@ -179,17 +144,6 @@ module.exports = {
         },
       },
     ],
-    overrides: {
-      "contracts/utils/GnosisSafe/GnosisProxy.sol": { version: "0.5.14" },
-      "contracts/utils/GnosisSafe/GnosisSafe.sol": { version: "0.5.14" },
-      "contracts/utils/Create2Deployer.sol": {
-        version: "0.5.17",
-        evmVersion: "istanbul",
-        optimizer: { enabled: false, runs: 200 },
-      },
-      "contracts/omen/OMNToken.sol": { version: "0.8.8" },
-      "contracts/erc20guild/IERC20Guild.sol": { version: "0.8.8" },
-    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS ? true : false,

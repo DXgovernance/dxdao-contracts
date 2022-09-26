@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
- * @title ERC20TokenVesting
+ * @title TokenVesting
  * @dev A token holder contract that can release its token balance gradually like a
  * typical vesting scheme, with a cliff and vesting period. Optionally revocable by the
  * owner.
  */
-contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
+contract TokenVesting is Ownable {
     // The vesting schedule is time-based (i.e. using block timestamps as opposed to e.g. block numbers), and is
     // therefore sensitive to timestamp manipulation (which is something miners can do, to a certain degree). Therefore,
     // it is recommended to avoid using short time durations (less than a minute). Typical vesting schemes, with a
@@ -43,66 +41,65 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
      * @dev Creates a vesting contract that vests its balance of any ERC20 token to the
      * beneficiary, gradually in a linear fashion until start + duration. By then all
      * of the balance will have vested.
-     * @param __beneficiary address of the beneficiary to whom vested tokens are transferred
-     * @param __start the time (as Unix time) at which point vesting starts
-     * @param __cliffDuration duration in seconds of the cliff in which tokens will begin to vest
-     * @param __duration duration in seconds of the period in which the tokens will vest
-     * @param __revocable whether the vesting is revocable or not
+     * @param beneficiary address of the beneficiary to whom vested tokens are transferred
+     * @param cliffDuration duration in seconds of the cliff in which tokens will begin to vest
+     * @param start the time (as Unix time) at which point vesting starts
+     * @param duration duration in seconds of the period in which the tokens will vest
+     * @param revocable whether the vesting is revocable or not
      */
-    function initialize(
-        address __beneficiary,
-        uint256 __start,
-        uint256 __cliffDuration,
-        uint256 __duration,
-        bool __revocable
-    ) external initializer {
-        require(__beneficiary != address(0), "TokenVesting: beneficiary is the zero address");
+    constructor(
+        address beneficiary,
+        uint256 start,
+        uint256 cliffDuration,
+        uint256 duration,
+        bool revocable
+    ) public {
+        require(beneficiary != address(0), "TokenVesting: beneficiary is the zero address");
         // solhint-disable-next-line max-line-length
-        require(__cliffDuration <= __duration, "TokenVesting: cliff is longer than duration");
-        require(__duration > 0, "TokenVesting: duration is 0");
+        require(cliffDuration <= duration, "TokenVesting: cliff is longer than duration");
+        require(duration > 0, "TokenVesting: duration is 0");
         // solhint-disable-next-line max-line-length
-        require(__start.add(__duration) > block.timestamp, "TokenVesting: final time is before current time");
+        require(start.add(duration) > block.timestamp, "TokenVesting: final time is before current time");
 
-        __Ownable_init();
-        _beneficiary = __beneficiary;
-        _revocable = __revocable;
-        _duration = __duration;
-        _cliff = __start.add(__cliffDuration);
-        _start = __start;
+        _beneficiary = beneficiary;
+        _revocable = revocable;
+        _duration = duration;
+        _cliff = start.add(cliffDuration);
+        _start = start;
     }
 
     /**
      * @return the beneficiary of the tokens.
      */
-    function beneficiary() external view returns (address) {
+    function beneficiary() public view returns (address) {
         return _beneficiary;
     }
 
     /**
      * @return the cliff time of the token vesting.
      */
-    function cliff() external view returns (uint256) {
+    function cliff() public view returns (uint256) {
         return _cliff;
     }
 
     /**
      * @return the start time of the token vesting.
      */
-    function start() external view returns (uint256) {
+    function start() public view returns (uint256) {
         return _start;
     }
 
     /**
      * @return the duration of the token vesting.
      */
-    function duration() external view returns (uint256) {
+    function duration() public view returns (uint256) {
         return _duration;
     }
 
     /**
      * @return true if the vesting is revocable.
      */
-    function revocable() external view returns (bool) {
+    function revocable() public view returns (bool) {
         return _revocable;
     }
 
@@ -116,7 +113,7 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
     /**
      * @return true if the token is revoked.
      */
-    function revoked(address token) external view returns (bool) {
+    function revoked(address token) public view returns (bool) {
         return _revoked[token];
     }
 
@@ -124,7 +121,7 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
      * @notice Transfers vested tokens to beneficiary.
      * @param token ERC20 token which is being vested
      */
-    function release(IERC20 token) external {
+    function release(IERC20 token) public {
         uint256 unreleased = _releasableAmount(token);
 
         require(unreleased > 0, "TokenVesting: no tokens are due");
@@ -141,7 +138,7 @@ contract ERC20TokenVesting is Initializable, OwnableUpgradeable {
      * remain in the contract, the rest are returned to the owner.
      * @param token ERC20 token which is being vested
      */
-    function revoke(IERC20 token) external onlyOwner {
+    function revoke(IERC20 token) public onlyOwner {
         require(_revocable, "TokenVesting: cannot revoke");
         require(!_revoked[address(token)], "TokenVesting: token already revoked");
 

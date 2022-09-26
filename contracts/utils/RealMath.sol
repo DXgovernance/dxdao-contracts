@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.17;
 
 /**
  * RealMath: fixed-point math library, based on fractional and integer parts.
@@ -81,4 +81,3 @@ library RealMath {
         return uint256((uint256(realNumerator) * REAL_ONE) / uint256(realDenominator));
     }
 }
-
