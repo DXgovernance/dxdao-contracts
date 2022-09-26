@@ -20,7 +20,7 @@ contract WalletScheme {
     using SafeMath for uint256;
     using Address for address;
 
-    string public constant SCHEME_TYPE = "Wallet Scheme v1.2";
+    string public constant SCHEME_TYPE = "Wallet Scheme v1.3";
     bytes4 public constant ERC20_TRANSFER_SIGNATURE = bytes4(keccak256("transfer(address,uint256)"));
     bytes4 public constant ERC20_APPROVE_SIGNATURE = bytes4(keccak256("approve(address,uint256)"));
     bytes4 public constant SET_MAX_SECONDS_FOR_EXECUTION_SIGNATURE =
@@ -174,16 +174,34 @@ contract WalletScheme {
             for (uint256 i = 0; i < proposal.to.length; i++) {
                 _asset = address(0);
                 _callDataFuncSignature = this.getFuncSignature(proposal.callData[i]);
-                _to = proposal.to[i];
-                _value = proposal.value[i];
 
                 // The permission registry keeps track of all value transferred and checks call permission
-                permissionRegistry.setETHPermissionUsed(
-                    doAvatarGenericCalls ? avatar : address(this),
-                    _to,
-                    _callDataFuncSignature,
-                    _value
-                );
+                if (doAvatarGenericCalls) {
+                    (, bytes memory permissionData) = address(controller).call(
+                        abi.encodeWithSignature(
+                            "genericCall(address,bytes,address,uint256)",
+                            address(permissionRegistry),
+                            abi.encodeWithSignature(
+                                "setETHPermissionUsed(address,address,bytes4,uint256)",
+                                avatar,
+                                proposal.to[i],
+                                _callDataFuncSignature,
+                                proposal.value[i]
+                            ),
+                            avatar,
+                            0
+                        )
+                    );
+                    // if permissionData is longer than 96 bytes this is cause it is a revert message
+                    require(permissionData.length == 96, "WalletScheme: permission check failed");
+                } else {
+                    permissionRegistry.setETHPermissionUsed(
+                        address(this),
+                        proposal.to[i],
+                        _callDataFuncSignature,
+                        proposal.value[i]
+                    );
+                }
 
                 // If controller address is set the code needs to be encoded to genericCall function
                 if (doAvatarGenericCalls && proposal.to[i] != address(controller)) {
