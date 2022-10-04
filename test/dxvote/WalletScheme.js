@@ -247,6 +247,8 @@ contract("WalletScheme", function (accounts) {
       value: 1000,
     });
 
+    await permissionRegistry.transferOwnership(org.avatar.address);
+
     const newWalletScheme = await WalletScheme.new();
     await newWalletScheme.initialize(
       org.avatar.address,
@@ -411,13 +413,13 @@ contract("WalletScheme", function (accounts) {
       ),
       "_proposalId"
     );
+
     await expectRevert(
       votingMachine.contract.vote(proposalId1, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "call execution failed"
+      "WalletScheme: call execution failed"
     );
-
     const proposalId2 = await helpers.getValueFromLogs(
       await masterWalletScheme.proposeCalls(
         [org.controller.address],
@@ -432,7 +434,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "call execution failed"
+      "WalletScheme: call execution failed"
     );
 
     const proposalId3 = await helpers.getValueFromLogs(
@@ -1054,7 +1056,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "PermissionRegistry: Call not allowed"
+      "WalletScheme: permission check failed"
     );
 
     assert.equal(
@@ -1117,7 +1119,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "PermissionRegistry: Value limit reached"
+      "WalletScheme: permission check failed"
     );
 
     assert.equal(
@@ -1157,6 +1159,7 @@ contract("WalletScheme", function (accounts) {
       true
     );
 
+    await time.increase(31);
     const callData = helpers.testCallFrom(org.avatar.address);
 
     const tx = await masterWalletScheme.proposeCalls(
@@ -1171,7 +1174,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "PermissionRegistry: Value limit reached"
+      "WalletScheme: permission check failed"
     );
 
     assert.equal(
