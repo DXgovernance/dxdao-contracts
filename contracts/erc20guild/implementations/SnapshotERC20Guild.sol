@@ -251,7 +251,7 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
 
     // @dev Get minimum amount of votingPower needed for proposal execution
     function getVotingPowerForProposalExecution(uint256 snapshotId) public view virtual returns (uint256) {
-        return totalLockedAt(snapshotId).mul(votingPowerForProposalExecution).div(10000);
+        return totalLockedAt(snapshotId).mul(votingPowerPercentageForProposalExecution).div(10000);
     }
 
     // @dev Get the proposal snapshot id

@@ -22,9 +22,9 @@ contract MigratableERC20Guild is ERC20Guild {
     // @dev Constructor
     // @param _token The ERC20 token that will be used as source of voting power
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
-    // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
+    // @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // action
-    // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
     // @param _name The name of the ERC20Guild
     // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
     // @param _lockTime The minimum amount of seconds that the tokens would be locked
@@ -32,8 +32,8 @@ contract MigratableERC20Guild is ERC20Guild {
     constructor(
         address _token,
         uint256 _proposalTime,
-        uint256 _votingPowerForProposalExecution,
-        uint256 _votingPowerForProposalCreation,
+        uint256 _votingPowerPercentageForProposalExecution,
+        uint256 _votingPowerPercentageForProposalCreation,
         string memory _name,
         uint256 _lockTime,
         address _permissionRegistry
@@ -41,8 +41,8 @@ contract MigratableERC20Guild is ERC20Guild {
         ERC20Guild(
             _token,
             _proposalTime,
-            _votingPowerForProposalExecution,
-            _votingPowerForProposalCreation,
+            _votingPowerPercentageForProposalExecution,
+            _votingPowerPercentageForProposalCreation,
             _name,
             _lockTime,
             _permissionRegistry

@@ -20,8 +20,8 @@ require("chai").should();
 const constants = helpers.constants;
 const balances = [25000, 25000, 50000, 100000, 100000, 200000];
 const proposalTime = 30;
-const votingPowerForProposalExecution = 5000; // 50%
-const votingPowerForProposalCreation = 1000; // 10%
+const votingPowerPercentageForProposalExecution = 5000; // 50%
+const votingPowerPercentageForProposalCreation = 1000; // 10%
 
 contract("SnapshotRepERC20Guild", function (accounts) {
   let guildToken, snapshotRepErc20Guild, permissionRegistry, genericProposal;
@@ -47,8 +47,8 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       guildToken.address,
       proposalTime,
       30, // _timeForExecution,
-      votingPowerForProposalExecution,
-      votingPowerForProposalCreation,
+      votingPowerPercentageForProposalExecution,
+      votingPowerPercentageForProposalCreation,
       "SnapshotRep Guild",
       10, //  _voteGas,
       0, //  _maxGasPrice,
