@@ -73,11 +73,11 @@ contract BaseERC20Guild {
 
     // The percentage of voting power in base 10000 needed to execute a proposal action
     // 100 == 1% 2500 == 25%
-    uint256 public votingPowerForProposalExecution;
+    uint256 public votingPowerPercentageForProposalExecution;
 
     // The percentage of voting power in base 10000 needed to create a proposal
     // 100 == 1% 2500 == 25%
-    uint256 public votingPowerForProposalCreation;
+    uint256 public votingPowerPercentageForProposalCreation;
 
     // The amount of gas in wei unit used for vote refunds
     uint256 public voteGas;
@@ -163,9 +163,9 @@ contract BaseERC20Guild {
     // @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initialized
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     // @param _timeForExecution The amount of time in seconds that a proposal action will have to execute successfully
-    // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
+    // @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // action
-    // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
     // @param _voteGas The amount of gas in wei unit used for vote refunds.
     // Can't be higher than the gas used by setVote (117000)
     // @param _maxGasPrice The maximum gas price used for vote refunds
@@ -174,8 +174,8 @@ contract BaseERC20Guild {
     function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votingPowerForProposalExecution,
-        uint256 _votingPowerForProposalCreation,
+        uint256 _votingPowerPercentageForProposalExecution,
+        uint256 _votingPowerPercentageForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
@@ -186,12 +186,15 @@ contract BaseERC20Guild {
         require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself or when initialized");
         require(_proposalTime > 0, "ERC20Guild: proposal time has to be more than 0");
         require(_lockTime >= _proposalTime, "ERC20Guild: lockTime has to be higher or equal to proposalTime");
-        require(_votingPowerForProposalExecution > 0, "ERC20Guild: voting power for execution has to be more than 0");
+        require(
+            _votingPowerPercentageForProposalExecution > 0,
+            "ERC20Guild: voting power for execution has to be more than 0"
+        );
         require(_voteGas <= 117000, "ERC20Guild: vote gas has to be equal or lower than 117000");
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
-        votingPowerForProposalExecution = _votingPowerForProposalExecution;
-        votingPowerForProposalCreation = _votingPowerForProposalCreation;
+        votingPowerPercentageForProposalExecution = _votingPowerPercentageForProposalExecution;
+        votingPowerPercentageForProposalCreation = _votingPowerPercentageForProposalCreation;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
@@ -573,12 +576,12 @@ contract BaseERC20Guild {
 
     // @dev Get minimum amount of votingPower needed for creation
     function getVotingPowerForProposalCreation() public view virtual returns (uint256) {
-        return getTotalLocked().mul(votingPowerForProposalCreation).div(10000);
+        return getTotalLocked().mul(votingPowerPercentageForProposalCreation).div(10000);
     }
 
     // @dev Get minimum amount of votingPower needed for proposal execution
     function getVotingPowerForProposalExecution() public view virtual returns (uint256) {
-        return getTotalLocked().mul(votingPowerForProposalExecution).div(10000);
+        return getTotalLocked().mul(votingPowerPercentageForProposalExecution).div(10000);
     }
 
     // @dev Get the length of the proposalIds array
