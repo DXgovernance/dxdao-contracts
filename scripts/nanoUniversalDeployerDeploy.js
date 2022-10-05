@@ -4,14 +4,41 @@ require("@nomiclabs/hardhat-web3");
 
 task("nanoUniversalDeployerDeploy", "Deploy a NanoUniversalDeployer").setAction(
   async () => {
-    await hre.run("keylessDeploy", {
-      bytecode:
-        "0x6080604052348015600f57600080fd5b50609980601d6000396000f3fe60a06020601f369081018290049091028201604052608081815260009260609284918190838280828437600092018290525084519495509392505060208401905034f5604080516001600160a01b0383168152905191935081900360200190a0505000fea26469706673582212205a310755225e3c740b2f013fb6343f4c205e7141fcdf15947f5f0e0e818727fb64736f6c634300060a0033",
+    const nanoUniversalDeployer = await hre.artifacts.require(
+      "NanoUniversalDeployer"
+    );
+    const web3 = hre.web3;
+    const gasPrice = 1000000000 * 100;
+    const gasAmount = 140000;
+
+    const deployResult = await hre.run("keylessDeploy", {
+      bytecode: nanoUniversalDeployer.bytecode,
       signaturevalue:
         "1820182018201820182018201820182018201820182018201820182018201820",
-      gas: 140000,
-      gasprice: 155000000001,
-      execute: true,
+      gas: gasAmount,
+      gasprice: gasPrice,
+      execute: false,
     });
+
+    const sender = (await web3.eth.getAccounts())[0];
+    if (hre.network.name === "hardhat")
+      await web3.eth.sendTransaction({
+        to: deployResult.deployerAddress,
+        value: gasPrice * gasAmount,
+        from: sender,
+      });
+
+    console.log(
+      await hre.run("keylessDeploy", {
+        bytecode: nanoUniversalDeployer.bytecode,
+        signaturevalue:
+          "1820182018201820182018201820182018201820182018201820182018201820",
+        gas: gasAmount,
+        gasprice: gasPrice,
+        execute: true,
+      })
+    );
+
+    return;
   }
 );

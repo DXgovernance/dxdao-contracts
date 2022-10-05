@@ -13,6 +13,9 @@ require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
 
 require("./scripts/nanoUniversalDeployerDeploy");
+require("./scripts/dxdaoFinanceGuildDeployer");
+require("./scripts/dxdaoDevopsGuildDeployer");
+require("./scripts/dxdGuildDeployer");
 require("./scripts/keylessDeploy");
 require("./scripts/create2");
 require("./scripts/actions-dxdao-contracts");
