@@ -25,7 +25,7 @@ export async function createAndSetupGuildToken(accounts, balances) {
 
 export async function createProposal({
   guild,
-  actions,
+  options,
   title = constants.TEST_TITLE,
   contentHash = constants.SOME_HASH,
   account,
@@ -34,17 +34,17 @@ export async function createProposal({
     callsData = [],
     callsValue = [];
 
-  actions.map(action => {
-    action.to.map(to => callsTo.push(to));
-    action.data.map(data => callsData.push(data));
-    action.value.map(value => callsValue.push(value));
+  options.map(option => {
+    option.to.map(to => callsTo.push(to));
+    option.data.map(data => callsData.push(data));
+    option.value.map(value => callsValue.push(value));
   });
 
   const tx = await guild.createProposal(
     callsTo,
     callsData,
     callsValue,
-    actions.length,
+    options.length,
     title,
     contentHash,
     { from: account }
@@ -55,10 +55,10 @@ export async function createProposal({
 export async function setVotesOnProposal({
   guild,
   proposalId,
-  action,
+  option,
   account,
   votingPower = 0,
 }) {
   if (votingPower === 0) votingPower = await guild.votingPowerOf(account);
-  return guild.setVote(proposalId, action, votingPower, { from: account });
+  return guild.setVote(proposalId, option, votingPower, { from: account });
 }

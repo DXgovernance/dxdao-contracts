@@ -96,7 +96,7 @@ contract("ERC20Guild", function (accounts) {
     actionMockB = await ActionMock.new();
     genericProposal = {
       guild: erc20Guild,
-      actions: [
+      options: [
         {
           to: [actionMockA.address, actionMockA.address],
           data: [
@@ -151,7 +151,7 @@ contract("ERC20Guild", function (accounts) {
   const allowActionMockA = async function () {
     const setETHPermissionToActionMockA = await createProposal({
       guild: erc20Guild,
-      actions: [
+      options: [
         {
           to: [
             permissionRegistry.address,
@@ -207,13 +207,13 @@ contract("ERC20Guild", function (accounts) {
     await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setETHPermissionToActionMockA,
-      action: 1,
+      option: 1,
       account: accounts[4],
     });
     await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setETHPermissionToActionMockA,
-      action: 1,
+      option: 1,
       account: accounts[5],
     });
     await time.increase(30);
@@ -374,7 +374,7 @@ contract("ERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [erc20Guild.address],
             data: [
@@ -401,14 +401,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 
@@ -460,7 +460,7 @@ contract("ERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [permissionRegistry.address],
             data: [
@@ -476,13 +476,13 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[4],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 
@@ -508,7 +508,7 @@ contract("ERC20Guild", function (accounts) {
       // Create a proposal to execute setConfig with minimum tokens locked 3000 for proposal creation
       const setConfigProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [erc20Guild.address],
             data: [
@@ -536,14 +536,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: setConfigProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: setConfigProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 
@@ -591,7 +591,7 @@ contract("ERC20Guild", function (accounts) {
       // Create a proposal to execute setConfig with minimum 3 members to create proposal.
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [erc20Guild.address],
             data: [
@@ -619,14 +619,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 
@@ -665,19 +665,19 @@ contract("ERC20Guild", function (accounts) {
       );
     });
 
-    it("cannot create a proposal with invalid totalActions", async function () {
-      const invalidTotalActions = 3;
+    it("cannot create a proposal with invalid totalOptions", async function () {
+      const invalidtotalOptions = 3;
       await expectRevert(
         erc20Guild.createProposal(
           [actionMockA.address, actionMockA.address],
           ["0x00", "0x00"],
           [1, 1],
-          invalidTotalActions,
+          invalidtotalOptions,
           "Guild Test Proposal",
           constants.SOME_HASH,
           { from: accounts[2] }
         ),
-        "ERC20Guild: Invalid totalActions or action calls length"
+        "ERC20Guild: Invalid totalOptions or action calls length"
       );
     });
 
@@ -769,7 +769,7 @@ contract("ERC20Guild", function (accounts) {
       await expectRevert(
         createProposal({
           guild: erc20Guild,
-          actions: [
+          options: [
             { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
             { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
             { to: [actionMockA.address], data: ["0x00"], value: ["1"] },
@@ -800,7 +800,7 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
         votingPower: 25000,
       });
@@ -809,7 +809,7 @@ contract("ERC20Guild", function (accounts) {
         setVotesOnProposal({
           guild: erc20Guild,
           proposalId: guildProposalId,
-          action: 1,
+          option: 1,
           account: accounts[3],
           votingPower: 20000,
         }),
@@ -825,7 +825,7 @@ contract("ERC20Guild", function (accounts) {
         setVotesOnProposal({
           guild: erc20Guild,
           proposalId: guildProposalId,
-          action: 1,
+          option: 1,
           account: accounts[3],
           votingPower: votingPower + 1,
         }),
@@ -839,7 +839,7 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 0,
+        option: 0,
         account: accounts[3],
         votingPower: 25000,
       });
@@ -848,7 +848,7 @@ contract("ERC20Guild", function (accounts) {
         setVotesOnProposal({
           guild: erc20Guild,
           proposalId: guildProposalId,
-          action: 1,
+          option: 1,
           account: accounts[3],
         }),
         "ERC20Guild: Cannot change action voted, only increase votingPower"
@@ -867,13 +867,13 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 
@@ -888,7 +888,7 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
       await time.increase(time.duration.seconds(61));
@@ -904,21 +904,21 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: proposalId,
-        action: 0,
+        option: 0,
         account: accounts[2],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: proposalId,
-        action: 0,
+        option: 0,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: proposalId,
-        action: 0,
+        option: 0,
         account: accounts[4],
       });
 
@@ -956,7 +956,7 @@ contract("ERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [actionMockA.address],
             data: [testWithNoargsEncoded],
@@ -968,14 +968,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[2],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 
@@ -990,7 +990,7 @@ contract("ERC20Guild", function (accounts) {
     it("proposal fail because it run out of time to execute", async function () {
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [actionMockA.address, actionMockA.address],
             data: [
@@ -1005,13 +1005,13 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[2],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 
@@ -1037,7 +1037,7 @@ contract("ERC20Guild", function (accounts) {
       // so more tests cases can be done
       const decreaseVotingPowerNeeded = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [erc20Guild.address],
             data: [
@@ -1064,13 +1064,13 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: decreaseVotingPowerNeeded,
-        action: 1,
+        option: 1,
         account: accounts[4],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: decreaseVotingPowerNeeded,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
       await time.increase(time.duration.seconds(31));
@@ -1078,7 +1078,7 @@ contract("ERC20Guild", function (accounts) {
 
       proposalWithThreeOptions = {
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [actionMockA.address, actionMockA.address],
             data: [
@@ -1110,7 +1110,7 @@ contract("ERC20Guild", function (accounts) {
       const allowAllActionsMock = async function () {
         const setPermissionToActionMockA = await createProposal({
           guild: erc20Guild,
-          actions: [
+          options: [
             {
               to: [permissionRegistry.address],
               data: [
@@ -1132,13 +1132,13 @@ contract("ERC20Guild", function (accounts) {
         await setVotesOnProposal({
           guild: erc20Guild,
           proposalId: setPermissionToActionMockA,
-          action: 1,
+          option: 1,
           account: accounts[4],
         });
         await setVotesOnProposal({
           guild: erc20Guild,
           proposalId: setPermissionToActionMockA,
-          action: 1,
+          option: 1,
           account: accounts[5],
         });
         await time.increase(30);
@@ -1154,13 +1154,13 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[1],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 3,
+        option: 3,
         account: accounts[2],
       });
 
@@ -1177,19 +1177,19 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[1],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 2,
+        option: 2,
         account: accounts[2],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 3,
+        option: 3,
         account: accounts[5],
       });
 
@@ -1209,13 +1209,13 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 0,
+        option: 0,
         account: accounts[1],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[2],
       });
 
@@ -1232,25 +1232,25 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[1],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[2],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 2,
+        option: 2,
         account: accounts[3],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 3,
+        option: 3,
         account: accounts[4],
       });
 
@@ -1267,25 +1267,25 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[1],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[2],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 2,
+        option: 2,
         account: accounts[5],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 3,
+        option: 3,
         account: accounts[3],
       });
 
@@ -1318,7 +1318,7 @@ contract("ERC20Guild", function (accounts) {
 
       const setTestPermissions = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [
               permissionRegistry.address,
@@ -1358,13 +1358,13 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: setTestPermissions,
-        action: 1,
+        option: 1,
         account: accounts[4],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: setTestPermissions,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
       await time.increase(30);
@@ -1380,7 +1380,7 @@ contract("ERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [actionMockB.address],
             data: [helpers.testCallFrom(erc20Guild.address)],
@@ -1392,14 +1392,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
       await time.increase(time.duration.seconds(31));
@@ -1418,7 +1418,7 @@ contract("ERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [accounts[8], accounts[7], actionMockA.address],
             data: ["0x00", "0x00", helpers.testCallFrom(erc20Guild.address)],
@@ -1430,14 +1430,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
       await time.increase(time.duration.seconds(31));
@@ -1456,7 +1456,7 @@ contract("ERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [testToken.address, testToken.address],
             data: [
@@ -1475,14 +1475,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
       await time.increase(time.duration.seconds(31));
@@ -1501,7 +1501,7 @@ contract("ERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [testToken.address, testToken.address],
             data: [
@@ -1520,14 +1520,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
       await time.increase(time.duration.seconds(31));
@@ -1547,7 +1547,7 @@ contract("ERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [
               actionMockA.address,
@@ -1595,14 +1595,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 
@@ -1622,7 +1622,7 @@ contract("ERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [actionMockA.address, actionMockA.address],
             data: [
@@ -1637,14 +1637,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 
@@ -1664,7 +1664,7 @@ contract("ERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [actionMockA.address, actionMockA.address],
             data: ["0x00", "0x00"],
@@ -1676,14 +1676,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 
@@ -1710,7 +1710,7 @@ contract("ERC20Guild", function (accounts) {
 
       const allowActionMock = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [permissionRegistry.address],
             data: [
@@ -1732,14 +1732,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: allowActionMock,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: allowActionMock,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
       await time.increase(time.duration.seconds(31));
@@ -1749,14 +1749,14 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 3,
+        option: 3,
         account: accounts[3],
       });
 
       const txVote = await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 3,
+        option: 3,
         account: accounts[5],
       });
 
@@ -1798,10 +1798,10 @@ contract("ERC20Guild", function (accounts) {
         callsData = [],
         callsValue = [];
 
-      genericProposal.actions.map(action => {
-        action.to.map(to => callsTo.push(to));
-        action.data.map(data => callsData.push(data));
-        action.value.map(value => callsValue.push(value.toString()));
+      genericProposal.options.map(option => {
+        option.to.map(to => callsTo.push(to));
+        option.data.map(data => callsData.push(data));
+        option.value.map(value => callsValue.push(value.toString()));
       });
 
       assert.equal(creator, accounts[3]);
@@ -1972,7 +1972,7 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 3,
+        option: 3,
         account: accounts[3],
       });
 
@@ -2026,7 +2026,7 @@ contract("ERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [erc20Guild.address],
             data: [
@@ -2053,13 +2053,13 @@ contract("ERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[4],
       });
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
       await time.increase(time.duration.seconds(31));
@@ -2180,7 +2180,7 @@ contract("ERC20Guild", function (accounts) {
         let incorrectVoteGas = new BN(220000);
         const guildProposalIncorrectVoteGas = await createProposal({
           guild: erc20Guild,
-          actions: [
+          options: [
             {
               to: [erc20Guild.address],
               data: [
@@ -2207,13 +2207,13 @@ contract("ERC20Guild", function (accounts) {
         await setVotesOnProposal({
           guild: erc20Guild,
           proposalId: guildProposalIncorrectVoteGas,
-          action: 1,
+          option: 1,
           account: accounts[4],
         });
         await setVotesOnProposal({
           guild: erc20Guild,
           proposalId: guildProposalIncorrectVoteGas,
-          action: 1,
+          option: 1,
           account: accounts[5],
         });
         await time.increase(time.duration.seconds(31));
@@ -2228,7 +2228,7 @@ contract("ERC20Guild", function (accounts) {
         await setVotesOnProposal({
           guild: erc20Guild,
           proposalId: newProposal,
-          action: 1,
+          option: 1,
           account: accounts[1],
         });
 
@@ -2359,7 +2359,7 @@ contract("ERC20Guild", function (accounts) {
       };
 
       let proposalIds = [],
-        actions = [],
+        options = [],
         votes = [],
         voters = [],
         signatures = [];
@@ -2367,7 +2367,7 @@ contract("ERC20Guild", function (accounts) {
       for (let i = 0; i < 10; i++) {
         const guildProposalId = await createProposal(genericProposal);
         proposalIds.push(guildProposalId);
-        actions.push(1);
+        options.push(1);
         votes.push(10);
         voters.push(accounts[1]);
         signatures.push(await getSignature(guildProposalId, accounts[1]));
@@ -2379,7 +2379,7 @@ contract("ERC20Guild", function (accounts) {
             await new web3.eth.Contract(ERC20Guild.abi).methods
               .setSignedVote(
                 proposalId,
-                actions[i],
+                options[i],
                 votes[i],
                 voters[i],
                 signatures[i]

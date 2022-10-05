@@ -184,7 +184,7 @@ contract("DXDGuild", function (accounts) {
       await setVotesOnProposal({
         guild: dxdGuild,
         proposalId: proposalId,
-        action: 1,
+        option: 1,
         account: accounts[1],
       });
 
@@ -196,14 +196,14 @@ contract("DXDGuild", function (accounts) {
       await setVotesOnProposal({
         guild: dxdGuild,
         proposalId: proposalId,
-        action: 1,
+        option: 1,
         account: accounts[2],
       });
 
       const txVote = await setVotesOnProposal({
         guild: dxdGuild,
         proposalId: proposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
