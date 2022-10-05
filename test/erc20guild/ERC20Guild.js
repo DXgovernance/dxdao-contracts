@@ -677,7 +677,7 @@ contract("ERC20Guild", function (accounts) {
           constants.SOME_HASH,
           { from: accounts[2] }
         ),
-        "ERC20Guild: Invalid totalOptions or action calls length"
+        "ERC20Guild: Invalid totalOptions or option calls length"
       );
     });
 
@@ -784,7 +784,7 @@ contract("ERC20Guild", function (accounts) {
           ],
           account: accounts[3],
         }),
-        "ERC20Guild: Maximum amount of actions per proposal reached"
+        "ERC20Guild: Maximum amount of options per proposal reached"
       );
     });
   });
@@ -851,7 +851,7 @@ contract("ERC20Guild", function (accounts) {
           option: 1,
           account: accounts[3],
         }),
-        "ERC20Guild: Cannot change action voted, only increase votingPower"
+        "ERC20Guild: Cannot change option voted, only increase votingPower"
       );
     });
   });

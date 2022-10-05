@@ -34,7 +34,7 @@ import "../utils/TokenVault.sol";
   be set.
   Signed votes can be executed in behalf of other users, to sign a vote the voter needs to hash it with the function
   hashVote, after signing the hash teh voter can share it to other account to be executed.
-  Multiple votes and signed votes can be executed in one transoption.
+  Multiple votes and signed votes can be executed in one transaction.
   The guild can sign EIP1271 messages, to do this the guild needs to call itself and allow the signature to be verified 
   with and extra signature of any account with voting power.
 */
