@@ -59,7 +59,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
     const setGlobaLPermissionProposal = await createProposal({
       guild: snapshotRepErc20Guild,
-      actions: [
+      options: [
         {
           to: [permissionRegistry.address, permissionRegistry.address],
           data: [
@@ -90,13 +90,13 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     await setVotesOnProposal({
       guild: snapshotRepErc20Guild,
       proposalId: setGlobaLPermissionProposal,
-      action: 1,
+      option: 1,
       account: accounts[4],
     });
     await setVotesOnProposal({
       guild: snapshotRepErc20Guild,
       proposalId: setGlobaLPermissionProposal,
-      action: 1,
+      option: 1,
       account: accounts[5],
     });
     await time.increase(proposalTime); // wait for proposal to end
@@ -104,7 +104,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
     genericProposal = {
       guild: snapshotRepErc20Guild,
-      actions: [
+      options: [
         {
           to: [accounts[1]],
           data: ["0x00"],
@@ -151,7 +151,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     await setVotesOnProposal({
       guild: snapshotRepErc20Guild,
       proposalId: proposalId,
-      action: 1,
+      option: 1,
       account: accounts[1],
     });
     await time.increase(proposalTime);
@@ -167,13 +167,13 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     await setVotesOnProposal({
       guild: snapshotRepErc20Guild,
       proposalId: proposalId,
-      action: 1,
+      option: 1,
       account: accounts[4],
     });
     await setVotesOnProposal({
       guild: snapshotRepErc20Guild,
       proposalId: proposalId,
-      action: 1,
+      option: 1,
       account: accounts[5],
     });
 
@@ -218,14 +218,14 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
     it("Should Vote", async () => {
       const account = accounts[2];
-      const action = new BN(0);
+      const option = new BN(0);
       const votingPower = new BN(500);
 
       const proposalData1 = await snapshotRepErc20Guild.getProposal(proposalId);
       const totalVotes1 = new BN(proposalData1.totalVotes);
       expect(parseInt(totalVotes1.toString())).to.be.equal(0);
 
-      await snapshotRepErc20Guild.setVote(proposalId, action, votingPower, {
+      await snapshotRepErc20Guild.setVote(proposalId, option, votingPower, {
         from: account,
       });
       const proposalData2 = await snapshotRepErc20Guild.getProposal(proposalId);
@@ -237,11 +237,11 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
     it("Should emmit VoteAdded Event", async () => {
       const account = accounts[2];
-      const action = new BN(0);
+      const option = new BN(0);
       const votingPower = new BN(500);
       const tx = await snapshotRepErc20Guild.setVote(
         proposalId,
-        action,
+        option,
         votingPower,
         {
           from: account,
@@ -250,7 +250,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
       expectEvent(tx, "VoteAdded", {
         proposalId,
-        action,
+        option,
         voter: account,
         votingPower,
       });
@@ -270,7 +270,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
     it("Should fail if votingPower provided is larger than real user voting power ", async () => {
       const account = accounts[2];
-      const action = 0;
+      const option = 0;
 
       const invalidVotingPower = new BN(
         await snapshotRepErc20Guild.votingPowerOfAt(account, snapshotId)
@@ -278,7 +278,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
       const voteTrigger = snapshotRepErc20Guild.setVote(
         proposalId,
-        action,
+        option,
         invalidVotingPower
       );
       await expectRevert(
@@ -289,47 +289,47 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
     it("Should fail if user voted before and vote again with less votingPower", async () => {
       const account = accounts[2];
-      const action = 0;
+      const option = 0;
       const votingPower = new BN(1000);
       const decreasedVotingPower = votingPower.sub(new BN(10));
-      await snapshotRepErc20Guild.setVote(proposalId, action, votingPower, {
+      await snapshotRepErc20Guild.setVote(proposalId, option, votingPower, {
         from: account,
       });
 
       await expectRevert(
         snapshotRepErc20Guild.setVote(
           proposalId,
-          action,
+          option,
           decreasedVotingPower,
           {
             from: account,
           }
         ),
-        "SnapshotRepERC20Guild: Cannot change action voted, only increase votingPower"
+        "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
       );
     });
 
-    it("Should fail if user has voted and try to change voted action", async () => {
+    it("Should fail if user has voted and try to change voted option", async () => {
       const account = accounts[2];
-      const action1 = new BN("1");
-      const action2 = new BN("0");
+      const option1 = new BN("1");
+      const option2 = new BN("0");
       const votingPower = new BN("500");
       const increasedVotingPower = new BN("10000");
 
-      await snapshotRepErc20Guild.setVote(proposalId, action1, votingPower, {
+      await snapshotRepErc20Guild.setVote(proposalId, option1, votingPower, {
         from: account,
       });
 
       await expectRevert(
         snapshotRepErc20Guild.setVote(
           proposalId,
-          action2,
+          option2,
           increasedVotingPower,
           {
             from: account,
           }
         ),
-        "SnapshotRepERC20Guild: Cannot change action voted, only increase votingPower"
+        "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
       );
     });
   });
@@ -342,12 +342,12 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
     it("Should fail if user has voted", async () => {
       const account = accounts[2];
-      const action = new BN("0");
+      const option = new BN("0");
       const votingPower = new BN("500");
       const hashedVote = await snapshotRepErc20Guild.hashVote(
         account,
         proposalId,
-        action,
+        option,
         votingPower
       );
       const votesignature = fixSignature(
@@ -356,7 +356,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
       await snapshotRepErc20Guild.setSignedVote(
         proposalId,
-        action,
+        option,
         votingPower,
         account,
         votesignature,
@@ -368,7 +368,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       await expectRevert(
         snapshotRepErc20Guild.setSignedVote(
           proposalId,
-          action,
+          option,
           votingPower,
           account,
           votesignature,
@@ -383,13 +383,13 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     it("Should fail with wrong signer msg", async () => {
       const account = accounts[2];
       const wrongSignerAccount = accounts[3];
-      const action = new BN("0");
+      const option = new BN("0");
       const votingPower = new BN("500");
 
       const hashedVote = await snapshotRepErc20Guild.hashVote(
         account,
         proposalId,
-        action,
+        option,
         votingPower
       );
       const votesignature = fixSignature(
@@ -399,7 +399,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       await expectRevert(
         snapshotRepErc20Guild.setSignedVote(
           proposalId,
-          action,
+          option,
           votingPower,
           account,
           votesignature,
@@ -412,7 +412,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     });
   });
   describe("lockTokens", () => {
-    it("Should revert action", async () => {
+    it("Should revert option", async () => {
       await expectRevert(
         snapshotRepErc20Guild.lockTokens(new BN("100")),
         "SnapshotRepERC20Guild: token vault disabled"
@@ -421,7 +421,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
   });
 
   describe("withdrawTokens", () => {
-    it("Should revert action", async () => {
+    it("Should revert option", async () => {
       await expectRevert(
         snapshotRepErc20Guild.withdrawTokens(new BN("100")),
         "SnapshotRepERC20Guild: token vault disabled"
@@ -478,7 +478,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       // create proposal to burn tokens
       const burnProposalId = await createProposal({
         guild: snapshotRepErc20Guild,
-        actions: [
+        options: [
           {
             to: [guildToken.address],
             data: [burnCallData],
@@ -491,13 +491,13 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: snapshotRepErc20Guild,
         proposalId: burnProposalId,
-        action: 1,
+        option: 1,
         account: accounts[4],
       });
       await setVotesOnProposal({
         guild: snapshotRepErc20Guild,
         proposalId: burnProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 

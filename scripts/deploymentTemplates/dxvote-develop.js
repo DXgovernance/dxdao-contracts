@@ -460,7 +460,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
                 .encodeABI(),
             ],
             value: ["0"],
-            totalActions: "1",
+            totalOptions: "1",
             title: "Proposal Test #0",
             description:
               "Allow call any address and function and send a max of 5 ETH per proposal",

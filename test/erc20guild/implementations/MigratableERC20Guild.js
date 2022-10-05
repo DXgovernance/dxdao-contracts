@@ -83,7 +83,7 @@ contract("MigratableERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [erc20Guild.address],
             data: [
@@ -99,14 +99,14 @@ contract("MigratableERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 
@@ -158,7 +158,7 @@ contract("MigratableERC20Guild", function (accounts) {
 
     const guildProposalId = await createProposal({
       guild: erc20Guild,
-      actions: [
+      options: [
         {
           to: [erc20Guild.address],
           data: [
@@ -174,14 +174,14 @@ contract("MigratableERC20Guild", function (accounts) {
     await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: guildProposalId,
-      action: 1,
+      option: 1,
       account: accounts[3],
     });
 
     await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: guildProposalId,
-      action: 1,
+      option: 1,
       account: accounts[5],
     });
 

@@ -55,7 +55,7 @@ contract("SnapshotERC20Guild", function (accounts) {
 
     const setGlobaLPermissionProposal = await createProposal({
       guild: erc20Guild,
-      actions: [
+      options: [
         {
           to: [permissionRegistry.address],
           data: [
@@ -78,7 +78,7 @@ contract("SnapshotERC20Guild", function (accounts) {
     await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setGlobaLPermissionProposal,
-      action: 1,
+      option: 1,
       account: accounts[1],
     });
     await time.increase(30);
@@ -101,7 +101,7 @@ contract("SnapshotERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [accounts[1]],
             data: ["0x00"],
@@ -180,7 +180,7 @@ contract("SnapshotERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
@@ -206,7 +206,7 @@ contract("SnapshotERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [accounts[1]],
             data: ["0x0"],
@@ -257,7 +257,7 @@ contract("SnapshotERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [accounts[1]],
             data: ["0x0"],
