@@ -367,6 +367,25 @@ contract BaseERC20Guild {
         _setVote(msg.sender, proposalId, option, votingPower);
     }
 
+    function executeSignedVotes(
+        bytes32 root, 
+        // bytes memory signature,
+        bytes32[] proposalIds,
+        uint256[] options,
+        uint256[] votingPowers
+    ){
+      for (i = 0; i < proposalIds.length; i++) {
+        // validar leaf
+        bool valid = 
+        require(valid, 'El voto no fue firmado')
+        (, bool success) = setVote(
+         proposalIds[i],
+         options[i],
+         votingPowers[i]
+        )
+      }
+    }
+
     /// @dev Set the voting power to vote in a proposal using a signed vote
     /// @param proposalId The id of the proposal to set the vote
     /// @param option The proposal option to be voted
