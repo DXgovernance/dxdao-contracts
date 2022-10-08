@@ -4,7 +4,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const deploySalt = process.env.DEPLOY_SALT;
-  const deployExtraSalt = "devOpsRepToken";
+  const deployExtraSalt = "dxdaoDevOps";
 
   const SnapshotRepERC20Guild = await hre.artifacts.require(
     "SnapshotRepERC20Guild"
@@ -20,6 +20,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   );
 
   const devOpsRepTokenDeploy = await deploy("ERC20SnapshotRep", {
+    name: "DevOpsToken",
     from: deployer,
     args: [],
     deterministicDeployment: hre.web3.utils.sha3(deploySalt + deployExtraSalt),
@@ -27,13 +28,14 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const devOpsRepToken = await ERC20SnapshotRep.at(
     devOpsRepTokenDeploy.address
   );
-  await devOpsRepToken.initialize("DXdao DevOps Reputation Token", "TREP");
+  await devOpsRepToken.initialize("DXdao DevOps Reputation Token", "DREP");
   await devOpsRepToken.mint("0x0b17cf48420400e1D71F8231d4a8e43B3566BB5B", 1000);
 
   const dxdaoDevOpsGuildDeploy = await deploy("SnapshotRepERC20Guild", {
+    name: "DevOpsGuild",
     from: deployer,
     args: [],
-    deterministicDeployment: hre.web3.utils.sha3(deploySalt + 2),
+    deterministicDeployment: hre.web3.utils.sha3(deploySalt + deployExtraSalt),
   });
   const dxdaoDevOpsGuild = await SnapshotRepERC20Guild.at(
     dxdaoDevOpsGuildDeploy.address
@@ -41,13 +43,13 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
   await dxdaoDevOpsGuild.initialize(
     devOpsRepToken.address,
-    moment.duration(1, "days").asSeconds(), // proposal time
+    moment.duration(2, "hours").asSeconds(), // proposal time
     moment.duration(6, "hours").asSeconds(), // time for execution
     5000, // 50% voting power for proposal execution
     500, // 5% voting power for proposal creation
     "DXdao DevOps Guild", // guild name
-    0, // vote gas
-    0, // max gas price
+    "21000", // vote gas
+    "100000000", // max gas price
     10, // max active proposals
     moment.duration(1, "days").asSeconds(), // lock time, not used
     permissionRegistry.address

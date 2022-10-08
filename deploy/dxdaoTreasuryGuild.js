@@ -4,7 +4,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   const deploySalt = process.env.DEPLOY_SALT;
-  const deployExtraSalt = "treasuryRepTokenDeploy";
+  const deployExtraSalt = "dxdaoTreasury";
 
   const SnapshotRepERC20Guild = await hre.artifacts.require(
     "SnapshotRepERC20Guild"
@@ -36,7 +36,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const dxdaoTreasuryGuildDeploy = await deploy("SnapshotRepERC20Guild", {
     from: deployer,
     args: [],
-    deterministicDeployment: hre.web3.utils.sha3(deploySalt + 1),
+    deterministicDeployment: hre.web3.utils.sha3(deploySalt + deployExtraSalt),
   });
   const dxdaoTreasuryGuild = await SnapshotRepERC20Guild.at(
     dxdaoTreasuryGuildDeploy.address

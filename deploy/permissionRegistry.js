@@ -5,6 +5,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const PermissionRegistry = await hre.artifacts.require("PermissionRegistry");
 
   const permissionRegistryDeploy = await deploy("PermissionRegistry", {
+    name: "PermissionRegistry",
     from: deployer,
     args: [],
     deterministicDeployment: deploySalt,
