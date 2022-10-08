@@ -18,7 +18,7 @@ KEY_INFURA_API_KEY="xxxx"
 
 // Required to verify smart contracts
 
-KEY_ETHERSCAN="xxx"
+API_KEY_ETHERSCAN="xxx"
 
 
 
@@ -55,6 +55,14 @@ This script will get the DXdao Rep from mainnet or xdai DXdao rep token and REP 
 ### Coverage
 
 `yarn coverage`
+
+## Deterministic Deployment
+
+Example command for goerli:
+
+```
+ETHERSCAN_API_KEY=Y3TJ6KYE7RGNDNWVEC2K3A2PRC7HSAMVPS DEPLOY_SALT=0x5caa6a9b2e6023fe37efcabde5d64ed32e8523bac8d1 yarn hardhat deploy --tags PermissionRegistry,DXdaoTreasuryGuild,DXdaoDevOpsGuild,DXDGuild --network goerli
+```
 
 ## Create2
 
