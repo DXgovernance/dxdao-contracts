@@ -2515,7 +2515,7 @@ contract("ERC20Guild", function (accounts) {
       console.log(isValid);
       console.log(isValid.logs[0].args.validated);
 
-      await expect(isValid.logs[0].args.validated).to.equal(true);
+      expect(isValid.logs[0].args.validated).to.equal(true);
     });
   });
 });

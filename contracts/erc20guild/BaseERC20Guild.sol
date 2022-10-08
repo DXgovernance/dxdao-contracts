@@ -400,6 +400,54 @@ contract BaseERC20Guild {
         return success;
     }
 
+    function executeSignedVotes(
+        // vote block data
+        bytes32 root,
+        address voter,
+        // vote merkle tree data
+        bytes32[] memory votesHashes,
+        bytes32[][] memory proofs,
+        // vote data
+        bytes32[] memory proposalIds,
+        uint256[] memory options,
+        uint256[] memory votingPowers,
+        bytes32[] memory voteIndexesToExecute
+    ) public {
+        uint256 i = 0;
+
+        // validar el largo de todo que se aigual
+        // validar signature del root
+
+        for (i = 0; i < votesHashes.length; i++) {
+            // verify leaf
+            bool valid = basicMerkleTree(root, votesHashes[i], proofs[i]);
+            require(valid, "invalid arbol");
+
+            // validate voting power and stuff
+            require(proposals[proposalIds[i]].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
+            require(
+                (votingPowerOf(voter) >= votingPowers[i]) &&
+                    (votingPowers[i] > proposalVotes[proposalIds[i]][voter].votingPower),
+                "ERC20Guild: Invalid votingPower amount"
+            );
+            require(
+                (proposalVotes[proposalIds[i]][voter].option == 0 &&
+                    proposalVotes[proposalIds[i]][voter].votingPower == 0) ||
+                    (proposalVotes[proposalIds[i]][voter].option == options[i] &&
+                        proposalVotes[proposalIds[i]][voter].votingPower < votingPowers[i]),
+                "ERC20Guild: Cannot change option voted, only increase votingPower"
+            );
+
+            if (voteIndexesToExecute.length == 0) {
+                _setVote(voter, proposalIds[i], options[i], votingPowers[i]);
+            } else if (voteIndexesToExecute[i] > 0) {
+                _setVote(voter, proposalIds[i], options[i], votingPowers[i]);
+            } else {
+                // nada
+            }
+        }
+    }
+
     // function executeSignedVotes(
     //     bytes32 root,
     //     bytes32[] voteHash,
