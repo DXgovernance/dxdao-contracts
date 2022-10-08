@@ -12,6 +12,7 @@ const deployGuildRegistry = async function (
       ? await GuildRegistry.new()
       : await GuildRegistry.at(guildRegistryConfig.address);
 
+  await guildRegistry.initialize();
   if (guildRegistryConfig.owner)
     await guildRegistry.transferOwnership(
       networkContracts.addresses[guildRegistryConfig.owner] ||

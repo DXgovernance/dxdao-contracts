@@ -9,6 +9,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const SnapshotRepERC20Guild = await hre.artifacts.require(
     "SnapshotRepERC20Guild"
   );
+  const GuildRegistry = await hre.artifacts.require("GuildRegistry");
   const PermissionRegistry = await hre.artifacts.require("PermissionRegistry");
   const ERC20SnapshotRep = await hre.artifacts.require("ERC20SnapshotRep");
 
@@ -18,6 +19,9 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const permissionRegistry = await PermissionRegistry.at(
     permissionRegistryDeployed.address
   );
+
+  const guildRegistryDeployed = await deployments.get("GuildRegistry");
+  const guildRegistry = await GuildRegistry.at(guildRegistryDeployed.address);
 
   const devOpsRepTokenDeploy = await deploy("ERC20SnapshotRep", {
     name: "DevOpsToken",
@@ -56,6 +60,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   );
 
   await permissionRegistry.setETHPermissionDelay(dxdaoDevOpsGuild.address, 1);
+  await guildRegistry.addGuild(dxdaoDevOpsGuild.address);
   await devOpsRepToken.transferOwnership(dxdaoDevOpsGuild.address);
 
   if (process.env.ETHERSCAN_API_KEY && hre.network.name !== "hardhat") {
@@ -76,5 +81,5 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   console.log(`DXdaoDevOpsGuild address ${dxdaoDevOpsGuild.address}`);
 };
 
-module.exports.dependencies = ["PermissionRegistry"];
+module.exports.dependencies = ["PermissionRegistry", "GuildRegistry"];
 module.exports.tags = ["DXdaoDevOpsGuild"];
