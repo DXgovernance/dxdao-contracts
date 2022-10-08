@@ -91,6 +91,7 @@ task("keylessDeploy", "Deploy a smart contract without a private key")
       if (ethTx.validate(true) !== "") {
         throw new Error("Signer Error: " + ethTx.validate(true));
       }
+      console.log(bytecode);
 
       var rawTransaction = "0x" + ethTx.serialize().toString("hex");
       var transactionHash = web3.utils.keccak256(rawTransaction);
