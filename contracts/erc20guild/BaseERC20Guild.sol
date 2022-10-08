@@ -401,29 +401,37 @@ contract BaseERC20Guild {
     }
 
     function executeSignedVotes(
-        // vote block data
         bytes32 root,
         address voter,
-        // vote merkle tree data
         bytes32[] memory votesHashes,
         bytes32[][] memory proofs,
-        // vote data
         bytes32[] memory proposalIds,
         uint256[] memory options,
         uint256[] memory votingPowers,
-        bytes32[] memory voteIndexesToExecute
+        bool[] memory voteIndexesToExecute,
+        bytes memory signature
     ) public {
         uint256 i = 0;
 
         // validar el largo de todo que se aigual
+        require(
+            proposalIds.length == options.length && options.length == votingPowers.length,
+            "Invalid proposalIds, options or votingPowers length"
+        );
+
         // validar signature del root
+        bytes32 rootHash = keccak256(abi.encodePacked(root));
+        require(voter == rootHash.toEthSignedMessageHash().recover(signature), "ERC20Guild: Wrong signer");
 
         for (i = 0; i < votesHashes.length; i++) {
+            bytes32 hashedVote = hashVote(voter, proposalIds[i], options[i], votingPowers[i]);
+            require(hashedVote == votesHashes[i], "Invalid vote hash");
+
             // verify leaf
             bool valid = basicMerkleTree(root, votesHashes[i], proofs[i]);
             require(valid, "invalid arbol");
 
-            // validate voting power and stuff
+            // validate voting power and proposal
             require(proposals[proposalIds[i]].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
             require(
                 (votingPowerOf(voter) >= votingPowers[i]) &&
@@ -440,10 +448,8 @@ contract BaseERC20Guild {
 
             if (voteIndexesToExecute.length == 0) {
                 _setVote(voter, proposalIds[i], options[i], votingPowers[i]);
-            } else if (voteIndexesToExecute[i] > 0) {
+            } else if (!!voteIndexesToExecute[i]) {
                 _setVote(voter, proposalIds[i], options[i], votingPowers[i]);
-            } else {
-                // nada
             }
         }
     }
