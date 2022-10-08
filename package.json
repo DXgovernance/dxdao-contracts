@@ -89,6 +89,7 @@
     "chai": "^4.2.0",
     "ipfs-core": "^0.14.1",
     "math": "0.0.3",
+    "merkletreejs": "^0.2.32",
     "moment": "^2.27.0",
     "openzeppelin-solidity": "2.4.0",
     "prettier": "^2.0.5",
