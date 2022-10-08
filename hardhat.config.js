@@ -12,6 +12,7 @@ require("@nomiclabs/hardhat-etherscan");
 require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
 
+require("hardhat-deploy");
 require("./scripts/nanoUniversalDeployerDeploy");
 require("./scripts/dxdaoFinanceGuildDeployer");
 require("./scripts/dxdaoDevopsGuildDeployer");
@@ -65,7 +66,7 @@ const MNEMONIC_KEY =
 
 const INFURA_PROJECT_ID = "5730f284ad6741b183c921ebb0509880";
 const MNEMONIC = process.env.KEY_MNEMONIC || MNEMONIC_KEY;
-const ETHERSCAN_API_KEY = process.env.KEY_ETHERSCAN;
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
 const hardharNetworks = process.env.CI
   ? {
@@ -77,6 +78,9 @@ const hardharNetworks = process.env.CI
         gasLimit: 9000000,
         gasPrice: 10000000000, // 10 gwei
         timeout: 60000,
+      },
+      namedAccounts: {
+        deployer: 0,
       },
     }
   : {
@@ -110,7 +114,7 @@ const hardharNetworks = process.env.CI
         timeout: 600000, // 10 minutes
       },
       xdai: {
-        url: "https://rpc.xdaichain.com/",
+        url: "https://poa-xdai-archival.gateway.pokt.network/v1/lb/61d897d4a065f5003a113d9a",
         accounts: { mnemonic: MNEMONIC },
         chainId: 100,
         gasLimit: 17000000,
@@ -204,5 +208,8 @@ module.exports = {
       "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol",
       "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
     ],
+  },
+  namedAccounts: {
+    deployer: 0,
   },
 };
