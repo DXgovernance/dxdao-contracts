@@ -364,6 +364,33 @@ contract BaseERC20Guild {
         _setVote(msg.sender, proposalId, option, votingPower);
     }
 
+    function executeSignedVotesBatches(
+        bytes32[] memory roots,
+        address[] memory voters,
+        bytes32[][] memory votesHashes,
+        bytes32[][][] memory proofs,
+        bytes32[][] memory proposalIds,
+        uint256[][] memory options,
+        uint256[][] memory votingPowers,
+        bool[][] memory voteIndexesToExecute,
+        bytes[] memory signatures
+    ) public {
+        uint256 i = 0;
+        for (i = 0; i < roots.length; i++) {
+            executeSignedVotes(
+                roots[i],
+                voters[i],
+                votesHashes[i],
+                proofs[i],
+                proposalIds[i],
+                options[i],
+                votingPowers[i],
+                voteIndexesToExecute[i],
+                signatures[i]
+            );
+        }
+    }
+
     function validateMerkleTreeLeaf(
         bytes32 root,
         bytes32 voteHash,
@@ -380,15 +407,45 @@ contract BaseERC20Guild {
         bytes32[] memory proposalIds,
         uint256[] memory options,
         uint256[] memory votingPowers
-    ) public {
+    ) public returns (bool[] memory) {
         require(
             proposalIds.length == options.length && options.length == votingPowers.length,
             "ERC20Guild: Invalid proposalIds, options or votingPowers length"
         );
         uint256 i = 0;
+        bool[] memory result = new bool[](proposalIds.length);
+
         for (i = 0; i < proposalIds.length; i++) {
-            setVote(proposalIds[i], options[i], votingPowers[i]);
+            if (proposals[proposalIds[i]].endTime < block.timestamp) {
+                // "ERC20Guild: Proposal ended, cannot be voted"
+                result[i] = false;
+                continue;
+            }
+
+            if (
+                votingPowerOf(msg.sender) < votingPowers[i] ||
+                votingPowers[i] < proposalVotes[proposalIds[i]][msg.sender].votingPower
+            ) {
+                // "ERC20Guild: Invalid votingPower amount"
+                result[i] = false;
+                continue;
+            }
+
+            if (
+                (proposalVotes[proposalIds[i]][msg.sender].option == 0 ||
+                    proposalVotes[proposalIds[i]][msg.sender].votingPower == 0) &&
+                (proposalVotes[proposalIds[i]][msg.sender].option != options[i] &&
+                    proposalVotes[proposalIds[i]][msg.sender].votingPower > votingPowers[i])
+            ) {
+                //     "ERC20Guild: Cannot change option voted, only increase votingPower"
+                result[i] = false;
+                continue;
+            }
+            result[i] = true;
+            _setVote(msg.sender, proposalIds[i], options[i], votingPowers[i]);
         }
+
+        return result;
     }
 
     // @dev Execute batch of signed votes
@@ -429,6 +486,8 @@ contract BaseERC20Guild {
                 bytes32 hashedVote = hashVote(voter, proposalIds[i], options[i], votingPowers[i]);
                 require(hashedVote == votesHashes[i], "ERC20Guild: Invalid vote hash");
 
+                require(!signedVotes[hashedVote], "ERC20Guild: Already voted");
+
                 // verify leaf
                 bool valid = validateMerkleTreeLeaf(root, votesHashes[i], proofs[i]);
                 require(valid, "ERC20Guild: Invalid merkle tree leaf");
@@ -451,6 +510,7 @@ contract BaseERC20Guild {
                     "ERC20Guild: Cannot change option voted, only increase votingPower"
                 );
 
+                signedVotes[hashedVote] = true;
                 _setVote(voter, proposalIds[i], options[i], votingPowers[i]);
             }
         }
