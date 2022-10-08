@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "../utils/PermissionRegistry.sol";
 import "../utils/TokenVault.sol";
 
@@ -367,6 +368,7 @@ contract BaseERC20Guild {
         _setVote(msg.sender, proposalId, option, votingPower);
     }
 
+
     function executeSignedVotes(
         bytes32 root, 
         // bytes memory signature,
@@ -385,6 +387,36 @@ contract BaseERC20Guild {
         )
       }
     }
+
+    event MerkleTreeValidated(bool validated);
+
+    function basicMerkleTree(
+        bytes32 root,
+        bytes32 voteHash,
+        bytes32[] memory proof
+    ) public virtual returns (bool) {
+        bool success = MerkleProof.verify(proof, root, voteHash);
+        emit MerkleTreeValidated(success);
+        return success;
+    }
+
+    // function executeSignedVotes(
+    //     bytes32 root,
+    //     bytes32[] voteHash,
+    //     bytes32[] proof,
+    //     address voter,
+    //     bytes32 proposalId,
+    //     uint256 option,
+    //     uint256 votingPower
+    // ){
+    //     //validate that the vote is part of the merkle tree
+    //     (,bool success) = MerkleProof.verify([proof], root, voteHash);
+    //     require(success, "Merkle proof not verified");
+    //     // validate that the hash corresponds to toe voting params
+    //     // ? validate that the signer actually owns the details => sign the root with metamask
+    //     _setVote(voter, proposalId, option, votingPower);
+
+    // }
 
     /// @dev Set the voting power to vote in a proposal using a signed vote
     /// @param proposalId The id of the proposal to set the vote

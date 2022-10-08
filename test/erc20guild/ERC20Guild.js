@@ -90,7 +90,7 @@ contract("ERC20Guild", function (accounts) {
       erc20GuildInitializeData
     );
 
-    erc20Guild = await IERC20Guild.at(erc20GuildProxy.address);
+    erc20Guild = await ERC20Guild.at(erc20GuildProxy.address);
 
     actionMockA = await ActionMock.new();
     actionMockB = await ActionMock.new();
@@ -2480,6 +2480,42 @@ contract("ERC20Guild", function (accounts) {
         ),
         "ERC20Guild: Wrong signer"
       );
+    });
+  });
+
+  describe.only("merkle trees", () => {
+    it("basic merkle proof", async () => {
+      let data = {
+        root: "0xfff13b75b14e432566eaefe5da8d759e310c210160dd7fed48af35f20293446a",
+        data: [
+          {
+            voteInfo: {
+              voter: "0xC5B20AdE9c9Cd5e0CC087C62b26B815A4bc1881f",
+              proposalId:
+                "0x5aed9b5e04df3b2789fea1726253c1f12d96d1adab0a501d2b898621edda9565",
+              option: "1",
+              votingPower: "50000000000000000000",
+            },
+            hash: "0xfff13b75b14e432566eaefe5da8d759e310c210160dd7fed48af35f20293446a",
+            proof: [],
+          },
+        ],
+      };
+
+      const root = data.root;
+      const hash = data.data[0].hash;
+      const proof = data.data[0].proof;
+
+      console.log(root);
+      console.log(hash);
+      console.log(proof);
+
+      const isValid = await erc20Guild.basicMerkleTree(root, hash, proof);
+
+      console.log(isValid);
+      console.log(isValid.logs[0].args.validated);
+
+      await expect(isValid.logs[0].args.validated).to.equal(true);
     });
   });
 });
