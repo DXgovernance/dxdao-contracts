@@ -364,32 +364,28 @@ contract BaseERC20Guild {
         _setVote(msg.sender, proposalId, option, votingPower);
     }
 
-    // function executeSignedVotesBatches(
-    //     bytes32[] memory roots,
-    //     address[] memory voters,
-    //     bytes32[][] memory votesHashes,
-    //     bytes32[][][] memory proofs,
-    //     bytes32[][] memory proposalIds,
-    //     uint256[][] memory options,
-    //     uint256[][] memory votingPowers,
-    //     bool[][] memory voteIndexesToExecute,
-    //     bytes[] memory signatures
-    // ) public {
-    //     uint256 i = 0;
-    //     for (i = 0; i < roots.length; i++) {
-    //         executeSignedVotes(
-    //             roots[i],
-    //             voters[i],
-    //             votesHashes[i],
-    //             proofs[i],
-    //             proposalIds[i],
-    //             options[i],
-    //             votingPowers[i],
-    //             voteIndexesToExecute[i],
-    //             signatures[i]
-    //         );
-    //     }
-    // }
+    function executeSignedVotesBatches(
+        bytes32[] memory roots,
+        address[] memory voters,
+        bytes32[] memory votesHashes,
+        bytes32[][] memory proofs,
+        bytes32[] memory proposalIds,
+        uint256[] memory options,
+        uint256[] memory votingPowers
+    ) public {
+        uint256 i = 0;
+        for (i = 0; i < roots.length; i++) {
+            executeSignedVote(
+                roots[i],
+                voters[i],
+                votesHashes[i],
+                proofs[i],
+                proposalIds[i],
+                options[i],
+                votingPowers[i]
+            );
+        }
+    }
 
     function validateMerkleTreeLeaf(
         bytes32 root,
