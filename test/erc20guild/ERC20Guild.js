@@ -1,9 +1,8 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert, expect } from "chai";
-import { BigNumber, utils } from "ethers";
+import { utils } from "ethers";
 import * as helpers from "../helpers";
 import MerkleTree from "merkletreejs";
-import { ethers } from "hardhat";
 
 const { fixSignature } = require("../helpers/sign");
 const {
@@ -2533,25 +2532,17 @@ contract("ERC20Guild", function (accounts) {
       );
 
       const root = tree.getHexRoot();
-      let [, address1] = await ethers.getSigners();
 
-      let signature = await address1.signMessage(root);
-
-      const proofs = [
-        tree.getHexProof(firstVoteHash),
-        tree.getHexProof(secondVoteHash),
-      ];
+      const proof = tree.getHexProof(firstVoteHash);
 
       votingData = {
         root,
         voter,
-        voteHashes: [firstVoteHash, secondVoteHash],
-        proofs,
-        proposalIds: [firstProposalId, secondProposalId],
-        options: [1, 1],
-        votingPowers: [votingPower, votingPower],
-        voteIndexesToExecute: [],
-        signature,
+        voteHash: firstVoteHash,
+        proof,
+        proposalId: firstProposalId,
+        option: 1,
+        votingPower: votingPower,
       };
     });
 
@@ -2570,29 +2561,28 @@ contract("ERC20Guild", function (accounts) {
     // });
 
     it("can vote multiple votes", async () => {
-      await erc20Guild.executeSignedVotes(
+      console.log(votingData);
+      await erc20Guild.executeSignedVote(
         votingData.root,
         votingData.voter,
-        votingData.voteHashes,
-        votingData.proofs,
-        votingData.proposalIds,
-        votingData.options,
-        votingData.votingPowers,
-        [],
-        votingData.signature
+        votingData.voteHash,
+        votingData.proof,
+        votingData.proposalId,
+        votingData.option,
+        votingData.votingPower
       );
 
       const firstProposalData = await erc20Guild.getProposal(firstProposalId);
 
       expect(firstProposalData.totalVotes[1]).to.equal(
-        votingData.votingPowers[0].toString()
+        votingData.votingPower.toString()
       );
 
-      const secondProposalData = await erc20Guild.getProposal(secondProposalId);
+      // const secondProposalData = await erc20Guild.getProposal(secondProposalId);
 
-      expect(secondProposalData.totalVotes[1]).to.equal(
-        votingData.votingPowers[1].toString()
-      );
+      // expect(secondProposalData.totalVotes[1]).to.equal(
+      //   votingData.votingPowers[1].toString()
+      // );
     });
   });
 });
