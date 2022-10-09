@@ -371,7 +371,8 @@ contract BaseERC20Guild {
         bytes32[][] memory proofs,
         bytes32[] memory proposalIds,
         uint256[] memory options,
-        uint256[] memory votingPowers
+        uint256[] memory votingPowers,
+        bytes[] memory signatures
     ) public {
         uint256 i = 0;
         for (i = 0; i < roots.length; i++) {
@@ -382,7 +383,8 @@ contract BaseERC20Guild {
                 proofs[i],
                 proposalIds[i],
                 options[i],
-                votingPowers[i]
+                votingPowers[i],
+                signatures[i]
             );
         }
     }
@@ -461,12 +463,16 @@ contract BaseERC20Guild {
         bytes32[] memory proof,
         bytes32 proposalId,
         uint256 option,
-        uint256 votingPower
+        uint256 votingPower,
+        bytes memory signature
     ) public {
         bytes32 hashedVote = hashVote(voter, proposalId, option, votingPower);
         require(hashedVote == voteHash, "ERC20Guild: Invalid vote hash");
 
         require(!signedVotes[hashedVote], "ERC20Guild: Already voted");
+
+        bytes32 rootHash = keccak256(abi.encodePacked(root));
+        require(voter == rootHash.toEthSignedMessageHash().recover(signature), "ERC20Guild: Wrong signer");
 
         // verify leaf
         bool valid = validateMerkleTreeLeaf(root, voteHash, proof);
