@@ -11,6 +11,7 @@ require("@openzeppelin/hardhat-upgrades");
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
+require("@semaphore-protocol/hardhat");
 
 require("hardhat-deploy");
 require("./scripts/nanoUniversalDeployerDeploy");
@@ -18,6 +19,7 @@ require("./scripts/keylessDeploy");
 require("./scripts/create2");
 require("./scripts/actions-dxdao-contracts");
 require("./scripts/deploy-dxdao-contracts");
+require("./scripts/deploy-semaphore");
 require("./scripts/deploymentTemplates/dxvote-develop");
 require("./scripts/deploymentTemplates/guilds-goerli");
 
@@ -174,6 +176,15 @@ module.exports = {
       },
       {
         version: "0.8.8",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
+        version: "0.8.4",
         settings: {
           optimizer: {
             enabled: true,
