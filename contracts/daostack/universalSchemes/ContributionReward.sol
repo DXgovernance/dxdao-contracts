@@ -438,33 +438,7 @@ contract ContributionReward is UniversalScheme, VotingMachineCallbacks, Proposal
      *         rewards[4] - Number of periods
      */
     function validateProposalParams(int256 _reputationChange, uint256[5] memory _rewards) private pure {
-        require(((_rewards[3] > 0) || (_rewards[4] == 1)), "periodLength equal 0 require numberOfPeriods to be 1");
-        if (_rewards[4] > 0) {
-            // This is the only case of overflow not detected by the check below
-            require(
-                !(int256(_rewards[4]) == -1 && _reputationChange == (-2**255)),
-                "numberOfPeriods * _reputationChange will overflow"
-            );
-            //check that numberOfPeriods * _reputationChange will not overflow
-            require(
-                (int256(_rewards[4]) * _reputationChange) / int256(_rewards[4]) == _reputationChange,
-                "numberOfPeriods * reputationChange will overflow"
-            );
-            //check that numberOfPeriods * tokenReward will not overflow
-            require(
-                (_rewards[4] * _rewards[0]) / _rewards[4] == _rewards[0],
-                "numberOfPeriods * tokenReward will overflow"
-            );
-            //check that numberOfPeriods * ethReward will not overflow
-            require(
-                (_rewards[4] * _rewards[1]) / _rewards[4] == _rewards[1],
-                "numberOfPeriods * ethReward will overflow"
-            );
-            //check that numberOfPeriods * texternalTokenReward will not overflow
-            require(
-                (_rewards[4] * _rewards[2]) / _rewards[4] == _rewards[2],
-                "numberOfPeriods * texternalTokenReward will overflow"
-            );
-        }
+        require(_rewards[3] == 0, "periodLength should be 0");
+        require(_rewards[4] == 1, "numberOfPeriods should be 1");
     }
 }
