@@ -18,22 +18,22 @@ contract TokenVault {
     address public admin;
     mapping(address => uint256) public balances;
 
-    // @dev Initializer
-    // @param _token The address of the token to be used
-    // @param _admin The address of the contract that will execute deposits and withdrawals
+    /// @dev Initializer
+    /// @param _token The address of the token to be used
+    /// @param _admin The address of the contract that will execute deposits and withdrawals
     constructor(address _token, address _admin) {
         token = IERC20Upgradeable(_token);
         admin = _admin;
     }
 
-    // @dev Deposit the tokens from the user to the vault from the admin contract
+    /// @dev Deposit the tokens from the user to the vault from the admin contract
     function deposit(address user, uint256 amount) external {
         require(msg.sender == admin, "TokenVault: Deposit must be sent through admin");
         token.safeTransferFrom(user, address(this), amount);
         balances[user] = balances[user].add(amount);
     }
 
-    // @dev Withdraw the tokens to the user from the vault from the admin contract
+    /// @dev Withdraw the tokens to the user from the vault from the admin contract
     function withdraw(address user, uint256 amount) external {
         require(msg.sender == admin);
         token.safeTransfer(user, amount);
