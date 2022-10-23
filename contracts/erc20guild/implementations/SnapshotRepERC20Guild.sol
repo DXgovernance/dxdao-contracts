@@ -13,7 +13,7 @@ import "../../utils/ERC20/ERC20SnapshotRep.sol";
   When a proposal is created it saves the snapshot if at the moment of creation,
   the voters can vote only with the voting power they had at that time.
 */
-contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
+contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
     using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
@@ -47,7 +47,6 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         uint256 _lockTime,
         address _permissionRegistry
     ) public override initializer {
-        __Ownable_init();
         super.initialize(
             _token,
             _proposalTime,
