@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.8;
+pragma solidity >=0.8.0;
 
 import "../ERC20GuildUpgradeable.sol";
 import "../../utils/Arrays.sol";
