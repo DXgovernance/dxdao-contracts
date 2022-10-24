@@ -76,9 +76,6 @@ const hardharNetworks = process.env.CI
         gasPrice: 10000000000, // 10 gwei
         timeout: 60000,
       },
-      namedAccounts: {
-        deployer: 0,
-      },
     }
   : {
       hardhat: {
