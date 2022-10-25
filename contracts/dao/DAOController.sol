@@ -124,12 +124,7 @@ contract DAOController is Initializable {
 
         emit UnregisterScheme(msg.sender, _scheme);
 
-        schemes[_scheme] = Scheme({
-            paramsHash: bytes32(0),
-            isRegistered: false,
-            canManageSchemes: false,
-            canMakeAvatarCalls: false
-        });
+        delete schemes[_scheme];
         return true;
     }
 
