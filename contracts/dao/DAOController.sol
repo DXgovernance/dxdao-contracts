@@ -115,7 +115,7 @@ contract DAOController is Initializable {
             return false;
         }
 
-        if (scheme.isRegistered && scheme.canManageSchemes) {
+        if (scheme.canManageSchemes) {
             require(
                 schemesWithManageSchemesPermission > 1,
                 "DAOController: Cannot unregister last scheme with manage schemes permission"
