@@ -36,7 +36,6 @@ contract DAOController is Initializable {
         bool canMakeAvatarCalls;
     }
 
-    address[] public schemesAddresses;
     mapping(address => Scheme) public schemes;
     uint256 public schemesWithManageSchemesPermission;
 
