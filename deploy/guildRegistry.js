@@ -28,4 +28,4 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 };
 
 module.exports.tags = ["GuildRegistry"];
-module.exports.runAtEnd = true;
+module.exports.runAtEnd = false;
