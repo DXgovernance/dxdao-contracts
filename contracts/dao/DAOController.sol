@@ -42,9 +42,13 @@ contract DAOController is Initializable {
     event RegisterScheme(address indexed _sender, address indexed _scheme);
     event UnregisterScheme(address indexed _sender, address indexed _scheme);
 
-    function initialize(address _scheme, address _reputationToken) public initializer {
+    function initialize(
+        address _scheme,
+        address _reputationToken,
+        bytes32 _paramsHash
+    ) public initializer {
         schemes[_scheme] = Scheme({
-            paramsHash: bytes32(0),
+            paramsHash: _paramsHash,
             isRegistered: true,
             canManageSchemes: true,
             canMakeAvatarCalls: true
