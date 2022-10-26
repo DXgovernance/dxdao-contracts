@@ -59,7 +59,6 @@ export const deployDao = async function (deployConfig) {
   await reputation.initialize("DXDaoReputation", "DXRep");
 
   const controller = await DAOController.new();
-  await controller.initialize(deployConfig.owner, reputation.address);
 
   const avatar = await DAOAvatar.new();
   await avatar.initialize(controller.address);
@@ -75,6 +74,14 @@ export const deployDao = async function (deployConfig) {
   const votingMachine = await DXDVotingMachine.new(
     deployConfig.votingMachineToken,
     avatar.address
+  );
+
+  const defaultParamsHash = await setDefaultParameters(votingMachine);
+
+  await controller.initialize(
+    deployConfig.owner,
+    reputation.address,
+    defaultParamsHash
   );
 
   return { controller, avatar, reputation, votingMachine };
