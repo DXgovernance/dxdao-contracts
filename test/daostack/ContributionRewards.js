@@ -10,8 +10,6 @@ const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const Avatar = artifacts.require("./DxAvatar.sol");
 const Redeemer = artifacts.require("./Redeemer.sol");
 const ETHRelayer = artifacts.require("./ETHRelayer.sol");
-const GnosisProxy = artifacts.require("./GnosisProxy.sol");
-const GnosisSafe = artifacts.require("./GnosisSafe.sol");
 
 const { expectEvent, time } = require("@openzeppelin/test-helpers");
 
@@ -310,7 +308,7 @@ contract("ContributionReward", accounts => {
     );
   });
 
-  it("execute proposeContributionReward  mint tokens ", async function () {
+  it("execute proposeContributionReward mint tokens ", async function () {
     var testSetup = await setup(accounts);
     var reputationReward = 12;
     var nativeTokenReward = 12;
@@ -343,7 +341,7 @@ contract("ContributionReward", accounts => {
     assert.equal(tokens.toNumber(), nativeTokenReward);
   });
 
-  it("execute proposeContributionReward  send ethers ", async function () {
+  it("execute proposeContributionReward send ethers ", async function () {
     var testSetup = await setup(accounts);
     var reputationReward = 12;
     var nativeTokenReward = 12;
@@ -394,9 +392,7 @@ contract("ContributionReward", accounts => {
     var periodLength = 50;
     var numberOfPeriods = 1;
     //send some ether to the org avatar
-    var gnosisSafe = await GnosisSafe.new();
-    var gnosisProxy = await GnosisProxy.new(gnosisSafe.address);
-    var ethRelayer = await ETHRelayer.new(gnosisProxy.address);
+    var ethRelayer = await ETHRelayer.new(accounts[1]);
     await web3.eth.sendTransaction({
       from: accounts[0],
       to: testSetup.org.avatar.address,
@@ -427,7 +423,10 @@ contract("ContributionReward", accounts => {
     );
     assert.equal(await web3.eth.getBalance(ethRelayer.address), ethReward);
     await ethRelayer.relay();
-    assert.equal(await web3.eth.getBalance(gnosisProxy.address), ethReward);
+    assert.equal(
+      await web3.eth.getBalance(accounts[1]),
+      "10000000000000000000666"
+    );
   });
 
   it("execute proposeContributionReward  send externalToken ", async function () {
