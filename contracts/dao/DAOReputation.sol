@@ -34,7 +34,6 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     // @return True if the reputation are generated correctly
     function mint(address _account, uint256 _amount) external onlyOwner returns (bool) {
         _mint(_account, _amount);
-        _snapshot();
         emit Mint(_account, _amount);
         return true;
     }
@@ -42,7 +41,6 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     function mintMultiple(address[] memory _accounts, uint256[] memory _amount) external onlyOwner returns (bool) {
         for (uint256 i = 0; i < _accounts.length; i++) {
             _mint(_accounts[i], _amount[i]);
-            _snapshot();
             emit Mint(_accounts[i], _amount[i]);
         }
         return true;
@@ -54,7 +52,6 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     // @return True if the reputation are burned correctly
     function burn(address _account, uint256 _amount) external onlyOwner returns (bool) {
         _burn(_account, _amount);
-        _snapshot();
         emit Burn(_account, _amount);
         return true;
     }
@@ -62,7 +59,6 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     function burnMultiple(address[] memory _accounts, uint256 _amount) external onlyOwner returns (bool) {
         for (uint256 i = 0; i < _accounts.length; i++) {
             _burn(_accounts[i], _amount);
-            _snapshot();
             emit Burn(_accounts[i], _amount);
         }
         return true;
@@ -73,5 +69,12 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      */
     function getCurrentSnapshotId() public view returns (uint256) {
         return _getCurrentSnapshotId();
+    }
+
+    /**
+     * @dev Get the current snapshotId
+     */
+    function takeSnaphost() external onlyOwner returns (uint256) {
+        return _snapshot();
     }
 }
