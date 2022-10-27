@@ -74,7 +74,7 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     /**
      * @dev Get the current snapshotId
      */
-    function takeSnaphost() external onlyOwner returns (uint256) {
+    function takeSnapshot() external onlyOwner returns (uint256) {
         return _snapshot();
     }
 }
