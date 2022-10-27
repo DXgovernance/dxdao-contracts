@@ -1,10 +1,20 @@
 const moment = require("moment");
+const hre = require("hardhat");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
-  const dxdToken = "0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3";
-  const votingMachine = "0x5f9e4a3b1f7a2cbbd0e6d7d4a9f4d9b9f6e9e4e5";
+
+  const dxdToken =
+    hre.network.name === "mainnet"
+      ? "0xa1d65E8fB6e87b60FECCBc582F7f97804B725521"
+      : hre.network.name === "xdai"
+      ? "0xb90D6bec20993Be5d72A5ab353343f7a0281f158"
+      : process.env.DXD_ADDRESS;
+
+  const votingMachine =
+    process.env.VOTING_MACHINE_ADDRESS ||
+    "0x1000000000000000000000000000000000000000";
   const deploySalt = process.env.DEPLOY_SALT;
 
   const PermissionRegistry = await hre.artifacts.require("PermissionRegistry");
@@ -51,5 +61,5 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   console.log(`DXDGuild address ${dxdGuild.address}`);
 };
 
-module.exports.dependencies = ["PermissionRegistry"];
+module.exports.dependencies = ["DXDToken", "PermissionRegistry"];
 module.exports.tags = ["DXDGuild"];

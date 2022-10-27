@@ -1,13 +1,13 @@
 const hre = require("hardhat");
-const { deployments } = hre;
 
 async function main() {
-  await deployments.fixture(
+  await hre.deployments.fixture(
     [
       "PermissionRegistry",
       "GuildRegistry",
       "DXdaoDevOpsGuild",
       "DXdaoTreasuryGuild",
+      "DXDGuild",
     ],
     { fallbackToGlobal: true }
   );
