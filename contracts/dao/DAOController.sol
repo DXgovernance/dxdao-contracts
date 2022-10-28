@@ -91,7 +91,7 @@ contract DAOController is Initializable {
         // Add or change the scheme:
         if ((!scheme.isRegistered || !scheme.canManageSchemes) && _canManageSchemes) {
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.add(1);
-        } else if (scheme.isRegistered && scheme.canManageSchemes) {
+        } else if (scheme.canManageSchemes && !_canManageSchemes) {
             require(
                 schemesWithManageSchemesPermission > 1,
                 "DAOController: Cannot disable canManageSchemes property from the last scheme with manage schemes permissions"
