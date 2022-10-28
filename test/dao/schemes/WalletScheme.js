@@ -9,6 +9,7 @@ const WalletScheme = artifacts.require("./WalletScheme.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
+const DAOAvatar = artifacts.require("./DAOAvatar.sol");
 
 contract("WalletScheme", function (accounts) {
   let standardTokenMock,
@@ -40,9 +41,7 @@ contract("WalletScheme", function (accounts) {
       ],
     });
 
-    const defaultParamsHash = await helpers.setDefaultParameters(
-      org.votingMachine
-    );
+    defaultParamsHash = await helpers.setDefaultParameters(org.votingMachine);
 
     permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
     await permissionRegistry.initialize();
@@ -456,7 +455,7 @@ contract("WalletScheme", function (accounts) {
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
     );
     assert.equal(organizationProposal.callData[0], callData);
-    assert.equal(organizationProposal.to[0], masterWalletScheme.address);
+    assert.equal(organizationProposal.to[0], avatarScheme.address);
     assert.equal(organizationProposal.value[0], 0);
     assert.equal(await avatarScheme.maxSecondsForExecution(), executionTimeout);
   });
@@ -518,14 +517,15 @@ contract("WalletScheme", function (accounts) {
     const callData = helpers.testCallFrom(org.avatar.address);
 
     let tx = await avatarScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [actionMock.address, ZERO_ADDRESS],
+      [callData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    tx = await votingMachine.contract.vote(
+    tx = await org.votingMachine.vote(
       proposalId,
       2,
       0,
@@ -691,13 +691,9 @@ contract("WalletScheme", function (accounts) {
       ),
       "_proposalId"
     );
-    await votingMachine.contract.vote(
-      proposalId3,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalId3, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (await avatarScheme.getOrganizationProposal(proposalId1)).state,
@@ -722,15 +718,16 @@ contract("WalletScheme", function (accounts) {
     const callData = helpers.testCallFrom(org.avatar.address);
 
     const tx = await avatarScheme.proposeCalls(
-      [accounts[1]],
-      [callData],
-      [0],
+      [accounts[1], ZERO_ADDRESS],
+      [callData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(
-      votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
       "PermissionRegistry: Call not allowed"
@@ -743,13 +740,9 @@ contract("WalletScheme", function (accounts) {
 
     await time.increase(executionTimeout);
 
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (await avatarScheme.getOrganizationProposal(proposalId)).state,
@@ -785,15 +778,16 @@ contract("WalletScheme", function (accounts) {
     const callData = helpers.testCallFrom(org.avatar.address);
 
     const tx = await avatarScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [101],
+      [actionMock.address, ZERO_ADDRESS],
+      [callData, "0x0"],
+      [101, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(
-      votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
       "PermissionRegistry: Value limit reached"
@@ -806,13 +800,9 @@ contract("WalletScheme", function (accounts) {
 
     await time.increase(executionTimeout + 1);
 
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (await avatarScheme.getOrganizationProposal(proposalId)).state,
@@ -842,12 +832,13 @@ contract("WalletScheme", function (accounts) {
       [actionMock.address, actionMock.address],
       [callData, callData],
       [50, 3],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(
-      votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
       "PermissionRegistry: Value limit reached"
@@ -860,13 +851,9 @@ contract("WalletScheme", function (accounts) {
 
     await time.increase(executionTimeout + 1);
 
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (await avatarScheme.getOrganizationProposal(proposalId)).state,
@@ -913,20 +900,17 @@ contract("WalletScheme", function (accounts) {
 
     // Proposal to allow calling actionMock
     const tx = await avatarScheme.proposeCalls(
-      [permissionRegistry.address],
-      [setPermissionData],
-      [0],
+      [permissionRegistry.address, ZERO_ADDRESS],
+      [setPermissionData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     const setPermissionTime = Number(await time.latest());
 
@@ -944,20 +928,17 @@ contract("WalletScheme", function (accounts) {
     await time.increase(1);
 
     const tx2 = await avatarScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [actionMock.address, ZERO_ADDRESS],
+      [callData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
-    await votingMachine.contract.vote(
-      proposalId2,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     const organizationProposal = await avatarScheme.getOrganizationProposal(
       proposalId2
@@ -972,13 +953,15 @@ contract("WalletScheme", function (accounts) {
   });
 
   it("MasterWalletScheme - positive decision - proposal executed with multiple calls and value", async function () {
-    var wallet = await Wallet.new();
+    var wallet = await DAOAvatar.new();
+    await wallet.initialize(org.avatar.address);
+
     await web3.eth.sendTransaction({
       from: accounts[0],
       to: org.avatar.address,
       value: constants.TEST_VALUE,
     });
-    await wallet.transferOwnership(org.avatar.address);
+    // await wallet.transferOwnership(org.avatar.address);
 
     const payCallData = await new web3.eth.Contract(wallet.abi).methods
       .pay(accounts[1])
@@ -1006,6 +989,7 @@ contract("WalletScheme", function (accounts) {
       [wallet.address, wallet.address],
       ["0x0", payCallData],
       [constants.TEST_VALUE, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
@@ -1017,13 +1001,10 @@ contract("WalletScheme", function (accounts) {
     assert.equal(await web3.eth.getBalance(wallet.address), 0);
     const balanceBeforePay = await web3.eth.getBalance(accounts[1]);
 
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2], gas: 9000000 }
-    );
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+      gas: 9000000,
+    });
     assert.equal(await web3.eth.getBalance(org.avatar.address), 0);
     assert.equal(await web3.eth.getBalance(wallet.address), 0);
     assert.equal(
@@ -1050,16 +1031,17 @@ contract("WalletScheme", function (accounts) {
     const callData = helpers.testCallFrom(constants.NULL_ADDRESS);
 
     let tx = await avatarScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [actionMock.address, ZERO_ADDRESS],
+      [callData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
     await expectRevert(
-      votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
       "call execution failed"
@@ -1072,7 +1054,7 @@ contract("WalletScheme", function (accounts) {
 
     await time.increase(executionTimeout);
 
-    tx = await votingMachine.contract.vote(
+    tx = await org.votingMachine.vote(
       proposalId,
       1,
       0,
@@ -1090,14 +1072,15 @@ contract("WalletScheme", function (accounts) {
     const callData = helpers.testCallWithoutReturnValueFrom(org.avatar.address);
 
     let tx = await avatarScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [actionMock.address, ZERO_ADDRESS],
+      [callData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    tx = await votingMachine.contract.vote(
+    tx = await org.votingMachine.vote(
       proposalId,
       1,
       0,
@@ -1126,31 +1109,33 @@ contract("WalletScheme", function (accounts) {
 
   it("MasterWalletScheme - proposal with REP - execute mintReputation & burnReputation", async function () {
     const callDataMintRep = await org.controller.contract.methods
-      .mintReputation(constants.TEST_VALUE, accounts[4], org.avatar.address)
+      .mintReputation(constants.TEST_VALUE, accounts[4])
       .encodeABI();
     const callDataBurnRep = await org.controller.contract.methods
-      .burnReputation(constants.TEST_VALUE, accounts[4], org.avatar.address)
+      .burnReputation(constants.TEST_VALUE, accounts[4])
       .encodeABI();
 
     var tx = await avatarScheme.proposeCalls(
-      [org.controller.address],
-      [callDataMintRep],
-      [0],
+      [org.controller.address, ZERO_ADDRESS],
+      [callDataMintRep, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
     const proposalIdMintRep = await helpers.getValueFromLogs(tx, "_proposalId");
     tx = await avatarScheme.proposeCalls(
-      [org.controller.address],
-      [callDataBurnRep],
-      [0],
+      [org.controller.address, ZERO_ADDRESS],
+      [callDataBurnRep, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
     const proposalIdBurnRep = await helpers.getValueFromLogs(tx, "_proposalId");
 
     // Mint Rep
-    tx = await votingMachine.contract.vote(
+    tx = await org.votingMachine.vote(
       proposalIdMintRep,
       1,
       0,
@@ -1163,7 +1148,7 @@ contract("WalletScheme", function (accounts) {
     );
 
     // Burn Rep
-    tx = await votingMachine.contract.vote(
+    tx = await org.votingMachine.vote(
       proposalIdBurnRep,
       1,
       0,
@@ -1201,16 +1186,17 @@ contract("WalletScheme", function (accounts) {
       (totalSupplyWhenExecuting * 105) / 100 - totalSupplyWhenExecuting;
 
     const data0 = await org.controller.contract.methods
-      .mintReputation(maxRepAmountToChange + 1, accounts[4], org.avatar.address)
+      .mintReputation(maxRepAmountToChange + 1, accounts[4])
       .encodeABI();
 
     const data1 = await org.controller.contract.methods
-      .mintReputation(maxRepAmountToChange, accounts[4], org.avatar.address)
+      .mintReputation(maxRepAmountToChange, accounts[4])
       .encodeABI();
     var tx = await avatarScheme.proposeCalls(
-      [org.controller.address],
-      [data0],
-      [0],
+      [org.controller.address, ZERO_ADDRESS],
+      [data0, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
@@ -1220,16 +1206,17 @@ contract("WalletScheme", function (accounts) {
     );
 
     tx = await avatarScheme.proposeCalls(
-      [org.controller.address],
-      [data1],
-      [0],
+      [org.controller.address, ZERO_ADDRESS],
+      [data1, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
     const proposalIdMintRep = await helpers.getValueFromLogs(tx, "_proposalId");
 
     await expectRevert(
-      votingMachine.contract.vote(
+      org.votingMachine.vote(
         proposalIdMintRepToFail,
         1,
         0,
@@ -1239,7 +1226,7 @@ contract("WalletScheme", function (accounts) {
       "WalletScheme: maxRepPercentageChange passed"
     );
 
-    await votingMachine.contract.vote(
+    await org.votingMachine.vote(
       proposalIdMintRep,
       1,
       0,
@@ -1272,16 +1259,17 @@ contract("WalletScheme", function (accounts) {
     );
 
     const data0 = await org.controller.contract.methods
-      .burnReputation(maxRepAmountToChange + 1, accounts[2], org.avatar.address)
+      .burnReputation(maxRepAmountToChange + 1, accounts[2])
       .encodeABI();
 
     const data1 = await org.controller.contract.methods
-      .burnReputation(maxRepAmountToChange, accounts[2], org.avatar.address)
+      .burnReputation(maxRepAmountToChange, accounts[2])
       .encodeABI();
     var tx = await avatarScheme.proposeCalls(
-      [org.controller.address],
-      [data0],
-      [0],
+      [org.controller.address, ZERO_ADDRESS],
+      [data0, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
@@ -1291,16 +1279,17 @@ contract("WalletScheme", function (accounts) {
     );
 
     tx = await avatarScheme.proposeCalls(
-      [org.controller.address],
-      [data1],
-      [0],
+      [org.controller.address, ZERO_ADDRESS],
+      [data1, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
     const proposalIdMintRep = await helpers.getValueFromLogs(tx, "_proposalId");
 
     await expectRevert(
-      votingMachine.contract.vote(
+      org.votingMachine.vote(
         proposalIdMintRepToFail,
         1,
         0,
@@ -1309,7 +1298,7 @@ contract("WalletScheme", function (accounts) {
       ),
       "maxRepPercentageChange passed"
     );
-    await votingMachine.contract.vote(
+    await org.votingMachine.vote(
       proposalIdMintRep,
       1,
       0,
@@ -1346,12 +1335,13 @@ contract("WalletScheme", function (accounts) {
       )
       .encodeABI();
     const callDataRemoveScheme = await org.controller.contract.methods
-      .unregisterScheme(walletScheme.address, org.avatar.address)
+      .unregisterScheme(walletScheme.address)
       .encodeABI();
     var tx = await avatarScheme.proposeCalls(
-      [org.controller.address],
-      [callDataRegisterScheme],
-      [0],
+      [org.controller.address, ZERO_ADDRESS],
+      [callDataRegisterScheme, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
@@ -1360,9 +1350,10 @@ contract("WalletScheme", function (accounts) {
       "_proposalId"
     );
     tx = await avatarScheme.proposeCalls(
-      [org.controller.address],
-      [callDataRemoveScheme],
-      [0],
+      [org.controller.address, ZERO_ADDRESS],
+      [callDataRemoveScheme, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
@@ -1373,7 +1364,7 @@ contract("WalletScheme", function (accounts) {
 
     // Add Scheme
     await expectRevert(
-      votingMachine.contract.vote(
+      org.votingMachine.vote(
         proposalIdAddScheme,
         1,
         0,
@@ -1392,7 +1383,7 @@ contract("WalletScheme", function (accounts) {
 
     // Remove Scheme
     await expectRevert(
-      votingMachine.contract.vote(
+      org.votingMachine.vote(
         proposalIdRemoveScheme,
         1,
         0,
@@ -1410,14 +1401,15 @@ contract("WalletScheme", function (accounts) {
   it("MasterWalletScheme - execute should fail if not passed/executed from votingMachine", async function () {
     const callData = helpers.testCallFrom(org.avatar.address);
     var tx = await avatarScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [actionMock.address, ZERO_ADDRESS],
+      [callData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await votingMachine.contract.execute(proposalId);
+    await org.votingMachine.execute(proposalId);
     const organizationProposal = await avatarScheme.getOrganizationProposal(
       proposalId
     );
@@ -1470,13 +1462,9 @@ contract("WalletScheme", function (accounts) {
     assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
 
     const balanceBeforePay = await web3.eth.getBalance(accounts[1]);
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
     assert.equal(await web3.eth.getBalance(org.avatar.address), 0);
     assert.equal(await web3.eth.getBalance(wallet.address), 0);
     assert.equal(
@@ -1574,14 +1562,15 @@ contract("WalletScheme", function (accounts) {
     const callData = helpers.testCallFrom(walletScheme.address);
 
     let tx = await walletScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [actionMock.address, ZERO_ADDRESS],
+      [callData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    tx = await votingMachine.contract.vote(
+    tx = await org.votingMachine.vote(
       proposalId,
       2,
       0,
@@ -1607,20 +1596,17 @@ contract("WalletScheme", function (accounts) {
     const callData = helpers.testCallFrom(walletScheme.address);
 
     const tx = await walletScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [actionMock.address, ZERO_ADDRESS],
+      [callData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     const organizationProposal = await walletScheme.getOrganizationProposal(
       proposalId
@@ -1661,6 +1647,7 @@ contract("WalletScheme", function (accounts) {
       [wallet.address, wallet.address],
       ["0x0", payCallData],
       [constants.TEST_VALUE, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
@@ -1672,13 +1659,9 @@ contract("WalletScheme", function (accounts) {
     );
     assert.equal(await web3.eth.getBalance(wallet.address), 0);
     const balanceBeforePay = await web3.eth.getBalance(accounts[1]);
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
     assert.equal(await web3.eth.getBalance(walletScheme.address), 0);
     assert.equal(await web3.eth.getBalance(wallet.address), 0);
     assert.equal(
@@ -1705,16 +1688,17 @@ contract("WalletScheme", function (accounts) {
     const callData = helpers.testCallFrom(constants.NULL_ADDRESS);
 
     let tx = await walletScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [actionMock.address, ZERO_ADDRESS],
+      [callData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
     await expectRevert(
-      votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
       "call execution failed"
@@ -1727,7 +1711,7 @@ contract("WalletScheme", function (accounts) {
 
     await time.increase(executionTimeout);
 
-    tx = await votingMachine.contract.vote(
+    tx = await org.votingMachine.vote(
       proposalId,
       1,
       0,
@@ -1748,14 +1732,15 @@ contract("WalletScheme", function (accounts) {
     );
 
     let tx = await walletScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [actionMock.address, ZERO_ADDRESS],
+      [callData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    tx = await votingMachine.contract.vote(
+    tx = await org.votingMachine.vote(
       proposalId,
       1,
       0,
@@ -1781,31 +1766,33 @@ contract("WalletScheme", function (accounts) {
 
   it("QuickWalletScheme - proposal with REP - execute mintReputation & burnReputation", async function () {
     const callDataMintRep = await org.controller.contract.methods
-      .mintReputation(constants.TEST_VALUE, accounts[4], org.avatar.address)
+      .mintReputation(constants.TEST_VALUE, accounts[4])
       .encodeABI();
     const callDataBurnRep = await org.controller.contract.methods
-      .burnReputation(constants.TEST_VALUE, accounts[4], org.avatar.address)
+      .burnReputation(constants.TEST_VALUE, accounts[4])
       .encodeABI();
 
     var tx = await walletScheme.proposeCalls(
-      [org.controller.address],
-      [callDataMintRep],
-      [0],
+      [org.controller.address, ZERO_ADDRESS],
+      [callDataMintRep, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
     const proposalIdMintRep = await helpers.getValueFromLogs(tx, "_proposalId");
     tx = await walletScheme.proposeCalls(
-      [org.controller.address],
-      [callDataBurnRep],
-      [0],
+      [org.controller.address, ZERO_ADDRESS],
+      [callDataBurnRep, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
     const proposalIdBurnRep = await helpers.getValueFromLogs(tx, "_proposalId");
 
     // Mint Rep
-    await votingMachine.contract.vote(
+    await org.votingMachine.vote(
       proposalIdMintRep,
       1,
       0,
@@ -1818,7 +1805,7 @@ contract("WalletScheme", function (accounts) {
     );
 
     // Burn Rep
-    await votingMachine.contract.vote(
+    await org.votingMachine.vote(
       proposalIdBurnRep,
       1,
       0,
@@ -1856,13 +1843,14 @@ contract("WalletScheme", function (accounts) {
       )
       .encodeABI();
     const callDataRemoveScheme = await org.controller.contract.methods
-      .unregisterScheme(avatarScheme.address, org.avatar.address)
+      .unregisterScheme(avatarScheme.address)
       .encodeABI();
 
     var tx = await walletScheme.proposeCalls(
-      [org.controller.address],
-      [callDataRegisterScheme],
-      [0],
+      [org.controller.address, ZERO_ADDRESS],
+      [callDataRegisterScheme, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
@@ -1871,9 +1859,10 @@ contract("WalletScheme", function (accounts) {
       "_proposalId"
     );
     tx = await walletScheme.proposeCalls(
-      [org.controller.address],
-      [callDataRemoveScheme],
-      [0],
+      [org.controller.address, ZERO_ADDRESS],
+      [callDataRemoveScheme, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
@@ -1884,7 +1873,7 @@ contract("WalletScheme", function (accounts) {
 
     // Add Scheme
     await expectRevert(
-      votingMachine.contract.vote(
+      org.votingMachine.vote(
         proposalIdAddScheme,
         1,
         0,
@@ -1907,7 +1896,7 @@ contract("WalletScheme", function (accounts) {
 
     // Remove Scheme
     await expectRevert(
-      votingMachine.contract.vote(
+      org.votingMachine.vote(
         proposalIdRemoveScheme,
         1,
         0,
@@ -1927,7 +1916,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(removedScheme.permissions, "0x00000011");
 
     await time.increase(executionTimeout);
-    await votingMachine.contract.vote(
+    await org.votingMachine.vote(
       proposalIdAddScheme,
       1,
       0,
@@ -1939,7 +1928,7 @@ contract("WalletScheme", function (accounts) {
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
     );
 
-    await votingMachine.contract.vote(
+    await org.votingMachine.vote(
       proposalIdRemoveScheme,
       1,
       0,
@@ -2003,20 +1992,17 @@ contract("WalletScheme", function (accounts) {
 
     // Proposal to allow calling actionMock
     const tx = await walletScheme.proposeCalls(
-      [permissionRegistry.address],
-      [setPermissionData],
-      [0],
+      [permissionRegistry.address, ZERO_ADDRESS],
+      [setPermissionData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
     const setPermissionTime = Number(await time.latest());
 
     assert.equal(
@@ -2033,20 +2019,17 @@ contract("WalletScheme", function (accounts) {
     await time.increase(1);
 
     const tx2 = await walletScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [actionMock.address, ZERO_ADDRESS],
+      [callData, "0x0"],
+      [0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
-    await votingMachine.contract.vote(
-      proposalId2,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
 
     const organizationProposal = await walletScheme.getOrganizationProposal(
       proposalId2
@@ -2061,13 +2044,13 @@ contract("WalletScheme", function (accounts) {
   });
 
   it("QuickWalletScheme - positive decision - proposal executed with transfer, pay and mint rep", async function () {
-    var wallet = await Wallet.new();
+    var wallet = await WalletScheme.new();
     await web3.eth.sendTransaction({
       from: accounts[0],
       to: walletScheme.address,
       value: 100000000,
     });
-    await wallet.transferOwnership(walletScheme.address);
+    // await wallet.transferOwnership(walletScheme.address);
 
     const payCallData = await new web3.eth.Contract(wallet.abi).methods
       .pay(accounts[1])
@@ -2097,7 +2080,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
 
     const balanceBeforePay = await web3.eth.getBalance(accounts[1]);
-    tx = await votingMachine.contract.vote(
+    tx = await org.votingMachine.vote(
       proposalId,
       1,
       0,
@@ -2169,20 +2152,17 @@ contract("WalletScheme", function (accounts) {
 
       // Proposal to allow calling actionMock
       const tx = await avatarScheme.proposeCalls(
-        [permissionRegistry.address],
-        [addERC20LimitData],
-        [0],
+        [permissionRegistry.address, ZERO_ADDRESS],
+        [addERC20LimitData, "0x0"],
+        [0, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-      await votingMachine.contract.vote(
-        proposalId,
-        1,
-        0,
-        constants.NULL_ADDRESS,
-        { from: accounts[2] }
-      );
+      await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+        from: accounts[2],
+      });
 
       const erc20TransferPermission = await permissionRegistry.getERC20Limit(
         avatarScheme.address,
@@ -2199,20 +2179,18 @@ contract("WalletScheme", function (accounts) {
       assert.equal(await testToken.balanceOf(org.avatar.address), "200");
 
       const tx2 = await avatarScheme.proposeCalls(
-        [testToken.address],
-        [transferData],
-        [0],
+        [testToken.address, ZERO_ADDRESS],
+        [transferData, "0x0"],
+        [0, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
       const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
-      await votingMachine.contract.vote(
-        proposalId2,
-        1,
-        0,
-        constants.NULL_ADDRESS,
-        { from: accounts[2], gas: constants.GAS_LIMIT }
-      );
+      await org.votingMachine.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
+        from: accounts[2],
+        gas: constants.GAS_LIMIT,
+      });
       assert.equal(await testToken.balanceOf(org.avatar.address), "150");
 
       const organizationProposal = await avatarScheme.getOrganizationProposal(
@@ -2258,15 +2236,16 @@ contract("WalletScheme", function (accounts) {
         .encodeABI();
 
       const tx = await avatarScheme.proposeCalls(
-        [testToken.address],
-        [transferData],
-        [0],
+        [testToken.address, ZERO_ADDRESS],
+        [transferData, "0x0"],
+        [0, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
       await expectRevert(
-        votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+        org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
           from: accounts[2],
         }),
         "PermissionRegistry: Value limit reached"
@@ -2278,13 +2257,9 @@ contract("WalletScheme", function (accounts) {
       );
 
       await time.increase(executionTimeout);
-      await votingMachine.contract.vote(
-        proposalId,
-        1,
-        0,
-        constants.NULL_ADDRESS,
-        { from: accounts[2] }
-      );
+      await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+        from: accounts[2],
+      });
 
       assert.equal(
         (await avatarScheme.getOrganizationProposal(proposalId)).state,
@@ -2325,15 +2300,16 @@ contract("WalletScheme", function (accounts) {
         .encodeABI();
 
       const tx = await walletScheme.proposeCalls(
-        [testToken.address],
-        [transferData],
-        [0],
+        [testToken.address, ZERO_ADDRESS],
+        [transferData, "0x0"],
+        [0, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
       await expectRevert(
-        votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+        org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
           from: accounts[2],
         }),
         "PermissionRegistry: Value limit reached"
@@ -2346,13 +2322,9 @@ contract("WalletScheme", function (accounts) {
 
       await time.increase(executionTimeout);
 
-      await votingMachine.contract.vote(
-        proposalId,
-        1,
-        0,
-        constants.NULL_ADDRESS,
-        { from: accounts[2] }
-      );
+      await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+        from: accounts[2],
+      });
 
       assert.equal(
         (await walletScheme.getOrganizationProposal(proposalId)).state,
@@ -2375,9 +2347,10 @@ contract("WalletScheme", function (accounts) {
 
       await expectRevert(
         avatarScheme.proposeCalls(
-          [testToken.address],
-          [transferData],
-          [1],
+          [testToken.address, ZERO_ADDRESS],
+          [transferData, "0x0"],
+          [1, 0],
+          2,
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
@@ -2407,20 +2380,17 @@ contract("WalletScheme", function (accounts) {
 
       // Proposal to allow calling actionMock
       const tx = await walletScheme.proposeCalls(
-        [permissionRegistry.address],
-        [addERC20LimitData],
-        [0],
+        [permissionRegistry.address, ZERO_ADDRESS],
+        [addERC20LimitData, "0x0"],
+        [0, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-      await votingMachine.contract.vote(
-        proposalId,
-        1,
-        0,
-        constants.NULL_ADDRESS,
-        { from: accounts[2] }
-      );
+      await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+        from: accounts[2],
+      });
 
       assert.equal(
         await permissionRegistry.getERC20Limit(
@@ -2437,21 +2407,18 @@ contract("WalletScheme", function (accounts) {
       assert.equal(await testToken.balanceOf(walletScheme.address), "200");
 
       const tx2 = await walletScheme.proposeCalls(
-        [testToken.address],
-        [transferData],
-        [0],
+        [testToken.address, ZERO_ADDRESS],
+        [transferData, "0x0"],
+        [0, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
       const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
 
-      await votingMachine.contract.vote(
-        proposalId2,
-        1,
-        0,
-        constants.NULL_ADDRESS,
-        { from: accounts[2] }
-      );
+      await org.votingMachine.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
+        from: accounts[2],
+      });
       assert.equal(await testToken.balanceOf(walletScheme.address), "150");
 
       const organizationProposal = await walletScheme.getOrganizationProposal(

@@ -1,3 +1,4 @@
+import { ZERO_ADDRESS } from "@openzeppelin/test-helpers/src/constants";
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import * as helpers from "../../helpers";
 const { fixSignature } = require("../../helpers/sign");
@@ -484,6 +485,7 @@ contract("DXDVotingMachine", function (accounts) {
             "address not allowed to vote on behalf"
           );
         });
+
         it("Succeeds if allowed address is able to vote on behalf", async function () {
           const tx = await dxdVotingMachine.vote(
             genericProposalId,
@@ -503,6 +505,7 @@ contract("DXDVotingMachine", function (accounts) {
             _reputation: "10000",
           });
         });
+
         it("should emit event StateChange to QuietVotingPeriod", async function () {
           const upStake = await dxdVotingMachine.stake(
             genericProposalId,
@@ -979,15 +982,19 @@ contract("DXDVotingMachine", function (accounts) {
         value: web3.utils.toWei("1"),
       });
 
+      const parameterHash = await dxdVotingMachine.getParametersHash(
+        helpers.defaultParametersArray,
+        helpers.defaultParameters.voteOnBehalf
+      );
+
       const setBoostedVoteRequiredPercentageData =
         web3.eth.abi.encodeFunctionCall(
           DXDVotingMachine.abi.find(
             x => x.name === "setBoostedVoteRequiredPercentage"
           ),
-          [masterAvatarScheme.address, dxdVotingMachine.params, 1950]
+          [masterAvatarScheme.address, parameterHash, 1950]
         );
 
-      console.log(setBoostedVoteRequiredPercentageData);
       await permissionRegistry.setETHPermission(
         org.avatar.address,
         dxdVotingMachine.address,
@@ -1039,7 +1046,7 @@ contract("DXDVotingMachine", function (accounts) {
         await dxdVotingMachine.getBoostedVoteRequiredPercentage(
           org.avatar.address,
           masterAvatarScheme.address,
-          dxdVotingMachine.params
+          parameterHash
         )
       );
     });
@@ -1062,7 +1069,6 @@ contract("DXDVotingMachine", function (accounts) {
         _proposalId: testProposalId,
         _proposalState: "4",
       });
-      await time.increase(3600 + 1);
 
       await dxdVotingMachine.vote(
         testProposalId,
@@ -1128,7 +1134,6 @@ contract("DXDVotingMachine", function (accounts) {
         _proposalState: "4",
       });
 
-      await time.increase(3600 + 1);
       await dxdVotingMachine.vote(
         testProposalId,
         1,
@@ -1136,11 +1141,14 @@ contract("DXDVotingMachine", function (accounts) {
         constants.NULL_ADDRESS,
         { from: accounts[2], gasPrice: constants.GAS_PRICE }
       );
+
       await time.increase(86400 + 1);
+
       const executeTx = await dxdVotingMachine.execute(testProposalId, {
         from: accounts[1],
         gasPrice: constants.GAS_PRICE,
       });
+
       // Check it changed to executed in redeem
       await expectEvent.inTransaction(
         executeTx.tx,
@@ -1167,48 +1175,83 @@ contract("DXDVotingMachine", function (accounts) {
     });
 
     it("should calculate average downstake of Boosted Proposals", async function () {
-      const proposalId = await helpers.getValueFromLogs(
-        await masterAvatarScheme.proposeCalls(
-          [actionMock.address],
-          [helpers.testCallFrom(org.avatar.address)],
-          [0],
-          2,
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
+      // First proposal
+      const firstProposalTx = await masterAvatarScheme.proposeCalls(
+        [actionMock.address],
+        [helpers.testCallFrom(org.avatar.address)],
+        [0],
+        2,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      );
+
+      const firstProposalId = await helpers.getValueFromLogs(
+        firstProposalTx,
         "_proposalId"
       );
 
-      const proposalId2 = await helpers.getValueFromLogs(
-        await masterAvatarScheme.proposeCalls(
-          [actionMock.address],
-          [helpers.testCallFrom(org.avatar.address)],
-          [0],
-          2,
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
-        "_proposalId"
+      const firstUpStake = await dxdVotingMachine.stake(
+        firstProposalId,
+        1,
+        1000,
+        {
+          from: accounts[1],
+        }
       );
 
-      const upStake2 = await dxdVotingMachine.stake(proposalId2, 1, 100, {
-        from: accounts[1],
+      expectEvent(firstUpStake.receipt, "StateChange", {
+        _proposalId: firstProposalId,
+        _proposalState: "4",
       });
 
-      expectEvent(upStake2.receipt, "StateChange", {
-        _proposalId: proposalId2,
+      // Second proposal
+
+      const secondProposalTx = await masterAvatarScheme.proposeCalls(
+        [actionMock.address],
+        [helpers.testCallFrom(org.avatar.address)],
+        [0],
+        2,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      );
+
+      const secondProposalId = await helpers.getValueFromLogs(
+        secondProposalTx,
+        "_proposalId"
+      );
+
+      const secondUpStake = await dxdVotingMachine.stake(
+        secondProposalId,
+        1,
+        1000,
+        { from: accounts[1] }
+      );
+
+      expectEvent(secondUpStake.receipt, "StateChange", {
+        _proposalId: secondProposalId,
         _proposalState: "4",
       });
 
       await time.increase(3600 + 1);
 
-      await dxdVotingMachine.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
-        from: accounts[1],
-        gasPrice: constants.GAS_PRICE,
-      });
+      await dxdVotingMachine.vote(
+        secondProposalId,
+        1,
+        0,
+        constants.NULL_ADDRESS,
+        {
+          from: accounts[2],
+          gasPrice: constants.GAS_PRICE,
+        }
+      );
+
+      // await time.increase(86400 + 1);
 
       //check boosted
-      assert.equal((await dxdVotingMachine.proposals(proposalId2)).state, "5");
+      assert.equal(
+        (await dxdVotingMachine.proposals(secondProposalId)).state,
+        "5"
+      );
 
       await dxdVotingMachine.stake(proposalId, 2, 2000, {
         from: accounts[0],
@@ -1435,8 +1478,6 @@ contract("DXDVotingMachine", function (accounts) {
         _proposalId: proposalId,
         _proposalState: "4",
       });
-
-      await time.increase(2000);
 
       await dxdVotingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[1],
