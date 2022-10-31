@@ -9,7 +9,7 @@ on:
 
 jobs:
   coverage:
-    if: (contains(github.event.pull_request.labels.*.name, 'Ready to review') || github.event.pull_request.base_ref == develop )
+    if: (contains(github.event.pull_request.labels.*.name, 'Ready to review') || github.event.pull_request.base_ref == 'develop' )
 
     runs-on: ubuntu-latest
 
