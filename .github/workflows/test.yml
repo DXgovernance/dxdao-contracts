@@ -7,7 +7,7 @@ on:
   push:
     branches: ["**"]
   issue_comment:
-    types: [created]
+    types: [created, edited, deleted]
   workflow_dispatch:
 
 jobs:
