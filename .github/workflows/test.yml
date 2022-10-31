@@ -2,14 +2,15 @@ name: Tests
 
 on:
   pull_request:
-    branches:
-      - develop
+    branches: ["**"]
   push:
     branches: ["**"]
   workflow_dispatch:
 
 jobs:
   coverage:
+    if: (contains(github.event.pull_request.labels.*.name, 'Ready to review') || github.event.pull_request.base_ref == develop )
+
     runs-on: ubuntu-latest
 
     strategy:
@@ -36,3 +37,4 @@ jobs:
         with:
           coverage-file: coverage/lcov.info
           minimum-coverage: 80
+
