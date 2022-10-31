@@ -24,8 +24,8 @@ const moment = require("moment");
 
 const MNEMONIC_PHRASE = process.env.MNEMONIC_PHRASE;
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
-const INFURA_API_KEY = process.env.REACT_APP_KEY_INFURA_API_KEY;
-const ALCHEMY_API_KEY = process.env.REACT_APP_KEY_ALCHEMY_API_KEY;
+const INFURA_API_KEY = process.env.INFURA_API_KEY;
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
 
 const hardharNetworks = process.env.CI
   ? {
@@ -70,7 +70,8 @@ const hardharNetworks = process.env.CI
           : `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
         accounts: { mnemonic: MNEMONIC_PHRASE },
         chainId: 5,
-        gasMultiplier: 10,
+        gasLimit: 9000000,
+        gasPrice: 100000000000, // 100 gwei
         timeout: 600000, // 10 minutes
       },
       xdai: {
