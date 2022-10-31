@@ -68,15 +68,6 @@ contract AvatarScheme is Scheme {
         } else {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
 
-            // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
-            require(
-                (oldRepSupply.mul(uint256(100).add(maxRepPercentageChange)).div(100) >=
-                    getNativeReputationTotalSupply()) &&
-                    (oldRepSupply.mul(uint256(100).sub(maxRepPercentageChange)).div(100) <=
-                        getNativeReputationTotalSupply()),
-                "AvatarScheme: maxRepPercentageChange passed"
-            );
-
             require(permissionRegistry.checkERC20Limits(address(avatar)), "AvatarScheme: ERC20 limits passed");
             proposal.state = ProposalState.ExecutionSucceeded;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
@@ -121,6 +112,14 @@ contract AvatarScheme is Scheme {
                 );
                 require(callsSucessResult, "AvatarScheme: Proposal call failed");
             }
+            // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
+            require(
+                (oldRepSupply.mul(uint256(100).add(maxRepPercentageChange)).div(100) >=
+                    getNativeReputationTotalSupply()) &&
+                    (oldRepSupply.mul(uint256(100).sub(maxRepPercentageChange)).div(100) <=
+                        getNativeReputationTotalSupply()),
+                "AvatarScheme: maxRepPercentageChange passed"
+            );
         }
         controller.endProposal(_proposalId);
         executingProposal = false;
