@@ -1,0 +1,764 @@
+{
+  "address": "0xf3cC6B6ade5B0F3e00Ab57365528b3d087955022",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes4",
+          "name": "functionSignature",
+          "type": "bytes4"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "fromTime",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "PermissionSet",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "valueAllowed",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "addERC20Limit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        }
+      ],
+      "name": "checkERC20Limits",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes4",
+          "name": "",
+          "type": "bytes4"
+        }
+      ],
+      "name": "ethPermissions",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "valueTransferred",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "valueTransferedOnBlock",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "valueAllowed",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "fromTime",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "executeRemoveERC20Limit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "getERC20Limit",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes4",
+          "name": "functionSignature",
+          "type": "bytes4"
+        }
+      ],
+      "name": "getETHPermission",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "valueAllowed",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "fromTime",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        }
+      ],
+      "name": "getETHPermissionDelay",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "permissionDelay",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "removeERC20Limit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "setERC20Balances",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes4",
+          "name": "functionSignature",
+          "type": "bytes4"
+        },
+        {
+          "internalType": "uint256",
+          "name": "valueAllowed",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "allowed",
+          "type": "bool"
+        }
+      ],
+      "name": "setETHPermission",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_timeDelay",
+          "type": "uint256"
+        }
+      ],
+      "name": "setETHPermissionDelay",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes4",
+          "name": "functionSignature",
+          "type": "bytes4"
+        },
+        {
+          "internalType": "uint256",
+          "name": "valueTransferred",
+          "type": "uint256"
+        }
+      ],
+      "name": "setETHPermissionUsed",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x8c46541e4c03f7b16c921be29087e5df23fb433363ba2e5b99d9e833435e0507",
+  "receipt": {
+    "to": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+    "from": "0x9578e973bbA0Cc33BDbc93C7f77bb3fe6D47d68a",
+    "contractAddress": null,
+    "transactionIndex": 34,
+    "gasUsed": "1493853",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x938ed5d7c2f2e6791554f8fecdd9af4469c902577f26ce0485d92f21cfa55e23",
+    "transactionHash": "0x8c46541e4c03f7b16c921be29087e5df23fb433363ba2e5b99d9e833435e0507",
+    "logs": [],
+    "blockNumber": 7843412,
+    "cumulativeGasUsed": "13349294",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "db2defd46476f1c748731bb4c19101a2",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.8+commit.dddeac2f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bytes4\",\"name\":\"functionSignature\",\"type\":\"bytes4\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"fromTime\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"PermissionSet\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"valueAllowed\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"addERC20Limit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"}],\"name\":\"checkERC20Limits\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"\",\"type\":\"bytes4\"}],\"name\":\"ethPermissions\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"valueTransferred\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"valueTransferedOnBlock\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"valueAllowed\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"fromTime\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"executeRemoveERC20Limit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"getERC20Limit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"functionSignature\",\"type\":\"bytes4\"}],\"name\":\"getETHPermission\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"valueAllowed\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"fromTime\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"}],\"name\":\"getETHPermissionDelay\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"permissionDelay\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"removeERC20Limit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"setERC20Balances\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"functionSignature\",\"type\":\"bytes4\"},{\"internalType\":\"uint256\",\"name\":\"valueAllowed\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"allowed\",\"type\":\"bool\"}],\"name\":\"setETHPermission\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_timeDelay\",\"type\":\"uint256\"}],\"name\":\"setETHPermissionDelay\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"functionSignature\",\"type\":\"bytes4\"},{\"internalType\":\"uint256\",\"name\":\"valueTransferred\",\"type\":\"uint256\"}],\"name\":\"setETHPermissionUsed\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"A registry of smart contracts functions and ERC20 transfer limits that are allowed to be called between contracts. A time delay in seconds over the permissions can be set form any contract, this delay would be added to any new permissions sent by that address. The PermissionRegistry owner (if there is an owner and owner address is not 0x0) can overwrite/set any permission. The registry allows setting ERC20 limits, the limit needs to be set at the beggining of the block and then it can be checked at any time. To remove or replace ERC20 limits first it needs to be removed and then it can be set again. The smart contracts permissions are compound by the `from` address, `to` address, `value` uint256 and `fromTime` uint256, if `fromTime` is zero it means the function is not allowed.\",\"kind\":\"dev\",\"methods\":{\"addERC20Limit(address,address,uint256,uint256)\":{\"details\":\"Add an ERC20Limit for an address, there cannot be more than one limit per token.\",\"params\":{\"from\":\"The address that will execute the call\",\"index\":\"The index of the token permission in the erco limits\",\"token\":\"The erc20 token to set the limit\",\"valueAllowed\":\"The amount of value allowed of the token to be sent\"}},\"checkERC20Limits(address)\":{\"details\":\"Checks the value transferred in block for all registered ERC20 limits.\",\"params\":{\"from\":\"The address from which ERC20 tokens limits will be checked\"}},\"executeRemoveERC20Limit(address,uint256)\":{\"details\":\"Executes the final removal of an ERC20 limit of an address by its index in the ERC20Lmits array.\",\"params\":{\"from\":\"The address that will execute the call\",\"index\":\"The index of the token permission in the erco limits\"}},\"getERC20Limit(address,address)\":{\"details\":\"Gets the vallue allowed to be sent in a block of the ER20 token\",\"params\":{\"from\":\"The address from which the call will be executed\",\"token\":\"The address that will be called\"}},\"getETHPermission(address,address,bytes4)\":{\"details\":\"Gets the time from which the function can be executed from a contract to another and with which value. In case of now being allowed to do the call it returns zero in both values\",\"params\":{\"from\":\"The address from which the call will be executed\",\"functionSignature\":\"The signature of the function to be executed\",\"to\":\"The address that will be called\"}},\"getETHPermissionDelay(address)\":{\"details\":\"Get the time delay to be used for an address\",\"params\":{\"from\":\"The address to get the permission delay from\"}},\"initialize()\":{\"details\":\"initializer\"},\"owner()\":{\"details\":\"Returns the address of the current owner.\"},\"removeERC20Limit(address,uint256)\":{\"details\":\"Removes an ERC20 limit of an address by its index in the ERC20Lmits array. (take in count that the limit execution has to be called after the remove time)\",\"params\":{\"from\":\"The address that will execute the call\",\"index\":\"The index of the token permission in the erco limits\"}},\"renounceOwnership()\":{\"details\":\"Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.\"},\"setERC20Balances()\":{\"details\":\"Sets the initial balances for ERC20 tokens in the current block\"},\"setETHPermission(address,address,bytes4,uint256,bool)\":{\"details\":\"Sets the time from which the function can be executed from a contract to another a with which value.\",\"params\":{\"allowed\":\"If the function is allowed or not.\",\"from\":\"The address that will execute the call\",\"functionSignature\":\"The signature of the function to be executed\",\"to\":\"The address that will be called\",\"valueAllowed\":\"The amount of value allowed of the token to be sent\"}},\"setETHPermissionDelay(address,uint256)\":{\"details\":\"Set the time delay for a call to show as allowed\",\"params\":{\"_timeDelay\":\"The amount of time that has to pass after permission addition to allow execution\"}},\"setETHPermissionUsed(address,address,bytes4,uint256)\":{\"details\":\"Sets the value transferred in a permission on the actual block and checks the allowed timestamp.      It also checks that the value does not go over the permission other global limits.\",\"params\":{\"from\":\"The address from which the call will be executed\",\"functionSignature\":\"The signature of the function to be executed\",\"to\":\"The address that will be called\",\"valueTransferred\":\"The value to be transferred\"}},\"transferOwnership(address)\":{\"details\":\"Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.\"}},\"title\":\"PermissionRegistry.\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/utils/PermissionRegistry.sol\":\"PermissionRegistry\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (access/Ownable.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../utils/ContextUpgradeable.sol\\\";\\nimport \\\"../proxy/utils/Initializable.sol\\\";\\n\\n/**\\n * @dev Contract module which provides a basic access control mechanism, where\\n * there is an account (an owner) that can be granted exclusive access to\\n * specific functions.\\n *\\n * By default, the owner account will be the one that deploys the contract. This\\n * can later be changed with {transferOwnership}.\\n *\\n * This module is used through inheritance. It will make available the modifier\\n * `onlyOwner`, which can be applied to your functions to restrict their use to\\n * the owner.\\n */\\nabstract contract OwnableUpgradeable is Initializable, ContextUpgradeable {\\n    address private _owner;\\n\\n    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);\\n\\n    /**\\n     * @dev Initializes the contract setting the deployer as the initial owner.\\n     */\\n    function __Ownable_init() internal initializer {\\n        __Context_init_unchained();\\n        __Ownable_init_unchained();\\n    }\\n\\n    function __Ownable_init_unchained() internal initializer {\\n        _transferOwnership(_msgSender());\\n    }\\n\\n    /**\\n     * @dev Returns the address of the current owner.\\n     */\\n    function owner() public view virtual returns (address) {\\n        return _owner;\\n    }\\n\\n    /**\\n     * @dev Throws if called by any account other than the owner.\\n     */\\n    modifier onlyOwner() {\\n        require(owner() == _msgSender(), \\\"Ownable: caller is not the owner\\\");\\n        _;\\n    }\\n\\n    /**\\n     * @dev Leaves the contract without owner. It will not be possible to call\\n     * `onlyOwner` functions anymore. Can only be called by the current owner.\\n     *\\n     * NOTE: Renouncing ownership will leave the contract without an owner,\\n     * thereby removing any functionality that is only available to the owner.\\n     */\\n    function renounceOwnership() public virtual onlyOwner {\\n        _transferOwnership(address(0));\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Can only be called by the current owner.\\n     */\\n    function transferOwnership(address newOwner) public virtual onlyOwner {\\n        require(newOwner != address(0), \\\"Ownable: new owner is the zero address\\\");\\n        _transferOwnership(newOwner);\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Internal function without access restriction.\\n     */\\n    function _transferOwnership(address newOwner) internal virtual {\\n        address oldOwner = _owner;\\n        _owner = newOwner;\\n        emit OwnershipTransferred(oldOwner, newOwner);\\n    }\\n    uint256[49] private __gap;\\n}\\n\",\"keccak256\":\"0xd0fc241d70f27a08c43c0c9e5a15d2661a643d8db46c219b2322bef8a34bbdd7\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (proxy/utils/Initializable.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed\\n * behind a proxy. Since a proxied contract can't have a constructor, it's common to move constructor logic to an\\n * external initializer function, usually called `initialize`. It then becomes necessary to protect this initializer\\n * function so it can only be called once. The {initializer} modifier provided by this contract will have this effect.\\n *\\n * TIP: To avoid leaving the proxy in an uninitialized state, the initializer function should be called as early as\\n * possible by providing the encoded function call as the `_data` argument to {ERC1967Proxy-constructor}.\\n *\\n * CAUTION: When used with inheritance, manual care must be taken to not invoke a parent initializer twice, or to ensure\\n * that all initializers are idempotent. This is not verified automatically as constructors are by Solidity.\\n *\\n * [CAUTION]\\n * ====\\n * Avoid leaving a contract uninitialized.\\n *\\n * An uninitialized contract can be taken over by an attacker. This applies to both a proxy and its implementation\\n * contract, which may impact the proxy. To initialize the implementation contract, you can either invoke the\\n * initializer manually, or you can include a constructor to automatically mark it as initialized when it is deployed:\\n *\\n * [.hljs-theme-light.nopadding]\\n * ```\\n * /// @custom:oz-upgrades-unsafe-allow constructor\\n * constructor() initializer {}\\n * ```\\n * ====\\n */\\nabstract contract Initializable {\\n    /**\\n     * @dev Indicates that the contract has been initialized.\\n     */\\n    bool private _initialized;\\n\\n    /**\\n     * @dev Indicates that the contract is in the process of being initialized.\\n     */\\n    bool private _initializing;\\n\\n    /**\\n     * @dev Modifier to protect an initializer function from being invoked twice.\\n     */\\n    modifier initializer() {\\n        require(_initializing || !_initialized, \\\"Initializable: contract is already initialized\\\");\\n\\n        bool isTopLevelCall = !_initializing;\\n        if (isTopLevelCall) {\\n            _initializing = true;\\n            _initialized = true;\\n        }\\n\\n        _;\\n\\n        if (isTopLevelCall) {\\n            _initializing = false;\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x6287586f5e4a103c89d4dda41406136cdf283cc625bd1ebfdf1468aae5bfe449\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (utils/Context.sol)\\n\\npragma solidity ^0.8.0;\\nimport \\\"../proxy/utils/Initializable.sol\\\";\\n\\n/**\\n * @dev Provides information about the current execution context, including the\\n * sender of the transaction and its data. While these are generally available\\n * via msg.sender and msg.data, they should not be accessed in such a direct\\n * manner, since when dealing with meta-transactions the account sending and\\n * paying for execution may not be the actual sender (as far as an application\\n * is concerned).\\n *\\n * This contract is only required for intermediate, library-like contracts.\\n */\\nabstract contract ContextUpgradeable is Initializable {\\n    function __Context_init() internal initializer {\\n        __Context_init_unchained();\\n    }\\n\\n    function __Context_init_unchained() internal initializer {\\n    }\\n    function _msgSender() internal view virtual returns (address) {\\n        return msg.sender;\\n    }\\n\\n    function _msgData() internal view virtual returns (bytes calldata) {\\n        return msg.data;\\n    }\\n    uint256[50] private __gap;\\n}\\n\",\"keccak256\":\"0x0c34de2f75ee9ab06bf9151824be575885d0a9b460c292476a260578fb5a4e1c\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (utils/math/SafeMath.sol)\\n\\npragma solidity ^0.8.0;\\n\\n// CAUTION\\n// This version of SafeMath should only be used with Solidity 0.8 or later,\\n// because it relies on the compiler's built in overflow checks.\\n\\n/**\\n * @dev Wrappers over Solidity's arithmetic operations.\\n *\\n * NOTE: `SafeMath` is generally not needed starting with Solidity 0.8, since the compiler\\n * now has built in overflow checking.\\n */\\nlibrary SafeMathUpgradeable {\\n    /**\\n     * @dev Returns the addition of two unsigned integers, with an overflow flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        unchecked {\\n            uint256 c = a + b;\\n            if (c < a) return (false, 0);\\n            return (true, c);\\n        }\\n    }\\n\\n    /**\\n     * @dev Returns the substraction of two unsigned integers, with an overflow flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        unchecked {\\n            if (b > a) return (false, 0);\\n            return (true, a - b);\\n        }\\n    }\\n\\n    /**\\n     * @dev Returns the multiplication of two unsigned integers, with an overflow flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function tryMul(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        unchecked {\\n            // Gas optimization: this is cheaper than requiring 'a' not being zero, but the\\n            // benefit is lost if 'b' is also tested.\\n            // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522\\n            if (a == 0) return (true, 0);\\n            uint256 c = a * b;\\n            if (c / a != b) return (false, 0);\\n            return (true, c);\\n        }\\n    }\\n\\n    /**\\n     * @dev Returns the division of two unsigned integers, with a division by zero flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function tryDiv(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        unchecked {\\n            if (b == 0) return (false, 0);\\n            return (true, a / b);\\n        }\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers, with a division by zero flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function tryMod(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        unchecked {\\n            if (b == 0) return (false, 0);\\n            return (true, a % b);\\n        }\\n    }\\n\\n    /**\\n     * @dev Returns the addition of two unsigned integers, reverting on\\n     * overflow.\\n     *\\n     * Counterpart to Solidity's `+` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - Addition cannot overflow.\\n     */\\n    function add(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return a + b;\\n    }\\n\\n    /**\\n     * @dev Returns the subtraction of two unsigned integers, reverting on\\n     * overflow (when the result is negative).\\n     *\\n     * Counterpart to Solidity's `-` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - Subtraction cannot overflow.\\n     */\\n    function sub(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return a - b;\\n    }\\n\\n    /**\\n     * @dev Returns the multiplication of two unsigned integers, reverting on\\n     * overflow.\\n     *\\n     * Counterpart to Solidity's `*` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - Multiplication cannot overflow.\\n     */\\n    function mul(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return a * b;\\n    }\\n\\n    /**\\n     * @dev Returns the integer division of two unsigned integers, reverting on\\n     * division by zero. The result is rounded towards zero.\\n     *\\n     * Counterpart to Solidity's `/` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - The divisor cannot be zero.\\n     */\\n    function div(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return a / b;\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),\\n     * reverting when dividing by zero.\\n     *\\n     * Counterpart to Solidity's `%` operator. This function uses a `revert`\\n     * opcode (which leaves remaining gas untouched) while Solidity uses an\\n     * invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     *\\n     * - The divisor cannot be zero.\\n     */\\n    function mod(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return a % b;\\n    }\\n\\n    /**\\n     * @dev Returns the subtraction of two unsigned integers, reverting with custom message on\\n     * overflow (when the result is negative).\\n     *\\n     * CAUTION: This function is deprecated because it requires allocating memory for the error\\n     * message unnecessarily. For custom revert reasons use {trySub}.\\n     *\\n     * Counterpart to Solidity's `-` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - Subtraction cannot overflow.\\n     */\\n    function sub(\\n        uint256 a,\\n        uint256 b,\\n        string memory errorMessage\\n    ) internal pure returns (uint256) {\\n        unchecked {\\n            require(b <= a, errorMessage);\\n            return a - b;\\n        }\\n    }\\n\\n    /**\\n     * @dev Returns the integer division of two unsigned integers, reverting with custom message on\\n     * division by zero. The result is rounded towards zero.\\n     *\\n     * Counterpart to Solidity's `/` operator. Note: this function uses a\\n     * `revert` opcode (which leaves remaining gas untouched) while Solidity\\n     * uses an invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     *\\n     * - The divisor cannot be zero.\\n     */\\n    function div(\\n        uint256 a,\\n        uint256 b,\\n        string memory errorMessage\\n    ) internal pure returns (uint256) {\\n        unchecked {\\n            require(b > 0, errorMessage);\\n            return a / b;\\n        }\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),\\n     * reverting with custom message when dividing by zero.\\n     *\\n     * CAUTION: This function is deprecated because it requires allocating memory for the error\\n     * message unnecessarily. For custom revert reasons use {tryMod}.\\n     *\\n     * Counterpart to Solidity's `%` operator. This function uses a `revert`\\n     * opcode (which leaves remaining gas untouched) while Solidity uses an\\n     * invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     *\\n     * - The divisor cannot be zero.\\n     */\\n    function mod(\\n        uint256 a,\\n        uint256 b,\\n        string memory errorMessage\\n    ) internal pure returns (uint256) {\\n        unchecked {\\n            require(b > 0, errorMessage);\\n            return a % b;\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x23ee0c2d7bcce5d09d40f3a14c91f29000d3a83b8a9c26440cd1b3748a93ea47\",\"license\":\"MIT\"},\"@openzeppelin/contracts/token/ERC20/IERC20.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (token/ERC20/IERC20.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Interface of the ERC20 standard as defined in the EIP.\\n */\\ninterface IERC20 {\\n    /**\\n     * @dev Returns the amount of tokens in existence.\\n     */\\n    function totalSupply() external view returns (uint256);\\n\\n    /**\\n     * @dev Returns the amount of tokens owned by `account`.\\n     */\\n    function balanceOf(address account) external view returns (uint256);\\n\\n    /**\\n     * @dev Moves `amount` tokens from the caller's account to `recipient`.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transfer(address recipient, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Returns the remaining number of tokens that `spender` will be\\n     * allowed to spend on behalf of `owner` through {transferFrom}. This is\\n     * zero by default.\\n     *\\n     * This value changes when {approve} or {transferFrom} are called.\\n     */\\n    function allowance(address owner, address spender) external view returns (uint256);\\n\\n    /**\\n     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * IMPORTANT: Beware that changing an allowance with this method brings the risk\\n     * that someone may use both the old and the new allowance by unfortunate\\n     * transaction ordering. One possible solution to mitigate this race\\n     * condition is to first reduce the spender's allowance to 0 and set the\\n     * desired value afterwards:\\n     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729\\n     *\\n     * Emits an {Approval} event.\\n     */\\n    function approve(address spender, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Moves `amount` tokens from `sender` to `recipient` using the\\n     * allowance mechanism. `amount` is then deducted from the caller's\\n     * allowance.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transferFrom(\\n        address sender,\\n        address recipient,\\n        uint256 amount\\n    ) external returns (bool);\\n\\n    /**\\n     * @dev Emitted when `value` tokens are moved from one account (`from`) to\\n     * another (`to`).\\n     *\\n     * Note that `value` may be zero.\\n     */\\n    event Transfer(address indexed from, address indexed to, uint256 value);\\n\\n    /**\\n     * @dev Emitted when the allowance of a `spender` for an `owner` is set by\\n     * a call to {approve}. `value` is the new allowance.\\n     */\\n    event Approval(address indexed owner, address indexed spender, uint256 value);\\n}\\n\",\"keccak256\":\"0xc1452b054778f1926419196ef12ae200758a4ee728df69ae1cd13e5c16ca7df7\",\"license\":\"MIT\"},\"contracts/utils/PermissionRegistry.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0\\r\\npragma solidity ^0.8.8;\\r\\n\\r\\nimport \\\"@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol\\\";\\r\\nimport \\\"@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol\\\";\\r\\nimport \\\"@openzeppelin/contracts/token/ERC20/IERC20.sol\\\";\\r\\n\\r\\n/**\\r\\n * @title PermissionRegistry.\\r\\n * @dev A registry of smart contracts functions and ERC20 transfer limits that are allowed to be called between contracts.\\r\\n * A time delay in seconds over the permissions can be set form any contract, this delay would be added to any new\\r\\n * permissions sent by that address.\\r\\n * The PermissionRegistry owner (if there is an owner and owner address is not 0x0) can overwrite/set any permission.\\r\\n * The registry allows setting ERC20 limits, the limit needs to be set at the beggining of the block and then it can be\\r\\n * checked at any time. To remove or replace ERC20 limits first it needs to be removed and then it can be set again.\\r\\n * The smart contracts permissions are compound by the `from` address, `to` address, `value` uint256 and `fromTime` uint256,\\r\\n * if `fromTime` is zero it means the function is not allowed.\\r\\n */\\r\\n\\r\\ncontract PermissionRegistry is OwnableUpgradeable {\\r\\n    using SafeMathUpgradeable for uint256;\\r\\n\\r\\n    mapping(address => uint256) public permissionDelay;\\r\\n\\r\\n    event PermissionSet(address from, address to, bytes4 functionSignature, uint256 fromTime, uint256 value);\\r\\n\\r\\n    struct ETHPermission {\\r\\n        uint256 valueTransferred;\\r\\n        uint256 valueTransferedOnBlock;\\r\\n        uint256 valueAllowed;\\r\\n        uint256 fromTime;\\r\\n    }\\r\\n\\r\\n    struct ERC20Limit {\\r\\n        address token;\\r\\n        uint256 initialValueOnBlock;\\r\\n        uint256 valueAllowed;\\r\\n        uint256 removeTime;\\r\\n    }\\r\\n\\r\\n    // from address => to address => function call signature allowed => Permission\\r\\n    mapping(address => mapping(address => mapping(bytes4 => ETHPermission))) public ethPermissions;\\r\\n\\r\\n    // from address => array of tokens allowed and the max value ot be transferred per block\\r\\n    mapping(address => ERC20Limit[]) erc20Limits;\\r\\n\\r\\n    // mapping of the last block number used for the initial balance\\r\\n    mapping(address => uint256) erc20LimitsOnBlock;\\r\\n\\r\\n    /**\\r\\n     * @dev initializer\\r\\n     */\\r\\n    function initialize() public initializer {\\r\\n        __Ownable_init();\\r\\n    }\\r\\n\\r\\n    /**\\r\\n     * @dev Set the time delay for a call to show as allowed\\r\\n     * @param _timeDelay The amount of time that has to pass after permission addition to allow execution\\r\\n     */\\r\\n    function setETHPermissionDelay(address from, uint256 _timeDelay) public {\\r\\n        if (msg.sender != owner()) {\\r\\n            require(from == msg.sender, \\\"PermissionRegistry: Only owner can specify from value\\\");\\r\\n        }\\r\\n        permissionDelay[from] = _timeDelay;\\r\\n    }\\r\\n\\r\\n    /**\\r\\n     * @dev Sets the time from which the function can be executed from a contract to another a with which value.\\r\\n     * @param from The address that will execute the call\\r\\n     * @param to The address that will be called\\r\\n     * @param functionSignature The signature of the function to be executed\\r\\n     * @param valueAllowed The amount of value allowed of the token to be sent\\r\\n     * @param allowed If the function is allowed or not.\\r\\n     */\\r\\n    function setETHPermission(\\r\\n        address from,\\r\\n        address to,\\r\\n        bytes4 functionSignature,\\r\\n        uint256 valueAllowed,\\r\\n        bool allowed\\r\\n    ) public {\\r\\n        if (msg.sender != owner()) {\\r\\n            require(from == msg.sender, \\\"PermissionRegistry: Only owner can specify from value\\\");\\r\\n        }\\r\\n        require(to != address(this), \\\"PermissionRegistry: Cant set ethPermissions to PermissionRegistry\\\");\\r\\n        if (allowed) {\\r\\n            ethPermissions[from][to][functionSignature].fromTime = block.timestamp.add(permissionDelay[from]);\\r\\n            ethPermissions[from][to][functionSignature].valueAllowed = valueAllowed;\\r\\n        } else {\\r\\n            ethPermissions[from][to][functionSignature].fromTime = 0;\\r\\n            ethPermissions[from][to][functionSignature].valueAllowed = 0;\\r\\n        }\\r\\n        emit PermissionSet(\\r\\n            from,\\r\\n            to,\\r\\n            functionSignature,\\r\\n            ethPermissions[from][to][functionSignature].fromTime,\\r\\n            ethPermissions[from][to][functionSignature].valueAllowed\\r\\n        );\\r\\n    }\\r\\n\\r\\n    /**\\r\\n     * @dev Add an ERC20Limit for an address, there cannot be more than one limit per token.\\r\\n     * @param from The address that will execute the call\\r\\n     * @param token The erc20 token to set the limit\\r\\n     * @param valueAllowed The amount of value allowed of the token to be sent\\r\\n     * @param index The index of the token permission in the erco limits\\r\\n     */\\r\\n    function addERC20Limit(\\r\\n        address from,\\r\\n        address token,\\r\\n        uint256 valueAllowed,\\r\\n        uint256 index\\r\\n    ) public {\\r\\n        if (msg.sender != owner()) {\\r\\n            require(from == msg.sender, \\\"PermissionRegistry: Only owner can specify from value\\\");\\r\\n        }\\r\\n        require(index <= erc20Limits[from].length, \\\"PermissionRegistry: Index out of bounds\\\");\\r\\n        require(token != address(0), \\\"PermissionRegistry: Token address cannot be 0x0\\\");\\r\\n\\r\\n        uint256 balanceNow = IERC20(token).balanceOf(msg.sender);\\r\\n\\r\\n        // set 0 as initialvalue to not allow any balance change for this token on this block\\r\\n        if (index == erc20Limits[from].length) {\\r\\n            for (uint256 i = 0; i < erc20Limits[from].length; i++) {\\r\\n                require(erc20Limits[from][i].token != token, \\\"PermissionRegistry: Limit on token already added\\\");\\r\\n            }\\r\\n            erc20Limits[from].push(ERC20Limit(token, balanceNow, valueAllowed, 0));\\r\\n        } else {\\r\\n            require(\\r\\n                erc20Limits[from][index].token == address(0),\\r\\n                \\\"PermissionRegistry: Cant override existent ERC20 limit\\\"\\r\\n            );\\r\\n            erc20Limits[from][index].token = token;\\r\\n            erc20Limits[from][index].initialValueOnBlock = balanceNow;\\r\\n            erc20Limits[from][index].valueAllowed = valueAllowed;\\r\\n            erc20Limits[from][index].removeTime = 0;\\r\\n        }\\r\\n    }\\r\\n\\r\\n    /**\\r\\n     * @dev Removes an ERC20 limit of an address by its index in the ERC20Lmits array.\\r\\n     * (take in count that the limit execution has to be called after the remove time)\\r\\n     * @param from The address that will execute the call\\r\\n     * @param index The index of the token permission in the erco limits\\r\\n     */\\r\\n    function removeERC20Limit(address from, uint256 index) public {\\r\\n        if (msg.sender != owner()) {\\r\\n            require(from == msg.sender, \\\"PermissionRegistry: Only owner can specify from value\\\");\\r\\n        }\\r\\n        require(index < erc20Limits[from].length, \\\"PermissionRegistry: Index out of bounds\\\");\\r\\n\\r\\n        erc20Limits[from][index].removeTime = block.timestamp.add(permissionDelay[from]);\\r\\n    }\\r\\n\\r\\n    /**\\r\\n     * @dev Executes the final removal of an ERC20 limit of an address by its index in the ERC20Lmits array.\\r\\n     * @param from The address that will execute the call\\r\\n     * @param index The index of the token permission in the erco limits\\r\\n     */\\r\\n    function executeRemoveERC20Limit(address from, uint256 index) public {\\r\\n        require(\\r\\n            block.timestamp < erc20Limits[from][index].removeTime,\\r\\n            \\\"PermissionRegistry: Cant execute permission removal\\\"\\r\\n        );\\r\\n\\r\\n        erc20Limits[from][index] = ERC20Limit(address(0), 0, 0, 0);\\r\\n    }\\r\\n\\r\\n    /**\\r\\n     * @dev Sets the value transferred in a permission on the actual block and checks the allowed timestamp.\\r\\n     *      It also checks that the value does not go over the permission other global limits.\\r\\n     * @param from The address from which the call will be executed\\r\\n     * @param to The address that will be called\\r\\n     * @param functionSignature The signature of the function to be executed\\r\\n     * @param valueTransferred The value to be transferred\\r\\n     */\\r\\n    function setETHPermissionUsed(\\r\\n        address from,\\r\\n        address to,\\r\\n        bytes4 functionSignature,\\r\\n        uint256 valueTransferred\\r\\n    ) public {\\r\\n        if (msg.sender != owner()) {\\r\\n            require(from == msg.sender, \\\"PermissionRegistry: Only owner can specify from value\\\");\\r\\n        }\\r\\n        if (valueTransferred > 0) {\\r\\n            _setValueTransferred(ethPermissions[from][address(0)][bytes4(0)], valueTransferred);\\r\\n        }\\r\\n\\r\\n        (, uint256 fromTime) = getETHPermission(from, to, functionSignature);\\r\\n\\r\\n        if (fromTime > 0) {\\r\\n            require(fromTime < block.timestamp, \\\"PermissionRegistry: Call not allowed yet\\\");\\r\\n            _setValueTransferred(ethPermissions[from][to][functionSignature], valueTransferred);\\r\\n        } else if (functionSignature != bytes4(0)) {\\r\\n            revert(\\\"PermissionRegistry: Call not allowed\\\");\\r\\n        }\\r\\n    }\\r\\n\\r\\n    /**\\r\\n     * @dev Sets the value transferred in a a permission on the actual block.\\r\\n     * @param permission The permission to add the value transferred\\r\\n     * @param valueTransferred The value to be transferred\\r\\n     */\\r\\n    function _setValueTransferred(ETHPermission storage permission, uint256 valueTransferred) internal {\\r\\n        if (permission.valueTransferedOnBlock < block.number) {\\r\\n            permission.valueTransferedOnBlock = block.number;\\r\\n            permission.valueTransferred = valueTransferred;\\r\\n        } else {\\r\\n            permission.valueTransferred = permission.valueTransferred.add(valueTransferred);\\r\\n        }\\r\\n        require(permission.valueTransferred <= permission.valueAllowed, \\\"PermissionRegistry: Value limit reached\\\");\\r\\n    }\\r\\n\\r\\n    /**\\r\\n     * @dev Sets the initial balances for ERC20 tokens in the current block\\r\\n     */\\r\\n    function setERC20Balances() public {\\r\\n        if (erc20LimitsOnBlock[msg.sender] < block.number) {\\r\\n            erc20LimitsOnBlock[msg.sender] = block.number;\\r\\n            for (uint256 i = 0; i < erc20Limits[msg.sender].length; i++) {\\r\\n                erc20Limits[msg.sender][i].initialValueOnBlock = IERC20(erc20Limits[msg.sender][i].token).balanceOf(\\r\\n                    msg.sender\\r\\n                );\\r\\n            }\\r\\n        }\\r\\n    }\\r\\n\\r\\n    /**\\r\\n     * @dev Checks the value transferred in block for all registered ERC20 limits.\\r\\n     * @param from The address from which ERC20 tokens limits will be checked\\r\\n     */\\r\\n    function checkERC20Limits(address from) public returns (bool) {\\r\\n        require(erc20LimitsOnBlock[from] == block.number, \\\"PermissionRegistry: ERC20 initialValues not set\\\");\\r\\n        for (uint256 i = 0; i < erc20Limits[from].length; i++) {\\r\\n            require(\\r\\n                erc20Limits[from][i].initialValueOnBlock.sub(IERC20(erc20Limits[from][i].token).balanceOf(from)) <=\\r\\n                    erc20Limits[from][i].valueAllowed,\\r\\n                \\\"PermissionRegistry: Value limit reached\\\"\\r\\n            );\\r\\n        }\\r\\n        return true;\\r\\n    }\\r\\n\\r\\n    /**\\r\\n     * @dev Get the time delay to be used for an address\\r\\n     * @param from The address to get the permission delay from\\r\\n     */\\r\\n    function getETHPermissionDelay(address from) public view returns (uint256) {\\r\\n        return permissionDelay[from];\\r\\n    }\\r\\n\\r\\n    /**\\r\\n     * @dev Gets the time from which the function can be executed from a contract to another and with which value.\\r\\n     * In case of now being allowed to do the call it returns zero in both values\\r\\n     * @param from The address from which the call will be executed\\r\\n     * @param to The address that will be called\\r\\n     * @param functionSignature The signature of the function to be executed\\r\\n     */\\r\\n    function getETHPermission(\\r\\n        address from,\\r\\n        address to,\\r\\n        bytes4 functionSignature\\r\\n    ) public view returns (uint256 valueAllowed, uint256 fromTime) {\\r\\n        // Allow by default internal contract calls and to this contract but with no value\\r\\n        if ((from == to) || (to == address(this))) {\\r\\n            return (0, 1);\\r\\n        } else {\\r\\n            return (\\r\\n                ethPermissions[from][to][functionSignature].valueAllowed,\\r\\n                ethPermissions[from][to][functionSignature].fromTime\\r\\n            );\\r\\n        }\\r\\n    }\\r\\n\\r\\n    /**\\r\\n     * @dev Gets the vallue allowed to be sent in a block of the ER20 token\\r\\n     * @param from The address from which the call will be executed\\r\\n     * @param token The address that will be called\\r\\n     */\\r\\n    function getERC20Limit(address from, address token) public view returns (uint256) {\\r\\n        for (uint256 i = 0; i < erc20Limits[from].length; i++)\\r\\n            if (erc20Limits[from][i].token == token) return erc20Limits[from][i].valueAllowed;\\r\\n        return 0;\\r\\n    }\\r\\n}\\r\\n\",\"keccak256\":\"0x54effa105b7b2f9244b7d9ff3f4eb5de89797ad765b2a8bf5702542b80a35bd0\",\"license\":\"AGPL-3.0\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50611a01806100206000396000f3fe608060405234801561001057600080fd5b506004361061010b5760003560e01c80638d2b9eff116100a2578063e926b6b511610071578063e926b6b514610250578063ea41790414610279578063eed47033146102a1578063f2fde38b146102b4578063fb0fde85146102c757600080fd5b80638d2b9eff1461019c5780638da5cb5b146101bc5780639692010c146101d7578063bcbe6d7b146101ea57600080fd5b806348ec8bb6116100de57806348ec8bb6146101665780636cfe048914610179578063715018a61461018c5780638129fc1c1461019457600080fd5b8063108764761461011057806331952632146101255780633e7a47b214610138578063443f863f14610140575b600080fd5b61012361011e366004611644565b6102ea565b005b61012361013336600461166e565b610349565b610123610813565b61015361014e3660046116b0565b610949565b6040519081526020015b60405180910390f35b610123610174366004611644565b610a1e565b6101236101873660046116fb565b610af6565b610123610d10565b610123610d74565b6101536101aa366004611762565b60656020526000908152604090205481565b6033546040516001600160a01b03909116815260200161015d565b6101236101e5366004611644565b610de7565b6102306101f836600461177d565b606660209081526000938452604080852082529284528284209052825290208054600182015460028301546003909301549192909184565b60408051948552602085019390935291830152606082015260800161015d565b61015361025e366004611762565b6001600160a01b031660009081526065602052604090205490565b61028c61028736600461177d565b610f2b565b6040805192835260208301919091520161015d565b6101236102af3660046117c0565b610fb4565b6101236102c2366004611762565b611146565b6102da6102d5366004611762565b61120e565b604051901515815260200161015d565b6033546001600160a01b0316331461032d576001600160a01b038216331461032d5760405162461bcd60e51b81526004016103249061180b565b60405180910390fd5b6001600160a01b03909116600090815260656020526040902055565b6033546001600160a01b03163314610383576001600160a01b03841633146103835760405162461bcd60e51b81526004016103249061180b565b6001600160a01b0384166000908152606760205260409020548111156103bb5760405162461bcd60e51b815260040161032490611860565b6001600160a01b0383166104295760405162461bcd60e51b815260206004820152602f60248201527f5065726d697373696f6e52656769737472793a20546f6b656e2061646472657360448201526e0732063616e6e6f742062652030783608c1b6064820152608401610324565b6040516370a0823160e01b81523360048201526000906001600160a01b038516906370a082319060240160206040518083038186803b15801561046b57600080fd5b505afa15801561047f573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906104a391906118a7565b6001600160a01b0386166000908152606760205260409020549091508214156106305760005b6001600160a01b0386166000908152606760205260409020548110156105ab576001600160a01b03868116600090815260676020526040902080549187169183908110610518576105186118c0565b60009182526020909120600490910201546001600160a01b031614156105995760405162461bcd60e51b815260206004820152603060248201527f5065726d697373696f6e52656769737472793a204c696d6974206f6e20746f6b60448201526f195b88185b1c9958591e48185919195960821b6064820152608401610324565b806105a3816118ec565b9150506104c9565b506001600160a01b0385811660009081526067602090815260408083208151608081018352898616815280840187815292810189815260608201868152835460018082018655948852959096209151600490950290910180546001600160a01b031916949096169390931785559051908401555160028301555160039091015561080c565b6001600160a01b038516600090815260676020526040812080548490811061065a5761065a6118c0565b60009182526020909120600490910201546001600160a01b0316146106e05760405162461bcd60e51b815260206004820152603660248201527f5065726d697373696f6e52656769737472793a2043616e74206f7665727269646044820152751948195e1a5cdd195b9d08115490cc8c081b1a5b5a5d60521b6064820152608401610324565b6001600160a01b038516600090815260676020526040902080548591908490811061070d5761070d6118c0565b6000918252602080832060049290920290910180546001600160a01b0319166001600160a01b03948516179055918716815260679091526040902080548291908490811061075d5761075d6118c0565b9060005260206000209060040201600101819055508260676000876001600160a01b03166001600160a01b0316815260200190815260200160002083815481106107a9576107a96118c0565b906000526020600020906004020160020181905550600060676000876001600160a01b03166001600160a01b0316815260200190815260200160002083815481106107f6576107f66118c0565b9060005260206000209060040201600301819055505b5050505050565b33600090815260686020526040902054431115610947573360009081526068602052604081204390555b3360009081526067602052604090205481101561094557336000908152606760205260409020805482908110610875576108756118c0565b60009182526020909120600491820201546040516370a0823160e01b815233928101929092526001600160a01b0316906370a082319060240160206040518083038186803b1580156108c657600080fd5b505afa1580156108da573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906108fe91906118a7565b33600090815260676020526040902080548390811061091f5761091f6118c0565b60009182526020909120600160049092020101558061093d816118ec565b91505061083d565b505b565b6000805b6001600160a01b038416600090815260676020526040902054811015610a12576001600160a01b0384811660009081526067602052604090208054918516918390811061099c5761099c6118c0565b60009182526020909120600490910201546001600160a01b03161415610a00576001600160a01b03841660009081526067602052604090208054829081106109e6576109e66118c0565b906000526020600020906004020160020154915050610a18565b80610a0a816118ec565b91505061094d565b50600090505b92915050565b6033546001600160a01b03163314610a58576001600160a01b0382163314610a585760405162461bcd60e51b81526004016103249061180b565b6001600160a01b0382166000908152606760205260409020548110610a8f5760405162461bcd60e51b815260040161032490611860565b6001600160a01b038216600090815260656020526040902054610ab3904290611434565b6001600160a01b0383166000908152606760205260409020805483908110610add57610add6118c0565b9060005260206000209060040201600301819055505050565b6033546001600160a01b03163314610b30576001600160a01b0385163314610b305760405162461bcd60e51b81526004016103249061180b565b6001600160a01b038416301415610bb95760405162461bcd60e51b815260206004820152604160248201527f5065726d697373696f6e52656769737472793a2043616e74207365742065746860448201527f5065726d697373696f6e7320746f205065726d697373696f6e526567697374726064820152607960f81b608482015260a401610324565b8015610c2d576001600160a01b038516600090815260656020526040902054610be3904290611434565b6001600160a01b03868116600090815260666020908152604080832093891683529281528282206001600160e01b0319881683529052206003810191909155600201829055610c72565b6001600160a01b03858116600090815260666020908152604080832093881683529281528282206001600160e01b031987168352905290812060038101829055600201555b6001600160a01b0385811660008181526066602090815260408083209489168084529482528083206001600160e01b03198916808552908352928190206003810154600290910154825195865292850195909552830191909152606082019290925260808101919091527fa8d1883748320f844ad63c0685f3f5372c0932122cbbdd9fd172781458d768cc9060a00160405180910390a15050505050565b6033546001600160a01b03163314610d6a5760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152606401610324565b6109476000611447565b600054610100900460ff1680610d8d575060005460ff16155b610da95760405162461bcd60e51b815260040161032490611907565b600054610100900460ff16158015610dcb576000805461ffff19166101011790555b610dd3611499565b8015610945576000805461ff001916905550565b6001600160a01b0382166000908152606760205260409020805482908110610e1157610e116118c0565b9060005260206000209060040201600301544210610e8d5760405162461bcd60e51b815260206004820152603360248201527f5065726d697373696f6e52656769737472793a2043616e742065786563757465604482015272081c195c9b5a5cdcda5bdb881c995b5bdd985b606a1b6064820152608401610324565b6040805160808101825260008082526020808301829052828401829052606083018290526001600160a01b03861682526067905291909120805483908110610ed757610ed76118c0565b600091825260209182902083516004929092020180546001600160a01b0319166001600160a01b03909216919091178155908201516001820155604082015160028201556060909101516003909101555050565b600080836001600160a01b0316856001600160a01b03161480610f5657506001600160a01b03841630145b15610f675750600090506001610fac565b50506001600160a01b03838116600090815260666020908152604080832093861683529281528282206001600160e01b03198516835290522060028101546003909101545b935093915050565b6033546001600160a01b03163314610fee576001600160a01b0384163314610fee5760405162461bcd60e51b81526004016103249061180b565b8015611026576001600160a01b0384166000908152606660209081526040808320838052825280832090915290206110269082611500565b6000611033858585610f2b565b91505080156110e25742811061109c5760405162461bcd60e51b815260206004820152602860248201527f5065726d697373696f6e52656769737472793a2043616c6c206e6f7420616c6c6044820152671bddd959081e595d60c21b6064820152608401610324565b6001600160a01b03808616600090815260666020908152604080832093881683529281528282206001600160e01b0319871683529052206110dd9083611500565b61080c565b6001600160e01b031983161561080c5760405162461bcd60e51b8152602060048201526024808201527f5065726d697373696f6e52656769737472793a2043616c6c206e6f7420616c6c6044820152631bddd95960e21b6064820152608401610324565b6033546001600160a01b031633146111a05760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152606401610324565b6001600160a01b0381166112055760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b6064820152608401610324565b61094581611447565b6001600160a01b038116600090815260686020526040812054431461128d5760405162461bcd60e51b815260206004820152602f60248201527f5065726d697373696f6e52656769737472793a20455243323020696e6974696160448201526e1b15985b1d595cc81b9bdd081cd95d608a1b6064820152608401610324565b60005b6001600160a01b03831660009081526067602052604090205481101561142b576001600160a01b03831660009081526067602052604090208054829081106112da576112da6118c0565b9060005260206000209060040201600201546113fb60676000866001600160a01b03166001600160a01b031681526020019081526020016000208381548110611325576113256118c0565b60009182526020909120600491820201546040516370a0823160e01b81526001600160a01b03888116938201939093529116906370a082319060240160206040518083038186803b15801561137957600080fd5b505afa15801561138d573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906113b191906118a7565b6001600160a01b03861660009081526067602052604090208054859081106113db576113db6118c0565b90600052602060002090600402016001015461155290919063ffffffff16565b11156114195760405162461bcd60e51b815260040161032490611955565b80611423816118ec565b915050611290565b50600192915050565b6000611440828461199c565b9392505050565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b600054610100900460ff16806114b2575060005460ff16155b6114ce5760405162461bcd60e51b815260040161032490611907565b600054610100900460ff161580156114f0576000805461ffff19166101011790555b6114f861155e565b610dd36115c8565b438260010154101561151a57436001830155808255611529565b81546115269082611434565b82555b60028201548254111561154e5760405162461bcd60e51b815260040161032490611955565b5050565b600061144082846119b4565b600054610100900460ff1680611577575060005460ff16155b6115935760405162461bcd60e51b815260040161032490611907565b600054610100900460ff16158015610dd3576000805461ffff19166101011790558015610945576000805461ff001916905550565b600054610100900460ff16806115e1575060005460ff16155b6115fd5760405162461bcd60e51b815260040161032490611907565b600054610100900460ff1615801561161f576000805461ffff19166101011790555b610dd333611447565b80356001600160a01b038116811461163f57600080fd5b919050565b6000806040838503121561165757600080fd5b61166083611628565b946020939093013593505050565b6000806000806080858703121561168457600080fd5b61168d85611628565b935061169b60208601611628565b93969395505050506040820135916060013590565b600080604083850312156116c357600080fd5b6116cc83611628565b91506116da60208401611628565b90509250929050565b80356001600160e01b03198116811461163f57600080fd5b600080600080600060a0868803121561171357600080fd5b61171c86611628565b945061172a60208701611628565b9350611738604087016116e3565b9250606086013591506080860135801515811461175457600080fd5b809150509295509295909350565b60006020828403121561177457600080fd5b61144082611628565b60008060006060848603121561179257600080fd5b61179b84611628565b92506117a960208501611628565b91506117b7604085016116e3565b90509250925092565b600080600080608085870312156117d657600080fd5b6117df85611628565b93506117ed60208601611628565b92506117fb604086016116e3565b9396929550929360600135925050565b60208082526035908201527f5065726d697373696f6e52656769737472793a204f6e6c79206f776e65722063604082015274616e20737065636966792066726f6d2076616c756560581b606082015260800190565b60208082526027908201527f5065726d697373696f6e52656769737472793a20496e646578206f7574206f6660408201526620626f756e647360c81b606082015260800190565b6000602082840312156118b957600080fd5b5051919050565b634e487b7160e01b600052603260045260246000fd5b634e487b7160e01b600052601160045260246000fd5b6000600019821415611900576119006118d6565b5060010190565b6020808252602e908201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160408201526d191e481a5b9a5d1a585b1a5e995960921b606082015260800190565b60208082526027908201527f5065726d697373696f6e52656769737472793a2056616c7565206c696d6974206040820152661c995858da195960ca1b606082015260800190565b600082198211156119af576119af6118d6565b500190565b6000828210156119c6576119c66118d6565b50039056fea2646970667358221220b99c0a699349fab8f86317fdda944482514211fbfe1d9f7f2823b192dccedccc64736f6c63430008080033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061010b5760003560e01c80638d2b9eff116100a2578063e926b6b511610071578063e926b6b514610250578063ea41790414610279578063eed47033146102a1578063f2fde38b146102b4578063fb0fde85146102c757600080fd5b80638d2b9eff1461019c5780638da5cb5b146101bc5780639692010c146101d7578063bcbe6d7b146101ea57600080fd5b806348ec8bb6116100de57806348ec8bb6146101665780636cfe048914610179578063715018a61461018c5780638129fc1c1461019457600080fd5b8063108764761461011057806331952632146101255780633e7a47b214610138578063443f863f14610140575b600080fd5b61012361011e366004611644565b6102ea565b005b61012361013336600461166e565b610349565b610123610813565b61015361014e3660046116b0565b610949565b6040519081526020015b60405180910390f35b610123610174366004611644565b610a1e565b6101236101873660046116fb565b610af6565b610123610d10565b610123610d74565b6101536101aa366004611762565b60656020526000908152604090205481565b6033546040516001600160a01b03909116815260200161015d565b6101236101e5366004611644565b610de7565b6102306101f836600461177d565b606660209081526000938452604080852082529284528284209052825290208054600182015460028301546003909301549192909184565b60408051948552602085019390935291830152606082015260800161015d565b61015361025e366004611762565b6001600160a01b031660009081526065602052604090205490565b61028c61028736600461177d565b610f2b565b6040805192835260208301919091520161015d565b6101236102af3660046117c0565b610fb4565b6101236102c2366004611762565b611146565b6102da6102d5366004611762565b61120e565b604051901515815260200161015d565b6033546001600160a01b0316331461032d576001600160a01b038216331461032d5760405162461bcd60e51b81526004016103249061180b565b60405180910390fd5b6001600160a01b03909116600090815260656020526040902055565b6033546001600160a01b03163314610383576001600160a01b03841633146103835760405162461bcd60e51b81526004016103249061180b565b6001600160a01b0384166000908152606760205260409020548111156103bb5760405162461bcd60e51b815260040161032490611860565b6001600160a01b0383166104295760405162461bcd60e51b815260206004820152602f60248201527f5065726d697373696f6e52656769737472793a20546f6b656e2061646472657360448201526e0732063616e6e6f742062652030783608c1b6064820152608401610324565b6040516370a0823160e01b81523360048201526000906001600160a01b038516906370a082319060240160206040518083038186803b15801561046b57600080fd5b505afa15801561047f573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906104a391906118a7565b6001600160a01b0386166000908152606760205260409020549091508214156106305760005b6001600160a01b0386166000908152606760205260409020548110156105ab576001600160a01b03868116600090815260676020526040902080549187169183908110610518576105186118c0565b60009182526020909120600490910201546001600160a01b031614156105995760405162461bcd60e51b815260206004820152603060248201527f5065726d697373696f6e52656769737472793a204c696d6974206f6e20746f6b60448201526f195b88185b1c9958591e48185919195960821b6064820152608401610324565b806105a3816118ec565b9150506104c9565b506001600160a01b0385811660009081526067602090815260408083208151608081018352898616815280840187815292810189815260608201868152835460018082018655948852959096209151600490950290910180546001600160a01b031916949096169390931785559051908401555160028301555160039091015561080c565b6001600160a01b038516600090815260676020526040812080548490811061065a5761065a6118c0565b60009182526020909120600490910201546001600160a01b0316146106e05760405162461bcd60e51b815260206004820152603660248201527f5065726d697373696f6e52656769737472793a2043616e74206f7665727269646044820152751948195e1a5cdd195b9d08115490cc8c081b1a5b5a5d60521b6064820152608401610324565b6001600160a01b038516600090815260676020526040902080548591908490811061070d5761070d6118c0565b6000918252602080832060049290920290910180546001600160a01b0319166001600160a01b03948516179055918716815260679091526040902080548291908490811061075d5761075d6118c0565b9060005260206000209060040201600101819055508260676000876001600160a01b03166001600160a01b0316815260200190815260200160002083815481106107a9576107a96118c0565b906000526020600020906004020160020181905550600060676000876001600160a01b03166001600160a01b0316815260200190815260200160002083815481106107f6576107f66118c0565b9060005260206000209060040201600301819055505b5050505050565b33600090815260686020526040902054431115610947573360009081526068602052604081204390555b3360009081526067602052604090205481101561094557336000908152606760205260409020805482908110610875576108756118c0565b60009182526020909120600491820201546040516370a0823160e01b815233928101929092526001600160a01b0316906370a082319060240160206040518083038186803b1580156108c657600080fd5b505afa1580156108da573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906108fe91906118a7565b33600090815260676020526040902080548390811061091f5761091f6118c0565b60009182526020909120600160049092020101558061093d816118ec565b91505061083d565b505b565b6000805b6001600160a01b038416600090815260676020526040902054811015610a12576001600160a01b0384811660009081526067602052604090208054918516918390811061099c5761099c6118c0565b60009182526020909120600490910201546001600160a01b03161415610a00576001600160a01b03841660009081526067602052604090208054829081106109e6576109e66118c0565b906000526020600020906004020160020154915050610a18565b80610a0a816118ec565b91505061094d565b50600090505b92915050565b6033546001600160a01b03163314610a58576001600160a01b0382163314610a585760405162461bcd60e51b81526004016103249061180b565b6001600160a01b0382166000908152606760205260409020548110610a8f5760405162461bcd60e51b815260040161032490611860565b6001600160a01b038216600090815260656020526040902054610ab3904290611434565b6001600160a01b0383166000908152606760205260409020805483908110610add57610add6118c0565b9060005260206000209060040201600301819055505050565b6033546001600160a01b03163314610b30576001600160a01b0385163314610b305760405162461bcd60e51b81526004016103249061180b565b6001600160a01b038416301415610bb95760405162461bcd60e51b815260206004820152604160248201527f5065726d697373696f6e52656769737472793a2043616e74207365742065746860448201527f5065726d697373696f6e7320746f205065726d697373696f6e526567697374726064820152607960f81b608482015260a401610324565b8015610c2d576001600160a01b038516600090815260656020526040902054610be3904290611434565b6001600160a01b03868116600090815260666020908152604080832093891683529281528282206001600160e01b0319881683529052206003810191909155600201829055610c72565b6001600160a01b03858116600090815260666020908152604080832093881683529281528282206001600160e01b031987168352905290812060038101829055600201555b6001600160a01b0385811660008181526066602090815260408083209489168084529482528083206001600160e01b03198916808552908352928190206003810154600290910154825195865292850195909552830191909152606082019290925260808101919091527fa8d1883748320f844ad63c0685f3f5372c0932122cbbdd9fd172781458d768cc9060a00160405180910390a15050505050565b6033546001600160a01b03163314610d6a5760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152606401610324565b6109476000611447565b600054610100900460ff1680610d8d575060005460ff16155b610da95760405162461bcd60e51b815260040161032490611907565b600054610100900460ff16158015610dcb576000805461ffff19166101011790555b610dd3611499565b8015610945576000805461ff001916905550565b6001600160a01b0382166000908152606760205260409020805482908110610e1157610e116118c0565b9060005260206000209060040201600301544210610e8d5760405162461bcd60e51b815260206004820152603360248201527f5065726d697373696f6e52656769737472793a2043616e742065786563757465604482015272081c195c9b5a5cdcda5bdb881c995b5bdd985b606a1b6064820152608401610324565b6040805160808101825260008082526020808301829052828401829052606083018290526001600160a01b03861682526067905291909120805483908110610ed757610ed76118c0565b600091825260209182902083516004929092020180546001600160a01b0319166001600160a01b03909216919091178155908201516001820155604082015160028201556060909101516003909101555050565b600080836001600160a01b0316856001600160a01b03161480610f5657506001600160a01b03841630145b15610f675750600090506001610fac565b50506001600160a01b03838116600090815260666020908152604080832093861683529281528282206001600160e01b03198516835290522060028101546003909101545b935093915050565b6033546001600160a01b03163314610fee576001600160a01b0384163314610fee5760405162461bcd60e51b81526004016103249061180b565b8015611026576001600160a01b0384166000908152606660209081526040808320838052825280832090915290206110269082611500565b6000611033858585610f2b565b91505080156110e25742811061109c5760405162461bcd60e51b815260206004820152602860248201527f5065726d697373696f6e52656769737472793a2043616c6c206e6f7420616c6c6044820152671bddd959081e595d60c21b6064820152608401610324565b6001600160a01b03808616600090815260666020908152604080832093881683529281528282206001600160e01b0319871683529052206110dd9083611500565b61080c565b6001600160e01b031983161561080c5760405162461bcd60e51b8152602060048201526024808201527f5065726d697373696f6e52656769737472793a2043616c6c206e6f7420616c6c6044820152631bddd95960e21b6064820152608401610324565b6033546001600160a01b031633146111a05760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152606401610324565b6001600160a01b0381166112055760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b6064820152608401610324565b61094581611447565b6001600160a01b038116600090815260686020526040812054431461128d5760405162461bcd60e51b815260206004820152602f60248201527f5065726d697373696f6e52656769737472793a20455243323020696e6974696160448201526e1b15985b1d595cc81b9bdd081cd95d608a1b6064820152608401610324565b60005b6001600160a01b03831660009081526067602052604090205481101561142b576001600160a01b03831660009081526067602052604090208054829081106112da576112da6118c0565b9060005260206000209060040201600201546113fb60676000866001600160a01b03166001600160a01b031681526020019081526020016000208381548110611325576113256118c0565b60009182526020909120600491820201546040516370a0823160e01b81526001600160a01b03888116938201939093529116906370a082319060240160206040518083038186803b15801561137957600080fd5b505afa15801561138d573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906113b191906118a7565b6001600160a01b03861660009081526067602052604090208054859081106113db576113db6118c0565b90600052602060002090600402016001015461155290919063ffffffff16565b11156114195760405162461bcd60e51b815260040161032490611955565b80611423816118ec565b915050611290565b50600192915050565b6000611440828461199c565b9392505050565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b600054610100900460ff16806114b2575060005460ff16155b6114ce5760405162461bcd60e51b815260040161032490611907565b600054610100900460ff161580156114f0576000805461ffff19166101011790555b6114f861155e565b610dd36115c8565b438260010154101561151a57436001830155808255611529565b81546115269082611434565b82555b60028201548254111561154e5760405162461bcd60e51b815260040161032490611955565b5050565b600061144082846119b4565b600054610100900460ff1680611577575060005460ff16155b6115935760405162461bcd60e51b815260040161032490611907565b600054610100900460ff16158015610dd3576000805461ffff19166101011790558015610945576000805461ff001916905550565b600054610100900460ff16806115e1575060005460ff16155b6115fd5760405162461bcd60e51b815260040161032490611907565b600054610100900460ff1615801561161f576000805461ffff19166101011790555b610dd333611447565b80356001600160a01b038116811461163f57600080fd5b919050565b6000806040838503121561165757600080fd5b61166083611628565b946020939093013593505050565b6000806000806080858703121561168457600080fd5b61168d85611628565b935061169b60208601611628565b93969395505050506040820135916060013590565b600080604083850312156116c357600080fd5b6116cc83611628565b91506116da60208401611628565b90509250929050565b80356001600160e01b03198116811461163f57600080fd5b600080600080600060a0868803121561171357600080fd5b61171c86611628565b945061172a60208701611628565b9350611738604087016116e3565b9250606086013591506080860135801515811461175457600080fd5b809150509295509295909350565b60006020828403121561177457600080fd5b61144082611628565b60008060006060848603121561179257600080fd5b61179b84611628565b92506117a960208501611628565b91506117b7604085016116e3565b90509250925092565b600080600080608085870312156117d657600080fd5b6117df85611628565b93506117ed60208601611628565b92506117fb604086016116e3565b9396929550929360600135925050565b60208082526035908201527f5065726d697373696f6e52656769737472793a204f6e6c79206f776e65722063604082015274616e20737065636966792066726f6d2076616c756560581b606082015260800190565b60208082526027908201527f5065726d697373696f6e52656769737472793a20496e646578206f7574206f6660408201526620626f756e647360c81b606082015260800190565b6000602082840312156118b957600080fd5b5051919050565b634e487b7160e01b600052603260045260246000fd5b634e487b7160e01b600052601160045260246000fd5b6000600019821415611900576119006118d6565b5060010190565b6020808252602e908201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160408201526d191e481a5b9a5d1a585b1a5e995960921b606082015260800190565b60208082526027908201527f5065726d697373696f6e52656769737472793a2056616c7565206c696d6974206040820152661c995858da195960ca1b606082015260800190565b600082198211156119af576119af6118d6565b500190565b6000828210156119c6576119c66118d6565b50039056fea2646970667358221220b99c0a699349fab8f86317fdda944482514211fbfe1d9f7f2823b192dccedccc64736f6c63430008080033",
+  "devdoc": {
+    "details": "A registry of smart contracts functions and ERC20 transfer limits that are allowed to be called between contracts. A time delay in seconds over the permissions can be set form any contract, this delay would be added to any new permissions sent by that address. The PermissionRegistry owner (if there is an owner and owner address is not 0x0) can overwrite/set any permission. The registry allows setting ERC20 limits, the limit needs to be set at the beggining of the block and then it can be checked at any time. To remove or replace ERC20 limits first it needs to be removed and then it can be set again. The smart contracts permissions are compound by the `from` address, `to` address, `value` uint256 and `fromTime` uint256, if `fromTime` is zero it means the function is not allowed.",
+    "kind": "dev",
+    "methods": {
+      "addERC20Limit(address,address,uint256,uint256)": {
+        "details": "Add an ERC20Limit for an address, there cannot be more than one limit per token.",
+        "params": {
+          "from": "The address that will execute the call",
+          "index": "The index of the token permission in the erco limits",
+          "token": "The erc20 token to set the limit",
+          "valueAllowed": "The amount of value allowed of the token to be sent"
+        }
+      },
+      "checkERC20Limits(address)": {
+        "details": "Checks the value transferred in block for all registered ERC20 limits.",
+        "params": {
+          "from": "The address from which ERC20 tokens limits will be checked"
+        }
+      },
+      "executeRemoveERC20Limit(address,uint256)": {
+        "details": "Executes the final removal of an ERC20 limit of an address by its index in the ERC20Lmits array.",
+        "params": {
+          "from": "The address that will execute the call",
+          "index": "The index of the token permission in the erco limits"
+        }
+      },
+      "getERC20Limit(address,address)": {
+        "details": "Gets the vallue allowed to be sent in a block of the ER20 token",
+        "params": {
+          "from": "The address from which the call will be executed",
+          "token": "The address that will be called"
+        }
+      },
+      "getETHPermission(address,address,bytes4)": {
+        "details": "Gets the time from which the function can be executed from a contract to another and with which value. In case of now being allowed to do the call it returns zero in both values",
+        "params": {
+          "from": "The address from which the call will be executed",
+          "functionSignature": "The signature of the function to be executed",
+          "to": "The address that will be called"
+        }
+      },
+      "getETHPermissionDelay(address)": {
+        "details": "Get the time delay to be used for an address",
+        "params": {
+          "from": "The address to get the permission delay from"
+        }
+      },
+      "initialize()": {
+        "details": "initializer"
+      },
+      "owner()": {
+        "details": "Returns the address of the current owner."
+      },
+      "removeERC20Limit(address,uint256)": {
+        "details": "Removes an ERC20 limit of an address by its index in the ERC20Lmits array. (take in count that the limit execution has to be called after the remove time)",
+        "params": {
+          "from": "The address that will execute the call",
+          "index": "The index of the token permission in the erco limits"
+        }
+      },
+      "renounceOwnership()": {
+        "details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner."
+      },
+      "setERC20Balances()": {
+        "details": "Sets the initial balances for ERC20 tokens in the current block"
+      },
+      "setETHPermission(address,address,bytes4,uint256,bool)": {
+        "details": "Sets the time from which the function can be executed from a contract to another a with which value.",
+        "params": {
+          "allowed": "If the function is allowed or not.",
+          "from": "The address that will execute the call",
+          "functionSignature": "The signature of the function to be executed",
+          "to": "The address that will be called",
+          "valueAllowed": "The amount of value allowed of the token to be sent"
+        }
+      },
+      "setETHPermissionDelay(address,uint256)": {
+        "details": "Set the time delay for a call to show as allowed",
+        "params": {
+          "_timeDelay": "The amount of time that has to pass after permission addition to allow execution"
+        }
+      },
+      "setETHPermissionUsed(address,address,bytes4,uint256)": {
+        "details": "Sets the value transferred in a permission on the actual block and checks the allowed timestamp.      It also checks that the value does not go over the permission other global limits.",
+        "params": {
+          "from": "The address from which the call will be executed",
+          "functionSignature": "The signature of the function to be executed",
+          "to": "The address that will be called",
+          "valueTransferred": "The value to be transferred"
+        }
+      },
+      "transferOwnership(address)": {
+        "details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
+      }
+    },
+    "title": "PermissionRegistry.",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 145,
+        "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+        "label": "_initialized",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_bool"
+      },
+      {
+        "astId": 148,
+        "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+        "label": "_initializing",
+        "offset": 1,
+        "slot": "0",
+        "type": "t_bool"
+      },
+      {
+        "astId": 1811,
+        "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+        "label": "__gap",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_array(t_uint256)50_storage"
+      },
+      {
+        "astId": 10,
+        "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+        "label": "_owner",
+        "offset": 0,
+        "slot": "51",
+        "type": "t_address"
+      },
+      {
+        "astId": 124,
+        "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+        "label": "__gap",
+        "offset": 0,
+        "slot": "52",
+        "type": "t_array(t_uint256)49_storage"
+      },
+      {
+        "astId": 14030,
+        "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+        "label": "permissionDelay",
+        "offset": 0,
+        "slot": "101",
+        "type": "t_mapping(t_address,t_uint256)"
+      },
+      {
+        "astId": 14069,
+        "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+        "label": "ethPermissions",
+        "offset": 0,
+        "slot": "102",
+        "type": "t_mapping(t_address,t_mapping(t_address,t_mapping(t_bytes4,t_struct(ETHPermission)14051_storage)))"
+      },
+      {
+        "astId": 14075,
+        "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+        "label": "erc20Limits",
+        "offset": 0,
+        "slot": "103",
+        "type": "t_mapping(t_address,t_array(t_struct(ERC20Limit)14060_storage)dyn_storage)"
+      },
+      {
+        "astId": 14079,
+        "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+        "label": "erc20LimitsOnBlock",
+        "offset": 0,
+        "slot": "104",
+        "type": "t_mapping(t_address,t_uint256)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_array(t_struct(ERC20Limit)14060_storage)dyn_storage": {
+        "base": "t_struct(ERC20Limit)14060_storage",
+        "encoding": "dynamic_array",
+        "label": "struct PermissionRegistry.ERC20Limit[]",
+        "numberOfBytes": "32"
+      },
+      "t_array(t_uint256)49_storage": {
+        "base": "t_uint256",
+        "encoding": "inplace",
+        "label": "uint256[49]",
+        "numberOfBytes": "1568"
+      },
+      "t_array(t_uint256)50_storage": {
+        "base": "t_uint256",
+        "encoding": "inplace",
+        "label": "uint256[50]",
+        "numberOfBytes": "1600"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_bytes4": {
+        "encoding": "inplace",
+        "label": "bytes4",
+        "numberOfBytes": "4"
+      },
+      "t_mapping(t_address,t_array(t_struct(ERC20Limit)14060_storage)dyn_storage)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => struct PermissionRegistry.ERC20Limit[])",
+        "numberOfBytes": "32",
+        "value": "t_array(t_struct(ERC20Limit)14060_storage)dyn_storage"
+      },
+      "t_mapping(t_address,t_mapping(t_address,t_mapping(t_bytes4,t_struct(ETHPermission)14051_storage)))": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => mapping(address => mapping(bytes4 => struct PermissionRegistry.ETHPermission)))",
+        "numberOfBytes": "32",
+        "value": "t_mapping(t_address,t_mapping(t_bytes4,t_struct(ETHPermission)14051_storage))"
+      },
+      "t_mapping(t_address,t_mapping(t_bytes4,t_struct(ETHPermission)14051_storage))": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => mapping(bytes4 => struct PermissionRegistry.ETHPermission))",
+        "numberOfBytes": "32",
+        "value": "t_mapping(t_bytes4,t_struct(ETHPermission)14051_storage)"
+      },
+      "t_mapping(t_address,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_mapping(t_bytes4,t_struct(ETHPermission)14051_storage)": {
+        "encoding": "mapping",
+        "key": "t_bytes4",
+        "label": "mapping(bytes4 => struct PermissionRegistry.ETHPermission)",
+        "numberOfBytes": "32",
+        "value": "t_struct(ETHPermission)14051_storage"
+      },
+      "t_struct(ERC20Limit)14060_storage": {
+        "encoding": "inplace",
+        "label": "struct PermissionRegistry.ERC20Limit",
+        "members": [
+          {
+            "astId": 14053,
+            "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+            "label": "token",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address"
+          },
+          {
+            "astId": 14055,
+            "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+            "label": "initialValueOnBlock",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 14057,
+            "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+            "label": "valueAllowed",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 14059,
+            "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+            "label": "removeTime",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256"
+          }
+        ],
+        "numberOfBytes": "128"
+      },
+      "t_struct(ETHPermission)14051_storage": {
+        "encoding": "inplace",
+        "label": "struct PermissionRegistry.ETHPermission",
+        "members": [
+          {
+            "astId": 14044,
+            "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+            "label": "valueTransferred",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 14046,
+            "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+            "label": "valueTransferedOnBlock",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 14048,
+            "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+            "label": "valueAllowed",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 14050,
+            "contract": "contracts/utils/PermissionRegistry.sol:PermissionRegistry",
+            "label": "fromTime",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256"
+          }
+        ],
+        "numberOfBytes": "128"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}

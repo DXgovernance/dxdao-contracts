@@ -26,4 +26,3 @@ tags
 yarn-error.log
 venv/
 contracts/hardhat-dependency-compiler
-deployments
