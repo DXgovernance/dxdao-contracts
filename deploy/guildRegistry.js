@@ -11,7 +11,12 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     deterministicDeployment: deploySalt,
   });
   const guildRegistry = await GuildRegistry.at(guildRegistryDeploy.address);
-  await guildRegistry.initialize();
+
+  try {
+    await guildRegistry.initialize();
+  } catch (e) {
+    console.warn("Guild Registry is already deployed");
+  }
 
   if (process.env.ETHERSCAN_API_KEY && hre.network.name !== "hardhat") {
     try {

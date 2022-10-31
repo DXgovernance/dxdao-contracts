@@ -151,7 +151,19 @@ module.exports = {
     enabled: process.env.REPORT_GAS ? true : false,
   },
   networks: hardharNetworks,
-  etherscan: { apiKey: ETHERSCAN_API_KEY },
+  etherscan: {
+    apiKey: ETHERSCAN_API_KEY,
+    customChains: [
+      {
+        network: "xdai",
+        chainId: 100,
+        urls: {
+          apiURL: "https://api.gnosisscan.io/api",
+          browserURL: "https://gnosisscan.io",
+        },
+      },
+    ],
+  },
   dependencyCompiler: {
     keep: true,
     paths: [
