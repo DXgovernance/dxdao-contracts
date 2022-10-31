@@ -67,8 +67,6 @@ contract AvatarScheme is Scheme {
             emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         } else {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
-
-            require(permissionRegistry.checkERC20Limits(address(avatar)), "AvatarScheme: ERC20 limits passed");
             proposal.state = ProposalState.ExecutionSucceeded;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
 
@@ -120,6 +118,7 @@ contract AvatarScheme is Scheme {
                         getNativeReputationTotalSupply()),
                 "AvatarScheme: maxRepPercentageChange passed"
             );
+            require(permissionRegistry.checkERC20Limits(address(avatar)), "AvatarScheme: ERC20 limits passed");
         }
         controller.endProposal(_proposalId);
         executingProposal = false;
