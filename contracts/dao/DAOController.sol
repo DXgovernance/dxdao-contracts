@@ -159,7 +159,6 @@ contract DAOController is Initializable {
     function startProposal(bytes32 _proposalId) external onlyRegisteredScheme {
         activeProposals.add(_proposalId);
         schemeOfProposal[_proposalId] = msg.sender;
-        reputationToken.takeSnapshot();
     }
 
     /**

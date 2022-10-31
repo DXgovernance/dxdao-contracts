@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20Snapshot
  * @title DAO Reputation
  * @dev An ERC20 token that is non-transferable, owned and controlled by the DAO.
  * Used by the DAO to vote on proposals.
- * It uses a snapshot mechanism to keep track of the reputation at the moment of each proposal creation.
+ * It uses a snapshot mechanism to keep track of the reputation at the moment of each modification of the supply of the token (every mint an burn).
  */
 contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     event Mint(address indexed _to, uint256 _amount);
@@ -34,6 +34,7 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     // @return True if the reputation are generated correctly
     function mint(address _account, uint256 _amount) external onlyOwner returns (bool) {
         _mint(_account, _amount);
+        _snapshot();
         emit Mint(_account, _amount);
         return true;
     }
@@ -52,6 +53,7 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     // @return True if the reputation are burned correctly
     function burn(address _account, uint256 _amount) external onlyOwner returns (bool) {
         _burn(_account, _amount);
+        _snapshot();
         emit Burn(_account, _amount);
         return true;
     }
@@ -69,12 +71,5 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      */
     function getCurrentSnapshotId() public view returns (uint256) {
         return _getCurrentSnapshotId();
-    }
-
-    /**
-     * @dev Get the current snapshotId
-     */
-    function takeSnapshot() external onlyOwner returns (uint256) {
-        return _snapshot();
     }
 }
