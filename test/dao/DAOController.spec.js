@@ -8,13 +8,15 @@ const DAOAvatar = artifacts.require("./DAOAvatar.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 import * as helpers from "../helpers";
 
-contract("WalletScheme", function (accounts) {
-  let standardTokenMock;
-  // let org;
+contract("DAOController", function (accounts) {
+  let reputation,
+    controller,
+    avatar,
+    defaultParamsHash,
+    repHolders,
+    standardTokenMock;
 
-  let reputation, controller, avatar, defaultParamsHash, repHolders;
-
-  const schemeAddress = accounts[0]; // I need to make calls from scheme
+  const schemeAddress = accounts[0];
 
   beforeEach(async function () {
     repHolders = [
@@ -31,9 +33,10 @@ contract("WalletScheme", function (accounts) {
     avatar = await DAOAvatar.new();
     await avatar.initialize(controller.address);
 
-    for (let i = 0; i < repHolders.length; i++) {
-      await reputation.mint(repHolders[i].address, repHolders[i].amount);
+    for (let { address, amount } of repHolders) {
+      await reputation.mint(address, amount);
     }
+
     await reputation.transferOwnership(controller.address);
 
     standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
@@ -61,14 +64,18 @@ contract("WalletScheme", function (accounts) {
     const canManageSchemes = await controller.getSchemeCanManageSchemes(
       schemeAddress
     );
+    const canMakeAvatarCalls = await controller.getSchemeCanMakeAvatarCalls(
+      schemeAddress
+    );
 
     expect(schemesWithManageSchemesPermission.toNumber()).to.equal(1);
     expect(defaultSchemeParamsHash).to.equal(defaultParamsHash);
     expect(canManageSchemes).to.eq(true);
+    expect(canMakeAvatarCalls).to.eq(true);
   });
 
   // eslint-disable-next-line max-len
-  it("registerScheme should subtract from schemesWithManageSchemesPermission counter if _canManageSchemes is set to false in a registered scheme", async function () {
+  it("registerScheme() should not allow subtracting from schemesWithManageSchemesPermission if there is only 1 scheme with manage schemes permissions", async function () {
     // change scheme with _canManageSchemes=false
     const registerCall = controller.registerScheme(
       schemeAddress,
@@ -84,17 +91,22 @@ contract("WalletScheme", function (accounts) {
   });
 
   // eslint-disable-next-line max-len
-  it("registerScheme should not allow subtracting from schemesWithManageSchemesPermission if there is only 1 scheme with manage schemes permissions", async function () {
+  it("registerScheme() should subtract from schemesWithManageSchemesPermission counter if _canManageSchemes is set to false in a registered scheme", async function () {
     // register new scheme with  manage schemes permissions
+    const newSchemeAddress = accounts[10];
     await controller.registerScheme(
-      accounts[10],
+      newSchemeAddress,
       defaultParamsHash,
       true,
       true
     );
+    let currentSchemesWithManagePermission = [schemeAddress, newSchemeAddress]
+      .length;
     const schemesWithManageSchemesPermission =
       await controller.getSchemesCountWithManageSchemesPermissions();
-    expect(schemesWithManageSchemesPermission.toNumber()).to.equal(2);
+    expect(schemesWithManageSchemesPermission.toNumber()).to.equal(
+      currentSchemesWithManagePermission
+    );
 
     // change manage schemes permissions to first scheme
     await controller.registerScheme(
@@ -107,7 +119,7 @@ contract("WalletScheme", function (accounts) {
     const schemesWithManageSchemesPermissionAfterChange =
       await controller.getSchemesCountWithManageSchemesPermissions();
     expect(schemesWithManageSchemesPermissionAfterChange.toNumber()).to.equal(
-      1
+      currentSchemesWithManagePermission - 1
     );
   });
 });
