@@ -36,7 +36,6 @@ contract DAOController is Initializable {
         bool canMakeAvatarCalls;
     }
 
-    address[] public schemesAddresses;
     mapping(address => Scheme) public schemes;
     uint256 public schemesWithManageSchemesPermission;
 
@@ -115,7 +114,7 @@ contract DAOController is Initializable {
             return false;
         }
 
-        if (scheme.isRegistered && scheme.canManageSchemes) {
+        if (scheme.canManageSchemes) {
             require(
                 schemesWithManageSchemesPermission > 1,
                 "DAOController: Cannot unregister last scheme with manage schemes permission"
@@ -125,12 +124,7 @@ contract DAOController is Initializable {
 
         emit UnregisterScheme(msg.sender, _scheme);
 
-        schemes[_scheme] = Scheme({
-            paramsHash: bytes32(0),
-            isRegistered: false,
-            canManageSchemes: false,
-            canMakeAvatarCalls: false
-        });
+        delete schemes[_scheme];
         return true;
     }
 
