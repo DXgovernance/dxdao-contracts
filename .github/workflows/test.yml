@@ -13,7 +13,7 @@ on:
 jobs:
   coverage:
     # if: ${{ contains(github.event.pull_request.labels.*.name, 'Ready to review') || startsWith(github.head_ref, 'develop') }}
-    if: ${{ contains(github.event.comment.html_url, '/test') || ( github.event.issue.pull_request && startsWith(github.head_ref, 'develop') ) }}
+    if: ${{ contains(github.event.comment.html_url, '/test') || && startsWith(github.head_ref, 'develop') }}
 
     runs-on: ubuntu-latest
 
