@@ -11,7 +11,7 @@ const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const DAOAvatar = artifacts.require("./DAOAvatar.sol");
 
-contract.only("WalletScheme", function (accounts) {
+contract("WalletScheme", function (accounts) {
   let standardTokenMock,
     permissionRegistry,
     registrarScheme,
