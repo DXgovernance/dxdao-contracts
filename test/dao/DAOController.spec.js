@@ -1,5 +1,6 @@
 import { expect } from "chai";
 const { expectRevert } = require("@openzeppelin/test-helpers");
+// const ethers = require("ethers");
 
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const DAOReputation = artifacts.require("./DAOReputation.sol");
@@ -120,6 +121,26 @@ contract("DAOController", function (accounts) {
       await controller.getSchemesCountWithManageSchemesPermissions();
     expect(schemesWithManageSchemesPermissionAfterChange.toNumber()).to.equal(
       currentSchemesWithManagePermission - 1
+    );
+  });
+
+  it.skip("endProposal() should fail if caller is not the scheme that started the proposal", async () => {
+    await controller.registerScheme(accounts[1], defaultParamsHash, true, true);
+    const proposalId = web3.utils.randomHex(32);
+
+    await controller.startProposal(proposalId, {
+      from: accounts[1],
+    });
+
+    const activeProposals = await controller.getActiveProposals();
+    expect(activeProposals[0].proposalId).to.equal(proposalId);
+
+    await expectRevert(
+      controller.endProposal(proposalId, {
+        from: schemeAddress,
+        gas: 30000000,
+      }),
+      "DAOController: Cannot disable canManageSchemes property from the last scheme with manage schemes permissions"
     );
   });
 });

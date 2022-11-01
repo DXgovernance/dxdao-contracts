@@ -171,6 +171,10 @@ contract DAOController is Initializable {
      */
     function endProposal(bytes32 _proposalId) external {
         require(
+            schemeOfProposal[_proposalId] == msg.sender,
+            "DAOController: Sender is not the scheme that originally started the proposal"
+        );
+        require(
             schemes[msg.sender].isRegistered ||
                 (!schemes[schemeOfProposal[_proposalId]].isRegistered && activeProposals.contains(_proposalId)),
             "DAOController: Sender is not a registered scheme or proposal is not active"
