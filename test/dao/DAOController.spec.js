@@ -135,12 +135,13 @@ contract("DAOController", function (accounts) {
     const activeProposals = await controller.getActiveProposals();
     expect(activeProposals[0].proposalId).to.equal(proposalId);
 
+    // TODO: fix this call. getting "Transaction reverted: function was called with incorrect parameters"
     await expectRevert(
       controller.endProposal(proposalId, {
         from: schemeAddress,
         gas: 30000000,
       }),
-      "DAOController: Cannot disable canManageSchemes property from the last scheme with manage schemes permissions"
+      "DAOController: Sender is not the scheme that originally started the proposal"
     );
   });
 });
