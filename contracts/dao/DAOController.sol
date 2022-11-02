@@ -225,18 +225,51 @@ contract DAOController is Initializable {
         return (schemes[_scheme].isRegistered);
     }
 
-    function getActiveProposals() external view returns (ProposalAndScheme[] memory activeProposalsArray) {
-        activeProposalsArray = new ProposalAndScheme[](activeProposals.length());
-        for (uint256 i = 0; i < activeProposals.length(); i++) {
+    /**
+     * @dev Returns array of active proposals
+     * @param _start index to start batching
+     * @param _end last index of batch
+     */
+    function getActiveProposals(uint256 _start, uint256 _end)
+        external
+        view
+        returns (ProposalAndScheme[] memory activeProposalsArray)
+    {
+        uint256 totalActiveCount = uint256(activeProposals.length());
+        require(_start <= totalActiveCount, "DAOController: _start cannot be bigger than activeProposals length");
+        require(_end <= totalActiveCount, "DAOController: _end cannot be bigger than activeProposals length");
+
+        uint256 end = _end == 0 ? totalActiveCount.sub(1) : _end;
+
+        activeProposalsArray = new ProposalAndScheme[](end.sub(_start).add(1));
+        uint256 i = _start;
+        for (i; i <= end; i++) {
             activeProposalsArray[i].proposalId = activeProposals.at(i);
             activeProposalsArray[i].scheme = schemeOfProposal[activeProposals.at(i)];
         }
         return activeProposalsArray;
     }
 
-    function getInactiveProposals() external view returns (ProposalAndScheme[] memory inactiveProposalsArray) {
-        inactiveProposalsArray = new ProposalAndScheme[](inactiveProposals.length());
-        for (uint256 i = 0; i < inactiveProposals.length(); i++) {
+    /**
+     * @dev Returns array of inactive proposals
+     * @param _start index to start batching
+     * @param _end last index of batch
+     */
+    function getInactiveProposals(uint256 _start, uint256 _end)
+        external
+        view
+        returns (ProposalAndScheme[] memory inactiveProposalsArray)
+    {
+        uint256 totalInactiveCount = uint256(inactiveProposals.length());
+        require(_start <= totalInactiveCount, "DAOController: _start cannot be bigger than activeProposals length");
+        require(_end <= totalInactiveCount, "DAOController: _end cannot be bigger than activeProposals length");
+
+        uint256 end = _end == 0 ? totalInactiveCount.sub(1) : _end;
+
+        inactiveProposalsArray = new ProposalAndScheme[](end.sub(_start).add(1));
+        uint256 i = _start;
+
+        for (i; i <= end; i++) {
             inactiveProposalsArray[i].proposalId = inactiveProposals.at(i);
             inactiveProposalsArray[i].scheme = schemeOfProposal[inactiveProposals.at(i)];
         }
@@ -245,5 +278,19 @@ contract DAOController is Initializable {
 
     function getDaoReputation() external view returns (DAOReputation) {
         return reputationToken;
+    }
+
+    /**
+     * @dev Returns the amount of active proposals
+     */
+    function getActiveProposalsCount() public view returns (uint256) {
+        return activeProposals.length();
+    }
+
+    /**
+     * @dev Returns the amount of inactive proposals
+     */
+    function getInactiveProposalsCount() public view returns (uint256) {
+        return inactiveProposals.length();
     }
 }
