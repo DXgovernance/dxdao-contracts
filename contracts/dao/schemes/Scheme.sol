@@ -11,7 +11,7 @@ import "../DAOController.sol";
 import "../votingMachine/DXDVotingMachineCallbacks.sol";
 
 /**
- * @title WalletScheme.
+ * @title Scheme.
  * @dev  A scheme for proposing and executing calls to any contract except itself
  * It has a value call controller address, in case of the controller address ot be set the scheme will be doing
  * generic calls to the dao controller. If the controller address is not set it will e executing raw calls form the
@@ -77,12 +77,12 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         uint256 _maxSecondsForExecution,
         uint256 _maxRepPercentageChange
     ) external {
-        require(address(avatar) == address(0), "WalletScheme: cannot init twice");
-        require(_avatar != address(0), "WalletScheme: avatar cannot be zero");
-        require(_controller != address(0), "WalletScheme: controller cannot be zero");
+        require(address(avatar) == address(0), "Scheme: cannot init twice");
+        require(_avatar != address(0), "Scheme: avatar cannot be zero");
+        require(_controller != address(0), "Scheme: controller cannot be zero");
         require(
             _maxSecondsForExecution >= 86400,
-            "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
+            "Scheme: _maxSecondsForExecution cant be less than 86400 seconds"
         );
         avatar = DAOAvatar(_avatar);
         votingMachine = _votingMachine;
@@ -100,11 +100,11 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external virtual {
         require(
             msg.sender == address(avatar) || msg.sender == address(this),
-            "WalletScheme: setMaxSecondsForExecution is callable only from the avatar or the scheme"
+            "Scheme: setMaxSecondsForExecution is callable only from the avatar or the scheme"
         );
         require(
             _maxSecondsForExecution >= 86400,
-            "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
+            "Scheme: _maxSecondsForExecution cant be less than 86400 seconds"
         );
         maxSecondsForExecution = _maxSecondsForExecution;
     }
@@ -148,13 +148,13 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             require(
                 (callDataFuncSignature != bytes4(keccak256("transfer(address,uint256)")) &&
                     callDataFuncSignature != bytes4(keccak256("approve(address,uint256)"))) || _value[i] == 0,
-                "WalletScheme: cant propose ERC20 transfers with value"
+                "Scheme: cant propose ERC20 transfers with value"
             );
         }
-        require(_to.length == _callData.length, "WalletScheme: invalid _callData length");
-        require(_to.length == _value.length, "WalletScheme: invalid _value length");
+        require(_to.length == _callData.length, "Scheme: invalid _callData length");
+        require(_to.length == _value.length, "Scheme: invalid _value length");
 
-        require(_totalOptions == 2, "WalletScheme: The total amount of options should be 2");
+        require(_totalOptions == 2, "Scheme: The total amount of options should be 2");
 
         bytes32 voteParams = controller.getSchemeParameters(address(this));
 
@@ -169,7 +169,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
                     msg.sender,
                     avatar
                 ),
-                "WalletScheme: DXDVotingMachine callback propose error"
+                "Scheme: DXDVotingMachine callback propose error"
             ),
             (bytes32)
         );
