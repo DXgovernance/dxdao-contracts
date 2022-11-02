@@ -2,8 +2,7 @@ name: Tests
 
 on:
   pull_request:
-    branches:
-      - develop
+    branches: ["**"]
   push:
     branches: ["**"]
   workflow_dispatch:
@@ -36,3 +35,4 @@ jobs:
         with:
           coverage-file: coverage/lcov.info
           minimum-coverage: 80
+
