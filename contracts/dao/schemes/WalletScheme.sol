@@ -40,6 +40,18 @@ contract WalletScheme is Scheme {
         maxSecondsForExecution = _maxSecondsForExecution;
     }
 
+    function proposeCalls(
+        address[] calldata _to,
+        bytes[] calldata _callData,
+        uint256[] calldata _value,
+        uint256 _totalOptions,
+        string calldata _title,
+        string calldata _descriptionHash
+    ) public override returns (bytes32) {
+        require(_totalOptions == 2, "AvatarScheme: The total amount of options should be 2");
+        return super.proposeCalls(_to, _callData, _value, _totalOptions, _title, _descriptionHash);
+    }
+
     /**
      * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
      * @param _proposalId the ID of the voting in the voting machine

@@ -139,7 +139,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         uint256 _totalOptions,
         string calldata _title,
         string calldata _descriptionHash
-    ) external returns (bytes32) {
+    ) public virtual returns (bytes32) {
         // Check the proposal calls
         for (uint256 i = 0; i < _to.length; i++) {
             bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
@@ -153,8 +153,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         }
         require(_to.length == _callData.length, "Scheme: invalid _callData length");
         require(_to.length == _value.length, "Scheme: invalid _value length");
-
-        require(_totalOptions == 2, "Scheme: The total amount of options should be 2");
 
         bytes32 voteParams = controller.getSchemeParameters(address(this));
 
