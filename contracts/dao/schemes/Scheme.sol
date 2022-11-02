@@ -80,10 +80,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         require(address(avatar) == address(0), "Scheme: cannot init twice");
         require(_avatar != address(0), "Scheme: avatar cannot be zero");
         require(_controller != address(0), "Scheme: controller cannot be zero");
-        require(
-            _maxSecondsForExecution >= 86400,
-            "Scheme: _maxSecondsForExecution cant be less than 86400 seconds"
-        );
+        require(_maxSecondsForExecution >= 86400, "Scheme: _maxSecondsForExecution cant be less than 86400 seconds");
         avatar = DAOAvatar(_avatar);
         votingMachine = _votingMachine;
         controller = DAOController(_controller);
@@ -102,10 +99,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             msg.sender == address(avatar) || msg.sender == address(this),
             "Scheme: setMaxSecondsForExecution is callable only from the avatar or the scheme"
         );
-        require(
-            _maxSecondsForExecution >= 86400,
-            "Scheme: _maxSecondsForExecution cant be less than 86400 seconds"
-        );
+        require(_maxSecondsForExecution >= 86400, "Scheme: _maxSecondsForExecution cant be less than 86400 seconds");
         maxSecondsForExecution = _maxSecondsForExecution;
     }
 
