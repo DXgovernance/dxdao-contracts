@@ -30,7 +30,6 @@ const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
 const hardharNetworks = process.env.CI
   ? {
       hardhat: {
-        accounts: { mnemonic: MNEMONIC_PHRASE },
         throwOnTransactionFailures: true,
         throwOnCallFailures: true,
         allowUnlimitedContractSize: true,
