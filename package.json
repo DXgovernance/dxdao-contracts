@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "test": "npx hardhat test",
-    "coverage": "./scripts/coverage.sh",
+    "coverage": "OVERRIDE_GAS_LIMIT=0xfffffffffff OVERRIDE_GAS_PRICE=1 yarn hardhat coverage",
     "compile": "rm -rf artifacts cache contracts/hardhat-dependency-compiler && npx hardhat compile",
     "deploy": "node scripts/deploy.js",
     "solidity-linter": "./scripts/solhint.sh",
