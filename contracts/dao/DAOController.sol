@@ -161,6 +161,12 @@ contract DAOController is Initializable {
      * @param _proposalId  the proposalId
      */
     function startProposal(bytes32 _proposalId) external onlyRegisteredScheme {
+        // TODO: ask Augusto why this next require is not a good option as mentioned at the issue:
+        // "Check that a proposal ID is not already used by another scheme when calling the startProposal
+        // function is not a good solution, because it will allow a scheme to block proposals from another scheme"
+        // https://github.com/DXgovernance/dxdao-contracts/issues/233
+        // How this will allow "blocking" proposals from another scheme??
+        require(schemeOfProposal[_proposalId] == address(0), "DAOController: _proposalId used by other scheme");
         activeProposals.add(_proposalId);
         schemeOfProposal[_proposalId] = msg.sender;
     }
@@ -227,27 +233,44 @@ contract DAOController is Initializable {
 
     /**
      * @dev Returns array of active proposals
-     * @param _start index to start batching
-     * @param _end last index of batch
+     * @param _start index to start batching (included).
+     * @param _end last index of batch (included). Zero will default to last element from the list
+     * @param _proposals EnumerableSetUpgradeable set of proposals
+     * @return proposalsArray with proposals list.
+     */
+    function _getProposalsBatchRequest(
+        uint256 _start,
+        uint256 _end,
+        EnumerableSetUpgradeable.Bytes32Set storage _proposals
+    ) internal view returns (ProposalAndScheme[] memory proposalsArray) {
+        uint256 totalCount = uint256(_proposals.length());
+        require(_start < totalCount, "DAOController: _start cannot be bigger than proposals list length");
+        require(_end < totalCount, "DAOController: _end cannot be bigger than proposals list length");
+
+        uint256 end = _end == 0 ? totalCount.sub(1) : _end;
+        uint256 returnCount = end.sub(_start).add(1);
+
+        proposalsArray = new ProposalAndScheme[](returnCount);
+        uint256 i = 0;
+        for (i; i < returnCount; i++) {
+            proposalsArray[i].proposalId = _proposals.at(i.add(_start));
+            proposalsArray[i].scheme = schemeOfProposal[_proposals.at(i.add(_start))];
+        }
+        return proposalsArray;
+    }
+
+    /**
+     * @dev Returns array of active proposals
+     * @param _start index to start batching (included).
+     * @param _end last index of batch (included). Zero will return all
+     * @return activeProposalsArray with active proposals list.
      */
     function getActiveProposals(uint256 _start, uint256 _end)
         external
         view
         returns (ProposalAndScheme[] memory activeProposalsArray)
     {
-        uint256 totalActiveCount = uint256(activeProposals.length());
-        require(_start <= totalActiveCount, "DAOController: _start cannot be bigger than activeProposals length");
-        require(_end <= totalActiveCount, "DAOController: _end cannot be bigger than activeProposals length");
-
-        uint256 end = _end == 0 ? totalActiveCount.sub(1) : _end;
-
-        activeProposalsArray = new ProposalAndScheme[](end.sub(_start).add(1));
-        uint256 i = _start;
-        for (i; i <= end; i++) {
-            activeProposalsArray[i].proposalId = activeProposals.at(i);
-            activeProposalsArray[i].scheme = schemeOfProposal[activeProposals.at(i)];
-        }
-        return activeProposalsArray;
+        return _getProposalsBatchRequest(_start, _end, activeProposals);
     }
 
     /**
@@ -260,20 +283,7 @@ contract DAOController is Initializable {
         view
         returns (ProposalAndScheme[] memory inactiveProposalsArray)
     {
-        uint256 totalInactiveCount = uint256(inactiveProposals.length());
-        require(_start <= totalInactiveCount, "DAOController: _start cannot be bigger than activeProposals length");
-        require(_end <= totalInactiveCount, "DAOController: _end cannot be bigger than activeProposals length");
-
-        uint256 end = _end == 0 ? totalInactiveCount.sub(1) : _end;
-
-        inactiveProposalsArray = new ProposalAndScheme[](end.sub(_start).add(1));
-        uint256 i = _start;
-
-        for (i; i <= end; i++) {
-            inactiveProposalsArray[i].proposalId = inactiveProposals.at(i);
-            inactiveProposalsArray[i].scheme = schemeOfProposal[inactiveProposals.at(i)];
-        }
-        return inactiveProposalsArray;
+        return _getProposalsBatchRequest(_start, _end, inactiveProposals);
     }
 
     function getDaoReputation() external view returns (DAOReputation) {

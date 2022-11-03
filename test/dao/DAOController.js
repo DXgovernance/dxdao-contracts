@@ -1,6 +1,5 @@
 import { expect } from "chai";
-const { expectRevert, time } = require("@openzeppelin/test-helpers");
-// const ethers = require("ethers");
+const { expectRevert } = require("@openzeppelin/test-helpers");
 
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const DAOReputation = artifacts.require("./DAOReputation.sol");
@@ -14,7 +13,7 @@ const getRandomProposalIds = (n = 10) =>
     .fill()
     .map(() => web3.utils.randomHex(32));
 
-contract.only("DAOController", function (accounts) {
+contract("DAOController", function (accounts) {
   let reputation,
     controller,
     avatar,
@@ -129,6 +128,29 @@ contract.only("DAOController", function (accounts) {
     );
   });
 
+  // eslint-disable-next-line max-len
+  it("startProposal() shoul not allow a scheme assign itself as the proposer of a certain proposal ID", async () => {
+    const newSchemeAddress = accounts[1];
+    await controller.registerScheme(
+      newSchemeAddress,
+      defaultParamsHash,
+      true,
+      true
+    );
+
+    const proposalId = web3.utils.randomHex(32);
+
+    // start all proposals ids
+    await controller.startProposal(proposalId);
+
+    await expectRevert(
+      controller.startProposal(proposalId, {
+        from: newSchemeAddress,
+      }),
+      "DAOController: _proposalId used by other scheme"
+    );
+  });
+
   it("endProposal() should fail if caller is not the scheme that started the proposal", async () => {
     const newSchemeAddress = accounts[1];
     await controller.registerScheme(
@@ -173,7 +195,7 @@ contract.only("DAOController", function (accounts) {
     expect(
       proposalIds.every(id =>
         activeProposals.some(({ proposalId }) => proposalId === id)
-      )
+      ) // eslint-disable-line
     ).to.equal(true);
   });
 
@@ -192,11 +214,11 @@ contract.only("DAOController", function (accounts) {
     expect(
       activeProposals.every(({ proposalId }) =>
         proposalIds.some(id => proposalId === id)
-      )
+      ) // eslint-disable-line
     ).to.equal(true);
   });
 
-  it("getActiveProposals() should fail if _start > totalActiveProposals", async () => {
+  it("getActiveProposals() should fail if _start > totalActiveProposals or _end > totalActiveProposals", async () => {
     const TOTAL_PROPOSALS = 10;
     const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
 
@@ -205,23 +227,78 @@ contract.only("DAOController", function (accounts) {
 
     await expectRevert(
       controller.getActiveProposals(TOTAL_PROPOSALS + 1, 0),
-      "DAOController: _start cannot be bigger than activeProposals length"
+      "DAOController: _start cannot be bigger than proposals list length"
+    );
+    await expectRevert(
+      controller.getActiveProposals(0, TOTAL_PROPOSALS + 1),
+      "DAOController: _end cannot be bigger than proposals list length"
     );
   });
 
-  // TODO: fix this test
-  it.skip("getActiveProposals(20, 34) Should return proposals", async () => {
+  it("getActiveProposals(20, 34) Should return proposals", async () => {
     const TOTAL_PROPOSALS = 50;
-    const EXPECTED_PROPOSALS = 15;
+    const START = 20;
+    const END = 34;
+    const EXPECTED_PROPOSALS = END - START + 1;
     const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
 
     // start all proposals ids
     await Promise.all(proposalIds.map(id => controller.startProposal(id)));
 
     // get active proposals
-    const activeProposals = await controller.getActiveProposals(20, 34);
+    const activeProposals = await controller.getActiveProposals(START, END);
 
     expect(activeProposals.length).to.equal(EXPECTED_PROPOSALS);
+    expect(
+      activeProposals.every(({ proposalId }) =>
+        proposalIds.slice(START, END + 1).some(id => proposalId === id)
+      ) // eslint-disable-line
+    ).to.equal(true);
+  });
+
+  it("getInactiveProposals(0,0) should return by default all inactive proposals", async () => {
+    const TOTAL_PROPOSALS = 20;
+    const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
+
+    // start all proposals ids
+    await Promise.all(proposalIds.map(id => controller.startProposal(id)));
+
+    // end all proposals ids
+    await Promise.all(proposalIds.map(id => controller.endProposal(id)));
+
+    // get inactive proposals
+    const inactiveProposals = await controller.getInactiveProposals(0, 0);
+
+    expect(inactiveProposals.length).to.equal(TOTAL_PROPOSALS);
+    expect(
+      proposalIds.every(id =>
+        inactiveProposals.some(({ proposalId }) => proposalId === id)
+      ) // eslint-disable-line
+    ).to.equal(true);
+  });
+
+  it("getInactiveProposals(0,9) should return first 10 inactive proposals", async () => {
+    const TOTAL_PROPOSALS = 100;
+    const EXPECTED_PROPOSALS = 10;
+    const START = 0;
+    const END = 9;
+    const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
+
+    // start all proposals ids
+    await Promise.all(proposalIds.map(id => controller.startProposal(id)));
+
+    // end all proposals ids
+    await Promise.all(proposalIds.map(id => controller.endProposal(id)));
+
+    // get inactive proposals
+    const inactiveProposals = await controller.getInactiveProposals(START, END);
+
+    expect(inactiveProposals.length).to.equal(EXPECTED_PROPOSALS);
+    expect(
+      inactiveProposals.every(({ proposalId }) =>
+        proposalIds.some(id => proposalId === id)
+      ) // eslint-disable-line
+    ).to.equal(true);
   });
 
   it("getActiveProposalsCount() should return correct amount of proposals", async () => {
@@ -231,7 +308,7 @@ contract.only("DAOController", function (accounts) {
     await Promise.all(
       getRandomProposalIds(TOTAL_PROPOSALS).map(id =>
         controller.startProposal(id)
-      )
+      ) // eslint-disable-line
     );
 
     // get active proposals
@@ -246,8 +323,6 @@ contract.only("DAOController", function (accounts) {
 
     // start all proposals ids
     await Promise.all(proposalIds.map(id => controller.startProposal(id)));
-
-    time.increase(100);
     // end proposals
     await Promise.all(proposalIds.map(id => controller.endProposal(id)));
 
@@ -256,6 +331,4 @@ contract.only("DAOController", function (accounts) {
 
     expect(inactiveProposalsCount.toNumber()).to.equal(TOTAL_PROPOSALS);
   });
-  // it("getInactiveProposals(0,0) should return by default all inactive proposals", async () => {});
-  // it("getInactiveProposals(0,9) should return first 10 inactive proposals", async () => {});
 });
