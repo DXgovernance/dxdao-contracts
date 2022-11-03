@@ -66,7 +66,7 @@
     "run-with-ganache": "^0.1.1",
     "solhint": "^3.3.5",
     "solhint-plugin-prettier": "^0.0.5",
-    "solidity-coverage": "^0.7.16",
+    "solidity-coverage": "^0.8.2",
     "truffle": "^5.1.28",
     "truffle-hdwallet-provider": "^1.0.17",
     "uint32": "^0.2.1"
