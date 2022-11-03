@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./Scheme.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title WalletScheme.
  * @dev  A scheme for proposing and executing calls to any contract except itself
