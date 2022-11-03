@@ -8,8 +8,9 @@ import "./Scheme.sol";
 /**
  * @title AvatarScheme.
  * @dev  A scheme for proposing and executing calls to any contract from the DAO avatar
- * It has a value call controller address, in case of the controller address ot be set the scheme will be doing
- * generic calls to the dao controller. If the controller address is not set it will e executing raw calls form the
+ * It has a value call controller address, in case the controller address is set the scheme will be doing
+ * generic calls to the dao controller. If the controller address is not set it will be executing raw calls from the
+
  * scheme itself.
  * The scheme can only execute calls allowed to in the permission registry, if the controller address is set
  * the permissions will be checked using the avatar address as sender, if not the scheme address will be used as
@@ -56,11 +57,6 @@ contract AvatarScheme is Scheme {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.state == ProposalState.Submitted, "AvatarScheme: must be a submitted proposal");
 
-        require(
-            controller.getSchemeCanMakeAvatarCalls(address(this)),
-            "AvatarScheme: scheme have to make avatar calls"
-        );
-
         if (proposal.submittedTime.add(maxSecondsForExecution) < block.timestamp) {
             // If the amount of time passed since submission plus max proposal time is lower than block timestamp
             // the proposal timeout execution is reached and proposal cant be executed from now on
@@ -72,6 +68,8 @@ contract AvatarScheme is Scheme {
             emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         } else {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
+            proposal.state = ProposalState.ExecutionSucceeded;
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
 
             controller.avatarCall(
                 address(permissionRegistry),
@@ -116,7 +114,6 @@ contract AvatarScheme is Scheme {
 
                 proposal.state = ProposalState.ExecutionSucceeded;
             }
-
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
             require(
                 (oldRepSupply.mul(uint256(100).add(maxRepPercentageChange)).div(100) >=
@@ -125,10 +122,7 @@ contract AvatarScheme is Scheme {
                         getNativeReputationTotalSupply()),
                 "AvatarScheme: maxRepPercentageChange passed"
             );
-
             require(permissionRegistry.checkERC20Limits(address(avatar)), "AvatarScheme: ERC20 limits passed");
-
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
         }
         controller.endProposal(_proposalId);
         executingProposal = false;

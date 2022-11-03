@@ -218,7 +218,7 @@ An ERC20Guild with the functionality to migrate the ERC20 voting token used, the
 
 #### SnapshotERC20Guild
 
-An ERC20Guild that keeps track of the voting power by saving a snapshot of the voting power each time a lock/withdraw of tokens happens. The voting power to be used on a proposal would be the one that the guild had at the moment of the proposal creation.
+An ERC20Guild that keeps track of the voting power by saving a snapshot of the voting power each time a mint/burn of tokens happens. The voting power to be used on a proposal would be the one that the guild had at the moment of the proposal creation.
 
 #### SnapshotERC20REPGuild
 

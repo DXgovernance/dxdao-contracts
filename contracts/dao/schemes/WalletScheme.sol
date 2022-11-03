@@ -59,11 +59,6 @@ contract WalletScheme is Scheme {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.state == ProposalState.Submitted, "WalletScheme: must be a submitted proposal");
 
-        require(
-            !controller.getSchemeCanMakeAvatarCalls(address(this)),
-            "WalletScheme: scheme cannot make avatar calls"
-        );
-
         if (proposal.submittedTime.add(maxSecondsForExecution) < block.timestamp) {
             // If the amount of time passed since submission plus max proposal time is lower than block timestamp
             // the proposal timeout execution is reached and proposal cant be executed from now on
