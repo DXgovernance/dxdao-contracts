@@ -197,6 +197,19 @@ contract DAOController is Initializable {
         return reputationToken.mint(_account, _amount);
     }
 
+    /**
+     * @dev Transfer ownership of dao reputation
+     * @param _newOwner  the new owner of the reputation token
+     */
+    function transferReputationOwnership(address _newOwner)
+        external
+        onlyRegisteringSchemes
+        onlyAvatarCallScheme
+        onlyChangingReputation
+    {
+        reputationToken.transferOwnership(_newOwner);
+    }
+
     function isSchemeRegistered(address _scheme) external view returns (bool) {
         return _isSchemeRegistered(_scheme);
     }
