@@ -195,54 +195,11 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     }
 
     /**
-     * @dev Get the information of a proposal by id
-     * @param proposalId the ID of the proposal
-     */
-    function getOrganizationProposal(bytes32 proposalId)
-        public
-        view
-        returns (
-            address[] memory to,
-            bytes[] memory callData,
-            uint256[] memory value,
-            ProposalState state,
-            uint256 totalOptions,
-            string memory title,
-            string memory descriptionHash,
-            uint256 submittedTime
-        )
-    {
-        return (
-            proposals[proposalId].to,
-            proposals[proposalId].callData,
-            proposals[proposalId].value,
-            proposals[proposalId].state,
-            proposals[proposalId].totalOptions,
-            proposals[proposalId].title,
-            proposals[proposalId].descriptionHash,
-            proposals[proposalId].submittedTime
-        );
-    }
-
-    /**
      * @dev Get the information of a proposal by index
      * @param proposalIndex the index of the proposal in the proposals list
      */
-    function getOrganizationProposalByIndex(uint256 proposalIndex)
-        external
-        view
-        returns (
-            address[] memory to,
-            bytes[] memory callData,
-            uint256[] memory value,
-            ProposalState state,
-            uint256 totalOptions,
-            string memory title,
-            string memory descriptionHash,
-            uint256 submittedTime
-        )
-    {
-        return getOrganizationProposal(proposalsList[proposalIndex]);
+    function getProposalByIndex(uint256 proposalIndex) external view returns (Proposal memory) {
+        return proposals[proposalsList[proposalIndex]];
     }
 
     /**
