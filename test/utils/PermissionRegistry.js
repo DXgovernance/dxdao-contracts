@@ -162,7 +162,7 @@ contract("PermissionRegistry", function (accounts) {
     );
 
     assert.equal(
-      (await masterAvatarScheme.getOrganizationProposal(proposalId1)).state,
+      (await masterAvatarScheme.proposals(proposalId1)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
 
@@ -190,8 +190,7 @@ contract("PermissionRegistry", function (accounts) {
       from: accounts[2],
     });
 
-    const organizationProposal =
-      await quickWalletScheme.getOrganizationProposal(proposalId2);
+    const organizationProposal = await quickWalletScheme.proposals(proposalId2);
     assert.equal(
       organizationProposal.state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
@@ -269,7 +268,7 @@ contract("PermissionRegistry", function (accounts) {
     });
 
     assert.equal(
-      (await quickWalletScheme.getOrganizationProposal(proposalId)).state,
+      (await quickWalletScheme.proposals(proposalId)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
 
