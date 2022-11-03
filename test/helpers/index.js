@@ -114,7 +114,7 @@ export const defaultParameters = {
   thresholdConst: 2000,
   quietEndingPeriod: 10,
   proposingRepReward: 0,
-  votersReputationLossRatio: 15,
+  votersReputationLossRatio: 0,
   minimumDaoBounty: 100,
   daoBountyConst: 10,
   activationTime: 0,
