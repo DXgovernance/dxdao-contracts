@@ -1,4 +1,3 @@
-import { ZERO_ADDRESS } from "@openzeppelin/test-helpers/src/constants";
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import * as helpers from "../../helpers";
 const { fixSignature } = require("../../helpers/sign");
