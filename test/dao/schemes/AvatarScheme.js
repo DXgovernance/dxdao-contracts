@@ -16,15 +16,13 @@ contract("AvatarScheme", function (accounts) {
     avatarScheme,
     walletScheme,
     org,
-    actionMock,
-    testToken;
+    actionMock;
 
   const constants = helpers.constants;
   const executionTimeout = 172800 + 86400; // _queuedVotePeriodLimit + _boostedVotePeriodLimit
 
   beforeEach(async function () {
     actionMock = await ActionMock.new();
-    testToken = await ERC20Mock.new("", "", 1000, accounts[1]);
     standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
 
     org = await helpers.deployDao({
@@ -43,17 +41,6 @@ contract("AvatarScheme", function (accounts) {
 
     permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
     await permissionRegistry.initialize();
-
-    registrarScheme = await WalletScheme.new();
-    await registrarScheme.initialize(
-      org.avatar.address,
-      org.votingMachine.address,
-      org.controller.address,
-      permissionRegistry.address,
-      "Wallet Scheme Registrar",
-      executionTimeout,
-      0
-    );
 
     avatarScheme = await AvatarScheme.new();
     await avatarScheme.initialize(
@@ -79,67 +66,6 @@ contract("AvatarScheme", function (accounts) {
 
     await permissionRegistry.setETHPermission(
       org.avatar.address,
-      constants.NULL_ADDRESS,
-      constants.NULL_SIGNATURE,
-      constants.MAX_UINT_256,
-      true
-    );
-
-    await permissionRegistry.setETHPermission(
-      registrarScheme.address,
-      org.controller.address,
-      web3.eth.abi.encodeFunctionSignature(
-        "registerScheme(address,bytes32,bool,bool)"
-      ),
-      0,
-      true
-    );
-
-    await permissionRegistry.setETHPermission(
-      registrarScheme.address,
-      org.controller.address,
-      web3.eth.abi.encodeFunctionSignature("unregisterScheme(address)"),
-      0,
-      true
-    );
-
-    await permissionRegistry.setETHPermission(
-      walletScheme.address,
-      constants.NULL_ADDRESS,
-      constants.NULL_SIGNATURE,
-      constants.MAX_UINT_256,
-      true
-    );
-
-    await permissionRegistry.setETHPermission(
-      org.avatar.address,
-      registrarScheme.address,
-      web3.eth.abi.encodeFunctionSignature(
-        "setMaxSecondsForExecution(uint256)"
-      ),
-      0,
-      true
-    );
-    await permissionRegistry.setETHPermission(
-      org.avatar.address,
-      avatarScheme.address,
-      web3.eth.abi.encodeFunctionSignature(
-        "setMaxSecondsForExecution(uint256)"
-      ),
-      0,
-      true
-    );
-    await permissionRegistry.setETHPermission(
-      org.avatar.address,
-      walletScheme.address,
-      web3.eth.abi.encodeFunctionSignature(
-        "setMaxSecondsForExecution(uint256)"
-      ),
-      0,
-      true
-    );
-    await permissionRegistry.setETHPermission(
-      org.avatar.address,
       actionMock.address,
       web3.eth.abi.encodeFunctionSignature("test(address,uint256)"),
       0,
@@ -148,49 +74,6 @@ contract("AvatarScheme", function (accounts) {
 
     await permissionRegistry.setETHPermission(
       org.avatar.address,
-      actionMock.address,
-      web3.eth.abi.encodeFunctionSignature(
-        "executeCall(address,bytes,uint256)"
-      ),
-      0,
-      true
-    );
-    await permissionRegistry.setETHPermission(
-      org.avatar.address,
-      actionMock.address,
-      web3.eth.abi.encodeFunctionSignature(
-        "executeCallWithRequiredSuccess(address,bytes,uint256)"
-      ),
-      0,
-      true
-    );
-    await permissionRegistry.setETHPermission(
-      org.avatar.address,
-      actionMock.address,
-      web3.eth.abi.encodeFunctionSignature(
-        "testWithoutReturnValue(address,uint256)"
-      ),
-      0,
-      true
-    );
-    await permissionRegistry.setETHPermission(
-      walletScheme.address,
-      actionMock.address,
-      web3.eth.abi.encodeFunctionSignature(
-        "testWithoutReturnValue(address,uint256)"
-      ),
-      0,
-      true
-    );
-    await permissionRegistry.setETHPermission(
-      walletScheme.address,
-      actionMock.address,
-      web3.eth.abi.encodeFunctionSignature("test(address,uint256)"),
-      0,
-      true
-    );
-    await permissionRegistry.setETHPermission(
-      walletScheme.address,
       actionMock.address,
       web3.eth.abi.encodeFunctionSignature(
         "executeCall(address,bytes,uint256)"
@@ -202,22 +85,10 @@ contract("AvatarScheme", function (accounts) {
     await time.increase(30);
 
     await org.controller.registerScheme(
-      registrarScheme.address,
-      defaultParamsHash,
-      true,
-      false
-    );
-    await org.controller.registerScheme(
       avatarScheme.address,
       defaultParamsHash,
       false,
       true
-    );
-    await org.controller.registerScheme(
-      walletScheme.address,
-      defaultParamsHash,
-      false,
-      false
     );
   });
   it("should execute proposal", async function () {
@@ -245,7 +116,6 @@ contract("AvatarScheme", function (accounts) {
     const organizationProposal = await avatarScheme.getOrganizationProposal(
       proposalId
     );
-
     assert.equal(
       organizationProposal.state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
