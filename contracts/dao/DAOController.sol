@@ -184,7 +184,7 @@ contract DAOController is Initializable {
      * @param _amount  the amount of reputation to burn
      * @param _account  the account to burn reputation from
      */
-    function burnReputation(uint256 _amount, address _account) external onlyRegisteredScheme returns (bool) {
+    function burnReputation(uint256 _amount, address _account) external onlyChangingReputation returns (bool) {
         return reputationToken.burn(_account, _amount);
     }
 
@@ -193,7 +193,7 @@ contract DAOController is Initializable {
      * @param _amount  the amount of reputation to mint
      * @param _account  the account to mint reputation from
      */
-    function mintReputation(uint256 _amount, address _account) external onlyRegisteredScheme returns (bool) {
+    function mintReputation(uint256 _amount, address _account) external onlyChangingReputation returns (bool) {
         return reputationToken.mint(_account, _amount);
     }
 
