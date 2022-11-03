@@ -89,8 +89,9 @@ task("keylessDeploy", "Deploy a smart contract without a private key")
       ethTx.sign(Buffer.from(privateKey, "hex"));
 
       if (ethTx.validate(true) !== "") {
-        throw new Error("Signer Error: " + validationResult);
+        throw new Error("Signer Error: " + ethTx.validate(true));
       }
+      console.log(bytecode);
 
       var rawTransaction = "0x" + ethTx.serialize().toString("hex");
       var transactionHash = web3.utils.keccak256(rawTransaction);
@@ -131,19 +132,18 @@ task("keylessDeploy", "Deploy a smart contract without a private key")
     rawTx = rawTx + "a0" + signaturevalue + "a0" + signaturevalue;
 
     // Get the signer of the transaction we just built
-    let deployerAddress = recoverTransaction(rawTx);
+    const deployerAddress = recoverTransaction(rawTx);
 
-    // Deployment info
-    console.log("Deployer address:", deployerAddress);
-    console.log(
-      "Smart contract address:",
-      calcContractAddress(deployerAddress)
-    );
-    console.log("Raw transaction:", signedTx.rawTransaction);
-
+    let receipt;
     if (execute) {
       // Send the raw transaction and execute the deployment of the contract
-      let receipt = await web3.eth.sendSignedTransaction(rawTx);
-      console.log("Deployment receipt:", receipt);
+      receipt = await web3.eth.sendSignedTransaction(rawTx);
     }
+
+    return {
+      deployerAddress,
+      rawTransaction: signedTx.rawTransaction,
+      contractAddress: calcContractAddress(deployerAddress),
+      deployReceipt: receipt,
+    };
   });

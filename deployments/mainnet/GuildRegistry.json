@@ -1,0 +1,328 @@
+{
+  "address": "0xc74a2306504A39FAD0117d732Ed8e9EFC64dBE85",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "guildAddress",
+          "type": "address"
+        }
+      ],
+      "name": "AddGuild",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "guildAddress",
+          "type": "address"
+        }
+      ],
+      "name": "RemoveGuild",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "guildAddress",
+          "type": "address"
+        }
+      ],
+      "name": "addGuild",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getGuildsAddresses",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "guilds",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "index",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_value",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "guildAddress",
+          "type": "address"
+        }
+      ],
+      "name": "removeGuild",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x3f5ff0fdccf40dfc8d554380c9c40fc91d56e74786c471d91bac7dffe2793243",
+  "receipt": {
+    "to": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+    "from": "0x7A33dA4Bd3d9d6f1F6958d26A07E1135cC7E887e",
+    "contractAddress": null,
+    "transactionIndex": 171,
+    "gasUsed": "553358",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x666ebaffa2398b9778820ad199bf34abc46686f75c6b9c9809054a538f66940b",
+    "transactionHash": "0x3f5ff0fdccf40dfc8d554380c9c40fc91d56e74786c471d91bac7dffe2793243",
+    "logs": [],
+    "blockNumber": 15868065,
+    "cumulativeGasUsed": "16822963",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "b020c6f3bee6a2a31a0cec518b9b63c4",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.8+commit.dddeac2f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"guildAddress\",\"type\":\"address\"}],\"name\":\"AddGuild\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"guildAddress\",\"type\":\"address\"}],\"name\":\"RemoveGuild\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"guildAddress\",\"type\":\"address\"}],\"name\":\"addGuild\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getGuildsAddresses\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"guilds\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"index\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"guildAddress\",\"type\":\"address\"}],\"name\":\"removeGuild\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"owner()\":{\"details\":\"Returns the address of the current owner.\"},\"renounceOwnership()\":{\"details\":\"Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.\"},\"transferOwnership(address)\":{\"details\":\"Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/erc20guild/utils/GuildRegistry.sol\":\"GuildRegistry\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (access/Ownable.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../utils/ContextUpgradeable.sol\\\";\\nimport \\\"../proxy/utils/Initializable.sol\\\";\\n\\n/**\\n * @dev Contract module which provides a basic access control mechanism, where\\n * there is an account (an owner) that can be granted exclusive access to\\n * specific functions.\\n *\\n * By default, the owner account will be the one that deploys the contract. This\\n * can later be changed with {transferOwnership}.\\n *\\n * This module is used through inheritance. It will make available the modifier\\n * `onlyOwner`, which can be applied to your functions to restrict their use to\\n * the owner.\\n */\\nabstract contract OwnableUpgradeable is Initializable, ContextUpgradeable {\\n    address private _owner;\\n\\n    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);\\n\\n    /**\\n     * @dev Initializes the contract setting the deployer as the initial owner.\\n     */\\n    function __Ownable_init() internal initializer {\\n        __Context_init_unchained();\\n        __Ownable_init_unchained();\\n    }\\n\\n    function __Ownable_init_unchained() internal initializer {\\n        _transferOwnership(_msgSender());\\n    }\\n\\n    /**\\n     * @dev Returns the address of the current owner.\\n     */\\n    function owner() public view virtual returns (address) {\\n        return _owner;\\n    }\\n\\n    /**\\n     * @dev Throws if called by any account other than the owner.\\n     */\\n    modifier onlyOwner() {\\n        require(owner() == _msgSender(), \\\"Ownable: caller is not the owner\\\");\\n        _;\\n    }\\n\\n    /**\\n     * @dev Leaves the contract without owner. It will not be possible to call\\n     * `onlyOwner` functions anymore. Can only be called by the current owner.\\n     *\\n     * NOTE: Renouncing ownership will leave the contract without an owner,\\n     * thereby removing any functionality that is only available to the owner.\\n     */\\n    function renounceOwnership() public virtual onlyOwner {\\n        _transferOwnership(address(0));\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Can only be called by the current owner.\\n     */\\n    function transferOwnership(address newOwner) public virtual onlyOwner {\\n        require(newOwner != address(0), \\\"Ownable: new owner is the zero address\\\");\\n        _transferOwnership(newOwner);\\n    }\\n\\n    /**\\n     * @dev Transfers ownership of the contract to a new account (`newOwner`).\\n     * Internal function without access restriction.\\n     */\\n    function _transferOwnership(address newOwner) internal virtual {\\n        address oldOwner = _owner;\\n        _owner = newOwner;\\n        emit OwnershipTransferred(oldOwner, newOwner);\\n    }\\n    uint256[49] private __gap;\\n}\\n\",\"keccak256\":\"0xd0fc241d70f27a08c43c0c9e5a15d2661a643d8db46c219b2322bef8a34bbdd7\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (proxy/utils/Initializable.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed\\n * behind a proxy. Since a proxied contract can't have a constructor, it's common to move constructor logic to an\\n * external initializer function, usually called `initialize`. It then becomes necessary to protect this initializer\\n * function so it can only be called once. The {initializer} modifier provided by this contract will have this effect.\\n *\\n * TIP: To avoid leaving the proxy in an uninitialized state, the initializer function should be called as early as\\n * possible by providing the encoded function call as the `_data` argument to {ERC1967Proxy-constructor}.\\n *\\n * CAUTION: When used with inheritance, manual care must be taken to not invoke a parent initializer twice, or to ensure\\n * that all initializers are idempotent. This is not verified automatically as constructors are by Solidity.\\n *\\n * [CAUTION]\\n * ====\\n * Avoid leaving a contract uninitialized.\\n *\\n * An uninitialized contract can be taken over by an attacker. This applies to both a proxy and its implementation\\n * contract, which may impact the proxy. To initialize the implementation contract, you can either invoke the\\n * initializer manually, or you can include a constructor to automatically mark it as initialized when it is deployed:\\n *\\n * [.hljs-theme-light.nopadding]\\n * ```\\n * /// @custom:oz-upgrades-unsafe-allow constructor\\n * constructor() initializer {}\\n * ```\\n * ====\\n */\\nabstract contract Initializable {\\n    /**\\n     * @dev Indicates that the contract has been initialized.\\n     */\\n    bool private _initialized;\\n\\n    /**\\n     * @dev Indicates that the contract is in the process of being initialized.\\n     */\\n    bool private _initializing;\\n\\n    /**\\n     * @dev Modifier to protect an initializer function from being invoked twice.\\n     */\\n    modifier initializer() {\\n        require(_initializing || !_initialized, \\\"Initializable: contract is already initialized\\\");\\n\\n        bool isTopLevelCall = !_initializing;\\n        if (isTopLevelCall) {\\n            _initializing = true;\\n            _initialized = true;\\n        }\\n\\n        _;\\n\\n        if (isTopLevelCall) {\\n            _initializing = false;\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x6287586f5e4a103c89d4dda41406136cdf283cc625bd1ebfdf1468aae5bfe449\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (utils/Context.sol)\\n\\npragma solidity ^0.8.0;\\nimport \\\"../proxy/utils/Initializable.sol\\\";\\n\\n/**\\n * @dev Provides information about the current execution context, including the\\n * sender of the transaction and its data. While these are generally available\\n * via msg.sender and msg.data, they should not be accessed in such a direct\\n * manner, since when dealing with meta-transactions the account sending and\\n * paying for execution may not be the actual sender (as far as an application\\n * is concerned).\\n *\\n * This contract is only required for intermediate, library-like contracts.\\n */\\nabstract contract ContextUpgradeable is Initializable {\\n    function __Context_init() internal initializer {\\n        __Context_init_unchained();\\n    }\\n\\n    function __Context_init_unchained() internal initializer {\\n    }\\n    function _msgSender() internal view virtual returns (address) {\\n        return msg.sender;\\n    }\\n\\n    function _msgData() internal view virtual returns (bytes calldata) {\\n        return msg.data;\\n    }\\n    uint256[50] private __gap;\\n}\\n\",\"keccak256\":\"0x0c34de2f75ee9ab06bf9151824be575885d0a9b460c292476a260578fb5a4e1c\",\"license\":\"MIT\"},\"@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.0 (utils/Counters.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @title Counters\\n * @author Matt Condon (@shrugs)\\n * @dev Provides counters that can only be incremented, decremented or reset. This can be used e.g. to track the number\\n * of elements in a mapping, issuing ERC721 ids, or counting request ids.\\n *\\n * Include with `using Counters for Counters.Counter;`\\n */\\nlibrary CountersUpgradeable {\\n    struct Counter {\\n        // This variable should never be directly accessed by users of the library: interactions must be restricted to\\n        // the library's function. As of Solidity v0.5.2, this cannot be enforced, though there is a proposal to add\\n        // this feature: see https://github.com/ethereum/solidity/issues/4637\\n        uint256 _value; // default: 0\\n    }\\n\\n    function current(Counter storage counter) internal view returns (uint256) {\\n        return counter._value;\\n    }\\n\\n    function increment(Counter storage counter) internal {\\n        unchecked {\\n            counter._value += 1;\\n        }\\n    }\\n\\n    function decrement(Counter storage counter) internal {\\n        uint256 value = counter._value;\\n        require(value > 0, \\\"Counter: decrement overflow\\\");\\n        unchecked {\\n            counter._value = value - 1;\\n        }\\n    }\\n\\n    function reset(Counter storage counter) internal {\\n        counter._value = 0;\\n    }\\n}\\n\",\"keccak256\":\"0x704add6904e5156bac4fb870ee851af4c2d004ae0cac22fd030162843fd1d611\",\"license\":\"MIT\"},\"contracts/erc20guild/utils/GuildRegistry.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0\\r\\npragma solidity ^0.8.8;\\r\\n\\r\\nimport \\\"@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol\\\";\\r\\nimport \\\"@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol\\\";\\r\\nimport \\\"@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol\\\";\\r\\n\\r\\n/*\\r\\n  @title GuildRegistry\\r\\n  @author github:Kenny-Gin1\\r\\n  @dev GuildRegistry is a registry with the available guilds. \\r\\n  The contracts allows DXdao to add and remove guilds, as well as look up guild addresses.\\r\\n*/\\r\\n\\r\\ncontract GuildRegistry is Initializable, OwnableUpgradeable {\\r\\n    using CountersUpgradeable for CountersUpgradeable.Counter;\\r\\n    event AddGuild(address guildAddress);\\r\\n    event RemoveGuild(address guildAddress);\\r\\n\\r\\n    address[] public guilds;\\r\\n    CountersUpgradeable.Counter public index;\\r\\n\\r\\n    function initialize() public initializer {\\r\\n        __Ownable_init();\\r\\n    }\\r\\n\\r\\n    mapping(address => uint256) guildsByAddress;\\r\\n\\r\\n    function addGuild(address guildAddress) external onlyOwner {\\r\\n        guildsByAddress[guildAddress] = index.current();\\r\\n        guilds.push(guildAddress);\\r\\n        index.increment();\\r\\n        emit AddGuild(guildAddress);\\r\\n    }\\r\\n\\r\\n    function removeGuild(address guildAddress) external onlyOwner {\\r\\n        require(guilds.length > 0, \\\"No guilds to delete\\\");\\r\\n        // @notice Overwrite the guild we want to delete and then we remove the last element\\r\\n        uint256 guildIndexToDelete = guildsByAddress[guildAddress];\\r\\n        address guildAddressToMove = guilds[guilds.length - 1];\\r\\n        guilds[guildIndexToDelete] = guildAddressToMove;\\r\\n        guildsByAddress[guildAddressToMove] = guildIndexToDelete;\\r\\n        guilds.pop();\\r\\n        index.decrement();\\r\\n        emit RemoveGuild(guildAddress);\\r\\n    }\\r\\n\\r\\n    function getGuildsAddresses() external view returns (address[] memory) {\\r\\n        return guilds;\\r\\n    }\\r\\n}\\r\\n\",\"keccak256\":\"0x6e971e9551197d8b20a40add64aaa6842a44802931c8bd5f121df0b5ac211540\",\"license\":\"AGPL-3.0\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50610906806100206000396000f3fe608060405234801561001057600080fd5b50600436106100935760003560e01c80638da5cb5b116100665780638da5cb5b146100da5780639e0fc53e146100ff578063a03e02e114610112578063efe7b7af14610127578063f2fde38b1461013a57600080fd5b80631041095d146100985780632986c0e5146100ad578063715018a6146100ca5780638129fc1c146100d2575b600080fd5b6100ab6100a6366004610766565b61014d565b005b6066546100b79081565b6040519081526020015b60405180910390f35b6100ab6102e7565b6100ab61031d565b6033546001600160a01b03165b6040516001600160a01b0390911681526020016100c1565b6100ab61010d366004610766565b610391565b61011a610468565b6040516100c19190610796565b6100e76101353660046107e3565b6104ca565b6100ab610148366004610766565b6104f4565b6033546001600160a01b031633146101805760405162461bcd60e51b8152600401610177906107fc565b60405180910390fd5b6065546101c55760405162461bcd60e51b81526020600482015260136024820152724e6f206775696c647320746f2064656c65746560681b6044820152606401610177565b6001600160a01b038116600090815260676020526040812054606580549192916101f190600190610831565b8154811061020157610201610856565b600091825260209091200154606580546001600160a01b03909216925082918490811061023057610230610856565b600091825260208083209190910180546001600160a01b0319166001600160a01b039485161790559183168152606790915260409020829055606580548061027a5761027a61086c565b600082815260209020810160001990810180546001600160a01b03191690550190556102a6606661058c565b6040516001600160a01b03841681527fe185661ed055a359209cb92bd25b6cbca32081cc7317811b3d740e9ad4fb81039060200160405180910390a1505050565b6033546001600160a01b031633146103115760405162461bcd60e51b8152600401610177906107fc565b61031b60006105e3565b565b600054610100900460ff1680610336575060005460ff16155b6103525760405162461bcd60e51b815260040161017790610882565b600054610100900460ff16158015610374576000805461ffff19166101011790555b61037c610635565b801561038e576000805461ff00191690555b50565b6033546001600160a01b031633146103bb5760405162461bcd60e51b8152600401610177906107fc565b6066546001600160a01b0382166000818152606760205260408120929092556065805460018101825592527f8ff97419363ffd7000167f130ef7168fbea05faf9251824ca5043f113cc6a7c790910180546001600160a01b0319169091179055610429606680546001019055565b6040516001600160a01b03821681527fd4260d38a77bf719d5646b9536b018d7362d076dcc59540876e948b6787406c39060200160405180910390a150565b606060658054806020026020016040519081016040528092919081815260200182805480156104c057602002820191906000526020600020905b81546001600160a01b031681526001909101906020018083116104a2575b5050505050905090565b606581815481106104da57600080fd5b6000918252602090912001546001600160a01b0316905081565b6033546001600160a01b0316331461051e5760405162461bcd60e51b8152600401610177906107fc565b6001600160a01b0381166105835760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b6064820152608401610177565b61038e816105e3565b8054806105db5760405162461bcd60e51b815260206004820152601b60248201527f436f756e7465723a2064656372656d656e74206f766572666c6f7700000000006044820152606401610177565b600019019055565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b600054610100900460ff168061064e575060005460ff16155b61066a5760405162461bcd60e51b815260040161017790610882565b600054610100900460ff1615801561068c576000805461ffff19166101011790555b61069461069c565b61037c610706565b600054610100900460ff16806106b5575060005460ff16155b6106d15760405162461bcd60e51b815260040161017790610882565b600054610100900460ff1615801561037c576000805461ffff1916610101179055801561038e576000805461ff001916905550565b600054610100900460ff168061071f575060005460ff16155b61073b5760405162461bcd60e51b815260040161017790610882565b600054610100900460ff1615801561075d576000805461ffff19166101011790555b61037c336105e3565b60006020828403121561077857600080fd5b81356001600160a01b038116811461078f57600080fd5b9392505050565b6020808252825182820181905260009190848201906040850190845b818110156107d75783516001600160a01b0316835292840192918401916001016107b2565b50909695505050505050565b6000602082840312156107f557600080fd5b5035919050565b6020808252818101527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e6572604082015260600190565b60008282101561085157634e487b7160e01b600052601160045260246000fd5b500390565b634e487b7160e01b600052603260045260246000fd5b634e487b7160e01b600052603160045260246000fd5b6020808252602e908201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160408201526d191e481a5b9a5d1a585b1a5e995960921b60608201526080019056fea26469706673582212207226525ccfe96fc50205f9633c8d148dec64905e58ee790b941dc462c20c44ef64736f6c63430008080033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100935760003560e01c80638da5cb5b116100665780638da5cb5b146100da5780639e0fc53e146100ff578063a03e02e114610112578063efe7b7af14610127578063f2fde38b1461013a57600080fd5b80631041095d146100985780632986c0e5146100ad578063715018a6146100ca5780638129fc1c146100d2575b600080fd5b6100ab6100a6366004610766565b61014d565b005b6066546100b79081565b6040519081526020015b60405180910390f35b6100ab6102e7565b6100ab61031d565b6033546001600160a01b03165b6040516001600160a01b0390911681526020016100c1565b6100ab61010d366004610766565b610391565b61011a610468565b6040516100c19190610796565b6100e76101353660046107e3565b6104ca565b6100ab610148366004610766565b6104f4565b6033546001600160a01b031633146101805760405162461bcd60e51b8152600401610177906107fc565b60405180910390fd5b6065546101c55760405162461bcd60e51b81526020600482015260136024820152724e6f206775696c647320746f2064656c65746560681b6044820152606401610177565b6001600160a01b038116600090815260676020526040812054606580549192916101f190600190610831565b8154811061020157610201610856565b600091825260209091200154606580546001600160a01b03909216925082918490811061023057610230610856565b600091825260208083209190910180546001600160a01b0319166001600160a01b039485161790559183168152606790915260409020829055606580548061027a5761027a61086c565b600082815260209020810160001990810180546001600160a01b03191690550190556102a6606661058c565b6040516001600160a01b03841681527fe185661ed055a359209cb92bd25b6cbca32081cc7317811b3d740e9ad4fb81039060200160405180910390a1505050565b6033546001600160a01b031633146103115760405162461bcd60e51b8152600401610177906107fc565b61031b60006105e3565b565b600054610100900460ff1680610336575060005460ff16155b6103525760405162461bcd60e51b815260040161017790610882565b600054610100900460ff16158015610374576000805461ffff19166101011790555b61037c610635565b801561038e576000805461ff00191690555b50565b6033546001600160a01b031633146103bb5760405162461bcd60e51b8152600401610177906107fc565b6066546001600160a01b0382166000818152606760205260408120929092556065805460018101825592527f8ff97419363ffd7000167f130ef7168fbea05faf9251824ca5043f113cc6a7c790910180546001600160a01b0319169091179055610429606680546001019055565b6040516001600160a01b03821681527fd4260d38a77bf719d5646b9536b018d7362d076dcc59540876e948b6787406c39060200160405180910390a150565b606060658054806020026020016040519081016040528092919081815260200182805480156104c057602002820191906000526020600020905b81546001600160a01b031681526001909101906020018083116104a2575b5050505050905090565b606581815481106104da57600080fd5b6000918252602090912001546001600160a01b0316905081565b6033546001600160a01b0316331461051e5760405162461bcd60e51b8152600401610177906107fc565b6001600160a01b0381166105835760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b6064820152608401610177565b61038e816105e3565b8054806105db5760405162461bcd60e51b815260206004820152601b60248201527f436f756e7465723a2064656372656d656e74206f766572666c6f7700000000006044820152606401610177565b600019019055565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b600054610100900460ff168061064e575060005460ff16155b61066a5760405162461bcd60e51b815260040161017790610882565b600054610100900460ff1615801561068c576000805461ffff19166101011790555b61069461069c565b61037c610706565b600054610100900460ff16806106b5575060005460ff16155b6106d15760405162461bcd60e51b815260040161017790610882565b600054610100900460ff1615801561037c576000805461ffff1916610101179055801561038e576000805461ff001916905550565b600054610100900460ff168061071f575060005460ff16155b61073b5760405162461bcd60e51b815260040161017790610882565b600054610100900460ff1615801561075d576000805461ffff19166101011790555b61037c336105e3565b60006020828403121561077857600080fd5b81356001600160a01b038116811461078f57600080fd5b9392505050565b6020808252825182820181905260009190848201906040850190845b818110156107d75783516001600160a01b0316835292840192918401916001016107b2565b50909695505050505050565b6000602082840312156107f557600080fd5b5035919050565b6020808252818101527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e6572604082015260600190565b60008282101561085157634e487b7160e01b600052601160045260246000fd5b500390565b634e487b7160e01b600052603260045260246000fd5b634e487b7160e01b600052603160045260246000fd5b6020808252602e908201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160408201526d191e481a5b9a5d1a585b1a5e995960921b60608201526080019056fea26469706673582212207226525ccfe96fc50205f9633c8d148dec64905e58ee790b941dc462c20c44ef64736f6c63430008080033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "owner()": {
+        "details": "Returns the address of the current owner."
+      },
+      "renounceOwnership()": {
+        "details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner."
+      },
+      "transferOwnership(address)": {
+        "details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 145,
+        "contract": "contracts/erc20guild/utils/GuildRegistry.sol:GuildRegistry",
+        "label": "_initialized",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_bool"
+      },
+      {
+        "astId": 148,
+        "contract": "contracts/erc20guild/utils/GuildRegistry.sol:GuildRegistry",
+        "label": "_initializing",
+        "offset": 1,
+        "slot": "0",
+        "type": "t_bool"
+      },
+      {
+        "astId": 1811,
+        "contract": "contracts/erc20guild/utils/GuildRegistry.sol:GuildRegistry",
+        "label": "__gap",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_array(t_uint256)50_storage"
+      },
+      {
+        "astId": 10,
+        "contract": "contracts/erc20guild/utils/GuildRegistry.sol:GuildRegistry",
+        "label": "_owner",
+        "offset": 0,
+        "slot": "51",
+        "type": "t_address"
+      },
+      {
+        "astId": 124,
+        "contract": "contracts/erc20guild/utils/GuildRegistry.sol:GuildRegistry",
+        "label": "__gap",
+        "offset": 0,
+        "slot": "52",
+        "type": "t_array(t_uint256)49_storage"
+      },
+      {
+        "astId": 12840,
+        "contract": "contracts/erc20guild/utils/GuildRegistry.sol:GuildRegistry",
+        "label": "guilds",
+        "offset": 0,
+        "slot": "101",
+        "type": "t_array(t_address)dyn_storage"
+      },
+      {
+        "astId": 12843,
+        "contract": "contracts/erc20guild/utils/GuildRegistry.sol:GuildRegistry",
+        "label": "index",
+        "offset": 0,
+        "slot": "102",
+        "type": "t_struct(Counter)1818_storage"
+      },
+      {
+        "astId": 12856,
+        "contract": "contracts/erc20guild/utils/GuildRegistry.sol:GuildRegistry",
+        "label": "guildsByAddress",
+        "offset": 0,
+        "slot": "103",
+        "type": "t_mapping(t_address,t_uint256)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_array(t_address)dyn_storage": {
+        "base": "t_address",
+        "encoding": "dynamic_array",
+        "label": "address[]",
+        "numberOfBytes": "32"
+      },
+      "t_array(t_uint256)49_storage": {
+        "base": "t_uint256",
+        "encoding": "inplace",
+        "label": "uint256[49]",
+        "numberOfBytes": "1568"
+      },
+      "t_array(t_uint256)50_storage": {
+        "base": "t_uint256",
+        "encoding": "inplace",
+        "label": "uint256[50]",
+        "numberOfBytes": "1600"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_mapping(t_address,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_struct(Counter)1818_storage": {
+        "encoding": "inplace",
+        "label": "struct CountersUpgradeable.Counter",
+        "members": [
+          {
+            "astId": 1817,
+            "contract": "contracts/erc20guild/utils/GuildRegistry.sol:GuildRegistry",
+            "label": "_value",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256"
+          }
+        ],
+        "numberOfBytes": "32"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}

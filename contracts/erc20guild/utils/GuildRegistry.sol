@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.8;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 
 /*
   @title GuildRegistry
@@ -11,13 +12,17 @@ import "@openzeppelin/contracts/utils/Counters.sol";
   The contracts allows DXdao to add and remove guilds, as well as look up guild addresses.
 */
 
-contract GuildRegistry is Ownable {
-    using Counters for Counters.Counter;
+contract GuildRegistry is Initializable, OwnableUpgradeable {
+    using CountersUpgradeable for CountersUpgradeable.Counter;
     event AddGuild(address guildAddress);
     event RemoveGuild(address guildAddress);
 
     address[] public guilds;
-    Counters.Counter public index;
+    CountersUpgradeable.Counter public index;
+
+    function initialize() public initializer {
+        __Ownable_init();
+    }
 
     mapping(address => uint256) guildsByAddress;
 

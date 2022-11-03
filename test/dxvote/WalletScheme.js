@@ -8,8 +8,6 @@ const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const Wallet = artifacts.require("./Wallet.sol");
-const GnosisProxy = artifacts.require("./GnosisProxy.sol");
-const GnosisSafe = artifacts.require("./GnosisSafe.sol");
 
 contract("WalletScheme", function (accounts) {
   let standardTokenMock,
@@ -839,42 +837,6 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], actionMock.address);
     assert.equal(organizationProposal.value[0], 0);
-  });
-
-  it("MasterWalletScheme - proposal with value to gnosisSafe - positive decision - proposal executed", async () => {
-    await web3.eth.sendTransaction({
-      from: accounts[0],
-      to: org.avatar.address,
-      value: 1000,
-    });
-
-    var gnosisSafe = await GnosisSafe.new();
-    var gnosisProxy = await GnosisProxy.new(gnosisSafe.address);
-    const tx = await masterWalletScheme.proposeCalls(
-      [gnosisProxy.address],
-      ["0x0"],
-      [666],
-      constants.TEST_TITLE,
-      constants.SOME_HASH
-    );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await votingMachine.contract.vote(
-      proposalId,
-      1,
-      0,
-      constants.NULL_ADDRESS,
-      { from: accounts[2] }
-    );
-
-    const organizationProposal =
-      await masterWalletScheme.getOrganizationProposal(proposalId);
-    assert.equal(
-      organizationProposal.state,
-      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
-    );
-    assert.equal(organizationProposal.callData[0], "0x00");
-    assert.equal(organizationProposal.to[0], gnosisProxy.address);
-    assert.equal(organizationProposal.value[0], 666);
   });
 
   it("MasterWalletScheme - proposal with data - positive decision - proposal executed", async function () {

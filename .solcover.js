@@ -1,12 +1,4 @@
 module.exports = {
-  skipFiles: [
-    "daostack/",
-    "schemes/ContributionReward.sol",
-    "schemes/SchemeRegistrar.sol",
-    "test/",
-    "utils/",
-    "votingMachines/",
-    "node_modules/@daostack",
-  ],
+  skipFiles: ["daostack/", "deploy/", "test/", "utils/"],
   istanbulReporter: ["lcov"],
 };
