@@ -93,6 +93,7 @@ contract("DXDGuild", function (accounts) {
       masterAvatarScheme.address,
       defaultParamsHash,
       true,
+      true,
       true
     );
 

@@ -67,11 +67,13 @@ contract("PermissionRegistry", function (accounts) {
       masterAvatarScheme.address,
       defaultParamsHash,
       false,
+      true,
       true
     );
     await dao.controller.registerScheme(
       quickWalletScheme.address,
       defaultParamsHash,
+      false,
       false,
       false
     );

@@ -92,7 +92,7 @@ contract("WalletScheme", function (accounts) {
       registrarScheme.address,
       org.controller.address,
       web3.eth.abi.encodeFunctionSignature(
-        "registerScheme(address,bytes32,bool,bool)"
+        "registerScheme(address,bytes32,bool,bool,bool)"
       ),
       0,
       true
@@ -208,19 +208,22 @@ contract("WalletScheme", function (accounts) {
       registrarScheme.address,
       defaultParamsHash,
       true,
+      false,
       false
     );
     await org.controller.registerScheme(
       avatarScheme.address,
       defaultParamsHash,
       false,
+      true,
       true
     );
     await org.controller.registerScheme(
       walletScheme.address,
       defaultParamsHash,
       false,
-      false
+      false,
+      true
     );
   });
 
@@ -1342,7 +1345,10 @@ contract("WalletScheme", function (accounts) {
         constants.SOME_ADDRESS,
         constants.SOME_HASH,
         "0x0000000F",
-        org.avatar.address
+        org.avatar.address,
+        false,
+        false,
+        false
       )
       .encodeABI();
     const callDataRemoveScheme = await org.controller.contract.methods
@@ -1834,7 +1840,7 @@ contract("WalletScheme", function (accounts) {
       walletScheme.address,
       org.controller.address,
       web3.eth.abi.encodeFunctionSignature(
-        "registerScheme(address,bytes32,bytes4,address)"
+        "registerScheme(address,bytes32,bool,bool,bool)"
       ),
       0,
       true
@@ -1852,7 +1858,10 @@ contract("WalletScheme", function (accounts) {
         constants.SOME_ADDRESS,
         constants.SOME_HASH,
         "0x0000000F",
-        org.avatar.address
+        org.avatar.address,
+        false,
+        false,
+        false
       )
       .encodeABI();
     const callDataRemoveScheme = await org.controller.contract.methods

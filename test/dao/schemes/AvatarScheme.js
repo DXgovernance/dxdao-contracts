@@ -88,6 +88,7 @@ contract("AvatarScheme", function (accounts) {
       avatarScheme.address,
       defaultParamsHash,
       false,
+      true,
       true
     );
   });

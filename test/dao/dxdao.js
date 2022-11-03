@@ -69,6 +69,7 @@ contract("DXdao", function (accounts) {
       masterAvatarScheme.address,
       defaultParamsHash,
       true,
+      true,
       true
     );
 

@@ -111,12 +111,14 @@ contract("DXDVotingMachine", function (accounts) {
       masterAvatarScheme.address,
       defaultParamsHash,
       false,
+      true,
       true
     );
     await org.controller.registerScheme(
       registrarScheme.address,
       defaultParamsHash,
       true,
+      false,
       false
     );
     await permissionRegistry.setETHPermission(
@@ -137,7 +139,7 @@ contract("DXDVotingMachine", function (accounts) {
       registrarScheme.address,
       org.controller.address,
       web3.eth.abi.encodeFunctionSignature(
-        "registerScheme(address,bytes32,bool,bool)"
+        "registerScheme(address,bytes32,bool,bool,bool)"
       ),
       0,
       true
