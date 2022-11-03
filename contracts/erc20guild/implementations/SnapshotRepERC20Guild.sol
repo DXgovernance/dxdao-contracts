@@ -25,10 +25,10 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
     // @dev Initializer
     // @param _token The ERC20 token that will be used as source of voting power
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
-    // @param _timeForExecution The amount of time in seconds that a proposal action will have to execute successfully
-    // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
+    // @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
+    // @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // action
-    // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
     // @param _name The name of the ERC20Guild
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
@@ -39,8 +39,8 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         address _token,
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votingPowerForProposalExecution,
-        uint256 _votingPowerForProposalCreation,
+        uint256 _votingPowerPercentageForProposalExecution,
+        uint256 _votingPowerPercentageForProposalCreation,
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
@@ -53,8 +53,8 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
             _token,
             _proposalTime,
             _timeForExecution,
-            _votingPowerForProposalExecution,
-            _votingPowerForProposalCreation,
+            _votingPowerPercentageForProposalExecution,
+            _votingPowerPercentageForProposalCreation,
             _name,
             _voteGas,
             _maxGasPrice,
@@ -68,11 +68,11 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
 
     // @dev Set the voting power to vote in a proposal
     // @param proposalId The id of the proposal to set the vote
-    // @param action The proposal action to be voted
+    // @param option The proposal option to be voted
     // @param votingPower The votingPower to use in the proposal
     function setVote(
         bytes32 proposalId,
-        uint256 action,
+        uint256 option,
         uint256 votingPower
     ) public virtual override {
         require(
@@ -84,24 +84,24 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
             "SnapshotRepERC20Guild: Invalid votingPower amount"
         );
         require(
-            (proposalVotes[proposalId][msg.sender].action == 0 &&
+            (proposalVotes[proposalId][msg.sender].option == 0 &&
                 proposalVotes[proposalId][msg.sender].votingPower == 0) ||
-                (proposalVotes[proposalId][msg.sender].action == action &&
+                (proposalVotes[proposalId][msg.sender].option == option &&
                     proposalVotes[proposalId][msg.sender].votingPower < votingPower),
-            "SnapshotRepERC20Guild: Cannot change action voted, only increase votingPower"
+            "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
         );
-        _setVote(msg.sender, proposalId, action, votingPower);
+        _setVote(msg.sender, proposalId, option, votingPower);
     }
 
     // @dev Set the voting power to vote in a proposal using a signed vote
     // @param proposalId The id of the proposal to set the vote
-    // @param action The proposal action to be voted
+    // @param option The proposal option to be voted
     // @param votingPower The votingPower to use in the proposal
     // @param voter The address of the voter
     // @param signature The signature of the hashed vote
     function setSignedVote(
         bytes32 proposalId,
-        uint256 action,
+        uint256 option,
         uint256 votingPower,
         address voter,
         bytes memory signature
@@ -110,7 +110,7 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
             proposals[proposalId].endTime > block.timestamp,
             "SnapshotRepERC20Guild: Proposal ended, cannot be voted"
         );
-        bytes32 hashedVote = hashVote(voter, proposalId, action, votingPower);
+        bytes32 hashedVote = hashVote(voter, proposalId, option, votingPower);
         require(!signedVotes[hashedVote], "SnapshotRepERC20Guild: Already voted");
         require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "SnapshotRepERC20Guild: Wrong signer");
         signedVotes[hashedVote] = true;
@@ -120,12 +120,12 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
             "SnapshotRepERC20Guild: Invalid votingPower amount"
         );
         require(
-            (proposalVotes[proposalId][voter].action == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
-                (proposalVotes[proposalId][voter].action == action &&
+            (proposalVotes[proposalId][voter].option == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
+                (proposalVotes[proposalId][voter].option == option &&
                     proposalVotes[proposalId][voter].votingPower < votingPower),
-            "SnapshotRepERC20Guild: Cannot change action voted, only increase votingPower"
+            "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
         );
-        _setVote(voter, proposalId, action, votingPower);
+        _setVote(voter, proposalId, option, votingPower);
     }
 
     // @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild
@@ -142,18 +142,18 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
     // @param to The receiver addresses of each call to be executed
     // @param data The data to be executed on each call to be executed
     // @param value The ETH value to be sent on each call to be executed
-    // @param totalActions The amount of actions that would be offered to the voters
+    // @param totalOptions The amount of options that would be offered to the voters
     // @param title The title of the proposal
     // @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
         address[] memory to,
         bytes[] memory data,
         uint256[] memory value,
-        uint256 totalActions,
+        uint256 totalOptions,
         string memory title,
         string memory contentHash
     ) public virtual override returns (bytes32) {
-        bytes32 proposalId = super.createProposal(to, data, value, totalActions, title, contentHash);
+        bytes32 proposalId = super.createProposal(to, data, value, totalOptions, title, contentHash);
         proposalsSnapshots[proposalId] = ERC20SnapshotRep(address(token)).getCurrentSnapshotId();
         return proposalId;
     }
@@ -165,7 +165,7 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         require(proposals[proposalId].state == ProposalState.Active, "ERC20SnapshotRep: Proposal already executed");
         require(proposals[proposalId].endTime < block.timestamp, "ERC20SnapshotRep: Proposal hasn't ended yet");
 
-        uint256 winningAction = 0;
+        uint256 winningOption = 0;
         uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
         uint256 i = 1;
         for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
@@ -174,15 +174,15 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
                 proposals[proposalId].totalVotes[i] >= highestVoteAmount
             ) {
                 if (proposals[proposalId].totalVotes[i] == highestVoteAmount) {
-                    winningAction = 0;
+                    winningOption = 0;
                 } else {
-                    winningAction = i;
+                    winningOption = i;
                     highestVoteAmount = proposals[proposalId].totalVotes[i];
                 }
             }
         }
 
-        if (winningAction == 0) {
+        if (winningOption == 0) {
             proposals[proposalId].state = ProposalState.Rejected;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
         } else if (proposals[proposalId].endTime.add(timeForExecution) < block.timestamp) {
@@ -191,11 +191,11 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         } else {
             proposals[proposalId].state = ProposalState.Executed;
 
-            uint256 callsPerAction = proposals[proposalId].to.length.div(
+            uint256 callsPerOption = proposals[proposalId].to.length.div(
                 proposals[proposalId].totalVotes.length.sub(1)
             );
-            i = callsPerAction.mul(winningAction.sub(1));
-            uint256 endCall = i.add(callsPerAction);
+            i = callsPerOption.mul(winningOption.sub(1));
+            uint256 endCall = i.add(callsPerOption);
 
             permissionRegistry.setERC20Balances();
 
@@ -278,7 +278,7 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         return
             ERC20SnapshotRep(address(token))
                 .totalSupplyAt(getProposalSnapshotId(proposalId))
-                .mul(votingPowerForProposalExecution)
+                .mul(votingPowerPercentageForProposalExecution)
                 .div(10000);
     }
 }

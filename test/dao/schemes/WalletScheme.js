@@ -231,6 +231,8 @@ contract("WalletScheme", function (accounts) {
       value: 1000,
     });
 
+    await permissionRegistry.transferOwnership(org.avatar.address);
+
     const newWalletScheme = await WalletScheme.new();
     await newWalletScheme.initialize(
       org.avatar.address,
@@ -251,14 +253,56 @@ contract("WalletScheme", function (accounts) {
       constants.NULL_ADDRESS
     );
 
-    const registerSchemeData = web3.eth.abi.encodeFunctionCall(
-      org.controller.abi.find(x => x.name === "registerScheme"),
-      [newWalletScheme.address, defaultParamsHash, false, false]
+    const updateSchemeParamsData = await org.controller.contract.methods
+      .registerScheme(
+        masterWalletScheme.address,
+        newVotingParamsHash,
+        helpers.encodePermission({
+          canGenericCall: true,
+          canUpgrade: false,
+          canChangeConstraints: false,
+          canRegisterSchemes: false,
+        }),
+        org.avatar.address
+      )
+      .encodeABI();
+
+    const unregisterSchemeData = await org.controller.contract.methods
+      .unregisterScheme(quickWalletScheme.address, org.avatar.address)
+      .encodeABI();
+
+    const proposalId1 = await helpers.getValueFromLogs(
+      await masterWalletScheme.proposeCalls(
+        [org.controller.address],
+        [registerSchemeData],
+        [0],
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      ),
+      "_proposalId"
     );
 
-    const updateSchemeParamsData = web3.eth.abi.encodeFunctionCall(
-      org.controller.abi.find(x => x.name === "registerScheme"),
-      [avatarScheme.address, newParamsHash, false, true]
+    await expectRevert(
+      votingMachine.contract.vote(proposalId1, 1, 0, constants.NULL_ADDRESS, {
+        from: accounts[2],
+      }),
+      "WalletScheme: call execution failed"
+    );
+    const proposalId2 = await helpers.getValueFromLogs(
+      await masterWalletScheme.proposeCalls(
+        [org.controller.address],
+        [unregisterSchemeData],
+        [0],
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      ),
+      "_proposalId"
+    );
+    await expectRevert(
+      votingMachine.contract.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
+        from: accounts[2],
+      }),
+      "WalletScheme: call execution failed"
     );
 
     const unregisterSchemeData = web3.eth.abi.encodeFunctionCall(
@@ -733,7 +777,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "PermissionRegistry: Call not allowed"
+      "WalletScheme: permission check failed"
     );
 
     assert.equal(
@@ -796,7 +840,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "PermissionRegistry: Value limit reached"
+      "WalletScheme: permission check failed"
     );
 
     assert.equal(
@@ -836,6 +880,7 @@ contract("WalletScheme", function (accounts) {
       true
     );
 
+    await time.increase(31);
     const callData = helpers.testCallFrom(org.avatar.address);
 
     const tx = await avatarScheme.proposeCalls(
@@ -850,7 +895,7 @@ contract("WalletScheme", function (accounts) {
       votingMachine.contract.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
       }),
-      "PermissionRegistry: Value limit reached"
+      "WalletScheme: permission check failed"
     );
 
     assert.equal(

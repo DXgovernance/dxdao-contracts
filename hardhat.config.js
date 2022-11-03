@@ -12,6 +12,8 @@ require("@nomiclabs/hardhat-etherscan");
 require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
 
+require("./scripts/nanoUniversalDeployerDeploy");
+require("./scripts/keylessDeploy");
 require("./scripts/create2");
 require("./scripts/actions-dxdao-contracts");
 require("./scripts/deploy-dxdao-contracts");

@@ -94,7 +94,7 @@ contract("ERC20GuildWithERC1271", function (accounts) {
   const allowActionMockA = async function () {
     const setETHPermissionToActionMockA = await createProposal({
       guild: erc20Guild,
-      actions: [
+      options: [
         {
           to: [
             permissionRegistry.address,
@@ -138,13 +138,13 @@ contract("ERC20GuildWithERC1271", function (accounts) {
     await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setETHPermissionToActionMockA,
-      action: 1,
+      option: 1,
       account: accounts[4],
     });
     await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: setETHPermissionToActionMockA,
-      action: 1,
+      option: 1,
       account: accounts[5],
     });
     await time.increase(30);
@@ -160,7 +160,7 @@ contract("ERC20GuildWithERC1271", function (accounts) {
     it("Can validate an EIP1271 Signature", async function () {
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [erc20Guild.address],
             data: [
@@ -179,14 +179,14 @@ contract("ERC20GuildWithERC1271", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       const txVote = await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 

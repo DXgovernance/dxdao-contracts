@@ -182,6 +182,9 @@ contract PermissionRegistry is OwnableUpgradeable {
         bytes4 functionSignature,
         uint256 valueTransferred
     ) public {
+        if (msg.sender != owner()) {
+            require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
+        }
         if (valueTransferred > 0) {
             _setValueTransferred(ethPermissions[from][address(0)][bytes4(0)], valueTransferred);
         }
