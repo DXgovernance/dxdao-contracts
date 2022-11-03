@@ -7,13 +7,9 @@ import "./Scheme.sol";
 
 /**
  * @title AvatarScheme.
- * @dev  A scheme for proposing and executing calls to any contract from the DAO avatar
- * It has a value call controller address, in case of the controller address ot be set the scheme will be doing
- * generic calls to the dao controller. If the controller address is not set it will e executing raw calls form the
- * scheme itself.
- * The scheme can only execute calls allowed to in the permission registry, if the controller address is set
- * the permissions will be checked using the avatar address as sender, if not the scheme address will be used as
- * sender.
+ * @dev An implementation of Scheme where the scheme has only 2 options and execute calls from the avatar.
+ * Option 1 will execute all the calls that where submitted in the proposeCalls.
+ * Option 2 will mark the proposal as rejected and not execute any calls.
  */
 contract AvatarScheme is Scheme {
     using SafeMath for uint256;
@@ -37,6 +33,16 @@ contract AvatarScheme is Scheme {
         maxSecondsForExecution = _maxSecondsForExecution;
     }
 
+    /**
+     * @dev Propose calls to be executed, the calls have to be allowed by the permission registry
+     * @param _to - The addresses to call
+     * @param _callData - The abi encode data for the calls
+     * @param _value value(ETH) to transfer with the calls
+     * @param _totalOptions The amount of options to be voted on
+     * @param _title title of proposal
+     * @param _descriptionHash proposal description hash
+     * @return proposalId id which represents the proposal
+     */
     function proposeCalls(
         address[] calldata _to,
         bytes[] calldata _callData,
@@ -44,9 +50,59 @@ contract AvatarScheme is Scheme {
         uint256 _totalOptions,
         string calldata _title,
         string calldata _descriptionHash
-    ) public override returns (bytes32) {
+    ) public override returns (bytes32 proposalId) {
+        // Check the proposal calls
+        for (uint256 i = 0; i < _to.length; i++) {
+            bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
+
+            // This will fail only when and ERC20 transfer or approve with ETH value is proposed
+            require(
+                (callDataFuncSignature != bytes4(keccak256("transfer(address,uint256)")) &&
+                    callDataFuncSignature != bytes4(keccak256("approve(address,uint256)"))) || _value[i] == 0,
+                "AvatarScheme: cant propose ERC20 transfers with value"
+            );
+        }
+        require(_to.length == _callData.length, "AvatarScheme: invalid _callData length");
+        require(_to.length == _value.length, "AvatarScheme: invalid _value length");
+
         require(_totalOptions == 2, "AvatarScheme: The total amount of options should be 2");
-        return super.proposeCalls(_to, _callData, _value, _totalOptions, _title, _descriptionHash);
+
+        bytes32 voteParams = controller.getSchemeParameters(address(this));
+
+        // Get the proposal id that will be used from the voting machine
+        // bytes32 proposalId = votingMachine.propose(_totalOptions, voteParams, msg.sender, address(avatar));
+        proposalId = abi.decode(
+            votingMachine.functionCall(
+                abi.encodeWithSignature(
+                    "propose(uint256,bytes32,address,address)",
+                    _totalOptions,
+                    voteParams,
+                    msg.sender,
+                    avatar
+                ),
+                "AvatarScheme: DXDVotingMachine callback propose error"
+            ),
+            (bytes32)
+        );
+
+        controller.startProposal(proposalId);
+
+        // Add the proposal to the proposals mapping, proposals list and proposals information mapping
+        proposals[proposalId] = Proposal({
+            to: _to,
+            callData: _callData,
+            value: _value,
+            state: ProposalState.Submitted,
+            totalOptions: _totalOptions,
+            title: _title,
+            descriptionHash: _descriptionHash,
+            submittedTime: block.timestamp
+        });
+        // slither-disable-next-line all
+        proposalsList.push(proposalId);
+        proposalSnapshots[proposalId] = DAOReputation(getReputation()).getCurrentSnapshotId();
+        emit ProposalStateChange(proposalId, uint256(ProposalState.Submitted));
+        return proposalId;
     }
 
     /**
