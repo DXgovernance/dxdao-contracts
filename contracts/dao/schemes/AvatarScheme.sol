@@ -9,7 +9,8 @@ import "./Scheme.sol";
  * @title AvatarScheme.
  * @dev  A scheme for proposing and executing calls to any contract from the DAO avatar
  * It has a value call controller address, in case the controller address is set the scheme will be doing
- * generic calls to the dao controller. If the controller address is not set it will e executing raw calls from the
+ * generic calls to the dao controller. If the controller address is not set it will be executing raw calls from the
+
  * scheme itself.
  * The scheme can only execute calls allowed to in the permission registry, if the controller address is set
  * the permissions will be checked using the avatar address as sender, if not the scheme address will be used as
