@@ -297,18 +297,17 @@ contract("WalletScheme", function (accounts) {
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
 
-    // TODO: find out why [to, callData and value] are undefined
-    // assert.deepEqual(organizationProposal1.to, [
-    //   org.controller.address,
-    //   org.controller.address,
-    //   org.controller.address,
-    // ]);
-    // assert.deepEqual(organizationProposal1.callData, [
-    //   registerSchemeData,
-    //   updateSchemeParamsData,
-    //   unregisterSchemeData,
-    // ]);
-    // assert.deepEqual(organizationProposal1.value, ["0", "0", "0"]);
+    assert.deepEqual(organizationProposal1.to, [
+      org.controller.address,
+      org.controller.address,
+      org.controller.address,
+    ]);
+    assert.deepEqual(organizationProposal1.callData, [
+      registerSchemeData,
+      updateSchemeParamsData,
+      unregisterSchemeData,
+    ]);
+    assert.deepEqual(organizationProposal1.value, ["0", "0", "0"]);
 
     assert.equal(
       await org.controller.isSchemeRegistered(newWalletScheme.address),
@@ -457,10 +456,10 @@ contract("WalletScheme", function (accounts) {
       organizationProposal.state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
     );
-    // TODO: find out why [to, callData and value] are undefined
-    // assert.equal(organizationProposal.callData[0], callData);
-    // assert.equal(organizationProposal.to[0], avatarScheme.address);
-    // assert.equal(organizationProposal.value[0], 0);
+
+    assert.equal(organizationProposal.callData[0], callData);
+    assert.equal(organizationProposal.to[0], avatarScheme.address);
+    assert.equal(organizationProposal.value[0], 0);
     assert.equal(await avatarScheme.maxSecondsForExecution(), executionTimeout);
   });
 
@@ -546,10 +545,10 @@ contract("WalletScheme", function (accounts) {
     );
     assert.equal(organizationProposal.descriptionHash, constants.SOME_HASH);
     assert.equal(organizationProposal.title, constants.TEST_TITLE);
-    // TODO: find out why [to, callData and value] are undefined
-    // assert.equal(organizationProposal.callData[0], callData);
-    // assert.equal(organizationProposal.to[0], actionMock.address);
-    // assert.equal(organizationProposal.value[0], 0);
+
+    assert.equal(organizationProposal.callData[0], callData);
+    assert.equal(organizationProposal.to[0], actionMock.address);
+    assert.equal(organizationProposal.value[0], 0);
   });
 
   it("MasterWalletScheme - proposal with data - positive decision - proposal executed", async function () {
@@ -577,10 +576,9 @@ contract("WalletScheme", function (accounts) {
       organizationProposal.state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
-    // TODO: find out why [to, callData and value] are undefined
-    // assert.equal(organizationProposal.callData[0], callData);
-    // assert.equal(organizationProposal.to[0], avatarScheme.address);
-    // assert.equal(organizationProposal.value[0], 0);
+    assert.equal(organizationProposal.callData[0], callData);
+    assert.equal(organizationProposal.to[0], avatarScheme.address);
+    assert.equal(organizationProposal.value[0], 0);
   });
 
   it.skip("MasterWalletScheme - proposal with data - positive decision - proposal executed", async function () {
