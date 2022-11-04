@@ -1,4 +1,3 @@
-import { expect } from "chai";
 const { expectRevert } = require("@openzeppelin/test-helpers");
 
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
@@ -261,15 +260,18 @@ contract("DAOController", function (accounts) {
     expect(activeProposals).deep.equal([]);
   });
 
-  it.skip("getActiveProposals(0, 1) should return first proposal", async () => {
+  it("getActiveProposals(0, 1) should return first 2 proposals", async () => {
     const proposalIds = getRandomProposalIds(3);
     // start all proposals ids
     await Promise.all(proposalIds.map(id => controller.startProposal(id)));
     // get active proposals
     const activeProposals = await controller.getActiveProposals(0, 1);
 
-    expect(activeProposals.length).to.equal(1);
-    expect(activeProposals[0].proposalId).to.equal(proposalIds[0]);
+    expect(activeProposals.length).to.equal(2);
+    [0, 1].forEach(i =>
+      expect(activeProposals[i].proposalId).to.equal(proposalIds[i])
+    );
+
     expect(activeProposals[0].scheme).to.equal(schemeAddress);
   });
 
@@ -348,17 +350,4 @@ contract("DAOController", function (accounts) {
 
     expect(inactiveProposalsCount.toNumber()).to.equal(TOTAL_PROPOSALS);
   });
-  // it.skip("asd", () => {
-  //   function asd(_start, _end) {
-  //     const end = _end == 0 ? totalCount : _end; // 1
-  //     const returnCount = end - _start;
-
-  //     proposalsArray = [];
-  //     const i = 0;
-  //     for (i; i < returnCount; i++) {
-  //       console.log("i", i);
-  //     }
-  //     return proposalsArray;
-  //   }
-  // });
 });

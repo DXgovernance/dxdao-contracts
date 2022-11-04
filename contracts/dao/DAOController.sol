@@ -227,7 +227,7 @@ contract DAOController is Initializable {
     }
 
     /**
-     * @dev Returns array of active proposals
+     * @dev Returns array of active proposals based on index args. Both indexes are inclusive, unles (0,0) that returns all elements
      * @param _startIndex index to start batching (included).
      * @param _endIndex last index of batch (included). Zero will default to last element from the list
      * @param _proposals EnumerableSetUpgradeable set of proposals
