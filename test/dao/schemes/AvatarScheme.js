@@ -113,9 +113,7 @@ contract("AvatarScheme", function (accounts) {
     await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
       from: accounts[2],
     });
-    const organizationProposal = await avatarScheme.getOrganizationProposal(
-      proposalId
-    );
+    const organizationProposal = await avatarScheme.getProposal(proposalId);
     assert.equal(
       organizationProposal.state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd

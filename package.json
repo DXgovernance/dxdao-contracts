@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "test": "npx hardhat test",
-    "coverage": "./scripts/coverage.sh",
+    "coverage": "OVERRIDE_GAS_LIMIT=0xfffffffffff OVERRIDE_GAS_PRICE=1 yarn hardhat coverage",
     "compile": "rm -rf artifacts cache contracts/hardhat-dependency-compiler && npx hardhat compile",
     "deploy": "node scripts/deploy.js",
     "solidity-linter": "./scripts/solhint.sh",
@@ -66,7 +66,7 @@
     "run-with-ganache": "^0.1.1",
     "solhint": "^3.3.5",
     "solhint-plugin-prettier": "^0.0.5",
-    "solidity-coverage": "^0.7.16",
+    "solidity-coverage": "^0.8.2",
     "truffle": "^5.1.28",
     "truffle-hdwallet-provider": "^1.0.17",
     "uint32": "^0.2.1"

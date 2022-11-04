@@ -88,8 +88,9 @@ contract AvatarScheme is Scheme {
                 }
 
                 bool callsSucessResult = false;
+                bytes memory returnData;
                 // The permission registry keeps track of all value transferred and checks call permission
-                (callsSucessResult, ) = controller.avatarCall(
+                (callsSucessResult, returnData) = controller.avatarCall(
                     address(permissionRegistry),
                     abi.encodeWithSignature(
                         "setETHPermissionUsed(address,address,bytes4,uint256)",
@@ -101,15 +102,17 @@ contract AvatarScheme is Scheme {
                     avatar,
                     0
                 );
-                require(callsSucessResult, "AvatarScheme: setETHPermissionUsed failed");
+                require(callsSucessResult, string(returnData));
 
-                (callsSucessResult, ) = controller.avatarCall(
+                (callsSucessResult, returnData) = controller.avatarCall(
                     proposal.to[callIndex],
                     proposal.callData[callIndex],
                     avatar,
                     proposal.value[callIndex]
                 );
-                require(callsSucessResult, "AvatarScheme: Proposal call failed");
+                require(callsSucessResult, string(returnData));
+
+                proposal.state = ProposalState.ExecutionSucceeded;
             }
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
             require(
