@@ -193,6 +193,14 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     }
 
     /**
+     * @dev Get the information of a proposal
+     * @param proposalId the id of the proposal
+     */
+    function getProposal(bytes32 proposalId) external view returns (Proposal memory) {
+        return proposals[proposalId];
+    }
+
+    /**
      * @dev Get the information of a proposal by index
      * @param proposalIndex the index of the proposal in the proposals list
      */
