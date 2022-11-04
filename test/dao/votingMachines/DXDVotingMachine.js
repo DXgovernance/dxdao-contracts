@@ -320,7 +320,7 @@ contract("DXDVotingMachine", function (accounts) {
         );
         expect(tx.receipt.gasUsed).to.be.closeTo(gastVoteWithoutRefund, 1);
 
-        const organizationProposal = await masterAvatarScheme.proposals(
+        const organizationProposal = await masterAvatarScheme.getProposal(
           proposalId
         );
         assert.equal(
@@ -429,7 +429,7 @@ contract("DXDVotingMachine", function (accounts) {
           );
 
           assert.equal(
-            (await registrarScheme.proposals(registerProposalId)).state,
+            (await registrarScheme.getProposal(registerProposalId)).state,
             constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
           );
 
@@ -442,7 +442,7 @@ contract("DXDVotingMachine", function (accounts) {
           );
 
           assert.equal(
-            (await registrarScheme.proposals(registerProposalId)).state,
+            (await registrarScheme.getProposal(registerProposalId)).state,
             constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
           );
 
@@ -811,7 +811,7 @@ contract("DXDVotingMachine", function (accounts) {
           { from: accounts[4] }
         );
 
-        const organizationProposal = await masterAvatarScheme.proposals(
+        const organizationProposal = await masterAvatarScheme.getProposal(
           proposalId
         );
         assert.equal(
@@ -858,7 +858,7 @@ contract("DXDVotingMachine", function (accounts) {
           { from: accounts[4] }
         );
 
-        const organizationProposal = await masterAvatarScheme.proposals(
+        const organizationProposal = await masterAvatarScheme.getProposal(
           proposalId
         );
         assert.equal(
@@ -921,7 +921,7 @@ contract("DXDVotingMachine", function (accounts) {
             .voteDecision,
           0
         );
-        const organizationProposal = await masterAvatarScheme.proposals(
+        const organizationProposal = await masterAvatarScheme.getProposal(
           proposalId
         );
         assert.equal(
@@ -965,7 +965,7 @@ contract("DXDVotingMachine", function (accounts) {
             .voteDecision,
           0
         );
-        const organizationProposal = await masterAvatarScheme.proposals(
+        const organizationProposal = await masterAvatarScheme.getProposal(
           proposalId
         );
         assert.equal(
@@ -1103,7 +1103,7 @@ contract("DXDVotingMachine", function (accounts) {
         }
       );
 
-      const organizationProposal = await masterAvatarScheme.proposals(
+      const organizationProposal = await masterAvatarScheme.getProposal(
         testProposalId
       );
       assert.equal(
@@ -1164,7 +1164,7 @@ contract("DXDVotingMachine", function (accounts) {
         }
       );
 
-      const organizationProposal = await masterAvatarScheme.proposals(
+      const organizationProposal = await masterAvatarScheme.getProposal(
         testProposalId
       );
       assert.equal(
@@ -1318,7 +1318,7 @@ contract("DXDVotingMachine", function (accounts) {
         }
       );
 
-      const proposalState = (await masterAvatarScheme.proposals(proposalId))
+      const proposalState = (await masterAvatarScheme.getProposal(proposalId))
         .state;
 
       assert.equal(
@@ -1379,7 +1379,7 @@ contract("DXDVotingMachine", function (accounts) {
       // check executed
       assert.equal((await dxdVotingMachine.proposals(proposalId)).state, "2");
 
-      const proposalState = (await masterAvatarScheme.proposals(proposalId))
+      const proposalState = (await masterAvatarScheme.getProposal(proposalId))
         .state;
 
       assert.equal(
@@ -1440,7 +1440,7 @@ contract("DXDVotingMachine", function (accounts) {
       // check executed
       assert.equal((await dxdVotingMachine.proposals(proposalId)).state, "2");
 
-      const proposalState = (await masterAvatarScheme.proposals(proposalId))
+      const proposalState = (await masterAvatarScheme.getProposal(proposalId))
         .state;
 
       assert.equal(
@@ -1501,7 +1501,7 @@ contract("DXDVotingMachine", function (accounts) {
       // check executed
       assert.equal((await dxdVotingMachine.proposals(proposalId)).state, "2");
 
-      const proposalState = (await masterAvatarScheme.proposals(proposalId))
+      const proposalState = (await masterAvatarScheme.getProposal(proposalId))
         .state;
 
       assert.equal(

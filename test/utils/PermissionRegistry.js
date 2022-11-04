@@ -162,7 +162,7 @@ contract("PermissionRegistry", function (accounts) {
     );
 
     assert.equal(
-      (await masterAvatarScheme.proposals(proposalId1)).state,
+      (await masterAvatarScheme.getProposal(proposalId1)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
 
@@ -190,15 +190,16 @@ contract("PermissionRegistry", function (accounts) {
       from: accounts[2],
     });
 
-    const organizationProposal = await quickWalletScheme.proposals(proposalId2);
+    const organizationProposal = await quickWalletScheme.getProposal(
+      proposalId2
+    );
     assert.equal(
       organizationProposal.state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
-    // TODO: find out why [to, callData and value] are undefined
-    // assert.equal(organizationProposal.callData[0], callData);
-    // assert.equal(organizationProposal.to[0], actionMock.address);
-    // assert.equal(organizationProposal.value[0], 0);
+    assert.equal(organizationProposal.callData[0], callData);
+    assert.equal(organizationProposal.to[0], actionMock.address);
+    assert.equal(organizationProposal.value[0], 0);
   });
 
   it("remove permission from quickwallet", async function () {
@@ -269,7 +270,7 @@ contract("PermissionRegistry", function (accounts) {
     });
 
     assert.equal(
-      (await quickWalletScheme.proposals(proposalId)).state,
+      (await quickWalletScheme.getProposal(proposalId)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
 
