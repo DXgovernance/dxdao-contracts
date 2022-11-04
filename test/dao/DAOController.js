@@ -167,17 +167,17 @@ contract("DAOController", function (accounts) {
     });
 
     const activeProposals = await controller.getActiveProposals(0, 0);
-    expect(activeProposals[0].proposalId).to.equal(proposalId);
 
-    /**
-     * This next error should be "DAOController: Sender is not the scheme that originally started the proposal"
-     * TODO: find out why we are getting that current incorrect params error
-     */
+    const count = await controller.getActiveProposalsCount();
+
+    expect(activeProposals[0].proposalId).to.equal(proposalId);
+    expect(count.toNumber()).to.equal(1);
+
     await expectRevert(
       controller.endProposal(proposalId, {
         from: accounts[2],
       }),
-      "Transaction reverted: function was called with incorrect parameters"
+      "DAOController: Sender is not the scheme that originally started the proposal"
     );
   });
 
@@ -227,11 +227,11 @@ contract("DAOController", function (accounts) {
 
     await expectRevert(
       controller.getActiveProposals(TOTAL_PROPOSALS + 1, 0),
-      "DAOController: _start cannot be bigger than proposals list length"
+      "DAOController: _startIndex cannot be bigger than proposals list length"
     );
     await expectRevert(
       controller.getActiveProposals(0, TOTAL_PROPOSALS + 1),
-      "DAOController: _end cannot be bigger than proposals list length"
+      "DAOController: _endIndex cannot be bigger than proposals list length"
     );
   });
 
@@ -254,6 +254,23 @@ contract("DAOController", function (accounts) {
         proposalIds.slice(START, END + 1).some(id => proposalId === id)
       ) // eslint-disable-line
     ).to.equal(true);
+  });
+
+  it("getActiveProposals(0,0) should return empty [] if no active proposals", async () => {
+    const activeProposals = await controller.getActiveProposals(0, 0);
+    expect(activeProposals).deep.equal([]);
+  });
+
+  it.skip("getActiveProposals(0, 1) should return first proposal", async () => {
+    const proposalIds = getRandomProposalIds(3);
+    // start all proposals ids
+    await Promise.all(proposalIds.map(id => controller.startProposal(id)));
+    // get active proposals
+    const activeProposals = await controller.getActiveProposals(0, 1);
+
+    expect(activeProposals.length).to.equal(1);
+    expect(activeProposals[0].proposalId).to.equal(proposalIds[0]);
+    expect(activeProposals[0].scheme).to.equal(schemeAddress);
   });
 
   it("getInactiveProposals(0,0) should return by default all inactive proposals", async () => {
@@ -331,4 +348,17 @@ contract("DAOController", function (accounts) {
 
     expect(inactiveProposalsCount.toNumber()).to.equal(TOTAL_PROPOSALS);
   });
+  // it.skip("asd", () => {
+  //   function asd(_start, _end) {
+  //     const end = _end == 0 ? totalCount : _end; // 1
+  //     const returnCount = end - _start;
+
+  //     proposalsArray = [];
+  //     const i = 0;
+  //     for (i; i < returnCount; i++) {
+  //       console.log("i", i);
+  //     }
+  //     return proposalsArray;
+  //   }
+  // });
 });

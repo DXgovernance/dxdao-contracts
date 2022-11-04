@@ -161,11 +161,6 @@ contract DAOController is Initializable {
      * @param _proposalId  the proposalId
      */
     function startProposal(bytes32 _proposalId) external onlyRegisteredScheme {
-        // TODO: ask Augusto why this next require is not a good option as mentioned at the issue:
-        // "Check that a proposal ID is not already used by another scheme when calling the startProposal
-        // function is not a good solution, because it will allow a scheme to block proposals from another scheme"
-        // https://github.com/DXgovernance/dxdao-contracts/issues/233
-        // How this will allow "blocking" proposals from another scheme??
         require(schemeOfProposal[_proposalId] == address(0), "DAOController: _proposalId used by other scheme");
         activeProposals.add(_proposalId);
         schemeOfProposal[_proposalId] = msg.sender;
@@ -233,28 +228,36 @@ contract DAOController is Initializable {
 
     /**
      * @dev Returns array of active proposals
-     * @param _start index to start batching (included).
-     * @param _end last index of batch (included). Zero will default to last element from the list
+     * @param _startIndex index to start batching (included).
+     * @param _endIndex last index of batch (included). Zero will default to last element from the list
      * @param _proposals EnumerableSetUpgradeable set of proposals
      * @return proposalsArray with proposals list.
      */
     function _getProposalsBatchRequest(
-        uint256 _start,
-        uint256 _end,
+        uint256 _startIndex,
+        uint256 _endIndex,
         EnumerableSetUpgradeable.Bytes32Set storage _proposals
     ) internal view returns (ProposalAndScheme[] memory proposalsArray) {
         uint256 totalCount = uint256(_proposals.length());
-        require(_start < totalCount, "DAOController: _start cannot be bigger than proposals list length");
-        require(_end < totalCount, "DAOController: _end cannot be bigger than proposals list length");
+        if (totalCount == 0) {
+            return new ProposalAndScheme[](0);
+        }
+        require(_startIndex < totalCount, "DAOController: _startIndex cannot be bigger than proposals list length");
+        require(_endIndex < totalCount, "DAOController: _endIndex cannot be bigger than proposals list length");
+        require(
+            _startIndex < _endIndex || _startIndex == _endIndex,
+            "DAOController: _startIndex cannot be bigger _endIndex"
+        );
 
-        uint256 end = _end == 0 ? totalCount.sub(1) : _end;
-        uint256 returnCount = end.sub(_start).add(1);
+        (, uint256 total) = totalCount.trySub(1);
+        uint256 lastIndex = _endIndex == 0 ? total : _endIndex;
+        uint256 returnCount = lastIndex.add(1).sub(_startIndex);
 
         proposalsArray = new ProposalAndScheme[](returnCount);
         uint256 i = 0;
         for (i; i < returnCount; i++) {
-            proposalsArray[i].proposalId = _proposals.at(i.add(_start));
-            proposalsArray[i].scheme = schemeOfProposal[_proposals.at(i.add(_start))];
+            proposalsArray[i].proposalId = _proposals.at(i.add(_startIndex));
+            proposalsArray[i].scheme = schemeOfProposal[_proposals.at(i.add(_startIndex))];
         }
         return proposalsArray;
     }
