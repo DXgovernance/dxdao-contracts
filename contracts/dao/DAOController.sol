@@ -244,10 +244,7 @@ contract DAOController is Initializable {
         }
         require(_startIndex < totalCount, "DAOController: _startIndex cannot be bigger than proposals list length");
         require(_endIndex < totalCount, "DAOController: _endIndex cannot be bigger than proposals list length");
-        require(
-            _startIndex < _endIndex || _startIndex == _endIndex,
-            "DAOController: _startIndex cannot be bigger _endIndex"
-        );
+        require(_startIndex <= _endIndex, "DAOController: _startIndex cannot be bigger _endIndex");
 
         (, uint256 total) = totalCount.trySub(1);
         uint256 lastIndex = _endIndex == 0 ? total : _endIndex;

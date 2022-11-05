@@ -126,6 +126,61 @@ contract("DAOController", function (accounts) {
       currentSchemesWithManagePermission - 1
     );
   });
+  it('registerScheme() should reject with: "DAOController: Sender is not a registered scheme"', async function () {
+    const newSchemeAddress = accounts[10];
+    await expectRevert(
+      controller.registerScheme(
+        newSchemeAddress,
+        defaultParamsHash,
+        true,
+        true,
+        { from: newSchemeAddress }
+      ),
+      "DAOController: Sender is not a registered scheme"
+    );
+  });
+
+  it('registerScheme() should reject with: "DAOController: Sender cannot manage schemes"', async function () {
+    const schemeThatCanNotManageSchemes = accounts[10];
+    await controller.registerScheme(
+      schemeThatCanNotManageSchemes,
+      defaultParamsHash,
+      false, // can't manage schemes
+      true
+    );
+
+    await expectRevert(
+      controller.registerScheme(accounts[8], defaultParamsHash, true, true, {
+        from: schemeThatCanNotManageSchemes,
+      }),
+      "DAOController: Sender cannot manage schemes"
+    );
+  });
+
+  it('avatarCall() should reject with: "DAOController: Sender cannot perform avatar calls"', async function () {
+    const schemeThatCanNotMakeAvatarCalls = accounts[10];
+    await controller.registerScheme(
+      schemeThatCanNotMakeAvatarCalls,
+      defaultParamsHash,
+      true, //
+      false // canMakeAvatarCalls
+    );
+
+    await expectRevert(
+      controller.avatarCall(
+        helpers.constants.SOME_ADDRESS,
+        new web3.eth.Contract(DAOAvatar.abi).methods
+          .executeCall(helpers.constants.SOME_ADDRESS, "0x0", 0)
+          .encodeABI(),
+        avatar.address,
+        0,
+        {
+          from: schemeThatCanNotMakeAvatarCalls,
+        }
+      ),
+      "DAOController: Sender cannot perform avatar calls"
+    );
+  });
 
   // eslint-disable-next-line max-len
   it("startProposal() shoul not allow a scheme assign itself as the proposer of a certain proposal ID", async () => {
