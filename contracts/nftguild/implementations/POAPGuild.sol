@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../BaseNFTGuild.sol";
+import "../../utils/PermissionRegistry.sol";
 import "../utils/ipoap.sol";
 
 /*
@@ -35,10 +36,40 @@ import "../utils/ipoap.sol";
   hashVote, after signing the hash teh voter can share it to other account to be executed.
   Multiple votes and signed votes can be executed in one transaction.
 */
-contract POAPGuild is BaseNFTGuild, OwnableUpgradeable {
+contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using AddressUpgradeable for address;
+
+    function initialize(
+        address _token,
+        uint256 _proposalTime,
+        uint256 _timeForExecution,
+        uint256 _votingPowerPercentageForProposalExecution,
+        string memory _name,
+        uint256 _voteGas,
+        uint256 _maxGasPrice,
+        uint256 _maxActiveProposals,
+        uint256 _lockTime,
+        address _permissionRegistry
+    ) public virtual initializer {
+        require(address(_token) != address(0), "NFTGuild: token cant be zero address");
+        require(_proposalTime > 0, "NFTGuild: proposal time has to be more than 0");
+        require(_lockTime >= _proposalTime, "NFTGuild: lockTime has to be higher or equal to proposalTime");
+        require(
+            _votingPowerPercentageForProposalExecution > 0,
+            "NFTGuild: voting power for execution has to be more than 0"
+        );
+        name = _name;
+        poap = IPoap(_token);
+        proposalTime = _proposalTime;
+        timeForExecution = _timeForExecution;
+        votingPowerPercentageForProposalExecution = _votingPowerPercentageForProposalExecution;
+        voteGas = _voteGas;
+        maxGasPrice = _maxGasPrice;
+        maxActiveProposals = _maxActiveProposals;
+        permissionRegistry = PermissionRegistry(_permissionRegistry);
+    }
 
     // The ERC721 token that will be used as source of voting power
     IPoap public poap;

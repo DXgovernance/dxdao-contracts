@@ -4,7 +4,6 @@ pragma solidity ^0.8.8;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "../../utils/PermissionRegistry.sol";
-import "../../utils/TokenVault.sol";
 import "../BaseNFTGuild.sol";
 
 /*
