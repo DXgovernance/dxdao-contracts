@@ -97,13 +97,13 @@ contract DAOController is Initializable {
 
         // Add or change the scheme:
         if ((!scheme.isRegistered || !scheme.canManageSchemes) && _canManageSchemes) {
-            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.add(1);
+            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission + 1;
         } else if (scheme.canManageSchemes && !_canManageSchemes) {
             require(
                 schemesWithManageSchemesPermission > 1,
                 "DAOController: Cannot disable canManageSchemes property from the last scheme with manage schemes permissions"
             );
-            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.sub(1);
+            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission - 1;
         }
 
         schemes[_scheme] = Scheme({
@@ -271,15 +271,15 @@ contract DAOController is Initializable {
         require(_end < totalCount, "DAOController: _end cannot be bigger than proposals list length");
         require(_start <= _end, "DAOController: _start cannot be bigger _end");
 
-        (, uint256 total) = totalCount.trySub(1);
+        uint256 total = totalCount - 1;
         uint256 lastIndex = _end == 0 ? total : _end;
-        uint256 returnCount = lastIndex.add(1).sub(_start);
+        uint256 returnCount = lastIndex + 1 - _start;
 
         proposalsArray = new ProposalAndScheme[](returnCount);
         uint256 i = 0;
         for (i; i < returnCount; i++) {
-            proposalsArray[i].proposalId = _proposals.at(i.add(_start));
-            proposalsArray[i].scheme = schemeOfProposal[_proposals.at(i.add(_start))];
+            proposalsArray[i].proposalId = _proposals.at(i + _start);
+            proposalsArray[i].scheme = schemeOfProposal[_proposals.at(i + _start)];
         }
         return proposalsArray;
     }
