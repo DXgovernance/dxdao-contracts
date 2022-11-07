@@ -42,9 +42,13 @@ contract DAOController is Initializable {
     event RegisterScheme(address indexed _sender, address indexed _scheme);
     event UnregisterScheme(address indexed _sender, address indexed _scheme);
 
-    function initialize(address _scheme, address _reputationToken) public initializer {
+    function initialize(
+        address _scheme,
+        address _reputationToken,
+        bytes32 _paramsHash
+    ) public initializer {
         schemes[_scheme] = Scheme({
-            paramsHash: bytes32(0),
+            paramsHash: _paramsHash,
             isRegistered: true,
             canManageSchemes: true,
             canMakeAvatarCalls: true
@@ -87,6 +91,12 @@ contract DAOController is Initializable {
         // Add or change the scheme:
         if ((!scheme.isRegistered || !scheme.canManageSchemes) && _canManageSchemes) {
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.add(1);
+        } else if (scheme.canManageSchemes && !_canManageSchemes) {
+            require(
+                schemesWithManageSchemesPermission > 1,
+                "DAOController: Cannot disable canManageSchemes property from the last scheme with manage schemes permissions"
+            );
+            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.sub(1);
         }
 
         schemes[_scheme] = Scheme({
@@ -151,6 +161,7 @@ contract DAOController is Initializable {
      * @param _proposalId  the proposalId
      */
     function startProposal(bytes32 _proposalId) external onlyRegisteredScheme {
+        require(schemeOfProposal[_proposalId] == address(0), "DAOController: _proposalId used by other scheme");
         activeProposals.add(_proposalId);
         schemeOfProposal[_proposalId] = msg.sender;
     }
@@ -160,6 +171,10 @@ contract DAOController is Initializable {
      * @param _proposalId  the proposalId
      */
     function endProposal(bytes32 _proposalId) external {
+        require(
+            schemeOfProposal[_proposalId] == msg.sender,
+            "DAOController: Sender is not the scheme that originally started the proposal"
+        );
         require(
             schemes[msg.sender].isRegistered ||
                 (!schemes[schemeOfProposal[_proposalId]].isRegistered && activeProposals.contains(_proposalId)),
@@ -211,25 +226,81 @@ contract DAOController is Initializable {
         return (schemes[_scheme].isRegistered);
     }
 
-    function getActiveProposals() external view returns (ProposalAndScheme[] memory activeProposalsArray) {
-        activeProposalsArray = new ProposalAndScheme[](activeProposals.length());
-        for (uint256 i = 0; i < activeProposals.length(); i++) {
-            activeProposalsArray[i].proposalId = activeProposals.at(i);
-            activeProposalsArray[i].scheme = schemeOfProposal[activeProposals.at(i)];
+    /**
+     * @dev Returns array of proposals based on index args. Both indexes are inclusive, unles (0,0) that returns all elements
+     * @param _start index to start batching (included).
+     * @param _end last index of batch (included). Zero will default to last element from the list
+     * @param _proposals EnumerableSetUpgradeable set of proposals
+     * @return proposalsArray with proposals list.
+     */
+    function _getProposalsBatchRequest(
+        uint256 _start,
+        uint256 _end,
+        EnumerableSetUpgradeable.Bytes32Set storage _proposals
+    ) internal view returns (ProposalAndScheme[] memory proposalsArray) {
+        uint256 totalCount = uint256(_proposals.length());
+        if (totalCount == 0) {
+            return new ProposalAndScheme[](0);
         }
-        return activeProposalsArray;
+        require(_start < totalCount, "DAOController: _start cannot be bigger than proposals list length");
+        require(_end < totalCount, "DAOController: _end cannot be bigger than proposals list length");
+        require(_start <= _end, "DAOController: _start cannot be bigger _end");
+
+        (, uint256 total) = totalCount.trySub(1);
+        uint256 lastIndex = _end == 0 ? total : _end;
+        uint256 returnCount = lastIndex.add(1).sub(_start);
+
+        proposalsArray = new ProposalAndScheme[](returnCount);
+        uint256 i = 0;
+        for (i; i < returnCount; i++) {
+            proposalsArray[i].proposalId = _proposals.at(i.add(_start));
+            proposalsArray[i].scheme = schemeOfProposal[_proposals.at(i.add(_start))];
+        }
+        return proposalsArray;
     }
 
-    function getInactiveProposals() external view returns (ProposalAndScheme[] memory inactiveProposalsArray) {
-        inactiveProposalsArray = new ProposalAndScheme[](inactiveProposals.length());
-        for (uint256 i = 0; i < inactiveProposals.length(); i++) {
-            inactiveProposalsArray[i].proposalId = inactiveProposals.at(i);
-            inactiveProposalsArray[i].scheme = schemeOfProposal[inactiveProposals.at(i)];
-        }
-        return inactiveProposalsArray;
+    /**
+     * @dev Returns array of active proposals
+     * @param _start index to start batching (included).
+     * @param _end last index of batch (included). Zero will return all
+     * @return activeProposalsArray with active proposals list.
+     */
+    function getActiveProposals(uint256 _start, uint256 _end)
+        external
+        view
+        returns (ProposalAndScheme[] memory activeProposalsArray)
+    {
+        return _getProposalsBatchRequest(_start, _end, activeProposals);
+    }
+
+    /**
+     * @dev Returns array of inactive proposals
+     * @param _start index to start batching (included).
+     * @param _end last index of batch (included). Zero will return all
+     */
+    function getInactiveProposals(uint256 _start, uint256 _end)
+        external
+        view
+        returns (ProposalAndScheme[] memory inactiveProposalsArray)
+    {
+        return _getProposalsBatchRequest(_start, _end, inactiveProposals);
     }
 
     function getDaoReputation() external view returns (DAOReputation) {
         return reputationToken;
+    }
+
+    /**
+     * @dev Returns the amount of active proposals
+     */
+    function getActiveProposalsCount() public view returns (uint256) {
+        return activeProposals.length();
+    }
+
+    /**
+     * @dev Returns the amount of inactive proposals
+     */
+    function getInactiveProposalsCount() public view returns (uint256) {
+        return inactiveProposals.length();
     }
 }
