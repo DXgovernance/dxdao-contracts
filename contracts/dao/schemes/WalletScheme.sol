@@ -83,6 +83,7 @@ contract WalletScheme is Scheme {
                 }
 
                 bool callsSucessResult = false;
+                bytes memory returnData;
                 // The permission registry keeps track of all value transferred and checks call permission
                 permissionRegistry.setETHPermissionUsed(
                     address(this),
@@ -94,12 +95,13 @@ contract WalletScheme is Scheme {
                     proposal.callData[callIndex]
                 );
 
-                require(callsSucessResult, "WalletScheme: Proposal call failed");
+                require(callsSucessResult, string(returnData));
 
                 proposal.state = ProposalState.ExecutionSucceeded;
             }
 
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
+
             require(
                 (oldRepSupply.mul(uint256(100).add(maxRepPercentageChange)).div(100) >=
                     getNativeReputationTotalSupply()) &&

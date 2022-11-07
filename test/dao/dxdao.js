@@ -191,10 +191,7 @@ contract("DXdao", function (accounts) {
       from: accounts[2],
     });
 
-    assert.equal(
-      (await masterAvatarScheme.getOrganizationProposal(proposalId)).state,
-      2
-    );
+    assert.equal((await masterAvatarScheme.getProposal(proposalId)).state, 2);
     const inactiveProposals = await dxDao.controller.getInactiveProposals();
     assert.equal(inactiveProposals[0].proposalId, proposalId);
     assert.equal(inactiveProposals[0].scheme, masterAvatarScheme.address);
@@ -215,10 +212,7 @@ contract("DXdao", function (accounts) {
       }
     );
 
-    assert.equal(
-      (await masterAvatarScheme.getOrganizationProposal(proposalId)).state,
-      3
-    );
+    assert.equal((await masterAvatarScheme.getProposal(proposalId)).state, 3);
     const inactiveProposals = await dxDao.controller.getInactiveProposals();
     assert.equal(inactiveProposals[0].proposalId, proposalId);
     assert.equal(inactiveProposals[0].scheme, masterAvatarScheme.address);
