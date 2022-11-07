@@ -211,9 +211,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
 
             proposal.state = ProposalState.ExecutionTimeout;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionTimeout));
-        } else if (_winningOption == 2) {
-            proposal.state = ProposalState.Rejected;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         } else {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
 
@@ -221,30 +218,38 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
 
             uint256 callIndex = proposal.to.length.div(proposal.totalOptions).mul(_winningOption.sub(1));
             uint256 lastCallIndex = callIndex.add(proposal.to.length.div(proposal.totalOptions));
+            bool proposalRejectedFlag = true;
 
             for (callIndex; callIndex < lastCallIndex; callIndex++) {
                 bytes memory _data = proposal.callData[callIndex];
-                bytes4 callDataFuncSignature;
-                assembly {
-                    callDataFuncSignature := mload(add(_data, 32))
+
+                // If all proposal calls called the address(0) with value 0 then the proposal is marked as rejected,
+                // if not and even one call is do to a different address or with value > 0 then the proposal is marked
+                // as executed if all calls succeed.
+                if ((proposal.to[callIndex] != address(0) || proposal.value[callIndex] > 0)) {
+                    proposalRejectedFlag = false;
+                    bytes4 callDataFuncSignature;
+                    assembly {
+                        callDataFuncSignature := mload(add(_data, 32))
+                    }
+
+                    bool callsSucessResult = false;
+                    // The permission registry keeps track of all value transferred and checks call permission
+                    permissionRegistry.setETHPermissionUsed(
+                        address(this),
+                        proposal.to[callIndex],
+                        callDataFuncSignature,
+                        proposal.value[callIndex]
+                    );
+                    (callsSucessResult, ) = proposal.to[callIndex].call{value: proposal.value[callIndex]}(
+                        proposal.callData[callIndex]
+                    );
+
+                    require(callsSucessResult, "WalletScheme: Proposal call failed");
                 }
-
-                bool callsSucessResult = false;
-                // The permission registry keeps track of all value transferred and checks call permission
-                permissionRegistry.setETHPermissionUsed(
-                    address(this),
-                    proposal.to[callIndex],
-                    callDataFuncSignature,
-                    proposal.value[callIndex]
-                );
-                (callsSucessResult, ) = proposal.to[callIndex].call{value: proposal.value[callIndex]}(
-                    proposal.callData[callIndex]
-                );
-
-                require(callsSucessResult, "WalletScheme: Proposal call failed");
-
-                proposal.state = ProposalState.ExecutionSucceeded;
             }
+
+            proposal.state = proposalRejectedFlag ? ProposalState.Rejected : ProposalState.ExecutionSucceeded;
 
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
             require(
