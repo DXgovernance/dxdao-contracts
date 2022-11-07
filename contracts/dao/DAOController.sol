@@ -34,6 +34,7 @@ contract DAOController is Initializable {
         bool isRegistered;
         bool canManageSchemes;
         bool canMakeAvatarCalls;
+        bool canChangeReputation;
     }
 
     mapping(address => Scheme) public schemes;
@@ -51,7 +52,8 @@ contract DAOController is Initializable {
             paramsHash: _paramsHash,
             isRegistered: true,
             canManageSchemes: true,
-            canMakeAvatarCalls: true
+            canMakeAvatarCalls: true,
+            canChangeReputation: true
         });
         schemesWithManageSchemesPermission = 1;
         reputationToken = DAOReputation(_reputationToken);
@@ -72,19 +74,26 @@ contract DAOController is Initializable {
         _;
     }
 
+    modifier onlyChangingReputation() {
+        require(schemes[msg.sender].canChangeReputation, "DAOController: Sender cannot change reputation");
+        _;
+    }
+
     /**
      * @dev register a scheme
      * @param _scheme the address of the scheme
      * @param _paramsHash a hashed configuration of the usage of the scheme
      * @param _canManageSchemes whether the scheme is able to manage schemes
      * @param _canMakeAvatarCalls whether the scheme is able to make avatar calls
+     * @param _canChangeReputation whether the scheme is able to change reputation
      * @return bool success of the operation
      */
     function registerScheme(
         address _scheme,
         bytes32 _paramsHash,
         bool _canManageSchemes,
-        bool _canMakeAvatarCalls
+        bool _canMakeAvatarCalls,
+        bool _canChangeReputation
     ) external onlyRegisteredScheme onlyRegisteringSchemes returns (bool) {
         Scheme memory scheme = schemes[_scheme];
 
@@ -103,7 +112,8 @@ contract DAOController is Initializable {
             paramsHash: _paramsHash,
             isRegistered: true,
             canManageSchemes: _canManageSchemes,
-            canMakeAvatarCalls: _canMakeAvatarCalls
+            canMakeAvatarCalls: _canMakeAvatarCalls,
+            canChangeReputation: _canChangeReputation
         });
 
         emit RegisterScheme(msg.sender, _scheme);
@@ -189,7 +199,7 @@ contract DAOController is Initializable {
      * @param _amount  the amount of reputation to burn
      * @param _account  the account to burn reputation from
      */
-    function burnReputation(uint256 _amount, address _account) external onlyRegisteredScheme returns (bool) {
+    function burnReputation(uint256 _amount, address _account) external onlyChangingReputation returns (bool) {
         return reputationToken.burn(_account, _amount);
     }
 
@@ -198,8 +208,21 @@ contract DAOController is Initializable {
      * @param _amount  the amount of reputation to mint
      * @param _account  the account to mint reputation from
      */
-    function mintReputation(uint256 _amount, address _account) external onlyRegisteredScheme returns (bool) {
+    function mintReputation(uint256 _amount, address _account) external onlyChangingReputation returns (bool) {
         return reputationToken.mint(_account, _amount);
+    }
+
+    /**
+     * @dev Transfer ownership of dao reputation
+     * @param _newOwner  the new owner of the reputation token
+     */
+    function transferReputationOwnership(address _newOwner)
+        external
+        onlyRegisteringSchemes
+        onlyAvatarCallScheme
+        onlyChangingReputation
+    {
+        reputationToken.transferOwnership(_newOwner);
     }
 
     function isSchemeRegistered(address _scheme) external view returns (bool) {
@@ -216,6 +239,10 @@ contract DAOController is Initializable {
 
     function getSchemeCanMakeAvatarCalls(address _scheme) external view returns (bool) {
         return schemes[_scheme].canMakeAvatarCalls;
+    }
+
+    function getSchemeCanChangeReputation(address _scheme) external view returns (bool) {
+        return schemes[_scheme].canChangeReputation;
     }
 
     function getSchemesCountWithManageSchemesPermissions() external view returns (uint256) {
