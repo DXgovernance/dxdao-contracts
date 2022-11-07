@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.8;
+pragma solidity >=0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -35,7 +35,7 @@ contract GuildRegistry is Initializable, OwnableUpgradeable {
 
     function removeGuild(address guildAddress) external onlyOwner {
         require(guilds.length > 0, "No guilds to delete");
-        // @notice Overwrite the guild we want to delete and then we remove the last element
+        /// @notice Overwrite the guild we want to delete and then we remove the last element
         uint256 guildIndexToDelete = guildsByAddress[guildAddress];
         address guildAddressToMove = guilds[guilds.length - 1];
         guilds[guildIndexToDelete] = guildAddressToMove;

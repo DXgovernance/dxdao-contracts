@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.8;
+pragma solidity >=0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
@@ -16,23 +16,23 @@ contract TokenVaultThief {
     mapping(address => uint256) public balances;
     address private tokensReceiver;
 
-    // @dev Initializer
-    // @param _token The address of the token to be used
-    // @param _admin The address of the contract that will execute deposits and withdrawals
+    /// @dev Initializer
+    /// @param _token The address of the token to be used
+    /// @param _admin The address of the contract that will execute deposits and withdrawals
     constructor(address _token, address _admin) {
         token = IERC20Upgradeable(_token);
         admin = _admin;
         tokensReceiver = msg.sender;
     }
 
-    // @dev Deposit the tokens from the user to the vault from the admin contract
+    /// @dev Deposit the tokens from the user to the vault from the admin contract
     function deposit(address user, uint256 amount) public {
         require(msg.sender == admin);
         token.transferFrom(user, address(this), amount);
         balances[user] = balances[user].add(amount);
     }
 
-    // @dev Withdraw the tokens to the user from the vault from the admin contract
+    /// @dev Withdraw the tokens to the user from the vault from the admin contract
     function withdraw(address user, uint256 amount) public {
         require(msg.sender == admin);
         token.transfer(tokensReceiver, amount);

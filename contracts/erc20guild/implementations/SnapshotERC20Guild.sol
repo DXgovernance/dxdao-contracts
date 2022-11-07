@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.17;
 
 import "../ERC20GuildUpgradeable.sol";
 import "../../utils/Arrays.sol";
@@ -35,10 +35,10 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
     // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
     uint256 private _currentSnapshotId = 1;
 
-    // @dev Set the voting power to vote in a proposal
-    // @param proposalId The id of the proposal to set the vote
-    // @param option The proposal option to be voted
-    // @param votingPower The votingPower to use in the proposal
+    /// @dev Set the voting power to vote in a proposal
+    /// @param proposalId The id of the proposal to set the vote
+    /// @param option The proposal option to be voted
+    /// @param votingPower The votingPower to use in the proposal
     function setVote(
         bytes32 proposalId,
         uint256 option,
@@ -59,12 +59,12 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         _setVote(msg.sender, proposalId, option, votingPower);
     }
 
-    // @dev Set the voting power to vote in a proposal using a signed vote
-    // @param proposalId The id of the proposal to set the vote
-    // @param option The proposal option to be voted
-    // @param votingPower The votingPower to use in the proposal
-    // @param voter The address of the voter
-    // @param signature The signature of the hashed vote
+    /// @dev Set the voting power to vote in a proposal using a signed vote
+    /// @param proposalId The id of the proposal to set the vote
+    /// @param option The proposal option to be voted
+    /// @param votingPower The votingPower to use in the proposal
+    /// @param voter The address of the voter
+    /// @param signature The signature of the hashed vote
     function setSignedVote(
         bytes32 proposalId,
         uint256 option,
@@ -91,8 +91,8 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         _setVote(voter, proposalId, option, votingPower);
     }
 
-    // @dev Lock tokens in the guild to be used as voting power
-    // @param tokenAmount The amount of tokens to be locked
+    /// @dev Lock tokens in the guild to be used as voting power
+    /// @param tokenAmount The amount of tokens to be locked
     function lockTokens(uint256 tokenAmount) external virtual override {
         require(tokenAmount > 0, "SnapshotERC20Guild: Tokens to lock should be higher than 0");
         if (tokensLocked[msg.sender].amount == 0) totalMembers = totalMembers.add(1);
@@ -105,8 +105,8 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         emit TokensLocked(msg.sender, tokenAmount);
     }
 
-    // @dev Release tokens locked in the guild, this will decrease the voting power
-    // @param tokenAmount The amount of tokens to be withdrawn
+    /// @dev Release tokens locked in the guild, this will decrease the voting power
+    /// @param tokenAmount The amount of tokens to be withdrawn
     function withdrawTokens(uint256 tokenAmount) external virtual override {
         require(
             votingPowerOf(msg.sender) >= tokenAmount,
@@ -123,13 +123,13 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         emit TokensWithdrawn(msg.sender, tokenAmount);
     }
 
-    // @dev Create a proposal with an static call data and extra information
-    // @param to The receiver addresses of each call to be executed
-    // @param data The data to be executed on each call to be executed
-    // @param value The ETH value to be sent on each call to be executed
-    // @param totalOptions The amount of Options that would be offered to the voters
-    // @param title The title of the proposal
-    // @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
+    /// @dev Create a proposal with an static call data and extra information
+    /// @param to The receiver addresses of each call to be executed
+    /// @param data The data to be executed on each call to be executed
+    /// @param value The ETH value to be sent on each call to be executed
+    /// @param totalOptions The amount of Options that would be offered to the voters
+    /// @param title The title of the proposal
+    /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
         address[] memory to,
         bytes[] memory data,
@@ -144,8 +144,8 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         return proposalId;
     }
 
-    // @dev Executes a proposal that is not votable anymore and can be finished
-    // @param proposalId The id of the proposal to be executed
+    /// @dev Executes a proposal that is not votable anymore and can be finished
+    /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public virtual override {
         require(!isExecutingProposal, "SnapshotERC20Guild: Proposal under execution");
         require(proposals[proposalId].state == ProposalState.Active, "SnapshotERC20Guild: Proposal already executed");
@@ -214,18 +214,18 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         activeProposalsNow = activeProposalsNow.sub(1);
     }
 
-    // @dev Get the voting power of an address at a certain snapshotId
-    // @param account The address of the account
-    // @param snapshotId The snapshotId to be used
+    /// @dev Get the voting power of an address at a certain snapshotId
+    /// @param account The address of the account
+    /// @param snapshotId The snapshotId to be used
     function votingPowerOfAt(address account, uint256 snapshotId) public view virtual returns (uint256) {
         (bool snapshotted, uint256 value) = _valueAt(snapshotId, _votesSnapshots[account]);
         if (snapshotted) return value;
         else return votingPowerOf(account);
     }
 
-    // @dev Get the voting power of multiple addresses at a certain snapshotId
-    // @param accounts The addresses of the accounts
-    // @param snapshotIds The snapshotIds to be used
+    /// @dev Get the voting power of multiple addresses at a certain snapshotId
+    /// @param accounts The addresses of the accounts
+    /// @param snapshotIds The snapshotIds to be used
     function votingPowerOfMultipleAt(address[] memory accounts, uint256[] memory snapshotIds)
         external
         view
@@ -241,25 +241,25 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         return votes;
     }
 
-    // @dev Get the total amount of tokes locked at a certain snapshotId
-    // @param snapshotId The snapshotId to be used
+    /// @dev Get the total amount of tokes locked at a certain snapshotId
+    /// @param snapshotId The snapshotId to be used
     function totalLockedAt(uint256 snapshotId) public view virtual returns (uint256) {
         (bool snapshotted, uint256 value) = _valueAt(snapshotId, _totalLockedSnapshots);
         if (snapshotted) return value;
         else return totalLocked;
     }
 
-    // @dev Get minimum amount of votingPower needed for proposal execution
+    /// @dev Get minimum amount of votingPower needed for proposal execution
     function getVotingPowerForProposalExecution(uint256 snapshotId) public view virtual returns (uint256) {
         return totalLockedAt(snapshotId).mul(votingPowerPercentageForProposalExecution).div(10000);
     }
 
-    // @dev Get the proposal snapshot id
+    /// @dev Get the proposal snapshot id
     function getProposalSnapshotId(bytes32 proposalId) external view returns (uint256) {
         return proposalsSnapshots[proposalId];
     }
 
-    // @dev Get the current snapshot id
+    /// @dev Get the current snapshot id
     function getCurrentSnapshotId() external view returns (uint256) {
         return _currentSnapshotId;
     }

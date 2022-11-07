@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.8;
+pragma solidity >=0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
@@ -33,19 +33,19 @@ import "./BaseERC20Guild.sol";
   Multiple votes and signed votes can be executed in one transaction.
 */
 contract ERC20GuildUpgradeable is BaseERC20Guild, Initializable {
-    // @dev Initializer
-    // @param _token The ERC20 token that will be used as source of voting power
-    // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
-    // @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
-    // @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
+    /// @dev Initializer
+    /// @param _token The ERC20 token that will be used as source of voting power
+    /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting
+    /// @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
+    /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // action
-    // @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
-    // @param _name The name of the ERC20Guild
-    // @param _voteGas The amount of gas in wei unit used for vote refunds
-    // @param _maxGasPrice The maximum gas price used for vote refunds
-    // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
-    // @param _lockTime The minimum amount of seconds that the tokens would be locked
-    // @param _permissionRegistry The address of the permission registry contract to be used
+    /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    /// @param _name The name of the ERC20Guild
+    /// @param _voteGas The amount of gas in wei unit used for vote refunds
+    /// @param _maxGasPrice The maximum gas price used for vote refunds
+    /// @param _maxActiveProposals The maximum amount of proposals to be active at the same time
+    /// @param _lockTime The minimum amount of seconds that the tokens would be locked
+    /// @param _permissionRegistry The address of the permission registry contract to be used
     function initialize(
         address _token,
         uint256 _proposalTime,

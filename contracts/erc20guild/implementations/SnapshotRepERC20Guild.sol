@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.17;
 
 import "../ERC20GuildUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "../../utils/ERC20/ERC20SnapshotRep.sol";
@@ -14,7 +13,7 @@ import "../../utils/ERC20/ERC20SnapshotRep.sol";
   When a proposal is created it saves the snapshot if at the moment of creation,
   the voters can vote only with the voting power they had at that time.
 */
-contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
+contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
     using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
@@ -22,19 +21,19 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
     // Proposal id => Snapshot id
     mapping(bytes32 => uint256) public proposalsSnapshots;
 
-    // @dev Initializer
-    // @param _token The ERC20 token that will be used as source of voting power
-    // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
-    // @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
-    // @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
+    /// @dev Initializer
+    /// @param _token The ERC20 token that will be used as source of voting power
+    /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting
+    /// @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
+    /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // action
-    // @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
-    // @param _name The name of the ERC20Guild
-    // @param _voteGas The amount of gas in wei unit used for vote refunds
-    // @param _maxGasPrice The maximum gas price used for vote refunds
-    // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
-    // @param _lockTime The minimum amount of seconds that the tokens would be locked
-    // @param _permissionRegistry The address of the permission registry contract to be used
+    /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    /// @param _name The name of the ERC20Guild
+    /// @param _voteGas The amount of gas in wei unit used for vote refunds
+    /// @param _maxGasPrice The maximum gas price used for vote refunds
+    /// @param _maxActiveProposals The maximum amount of proposals to be active at the same time
+    /// @param _lockTime The minimum amount of seconds that the tokens would be locked
+    /// @param _permissionRegistry The address of the permission registry contract to be used
     function initialize(
         address _token,
         uint256 _proposalTime,
@@ -48,7 +47,6 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         uint256 _lockTime,
         address _permissionRegistry
     ) public override initializer {
-        __Ownable_init();
         super.initialize(
             _token,
             _proposalTime,
@@ -66,10 +64,10 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         permissionRegistry.setETHPermission(address(this), _token, bytes4(keccak256("burn(address,uint256)")), 0, true);
     }
 
-    // @dev Set the voting power to vote in a proposal
-    // @param proposalId The id of the proposal to set the vote
-    // @param option The proposal option to be voted
-    // @param votingPower The votingPower to use in the proposal
+    /// @dev Set the voting power to vote in a proposal
+    /// @param proposalId The id of the proposal to set the vote
+    /// @param option The proposal option to be voted
+    /// @param votingPower The votingPower to use in the proposal
     function setVote(
         bytes32 proposalId,
         uint256 option,
@@ -93,12 +91,12 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         _setVote(msg.sender, proposalId, option, votingPower);
     }
 
-    // @dev Set the voting power to vote in a proposal using a signed vote
-    // @param proposalId The id of the proposal to set the vote
-    // @param option The proposal option to be voted
-    // @param votingPower The votingPower to use in the proposal
-    // @param voter The address of the voter
-    // @param signature The signature of the hashed vote
+    /// @dev Set the voting power to vote in a proposal using a signed vote
+    /// @param proposalId The id of the proposal to set the vote
+    /// @param option The proposal option to be voted
+    /// @param votingPower The votingPower to use in the proposal
+    /// @param voter The address of the voter
+    /// @param signature The signature of the hashed vote
     function setSignedVote(
         bytes32 proposalId,
         uint256 option,
@@ -128,23 +126,23 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         _setVote(voter, proposalId, option, votingPower);
     }
 
-    // @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild
+    /// @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild
     function lockTokens(uint256) external virtual override {
         revert("SnapshotRepERC20Guild: token vault disabled");
     }
 
-    // @dev Override and disable withdraw of tokens, not needed in SnapshotRepERC20Guild
+    /// @dev Override and disable withdraw of tokens, not needed in SnapshotRepERC20Guild
     function withdrawTokens(uint256) external virtual override {
         revert("SnapshotRepERC20Guild: token vault disabled");
     }
 
-    // @dev Create a proposal with an static call data and extra information
-    // @param to The receiver addresses of each call to be executed
-    // @param data The data to be executed on each call to be executed
-    // @param value The ETH value to be sent on each call to be executed
-    // @param totalOptions The amount of options that would be offered to the voters
-    // @param title The title of the proposal
-    // @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
+    /// @dev Create a proposal with an static call data and extra information
+    /// @param to The receiver addresses of each call to be executed
+    /// @param data The data to be executed on each call to be executed
+    /// @param value The ETH value to be sent on each call to be executed
+    /// @param totalOptions The amount of options that would be offered to the voters
+    /// @param title The title of the proposal
+    /// @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
         address[] memory to,
         bytes[] memory data,
@@ -158,8 +156,8 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         return proposalId;
     }
 
-    // @dev Executes a proposal that is not votable anymore and can be finished
-    // @param proposalId The id of the proposal to be executed
+    /// @dev Executes a proposal that is not votable anymore and can be finished
+    /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public virtual override {
         require(!isExecutingProposal, "ERC20SnapshotRep: Proposal under execution");
         require(proposals[proposalId].state == ProposalState.Active, "ERC20SnapshotRep: Proposal already executed");
@@ -236,9 +234,9 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         activeProposalsNow = activeProposalsNow.sub(1);
     }
 
-    // @dev Get the voting power of multiple addresses at a certain snapshotId
-    // @param accounts The addresses of the accounts
-    // @param snapshotIds The snapshotIds to be used
+    /// @dev Get the voting power of multiple addresses at a certain snapshotId
+    /// @param accounts The addresses of the accounts
+    /// @param snapshotIds The snapshotIds to be used
     function votingPowerOfMultipleAt(address[] memory accounts, uint256[] memory snapshotIds)
         external
         view
@@ -250,30 +248,30 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
         return votes;
     }
 
-    // @dev Get the voting power of an address at a certain snapshotId
-    // @param account The address of the account
-    // @param snapshotId The snapshotId to be used
+    /// @dev Get the voting power of an address at a certain snapshotId
+    /// @param account The address of the account
+    /// @param snapshotId The snapshotId to be used
     function votingPowerOfAt(address account, uint256 snapshotId) public view virtual returns (uint256) {
         return ERC20SnapshotRep(address(token)).balanceOfAt(account, snapshotId);
     }
 
-    // @dev Get the voting power of an account
-    // @param account The address of the account
+    /// @dev Get the voting power of an account
+    /// @param account The address of the account
     function votingPowerOf(address account) public view virtual override returns (uint256) {
         return ERC20SnapshotRep(address(token)).balanceOf(account);
     }
 
-    // @dev Get the proposal snapshot id
+    /// @dev Get the proposal snapshot id
     function getProposalSnapshotId(bytes32 proposalId) public view returns (uint256) {
         return proposalsSnapshots[proposalId];
     }
 
-    // @dev Get the totalLocked
+    /// @dev Get the totalLocked
     function getTotalLocked() public view virtual override returns (uint256) {
         return ERC20SnapshotRep(address(token)).totalSupply();
     }
 
-    // @dev Get minimum amount of votingPower needed for proposal execution
+    /// @dev Get minimum amount of votingPower needed for proposal execution
     function getSnapshotVotingPowerForProposalExecution(bytes32 proposalId) public view virtual returns (uint256) {
         return
             ERC20SnapshotRep(address(token))
