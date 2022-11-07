@@ -24,7 +24,7 @@ contract DXDVotingMachineCallbacks {
         address _beneficiary,
         bytes32
     ) external onlyVotingMachine returns (bool success) {
-        controller.mintReputation(_amount, _beneficiary);
+        if (_amount > 0) controller.mintReputation(_amount, _beneficiary);
         return success;
     }
 
@@ -33,7 +33,7 @@ contract DXDVotingMachineCallbacks {
         address _beneficiary,
         bytes32
     ) external onlyVotingMachine returns (bool success) {
-        controller.burnReputation(_amount, _beneficiary);
+        if (_amount > 0) controller.burnReputation(_amount, _beneficiary);
         return success;
     }
 

@@ -69,6 +69,7 @@ contract("DXdao", function (accounts) {
       masterAvatarScheme.address,
       defaultParamsHash,
       true,
+      true,
       true
     );
 
@@ -160,7 +161,7 @@ contract("DXdao", function (accounts) {
 
     proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
-    const activeProposals = await dxDao.controller.getActiveProposals();
+    const activeProposals = await dxDao.controller.getActiveProposals(0, 0);
     assert.equal(activeProposals[0].proposalId, proposalId);
     assert.equal(activeProposals[0].scheme, masterAvatarScheme.address);
   });
@@ -191,10 +192,10 @@ contract("DXdao", function (accounts) {
     });
 
     assert.equal((await masterAvatarScheme.getProposal(proposalId)).state, 2);
-    const inactiveProposals = await dxDao.controller.getInactiveProposals();
+    const inactiveProposals = await dxDao.controller.getInactiveProposals(0, 0);
     assert.equal(inactiveProposals[0].proposalId, proposalId);
     assert.equal(inactiveProposals[0].scheme, masterAvatarScheme.address);
-    assert.deepEqual(await dxDao.controller.getActiveProposals(), []);
+    assert.deepEqual(await dxDao.controller.getActiveProposals(0, 0), []);
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
   });
 
@@ -212,10 +213,10 @@ contract("DXdao", function (accounts) {
     );
 
     assert.equal((await masterAvatarScheme.getProposal(proposalId)).state, 3);
-    const inactiveProposals = await dxDao.controller.getInactiveProposals();
+    const inactiveProposals = await dxDao.controller.getInactiveProposals(0, 0);
     assert.equal(inactiveProposals[0].proposalId, proposalId);
     assert.equal(inactiveProposals[0].scheme, masterAvatarScheme.address);
-    assert.deepEqual(await dxDao.controller.getActiveProposals(), []);
+    assert.deepEqual(await dxDao.controller.getActiveProposals(0, 0), []);
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "95");
 
     const executionTxEvents = helpers.logDecoder.decodeLogs(

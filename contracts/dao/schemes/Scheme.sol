@@ -138,17 +138,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         string calldata _title,
         string calldata _descriptionHash
     ) external returns (bytes32) {
-        // Check the proposal calls
-        for (uint256 i = 0; i < _to.length; i++) {
-            bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
-
-            // This will fail only when and ERC20 transfer or approve with ETH value is proposed
-            require(
-                (callDataFuncSignature != bytes4(keccak256("transfer(address,uint256)")) &&
-                    callDataFuncSignature != bytes4(keccak256("approve(address,uint256)"))) || _value[i] == 0,
-                "WalletScheme: cant propose ERC20 transfers with value"
-            );
-        }
         require(_to.length == _callData.length, "WalletScheme: invalid _callData length");
         require(_to.length == _value.length, "WalletScheme: invalid _value length");
 
