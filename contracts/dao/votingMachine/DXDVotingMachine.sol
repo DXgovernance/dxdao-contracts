@@ -23,7 +23,6 @@ import "./ProposalExecuteInterface.sol";
  */
 contract DXDVotingMachine {
     using ECDSA for bytes32;
-    using SafeMath for uint256;
     using Math for uint256;
     using RealMath for uint216;
     using RealMath for uint256;
@@ -298,7 +297,7 @@ contract DXDVotingMachine {
             organizationRefunds[msg.sender].voteGas > 0,
             "DXDVotingMachine: Address not registered in organizationRefounds"
         );
-        organizationRefunds[msg.sender].balance = organizationRefunds[msg.sender].balance.add(msg.value);
+        organizationRefunds[msg.sender].balance = organizationRefunds[msg.sender].balance + msg.value;
     }
 
     /**
@@ -325,13 +324,13 @@ contract DXDVotingMachine {
         );
         require(_execute(_proposalId), "proposal need to expire");
 
-        proposal.secondsFromTimeOutTillExecuteBoosted = block.timestamp.sub(
-            // solhint-disable-next-line not-rely-on-time
-            proposal.currentBoostedVotePeriodLimit.add(proposal.times[1])
-        );
+        proposal.secondsFromTimeOutTillExecuteBoosted =
+            block.timestamp -
+            (// solhint-disable-next-line not-rely-on-time
+            proposal.currentBoostedVotePeriodLimit + proposal.times[1]);
 
         expirationCallBounty = calcExecuteCallBounty(_proposalId);
-        proposal.totalStakes = proposal.totalStakes.sub(expirationCallBounty);
+        proposal.totalStakes = proposal.totalStakes - expirationCallBounty;
         require(stakingToken.transfer(msg.sender, expirationCallBounty), "transfer to msg.sender failed");
         emit ExpirationCallBounty(_proposalId, msg.sender, expirationCallBounty);
     }
@@ -416,9 +415,9 @@ contract DXDVotingMachine {
         //as staker
         Staker storage staker = proposalStakers[_proposalId][_beneficiary];
         uint256 totalWinningStakes = proposalStakes[_proposalId][proposal.winningVote];
-        uint256 totalStakesLeftAfterCallBounty = proposalStakes[_proposalId][NO]
-            .add(proposalStakes[_proposalId][YES])
-            .sub(calcExecuteCallBounty(_proposalId));
+        uint256 totalStakesLeftAfterCallBounty = proposalStakes[_proposalId][NO] +
+            proposalStakes[_proposalId][YES] -
+            calcExecuteCallBounty(_proposalId);
         if (staker.amount > 0) {
             if (proposal.state == ProposalState.ExpiredInQueue) {
                 //Stakes of a proposal that expires in Queue are sent back to stakers
@@ -426,11 +425,11 @@ contract DXDVotingMachine {
             } else if (staker.vote == proposal.winningVote) {
                 if (staker.vote == YES) {
                     if (proposal.daoBounty < totalStakesLeftAfterCallBounty) {
-                        uint256 _totalStakes = totalStakesLeftAfterCallBounty.sub(proposal.daoBounty);
-                        rewards[0] = (staker.amount.mul(_totalStakes)) / totalWinningStakes;
+                        uint256 _totalStakes = totalStakesLeftAfterCallBounty - proposal.daoBounty;
+                        rewards[0] = (staker.amount * _totalStakes) / totalWinningStakes;
                     }
                 } else {
-                    rewards[0] = (staker.amount.mul(totalStakesLeftAfterCallBounty)) / totalWinningStakes;
+                    rewards[0] = (staker.amount * totalStakesLeftAfterCallBounty) / totalWinningStakes;
                 }
             }
             staker.amount = 0;
@@ -442,9 +441,10 @@ contract DXDVotingMachine {
             proposal.state != ProposalState.ExpiredInQueue &&
             proposal.winningVote == NO
         ) {
-            rewards[0] = rewards[0]
-                .add((proposal.daoBounty.mul(totalStakesLeftAfterCallBounty)) / totalWinningStakes)
-                .sub(proposal.daoBounty);
+            rewards[0] =
+                rewards[0] +
+                ((proposal.daoBounty * totalStakesLeftAfterCallBounty) / totalWinningStakes) -
+                proposal.daoBounty;
             proposal.daoRedeemItsWinnings = true;
         }
 
@@ -453,7 +453,7 @@ contract DXDVotingMachine {
         if ((voter.reputation != 0) && (voter.preBoosted)) {
             if (proposal.state == ProposalState.ExpiredInQueue) {
                 //give back reputation for the voter
-                rewards[1] = ((voter.reputation.mul(params.votersReputationLossRatio)) / 100);
+                rewards[1] = ((voter.reputation * params.votersReputationLossRatio) / 100);
             } else if (proposal.winningVote == voter.vote) {
                 uint256 lostReputation;
                 if (proposal.winningVote == YES) {
@@ -461,10 +461,10 @@ contract DXDVotingMachine {
                 } else {
                     lostReputation = proposalPreBoostedVotes[_proposalId][YES];
                 }
-                lostReputation = (lostReputation.mul(params.votersReputationLossRatio)) / 100;
-                rewards[1] = ((voter.reputation.mul(params.votersReputationLossRatio)) / 100).add(
-                    (voter.reputation.mul(lostReputation)) / proposalPreBoostedVotes[_proposalId][proposal.winningVote]
-                );
+                lostReputation = (lostReputation * params.votersReputationLossRatio) / 100;
+                rewards[1] =
+                    ((voter.reputation * params.votersReputationLossRatio) / 100) +
+                    ((voter.reputation * lostReputation) / proposalPreBoostedVotes[_proposalId][proposal.winningVote]);
             }
             voter.reputation = 0;
         }
@@ -474,13 +474,13 @@ contract DXDVotingMachine {
             proposal.proposer = address(0);
         }
         if (rewards[0] != 0) {
-            proposal.totalStakes = proposal.totalStakes.sub(rewards[0]);
+            proposal.totalStakes = proposal.totalStakes - rewards[0];
             require(stakingToken.transfer(_beneficiary, rewards[0]), "transfer to beneficiary failed");
             emit Redeem(_proposalId, organizations[proposal.organizationId], _beneficiary, rewards[0]);
         }
-        if (rewards[1].add(rewards[2]) != 0) {
+        if (rewards[1] + rewards[2] != 0) {
             DXDVotingMachineCallbacksInterface(proposal.callbacks).mintReputation(
-                rewards[1].add(rewards[2]),
+                rewards[1] + rewards[2],
                 _beneficiary,
                 _proposalId
             );
@@ -488,7 +488,7 @@ contract DXDVotingMachine {
                 _proposalId,
                 organizations[proposal.organizationId],
                 _beneficiary,
-                rewards[1].add(rewards[2])
+                rewards[1] + rewards[2]
             );
         }
     }
@@ -521,7 +521,7 @@ contract DXDVotingMachine {
         }
         if ((potentialAmount != 0) && (stakingToken.balanceOf(address(this)) >= potentialAmount)) {
             staker.amount4Bounty = 0;
-            proposal.daoBountyRemain = proposal.daoBountyRemain.sub(potentialAmount);
+            proposal.daoBountyRemain = proposal.daoBountyRemain - potentialAmount;
             require(stakingToken.transfer(_beneficiary, potentialAmount), "fail transfer of daoBounty");
             redeemedAmount = potentialAmount;
             emit RedeemDaoBounty(_proposalId, organizations[proposal.organizationId], _beneficiary, redeemedAmount);
@@ -538,7 +538,7 @@ contract DXDVotingMachine {
         uint256 rewardSeconds = uint256(maxRewardSeconds).min(
             proposals[_proposalId].secondsFromTimeOutTillExecuteBoosted
         );
-        return rewardSeconds.mul(proposalStakes[_proposalId][YES]).div(maxRewardSeconds * 10);
+        return (rewardSeconds * proposalStakes[_proposalId][YES]) / (maxRewardSeconds * 10);
     }
 
     /**
@@ -567,7 +567,7 @@ contract DXDVotingMachine {
             power = params.limitExponentValue;
         }
 
-        return params.thresholdConst.pow(power);
+        return params.thresholdConst**power;
     }
 
     /**
@@ -625,7 +625,7 @@ contract DXDVotingMachine {
         //a garbage staker address due to wrong signature will revert due to lack of approval and funds.
         require(staker != address(0), "staker address cannot be 0");
         require(stakesNonce[staker] == _nonce);
-        stakesNonce[staker] = stakesNonce[staker].add(1);
+        stakesNonce[staker] = stakesNonce[staker] + 1;
         return _stake(_proposalId, _vote, _amount, staker);
     }
 
@@ -894,7 +894,7 @@ contract DXDVotingMachine {
             return false;
         }
         // The voting itself:
-        proposalVotes[_proposalId][_vote] = rep.add(proposalVotes[_proposalId][_vote]);
+        proposalVotes[_proposalId][_vote] = rep + proposalVotes[_proposalId][_vote];
         //check if the current winningVote changed or there is a tie.
         //for the case there is a tie the current winningVote set to NO.
         if (
@@ -926,8 +926,8 @@ contract DXDVotingMachine {
             preBoosted: ((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued))
         });
         if ((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued)) {
-            proposalPreBoostedVotes[_proposalId][_vote] = rep.add(proposalPreBoostedVotes[_proposalId][_vote]);
-            uint256 reputationDeposit = (params.votersReputationLossRatio.mul(rep)) / 100;
+            proposalPreBoostedVotes[_proposalId][_vote] = rep + proposalPreBoostedVotes[_proposalId][_vote];
+            uint256 reputationDeposit = (params.votersReputationLossRatio * rep) / 100;
             DXDVotingMachineCallbacksInterface(proposal.callbacks).burnReputation(
                 reputationDeposit,
                 _voter,
@@ -1101,8 +1101,9 @@ contract DXDVotingMachine {
                 (executionState == ExecutionState.BoostedTimeOut) ||
                 (executionState == ExecutionState.BoostedBarCrossed)
             ) {
-                orgBoostedProposalsCnt[tmpProposal.organizationId] = orgBoostedProposalsCnt[tmpProposal.organizationId]
-                    .sub(1);
+                orgBoostedProposalsCnt[tmpProposal.organizationId] =
+                    orgBoostedProposalsCnt[tmpProposal.organizationId] -
+                    1;
                 //remove a value from average = ((average * nbValues) - value) / (nbValues - 1);
                 uint256 boostedProposals = orgBoostedProposalsCnt[tmpProposal.organizationId];
                 if (boostedProposals == 0) {
@@ -1110,11 +1111,8 @@ contract DXDVotingMachine {
                 } else {
                     executeParams.averageDownstakesOfBoosted = averagesDownstakesOfBoosted[proposal.organizationId];
                     averagesDownstakesOfBoosted[proposal.organizationId] =
-                        (
-                            executeParams.averageDownstakesOfBoosted.mul(boostedProposals + 1).sub(
-                                proposalStakes[_proposalId][NO]
-                            )
-                        ) /
+                        ((executeParams.averageDownstakesOfBoosted * (boostedProposals + 1)) -
+                            proposalStakes[_proposalId][NO]) /
                         boostedProposals;
                 }
             }
@@ -1192,22 +1190,22 @@ contract DXDVotingMachine {
 
         uint256 amount = _amount;
         require(stakingToken.transferFrom(_staker, address(this), amount), "fail transfer from staker");
-        proposal.totalStakes = proposal.totalStakes.add(amount); //update totalRedeemableStakes
-        staker.amount = staker.amount.add(amount);
+        proposal.totalStakes = proposal.totalStakes + amount; //update totalRedeemableStakes
+        staker.amount = staker.amount + amount;
         // This is to prevent average downstakes calculation overflow
         // Note that GEN cap is 100000000 ether.
         require(staker.amount <= 0x100000000000000000000000000000000, "staking amount is too high");
         require(
-            proposal.totalStakes <= uint256(0x100000000000000000000000000000000).sub(proposal.daoBountyRemain),
+            proposal.totalStakes <= uint256(0x100000000000000000000000000000000) - proposal.daoBountyRemain,
             "total stakes is too high"
         );
 
         if (_vote == YES) {
-            staker.amount4Bounty = staker.amount4Bounty.add(amount);
+            staker.amount4Bounty = staker.amount4Bounty + amount;
         }
         staker.vote = _vote;
 
-        proposalStakes[_proposalId][_vote] = amount.add(proposalStakes[_proposalId][_vote]);
+        proposalStakes[_proposalId][_vote] = amount + proposalStakes[_proposalId][_vote];
         emit Stake(_proposalId, organizations[proposal.organizationId], _staker, _vote, _amount);
         return _execute(_proposalId);
     }
@@ -1233,7 +1231,7 @@ contract DXDVotingMachine {
         require(parameters[_paramsHash].queuedVoteRequiredPercentage >= 50);
         // Generate a unique ID:
         bytes32 proposalId = keccak256(abi.encodePacked(this, proposalsCnt));
-        proposalsCnt = proposalsCnt.add(1);
+        proposalsCnt = proposalsCnt + 1;
         // Open proposal:
         Proposal memory proposal;
         proposal.callbacks = msg.sender;
@@ -1254,10 +1252,8 @@ contract DXDVotingMachine {
             }
         }
         //calc dao bounty
-        uint256 daoBounty = parameters[_paramsHash]
-            .daoBountyConst
-            .mul(averagesDownstakesOfBoosted[proposal.organizationId])
-            .div(100);
+        uint256 daoBounty = (parameters[_paramsHash].daoBountyConst *
+            averagesDownstakesOfBoosted[proposal.organizationId]) / 100;
         proposal.daoBountyRemain = daoBounty.max(parameters[_paramsHash].minimumDaoBounty);
         proposals[proposalId] = proposal;
         proposalStakes[proposalId][NO] = proposal.daoBountyRemain; //dao downstake on the proposal
@@ -1274,11 +1270,10 @@ contract DXDVotingMachine {
     function _refundVote(bytes32 organizationId) internal {
         address orgAddress = organizations[organizationId];
         if (organizationRefunds[orgAddress].voteGas > 0) {
-            uint256 gasRefund = organizationRefunds[orgAddress].voteGas.mul(
-                tx.gasprice.min(organizationRefunds[orgAddress].maxGasPrice)
-            );
+            uint256 gasRefund = organizationRefunds[orgAddress].voteGas *
+                tx.gasprice.min(organizationRefunds[orgAddress].maxGasPrice);
             if (organizationRefunds[orgAddress].balance >= gasRefund) {
-                organizationRefunds[orgAddress].balance = organizationRefunds[orgAddress].balance.sub(gasRefund);
+                organizationRefunds[orgAddress].balance = organizationRefunds[orgAddress].balance - gasRefund;
                 payable(msg.sender).transfer(gasRefund);
             }
         }
