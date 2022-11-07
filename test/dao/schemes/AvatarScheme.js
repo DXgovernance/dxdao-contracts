@@ -1,6 +1,7 @@
 import { artifacts } from "hardhat";
 import * as helpers from "../../helpers";
 import { assert } from "chai";
+import { NULL_HASH, SOME_HASH } from "../../helpers/constants";
 const { time } = require("@openzeppelin/test-helpers");
 
 const AvatarScheme = artifacts.require("./AvatarScheme.sol");
@@ -9,7 +10,7 @@ const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 
-contract("AvatarScheme", function (accounts) {
+contract.only("AvatarScheme", function (accounts) {
   let standardTokenMock,
     permissionRegistry,
     registrarScheme,
@@ -121,5 +122,21 @@ contract("AvatarScheme", function (accounts) {
       organizationProposal.state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
     );
+  });
+
+  it("should return the function signature when the length is greater than 4 bytes", async function () {
+    const functionSignature = await avatarScheme.getFuncSignature(SOME_HASH);
+    assert.equal(SOME_HASH.substring(0, 10), functionSignature);
+  });
+
+  it("should return zero hash if the length is less than 4 bytes", async function () {
+    const smallFunctionHash = SOME_HASH.substring(0, 6);
+    const zeroHashFunctionSignature = NULL_HASH.substring(0, 10);
+    const functionSignature = await avatarScheme.getFuncSignature(
+      smallFunctionHash
+    );
+
+    assert.equal(zeroHashFunctionSignature, functionSignature);
+    assert.notEqual(smallFunctionHash, functionSignature);
   });
 });
