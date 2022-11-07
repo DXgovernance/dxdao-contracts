@@ -88,6 +88,7 @@ contract AvatarScheme is Scheme {
                 }
 
                 bool callsSucessResult = false;
+                bytes memory returnData;
 
                 // The only three calls that can be done directly to the controller is mintReputation, burnReputation and avatarCall
                 if (
@@ -98,7 +99,7 @@ contract AvatarScheme is Scheme {
                     (callsSucessResult, ) = address(controller).call(proposal.callData[callIndex]);
                 } else {
                     // The permission registry keeps track of all value transferred and checks call permission
-                    (callsSucessResult, ) = controller.avatarCall(
+                    (callsSucessResult, returnData) = controller.avatarCall(
                         address(permissionRegistry),
                         abi.encodeWithSignature(
                             "setETHPermissionUsed(address,address,bytes4,uint256)",
@@ -112,14 +113,14 @@ contract AvatarScheme is Scheme {
                     );
                     require(callsSucessResult, "AvatarScheme: setETHPermissionUsed failed");
 
-                    (callsSucessResult, ) = controller.avatarCall(
+                    (callsSucessResult, returnData) = controller.avatarCall(
                         proposal.to[callIndex],
                         proposal.callData[callIndex],
                         avatar,
                         proposal.value[callIndex]
                     );
                 }
-                require(callsSucessResult, "AvatarScheme: Proposal call failed");
+                require(callsSucessResult, string(returnData));
             }
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
             require(

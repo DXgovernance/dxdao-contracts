@@ -91,7 +91,7 @@ contract WalletScheme is Scheme {
                     callDataFuncSignature,
                     proposal.value[callIndex]
                 );
-                (callsSucessResult, ) = proposal.to[callIndex].call{value: proposal.value[callIndex]}(
+                (callsSucessResult, returnData) = proposal.to[callIndex].call{value: proposal.value[callIndex]}(
                     proposal.callData[callIndex]
                 );
 
