@@ -197,4 +197,16 @@ contract("MigratableERC20Guild", function (accounts) {
     assert.equal(await erc20Guild.getToken(), guildTokenA.address);
     assert.equal(await erc20Guild.getTokenVault(), tokenVaultA);
   });
+
+  describe("withdrawTokens", () => {
+    it("Should revert action if withdrawn tokens are > than tokens locked", async () => {
+      const votingPower = await erc20Guild.votingPowerOf(accounts[1]);
+      await expectRevert(
+        erc20Guild.withdrawTokens(votingPower.toNumber() + 1000, {
+          from: accounts[1],
+        }),
+        "MigratableERC2Guild: Unable to withdraw more tokens than locked"
+      );
+    });
+  });
 });

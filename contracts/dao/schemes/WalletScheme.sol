@@ -127,11 +127,6 @@ contract WalletScheme is Scheme {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.state == ProposalState.Submitted, "WalletScheme: must be a submitted proposal");
 
-        require(
-            !controller.getSchemeCanMakeAvatarCalls(address(this)),
-            "WalletScheme: scheme cannot make avatar calls"
-        );
-
         if (proposal.submittedTime.add(maxSecondsForExecution) < block.timestamp) {
             // If the amount of time passed since submission plus max proposal time is lower than block timestamp
             // the proposal timeout execution is reached and proposal cant be executed from now on
@@ -156,6 +151,7 @@ contract WalletScheme is Scheme {
                 }
 
                 bool callsSucessResult = false;
+                bytes memory returnData;
                 // The permission registry keeps track of all value transferred and checks call permission
                 permissionRegistry.setETHPermissionUsed(
                     address(this),
@@ -167,12 +163,13 @@ contract WalletScheme is Scheme {
                     proposal.callData[callIndex]
                 );
 
-                require(callsSucessResult, "WalletScheme: Proposal call failed");
+                require(callsSucessResult, string(returnData));
 
                 proposal.state = ProposalState.ExecutionSucceeded;
             }
 
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
+
             require(
                 (oldRepSupply.mul(uint256(100).add(maxRepPercentageChange)).div(100) >=
                     getNativeReputationTotalSupply()) &&
