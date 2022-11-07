@@ -94,7 +94,9 @@ contract("AvatarScheme", function (accounts) {
   });
   it("should execute proposal", async function () {
     const callData = helpers.testCallFrom(org.avatar.address);
-
+    const callDataMintRep = await org.controller.contract.methods
+      .mintReputation(10, accounts[1])
+      .encodeABI();
     await permissionRegistry.setETHPermission(
       org.avatar.address,
       accounts[1],
@@ -103,9 +105,9 @@ contract("AvatarScheme", function (accounts) {
       true
     );
     const tx = await avatarScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [actionMock.address, org.controller.address],
+      [callData, callDataMintRep],
+      [0, 0],
       2,
       constants.TEST_TITLE,
       constants.SOME_HASH

@@ -88,27 +88,37 @@ contract AvatarScheme is Scheme {
                 }
 
                 bool callsSucessResult = false;
-                // The permission registry keeps track of all value transferred and checks call permission
-                (callsSucessResult, ) = controller.avatarCall(
-                    address(permissionRegistry),
-                    abi.encodeWithSignature(
-                        "setETHPermissionUsed(address,address,bytes4,uint256)",
-                        avatar,
-                        proposal.to[callIndex],
-                        callDataFuncSignature,
-                        proposal.value[callIndex]
-                    ),
-                    avatar,
-                    0
-                );
-                require(callsSucessResult, "AvatarScheme: setETHPermissionUsed failed");
 
-                (callsSucessResult, ) = controller.avatarCall(
-                    proposal.to[callIndex],
-                    proposal.callData[callIndex],
-                    avatar,
-                    proposal.value[callIndex]
-                );
+                // The only three calls that can be done directly to the controller is mintReputation, burnReputation and avatarCall
+                if (
+                    proposal.to[callIndex] == address(controller) &&
+                    (callDataFuncSignature == bytes4(keccak256("mintReputation(uint256,address)")) ||
+                        callDataFuncSignature == bytes4(keccak256("burnReputation(uint256,address)")))
+                ) {
+                    (callsSucessResult, ) = address(controller).call(proposal.callData[callIndex]);
+                } else {
+                    // The permission registry keeps track of all value transferred and checks call permission
+                    (callsSucessResult, ) = controller.avatarCall(
+                        address(permissionRegistry),
+                        abi.encodeWithSignature(
+                            "setETHPermissionUsed(address,address,bytes4,uint256)",
+                            avatar,
+                            proposal.to[callIndex],
+                            callDataFuncSignature,
+                            proposal.value[callIndex]
+                        ),
+                        avatar,
+                        0
+                    );
+                    require(callsSucessResult, "AvatarScheme: setETHPermissionUsed failed");
+
+                    (callsSucessResult, ) = controller.avatarCall(
+                        proposal.to[callIndex],
+                        proposal.callData[callIndex],
+                        avatar,
+                        proposal.value[callIndex]
+                    );
+                }
                 require(callsSucessResult, "AvatarScheme: Proposal call failed");
             }
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
