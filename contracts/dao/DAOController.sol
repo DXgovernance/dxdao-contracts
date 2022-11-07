@@ -2,7 +2,6 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import "./DAOAvatar.sol";
 import "./DAOReputation.sol";
@@ -14,7 +13,6 @@ import "./DAOReputation.sol";
  * Each scheme has it own parameters and operation permissions.
  */
 contract DAOController is Initializable {
-    using SafeMathUpgradeable for uint256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
@@ -86,7 +84,7 @@ contract DAOController is Initializable {
 
         // Add or change the scheme:
         if ((!scheme.isRegistered || !scheme.canManageSchemes) && _canManageSchemes) {
-            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.add(1);
+            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission + 1;
         }
 
         schemes[_scheme] = Scheme({
@@ -119,7 +117,7 @@ contract DAOController is Initializable {
                 schemesWithManageSchemesPermission > 1,
                 "DAOController: Cannot unregister last scheme with manage schemes permission"
             );
-            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.sub(1);
+            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission - 1;
         }
 
         emit UnregisterScheme(msg.sender, _scheme);
