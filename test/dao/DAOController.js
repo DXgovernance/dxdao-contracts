@@ -235,7 +235,7 @@ contract("DAOController", function (accounts) {
     );
   });
 
-  it("getActiveProposals(0,0) should return by default all active proposals", async () => {
+  it("getActiveProposals(0,0) should return all active proposals", async () => {
     const TOTAL_PROPOSALS = 20;
     const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
 
@@ -281,11 +281,11 @@ contract("DAOController", function (accounts) {
 
     await expectRevert(
       controller.getActiveProposals(TOTAL_PROPOSALS + 1, 0),
-      "DAOController: _startIndex cannot be bigger than proposals list length"
+      "DAOController: _start cannot be bigger than proposals list length"
     );
     await expectRevert(
       controller.getActiveProposals(0, TOTAL_PROPOSALS + 1),
-      "DAOController: _endIndex cannot be bigger than proposals list length"
+      "DAOController: _end cannot be bigger than proposals list length"
     );
   });
 
@@ -330,7 +330,7 @@ contract("DAOController", function (accounts) {
     expect(activeProposals[0].scheme).to.equal(schemeAddress);
   });
 
-  it("getInactiveProposals(0,0) should return by default all inactive proposals", async () => {
+  it("getInactiveProposals(0,0) should return all inactive proposals", async () => {
     const TOTAL_PROPOSALS = 20;
     const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
 

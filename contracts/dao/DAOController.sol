@@ -227,34 +227,34 @@ contract DAOController is Initializable {
     }
 
     /**
-     * @dev Returns array of active proposals based on index args. Both indexes are inclusive, unles (0,0) that returns all elements
-     * @param _startIndex index to start batching (included).
-     * @param _endIndex last index of batch (included). Zero will default to last element from the list
+     * @dev Returns array of proposals based on index args. Both indexes are inclusive, unles (0,0) that returns all elements
+     * @param _start index to start batching (included).
+     * @param _end last index of batch (included). Zero will default to last element from the list
      * @param _proposals EnumerableSetUpgradeable set of proposals
      * @return proposalsArray with proposals list.
      */
     function _getProposalsBatchRequest(
-        uint256 _startIndex,
-        uint256 _endIndex,
+        uint256 _start,
+        uint256 _end,
         EnumerableSetUpgradeable.Bytes32Set storage _proposals
     ) internal view returns (ProposalAndScheme[] memory proposalsArray) {
         uint256 totalCount = uint256(_proposals.length());
         if (totalCount == 0) {
             return new ProposalAndScheme[](0);
         }
-        require(_startIndex < totalCount, "DAOController: _startIndex cannot be bigger than proposals list length");
-        require(_endIndex < totalCount, "DAOController: _endIndex cannot be bigger than proposals list length");
-        require(_startIndex <= _endIndex, "DAOController: _startIndex cannot be bigger _endIndex");
+        require(_start < totalCount, "DAOController: _start cannot be bigger than proposals list length");
+        require(_end < totalCount, "DAOController: _end cannot be bigger than proposals list length");
+        require(_start <= _end, "DAOController: _start cannot be bigger _end");
 
         (, uint256 total) = totalCount.trySub(1);
-        uint256 lastIndex = _endIndex == 0 ? total : _endIndex;
-        uint256 returnCount = lastIndex.add(1).sub(_startIndex);
+        uint256 lastIndex = _end == 0 ? total : _end;
+        uint256 returnCount = lastIndex.add(1).sub(_start);
 
         proposalsArray = new ProposalAndScheme[](returnCount);
         uint256 i = 0;
         for (i; i < returnCount; i++) {
-            proposalsArray[i].proposalId = _proposals.at(i.add(_startIndex));
-            proposalsArray[i].scheme = schemeOfProposal[_proposals.at(i.add(_startIndex))];
+            proposalsArray[i].proposalId = _proposals.at(i.add(_start));
+            proposalsArray[i].scheme = schemeOfProposal[_proposals.at(i.add(_start))];
         }
         return proposalsArray;
     }
@@ -275,8 +275,8 @@ contract DAOController is Initializable {
 
     /**
      * @dev Returns array of inactive proposals
-     * @param _start index to start batching
-     * @param _end last index of batch
+     * @param _start index to start batching (included).
+     * @param _end last index of batch (included). Zero will return all
      */
     function getInactiveProposals(uint256 _start, uint256 _end)
         external
