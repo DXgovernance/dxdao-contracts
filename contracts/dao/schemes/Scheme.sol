@@ -85,7 +85,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
         );
         avatar = DAOAvatar(_avatar);
-        votingMachine = _votingMachine;
+        votingMachine = IDXDVotingMachine(_votingMachine);
         controller = DAOController(_controller);
         permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
@@ -148,20 +148,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         bytes32 voteParams = controller.getSchemeParameters(address(this));
 
         // Get the proposal id that will be used from the voting machine
-        // bytes32 proposalId = votingMachine.propose(_totalOptions, voteParams, msg.sender, address(avatar));
-        bytes32 proposalId = abi.decode(
-            votingMachine.functionCall(
-                abi.encodeWithSignature(
-                    "propose(uint256,bytes32,address,address)",
-                    _totalOptions,
-                    voteParams,
-                    msg.sender,
-                    avatar
-                ),
-                "WalletScheme: DXDVotingMachine callback propose error"
-            ),
-            (bytes32)
-        );
+        bytes32 proposalId = votingMachine.propose(_totalOptions, voteParams, msg.sender, address(avatar));
 
         controller.startProposal(proposalId);
 
