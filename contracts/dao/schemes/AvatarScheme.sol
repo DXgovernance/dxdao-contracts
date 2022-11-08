@@ -18,16 +18,30 @@ import "./Scheme.sol";
 contract AvatarScheme is Scheme {
     using Address for address;
 
+    /// @notice Emitted when setMaxSecondsForExecution NOT called from the avatar
+    error AvatarScheme__SetMaxSecondsForExecutionNotCalledFromAvatar();
+
+    /// @notice Emitted when the proposal is already being executed
+    error AvatarScheme__ProposalExecutionAlreadyRunning();
+
+    /// @notice Emmited when the proposal wasn't submitted
+    error AvatarScheme__ProposalMustBeSubmitted();
+
+    /// @notice Emmited when the call to setETHPermissionUsed fails
+    error AvatarScheme__SetEthPermissionUsedFailed();
+
+    /// @notice Emmited when exceeded the maximum rep supply % change
+    error AvatarScheme__MaxRepPercentageChangePassed();
+
     /**
      * @dev Set the max amount of seconds that a proposal has to be executed
      * only callable from the avatar address
      * @param _maxSecondsForExecution New max proposal time in seconds to be used
      */
     function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external override {
-        require(
-            msg.sender == address(avatar),
-            "AvatarScheme: setMaxSecondsForExecution is callable only from the avatar"
-        );
+        if (msg.sender != address(avatar)) {
+            revert AvatarScheme__SetMaxSecondsForExecutionNotCalledFromAvatar();
+        }
 
         require(
             _maxSecondsForExecution >= 86400,
@@ -49,11 +63,15 @@ contract AvatarScheme is Scheme {
         returns (bool)
     {
         // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
-        require(!executingProposal, "AvatarScheme: proposal execution already running");
+        if (executingProposal) {
+            revert AvatarScheme__ProposalExecutionAlreadyRunning();
+        }
         executingProposal = true;
 
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.state == ProposalState.Submitted, "AvatarScheme: must be a submitted proposal");
+        if (proposal.state != ProposalState.Submitted) {
+            revert AvatarScheme__ProposalMustBeSubmitted();
+        }
 
         if (proposal.submittedTime + maxSecondsForExecution < block.timestamp) {
             // If the amount of time passed since submission plus max proposal time is lower than block timestamp
@@ -109,8 +127,9 @@ contract AvatarScheme is Scheme {
                         avatar,
                         0
                     );
-                    require(callsSucessResult, "AvatarScheme: setETHPermissionUsed failed");
-
+                    if (!callsSucessResult) {
+                        revert AvatarScheme__SetEthPermissionUsedFailed();
+                    }
                     (callsSucessResult, returnData) = controller.avatarCall(
                         proposal.to[callIndex],
                         proposal.callData[callIndex],

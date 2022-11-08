@@ -271,7 +271,7 @@ contract("AvatarScheme", function (accounts) {
   it("setMaxSecondsForExecution only callable from the avatar", async function () {
     await expectRevert(
       avatarScheme.setMaxSecondsForExecution(TEST_VALUE),
-      "AvatarScheme: setMaxSecondsForExecution is callable only from the avatar"
+      "AvatarScheme__SetMaxSecondsForExecutionNotCalledFromAvatar"
     );
   });
 
