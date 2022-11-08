@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./Scheme.sol";
 
@@ -12,7 +11,6 @@ import "./Scheme.sol";
  * Option 2 will execute all the calls that where submitted in the proposeCalls.
  */
 contract WalletScheme is Scheme {
-    using SafeMath for uint256;
     using Address for address;
 
     /**

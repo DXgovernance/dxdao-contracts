@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../utils/PermissionRegistry.sol";
@@ -27,7 +26,6 @@ import "../votingMachine/DXDVotingMachineCallbacks.sol";
  * If the wining option cant be executed successfully, it can be finished without execution once the maxTimesForExecution time passes.
  */
 abstract contract Scheme is DXDVotingMachineCallbacks {
-    using SafeMath for uint256;
     using Address for address;
 
     enum ProposalState {
@@ -88,7 +86,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         require(_controller != address(0), "Scheme: controller cannot be zero");
         require(_maxSecondsForExecution >= 86400, "Scheme: _maxSecondsForExecution cant be less than 86400 seconds");
         avatar = DAOAvatar(_avatar);
-        votingMachine = _votingMachine;
+        votingMachine = IDXDVotingMachine(_votingMachine);
         controller = DAOController(_controller);
         permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
@@ -129,25 +127,12 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     ) public virtual returns (bytes32 proposalId) {
         require(_to.length == _callData.length, "Scheme: invalid _callData length");
         require(_to.length == _value.length, "Scheme: invalid _value length");
-        require(_value.length.mod(_totalOptions.sub(1)) == 0, "Scheme: Invalid _totalOptions or action calls length");
+        require((_value.length % (_totalOptions - 1)) == 0, "Scheme: Invalid _totalOptions or action calls length");
 
         bytes32 voteParams = controller.getSchemeParameters(address(this));
 
         // Get the proposal id that will be used from the voting machine
-        // bytes32 proposalId = votingMachine.propose(_totalOptions, voteParams, msg.sender, address(avatar));
-        proposalId = abi.decode(
-            votingMachine.functionCall(
-                abi.encodeWithSignature(
-                    "propose(uint256,bytes32,address,address)",
-                    _totalOptions,
-                    voteParams,
-                    msg.sender,
-                    avatar
-                ),
-                "Scheme: DXDVotingMachine callback propose error"
-            ),
-            (bytes32)
-        );
+        bytes32 proposalId = votingMachine.propose(_totalOptions, voteParams, msg.sender, address(avatar));
 
         controller.startProposal(proposalId);
 
@@ -193,7 +178,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             "WalletScheme: scheme cannot make avatar calls"
         );
 
-        if (proposal.submittedTime.add(maxSecondsForExecution) < block.timestamp) {
+        if (proposal.submittedTime + maxSecondsForExecution < block.timestamp) {
             // If the amount of time passed since submission plus max proposal time is lower than block timestamp
             // the proposal timeout execution is reached and proposal cant be executed from now on
 
@@ -207,8 +192,8 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
 
             permissionRegistry.setERC20Balances();
 
-            uint256 callIndex = proposal.to.length.div(proposal.totalOptions.sub(1)).mul(_winningOption.sub(2));
-            uint256 lastCallIndex = callIndex.add(proposal.to.length.div(proposal.totalOptions.sub(1)));
+            uint256 callIndex = (proposal.to.length / (proposal.totalOptions - 1)) * (_winningOption - 2);
+            uint256 lastCallIndex = callIndex + (proposal.to.length / (proposal.totalOptions - 1));
             bool callsSucessResult = false;
             bytes memory returnData;
 
@@ -240,9 +225,9 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
 
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
             require(
-                (oldRepSupply.mul(uint256(100).add(maxRepPercentageChange)).div(100) >=
+                ((oldRepSupply * (uint256(100) + (maxRepPercentageChange))) / 100 >=
                     getNativeReputationTotalSupply()) &&
-                    (oldRepSupply.mul(uint256(100).sub(maxRepPercentageChange)).div(100) <=
+                    ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 <=
                         getNativeReputationTotalSupply()),
                 "WalletScheme: maxRepPercentageChange passed"
             );
