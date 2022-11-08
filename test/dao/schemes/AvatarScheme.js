@@ -88,12 +88,15 @@ contract("AvatarScheme", function (accounts) {
       avatarScheme.address,
       defaultParamsHash,
       false,
+      true,
       true
     );
   });
   it("should execute proposal", async function () {
     const callData = helpers.testCallFrom(org.avatar.address);
-
+    const callDataMintRep = await org.controller.contract.methods
+      .mintReputation(10, accounts[1])
+      .encodeABI();
     await permissionRegistry.setETHPermission(
       org.avatar.address,
       accounts[1],
@@ -102,17 +105,23 @@ contract("AvatarScheme", function (accounts) {
       true
     );
     const tx = await avatarScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
+      [actionMock.address, org.controller.address],
+      [callData, callDataMintRep],
+      [0, 0],
       2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
-      from: accounts[2],
-    });
+    await org.votingMachine.vote(
+      proposalId,
+      constants.YES_OPTION,
+      0,
+      constants.ZERO_ADDRESS,
+      {
+        from: accounts[2],
+      }
+    );
     const organizationProposal = await avatarScheme.getProposal(proposalId);
     assert.equal(
       organizationProposal.state,
