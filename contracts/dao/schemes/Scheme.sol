@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../utils/PermissionRegistry.sol";
@@ -21,7 +20,6 @@ import "../votingMachine/DXDVotingMachineCallbacks.sol";
  * sender.
  */
 abstract contract Scheme is DXDVotingMachineCallbacks {
-    using SafeMath for uint256;
     using Address for address;
 
     enum ProposalState {
