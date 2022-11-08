@@ -16,6 +16,7 @@ export const TEST_TITLE = "Awesome Proposal Title";
 export const ERC20_TRANSFER_SIGNATURE = "0xa9059cbb";
 export const SOME_TOKEN_URI =
   "http://www.someTokenImplementation.com/tokens/19";
+export const MIN_SECONDS_FOR_EXECUTION = 86400;
 
 export const WALLET_SCHEME_PROPOSAL_STATES = {
   none: 0,
