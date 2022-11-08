@@ -1549,6 +1549,11 @@ contract("WalletScheme", function (accounts) {
     });
   });
 
+  it.only("MasterWalletScheme - get scheme type", async function () {
+    const schemeType = await masterWalletScheme.getSchemeType();
+    assert.equal(schemeType, "WalletScheme_v1");
+  });
+
   it("QuickWalletScheme can receive value in contract", async function () {
     await web3.eth.sendTransaction({
       from: accounts[0],
