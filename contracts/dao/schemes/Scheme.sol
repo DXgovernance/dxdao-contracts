@@ -10,7 +10,7 @@ import "../DAOController.sol";
 import "../votingMachine/DXDVotingMachineCallbacks.sol";
 
 /**
- * @title WalletScheme.
+ * @title Scheme.
  * @dev  A scheme for proposing and executing calls to any contract except itself
  * It has a value call controller address, in case of the controller address ot be set the scheme will be doing
  * generic calls to the dao controller. If the controller address is not set it will e executing raw calls form the
@@ -55,6 +55,27 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
 
     event ProposalStateChange(bytes32 indexed _proposalId, uint256 indexed _state);
 
+    /// @notice Emitted when its initialized twice
+    error Scheme__CannotInitTwice();
+
+    /// @notice Emitted if avatar address is zero
+    error Scheme__AvatarAddressCannotBeZero();
+
+    /// @notice Emitted if controller address is zero
+    error Scheme__ControllerAddressCannotBeZero();
+
+    /// @notice Emitted if maxSecondsForExecution is set lower than 86400
+    error Scheme__MaxSecondsForExecutionTooLow();
+
+    /// @notice Emitted when setMaxSecondsForExecution is being called from an address different than the avatar or the scheme
+    error Scheme__SetMaxSecondsForExecutionInvalidCaller();
+
+    /// @notice _to, _callData and _value must have all the same length
+    error Scheme_InvalidParameterArrayLength();
+
+    /// @notice Emitted when the total amount of options is not 2
+    error Scheme__MustHaveTwoOptions();
+
     /**
      * @dev initialize
      * @param _avatar the avatar address
@@ -75,13 +96,22 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         uint256 _maxSecondsForExecution,
         uint256 _maxRepPercentageChange
     ) external {
-        require(address(avatar) == address(0), "WalletScheme: cannot init twice");
-        require(_avatar != address(0), "WalletScheme: avatar cannot be zero");
-        require(_controller != address(0), "WalletScheme: controller cannot be zero");
-        require(
-            _maxSecondsForExecution >= 86400,
-            "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
-        );
+        if (address(avatar) != address(0)) {
+            revert Scheme__CannotInitTwice();
+        }
+
+        if (_avatar == address(0)) {
+            revert Scheme__AvatarAddressCannotBeZero();
+        }
+
+        if (_controller == address(0)) {
+            revert Scheme__ControllerAddressCannotBeZero();
+        }
+
+        if (_maxSecondsForExecution < 86400) {
+            revert Scheme__MaxSecondsForExecutionTooLow();
+        }
+
         avatar = DAOAvatar(_avatar);
         votingMachine = IDXDVotingMachine(_votingMachine);
         controller = DAOController(_controller);
@@ -96,14 +126,14 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @param _maxSecondsForExecution New max proposal time in seconds to be used
      */
     function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external virtual {
-        require(
-            msg.sender == address(avatar) || msg.sender == address(this),
-            "WalletScheme: setMaxSecondsForExecution is callable only from the avatar or the scheme"
-        );
-        require(
-            _maxSecondsForExecution >= 86400,
-            "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
-        );
+        if (msg.sender != address(avatar) || msg.sender != address(this)) {
+            revert Scheme__SetMaxSecondsForExecutionInvalidCaller();
+        }
+
+        if (_maxSecondsForExecution < 86400) {
+            revert Scheme__MaxSecondsForExecutionTooLow();
+        }
+
         maxSecondsForExecution = _maxSecondsForExecution;
     }
 
@@ -138,10 +168,13 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         string calldata _title,
         string calldata _descriptionHash
     ) external returns (bytes32) {
-        require(_to.length == _callData.length, "WalletScheme: invalid _callData length");
-        require(_to.length == _value.length, "WalletScheme: invalid _value length");
+        if (_to.length != _callData.length || _to.length != _value.length) {
+            revert Scheme_InvalidParameterArrayLength();
+        }
 
-        require(_totalOptions == 2, "WalletScheme: The total amount of options should be 2");
+        if (_totalOptions != 2) {
+            revert Scheme__MustHaveTwoOptions();
+        }
 
         bytes32 voteParams = controller.getSchemeParameters(address(this));
 

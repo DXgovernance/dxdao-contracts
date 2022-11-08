@@ -1509,7 +1509,7 @@ contract("WalletScheme", function (accounts) {
         86400 - 1,
         5
       ),
-      "_maxSecondsForExecution cant be less than 86400 seconds"
+      "Scheme__MaxSecondsForExecutionTooLow()"
     );
     await expectRevert(
       unitializedWalletScheme.initialize(
@@ -1521,7 +1521,7 @@ contract("WalletScheme", function (accounts) {
         executionTimeout,
         5
       ),
-      "avatar cannot be zero"
+      "Scheme__AvatarAddressCannotBeZero()"
     );
   });
 
@@ -1536,7 +1536,7 @@ contract("WalletScheme", function (accounts) {
         executionTimeout,
         5
       ),
-      "cannot init twice"
+      "Scheme__CannotInitTwice()"
     );
   });
 
