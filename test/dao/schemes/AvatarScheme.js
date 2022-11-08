@@ -15,7 +15,7 @@ const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 
-contract("AvatarScheme", function (accounts) {
+contract.only("AvatarScheme", function (accounts) {
   let standardTokenMock,
     permissionRegistry,
     registrarScheme,
@@ -260,11 +260,10 @@ contract("AvatarScheme", function (accounts) {
     );
     const proposalId = await helpers.getValueFromLogs(trx, "_proposalId");
 
-    await expectRevert(
+    await expectRevert.unspecified(
       org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
         from: accounts[2],
-      }),
-      "AvatarScheme: _maxSecondsForExecution cant be less than 86400 seconds"
+      })
     );
   });
 

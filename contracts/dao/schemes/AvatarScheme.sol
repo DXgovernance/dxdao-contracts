@@ -21,17 +21,26 @@ contract AvatarScheme is Scheme {
     /// @notice Emitted when setMaxSecondsForExecution NOT called from the avatar
     error AvatarScheme__SetMaxSecondsForExecutionNotCalledFromAvatar();
 
+    /// @notice Emitted when trying to set maxSecondsForExecution to a value lower than 86400
+    error AvatarScheme__MaxSecondsForExecutionTooLow();
+
     /// @notice Emitted when the proposal is already being executed
     error AvatarScheme__ProposalExecutionAlreadyRunning();
 
-    /// @notice Emmited when the proposal wasn't submitted
+    /// @notice Emitted when the proposal wasn't submitted
     error AvatarScheme__ProposalMustBeSubmitted();
 
-    /// @notice Emmited when the call to setETHPermissionUsed fails
+    /// @notice Emitted when the call to setETHPermissionUsed fails
     error AvatarScheme__SetEthPermissionUsedFailed();
 
-    /// @notice Emmited when exceeded the maximum rep supply % change
+    /// @notice Emitted when the avatarCall failed. Returns the revert error
+    error AvatarScheme__AvatarCallFailed(string reason);
+
+    /// @notice Emitted when exceeded the maximum rep supply % change
     error AvatarScheme__MaxRepPercentageChangePassed();
+
+    /// @notice Emitted when ERC20 limits passed
+    error AvatarScheme__ERC20LimitsPassed();
 
     /**
      * @dev Set the max amount of seconds that a proposal has to be executed
@@ -43,10 +52,11 @@ contract AvatarScheme is Scheme {
             revert AvatarScheme__SetMaxSecondsForExecutionNotCalledFromAvatar();
         }
 
-        require(
-            _maxSecondsForExecution >= 86400,
-            "AvatarScheme: _maxSecondsForExecution cant be less than 86400 seconds"
-        );
+        if (_maxSecondsForExecution < 86400) {
+            console.log("Wish we were here");
+            revert AvatarScheme__MaxSecondsForExecutionTooLow();
+        }
+
         maxSecondsForExecution = _maxSecondsForExecution;
     }
 
@@ -137,16 +147,23 @@ contract AvatarScheme is Scheme {
                         proposal.value[callIndex]
                     );
                 }
-                require(callsSucessResult, string(returnData));
+                if (!callsSucessResult) {
+                    revert AvatarScheme__AvatarCallFailed({reason: string(returnData)});
+                }
             }
+
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
-            require(
-                ((oldRepSupply * (uint256(100) + maxRepPercentageChange)) / 100 >= getNativeReputationTotalSupply()) &&
-                    ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 <=
-                        getNativeReputationTotalSupply()),
-                "AvatarScheme: maxRepPercentageChange passed"
-            );
-            require(permissionRegistry.checkERC20Limits(address(avatar)), "AvatarScheme: ERC20 limits passed");
+
+            if (
+                ((oldRepSupply * (uint256(100) + maxRepPercentageChange)) / 100 < getNativeReputationTotalSupply()) ||
+                ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 > getNativeReputationTotalSupply())
+            ) {
+                revert AvatarScheme__MaxRepPercentageChangePassed();
+            }
+
+            if (!permissionRegistry.checkERC20Limits(address(avatar))) {
+                revert AvatarScheme__ERC20LimitsPassed();
+            }
         }
         controller.endProposal(_proposalId);
         executingProposal = false;
