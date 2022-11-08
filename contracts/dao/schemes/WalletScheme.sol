@@ -8,8 +8,8 @@ import "./Scheme.sol";
 /**
  * @title WalletScheme.
  * @dev An implementation of Scheme where the scheme has only 2 options and execute calls form the scheme itself.
- * Option 1 will execute all the calls that where submitted in the proposeCalls.
- * Option 2 will mark the proposal as rejected and execute empty calls
+ * Option 1 will mark the proposal as rejected and not execute any calls.
+ * Option 2 will execute all the calls that where submitted in the proposeCalls.
  */
 contract WalletScheme is Scheme {
     using SafeMath for uint256;
@@ -39,15 +39,26 @@ contract WalletScheme is Scheme {
         string calldata _descriptionHash
     ) public override returns (bytes32 proposalId) {
         require(_totalOptions == 2, "WalletScheme: The total amount of options should be 2");
-
-        for (uint256 i = _to.length.div(2); i < _to.length; i++) {
-            require(
-                _to[i] == address(0) && _callData[i].length == 0 && _value[i] == 0,
-                "WalletScheme: The second half of the calls should be empty"
-            );
-        }
-
         return super.proposeCalls(_to, _callData, _value, _totalOptions, _title, _descriptionHash);
+    }
+
+    /**
+     * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
+     * @param _proposalId the ID of the voting in the voting machine
+     * @param _winningOption The winning option in the voting machine
+     * @return bool success
+     */
+    function executeProposal(bytes32 _proposalId, uint256 _winningOption)
+        public
+        override
+        onlyVotingMachine
+        returns (bool)
+    {
+        require(
+            !controller.getSchemeCanMakeAvatarCalls(address(this)),
+            "WalletScheme: scheme cannot make avatar calls"
+        );
+        return super.executeProposal(_proposalId, _winningOption);
     }
 
     /**

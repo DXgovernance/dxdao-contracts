@@ -8,30 +8,12 @@ import "./Scheme.sol";
 /**
  * @title AvatarScheme.
  * @dev An implementation of Scheme where the scheme has only 2 options and execute calls from the avatar.
- * Option 1 will execute all the calls that where submitted in the proposeCalls.
- * Option 2 will mark the proposal as rejected and not execute any calls.
+ * Option 1 will mark the proposal as rejected and not execute any calls.
+ * Option 2 will execute all the calls that where submitted in the proposeCalls.
  */
 contract AvatarScheme is Scheme {
     using SafeMath for uint256;
     using Address for address;
-
-    /**
-     * @dev Set the max amount of seconds that a proposal has to be executed
-     * only callable from the avatar address
-     * @param _maxSecondsForExecution New max proposal time in seconds to be used
-     */
-    function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external override {
-        require(
-            msg.sender == address(avatar),
-            "WalletScheme: setMaxSecondsForExecution is callable only from the avatar"
-        );
-
-        require(
-            _maxSecondsForExecution >= 86400,
-            "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
-        );
-        maxSecondsForExecution = _maxSecondsForExecution;
-    }
 
     /**
      * @dev Propose calls to be executed, the calls have to be allowed by the permission registry
@@ -51,58 +33,8 @@ contract AvatarScheme is Scheme {
         string calldata _title,
         string calldata _descriptionHash
     ) public override returns (bytes32 proposalId) {
-        // Check the proposal calls
-        for (uint256 i = 0; i < _to.length; i++) {
-            bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
-
-            // This will fail only when and ERC20 transfer or approve with ETH value is proposed
-            require(
-                (callDataFuncSignature != bytes4(keccak256("transfer(address,uint256)")) &&
-                    callDataFuncSignature != bytes4(keccak256("approve(address,uint256)"))) || _value[i] == 0,
-                "AvatarScheme: cant propose ERC20 transfers with value"
-            );
-        }
-        require(_to.length == _callData.length, "AvatarScheme: invalid _callData length");
-        require(_to.length == _value.length, "AvatarScheme: invalid _value length");
-
         require(_totalOptions == 2, "AvatarScheme: The total amount of options should be 2");
-
-        bytes32 voteParams = controller.getSchemeParameters(address(this));
-
-        // Get the proposal id that will be used from the voting machine
-        // bytes32 proposalId = votingMachine.propose(_totalOptions, voteParams, msg.sender, address(avatar));
-        proposalId = abi.decode(
-            votingMachine.functionCall(
-                abi.encodeWithSignature(
-                    "propose(uint256,bytes32,address,address)",
-                    _totalOptions,
-                    voteParams,
-                    msg.sender,
-                    avatar
-                ),
-                "AvatarScheme: DXDVotingMachine callback propose error"
-            ),
-            (bytes32)
-        );
-
-        controller.startProposal(proposalId);
-
-        // Add the proposal to the proposals mapping, proposals list and proposals information mapping
-        proposals[proposalId] = Proposal({
-            to: _to,
-            callData: _callData,
-            value: _value,
-            state: ProposalState.Submitted,
-            totalOptions: _totalOptions,
-            title: _title,
-            descriptionHash: _descriptionHash,
-            submittedTime: block.timestamp
-        });
-        // slither-disable-next-line all
-        proposalsList.push(proposalId);
-        proposalSnapshots[proposalId] = DAOReputation(getReputation()).getCurrentSnapshotId();
-        emit ProposalStateChange(proposalId, uint256(ProposalState.Submitted));
-        return proposalId;
+        return super.proposeCalls(_to, _callData, _value, _totalOptions, _title, _descriptionHash);
     }
 
     /**
@@ -112,7 +44,7 @@ contract AvatarScheme is Scheme {
      * @return bool success
      */
     function executeProposal(bytes32 _proposalId, uint256 _winningOption)
-        external
+        public
         override
         onlyVotingMachine
         returns (bool)
@@ -130,7 +62,7 @@ contract AvatarScheme is Scheme {
 
             proposal.state = ProposalState.ExecutionTimeout;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionTimeout));
-        } else if (_winningOption == 2) {
+        } else if (_winningOption == 1) {
             proposal.state = ProposalState.Rejected;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         } else {
@@ -156,30 +88,38 @@ contract AvatarScheme is Scheme {
 
                 bool callsSucessResult = false;
                 bytes memory returnData;
-                // The permission registry keeps track of all value transferred and checks call permission
-                (callsSucessResult, returnData) = controller.avatarCall(
-                    address(permissionRegistry),
-                    abi.encodeWithSignature(
-                        "setETHPermissionUsed(address,address,bytes4,uint256)",
+
+                // The only three calls that can be done directly to the controller is mintReputation, burnReputation and avatarCall
+                if (
+                    proposal.to[callIndex] == address(controller) &&
+                    (callDataFuncSignature == bytes4(keccak256("mintReputation(uint256,address)")) ||
+                        callDataFuncSignature == bytes4(keccak256("burnReputation(uint256,address)")))
+                ) {
+                    (callsSucessResult, ) = address(controller).call(proposal.callData[callIndex]);
+                } else {
+                    // The permission registry keeps track of all value transferred and checks call permission
+                    (callsSucessResult, returnData) = controller.avatarCall(
+                        address(permissionRegistry),
+                        abi.encodeWithSignature(
+                            "setETHPermissionUsed(address,address,bytes4,uint256)",
+                            avatar,
+                            proposal.to[callIndex],
+                            callDataFuncSignature,
+                            proposal.value[callIndex]
+                        ),
                         avatar,
+                        0
+                    );
+                    require(callsSucessResult, "AvatarScheme: setETHPermissionUsed failed");
+
+                    (callsSucessResult, returnData) = controller.avatarCall(
                         proposal.to[callIndex],
-                        callDataFuncSignature,
+                        proposal.callData[callIndex],
+                        avatar,
                         proposal.value[callIndex]
-                    ),
-                    avatar,
-                    0
-                );
+                    );
+                }
                 require(callsSucessResult, string(returnData));
-
-                (callsSucessResult, returnData) = controller.avatarCall(
-                    proposal.to[callIndex],
-                    proposal.callData[callIndex],
-                    avatar,
-                    proposal.value[callIndex]
-                );
-                require(callsSucessResult, string(returnData));
-
-                proposal.state = ProposalState.ExecutionSucceeded;
             }
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
             require(

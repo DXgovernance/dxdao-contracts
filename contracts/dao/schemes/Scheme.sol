@@ -16,11 +16,14 @@ import "../votingMachine/DXDVotingMachineCallbacks.sol";
  * The Scheme is designed to work with a Voting Machine and allow a any amount of options and calls to be executed.
  * Each proposal contains a list of options, and each option a list of calls, each call has (to, data and value).
  * The options should have the same amount of calls, and all those calls are sent in arrays on the proposeCalls function.
- * If there is 10 calls there can be 10, 5 or 2 options.
+ * The option 1 is always the default negative option, to vote against a proposal the vote goes on option 1.
+ * A minimum of two options is required, where 1 == NO and 2 == YES.
+ * Any options that are not 1 can be used for positive decisions with different calls to execute.
+ * The calls that will be executed are the ones that located in the batch of calls of the winner option.
+ * If there is 10 calls and 2 options it means that the 10 calls would be executed if option 2 wins.
+ * if there is 10 calls and 3 options it means that if options 2 wins it will execute calls [0,4] and in case option 3 wins it will execute calls [5,9].
  * When a proposal is created it is registered in the voting machine.
  * Once the governance process ends on the voting machine the voting machine can execute the proposal winning option.
- * The calls that will be executed are the ones that located in the batch of calls of the winner option.
- * If there is 10 calls and 5 options and the winning option is 2, the calls in the index 3 and 4 will be executed in that order.
  * If the wining option cant be executed successfully, it can be finished without execution once the maxTimesForExecution time passes.
  */
 abstract contract Scheme is DXDVotingMachineCallbacks {
@@ -124,24 +127,9 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         string calldata _title,
         string calldata _descriptionHash
     ) public virtual returns (bytes32 proposalId) {
-        // Check the proposal calls
-        for (uint256 i = 0; i < _to.length; i++) {
-            bytes4 callDataFuncSignature = getFuncSignature(_callData[i]);
-
-            // This will fail only when and ERC20 transfer or approve with ETH value is proposed
-            require(
-                (callDataFuncSignature != bytes4(keccak256("transfer(address,uint256)")) &&
-                    callDataFuncSignature != bytes4(keccak256("approve(address,uint256)"))) || _value[i] == 0,
-                "Scheme: cant propose ERC20 transfers with value"
-            );
-        }
         require(_to.length == _callData.length, "Scheme: invalid _callData length");
         require(_to.length == _value.length, "Scheme: invalid _value length");
-        require(_totalOptions > 1, "Scheme: _totalOptions has to be higher than 1");
-        require(
-            _totalOptions <= _to.length && _value.length.mod(_totalOptions) == 0,
-            "Scheme: Invalid _totalOptions or action calls length"
-        );
+        require(_value.length.mod(_totalOptions.sub(1)) == 0, "Scheme: Invalid _totalOptions or action calls length");
 
         bytes32 voteParams = controller.getSchemeParameters(address(this));
 
@@ -188,7 +176,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @return bool success
      */
     function executeProposal(bytes32 _proposalId, uint256 _winningOption)
-        external
+        public
         virtual
         onlyVotingMachine
         returns (bool)
@@ -211,29 +199,28 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
 
             proposal.state = ProposalState.ExecutionTimeout;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionTimeout));
+        } else if (_winningOption == 1) {
+            proposal.state = ProposalState.Rejected;
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         } else {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
 
             permissionRegistry.setERC20Balances();
 
-            uint256 callIndex = proposal.to.length.div(proposal.totalOptions).mul(_winningOption.sub(1));
-            uint256 lastCallIndex = callIndex.add(proposal.to.length.div(proposal.totalOptions));
-            bool proposalRejectedFlag = true;
+            uint256 callIndex = proposal.to.length.div(proposal.totalOptions.sub(1)).mul(_winningOption.sub(2));
+            uint256 lastCallIndex = callIndex.add(proposal.to.length.div(proposal.totalOptions.sub(1)));
+            bool callsSucessResult = false;
+            bytes memory returnData;
 
             for (callIndex; callIndex < lastCallIndex; callIndex++) {
                 bytes memory _data = proposal.callData[callIndex];
 
-                // If all proposal calls called the address(0) with value 0 then the proposal is marked as rejected,
-                // if not and even one call is do to a different address or with value > 0 then the proposal is marked
-                // as executed if all calls succeed.
-                if ((proposal.to[callIndex] != address(0) || proposal.value[callIndex] > 0)) {
-                    proposalRejectedFlag = false;
+                if (proposal.to[callIndex] != address(0) || proposal.value[callIndex] > 0 || _data.length > 0) {
                     bytes4 callDataFuncSignature;
                     assembly {
                         callDataFuncSignature := mload(add(_data, 32))
                     }
 
-                    bool callsSucessResult = false;
                     // The permission registry keeps track of all value transferred and checks call permission
                     permissionRegistry.setETHPermissionUsed(
                         address(this),
@@ -241,15 +228,15 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
                         callDataFuncSignature,
                         proposal.value[callIndex]
                     );
-                    (callsSucessResult, ) = proposal.to[callIndex].call{value: proposal.value[callIndex]}(
+                    (callsSucessResult, returnData) = proposal.to[callIndex].call{value: proposal.value[callIndex]}(
                         proposal.callData[callIndex]
                     );
 
-                    require(callsSucessResult, "WalletScheme: Proposal call failed");
+                    require(callsSucessResult, string(returnData));
                 }
             }
 
-            proposal.state = proposalRejectedFlag ? ProposalState.Rejected : ProposalState.ExecutionSucceeded;
+            proposal.state = ProposalState.ExecutionSucceeded;
 
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
             require(
