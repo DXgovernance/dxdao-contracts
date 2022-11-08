@@ -2,7 +2,6 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import "./DAOAvatar.sol";
 import "./DAOReputation.sol";
@@ -14,7 +13,6 @@ import "./DAOReputation.sol";
  * Each scheme has it own parameters and operation permissions.
  */
 contract DAOController is Initializable {
-    using SafeMathUpgradeable for uint256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
@@ -99,13 +97,13 @@ contract DAOController is Initializable {
 
         // Add or change the scheme:
         if ((!scheme.isRegistered || !scheme.canManageSchemes) && _canManageSchemes) {
-            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.add(1);
+            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission + 1;
         } else if (scheme.canManageSchemes && !_canManageSchemes) {
             require(
                 schemesWithManageSchemesPermission > 1,
                 "DAOController: Cannot disable canManageSchemes property from the last scheme with manage schemes permissions"
             );
-            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.sub(1);
+            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission - 1;
         }
 
         schemes[_scheme] = Scheme({
@@ -139,7 +137,7 @@ contract DAOController is Initializable {
                 schemesWithManageSchemesPermission > 1,
                 "DAOController: Cannot unregister last scheme with manage schemes permission"
             );
-            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission.sub(1);
+            schemesWithManageSchemesPermission = schemesWithManageSchemesPermission - 1;
         }
 
         emit UnregisterScheme(msg.sender, _scheme);
@@ -273,15 +271,15 @@ contract DAOController is Initializable {
         require(_end < totalCount, "DAOController: _end cannot be bigger than proposals list length");
         require(_start <= _end, "DAOController: _start cannot be bigger _end");
 
-        (, uint256 total) = totalCount.trySub(1);
+        uint256 total = totalCount - 1;
         uint256 lastIndex = _end == 0 ? total : _end;
-        uint256 returnCount = lastIndex.add(1).sub(_start);
+        uint256 returnCount = lastIndex + 1 - _start;
 
         proposalsArray = new ProposalAndScheme[](returnCount);
         uint256 i = 0;
         for (i; i < returnCount; i++) {
-            proposalsArray[i].proposalId = _proposals.at(i.add(_start));
-            proposalsArray[i].scheme = schemeOfProposal[_proposals.at(i.add(_start))];
+            proposalsArray[i].proposalId = _proposals.at(i + _start);
+            proposalsArray[i].scheme = schemeOfProposal[_proposals.at(i + _start)];
         }
         return proposalsArray;
     }

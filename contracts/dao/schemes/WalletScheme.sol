@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./Scheme.sol";
 
@@ -16,7 +15,6 @@ import "./Scheme.sol";
  * sender.
  */
 contract WalletScheme is Scheme {
-    using SafeMath for uint256;
     using Address for address;
 
     /**
@@ -59,7 +57,7 @@ contract WalletScheme is Scheme {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.state == ProposalState.Submitted, "WalletScheme: must be a submitted proposal");
 
-        if (proposal.submittedTime.add(maxSecondsForExecution) < block.timestamp) {
+        if ((proposal.submittedTime + maxSecondsForExecution) < block.timestamp) {
             // If the amount of time passed since submission plus max proposal time is lower than block timestamp
             // the proposal timeout execution is reached and proposal cant be executed from now on
 
@@ -103,9 +101,8 @@ contract WalletScheme is Scheme {
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
 
             require(
-                (oldRepSupply.mul(uint256(100).add(maxRepPercentageChange)).div(100) >=
-                    getNativeReputationTotalSupply()) &&
-                    (oldRepSupply.mul(uint256(100).sub(maxRepPercentageChange)).div(100) <=
+                ((oldRepSupply * (uint256(100) + maxRepPercentageChange)) / 100 >= getNativeReputationTotalSupply()) &&
+                    ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 <=
                         getNativeReputationTotalSupply()),
                 "WalletScheme: maxRepPercentageChange passed"
             );

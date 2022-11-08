@@ -73,7 +73,7 @@ contract AvatarScheme is Scheme {
             revert AvatarScheme__ProposalMustBeSubmitted();
         }
 
-        if (proposal.submittedTime + maxSecondsForExecution < block.timestamp) {
+        if ((proposal.submittedTime + maxSecondsForExecution) < block.timestamp) {
             // If the amount of time passed since submission plus max proposal time is lower than block timestamp
             // the proposal timeout execution is reached and proposal cant be executed from now on
 
