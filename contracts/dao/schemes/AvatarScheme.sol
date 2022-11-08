@@ -53,7 +53,6 @@ contract AvatarScheme is Scheme {
         }
 
         if (_maxSecondsForExecution < 86400) {
-            console.log("Wish we were here");
             revert AvatarScheme__MaxSecondsForExecutionTooLow();
         }
 
