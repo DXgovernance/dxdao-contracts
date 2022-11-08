@@ -175,8 +175,8 @@ contract("DAOController", function (accounts) {
       schemeThatCanNotMakeAvatarCalls,
       defaultParamsHash,
       true, //
-      false, // canMakeAvatarCalls
-      false // canChangeRep
+      false, // canMakeAvatarCalls,
+      true
     );
 
     await expectRevert(
