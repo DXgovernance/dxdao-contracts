@@ -1549,7 +1549,7 @@ contract("WalletScheme", function (accounts) {
     });
   });
 
-  it.only("MasterWalletScheme - get scheme type", async function () {
+  it("MasterWalletScheme - get scheme type", async function () {
     const schemeType = await masterWalletScheme.getSchemeType();
     assert.equal(schemeType, "WalletScheme_v1");
   });
