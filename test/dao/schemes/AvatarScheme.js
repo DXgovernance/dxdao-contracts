@@ -15,7 +15,7 @@ const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 
-contract.only("AvatarScheme", function (accounts) {
+contract("AvatarScheme", function (accounts) {
   let standardTokenMock,
     permissionRegistry,
     registrarScheme,
@@ -273,5 +273,47 @@ contract.only("AvatarScheme", function (accounts) {
       avatarScheme.setMaxSecondsForExecution(TEST_VALUE),
       "AvatarScheme: setMaxSecondsForExecution is callable only from the avatar"
     );
+  });
+
+  it("should change the state of the proposal to ExecutionTimeout", async function () {
+    const defaultMaxSecondsForExecution = 259200;
+    const callData = helpers.testCallFrom(org.avatar.address);
+
+    await permissionRegistry.setETHPermission(
+      org.avatar.address,
+      accounts[1],
+      callData.substring(0, 10),
+      0,
+      true
+    );
+    const tx = await avatarScheme.proposeCalls(
+      [actionMock.address],
+      [callData],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+    // Wait for maxSecondsForExecution
+    await time.increase(defaultMaxSecondsForExecution);
+
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
+
+    const organizationProposal = await avatarScheme.getProposal(proposalId);
+
+    assert.equal(
+      organizationProposal.state,
+      constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
+    );
+  });
+
+  it("can get the scheme type", async function () {
+    const schemeType = await avatarScheme.getSchemeType();
+    assert.equal(schemeType, "AvatarScheme_v1");
   });
 });
