@@ -17,24 +17,45 @@ import "./Scheme.sol";
 contract WalletScheme is Scheme {
     using Address for address;
 
+    /// @notice Emitted when setMaxSecondsForExecution NOT called from the scheme
+    error WalletScheme__SetMaxSecondsForExecutionNotCalledFromScheme();
+
+    /// @notice Emitted when trying to set maxSecondsForExecution to a value lower than 86400
+    error WalletScheme__MaxSecondsForExecutionTooLow();
+
+    /// @notice Emitted when trying to execute an already running proposal
+    error WalletScheme__ProposalExecutionAlreadyRunning();
+
+    /// @notice Emitted when the proposal is not a submitted proposal
+    error WalletScheme__ProposalMustBeSubmitted();
+
+    /// @notice Emitted when making a call failed
+    error WalletScheme__CallFailed(string reason);
+
+    /// @notice Emitted when exceeded the maximum rep supply % change
+    error WalletScheme__MaxRepPercentageChangePassed();
+
+    /// @notice Emitted when ERC20 limits are passed
+    error WalletScheme__ERC20LimitsPassed();
+
     /**
      * @dev Receive function that allows the wallet to receive ETH when the controller address is not set
      */
     receive() external payable {}
 
     /**
-     * @dev Set the max amount of seconds that a proposal has to be executed, only callable from the avatar address
+     * @dev Set the max amount of seconds that a proposal has to be executed, only callable from the scheme address
      * @param _maxSecondsForExecution New max proposal time in seconds to be used
      */
     function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external override {
-        require(
-            msg.sender == address(this),
-            "WalletScheme: setMaxSecondsForExecution is callable only from the scheme"
-        );
-        require(
-            _maxSecondsForExecution >= 86400,
-            "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
-        );
+        if (msg.sender != address(this)) {
+            revert WalletScheme__SetMaxSecondsForExecutionNotCalledFromScheme();
+        }
+
+        if (_maxSecondsForExecution < 86400) {
+            revert WalletScheme__MaxSecondsForExecutionTooLow();
+        }
+
         maxSecondsForExecution = _maxSecondsForExecution;
     }
 
@@ -51,11 +72,15 @@ contract WalletScheme is Scheme {
         returns (bool)
     {
         // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
-        require(!executingProposal, "WalletScheme: proposal execution already running");
+        if (executingProposal) {
+            revert WalletScheme__ProposalExecutionAlreadyRunning();
+        }
         executingProposal = true;
 
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.state == ProposalState.Submitted, "WalletScheme: must be a submitted proposal");
+        if (proposal.state != ProposalState.Submitted) {
+            revert WalletScheme__ProposalMustBeSubmitted();
+        }
 
         if ((proposal.submittedTime + maxSecondsForExecution) < block.timestamp) {
             // If the amount of time passed since submission plus max proposal time is lower than block timestamp
@@ -93,21 +118,25 @@ contract WalletScheme is Scheme {
                     proposal.callData[callIndex]
                 );
 
-                require(callsSucessResult, string(returnData));
+                if (!callsSucessResult) {
+                    revert WalletScheme__CallFailed({reason: string(returnData)});
+                }
 
                 proposal.state = ProposalState.ExecutionSucceeded;
             }
 
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
 
-            require(
-                ((oldRepSupply * (uint256(100) + maxRepPercentageChange)) / 100 >= getNativeReputationTotalSupply()) &&
-                    ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 <=
-                        getNativeReputationTotalSupply()),
-                "WalletScheme: maxRepPercentageChange passed"
-            );
+            if (
+                ((oldRepSupply * (uint256(100) + maxRepPercentageChange)) / 100 < getNativeReputationTotalSupply()) ||
+                ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 > getNativeReputationTotalSupply())
+            ) {
+                revert WalletScheme__MaxRepPercentageChangePassed();
+            }
 
-            require(permissionRegistry.checkERC20Limits(address(this)), "WalletScheme: ERC20 limits passed");
+            if (!permissionRegistry.checkERC20Limits(address(this))) {
+                revert WalletScheme__ERC20LimitsPassed();
+            }
 
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
         }
