@@ -18,7 +18,6 @@ const ActionMock = artifacts.require("./ActionMock.sol");
 contract("AvatarScheme", function (accounts) {
   let standardTokenMock,
     permissionRegistry,
-    registrarScheme,
     avatarScheme,
     walletScheme,
     org,
@@ -103,13 +102,7 @@ contract("AvatarScheme", function (accounts) {
     const callDataMintRep = await org.controller.contract.methods
       .mintReputation(10, accounts[1])
       .encodeABI();
-    await permissionRegistry.setETHPermission(
-      org.avatar.address,
-      accounts[1],
-      callData.substring(0, 10),
-      0,
-      true
-    );
+
     const tx = await avatarScheme.proposeCalls(
       [actionMock.address, org.controller.address],
       [callData, callDataMintRep],
