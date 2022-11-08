@@ -1,8 +1,13 @@
 import { artifacts } from "hardhat";
 import * as helpers from "../../helpers";
 import { assert } from "chai";
-import { NULL_HASH, SOME_HASH } from "../../helpers/constants";
-const { time } = require("@openzeppelin/test-helpers");
+import {
+  MIN_SECONDS_FOR_EXECUTION,
+  NULL_HASH,
+  SOME_HASH,
+  TEST_VALUE,
+} from "../../helpers/constants";
+const { time, expectRevert } = require("@openzeppelin/test-helpers");
 
 const AvatarScheme = artifacts.require("./AvatarScheme.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
@@ -138,5 +143,135 @@ contract.only("AvatarScheme", function (accounts) {
 
     assert.equal(zeroHashFunctionSignature, functionSignature);
     assert.notEqual(smallFunctionHash, functionSignature);
+  });
+
+  it("should get zero proposals if there is none", async function () {
+    const organizationProposals = await avatarScheme.getOrganizationProposals();
+    assert.equal(organizationProposals.length, 0);
+  });
+
+  it("should get the number of proposals created", async function () {
+    const createRandomAmountOfProposals = async maxNumberOfProposals => {
+      const numberOfProposals =
+        1 + Math.floor(Math.random() * (maxNumberOfProposals - 1));
+
+      const callData = helpers.testCallFrom(org.avatar.address);
+
+      for (let i = 1; i <= numberOfProposals; i++) {
+        await avatarScheme.proposeCalls(
+          [actionMock.address],
+          [callData],
+          [0],
+          2,
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        );
+      }
+
+      return numberOfProposals;
+    };
+
+    const numberOfProposalsCreated = await createRandomAmountOfProposals(6);
+    const organizationProposals = await avatarScheme.getOrganizationProposals();
+    assert.equal(organizationProposals.length, numberOfProposalsCreated);
+  });
+
+  it("can setMaxSecondsForExecution", async function () {
+    const secondsToSet = MIN_SECONDS_FOR_EXECUTION + TEST_VALUE;
+    const callData = helpers.encodeMaxSecondsForExecution(secondsToSet);
+
+    await permissionRegistry.setETHPermission(
+      org.avatar.address,
+      avatarScheme.address,
+      callData.substring(0, 10),
+      0,
+      true
+    );
+
+    const trx = await avatarScheme.proposeCalls(
+      [avatarScheme.address],
+      [callData],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(trx, "_proposalId");
+
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
+
+    const maxSecondsForExecution = await avatarScheme.maxSecondsForExecution();
+    assert.equal(maxSecondsForExecution.toNumber(), secondsToSet);
+  });
+
+  it("can setMaxSecondsForExecution exactly 86400", async function () {
+    const callData = helpers.encodeMaxSecondsForExecution(
+      MIN_SECONDS_FOR_EXECUTION
+    );
+
+    await permissionRegistry.setETHPermission(
+      org.avatar.address,
+      avatarScheme.address,
+      callData.substring(0, 10),
+      0,
+      true
+    );
+
+    const trx = await avatarScheme.proposeCalls(
+      [avatarScheme.address],
+      [callData],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(trx, "_proposalId");
+
+    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+      from: accounts[2],
+    });
+
+    const maxSecondsForExecution = await avatarScheme.maxSecondsForExecution();
+    assert.equal(maxSecondsForExecution.toNumber(), MIN_SECONDS_FOR_EXECUTION);
+  });
+
+  it("cannot setMaxSecondsForExecution if less than 86400", async function () {
+    const callData = helpers.encodeMaxSecondsForExecution(
+      MIN_SECONDS_FOR_EXECUTION - 1
+    );
+
+    await permissionRegistry.setETHPermission(
+      org.avatar.address,
+      avatarScheme.address,
+      callData.substring(0, 10),
+      0,
+      true
+    );
+
+    const trx = await avatarScheme.proposeCalls(
+      [avatarScheme.address],
+      [callData],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(trx, "_proposalId");
+
+    await expectRevert(
+      org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
+        from: accounts[2],
+      }),
+      "AvatarScheme: _maxSecondsForExecution cant be less than 86400 seconds"
+    );
+  });
+
+  it("setMaxSecondsForExecution only callable from the avatar", async function () {
+    await expectRevert(
+      avatarScheme.setMaxSecondsForExecution(TEST_VALUE),
+      "AvatarScheme: setMaxSecondsForExecution is callable only from the avatar"
+    );
   });
 });
