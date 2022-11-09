@@ -4,12 +4,14 @@ const DAOReputation = artifacts.require("./DAOReputation.sol");
 const DAOController = artifacts.require("./DAOController.sol");
 const DAOAvatar = artifacts.require("./DAOAvatar.sol");
 const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
+const ActionMock = artifacts.require("./ActionMock.sol");
 import * as helpers from "../helpers";
 
+const createProposalId = () => web3.utils.randomHex(32);
 const getRandomProposalIds = (n = 10) =>
   Array.from(Array(n))
     .fill()
-    .map(() => web3.utils.randomHex(32));
+    .map(() => createProposalId());
 
 contract("DAOController", function (accounts) {
   let reputation,
@@ -17,11 +19,13 @@ contract("DAOController", function (accounts) {
     avatar,
     defaultParamsHash,
     repHolders,
-    standardTokenMock;
+    standardTokenMock,
+    actionMock;
 
   const schemeAddress = accounts[0];
 
   beforeEach(async function () {
+    actionMock = await ActionMock.new();
     repHolders = [
       { address: accounts[0], amount: 20000 },
       { address: accounts[1], amount: 10000 },
@@ -57,8 +61,18 @@ contract("DAOController", function (accounts) {
       defaultParamsHash
     );
   });
+  it("Should fail with 'Initializable: contract is already initialized'", async () => {
+    await expectRevert(
+      controller.initialize(
+        schemeAddress,
+        reputation.address,
+        defaultParamsHash
+      ),
+      "Initializable: contract is already initialized"
+    );
+  });
 
-  it("Should initialize schemesWithManageSchemesPermission and set correct default scheme params", async function () {
+  it("Should initialize and set correct default scheme params", async function () {
     const schemesWithManageSchemesPermission =
       await controller.getSchemesCountWithManageSchemesPermissions();
     const defaultSchemeParamsHash = await controller.getSchemeParameters(
@@ -256,9 +270,7 @@ contract("DAOController", function (accounts) {
   });
 
   it("endProposal() shoud fail if proposal is not active", async () => {
-    const proposalId = web3.utils.randomHex(32);
-    await controller.startProposal(proposalId);
-    await controller.endProposal(proposalId);
+    const proposalId = createProposalId();
     await controller.registerScheme(
       accounts[2],
       defaultParamsHash,
@@ -266,10 +278,13 @@ contract("DAOController", function (accounts) {
       true,
       true
     );
+
+    await controller.startProposal(proposalId);
     await controller.unregisterScheme(schemeAddress);
+    await controller.endProposal(proposalId);
 
     await expectRevert(
-      controller.endProposal(proposalId, { from: schemeAddress }),
+      controller.endProposal(proposalId),
       "DAOController: Sender is not a registered scheme or proposal is not active"
     );
   });
@@ -542,8 +557,7 @@ contract("DAOController", function (accounts) {
       from: schemeAddress,
     });
 
-    // TODO:  A scheme can unregister another scheme. this is an issue?
-
+    // A scheme can unregister another scheme
     await expectEvent(tx.receipt, "UnregisterScheme", {
       _sender: schemeAddress,
       _scheme: schemeToUnregister,
@@ -610,18 +624,22 @@ contract("DAOController", function (accounts) {
   });
 
   it("avatarCall() should execute call", async () => {
-    const newOwner = accounts[6];
-
-    await controller.avatarCall(
-      controller.address,
-      new web3.eth.Contract(DAOController.abi).methods
-        .transferReputationOwnership(newOwner)
-        .encodeABI(),
+    const dataCall = new web3.eth.Contract(ActionMock.abi).methods
+      .test(schemeAddress, 200)
+      .encodeABI();
+    const tx = await controller.avatarCall(
+      actionMock.address,
+      dataCall,
       avatar.address,
       0
     );
-    // TODO: fix this. Action not executing
-    // expect(await reputation.owner()).to.equal(newOwner);
+    const avatarCallEvent = helpers.logDecoder.decodeLogs(
+      tx.receipt.rawLogs
+    )[0];
+
+    expect(avatarCallEvent.name).to.equal("CallExecuted");
+    expect(avatarCallEvent.args._to).to.equal(actionMock.address);
+    expect(avatarCallEvent.args._data).to.equal(dataCall);
   });
 
   it("burnReputation() should fail from onlyChangingReputation modifyer", async () => {
@@ -764,5 +782,39 @@ contract("DAOController", function (accounts) {
   it("getDaoReputation() should return reputationToken address", async () => {
     const rep = await controller.getDaoReputation();
     expect(rep).to.equal(reputation.address);
+  });
+  it("registerScheme() should update schemesWithManageSchemesPermission", async () => {
+    await controller.registerScheme(
+      accounts[4],
+      defaultParamsHash,
+      true,
+      true,
+      true
+    );
+
+    await controller.registerScheme(
+      schemeAddress,
+      defaultParamsHash,
+      false,
+      true,
+      true
+    );
+
+    let schemesWithManageSchemesPermission =
+      await controller.getSchemesCountWithManageSchemesPermissions();
+    expect(schemesWithManageSchemesPermission.toNumber()).to.equal(1);
+
+    await controller.registerScheme(
+      schemeAddress,
+      defaultParamsHash,
+      true,
+      true,
+      true,
+      { from: accounts[4] }
+    );
+
+    schemesWithManageSchemesPermission =
+      await controller.getSchemesCountWithManageSchemesPermissions();
+    expect(schemesWithManageSchemesPermission.toNumber()).to.equal(2);
   });
 });
