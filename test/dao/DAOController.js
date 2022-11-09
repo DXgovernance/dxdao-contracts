@@ -601,7 +601,6 @@ contract("DAOController", function (accounts) {
   });
 
   it("avatarCall() should fail from onlyAvatarCallScheme modifyer", async () => {
-    // const newScheme = accounts[2];
     await controller.registerScheme(
       schemeAddress,
       defaultParamsHash,
