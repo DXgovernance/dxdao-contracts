@@ -58,14 +58,9 @@ contract DXDVotingMachine {
         //in the threshold calculation to prevent overflow
         uint256 quietEndingPeriod; //quite ending period
         uint256 proposingRepReward; //proposer reputation reward.
-        uint256 votersReputationLossRatio; //Unsuccessful pre booster
-        //voters lose votersReputationLossRatio% of their reputation.
         uint256 minimumDaoBounty;
         uint256 daoBountyConst; //The DAO downstake for each proposal is calculate according to the formula
         //(daoBountyConst * averageBoostDownstakes)/100 .
-        uint256 activationTime; //the point in time after which proposals can be created.
-        //if this address is set so only this address is allowed to vote of behalf of someone else.
-        address voteOnBehalf;
     }
 
     struct Voter {
@@ -345,24 +340,19 @@ contract DXDVotingMachine {
      *    _params[4] -_thresholdConst
      *    _params[5] -_quietEndingPeriod
      *    _params[6] -_proposingRepReward
-     *    _params[7] -_votersReputationLossRatio
-     *    _params[8] -_minimumDaoBounty
-     *    _params[9] -_daoBountyConst
-     *    _params[10] -_activationTime
-     * @param _voteOnBehalf - authorized to vote on behalf of others.
+     *    _params[7] -_minimumDaoBounty
+     *    _params[8] -_daoBountyConst
      */
     function setParameters(
-        uint256[11] calldata _params, //use array here due to stack too deep issue.
-        address _voteOnBehalf
+        uint256[9] calldata _params //use array here due to stack too deep issue.
     ) external returns (bytes32) {
         require(_params[0] <= 100 && _params[0] >= 50, "50 <= queuedVoteRequiredPercentage <= 100");
         require(_params[4] <= 16000 && _params[4] > 1000, "1000 < thresholdConst <= 16000");
-        require(_params[7] <= 100, "votersReputationLossRatio <= 100");
         require(_params[2] >= _params[5], "boostedVotePeriodLimit >= quietEndingPeriod");
-        require(_params[8] > 0, "minimumDaoBounty should be > 0");
-        require(_params[9] > 0, "daoBountyConst should be > 0");
+        require(_params[7] > 0, "minimumDaoBounty should be > 0");
+        require(_params[8] > 0, "daoBountyConst should be > 0");
 
-        bytes32 paramsHash = getParametersHash(_params, _voteOnBehalf);
+        bytes32 paramsHash = getParametersHash(_params);
         //set a limit for power for a given alpha to prevent overflow
         uint256 limitExponent = 172; //for alpha less or equal 2
         uint256 j = 2;
@@ -383,11 +373,8 @@ contract DXDVotingMachine {
             limitExponentValue: limitExponent,
             quietEndingPeriod: _params[5],
             proposingRepReward: _params[6],
-            votersReputationLossRatio: _params[7],
-            minimumDaoBounty: _params[8],
-            daoBountyConst: _params[9],
-            activationTime: _params[10],
-            voteOnBehalf: _voteOnBehalf
+            minimumDaoBounty: _params[7],
+            daoBountyConst: _params[8]
         });
         return paramsHash;
     }
@@ -400,8 +387,7 @@ contract DXDVotingMachine {
      * @param _beneficiary - the beneficiary address
      * @return rewards -
      *           [0] stakerTokenReward
-     *           [1] voterReputationReward
-     *           [2] proposerReputationReward
+     *           [1] proposerReputationReward
      */
     // solhint-disable-next-line function-max-lines,code-complexity
     function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint256[3] memory rewards) {
@@ -447,29 +433,9 @@ contract DXDVotingMachine {
             proposal.daoRedeemItsWinnings = true;
         }
 
-        //as voter
-        Voter storage voter = proposalVoters[_proposalId][_beneficiary];
-        if ((voter.reputation != 0) && (voter.preBoosted)) {
-            if (proposal.state == ProposalState.ExpiredInQueue) {
-                //give back reputation for the voter
-                rewards[1] = ((voter.reputation * params.votersReputationLossRatio) / 100);
-            } else if (proposal.winningVote == voter.vote) {
-                uint256 lostReputation;
-                if (proposal.winningVote == YES) {
-                    lostReputation = proposalPreBoostedVotes[_proposalId][NO];
-                } else {
-                    lostReputation = proposalPreBoostedVotes[_proposalId][YES];
-                }
-                lostReputation = (lostReputation * params.votersReputationLossRatio) / 100;
-                rewards[1] =
-                    ((voter.reputation * params.votersReputationLossRatio) / 100) +
-                    ((voter.reputation * lostReputation) / proposalPreBoostedVotes[_proposalId][proposal.winningVote]);
-            }
-            voter.reputation = 0;
-        }
         //as proposer
         if ((proposal.proposer == _beneficiary) && (proposal.winningVote == YES) && (proposal.proposer != address(0))) {
-            rewards[2] = params.proposingRepReward;
+            rewards[1] = params.proposingRepReward;
             proposal.proposer = address(0);
         }
         if (rewards[0] != 0) {
@@ -477,18 +443,13 @@ contract DXDVotingMachine {
             require(stakingToken.transfer(_beneficiary, rewards[0]), "transfer to beneficiary failed");
             emit Redeem(_proposalId, organizations[proposal.organizationId], _beneficiary, rewards[0]);
         }
-        if (rewards[1] + rewards[2] != 0) {
+        if (rewards[1] > 0) {
             DXDVotingMachineCallbacksInterface(proposal.callbacks).mintReputation(
-                rewards[1] + rewards[2],
+                rewards[1],
                 _beneficiary,
                 _proposalId
             );
-            emit RedeemReputation(
-                _proposalId,
-                organizations[proposal.organizationId],
-                _beneficiary,
-                rewards[1] + rewards[2]
-            );
+            emit RedeemReputation(_proposalId, organizations[proposal.organizationId], _beneficiary, rewards[1]);
         }
     }
 
@@ -685,14 +646,7 @@ contract DXDVotingMachine {
         address _voter
     ) external votable(_proposalId) returns (bool) {
         Proposal storage proposal = proposals[_proposalId];
-        Parameters memory params = parameters[proposal.paramsHash];
-        address voter;
-        if (params.voteOnBehalf != address(0)) {
-            require(msg.sender == params.voteOnBehalf, "address not allowed to vote on behalf");
-            voter = _voter;
-        } else {
-            voter = msg.sender;
-        }
+        address voter = msg.sender;
         bool voteResult = internalVote(_proposalId, voter, _vote, _amount);
         _refundVote(proposal.organizationId);
         return voteResult;
@@ -926,12 +880,6 @@ contract DXDVotingMachine {
         });
         if ((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued)) {
             proposalPreBoostedVotes[_proposalId][_vote] = rep + proposalPreBoostedVotes[_proposalId][_vote];
-            uint256 reputationDeposit = (params.votersReputationLossRatio * rep) / 100;
-            DXDVotingMachineCallbacksInterface(proposal.callbacks).burnReputation(
-                reputationDeposit,
-                _voter,
-                _proposalId
-            );
         }
         emit VoteProposal(_proposalId, organizations[proposal.organizationId], _voter, _vote, rep);
         return _execute(_proposalId);
@@ -1224,8 +1172,6 @@ contract DXDVotingMachine {
         address _organization
     ) internal returns (bytes32) {
         require(_choicesAmount >= NUM_OF_CHOICES);
-        // solhint-disable-next-line not-rely-on-time
-        require(block.timestamp > parameters[_paramsHash].activationTime, "not active yet");
         //Check parameters existence.
         require(parameters[_paramsHash].queuedVoteRequiredPercentage >= 50);
         // Generate a unique ID:
@@ -1282,29 +1228,20 @@ contract DXDVotingMachine {
      * @dev hashParameters returns a hash of the given parameters
      */
     function getParametersHash(
-        uint256[11] memory _params, //use array here due to stack too deep issue.
-        address _voteOnBehalf
+        uint256[9] memory _params //use array here due to stack too deep issue.
     ) public pure returns (bytes32) {
-        //double call to keccak256 to avoid deep stack issue when call with too many params.
         return
             keccak256(
                 abi.encodePacked(
-                    keccak256(
-                        abi.encodePacked(
-                            _params[0],
-                            _params[1],
-                            _params[2],
-                            _params[3],
-                            _params[4],
-                            _params[5],
-                            _params[6],
-                            _params[7],
-                            _params[8],
-                            _params[9],
-                            _params[10]
-                        )
-                    ),
-                    _voteOnBehalf
+                    _params[0],
+                    _params[1],
+                    _params[2],
+                    _params[3],
+                    _params[4],
+                    _params[5],
+                    _params[6],
+                    _params[7],
+                    _params[8]
                 )
             );
     }

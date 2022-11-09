@@ -242,14 +242,12 @@ contract("WalletScheme", function (accounts) {
       0
     );
 
-    await org.votingMachine.setParameters(
-      [60, 86400, 3600, 1800, 1050, 0, 60, 10, 15, 10, 0],
-      constants.ZERO_ADDRESS
-    );
-    const newParamsHash = await org.votingMachine.getParametersHash(
-      [60, 86400, 3600, 1800, 1050, 0, 60, 10, 15, 10, 0],
-      constants.ZERO_ADDRESS
-    );
+    await org.votingMachine.setParameters([
+      60, 86400, 3600, 1800, 1050, 60, 10, 15, 10,
+    ]);
+    const newParamsHash = await org.votingMachine.getParametersHash([
+      60, 86400, 3600, 1800, 1050, 60, 10, 15, 10,
+    ]);
 
     const registerSchemeData = web3.eth.abi.encodeFunctionCall(
       org.controller.abi.find(x => x.name === "registerScheme"),

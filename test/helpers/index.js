@@ -113,7 +113,6 @@ export function testCallWithoutReturnValueFrom(address) {
 
 // Parameters
 export const defaultParameters = {
-  voteOnBehalf: constants.ZERO_ADDRESS,
   queuedVoteRequiredPercentage: 50,
   queuedVotePeriodLimit: 60,
   boostedVotePeriodLimit: 60,
@@ -121,10 +120,8 @@ export const defaultParameters = {
   thresholdConst: 2000,
   quietEndingPeriod: 10,
   proposingRepReward: 0,
-  votersReputationLossRatio: 0,
   minimumDaoBounty: 100,
   daoBountyConst: 10,
-  activationTime: 0,
 };
 
 export const defaultParametersArray = [
@@ -135,22 +132,14 @@ export const defaultParametersArray = [
   defaultParameters.thresholdConst,
   defaultParameters.quietEndingPeriod,
   defaultParameters.proposingRepReward,
-  defaultParameters.votersReputationLossRatio,
   defaultParameters.minimumDaoBounty,
   defaultParameters.daoBountyConst,
-  defaultParameters.activationTime,
 ];
 
 export const setDefaultParameters = async function (votingMachine) {
-  await votingMachine.setParameters(
-    defaultParametersArray,
-    defaultParameters.voteOnBehalf
-  );
+  await votingMachine.setParameters(defaultParametersArray);
 
-  return await votingMachine.getParametersHash(
-    defaultParametersArray,
-    defaultParameters.voteOnBehalf
-  );
+  return await votingMachine.getParametersHash(defaultParametersArray);
 };
 
 export function encodeERC20Transfer(to, value) {
