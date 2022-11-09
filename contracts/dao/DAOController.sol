@@ -96,6 +96,7 @@ contract DAOController is Initializable {
         Scheme memory scheme = schemes[_scheme];
 
         // Add or change the scheme:
+        // TODO: Does this condition make sense? If is not registered !scheme.canManageSchemes will always be true too because scheme gets deleted.
         if ((!scheme.isRegistered || !scheme.canManageSchemes) && _canManageSchemes) {
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission + 1;
         } else if (scheme.canManageSchemes && !_canManageSchemes) {
