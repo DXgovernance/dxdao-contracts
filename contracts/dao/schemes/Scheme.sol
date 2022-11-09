@@ -233,11 +233,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             revert Scheme__ProposalMustBeSubmitted();
         }
 
-        require(
-            !controller.getSchemeCanMakeAvatarCalls(address(this)),
-            "WalletScheme: scheme cannot make avatar calls"
-        );
-
         if (proposal.submittedTime + maxSecondsForExecution < block.timestamp) {
             // If the amount of time passed since submission plus max proposal time is lower than block timestamp
             // the proposal timeout execution is reached and proposal cant be executed from now on
