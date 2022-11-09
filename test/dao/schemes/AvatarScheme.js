@@ -15,7 +15,7 @@ const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 
-contract("AvatarScheme", function (accounts) {
+contract.only("AvatarScheme", function (accounts) {
   let standardTokenMock,
     permissionRegistry,
     avatarScheme,
@@ -97,6 +97,7 @@ contract("AvatarScheme", function (accounts) {
       true
     );
   });
+
   it("should execute proposal", async function () {
     const callData = helpers.testCallFrom(org.avatar.address);
     const callDataMintRep = await org.controller.contract.methods
@@ -197,9 +198,15 @@ contract("AvatarScheme", function (accounts) {
     );
     const proposalId = await helpers.getValueFromLogs(trx, "_proposalId");
 
-    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
-      from: accounts[2],
-    });
+    await org.votingMachine.vote(
+      proposalId,
+      constants.YES_OPTION,
+      0,
+      constants.ZERO_ADDRESS,
+      {
+        from: accounts[2],
+      }
+    );
 
     const maxSecondsForExecution = await avatarScheme.maxSecondsForExecution();
     assert.equal(maxSecondsForExecution.toNumber(), secondsToSet);
@@ -228,9 +235,15 @@ contract("AvatarScheme", function (accounts) {
     );
     const proposalId = await helpers.getValueFromLogs(trx, "_proposalId");
 
-    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
-      from: accounts[2],
-    });
+    await org.votingMachine.vote(
+      proposalId,
+      constants.YES_OPTION,
+      0,
+      constants.ZERO_ADDRESS,
+      {
+        from: accounts[2],
+      }
+    );
 
     const maxSecondsForExecution = await avatarScheme.maxSecondsForExecution();
     assert.equal(maxSecondsForExecution.toNumber(), MIN_SECONDS_FOR_EXECUTION);
@@ -260,16 +273,22 @@ contract("AvatarScheme", function (accounts) {
     const proposalId = await helpers.getValueFromLogs(trx, "_proposalId");
 
     await expectRevert.unspecified(
-      org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
-        from: accounts[2],
-      })
+      org.votingMachine.vote(
+        proposalId,
+        constants.YES_OPTION,
+        0,
+        constants.ZERO_ADDRESS,
+        {
+          from: accounts[2],
+        }
+      )
     );
   });
 
   it("setMaxSecondsForExecution only callable from the avatar", async function () {
     await expectRevert(
       avatarScheme.setMaxSecondsForExecution(TEST_VALUE),
-      "AvatarScheme__SetMaxSecondsForExecutionNotCalledFromAvatar"
+      "Scheme__SetMaxSecondsForExecutionInvalidCaller()"
     );
   });
 
@@ -298,9 +317,15 @@ contract("AvatarScheme", function (accounts) {
     // Wait for maxSecondsForExecution
     await time.increase(defaultMaxSecondsForExecution);
 
-    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
-      from: accounts[2],
-    });
+    await org.votingMachine.vote(
+      proposalId,
+      constants.YES_OPTION,
+      0,
+      constants.ZERO_ADDRESS,
+      {
+        from: accounts[2],
+      }
+    );
 
     const organizationProposal = await avatarScheme.getProposal(proposalId);
 
