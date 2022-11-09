@@ -370,9 +370,9 @@ contract("WalletScheme", function (accounts) {
   });
 
   it("MasterWalletScheme - setMaxSecondsForExecution is callable only form the avatar", async function () {
-    expectRevert(
+    await expectRevert(
       masterWalletScheme.setMaxSecondsForExecution(executionTimeout + 666),
-      "setMaxSecondsForExecution is callable only form the avatar"
+      "Scheme__SetMaxSecondsForExecutionInvalidCaller()"
     );
     assert.equal(
       await masterWalletScheme.maxSecondsForExecution(),
@@ -383,7 +383,7 @@ contract("WalletScheme", function (accounts) {
   it("MasterWalletScheme - proposal to change max proposal time - positive decision - proposal executed", async () => {
     const callData = helpers.encodeMaxSecondsForExecution(86400 + 666);
 
-    expectRevert(
+    await expectRevert(
       masterWalletScheme.proposeCalls(
         [masterWalletScheme.address],
         [callData],
@@ -435,11 +435,12 @@ contract("WalletScheme", function (accounts) {
   it("MasterWalletScheme - proposal to change max proposal time fails - positive decision - proposal fails", async () => {
     const callData = helpers.encodeMaxSecondsForExecution(86400 - 1);
 
-    expectRevert(
+    await expectRevert(
       masterWalletScheme.proposeCalls(
         [masterWalletScheme.address],
         [callData],
         [1],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
@@ -497,21 +498,24 @@ contract("WalletScheme", function (accounts) {
   });
 
   it("MasterWalletScheme - proposal with data or value to wallet scheme address fail", async function () {
-    expectRevert(
+    await expectRevert(
       masterWalletScheme.proposeCalls(
         [masterWalletScheme.address],
         ["0x00000000"],
         [1],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
       "invalid proposal caller"
     );
-    expectRevert(
+
+    await expectRevert(
       masterWalletScheme.proposeCalls(
         [masterWalletScheme.address],
         ["0x00000000"],
         [1],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
@@ -524,28 +528,46 @@ contract("WalletScheme", function (accounts) {
   it("MasterWalletScheme - proposing proposal with different length of to and value fail", async function () {
     const callData = helpers.testCallFrom(masterWalletScheme.address);
 
-    expectRevert(
+    await expectRevert(
       masterWalletScheme.proposeCalls(
         [actionMock.address],
         [callData],
         [0, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "invalid _value length"
+      "Scheme_InvalidParameterArrayLength()"
     );
-    expectRevert(
+    await expectRevert(
       masterWalletScheme.proposeCalls(
         [actionMock.address],
         [callData, callData],
         [0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "invalid _callData length"
+      "Scheme_InvalidParameterArrayLength()"
     );
 
     assert.equal(await masterWalletScheme.getOrganizationProposalsLength(), 0);
+  });
+
+  it("MasterWalletScheme - cannot make a proposal with more than 2 options", async function () {
+    const callData = helpers.testCallFrom(masterWalletScheme.address);
+
+    await expectRevert(
+      masterWalletScheme.proposeCalls(
+        [actionMock.address],
+        [callData],
+        [0],
+        3,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      ),
+      "WalletScheme__TotalOptionsMustBeTwo()"
+    );
   });
 
   it("MasterWalletScheme - proposal with data - negative decision - proposal rejected", async function () {
