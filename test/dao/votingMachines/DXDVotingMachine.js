@@ -216,7 +216,6 @@ contract("DXDVotingMachine", function (accounts) {
           setRefundConfProposalId,
           constants.YES_OPTION,
           0,
-          constants.ZERO_ADDRESS,
           { from: accounts[3] }
         );
 
@@ -256,7 +255,6 @@ contract("DXDVotingMachine", function (accounts) {
           fundVotingMachineProposalId,
           constants.YES_OPTION,
           0,
-          constants.ZERO_ADDRESS,
           { from: accounts[2], gasLimit: constants.GAS_LIMIT }
         );
         // Vote three times and pay only the first two
@@ -277,16 +275,10 @@ contract("DXDVotingMachine", function (accounts) {
           )
         );
         // Vote with higher gas than maxGasPrice and dont spend more than one vote refund
-        await dxdVotingMachine.vote(
-          proposalId,
-          constants.NO_OPTION,
-          0,
-          constants.ZERO_ADDRESS,
-          {
-            from: accounts[1],
-            gasPrice: constants.GAS_PRICE * 2,
-          }
-        );
+        await dxdVotingMachine.vote(proposalId, constants.NO_OPTION, 0, {
+          from: accounts[1],
+          gasPrice: constants.GAS_PRICE * 2,
+        });
 
         assert.equal(
           TOTAL_GAS_REFUND,
@@ -295,16 +287,10 @@ contract("DXDVotingMachine", function (accounts) {
               .balance
           )
         );
-        await dxdVotingMachine.vote(
-          proposalId,
-          constants.NO_OPTION,
-          0,
-          constants.ZERO_ADDRESS,
-          {
-            from: accounts[2],
-            gasPrice: constants.GAS_PRICE,
-          }
-        );
+        await dxdVotingMachine.vote(proposalId, constants.NO_OPTION, 0, {
+          from: accounts[2],
+          gasPrice: constants.GAS_PRICE,
+        });
 
         assert.equal(
           0,
@@ -316,13 +302,10 @@ contract("DXDVotingMachine", function (accounts) {
         const balanceBeforeVote = new BN(
           await web3.eth.getBalance(accounts[3])
         );
-        tx = await dxdVotingMachine.vote(
-          proposalId,
-          constants.YES_OPTION,
-          0,
-          constants.ZERO_ADDRESS,
-          { from: accounts[3], gasPrice: constants.GAS_PRICE }
-        );
+        tx = await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+          from: accounts[3],
+          gasPrice: constants.GAS_PRICE,
+        });
         const balanceAfterVote = new BN(await web3.eth.getBalance(accounts[3]));
 
         // There wasnt enough gas balance in the voting machine to pay the gas refund of the last vote
@@ -379,7 +362,6 @@ contract("DXDVotingMachine", function (accounts) {
           proposalId,
           constants.YES_OPTION,
           0,
-          constants.ZERO_ADDRESS,
           {
             from: accounts[1],
           }
@@ -397,7 +379,6 @@ contract("DXDVotingMachine", function (accounts) {
           proposalId,
           constants.NO_OPTION,
           0,
-          constants.ZERO_ADDRESS,
           {
             from: accounts[1],
           }
@@ -451,7 +432,6 @@ contract("DXDVotingMachine", function (accounts) {
             registerProposalId,
             constants.YES_OPTION,
             0,
-            constants.ZERO_ADDRESS,
             { from: accounts[3] }
           );
 
@@ -479,49 +459,6 @@ contract("DXDVotingMachine", function (accounts) {
             ),
             "_proposalId"
           );
-        });
-
-        it("Fails if address is not allowed to vote on behalf", async function () {
-          const proposalParamsHash = (
-            await dxdVotingMachine.proposals(genericProposalId)
-          ).defaultParamsHash;
-
-          const params = await dxdVotingMachine.parameters(proposalParamsHash);
-
-          assert.equal(params.voteOnBehalf, accounts[3]);
-
-          await expectRevert(
-            dxdVotingMachine.vote(
-              genericProposalId,
-              constants.YES_OPTION,
-              0,
-              accounts[2],
-              {
-                from: accounts[1],
-              }
-            ),
-            "address not allowed to vote on behalf"
-          );
-        });
-
-        it("Succeeds if allowed address is able to vote on behalf", async function () {
-          const tx = await dxdVotingMachine.vote(
-            genericProposalId,
-            constants.YES_OPTION,
-            0,
-            accounts[2],
-            {
-              from: accounts[3],
-            }
-          );
-
-          await expectEvent(tx, "VoteProposal", {
-            _proposalId: genericProposalId,
-            _organization: org.avatar.address,
-            _voter: accounts[2],
-            _vote: "1",
-            _reputation: "10000",
-          });
         });
 
         it("should emit event StateChange to QuietVotingPeriod", async function () {
@@ -1059,7 +996,6 @@ contract("DXDVotingMachine", function (accounts) {
         setBoostedVoteRequiredPercentageProposalId,
         constants.YES_OPTION,
         0,
-        constants.ZERO_ADDRESS,
         { from: accounts[3] }
       );
 
@@ -1097,21 +1033,15 @@ contract("DXDVotingMachine", function (accounts) {
         _proposalState: "4",
       });
 
-      await dxdVotingMachine.vote(
-        testProposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        { from: accounts[2], gasPrice: constants.GAS_PRICE }
-      );
+      await dxdVotingMachine.vote(testProposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+        gasPrice: constants.GAS_PRICE,
+      });
 
-      await dxdVotingMachine.vote(
-        testProposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        { from: accounts[1], gasPrice: constants.GAS_PRICE }
-      );
+      await dxdVotingMachine.vote(testProposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
       await time.increase(86400 + 1);
       const executeTx = await dxdVotingMachine.execute(testProposalId, {
         from: accounts[1],
@@ -1168,13 +1098,10 @@ contract("DXDVotingMachine", function (accounts) {
         _proposalState: "4",
       });
 
-      await dxdVotingMachine.vote(
-        testProposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        { from: accounts[2], gasPrice: constants.GAS_PRICE }
-      );
+      await dxdVotingMachine.vote(testProposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       await time.increase(86400 + 1);
 
@@ -1270,16 +1197,10 @@ contract("DXDVotingMachine", function (accounts) {
 
       await time.increase(3600 + 1);
 
-      await dxdVotingMachine.vote(
-        secondProposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(secondProposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       // await time.increase(86400 + 1);
 
@@ -1314,30 +1235,18 @@ contract("DXDVotingMachine", function (accounts) {
 
       await time.increase(3600 + 1);
 
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[1],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       //check boosted
       assert.equal((await dxdVotingMachine.proposals(proposalId)).state, "5");
 
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[0],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[0],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       await time.increase(86400 + 1);
 
@@ -1408,49 +1317,25 @@ contract("DXDVotingMachine", function (accounts) {
       });
 
       // vote enough times to pass the execution bar threshold
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[0],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[0],
+        gasPrice: constants.GAS_PRICE,
+      });
 
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[1],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
 
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+        gasPrice: constants.GAS_PRICE,
+      });
 
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[3],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[3],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       // check executed
       assert.equal((await dxdVotingMachine.proposals(proposalId)).state, "2");
@@ -1499,42 +1384,24 @@ contract("DXDVotingMachine", function (accounts) {
 
       await time.increase(3600 + 1);
 
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[1],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       // check boosted
       assert.equal((await dxdVotingMachine.proposals(proposalId)).state, "5");
 
       // vote enough times to pass the execution bar threshold
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+        gasPrice: constants.GAS_PRICE,
+      });
 
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[3],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[3],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       // check executed
       assert.equal((await dxdVotingMachine.proposals(proposalId)).state, "2");
@@ -1586,39 +1453,21 @@ contract("DXDVotingMachine", function (accounts) {
         _proposalState: "4",
       });
 
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[1],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       // vote enough times to pass the execution bar threshold
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+        gasPrice: constants.GAS_PRICE,
+      });
 
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[3],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[3],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       // check executed
       assert.equal((await dxdVotingMachine.proposals(proposalId)).state, "2");
@@ -1662,16 +1511,10 @@ contract("DXDVotingMachine", function (accounts) {
 
       await time.increase(3600 + 1);
 
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[1],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       await dxdVotingMachine.execute(proposalId2, {
         from: accounts[1],
@@ -1681,16 +1524,10 @@ contract("DXDVotingMachine", function (accounts) {
       // check boosted
       assert.equal((await dxdVotingMachine.proposals(proposalId2)).state, "5");
 
-      await dxdVotingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[1],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       const upStake = await dxdVotingMachine.stake(
         proposalId,
@@ -1707,27 +1544,15 @@ contract("DXDVotingMachine", function (accounts) {
         _proposalState: "4",
       });
 
-      await dxdVotingMachine.vote(
-        proposalId2,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[0],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
+        from: accounts[0],
+        gasPrice: constants.GAS_PRICE,
+      });
 
-      await dxdVotingMachine.vote(
-        proposalId2,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[3],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
+        from: accounts[3],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       // check executed
       assert.equal((await dxdVotingMachine.proposals(proposalId2)).state, "2");
@@ -1919,16 +1744,10 @@ contract("DXDVotingMachine", function (accounts) {
         helpers.defaultParameters.preBoostedVotePeriodLimit + 1
       );
 
-      await dxdVotingMachine.vote(
-        stakeProposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[1],
-          gasPrice: constants.GAS_PRICE,
-        }
-      );
+      await dxdVotingMachine.vote(stakeProposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
 
       // check Boosted
       assert.equal(

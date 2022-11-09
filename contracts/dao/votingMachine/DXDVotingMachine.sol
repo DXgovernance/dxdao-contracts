@@ -634,20 +634,17 @@ contract DXDVotingMachine {
      * @dev voting function from old voting machine changing only the logic to refund vote after vote done
      *
      * @param _proposalId id of the proposal
-     * @param _vote NO(2) or YES(1).
+     * @param _vote NO(1) or YES(2).
      * @param _amount the reputation amount to vote with, 0 will use all available REP
-     * @param _voter voter address
      * @return bool if the proposal has been executed or not
      */
     function vote(
         bytes32 _proposalId,
         uint256 _vote,
-        uint256 _amount,
-        address _voter
+        uint256 _amount
     ) external votable(_proposalId) returns (bool) {
         Proposal storage proposal = proposals[_proposalId];
-        address voter = msg.sender;
-        bool voteResult = internalVote(_proposalId, voter, _vote, _amount);
+        bool voteResult = internalVote(_proposalId, msg.sender, _vote, _amount);
         _refundVote(proposal.organizationId);
         return voteResult;
     }

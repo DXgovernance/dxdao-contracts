@@ -279,15 +279,9 @@ contract("WalletScheme", function (accounts) {
       ),
       "_proposalId"
     );
-    await org.votingMachine.vote(
-      proposalId1,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId1, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     const organizationProposal1 = await registrarScheme.getProposal(
       proposalId1
@@ -403,15 +397,9 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     const organizationProposal = await masterWalletScheme.getProposal(
       proposalId
@@ -454,29 +442,17 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(
-      org.votingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      ),
+      org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      }),
       "Scheme: _maxSecondsForExecution cant be less than 86400 seconds"
     );
 
     await time.increase(executionTimeout);
 
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     const organizationProposal = await masterWalletScheme.getProposal(
       proposalId
@@ -559,13 +535,9 @@ contract("WalletScheme", function (accounts) {
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    tx = await org.votingMachine.vote(
-      proposalId,
-      constants.NO_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      { from: accounts[2] }
-    );
+    tx = await org.votingMachine.vote(proposalId, constants.NO_OPTION, 0, {
+      from: accounts[2],
+    });
     const stateChangeEvent = helpers.getEventFromTx(tx, "ProposalStateChange");
 
     assert.equal(stateChangeEvent.args._state, 2);
@@ -600,15 +572,9 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     const organizationProposal = await masterWalletScheme.getProposal(
       proposalId
@@ -704,15 +670,9 @@ contract("WalletScheme", function (accounts) {
     );
 
     await expectRevert(
-      org.votingMachine.vote(
-        proposalId2,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      ),
+      org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      }),
       "call execution failed"
     );
 
@@ -739,15 +699,9 @@ contract("WalletScheme", function (accounts) {
       ),
       "_proposalId"
     );
-    await org.votingMachine.vote(
-      proposalId3,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId3, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (await masterWalletScheme.getProposal(proposalId1)).state,
@@ -781,15 +735,9 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(
-      org.votingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      ),
+      org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      }),
       "PermissionRegistry: Call not allowed"
     );
 
@@ -800,15 +748,9 @@ contract("WalletScheme", function (accounts) {
 
     await time.increase(executionTimeout);
 
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (await masterWalletScheme.getProposal(proposalId)).state,
@@ -854,15 +796,9 @@ contract("WalletScheme", function (accounts) {
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
     await expectRevert(
-      org.votingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      ),
+      org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      }),
       "PermissionRegistry: Value limit reached"
     );
 
@@ -873,15 +809,9 @@ contract("WalletScheme", function (accounts) {
 
     await time.increase(executionTimeout + 1);
 
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (await masterWalletScheme.getProposal(proposalId)).state,
@@ -917,15 +847,9 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(
-      org.votingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      ),
+      org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      }),
       "PermissionRegistry: Value limit reached"
     );
 
@@ -936,15 +860,9 @@ contract("WalletScheme", function (accounts) {
 
     await time.increase(executionTimeout + 1);
 
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (await masterWalletScheme.getProposal(proposalId)).state,
@@ -999,15 +917,9 @@ contract("WalletScheme", function (accounts) {
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     const setPermissionTime = Number(await time.latest());
 
@@ -1033,15 +945,9 @@ contract("WalletScheme", function (accounts) {
       constants.SOME_HASH
     );
     const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
-    await org.votingMachine.vote(
-      proposalId2,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     const organizationProposal = await masterWalletScheme.getProposal(
       proposalId2
@@ -1103,16 +1009,10 @@ contract("WalletScheme", function (accounts) {
     assert.equal(await web3.eth.getBalance(wallet.address), 0);
     const balanceBeforePay = await web3.eth.getBalance(accounts[1]);
 
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-        gas: 9000000,
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+      gas: 9000000,
+    });
     assert.equal(await web3.eth.getBalance(masterWalletScheme.address), 0);
     assert.equal(await web3.eth.getBalance(wallet.address), 0);
     assert.equal(
@@ -1150,13 +1050,9 @@ contract("WalletScheme", function (accounts) {
 
     await time.increase(executionTimeout);
 
-    tx = await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      { from: accounts[2] }
-    );
+    tx = await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (await masterWalletScheme.getProposal(proposalId)).state,
@@ -1178,13 +1074,9 @@ contract("WalletScheme", function (accounts) {
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    tx = await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      { from: accounts[2] }
-    );
+    tx = await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     // ! There is no event called "ExecutionResults"
     const executionEvent = helpers.getEventFromTx(tx, "ExecutionResults");
@@ -1234,13 +1126,9 @@ contract("WalletScheme", function (accounts) {
       "_proposalId"
     );
 
-    await org.votingMachine.vote(
-      proposalIdMintRep,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalIdMintRep, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
     assert.equal(
       await org.reputation.balanceOf(accounts[4]),
       constants.TEST_VALUE
@@ -1273,13 +1161,9 @@ contract("WalletScheme", function (accounts) {
       "_proposalId"
     );
 
-    await org.votingMachine.vote(
-      proposalIdBurnRep,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalIdBurnRep, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
     assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
 
     const mintRepProposal = await masterWalletScheme.getProposalByIndex(0);
@@ -1343,13 +1227,9 @@ contract("WalletScheme", function (accounts) {
     );
 
     await expectRevert(
-      org.votingMachine.vote(
-        proposalIdMintRepToFail,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        { from: accounts[2] }
-      ),
+      org.votingMachine.vote(proposalIdMintRepToFail, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      }),
       "WalletScheme: maxRepPercentageChange passed"
     );
 
@@ -1408,13 +1288,9 @@ contract("WalletScheme", function (accounts) {
     );
 
     await expectRevert(
-      org.votingMachine.vote(
-        proposalIdMintRepToFail,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        { from: accounts[2] }
-      ),
+      org.votingMachine.vote(proposalIdMintRepToFail, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      }),
       "WalletScheme: maxRepPercentageChange passed"
     );
 
@@ -1464,13 +1340,9 @@ contract("WalletScheme", function (accounts) {
 
     // Add Scheme
     await expectRevert(
-      org.votingMachine.vote(
-        proposalIdAddScheme,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        { from: accounts[2] }
-      ),
+      org.votingMachine.vote(proposalIdAddScheme, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      }),
       "PermissionRegistry: Call not allowed"
     );
 
@@ -1483,13 +1355,9 @@ contract("WalletScheme", function (accounts) {
 
     // Remove Scheme
     await expectRevert(
-      org.votingMachine.vote(
-        proposalIdRemoveScheme,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        { from: accounts[2] }
-      ),
+      org.votingMachine.vote(proposalIdRemoveScheme, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      }),
       "PermissionRegistry: Call not allowed"
     );
   });
@@ -1558,15 +1426,9 @@ contract("WalletScheme", function (accounts) {
     assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
 
     const balanceBeforePay = await web3.eth.getBalance(accounts[1]);
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
     assert.equal(await web3.eth.getBalance(masterWalletScheme.address), 0);
     assert.equal(await web3.eth.getBalance(wallet.address), 0);
     assert.equal(
@@ -1669,13 +1531,9 @@ contract("WalletScheme", function (accounts) {
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    tx = await org.votingMachine.vote(
-      proposalId,
-      constants.NO_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      { from: accounts[2] }
-    );
+    tx = await org.votingMachine.vote(proposalId, constants.NO_OPTION, 0, {
+      from: accounts[2],
+    });
     const stateChangeEvent = helpers.getEventFromTx(tx, "ProposalStateChange");
     assert.equal(stateChangeEvent.args._state, 2);
 
@@ -1704,15 +1562,9 @@ contract("WalletScheme", function (accounts) {
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     const organizationProposal = await quickWalletScheme.getProposal(
       proposalId
@@ -1765,15 +1617,9 @@ contract("WalletScheme", function (accounts) {
     );
     assert.equal(await web3.eth.getBalance(wallet.address), 0);
     const balanceBeforePay = await web3.eth.getBalance(accounts[1]);
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
     assert.equal(await web3.eth.getBalance(quickWalletScheme.address), 0);
     assert.equal(await web3.eth.getBalance(wallet.address), 0);
     assert.equal(
@@ -1810,15 +1656,9 @@ contract("WalletScheme", function (accounts) {
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
     await expectRevert(
-      org.votingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      ),
+      org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      }),
       " "
     );
 
@@ -1829,13 +1669,9 @@ contract("WalletScheme", function (accounts) {
 
     await time.increase(executionTimeout);
 
-    tx = await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      { from: accounts[2] }
-    );
+    tx = await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (await quickWalletScheme.getProposal(proposalId)).state,
@@ -1858,13 +1694,9 @@ contract("WalletScheme", function (accounts) {
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    tx = await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      { from: accounts[2] }
-    );
+    tx = await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
     const executionEvent = helpers.getEventFromTx(tx, "ExecutionResults");
 
     const returnValues = executionEvent.args._callsDataResult[0];
@@ -1925,26 +1757,18 @@ contract("WalletScheme", function (accounts) {
     const proposalIdBurnRep = await helpers.getValueFromLogs(tx, "_proposalId");
 
     // Mint Rep
-    await org.votingMachine.vote(
-      proposalIdMintRep,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalIdMintRep, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
     assert.equal(
       await org.reputation.balanceOf(accounts[4]),
       constants.TEST_VALUE
     );
 
     // Burn Rep
-    await org.votingMachine.vote(
-      proposalIdBurnRep,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalIdBurnRep, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
     assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
   });
 
@@ -2001,13 +1825,9 @@ contract("WalletScheme", function (accounts) {
 
     // Add Scheme
     await expectRevert(
-      org.votingMachine.vote(
-        proposalIdAddScheme,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        { from: accounts[2] }
-      ),
+      org.votingMachine.vote(proposalIdAddScheme, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      }),
       "DAOController: Sender cannot manage schemes"
     );
     assert.equal(
@@ -2023,13 +1843,9 @@ contract("WalletScheme", function (accounts) {
 
     // Remove Scheme
     await expectRevert(
-      org.votingMachine.vote(
-        proposalIdRemoveScheme,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        { from: accounts[2] }
-      ),
+      org.votingMachine.vote(proposalIdRemoveScheme, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      }),
       "DAOController: Sender cannot manage schemes"
     );
     assert.equal(
@@ -2038,13 +1854,9 @@ contract("WalletScheme", function (accounts) {
     );
 
     await time.increase(executionTimeout);
-    await org.votingMachine.vote(
-      proposalIdAddScheme,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      { from: accounts[2] }
-    );
+    await org.votingMachine.vote(proposalIdAddScheme, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
     assert.equal(
       (await quickWalletScheme.getProposal(proposalIdAddScheme)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
@@ -2054,7 +1866,6 @@ contract("WalletScheme", function (accounts) {
       proposalIdRemoveScheme,
       constants.YES_OPTION,
       0,
-      constants.ZERO_ADDRESS,
       { from: accounts[2] }
     );
     assert.equal(
@@ -2121,15 +1932,9 @@ contract("WalletScheme", function (accounts) {
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
     const setPermissionTime = Number(await time.latest());
 
     assert.equal(
@@ -2154,15 +1959,9 @@ contract("WalletScheme", function (accounts) {
       constants.SOME_HASH
     );
     const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
-    await org.votingMachine.vote(
-      proposalId2,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     const organizationProposal = await quickWalletScheme.getProposal(
       proposalId2
@@ -2216,13 +2015,9 @@ contract("WalletScheme", function (accounts) {
     assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
 
     const balanceBeforePay = await web3.eth.getBalance(accounts[1]);
-    tx = await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      { from: accounts[2] }
-    );
+    tx = await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
     const executionEvent = helpers.getEventFromTx(tx, "ExecutionResults");
     assert.equal(executionEvent.args._callsSucessResult[0], true);
     assert.equal(executionEvent.args._callsSucessResult[1], true);
@@ -2296,15 +2091,9 @@ contract("WalletScheme", function (accounts) {
         constants.SOME_HASH
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-      await org.votingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      );
+      await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      });
 
       const erc20TransferPermission = await permissionRegistry.getERC20Limit(
         masterWalletScheme.address,
@@ -2332,16 +2121,10 @@ contract("WalletScheme", function (accounts) {
         constants.SOME_HASH
       );
       const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
-      await org.votingMachine.vote(
-        proposalId2,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-          gas: constants.GAS_LIMIT,
-        }
-      );
+      await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
+        from: accounts[2],
+        gas: constants.GAS_LIMIT,
+      });
       assert.equal(
         await testToken.balanceOf(masterWalletScheme.address),
         "150"
@@ -2401,15 +2184,9 @@ contract("WalletScheme", function (accounts) {
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
       await expectRevert(
-        org.votingMachine.vote(
-          proposalId,
-          constants.YES_OPTION,
-          0,
-          constants.ZERO_ADDRESS,
-          {
-            from: accounts[2],
-          }
-        ),
+        org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+          from: accounts[2],
+        }),
         "PermissionRegistry: Value limit reached"
       );
 
@@ -2419,15 +2196,9 @@ contract("WalletScheme", function (accounts) {
       );
 
       await time.increase(executionTimeout);
-      await org.votingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      );
+      await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      });
 
       assert.equal(
         (await masterWalletScheme.getProposal(proposalId)).state,
@@ -2477,15 +2248,9 @@ contract("WalletScheme", function (accounts) {
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
       await expectRevert(
-        org.votingMachine.vote(
-          proposalId,
-          constants.YES_OPTION,
-          0,
-          constants.ZERO_ADDRESS,
-          {
-            from: accounts[2],
-          }
-        ),
+        org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+          from: accounts[2],
+        }),
         "PermissionRegistry: Value limit reached"
       );
 
@@ -2496,15 +2261,9 @@ contract("WalletScheme", function (accounts) {
 
       await time.increase(executionTimeout);
 
-      await org.votingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      );
+      await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      });
 
       assert.equal(
         (await quickWalletScheme.getProposal(proposalId)).state,
@@ -2542,15 +2301,9 @@ contract("WalletScheme", function (accounts) {
         constants.SOME_HASH
       );
       const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-      await org.votingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      );
+      await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      });
 
       assert.equal(
         await permissionRegistry.getERC20Limit(
@@ -2576,15 +2329,9 @@ contract("WalletScheme", function (accounts) {
       );
       const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
 
-      await org.votingMachine.vote(
-        proposalId2,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      );
+      await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      });
       assert.equal(await testToken.balanceOf(quickWalletScheme.address), "150");
 
       const organizationProposal = await quickWalletScheme.getProposal(
