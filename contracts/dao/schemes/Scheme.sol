@@ -132,7 +132,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @param _maxSecondsForExecution New max proposal time in seconds to be used
      */
     function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external virtual {
-        if (msg.sender != address(avatar) || msg.sender != address(this)) {
+        if (msg.sender != address(avatar) && msg.sender != address(this)) {
             revert Scheme__SetMaxSecondsForExecutionInvalidCaller();
         }
 
