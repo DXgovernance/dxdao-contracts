@@ -212,8 +212,8 @@ contract DXDVotingMachine {
     //organizationId => averageBoostDownstakes
     mapping(bytes32 => uint256) public averagesDownstakesOfBoosted;
     uint256 public constant NUM_OF_CHOICES = 2;
-    uint256 public constant NO = 2;
-    uint256 public constant YES = 1;
+    uint256 public constant NO = 1;
+    uint256 public constant YES = 2;
     uint256 public proposalsCnt; // Total number of proposals
     IERC20 public stakingToken;
     address private constant GEN_TOKEN_ADDRESS = 0x543Ff227F64Aa17eA132Bf9886cAb5DB55DCAddf;

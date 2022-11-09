@@ -10,14 +10,20 @@ import "../DAOController.sol";
 import "../votingMachine/DXDVotingMachineCallbacks.sol";
 
 /**
- * @title WalletScheme.
- * @dev  A scheme for proposing and executing calls to any contract except itself
- * It has a value call controller address, in case of the controller address ot be set the scheme will be doing
- * generic calls to the dao controller. If the controller address is not set it will e executing raw calls form the
- * scheme itself.
- * The scheme can only execute calls allowed to in the permission registry, if the controller address is set
- * the permissions will be checked using the avatar address as sender, if not the scheme address will be used as
- * sender.
+ * @title Scheme.
+ * @dev An abstract Scheme contract to be used as reference for any scheme implementation.
+ * The Scheme is designed to work with a Voting Machine and allow a any amount of options and calls to be executed.
+ * Each proposal contains a list of options, and each option a list of calls, each call has (to, data and value).
+ * The options should have the same amount of calls, and all those calls are sent in arrays on the proposeCalls function.
+ * The option 1 is always the default negative option, to vote against a proposal the vote goes on option 1.
+ * A minimum of two options is required, where 1 == NO and 2 == YES.
+ * Any options that are not 1 can be used for positive decisions with different calls to execute.
+ * The calls that will be executed are the ones that located in the batch of calls of the winner option.
+ * If there is 10 calls and 2 options it means that the 10 calls would be executed if option 2 wins.
+ * if there is 10 calls and 3 options it means that if options 2 wins it will execute calls [0,4] and in case option 3 wins it will execute calls [5,9].
+ * When a proposal is created it is registered in the voting machine.
+ * Once the governance process ends on the voting machine the voting machine can execute the proposal winning option.
+ * If the wining option cant be executed successfully, it can be finished without execution once the maxTimesForExecution time passes.
  */
 abstract contract Scheme is DXDVotingMachineCallbacks {
     using Address for address;
@@ -75,13 +81,10 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         uint256 _maxSecondsForExecution,
         uint256 _maxRepPercentageChange
     ) external {
-        require(address(avatar) == address(0), "WalletScheme: cannot init twice");
-        require(_avatar != address(0), "WalletScheme: avatar cannot be zero");
-        require(_controller != address(0), "WalletScheme: controller cannot be zero");
-        require(
-            _maxSecondsForExecution >= 86400,
-            "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
-        );
+        require(address(avatar) == address(0), "Scheme: cannot init twice");
+        require(_avatar != address(0), "Scheme: avatar cannot be zero");
+        require(_controller != address(0), "Scheme: controller cannot be zero");
+        require(_maxSecondsForExecution >= 86400, "Scheme: _maxSecondsForExecution cant be less than 86400 seconds");
         avatar = DAOAvatar(_avatar);
         votingMachine = IDXDVotingMachine(_votingMachine);
         controller = DAOController(_controller);
@@ -98,27 +101,11 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external virtual {
         require(
             msg.sender == address(avatar) || msg.sender == address(this),
-            "WalletScheme: setMaxSecondsForExecution is callable only from the avatar or the scheme"
+            "Scheme: setMaxSecondsForExecution is callable only from the avatar or the scheme"
         );
-        require(
-            _maxSecondsForExecution >= 86400,
-            "WalletScheme: _maxSecondsForExecution cant be less than 86400 seconds"
-        );
+        require(_maxSecondsForExecution >= 86400, "Scheme: _maxSecondsForExecution cant be less than 86400 seconds");
         maxSecondsForExecution = _maxSecondsForExecution;
     }
-
-    /**
-     * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
-     * @param _proposalId the ID of the voting in the voting machine
-     * @param _winningOption The winning option in the voting machine
-     * @return bool success
-     */
-    function executeProposal(bytes32 _proposalId, uint256 _winningOption)
-        external
-        virtual
-        onlyVotingMachine
-        returns (bool)
-    {}
 
     /**
      * @dev Propose calls to be executed, the calls have to be allowed by the permission registry
@@ -128,7 +115,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @param _totalOptions The amount of options to be voted on
      * @param _title title of proposal
      * @param _descriptionHash proposal description hash
-     * @return an id which represents the proposal
+     * @return proposalId id which represents the proposal
      */
     function proposeCalls(
         address[] calldata _to,
@@ -137,11 +124,10 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         uint256 _totalOptions,
         string calldata _title,
         string calldata _descriptionHash
-    ) external returns (bytes32) {
-        require(_to.length == _callData.length, "WalletScheme: invalid _callData length");
-        require(_to.length == _value.length, "WalletScheme: invalid _value length");
-
-        require(_totalOptions == 2, "WalletScheme: The total amount of options should be 2");
+    ) public virtual returns (bytes32 proposalId) {
+        require(_to.length == _callData.length, "Scheme: invalid _callData length");
+        require(_to.length == _value.length, "Scheme: invalid _value length");
+        require((_value.length % (_totalOptions - 1)) == 0, "Scheme: Invalid _totalOptions or action calls length");
 
         bytes32 voteParams = controller.getSchemeParameters(address(this));
 
@@ -169,8 +155,95 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     }
 
     /**
-     * @dev Get the information of a proposal
-     * @param proposalId the id of the proposal
+     * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
+     * @param _proposalId the ID of the voting in the voting machine
+     * @param _winningOption The winning option in the voting machine
+     * @return bool success
+     */
+    function executeProposal(bytes32 _proposalId, uint256 _winningOption)
+        public
+        virtual
+        onlyVotingMachine
+        returns (bool)
+    {
+        // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
+        require(!executingProposal, "WalletScheme: proposal execution already running");
+        executingProposal = true;
+
+        Proposal storage proposal = proposals[_proposalId];
+        require(proposal.state == ProposalState.Submitted, "WalletScheme: must be a submitted proposal");
+
+        require(
+            !controller.getSchemeCanMakeAvatarCalls(address(this)),
+            "WalletScheme: scheme cannot make avatar calls"
+        );
+
+        if (proposal.submittedTime + maxSecondsForExecution < block.timestamp) {
+            // If the amount of time passed since submission plus max proposal time is lower than block timestamp
+            // the proposal timeout execution is reached and proposal cant be executed from now on
+
+            proposal.state = ProposalState.ExecutionTimeout;
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionTimeout));
+        } else if (_winningOption == 1) {
+            proposal.state = ProposalState.Rejected;
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
+        } else {
+            uint256 oldRepSupply = getNativeReputationTotalSupply();
+
+            permissionRegistry.setERC20Balances();
+
+            uint256 callIndex = (proposal.to.length / (proposal.totalOptions - 1)) * (_winningOption - 2);
+            uint256 lastCallIndex = callIndex + (proposal.to.length / (proposal.totalOptions - 1));
+            bool callsSucessResult = false;
+            bytes memory returnData;
+
+            for (callIndex; callIndex < lastCallIndex; callIndex++) {
+                bytes memory _data = proposal.callData[callIndex];
+
+                if (proposal.to[callIndex] != address(0) || proposal.value[callIndex] > 0 || _data.length > 0) {
+                    bytes4 callDataFuncSignature;
+                    assembly {
+                        callDataFuncSignature := mload(add(_data, 32))
+                    }
+
+                    // The permission registry keeps track of all value transferred and checks call permission
+                    permissionRegistry.setETHPermissionUsed(
+                        address(this),
+                        proposal.to[callIndex],
+                        callDataFuncSignature,
+                        proposal.value[callIndex]
+                    );
+                    (callsSucessResult, returnData) = proposal.to[callIndex].call{value: proposal.value[callIndex]}(
+                        proposal.callData[callIndex]
+                    );
+
+                    require(callsSucessResult, string(returnData));
+                }
+            }
+
+            proposal.state = ProposalState.ExecutionSucceeded;
+
+            // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
+            require(
+                ((oldRepSupply * (uint256(100) + (maxRepPercentageChange))) / 100 >=
+                    getNativeReputationTotalSupply()) &&
+                    ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 <=
+                        getNativeReputationTotalSupply()),
+                "WalletScheme: maxRepPercentageChange passed"
+            );
+
+            require(permissionRegistry.checkERC20Limits(address(this)), "WalletScheme: ERC20 limits passed");
+
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
+        }
+        controller.endProposal(_proposalId);
+        executingProposal = false;
+        return true;
+    }
+
+    /**
+     * @dev Get the information of a proposal by id
+     * @param proposalId the ID of the proposal
      */
     function getProposal(bytes32 proposalId) external view returns (Proposal memory) {
         return proposals[proposalId];

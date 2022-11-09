@@ -105,7 +105,7 @@ contract("ERC20GuildWithERC1271", function (accounts) {
             await new web3.eth.Contract(PermissionRegistry.abi).methods
               .setETHPermission(
                 erc20Guild.address,
-                constants.NULL_ADDRESS,
+                constants.ZERO_ADDRESS,
                 constants.NULL_SIGNATURE,
                 200,
                 true

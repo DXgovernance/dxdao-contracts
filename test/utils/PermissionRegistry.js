@@ -81,7 +81,7 @@ contract("PermissionRegistry", function (accounts) {
 
   it("Cannot tranfer ownership to address zero", async function () {
     await expectRevert(
-      permissionRegistry.transferOwnership(constants.NULL_ADDRESS),
+      permissionRegistry.transferOwnership(constants.ZERO_ADDRESS),
       "Ownable: new owner is the zero address"
     );
   });
@@ -143,9 +143,15 @@ contract("PermissionRegistry", function (accounts) {
       0
     );
 
-    await dao.votingMachine.vote(proposalId1, 1, 0, constants.NULL_ADDRESS, {
-      from: accounts[2],
-    });
+    await dao.votingMachine.vote(
+      proposalId1,
+      constants.YES_OPTION,
+      0,
+      constants.ZERO_ADDRESS,
+      {
+        from: accounts[2],
+      }
+    );
 
     assert.equal(
       (
@@ -180,17 +186,29 @@ contract("PermissionRegistry", function (accounts) {
 
     // The call to execute is not allowed YET, because we change the delay time to 45 seconds
     await expectRevert(
-      dao.votingMachine.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
-        from: accounts[2],
-      }),
+      dao.votingMachine.vote(
+        proposalId2,
+        constants.YES_OPTION,
+        0,
+        constants.ZERO_ADDRESS,
+        {
+          from: accounts[2],
+        }
+      ),
       "PermissionRegistry: Call not allowed yet"
     );
 
     // After increasing the time it will allow the proposal execution
     await time.increase(45);
-    await dao.votingMachine.vote(proposalId2, 1, 0, constants.NULL_ADDRESS, {
-      from: accounts[2],
-    });
+    await dao.votingMachine.vote(
+      proposalId2,
+      constants.YES_OPTION,
+      0,
+      constants.ZERO_ADDRESS,
+      {
+        from: accounts[2],
+      }
+    );
 
     const organizationProposal = await quickWalletScheme.getProposal(
       proposalId2
@@ -267,9 +285,15 @@ contract("PermissionRegistry", function (accounts) {
       "666"
     );
 
-    await dao.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
-      from: accounts[2],
-    });
+    await dao.votingMachine.vote(
+      proposalId,
+      constants.YES_OPTION,
+      0,
+      constants.ZERO_ADDRESS,
+      {
+        from: accounts[2],
+      }
+    );
 
     assert.equal(
       (await quickWalletScheme.getProposal(proposalId)).state,

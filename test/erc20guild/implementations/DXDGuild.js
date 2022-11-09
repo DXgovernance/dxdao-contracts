@@ -57,7 +57,7 @@ contract("DXDGuild", function (accounts) {
     });
 
     // Parameters
-    const voteOnBehalf = constants.NULL_ADDRESS;
+    const voteOnBehalf = constants.ZERO_ADDRESS;
     const _queuedVoteRequiredPercentage = 50;
     const _queuedVotePeriodLimit = 60;
     const _boostedVotePeriodLimit = 60;
@@ -151,11 +151,11 @@ contract("DXDGuild", function (accounts) {
     it("execute a positive vote on the voting machine from the dxd-guild", async function () {
       const positiveVoteData = web3.eth.abi.encodeFunctionCall(
         dxDao.votingMachine.abi.find(x => x.name === "vote"),
-        [walletSchemeProposalId, 2, 0, constants.NULL_ADDRESS]
+        [walletSchemeProposalId, 2, 0, constants.ZERO_ADDRESS]
       );
       const negativeVoteData = web3.eth.abi.encodeFunctionCall(
         dxDao.votingMachine.abi.find(x => x.name === "vote"),
-        [walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS]
+        [walletSchemeProposalId, 1, 0, constants.ZERO_ADDRESS]
       );
 
       await expectRevert(

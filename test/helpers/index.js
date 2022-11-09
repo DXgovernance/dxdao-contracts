@@ -113,7 +113,7 @@ export function testCallWithoutReturnValueFrom(address) {
 
 // Parameters
 export const defaultParameters = {
-  voteOnBehalf: constants.NULL_ADDRESS,
+  voteOnBehalf: constants.ZERO_ADDRESS,
   queuedVoteRequiredPercentage: 50,
   queuedVotePeriodLimit: 60,
   boostedVotePeriodLimit: 60,
