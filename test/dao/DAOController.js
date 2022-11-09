@@ -85,6 +85,7 @@ contract("DAOController", function (accounts) {
       schemeAddress,
       defaultParamsHash,
       false,
+      false,
       false
     );
 
@@ -102,6 +103,7 @@ contract("DAOController", function (accounts) {
       newSchemeAddress,
       defaultParamsHash,
       true,
+      true,
       true
     );
     let currentSchemesWithManagePermission = [schemeAddress, newSchemeAddress]
@@ -116,6 +118,7 @@ contract("DAOController", function (accounts) {
     await controller.registerScheme(
       schemeAddress,
       defaultParamsHash,
+      false,
       false,
       false
     );
@@ -134,6 +137,7 @@ contract("DAOController", function (accounts) {
         defaultParamsHash,
         true,
         true,
+        true,
         { from: newSchemeAddress }
       ),
       "DAOController: Sender is not a registered scheme"
@@ -146,13 +150,21 @@ contract("DAOController", function (accounts) {
       schemeThatCanNotManageSchemes,
       defaultParamsHash,
       false, // can't manage schemes
+      true,
       true
     );
 
     await expectRevert(
-      controller.registerScheme(accounts[8], defaultParamsHash, true, true, {
-        from: schemeThatCanNotManageSchemes,
-      }),
+      controller.registerScheme(
+        accounts[8],
+        defaultParamsHash,
+        true,
+        true,
+        true,
+        {
+          from: schemeThatCanNotManageSchemes,
+        }
+      ),
       "DAOController: Sender cannot manage schemes"
     );
   });
@@ -163,7 +175,8 @@ contract("DAOController", function (accounts) {
       schemeThatCanNotMakeAvatarCalls,
       defaultParamsHash,
       true, //
-      false // canMakeAvatarCalls
+      false, // canMakeAvatarCalls
+      false // canChangeRep
     );
 
     await expectRevert(
@@ -189,6 +202,7 @@ contract("DAOController", function (accounts) {
       newSchemeAddress,
       defaultParamsHash,
       true,
+      true,
       true
     );
 
@@ -210,6 +224,7 @@ contract("DAOController", function (accounts) {
     await controller.registerScheme(
       newSchemeAddress,
       defaultParamsHash,
+      true,
       true,
       true
     );

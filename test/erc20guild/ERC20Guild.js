@@ -106,12 +106,12 @@ contract("ERC20Guild", function (accounts) {
           value: [new BN("0"), new BN("0")],
         },
         {
-          to: [actionMockA.address, constants.NULL_ADDRESS],
+          to: [actionMockA.address, constants.ZERO_ADDRESS],
           data: [helpers.testCallFrom(erc20Guild.address), "0x00"],
           value: [new BN("101"), new BN("0")],
         },
         {
-          to: [actionMockB.address, constants.NULL_ADDRESS],
+          to: [actionMockB.address, constants.ZERO_ADDRESS],
           data: [helpers.testCallFrom(erc20Guild.address, 666), "0x00"],
           value: [new BN("10"), new BN("0")],
         },
@@ -162,7 +162,7 @@ contract("ERC20Guild", function (accounts) {
             await new web3.eth.Contract(PermissionRegistry.abi).methods
               .setETHPermission(
                 erc20Guild.address,
-                constants.NULL_ADDRESS,
+                constants.ZERO_ADDRESS,
                 constants.NULL_SIGNATURE,
                 200,
                 true
@@ -232,7 +232,7 @@ contract("ERC20Guild", function (accounts) {
       erc20Guild = await ERC20Guild.new();
       await expectRevert(
         erc20Guild.initialize(
-          constants.NULL_ADDRESS,
+          constants.ZERO_ADDRESS,
           30,
           30,
           5000,
@@ -692,7 +692,7 @@ contract("ERC20Guild", function (accounts) {
           [0],
           1,
           "Guild Test Proposal",
-          constants.NULL_ADDRESS,
+          constants.ZERO_ADDRESS,
           { from: accounts[3] }
         ),
         "ERC20Guild: Wrong length of to, data or value arrays"
@@ -707,7 +707,7 @@ contract("ERC20Guild", function (accounts) {
           [],
           1,
           "Guild Test Proposal",
-          constants.NULL_ADDRESS,
+          constants.ZERO_ADDRESS,
           { from: accounts[3] }
         ),
         "ERC20Guild: Wrong length of to, data or value arrays"
@@ -722,7 +722,7 @@ contract("ERC20Guild", function (accounts) {
           [],
           1,
           "Guild Test Proposal",
-          constants.NULL_ADDRESS,
+          constants.ZERO_ADDRESS,
           { from: accounts[3] }
         ),
         "ERC20Guild: to, data value arrays cannot be empty"

@@ -112,9 +112,15 @@ contract("AvatarScheme", function (accounts) {
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await org.votingMachine.vote(proposalId, 1, 0, constants.NULL_ADDRESS, {
-      from: accounts[2],
-    });
+    await org.votingMachine.vote(
+      proposalId,
+      constants.YES_OPTION,
+      0,
+      constants.ZERO_ADDRESS,
+      {
+        from: accounts[2],
+      }
+    );
     const organizationProposal = await avatarScheme.getProposal(proposalId);
     assert.equal(
       organizationProposal.state,

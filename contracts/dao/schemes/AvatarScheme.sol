@@ -6,14 +6,9 @@ import "./Scheme.sol";
 
 /**
  * @title AvatarScheme.
- * @dev  A scheme for proposing and executing calls to any contract from the DAO avatar
- * It has a value call controller address, in case the controller address is set the scheme will be doing
- * generic calls to the dao controller. If the controller address is not set it will be executing raw calls from the
-
- * scheme itself.
- * The scheme can only execute calls allowed to in the permission registry, if the controller address is set
- * the permissions will be checked using the avatar address as sender, if not the scheme address will be used as
- * sender.
+ * @dev An implementation of Scheme where the scheme has only 2 options and execute calls from the avatar.
+ * Option 1 will mark the proposal as rejected and not execute any calls.
+ * Option 2 will execute all the calls that where submitted in the proposeCalls.
  */
 contract AvatarScheme is Scheme {
     using Address for address;
@@ -43,20 +38,25 @@ contract AvatarScheme is Scheme {
     error AvatarScheme__ERC20LimitsPassed();
 
     /**
-     * @dev Set the max amount of seconds that a proposal has to be executed
-     * only callable from the avatar address
-     * @param _maxSecondsForExecution New max proposal time in seconds to be used
+     * @dev Propose calls to be executed, the calls have to be allowed by the permission registry
+     * @param _to - The addresses to call
+     * @param _callData - The abi encode data for the calls
+     * @param _value value(ETH) to transfer with the calls
+     * @param _totalOptions The amount of options to be voted on
+     * @param _title title of proposal
+     * @param _descriptionHash proposal description hash
+     * @return proposalId id which represents the proposal
      */
-    function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external override {
-        if (msg.sender != address(avatar)) {
-            revert AvatarScheme__SetMaxSecondsForExecutionNotCalledFromAvatar();
-        }
-
-        if (_maxSecondsForExecution < 86400) {
-            revert AvatarScheme__MaxSecondsForExecutionTooLow();
-        }
-
-        maxSecondsForExecution = _maxSecondsForExecution;
+    function proposeCalls(
+        address[] calldata _to,
+        bytes[] calldata _callData,
+        uint256[] calldata _value,
+        uint256 _totalOptions,
+        string calldata _title,
+        string calldata _descriptionHash
+    ) public override returns (bytes32 proposalId) {
+        require(_totalOptions == 2, "AvatarScheme: The total amount of options should be 2");
+        return super.proposeCalls(_to, _callData, _value, _totalOptions, _title, _descriptionHash);
     }
 
     /**
@@ -66,7 +66,7 @@ contract AvatarScheme is Scheme {
      * @return bool success
      */
     function executeProposal(bytes32 _proposalId, uint256 _winningOption)
-        external
+        public
         override
         onlyVotingMachine
         returns (bool)
@@ -88,7 +88,7 @@ contract AvatarScheme is Scheme {
 
             proposal.state = ProposalState.ExecutionTimeout;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionTimeout));
-        } else if (_winningOption == 2) {
+        } else if (_winningOption == 1) {
             proposal.state = ProposalState.Rejected;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         } else {
