@@ -64,13 +64,13 @@ contract DXDVotingMachine {
     }
 
     struct Voter {
-        uint256 vote; // YES(1) ,NO(2)
+        uint256 vote; // NO(1), YES(2)
         uint256 reputation; // amount of voter's reputation
         bool preBoosted;
     }
 
     struct Staker {
-        uint256 vote; // YES(1) ,NO(2)
+        uint256 vote; // NO(1), YES(2)
         uint256 amount; // amount of staker's stake
         uint256 amount4Bounty; // amount of staker's stake used for bounty reward calculation.
     }
@@ -533,7 +533,7 @@ contract DXDVotingMachine {
     /**
      * @dev staking function
      * @param _proposalId id of the proposal
-     * @param _vote  NO(2) or YES(1).
+     * @param _vote  NO(1) or YES(2).
      * @param _amount the betting amount
      * @return bool true - the proposal has been executed
      *              false - otherwise.
@@ -549,7 +549,7 @@ contract DXDVotingMachine {
     /**
      * @dev stakeWithSignature function
      * @param _proposalId id of the proposal
-     * @param _vote  NO(2) or YES(1).
+     * @param _vote  NO(1) or YES(2).
      * @param _amount the betting amount
      * @param _nonce nonce value ,it is part of the signature to ensure that
               a signature can be received only once.
@@ -706,7 +706,7 @@ contract DXDVotingMachine {
      * @param votingMachine the voting machine address
      * @param proposalId id of the proposal
      * @param voter address of voter
-     * @param voteDecision the vote decision, NO(2) or YES(1).
+     * @param voteDecision the vote decision, NO(1) or YES(2).
      * @param amount the reputation amount to vote with, 0 will use all available REP
      * @param signature the encoded vote signature
      */
@@ -727,7 +727,7 @@ contract DXDVotingMachine {
      * @dev Signal the vote of a proposal in this voting machine to be executed later
      *
      * @param proposalId id of the proposal to vote
-     * @param voteDecision the vote decisions, NO(2) or YES(1).
+     * @param voteDecision the vote decisions, NO(1) or YES(2).
      * @param amount the reputation amount to vote with, 0 will use all available REP
      */
     function signalVote(
@@ -748,7 +748,7 @@ contract DXDVotingMachine {
      * @param votingMachine the voting machine address
      * @param proposalId id of the proposal to execute the vote on
      * @param voter the signer of the vote
-     * @param voteDecision the vote decision, NO(2) or YES(1).
+     * @param voteDecision the vote decision, NO(1) or YES(2).
      * @param amount the reputation amount to vote with, 0 will use all available REP
      * @param signature the signature of the hashed vote
      */
@@ -907,7 +907,7 @@ contract DXDVotingMachine {
      * @param votingMachine the voting machine address
      * @param proposalId id of the proposal
      * @param voter the signer of the vote
-     * @param voteDecision the vote decision, NO(2) or YES(1).
+     * @param voteDecision the vote decision, NO(1) or YES(2).
      * @param amount the reputation amount to vote with, 0 will use all available REP
      */
     function hashVote(
@@ -1103,7 +1103,7 @@ contract DXDVotingMachine {
     /**
      * @dev staking function
      * @param _proposalId id of the proposal
-     * @param _vote  NO(2) or YES(1).
+     * @param _vote  NO(1) or YES(2).
      * @param _amount the betting amount
      * @return bool true - the proposal has been executed
      *              false - otherwise.
@@ -1278,7 +1278,7 @@ contract DXDVotingMachine {
                max - maximum number of choices
      */
     function getAllowedRangeOfChoices() external pure returns (uint256 min, uint256 max) {
-        return (YES, NO);
+        return (NO, YES);
     }
 
     /**
@@ -1323,10 +1323,10 @@ contract DXDVotingMachine {
         )
     {
         return (
-            proposalPreBoostedVotes[_proposalId][YES],
             proposalPreBoostedVotes[_proposalId][NO],
-            proposalStakes[_proposalId][YES],
-            proposalStakes[_proposalId][NO]
+            proposalPreBoostedVotes[_proposalId][YES],
+            proposalStakes[_proposalId][NO],
+            proposalStakes[_proposalId][YES]
         );
     }
 
@@ -1353,12 +1353,12 @@ contract DXDVotingMachine {
         )
     {
         return (
-            proposalVotes[_proposalId][YES],
             proposalVotes[_proposalId][NO],
-            proposalPreBoostedVotes[_proposalId][YES],
+            proposalVotes[_proposalId][YES],
             proposalPreBoostedVotes[_proposalId][NO],
-            proposalStakes[_proposalId][YES],
-            proposalStakes[_proposalId][NO]
+            proposalPreBoostedVotes[_proposalId][YES],
+            proposalStakes[_proposalId][NO],
+            proposalStakes[_proposalId][YES]
         );
     }
 

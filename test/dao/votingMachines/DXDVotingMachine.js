@@ -337,12 +337,12 @@ contract("DXDVotingMachine", function (accounts) {
           setRefundConfProposalId
         );
 
-        expect(statusInfo["0"].toNumber()).to.equal(70000);
-        expect(statusInfo["1"].toNumber()).to.equal(0);
-        expect(statusInfo["2"].toNumber()).to.equal(70000);
-        expect(statusInfo["3"].toNumber()).to.equal(0);
-        expect(statusInfo["4"].toNumber()).to.equal(0);
-        expect(statusInfo["5"].toNumber()).to.equal(100);
+        expect(statusInfo["0"].toNumber()).to.equal(0);
+        expect(statusInfo["1"].toNumber()).to.equal(70000);
+        expect(statusInfo["2"].toNumber()).to.equal(0);
+        expect(statusInfo["3"].toNumber()).to.equal(70000);
+        expect(statusInfo["4"].toNumber()).to.equal(100);
+        expect(statusInfo["5"].toNumber()).to.equal(0);
       });
 
       it("Should fail if voter has already voted", async function () {
