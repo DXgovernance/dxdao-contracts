@@ -15,7 +15,7 @@ const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 
-contract.only("AvatarScheme", function (accounts) {
+contract("AvatarScheme", function (accounts) {
   let standardTokenMock,
     permissionRegistry,
     avatarScheme,

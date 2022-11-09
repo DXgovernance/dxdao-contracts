@@ -13,26 +13,8 @@ import "./Scheme.sol";
 contract WalletScheme is Scheme {
     using Address for address;
 
-    /// @notice Emitted when setMaxSecondsForExecution NOT called from the scheme
-    error WalletScheme__SetMaxSecondsForExecutionNotCalledFromScheme();
-
-    /// @notice Emitted when trying to set maxSecondsForExecution to a value lower than 86400
-    error WalletScheme__MaxSecondsForExecutionTooLow();
-
-    /// @notice Emitted when trying to execute an already running proposal
-    error WalletScheme__ProposalExecutionAlreadyRunning();
-
-    /// @notice Emitted when the proposal is not a submitted proposal
-    error WalletScheme__ProposalMustBeSubmitted();
-
-    /// @notice Emitted when making a call failed
-    error WalletScheme__CallFailed(string reason);
-
-    /// @notice Emitted when exceeded the maximum rep supply % change
-    error WalletScheme__MaxRepPercentageChangePassed();
-
-    /// @notice Emitted when ERC20 limits are passed
-    error WalletScheme__ERC20LimitsPassed();
+    /// @notice Emitted if the number of totalOptions is not 2
+    error WalletScheme__TotalOptionsMustBeTwo();
 
     /**
      * @dev Receive function that allows the wallet to receive ETH when the controller address is not set
@@ -57,7 +39,10 @@ contract WalletScheme is Scheme {
         string calldata _title,
         string calldata _descriptionHash
     ) public override returns (bytes32 proposalId) {
-        require(_totalOptions == 2, "WalletScheme: The total amount of options should be 2");
+        if (_totalOptions != 2) {
+            revert WalletScheme__TotalOptionsMustBeTwo();
+        }
+
         return super.proposeCalls(_to, _callData, _value, _totalOptions, _title, _descriptionHash);
     }
 

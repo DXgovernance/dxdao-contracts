@@ -79,8 +79,23 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     /// @notice _to, _callData and _value must have all the same length
     error Scheme_InvalidParameterArrayLength();
 
-    /// @notice Emitted when the total amount of options is not 2
-    error Scheme__MustHaveTwoOptions();
+    /// @notice Emitted when the totalOptions paramers is invalid
+    error Scheme__InvalidTotalOptionsOrActionsCallsLength();
+
+    /// @notice Emitted when the proposal is already being executed
+    error Scheme__ProposalExecutionAlreadyRunning();
+
+    /// @notice Emitted when the proposal isn't submitted
+    error Scheme__ProposalMustBeSubmitted();
+
+    /// @notice Emitted when the call failed. Returns the revert error
+    error Scheme__CallFailed(string reason);
+
+    /// @notice Emitted when the maxRepPercentageChange is exceeded
+    error Scheme__MaxRepPercentageChangePassed();
+
+    /// @notice Emitted if the ERC20 limits are exceeded
+    error Scheme__ERC20LimitsPassed();
 
     /**
      * @dev initialize
@@ -161,9 +176,13 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         string calldata _title,
         string calldata _descriptionHash
     ) public virtual returns (bytes32 proposalId) {
-        require(_to.length == _callData.length, "Scheme: invalid _callData length");
-        require(_to.length == _value.length, "Scheme: invalid _value length");
-        require((_value.length % (_totalOptions - 1)) == 0, "Scheme: Invalid _totalOptions or action calls length");
+        if (_to.length != _callData.length || _to.length != _value.length) {
+            revert Scheme_InvalidParameterArrayLength();
+        }
+
+        if ((_value.length % (_totalOptions - 1)) != 0) {
+            revert Scheme__InvalidTotalOptionsOrActionsCallsLength();
+        }
 
         bytes32 voteParams = controller.getSchemeParameters(address(this));
 
@@ -203,11 +222,16 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         returns (bool)
     {
         // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
-        require(!executingProposal, "WalletScheme: proposal execution already running");
+        if (executingProposal) {
+            revert Scheme__ProposalExecutionAlreadyRunning();
+        }
         executingProposal = true;
 
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.state == ProposalState.Submitted, "WalletScheme: must be a submitted proposal");
+
+        if (proposal.state != ProposalState.Submitted) {
+            revert Scheme__ProposalMustBeSubmitted();
+        }
 
         require(
             !controller.getSchemeCanMakeAvatarCalls(address(this)),
@@ -253,22 +277,25 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
                         proposal.callData[callIndex]
                     );
 
-                    require(callsSucessResult, string(returnData));
+                    if (!callsSucessResult) {
+                        revert Scheme__CallFailed({reason: string(returnData)});
+                    }
                 }
             }
 
             proposal.state = ProposalState.ExecutionSucceeded;
 
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
-            require(
-                ((oldRepSupply * (uint256(100) + (maxRepPercentageChange))) / 100 >=
-                    getNativeReputationTotalSupply()) &&
-                    ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 <=
-                        getNativeReputationTotalSupply()),
-                "WalletScheme: maxRepPercentageChange passed"
-            );
+            if (
+                ((oldRepSupply * (uint256(100) + (maxRepPercentageChange))) / 100 < getNativeReputationTotalSupply()) ||
+                ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 > getNativeReputationTotalSupply())
+            ) {
+                revert Scheme__MaxRepPercentageChangePassed();
+            }
 
-            require(permissionRegistry.checkERC20Limits(address(this)), "WalletScheme: ERC20 limits passed");
+            if (!permissionRegistry.checkERC20Limits(address(this))) {
+                revert Scheme__ERC20LimitsPassed();
+            }
 
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
         }

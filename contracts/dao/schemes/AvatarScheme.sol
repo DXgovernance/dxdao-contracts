@@ -13,12 +13,6 @@ import "./Scheme.sol";
 contract AvatarScheme is Scheme {
     using Address for address;
 
-    /// @notice Emitted when setMaxSecondsForExecution NOT called from the avatar
-    error AvatarScheme__SetMaxSecondsForExecutionNotCalledFromAvatar();
-
-    /// @notice Emitted when trying to set maxSecondsForExecution to a value lower than 86400
-    error AvatarScheme__MaxSecondsForExecutionTooLow();
-
     /// @notice Emitted when the proposal is already being executed
     error AvatarScheme__ProposalExecutionAlreadyRunning();
 
@@ -36,6 +30,9 @@ contract AvatarScheme is Scheme {
 
     /// @notice Emitted when ERC20 limits passed
     error AvatarScheme__ERC20LimitsPassed();
+
+    /// @notice Emitted if the number of totalOptions is not 2
+    error AvatarScheme__TotalOptionsMustBeTwo();
 
     /**
      * @dev Propose calls to be executed, the calls have to be allowed by the permission registry
@@ -55,7 +52,10 @@ contract AvatarScheme is Scheme {
         string calldata _title,
         string calldata _descriptionHash
     ) public override returns (bytes32 proposalId) {
-        require(_totalOptions == 2, "AvatarScheme: The total amount of options should be 2");
+        if (_totalOptions != 2) {
+            revert AvatarScheme__TotalOptionsMustBeTwo();
+        }
+
         return super.proposeCalls(_to, _callData, _value, _totalOptions, _title, _descriptionHash);
     }
 

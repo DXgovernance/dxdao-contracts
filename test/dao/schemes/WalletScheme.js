@@ -455,7 +455,7 @@ contract("WalletScheme", function (accounts) {
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await expectRevert(
+    await expectRevert.unspecified(
       org.votingMachine.vote(
         proposalId,
         constants.YES_OPTION,
@@ -464,8 +464,7 @@ contract("WalletScheme", function (accounts) {
         {
           from: accounts[2],
         }
-      ),
-      "Scheme: _maxSecondsForExecution cant be less than 86400 seconds"
+      )
     );
 
     await time.increase(executionTimeout);
@@ -1352,7 +1351,7 @@ contract("WalletScheme", function (accounts) {
         constants.ZERO_ADDRESS,
         { from: accounts[2] }
       ),
-      "WalletScheme__MaxRepPercentageChangePassed()"
+      "Scheme__MaxRepPercentageChangePassed()"
     );
 
     assert.equal(
@@ -1417,7 +1416,7 @@ contract("WalletScheme", function (accounts) {
         constants.ZERO_ADDRESS,
         { from: accounts[2] }
       ),
-      "WalletScheme__MaxRepPercentageChangePassed()"
+      "Scheme__MaxRepPercentageChangePassed()"
     );
 
     assert(
