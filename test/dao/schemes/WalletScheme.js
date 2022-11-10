@@ -4,7 +4,6 @@ import * as helpers from "../../helpers";
 const { fixSignature } = require("../../helpers/sign");
 const { time, expectRevert } = require("@openzeppelin/test-helpers");
 
-const AvatarScheme = artifacts.require("./AvatarScheme.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
@@ -501,6 +500,52 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.value[0], 0);
   });
 
+  it("WalletScheme - check that it cannot make avatar calls", async function () {
+    const newWallet = await WalletScheme.new();
+    await newWallet.initialize(
+      org.avatar.address,
+      org.votingMachine.address,
+      org.controller.address,
+      permissionRegistry.address,
+      "New Wallet",
+      executionTimeout,
+      5
+    );
+
+    await org.controller.registerScheme(
+      newWallet.address,
+      defaultParamsHash,
+      false,
+      true,
+      true
+    );
+
+    const callData = helpers.testCallFrom(newWallet.address);
+
+    const tx = await newWallet.proposeCalls(
+      [newWallet.address],
+      [callData],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+    await expectRevert(
+      org.votingMachine.vote(
+        proposalId,
+        constants.YES_OPTION,
+        0,
+        constants.ZERO_ADDRESS,
+        {
+          from: accounts[2],
+        }
+      ),
+      "WalletScheme__CannotMakeAvatarCalls()"
+    );
+  });
+
   it.skip("MasterWalletScheme - proposal with data - positive decision - proposal executed", async function () {
     const callData = helpers.encodeMaxSecondsForExecution(executionTimeout);
 
@@ -764,6 +809,60 @@ contract("WalletScheme", function (accounts) {
     assert.equal(
       (await masterWalletScheme.getProposal(proposalId)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
+    );
+  });
+
+  it("Global ETH transfer value not allowed value by permission registry - zero address", async function () {
+    const callData = helpers.testCallFrom(masterWalletScheme.address);
+
+    const tx = await masterWalletScheme.proposeCalls(
+      [constants.ZERO_ADDRESS],
+      [callData],
+      [101],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+    await expectRevert(
+      org.votingMachine.vote(
+        proposalId,
+        constants.YES_OPTION,
+        0,
+        constants.ZERO_ADDRESS,
+        {
+          from: accounts[2],
+        }
+      ),
+      "PermissionRegistry: Value limit reached"
+    );
+  });
+
+  it("Global ETH transfer call not allowed value by permission registry - zero address, no value", async function () {
+    const callData = helpers.testCallFrom(masterWalletScheme.address);
+
+    const tx = await masterWalletScheme.proposeCalls(
+      [constants.ZERO_ADDRESS],
+      [callData],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+    await expectRevert(
+      org.votingMachine.vote(
+        proposalId,
+        constants.YES_OPTION,
+        0,
+        constants.ZERO_ADDRESS,
+        {
+          from: accounts[2],
+        }
+      ),
+      "PermissionRegistry: Call not allowed"
     );
   });
 
@@ -1475,7 +1574,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.value[2], 0);
   });
 
-  it("MasterWalletScheme - cant initialize with wrong values", async function () {
+  it("MasterWalletScheme - cannot initialize with maxSecondsForExecution too log", async function () {
     const unitializedWalletScheme = await WalletScheme.new();
 
     await expectRevert(
@@ -1490,6 +1589,11 @@ contract("WalletScheme", function (accounts) {
       ),
       "Scheme__MaxSecondsForExecutionTooLow()"
     );
+  });
+
+  it("MasterWalletScheme - cant initialize if avatar address is zero", async function () {
+    const unitializedWalletScheme = await WalletScheme.new();
+
     await expectRevert(
       unitializedWalletScheme.initialize(
         constants.ZERO_ADDRESS,
@@ -1501,6 +1605,23 @@ contract("WalletScheme", function (accounts) {
         5
       ),
       "Scheme__AvatarAddressCannotBeZero()"
+    );
+  });
+
+  it("MasterWalletScheme - cant initialize if controller address is zero", async function () {
+    const unitializedWalletScheme = await WalletScheme.new();
+
+    await expectRevert(
+      unitializedWalletScheme.initialize(
+        org.avatar.address,
+        accounts[0],
+        constants.ZERO_ADDRESS,
+        permissionRegistry.address,
+        "Master Wallet",
+        executionTimeout,
+        5
+      ),
+      "Scheme__ControllerAddressCannotBeZero()"
     );
   });
 
@@ -1519,7 +1640,7 @@ contract("WalletScheme", function (accounts) {
     );
   });
 
-  it("MasterWalletScheme can receive value in contractt", async function () {
+  it("MasterWalletScheme can receive value in contract", async function () {
     await web3.eth.sendTransaction({
       from: accounts[0],
       to: masterWalletScheme.address,
