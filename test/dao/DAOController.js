@@ -13,7 +13,7 @@ const getRandomProposalIds = (n = 10) =>
     .fill()
     .map(() => createProposalId());
 
-contract("DAOController", function (accounts) {
+contract.only("DAOController", function (accounts) {
   let reputation,
     controller,
     avatar,
@@ -97,7 +97,7 @@ contract("DAOController", function (accounts) {
   });
 
   // eslint-disable-next-line max-len
-  it.skip("registerScheme() should not allow subtracting from schemesWithManageSchemesPermission if there is only 1 scheme with manage schemes permissions", async function () {
+  it("registerScheme() should not allow subtracting from schemesWithManageSchemesPermission if there is only 1 scheme with manage schemes permissions", async function () {
     // change scheme with _canManageSchemes=false
     const registerCall = controller.registerScheme(
       schemeAddress,
@@ -114,7 +114,7 @@ contract("DAOController", function (accounts) {
   });
 
   // eslint-disable-next-line max-len
-  it.skip("registerScheme() should subtract from schemesWithManageSchemesPermission counter if _canManageSchemes is set to false in a registered scheme", async function () {
+  it("registerScheme() should subtract from schemesWithManageSchemesPermission counter if _canManageSchemes is set to false in a registered scheme", async function () {
     // register new scheme with  manage schemes permissions
     const newSchemeAddress = accounts[10];
     await controller.registerScheme(
@@ -163,7 +163,7 @@ contract("DAOController", function (accounts) {
     );
   });
 
-  it.skip('registerScheme() should reject with: "DAOController: Sender cannot manage schemes"', async function () {
+  it('registerScheme() should reject with: "DAOController: Sender cannot manage schemes"', async function () {
     const schemeThatCanNotManageSchemes = accounts[10];
     await controller.registerScheme(
       schemeThatCanNotManageSchemes,
@@ -188,7 +188,7 @@ contract("DAOController", function (accounts) {
     );
   });
 
-  it.skip('avatarCall() should reject with: "DAOController: Sender cannot perform avatar calls"', async function () {
+  it('avatarCall() should reject with: "DAOController: Sender cannot perform avatar calls"', async function () {
     const schemeThatCanNotMakeAvatarCalls = accounts[10];
     await controller.registerScheme(
       schemeThatCanNotMakeAvatarCalls,
@@ -215,7 +215,7 @@ contract("DAOController", function (accounts) {
   });
 
   // eslint-disable-next-line max-len
-  it.skip("startProposal() shoul not allow a scheme assign itself as the proposer of a certain proposal ID", async () => {
+  it("startProposal() shoul not allow a scheme assign itself as the proposer of a certain proposal ID", async () => {
     const newSchemeAddress = accounts[1];
     await controller.registerScheme(
       newSchemeAddress,
@@ -238,7 +238,7 @@ contract("DAOController", function (accounts) {
     );
   });
 
-  it.skip("endProposal() should fail if caller is not the scheme that started the proposal", async () => {
+  it("endProposal() should fail if caller is not the scheme that started the proposal", async () => {
     const newSchemeAddress = accounts[1];
     await controller.registerScheme(
       newSchemeAddress,
