@@ -23,6 +23,7 @@ export const logDecoder = new LogDecoder([
   ERC20VestingFactory.abi,
   ERC721Factory.abi,
   ERC20Guild.abi,
+  ActionMock.abi,
 ]);
 
 export function getValueFromLogs(tx, arg, eventName, index = 0) {
