@@ -182,6 +182,7 @@ contract DXDVotingMachine {
     event GPExecuteProposal(bytes32 indexed _proposalId, ExecutionState _executionState);
     event ExpirationCallBounty(bytes32 indexed _proposalId, address indexed _beneficiary, uint256 _amount);
     event ConfidenceLevelChange(bytes32 indexed _proposalId, uint256 _confidenceThreshold);
+    event ProposalExecuteResult(bytes);
 
     // Event used to signal votes to be executed on chain
     event VoteSignaled(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount);
@@ -1020,7 +1021,16 @@ contract DXDVotingMachine {
             );
             emit GPExecuteProposal(_proposalId, executionState);
             proposal.daoBounty = proposal.daoBountyRemain;
-            ProposalExecuteInterface(proposal.callbacks).executeProposal(_proposalId, proposal.winningVote);
+
+            try ProposalExecuteInterface(proposal.callbacks).executeProposal(_proposalId, proposal.winningVote) {
+                emit ProposalExecuteResult(bytes("0"));
+            } catch Error(string memory errorMessage) {
+                emit ProposalExecuteResult(bytes(errorMessage));
+            } catch Panic(uint256 errorMessage) {
+                emit ProposalExecuteResult(abi.encodePacked(errorMessage));
+            } catch (bytes memory errorMessage) {
+                emit ProposalExecuteResult(errorMessage);
+            }
         }
         if (tmpProposal.state != proposal.state) {
             emit StateChange(_proposalId, proposal.state);
