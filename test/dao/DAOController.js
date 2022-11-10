@@ -13,7 +13,7 @@ const getRandomProposalIds = (n = 10) =>
     .fill()
     .map(() => createProposalId());
 
-contract.only("DAOController", function (accounts) {
+contract("DAOController", function (accounts) {
   let reputation,
     controller,
     avatar,
