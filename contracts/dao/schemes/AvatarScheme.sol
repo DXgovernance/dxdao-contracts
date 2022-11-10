@@ -121,7 +121,7 @@ contract AvatarScheme is Scheme {
                     (callDataFuncSignature == bytes4(keccak256("mintReputation(uint256,address)")) ||
                         callDataFuncSignature == bytes4(keccak256("burnReputation(uint256,address)")))
                 ) {
-                    (callsSucessResult, ) = address(controller).call(proposal.callData[callIndex]);
+                    (callsSucessResult, returnData) = address(controller).call(proposal.callData[callIndex]);
                 } else {
                     // The permission registry keeps track of all value transferred and checks call permission
                     (callsSucessResult, returnData) = controller.avatarCall(
@@ -146,6 +146,7 @@ contract AvatarScheme is Scheme {
                         proposal.value[callIndex]
                     );
                 }
+
                 if (!callsSucessResult) {
                     revert AvatarScheme__AvatarCallFailed({reason: string(returnData)});
                 }
