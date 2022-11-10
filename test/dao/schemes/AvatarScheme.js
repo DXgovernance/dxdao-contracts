@@ -129,6 +129,76 @@ contract("AvatarScheme", function (accounts) {
     );
   });
 
+  it("can burn rep", async function () {
+    const initialReputation = await org.reputation.balanceOf(accounts[1]);
+    let currentReputation;
+
+    const repChange = 10;
+
+    const callDataMintRep = await org.controller.contract.methods
+      .mintReputation(repChange, accounts[1])
+      .encodeABI();
+
+    const mintRepTx = await avatarScheme.proposeCalls(
+      [org.controller.address],
+      [callDataMintRep],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalIdMintRep = await helpers.getValueFromLogs(
+      mintRepTx,
+      "_proposalId"
+    );
+    await org.votingMachine.vote(
+      proposalIdMintRep,
+      constants.YES_OPTION,
+      0,
+      constants.ZERO_ADDRESS,
+      {
+        from: accounts[2],
+      }
+    );
+
+    currentReputation = await org.reputation.balanceOf(accounts[1]);
+
+    assert.equal(
+      currentReputation.toNumber(),
+      initialReputation.toNumber() + repChange
+    );
+
+    const callDataBurnRep = await org.controller.contract.methods
+      .burnReputation(repChange, accounts[1])
+      .encodeABI();
+
+    const burnRepTx = await avatarScheme.proposeCalls(
+      [org.controller.address],
+      [callDataBurnRep],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalIdBurnRep = await helpers.getValueFromLogs(
+      burnRepTx,
+      "_proposalId"
+    );
+    await org.votingMachine.vote(
+      proposalIdBurnRep,
+      constants.YES_OPTION,
+      0,
+      constants.ZERO_ADDRESS,
+      {
+        from: accounts[2],
+      }
+    );
+
+    currentReputation = await org.reputation.balanceOf(accounts[1]);
+
+    assert.equal(currentReputation.toNumber(), initialReputation.toNumber());
+  });
+
   it("should return the function signature when the length is greater than 4 bytes", async function () {
     const functionSignature = await avatarScheme.getFuncSignature(SOME_HASH);
     assert.equal(SOME_HASH.substring(0, 10), functionSignature);
@@ -151,10 +221,7 @@ contract("AvatarScheme", function (accounts) {
   });
 
   it("should get the number of proposals created", async function () {
-    const createRandomAmountOfProposals = async maxNumberOfProposals => {
-      const numberOfProposals =
-        1 + Math.floor(Math.random() * (maxNumberOfProposals - 1));
-
+    const createProposals = async numberOfProposals => {
       const callData = helpers.testCallFrom(org.avatar.address);
 
       for (let i = 1; i <= numberOfProposals; i++) {
@@ -171,7 +238,9 @@ contract("AvatarScheme", function (accounts) {
       return numberOfProposals;
     };
 
-    const numberOfProposalsCreated = await createRandomAmountOfProposals(6);
+    const randomNumber = helpers.getRandomNumber(1, 10);
+
+    const numberOfProposalsCreated = await createProposals(randomNumber);
     const organizationProposals = await avatarScheme.getOrganizationProposals();
     assert.equal(organizationProposals.length, numberOfProposalsCreated);
   });
@@ -338,5 +407,105 @@ contract("AvatarScheme", function (accounts) {
   it("can get the scheme type", async function () {
     const schemeType = await avatarScheme.getSchemeType();
     assert.equal(schemeType, "AvatarScheme_v1");
+  });
+
+  it("cannot execute a proposal if the number of options is not 2", async function () {
+    const callData = helpers.testCallFrom(org.avatar.address);
+
+    await expectRevert(
+      avatarScheme.proposeCalls(
+        [actionMock.address],
+        [callData],
+        [0],
+        3,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      ),
+      "AvatarScheme__TotalOptionsMustBeTwo()"
+    );
+  });
+
+  it("cannot mint more rep than maxRepPercentageChange", async function () {
+    const maxRepPercentageChange = await avatarScheme.maxRepPercentageChange();
+    const repSupply = await org.reputation.totalSupply();
+    const maxRepChangeAllowed =
+      (repSupply.toNumber() * (100 + maxRepPercentageChange.toNumber())) / 100;
+
+    const callDataMintRep = await org.controller.contract.methods
+      .mintReputation(maxRepChangeAllowed + 1, accounts[1])
+      .encodeABI();
+
+    const mintRepTx = await avatarScheme.proposeCalls(
+      [org.controller.address],
+      [callDataMintRep],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalIdMintRep = await helpers.getValueFromLogs(
+      mintRepTx,
+      "_proposalId"
+    );
+
+    await expectRevert(
+      org.votingMachine.vote(
+        proposalIdMintRep,
+        constants.YES_OPTION,
+        0,
+        constants.ZERO_ADDRESS,
+        {
+          from: accounts[2],
+        }
+      ),
+      "AvatarScheme__MaxRepPercentageChangePassed()"
+    );
+  });
+
+  it("cannot burn more rep than maxRepPercentageChange", async function () {
+    const maxRepPercentageChange = await avatarScheme.maxRepPercentageChange();
+    const repSupply = await org.reputation.totalSupply();
+    const maxRepChangeAllowed = -(
+      (repSupply.toNumber() * (100 - maxRepPercentageChange.toNumber())) / 100 -
+      repSupply.toNumber()
+    );
+
+    const callDataBurnRep = await org.controller.contract.methods
+      .burnReputation(maxRepChangeAllowed + 1, accounts[2])
+      .encodeABI();
+
+    await permissionRegistry.setETHPermission(
+      avatarScheme.address,
+      org.controller.address,
+      callDataBurnRep.substring(0, 10),
+      0,
+      true
+    );
+
+    const burnRepTx = await avatarScheme.proposeCalls(
+      [org.controller.address],
+      [callDataBurnRep],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalIdBurnRep = await helpers.getValueFromLogs(
+      burnRepTx,
+      "_proposalId"
+    );
+
+    await expectRevert(
+      org.votingMachine.vote(
+        proposalIdBurnRep,
+        constants.YES_OPTION,
+        0,
+        constants.ZERO_ADDRESS,
+        {
+          from: accounts[2],
+        }
+      ),
+      "AvatarScheme__MaxRepPercentageChangePassed()"
+    );
   });
 });
