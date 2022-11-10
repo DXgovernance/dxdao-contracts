@@ -61,6 +61,8 @@ contract DXDVotingMachine {
         uint256 minimumDaoBounty;
         uint256 daoBountyConst; //The DAO downstake for each proposal is calculate according to the formula
         //(daoBountyConst * averageBoostDownstakes)/100 .
+        uint256 boostedVoteRequiredPercentage; // The required % of votes needed in a boosted proposal to be
+        // executed on that scheme
     }
 
     struct Voter {
@@ -112,7 +114,6 @@ contract DXDVotingMachine {
     struct ExecuteFunctionParams {
         uint256 totalReputation;
         uint256 executionBar;
-        uint256 _boostedVoteRequiredPercentage;
         uint256 boostedExecutionBar;
         uint256 averageDownstakesOfBoosted;
         uint256 confidenceThreshold;
@@ -225,10 +226,6 @@ contract DXDVotingMachine {
 
     mapping(address => uint256) public stakesNonce; //stakes Nonce
 
-    // organization id scheme => parameters hash => required % of votes in boosted proposal.
-    // 100 == 1%, 2500 == 25%.
-    mapping(bytes32 => mapping(bytes32 => uint256)) public boostedVoteRequiredPercentage;
-
     // Event used to share vote signatures on chain
     mapping(bytes32 => mapping(address => VoteDecision)) public votesSignaled;
 
@@ -306,15 +303,20 @@ contract DXDVotingMachine {
      *    _params[6] -_proposingRepReward
      *    _params[7] -_minimumDaoBounty
      *    _params[8] -_daoBountyConst
+     *    _params[9] - _boostedVoteRequiredPercentage
      */
     function setParameters(
-        uint256[9] calldata _params //use array here due to stack too deep issue.
+        uint256[10] calldata _params //use array here due to stack too deep issue.
     ) external returns (bytes32) {
         require(_params[0] <= 10000 && _params[0] >= 5000, "5000 <= queuedVoteRequiredPercentage <= 10000");
         require(_params[4] <= 16000 && _params[4] > 1000, "1000 < thresholdConst <= 16000");
         require(_params[2] >= _params[5], "boostedVotePeriodLimit >= quietEndingPeriod");
         require(_params[7] > 0, "minimumDaoBounty should be > 0");
         require(_params[8] > 0, "daoBountyConst should be > 0");
+        require(
+            _params[0] > _params[9],
+            "queuedVoteRequiredPercentage should eb higher than boostedVoteRequiredPercentage"
+        );
 
         bytes32 paramsHash = getParametersHash(_params);
         //set a limit for power for a given alpha to prevent overflow
@@ -338,7 +340,8 @@ contract DXDVotingMachine {
             quietEndingPeriod: _params[5],
             proposingRepReward: _params[6],
             minimumDaoBounty: _params[7],
-            daoBountyConst: _params[8]
+            daoBountyConst: _params[8],
+            boostedVoteRequiredPercentage: _params[9]
         });
         return paramsHash;
     }
@@ -597,22 +600,6 @@ contract DXDVotingMachine {
         uint256 organizationBalance = organizations[organizationId].balance;
         organizations[organizationId].balance = 0;
         payable(msg.sender).transfer(organizationBalance);
-    }
-
-    /**
-     * @dev Config the required % of votes needed in a boosted proposal in a scheme, only callable by the avatar
-     * @param _scheme the scheme address to be configured
-     * @param _paramsHash the parameters configuration hashed of the scheme
-     * @param _boostedVotePeriodLimit the required % of votes needed in a boosted proposal to be executed on that scheme
-     */
-    function setBoostedVoteRequiredPercentage(
-        address _scheme,
-        bytes32 _paramsHash,
-        uint256 _boostedVotePeriodLimit
-    ) external {
-        boostedVoteRequiredPercentage[keccak256(abi.encodePacked(_scheme, msg.sender))][
-            _paramsHash
-        ] = _boostedVotePeriodLimit;
     }
 
     /**
@@ -912,14 +899,11 @@ contract DXDVotingMachine {
         executeParams.totalReputation = DXDVotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(
             _proposalId
         );
-        //first divide by 100 to prevent overflow
+        //first divide by 10000 to prevent overflow
         executeParams.executionBar = (executeParams.totalReputation / 10000) * params.queuedVoteRequiredPercentage;
-        executeParams._boostedVoteRequiredPercentage = boostedVoteRequiredPercentage[proposal.organizationId][
-            proposal.paramsHash
-        ];
         executeParams.boostedExecutionBar =
             (executeParams.totalReputation / 10000) *
-            executeParams._boostedVoteRequiredPercentage;
+            params.boostedVoteRequiredPercentage;
         ExecutionState executionState = ExecutionState.None;
         executeParams.averageDownstakesOfBoosted;
         executeParams.confidenceThreshold;
@@ -1199,7 +1183,7 @@ contract DXDVotingMachine {
      * @dev hashParameters returns a hash of the given parameters
      */
     function getParametersHash(
-        uint256[9] memory _params //use array here due to stack too deep issue.
+        uint256[10] memory _params //use array here due to stack too deep issue.
     ) public pure returns (bytes32) {
         return
             keccak256(
@@ -1212,7 +1196,8 @@ contract DXDVotingMachine {
                     _params[5],
                     _params[6],
                     _params[7],
-                    _params[8]
+                    _params[8],
+                    _params[9]
                 )
             );
     }
@@ -1253,20 +1238,6 @@ contract DXDVotingMachine {
      */
     function getAllowedRangeOfChoices() external pure returns (uint256 min, uint256 max) {
         return (NO, YES);
-    }
-
-    /**
-     * @dev Get the required % of votes needed in a boosted proposal in a scheme
-     * @param avatar the avatar address
-     * @param scheme the scheme address
-     * @param paramsHash the parameters configuration hashed of the scheme
-     */
-    function getBoostedVoteRequiredPercentage(
-        address avatar,
-        address scheme,
-        bytes32 paramsHash
-    ) external view returns (uint256) {
-        return boostedVoteRequiredPercentage[keccak256(abi.encodePacked(scheme, avatar))][paramsHash];
     }
 
     /**
