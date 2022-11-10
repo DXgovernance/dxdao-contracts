@@ -208,9 +208,7 @@ contract DXDVotingMachine {
     uint256 public constant YES = 2;
     uint256 public proposalsCnt; // Total number of proposals
     IERC20 public stakingToken;
-    address private constant GEN_TOKEN_ADDRESS = 0x543Ff227F64Aa17eA132Bf9886cAb5DB55DCAddf;
     uint256 private constant MAX_BOOSTED_PROPOSALS = 4096;
-    address public avatarOwner;
 
     // Digest describing the data the user signs according EIP 712.
     // Needs to match what is passed to Metamask.
@@ -262,20 +260,9 @@ contract DXDVotingMachine {
     /**
      * @dev Constructor
      */
-    constructor(IERC20 _stakingToken, address _avatarOwner) {
-        //The GEN token (staking token) address is hard coded in the contract by GEN_TOKEN_ADDRESS .
-        //This will work for a network which already hosted the GEN token on this address (e.g mainnet).
-        //If such contract address does not exist in the network (e.g ganache)
-        //the contract will use the _stakingToken param as the
-        //staking token address.
-
+    constructor(IERC20 _stakingToken) {
         require(address(_stakingToken) != address(0), "wrong _stakingToken");
-        if (address(GEN_TOKEN_ADDRESS).isContract()) {
-            stakingToken = IERC20(GEN_TOKEN_ADDRESS);
-        } else {
-            stakingToken = _stakingToken;
-        }
-        avatarOwner = _avatarOwner;
+        stakingToken = IERC20(_stakingToken);
     }
 
     /**
