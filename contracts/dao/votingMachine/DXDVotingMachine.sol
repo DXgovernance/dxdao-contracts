@@ -47,7 +47,7 @@ contract DXDVotingMachine {
 
     //Organization's parameters
     struct Parameters {
-        uint256 queuedVoteRequiredPercentage; // the absolute vote percentages bar.
+        uint256 queuedVoteRequiredPercentage; // the absolute vote percentages bar. 5000 = 50%
         uint256 queuedVotePeriodLimit; //the time limit for a proposal to be in an absolute voting mode.
         uint256 boostedVotePeriodLimit; //the time limit for a proposal to be in boost mode.
         uint256 preBoostedVotePeriodLimit; //the time limit for a proposal
@@ -310,7 +310,7 @@ contract DXDVotingMachine {
     function setParameters(
         uint256[9] calldata _params //use array here due to stack too deep issue.
     ) external returns (bytes32) {
-        require(_params[0] <= 100 && _params[0] >= 50, "50 <= queuedVoteRequiredPercentage <= 100");
+        require(_params[0] <= 10000 && _params[0] >= 5000, "5000 <= queuedVoteRequiredPercentage <= 10000");
         require(_params[4] <= 16000 && _params[4] > 1000, "1000 < thresholdConst <= 16000");
         require(_params[2] >= _params[5], "boostedVotePeriodLimit >= quietEndingPeriod");
         require(_params[7] > 0, "minimumDaoBounty should be > 0");
@@ -913,7 +913,7 @@ contract DXDVotingMachine {
             _proposalId
         );
         //first divide by 100 to prevent overflow
-        executeParams.executionBar = (executeParams.totalReputation / 100) * params.queuedVoteRequiredPercentage;
+        executeParams.executionBar = (executeParams.totalReputation / 10000) * params.queuedVoteRequiredPercentage;
         executeParams._boostedVoteRequiredPercentage = boostedVoteRequiredPercentage[proposal.organizationId][
             proposal.paramsHash
         ];
@@ -1139,7 +1139,7 @@ contract DXDVotingMachine {
     ) internal returns (bytes32) {
         require(_choicesAmount >= NUM_OF_CHOICES);
         //Check parameters existence.
-        require(parameters[_paramsHash].queuedVoteRequiredPercentage >= 50);
+        require(parameters[_paramsHash].queuedVoteRequiredPercentage >= 5000);
         // Generate a unique ID:
         bytes32 proposalId = keccak256(abi.encodePacked(this, proposalsCnt));
         proposalsCnt = proposalsCnt + 1;
