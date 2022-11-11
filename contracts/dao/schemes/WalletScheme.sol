@@ -13,6 +13,12 @@ import "./Scheme.sol";
 contract WalletScheme is Scheme {
     using Address for address;
 
+    /// @notice Emitted if the number of totalOptions is not 2
+    error WalletScheme__TotalOptionsMustBeTwo();
+
+    /// @notice Emitted if the WalletScheme can make avatar calls
+    error WalletScheme__CannotMakeAvatarCalls();
+
     /**
      * @dev Receive function that allows the wallet to receive ETH when the controller address is not set
      */
@@ -36,7 +42,10 @@ contract WalletScheme is Scheme {
         string calldata _title,
         string calldata _descriptionHash
     ) public override returns (bytes32 proposalId) {
-        require(_totalOptions == 2, "WalletScheme: The total amount of options should be 2");
+        if (_totalOptions != 2) {
+            revert WalletScheme__TotalOptionsMustBeTwo();
+        }
+
         return super.proposeCalls(_to, _callData, _value, _totalOptions, _title, _descriptionHash);
     }
 
@@ -52,10 +61,10 @@ contract WalletScheme is Scheme {
         onlyVotingMachine
         returns (bool)
     {
-        require(
-            !controller.getSchemeCanMakeAvatarCalls(address(this)),
-            "WalletScheme: scheme cannot make avatar calls"
-        );
+        if (controller.getSchemeCanMakeAvatarCalls(address(this))) {
+            revert WalletScheme__CannotMakeAvatarCalls();
+        }
+
         return super.executeProposal(_proposalId, _winningOption);
     }
 

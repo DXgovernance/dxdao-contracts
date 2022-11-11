@@ -240,4 +240,13 @@ export function encodeMaxSecondsForExecution(executionTimeout) {
   return setMaxSecondsForExecutionData;
 }
 
+export function getRandomNumber(min, max = min) {
+  // If there is just one argument, the minimum is set to zero, and the maximum is the argument
+  if ((min = max)) min = 0;
+  else Math.ceil(min);
+
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1) + min); // The maximum is inclusive and the minimum is inclusive
+}
+
 export { constants };

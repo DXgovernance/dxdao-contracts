@@ -13,6 +13,27 @@ import "./Scheme.sol";
 contract AvatarScheme is Scheme {
     using Address for address;
 
+    /// @notice Emitted when the proposal is already being executed
+    error AvatarScheme__ProposalExecutionAlreadyRunning();
+
+    /// @notice Emitted when the proposal wasn't submitted
+    error AvatarScheme__ProposalMustBeSubmitted();
+
+    /// @notice Emitted when the call to setETHPermissionUsed fails
+    error AvatarScheme__SetEthPermissionUsedFailed();
+
+    /// @notice Emitted when the avatarCall failed. Returns the revert error
+    error AvatarScheme__AvatarCallFailed(string reason);
+
+    /// @notice Emitted when exceeded the maximum rep supply % change
+    error AvatarScheme__MaxRepPercentageChangePassed();
+
+    /// @notice Emitted when ERC20 limits passed
+    error AvatarScheme__ERC20LimitsPassed();
+
+    /// @notice Emitted if the number of totalOptions is not 2
+    error AvatarScheme__TotalOptionsMustBeTwo();
+
     /**
      * @dev Propose calls to be executed, the calls have to be allowed by the permission registry
      * @param _to - The addresses to call
@@ -31,7 +52,10 @@ contract AvatarScheme is Scheme {
         string calldata _title,
         string calldata _descriptionHash
     ) public override returns (bytes32 proposalId) {
-        require(_totalOptions == 2, "AvatarScheme: The total amount of options should be 2");
+        if (_totalOptions != 2) {
+            revert AvatarScheme__TotalOptionsMustBeTwo();
+        }
+
         return super.proposeCalls(_to, _callData, _value, _totalOptions, _title, _descriptionHash);
     }
 
@@ -48,11 +72,15 @@ contract AvatarScheme is Scheme {
         returns (bool)
     {
         // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
-        require(!executingProposal, "AvatarScheme: proposal execution already running");
+        if (executingProposal) {
+            revert AvatarScheme__ProposalExecutionAlreadyRunning();
+        }
         executingProposal = true;
 
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.state == ProposalState.Submitted, "AvatarScheme: must be a submitted proposal");
+        if (proposal.state != ProposalState.Submitted) {
+            revert AvatarScheme__ProposalMustBeSubmitted();
+        }
 
         if ((proposal.submittedTime + maxSecondsForExecution) < block.timestamp) {
             // If the amount of time passed since submission plus max proposal time is lower than block timestamp
@@ -93,7 +121,7 @@ contract AvatarScheme is Scheme {
                     (callDataFuncSignature == bytes4(keccak256("mintReputation(uint256,address)")) ||
                         callDataFuncSignature == bytes4(keccak256("burnReputation(uint256,address)")))
                 ) {
-                    (callsSucessResult, ) = address(controller).call(proposal.callData[callIndex]);
+                    (callsSucessResult, returnData) = address(controller).call(proposal.callData[callIndex]);
                 } else {
                     // The permission registry keeps track of all value transferred and checks call permission
                     (callsSucessResult, returnData) = controller.avatarCall(
@@ -108,8 +136,9 @@ contract AvatarScheme is Scheme {
                         avatar,
                         0
                     );
-                    require(callsSucessResult, "AvatarScheme: setETHPermissionUsed failed");
-
+                    if (!callsSucessResult) {
+                        revert AvatarScheme__SetEthPermissionUsedFailed();
+                    }
                     (callsSucessResult, returnData) = controller.avatarCall(
                         proposal.to[callIndex],
                         proposal.callData[callIndex],
@@ -117,16 +146,24 @@ contract AvatarScheme is Scheme {
                         proposal.value[callIndex]
                     );
                 }
-                require(callsSucessResult, string(returnData));
+
+                if (!callsSucessResult) {
+                    revert AvatarScheme__AvatarCallFailed({reason: string(returnData)});
+                }
             }
+
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
-            require(
-                ((oldRepSupply * (uint256(100) + maxRepPercentageChange)) / 100 >= getNativeReputationTotalSupply()) &&
-                    ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 <=
-                        getNativeReputationTotalSupply()),
-                "AvatarScheme: maxRepPercentageChange passed"
-            );
-            require(permissionRegistry.checkERC20Limits(address(avatar)), "AvatarScheme: ERC20 limits passed");
+
+            if (
+                ((oldRepSupply * (uint256(100) + maxRepPercentageChange)) / 100 < getNativeReputationTotalSupply()) ||
+                ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 > getNativeReputationTotalSupply())
+            ) {
+                revert AvatarScheme__MaxRepPercentageChangePassed();
+            }
+
+            if (!permissionRegistry.checkERC20Limits(address(avatar))) {
+                revert AvatarScheme__ERC20LimitsPassed();
+            }
         }
         controller.endProposal(_proposalId);
         executingProposal = false;

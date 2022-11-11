@@ -4,7 +4,6 @@ import * as helpers from "../../helpers";
 const { fixSignature } = require("../../helpers/sign");
 const { time, expectRevert } = require("@openzeppelin/test-helpers");
 
-const AvatarScheme = artifacts.require("./AvatarScheme.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
@@ -370,183 +369,59 @@ contract("WalletScheme", function (accounts) {
   });
 
   it("MasterWalletScheme - setMaxSecondsForExecution is callable only form the avatar", async function () {
-    expectRevert(
-      masterWalletScheme.setMaxSecondsForExecution(executionTimeout + 666),
-      "setMaxSecondsForExecution is callable only form the avatar"
-    );
-    assert.equal(
-      await masterWalletScheme.maxSecondsForExecution(),
-      executionTimeout
-    );
-  });
-
-  it("MasterWalletScheme - proposal to change max proposal time - positive decision - proposal executed", async () => {
-    const callData = helpers.encodeMaxSecondsForExecution(86400 + 666);
-
-    expectRevert(
-      masterWalletScheme.proposeCalls(
-        [masterWalletScheme.address],
-        [callData],
-        [1],
-        2,
-        constants.TEST_TITLE,
-        constants.SOME_HASH
-      ),
-      "invalid proposal caller"
-    );
-
-    const tx = await masterWalletScheme.proposeCalls(
-      [masterWalletScheme.address],
-      [callData],
-      [0],
-      2,
-      constants.TEST_TITLE,
-      constants.SOME_HASH
-    );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
-
-    const organizationProposal = await masterWalletScheme.getProposal(
-      proposalId
-    );
-    assert.equal(
-      organizationProposal.state,
-      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
-    );
-    assert.equal(organizationProposal.callData[0], callData);
-    assert.equal(organizationProposal.to[0], masterWalletScheme.address);
-    assert.equal(organizationProposal.value[0], 0);
-    assert.equal(
-      await masterWalletScheme.maxSecondsForExecution(),
-      86400 + 666
-    );
-  });
-
-  // eslint-disable-next-line max-len
-  it("MasterWalletScheme - proposal to change max proposal time fails - positive decision - proposal fails", async () => {
-    const callData = helpers.encodeMaxSecondsForExecution(86400 - 1);
-
-    expectRevert(
-      masterWalletScheme.proposeCalls(
-        [masterWalletScheme.address],
-        [callData],
-        [1],
-        constants.TEST_TITLE,
-        constants.SOME_HASH
-      ),
-      "invalid proposal caller"
-    );
-
-    const tx = await masterWalletScheme.proposeCalls(
-      [masterWalletScheme.address],
-      [callData],
-      [0],
-      2,
-      constants.TEST_TITLE,
-      constants.SOME_HASH
-    );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
     await expectRevert(
-      org.votingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      ),
-      "Scheme: _maxSecondsForExecution cant be less than 86400 seconds"
+      masterWalletScheme.setMaxSecondsForExecution(executionTimeout + 666),
+      "Scheme__SetMaxSecondsForExecutionInvalidCaller()"
     );
-
-    await time.increase(executionTimeout);
-
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
-
-    const organizationProposal = await masterWalletScheme.getProposal(
-      proposalId
-    );
-    assert.equal(
-      organizationProposal.state,
-      constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
-    );
-
-    assert.equal(organizationProposal.callData[0], callData);
-    assert.equal(organizationProposal.to[0], masterWalletScheme.address);
-    assert.equal(organizationProposal.value[0], 0);
     assert.equal(
       await masterWalletScheme.maxSecondsForExecution(),
       executionTimeout
     );
-  });
-
-  it("MasterWalletScheme - proposal with data or value to wallet scheme address fail", async function () {
-    expectRevert(
-      masterWalletScheme.proposeCalls(
-        [masterWalletScheme.address],
-        ["0x00000000"],
-        [1],
-        constants.TEST_TITLE,
-        constants.SOME_HASH
-      ),
-      "invalid proposal caller"
-    );
-    expectRevert(
-      masterWalletScheme.proposeCalls(
-        [masterWalletScheme.address],
-        ["0x00000000"],
-        [1],
-        constants.TEST_TITLE,
-        constants.SOME_HASH
-      ),
-      "invalid proposal caller"
-    );
-
-    assert.equal(await masterWalletScheme.getOrganizationProposalsLength(), 0);
   });
 
   it("MasterWalletScheme - proposing proposal with different length of to and value fail", async function () {
     const callData = helpers.testCallFrom(masterWalletScheme.address);
 
-    expectRevert(
+    await expectRevert(
       masterWalletScheme.proposeCalls(
         [actionMock.address],
         [callData],
         [0, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "invalid _value length"
+      "Scheme_InvalidParameterArrayLength()"
     );
-    expectRevert(
+    await expectRevert(
       masterWalletScheme.proposeCalls(
         [actionMock.address],
         [callData, callData],
         [0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "invalid _callData length"
+      "Scheme_InvalidParameterArrayLength()"
     );
 
     assert.equal(await masterWalletScheme.getOrganizationProposalsLength(), 0);
+  });
+
+  it("MasterWalletScheme - cannot make a proposal with more than 2 options", async function () {
+    const callData = helpers.testCallFrom(masterWalletScheme.address);
+
+    await expectRevert(
+      masterWalletScheme.proposeCalls(
+        [actionMock.address],
+        [callData],
+        [0],
+        3,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      ),
+      "WalletScheme__TotalOptionsMustBeTwo()"
+    );
   });
 
   it("MasterWalletScheme - proposal with data - negative decision - proposal rejected", async function () {
@@ -623,6 +498,52 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], masterWalletScheme.address);
     assert.equal(organizationProposal.value[0], 0);
+  });
+
+  it("WalletScheme - check that it cannot make avatar calls", async function () {
+    const newWallet = await WalletScheme.new();
+    await newWallet.initialize(
+      org.avatar.address,
+      org.votingMachine.address,
+      org.controller.address,
+      permissionRegistry.address,
+      "New Wallet",
+      executionTimeout,
+      5
+    );
+
+    await org.controller.registerScheme(
+      newWallet.address,
+      defaultParamsHash,
+      false,
+      true,
+      true
+    );
+
+    const callData = helpers.testCallFrom(newWallet.address);
+
+    const tx = await newWallet.proposeCalls(
+      [newWallet.address],
+      [callData],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+    await expectRevert(
+      org.votingMachine.vote(
+        proposalId,
+        constants.YES_OPTION,
+        0,
+        constants.ZERO_ADDRESS,
+        {
+          from: accounts[2],
+        }
+      ),
+      "WalletScheme__CannotMakeAvatarCalls()"
+    );
   });
 
   it.skip("MasterWalletScheme - proposal with data - positive decision - proposal executed", async function () {
@@ -888,6 +809,60 @@ contract("WalletScheme", function (accounts) {
     assert.equal(
       (await masterWalletScheme.getProposal(proposalId)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
+    );
+  });
+
+  it("Global ETH transfer value not allowed value by permission registry - zero address", async function () {
+    const callData = helpers.testCallFrom(masterWalletScheme.address);
+
+    const tx = await masterWalletScheme.proposeCalls(
+      [constants.ZERO_ADDRESS],
+      [callData],
+      [101],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+    await expectRevert(
+      org.votingMachine.vote(
+        proposalId,
+        constants.YES_OPTION,
+        0,
+        constants.ZERO_ADDRESS,
+        {
+          from: accounts[2],
+        }
+      ),
+      "PermissionRegistry: Value limit reached"
+    );
+  });
+
+  it("Global ETH transfer call not allowed value by permission registry - zero address, no value", async function () {
+    const callData = helpers.testCallFrom(masterWalletScheme.address);
+
+    const tx = await masterWalletScheme.proposeCalls(
+      [constants.ZERO_ADDRESS],
+      [callData],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+    await expectRevert(
+      org.votingMachine.vote(
+        proposalId,
+        constants.YES_OPTION,
+        0,
+        constants.ZERO_ADDRESS,
+        {
+          from: accounts[2],
+        }
+      ),
+      "PermissionRegistry: Call not allowed"
     );
   });
 
@@ -1352,7 +1327,7 @@ contract("WalletScheme", function (accounts) {
         constants.ZERO_ADDRESS,
         { from: accounts[2] }
       ),
-      "WalletScheme: maxRepPercentageChange passed"
+      "Scheme__MaxRepPercentageChangePassed()"
     );
 
     assert.equal(
@@ -1417,7 +1392,7 @@ contract("WalletScheme", function (accounts) {
         constants.ZERO_ADDRESS,
         { from: accounts[2] }
       ),
-      "WalletScheme: maxRepPercentageChange passed"
+      "Scheme__MaxRepPercentageChangePassed()"
     );
 
     assert(
@@ -1599,7 +1574,7 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.value[2], 0);
   });
 
-  it("MasterWalletScheme - cant initialize with wrong values", async function () {
+  it("MasterWalletScheme - cannot initialize with maxSecondsForExecution too log", async function () {
     const unitializedWalletScheme = await WalletScheme.new();
 
     await expectRevert(
@@ -1612,8 +1587,13 @@ contract("WalletScheme", function (accounts) {
         86400 - 1,
         5
       ),
-      "_maxSecondsForExecution cant be less than 86400 seconds"
+      "Scheme__MaxSecondsForExecutionTooLow()"
     );
+  });
+
+  it("MasterWalletScheme - cant initialize if avatar address is zero", async function () {
+    const unitializedWalletScheme = await WalletScheme.new();
+
     await expectRevert(
       unitializedWalletScheme.initialize(
         constants.ZERO_ADDRESS,
@@ -1624,7 +1604,24 @@ contract("WalletScheme", function (accounts) {
         executionTimeout,
         5
       ),
-      "avatar cannot be zero"
+      "Scheme__AvatarAddressCannotBeZero()"
+    );
+  });
+
+  it("MasterWalletScheme - cant initialize if controller address is zero", async function () {
+    const unitializedWalletScheme = await WalletScheme.new();
+
+    await expectRevert(
+      unitializedWalletScheme.initialize(
+        org.avatar.address,
+        accounts[0],
+        constants.ZERO_ADDRESS,
+        permissionRegistry.address,
+        "Master Wallet",
+        executionTimeout,
+        5
+      ),
+      "Scheme__ControllerAddressCannotBeZero()"
     );
   });
 
@@ -1639,16 +1636,21 @@ contract("WalletScheme", function (accounts) {
         executionTimeout,
         5
       ),
-      "cannot init twice"
+      "Scheme__CannotInitTwice()"
     );
   });
 
-  it("MasterWalletScheme can receive value in contractt", async function () {
+  it("MasterWalletScheme can receive value in contract", async function () {
     await web3.eth.sendTransaction({
       from: accounts[0],
       to: masterWalletScheme.address,
       value: constants.TEST_VALUE,
     });
+  });
+
+  it("MasterWalletScheme - get scheme type", async function () {
+    const schemeType = await masterWalletScheme.getSchemeType();
+    assert.equal(schemeType, "WalletScheme_v1");
   });
 
   it("QuickWalletScheme can receive value in contract", async function () {
@@ -2002,15 +2004,14 @@ contract("WalletScheme", function (accounts) {
     );
 
     // Add Scheme
-    await expectRevert(
+    await expectRevert.unspecified(
       org.votingMachine.vote(
         proposalIdAddScheme,
         constants.YES_OPTION,
         0,
         constants.ZERO_ADDRESS,
         { from: accounts[2] }
-      ),
-      "DAOController: Sender cannot manage schemes"
+      )
     );
     assert.equal(
       (await quickWalletScheme.getProposal(proposalIdAddScheme)).state,
@@ -2024,15 +2025,14 @@ contract("WalletScheme", function (accounts) {
     );
 
     // Remove Scheme
-    await expectRevert(
+    await expectRevert.unspecified(
       org.votingMachine.vote(
         proposalIdRemoveScheme,
         constants.YES_OPTION,
         0,
         constants.ZERO_ADDRESS,
         { from: accounts[2] }
-      ),
-      "DAOController: Sender cannot manage schemes"
+      )
     );
     assert.equal(
       (await quickWalletScheme.getProposal(proposalIdRemoveScheme)).state,

@@ -61,6 +61,42 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
 
     event ProposalStateChange(bytes32 indexed _proposalId, uint256 indexed _state);
 
+    /// @notice Emitted when its initialized twice
+    error Scheme__CannotInitTwice();
+
+    /// @notice Emitted if avatar address is zero
+    error Scheme__AvatarAddressCannotBeZero();
+
+    /// @notice Emitted if controller address is zero
+    error Scheme__ControllerAddressCannotBeZero();
+
+    /// @notice Emitted if maxSecondsForExecution is set lower than 86400
+    error Scheme__MaxSecondsForExecutionTooLow();
+
+    /// @notice Emitted when setMaxSecondsForExecution is being called from an address different than the avatar or the scheme
+    error Scheme__SetMaxSecondsForExecutionInvalidCaller();
+
+    /// @notice _to, _callData and _value must have all the same length
+    error Scheme_InvalidParameterArrayLength();
+
+    /// @notice Emitted when the totalOptions paramers is invalid
+    error Scheme__InvalidTotalOptionsOrActionsCallsLength();
+
+    /// @notice Emitted when the proposal is already being executed
+    error Scheme__ProposalExecutionAlreadyRunning();
+
+    /// @notice Emitted when the proposal isn't submitted
+    error Scheme__ProposalMustBeSubmitted();
+
+    /// @notice Emitted when the call failed. Returns the revert error
+    error Scheme__CallFailed(string reason);
+
+    /// @notice Emitted when the maxRepPercentageChange is exceeded
+    error Scheme__MaxRepPercentageChangePassed();
+
+    /// @notice Emitted if the ERC20 limits are exceeded
+    error Scheme__ERC20LimitsPassed();
+
     /**
      * @dev initialize
      * @param _avatar the avatar address
@@ -81,10 +117,22 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         uint256 _maxSecondsForExecution,
         uint256 _maxRepPercentageChange
     ) external {
-        require(address(avatar) == address(0), "Scheme: cannot init twice");
-        require(_avatar != address(0), "Scheme: avatar cannot be zero");
-        require(_controller != address(0), "Scheme: controller cannot be zero");
-        require(_maxSecondsForExecution >= 86400, "Scheme: _maxSecondsForExecution cant be less than 86400 seconds");
+        if (address(avatar) != address(0)) {
+            revert Scheme__CannotInitTwice();
+        }
+
+        if (_avatar == address(0)) {
+            revert Scheme__AvatarAddressCannotBeZero();
+        }
+
+        if (_controller == address(0)) {
+            revert Scheme__ControllerAddressCannotBeZero();
+        }
+
+        if (_maxSecondsForExecution < 86400) {
+            revert Scheme__MaxSecondsForExecutionTooLow();
+        }
+
         avatar = DAOAvatar(_avatar);
         votingMachine = IDXDVotingMachine(_votingMachine);
         controller = DAOController(_controller);
@@ -99,11 +147,14 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @param _maxSecondsForExecution New max proposal time in seconds to be used
      */
     function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external virtual {
-        require(
-            msg.sender == address(avatar) || msg.sender == address(this),
-            "Scheme: setMaxSecondsForExecution is callable only from the avatar or the scheme"
-        );
-        require(_maxSecondsForExecution >= 86400, "Scheme: _maxSecondsForExecution cant be less than 86400 seconds");
+        if (msg.sender != address(avatar) && msg.sender != address(this)) {
+            revert Scheme__SetMaxSecondsForExecutionInvalidCaller();
+        }
+
+        if (_maxSecondsForExecution < 86400) {
+            revert Scheme__MaxSecondsForExecutionTooLow();
+        }
+
         maxSecondsForExecution = _maxSecondsForExecution;
     }
 
@@ -125,9 +176,13 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         string calldata _title,
         string calldata _descriptionHash
     ) public virtual returns (bytes32 proposalId) {
-        require(_to.length == _callData.length, "Scheme: invalid _callData length");
-        require(_to.length == _value.length, "Scheme: invalid _value length");
-        require((_value.length % (_totalOptions - 1)) == 0, "Scheme: Invalid _totalOptions or action calls length");
+        if (_to.length != _callData.length || _to.length != _value.length) {
+            revert Scheme_InvalidParameterArrayLength();
+        }
+
+        if ((_value.length % (_totalOptions - 1)) != 0) {
+            revert Scheme__InvalidTotalOptionsOrActionsCallsLength();
+        }
 
         bytes32 voteParams = controller.getSchemeParameters(address(this));
 
@@ -167,16 +222,16 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         returns (bool)
     {
         // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
-        require(!executingProposal, "WalletScheme: proposal execution already running");
+        if (executingProposal) {
+            revert Scheme__ProposalExecutionAlreadyRunning();
+        }
         executingProposal = true;
 
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.state == ProposalState.Submitted, "WalletScheme: must be a submitted proposal");
 
-        require(
-            !controller.getSchemeCanMakeAvatarCalls(address(this)),
-            "WalletScheme: scheme cannot make avatar calls"
-        );
+        if (proposal.state != ProposalState.Submitted) {
+            revert Scheme__ProposalMustBeSubmitted();
+        }
 
         if (proposal.submittedTime + maxSecondsForExecution < block.timestamp) {
             // If the amount of time passed since submission plus max proposal time is lower than block timestamp
@@ -217,22 +272,25 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
                         proposal.callData[callIndex]
                     );
 
-                    require(callsSucessResult, string(returnData));
+                    if (!callsSucessResult) {
+                        revert Scheme__CallFailed({reason: string(returnData)});
+                    }
                 }
             }
 
             proposal.state = ProposalState.ExecutionSucceeded;
 
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
-            require(
-                ((oldRepSupply * (uint256(100) + (maxRepPercentageChange))) / 100 >=
-                    getNativeReputationTotalSupply()) &&
-                    ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 <=
-                        getNativeReputationTotalSupply()),
-                "WalletScheme: maxRepPercentageChange passed"
-            );
+            if (
+                ((oldRepSupply * (uint256(100) + (maxRepPercentageChange))) / 100 < getNativeReputationTotalSupply()) ||
+                ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 > getNativeReputationTotalSupply())
+            ) {
+                revert Scheme__MaxRepPercentageChangePassed();
+            }
 
-            require(permissionRegistry.checkERC20Limits(address(this)), "WalletScheme: ERC20 limits passed");
+            if (!permissionRegistry.checkERC20Limits(address(this))) {
+                revert Scheme__ERC20LimitsPassed();
+            }
 
             emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
         }
