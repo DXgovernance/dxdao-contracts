@@ -265,34 +265,6 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev executeBoosted try to execute a boosted or QuietEndingPeriod proposal if it is expired
-     * it rewards the msg.sender with P % of the proposal's upstakes upon a successful call to this function.
-     * P = t/150, where t is the number of seconds passed since the the proposal's timeout.
-     * P is capped by 10%.
-     * @param _proposalId the id of the proposal
-     * @return expirationCallBounty the bounty amount for the expiration call
-     */
-    function executeBoosted(bytes32 _proposalId) external returns (uint256 expirationCallBounty) {
-        Proposal storage proposal = proposals[_proposalId];
-        require(
-            proposal.state == ProposalState.Boosted || proposal.state == ProposalState.QuietEndingPeriod,
-            "proposal state in not Boosted nor QuietEndingPeriod"
-        );
-        require(_execute(_proposalId), "proposal need to expire");
-
-        proposal.secondsFromTimeOutTillExecuteBoosted =
-            block.timestamp -
-            (// solhint-disable-next-line not-rely-on-time
-            proposal.currentBoostedVotePeriodLimit + proposal.times[1]);
-
-        expirationCallBounty = calcExecuteCallBounty(_proposalId);
-        proposal.totalStakes = proposal.totalStakes - expirationCallBounty;
-        organizations[proposal.organizationId].balance -= expirationCallBounty;
-        require(stakingToken.transfer(msg.sender, expirationCallBounty), "transfer to msg.sender failed");
-        emit ExpirationCallBounty(_proposalId, msg.sender, expirationCallBounty);
-    }
-
-    /**
      * @dev hash the parameters, save them if necessary, and return the hash value
      * @param _params a parameters array
      *    _params[0] - _queuedVoteRequiredPercentage,
