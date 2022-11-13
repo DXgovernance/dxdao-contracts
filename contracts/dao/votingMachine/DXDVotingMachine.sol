@@ -99,7 +99,8 @@ contract DXDVotingMachine {
 
     struct Organization {
         address avatar;
-        uint256 balance;
+        uint256 stakingTokenBalance;
+        uint256 voteGasBalance;
         uint256 voteGas;
         uint256 maxGasPrice;
         uint256 averagesDownstakesOfBoosted;
@@ -408,8 +409,8 @@ contract DXDVotingMachine {
         }
         if (rewards[0] != 0) {
             proposal.totalStakes = proposal.totalStakes - rewards[0];
-            organizations[proposal.organizationId].balance =
-                organizations[proposal.organizationId].balance -
+            organizations[proposal.organizationId].stakingTokenBalance =
+                organizations[proposal.organizationId].stakingTokenBalance -
                 rewards[0];
             require(stakingToken.transfer(_beneficiary, rewards[0]), "transfer to beneficiary failed");
             emit Redeem(_proposalId, organizations[proposal.organizationId].avatar, _beneficiary, rewards[0]);
@@ -450,9 +451,9 @@ contract DXDVotingMachine {
             //as staker
             potentialAmount = (staker.amount4Bounty * proposal.daoBounty) / totalWinningStakes;
         }
-        if ((potentialAmount != 0) && (organizations[proposal.organizationId].balance >= potentialAmount)) {
+        if ((potentialAmount != 0) && (organizations[proposal.organizationId].stakingTokenBalance >= potentialAmount)) {
             staker.amount4Bounty = 0;
-            organizations[proposal.organizationId].balance -= potentialAmount;
+            organizations[proposal.organizationId].stakingTokenBalance -= potentialAmount;
             proposal.daoBountyRemain = proposal.daoBountyRemain - potentialAmount;
             require(stakingToken.transfer(_beneficiary, potentialAmount), "fail transfer of daoBounty");
             redeemedAmount = potentialAmount;
@@ -575,15 +576,18 @@ contract DXDVotingMachine {
      */
     function setOrganizationRefund(
         address avatar,
+        address scheme,
         uint256 _voteGas,
         uint256 _maxGasPrice
     ) external payable {
-        bytes32 organizationId = keccak256(abi.encodePacked(msg.sender, avatar));
-        require(
-            organizations[organizationId].voteGas > 0,
-            "DXDVotingMachine: Address not registered in organizationRefounds"
-        );
-        organizations[organizationId].balance = organizations[organizationId].balance + msg.value;
+        bytes32 organizationId;
+        if (msg.sender == scheme) {
+            organizationId = keccak256(abi.encodePacked(msg.sender, avatar));
+        } else if (msg.sender == avatar) {
+            organizationId = keccak256(abi.encodePacked(scheme, msg.sender));
+        }
+        require(organizationId != bytes32(0), "DXDVotingMachine: Only scheme or avatar can set organization refund");
+        organizations[organizationId].voteGasBalance = organizations[organizationId].voteGasBalance + msg.value;
         organizations[organizationId].voteGas = _voteGas;
         organizations[organizationId].maxGasPrice = _maxGasPrice;
     }
@@ -591,16 +595,19 @@ contract DXDVotingMachine {
     /**
      * @dev Withdraw organization refund balance
      */
-    function withdrawRefundBalance(address avatar) public {
-        bytes32 organizationId = keccak256(abi.encodePacked(msg.sender, avatar));
+    function withdrawRefundBalance(address scheme) public {
+        bytes32 organizationId = keccak256(abi.encodePacked(msg.sender, scheme));
         require(
             organizations[organizationId].voteGas > 0,
             "DXDVotingMachine: Address not registered in organizationRefounds"
         );
-        require(organizations[organizationId].balance > 0, "DXDVotingMachine: Organization refund balance is zero");
-        uint256 organizationBalance = organizations[organizationId].balance;
-        organizations[organizationId].balance = 0;
-        payable(msg.sender).transfer(organizationBalance);
+        require(
+            organizations[organizationId].voteGasBalance > 0,
+            "DXDVotingMachine: Organization refund balance is zero"
+        );
+        uint256 voteGasBalance = organizations[organizationId].voteGasBalance;
+        organizations[organizationId].voteGasBalance = 0;
+        payable(msg.sender).transfer(voteGasBalance);
     }
 
     /**
@@ -1096,7 +1103,7 @@ contract DXDVotingMachine {
 
         uint256 amount = _amount;
         require(stakingToken.transferFrom(_staker, address(this), amount), "fail transfer from staker");
-        organizations[proposal.organizationId].balance += amount;
+        organizations[proposal.organizationId].stakingTokenBalance += amount;
         proposal.totalStakes = proposal.totalStakes + amount; //update totalRedeemableStakes
         staker.amount = staker.amount + amount;
         // This is to prevent average downstakes calculation overflow
@@ -1182,8 +1189,8 @@ contract DXDVotingMachine {
         if (organizations[organizationId].voteGas > 0) {
             uint256 gasRefund = organizations[organizationId].voteGas *
                 tx.gasprice.min(organizations[organizationId].maxGasPrice);
-            if (organizations[organizationId].balance >= gasRefund) {
-                organizations[organizationId].balance -= gasRefund;
+            if (organizations[organizationId].voteGasBalance >= gasRefund) {
+                organizations[organizationId].voteGasBalance -= gasRefund;
                 payable(msg.sender).transfer(gasRefund);
             }
         }
