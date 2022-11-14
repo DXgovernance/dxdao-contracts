@@ -30,7 +30,8 @@ contract DXDVotingMachine {
     enum ProposalState {
         None,
         ExpiredInQueue,
-        Executed,
+        ExecutedInQueue,
+        ExecutedInBoost,
         Queued,
         PreBoosted,
         Boosted,
@@ -38,6 +39,7 @@ contract DXDVotingMachine {
     }
     enum ExecutionState {
         None,
+        Failed,
         QueueBarCrossed,
         QueueTimeOut,
         PreBoostedBarCrossed,
@@ -81,6 +83,7 @@ contract DXDVotingMachine {
         bytes32 schemeId; // the scheme unique identifier the proposal is target to.
         address callbacks; // should fulfill voting callbacks interface.
         ProposalState state;
+        ExecutionState executionState;
         uint256 winningVote; //the winning vote.
         address proposer;
         //the proposal boosted period limit . it is updated for the case of quiteWindow mode.
@@ -180,7 +183,6 @@ contract DXDVotingMachine {
     );
 
     event StateChange(bytes32 indexed _proposalId, ProposalState _proposalState);
-    event GPExecuteProposal(bytes32 indexed _proposalId, ExecutionState _executionState);
     event ExpirationCallBounty(bytes32 indexed _proposalId, address indexed _beneficiary, uint256 _amount);
     event ConfidenceLevelChange(bytes32 indexed _proposalId, uint256 _confidenceThreshold);
     event ProposalExecuteResult(bytes);
@@ -334,8 +336,10 @@ contract DXDVotingMachine {
     function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint256[3] memory rewards) {
         Proposal storage proposal = proposals[_proposalId];
         require(
-            (proposal.state == ProposalState.Executed) || (proposal.state == ProposalState.ExpiredInQueue),
-            "Proposal should be Executed or ExpiredInQueue"
+            (proposal.state == ProposalState.ExecutedInQueue) ||
+                (proposal.state == ProposalState.ExecutedInBoost) ||
+                (proposal.state == ProposalState.ExpiredInQueue),
+            "Proposal should be ExecutedInQueue, ExecutedInBoost or ExpiredInQueue"
         );
         Parameters memory params = parameters[proposal.paramsHash];
         //as staker
@@ -411,7 +415,7 @@ contract DXDVotingMachine {
         returns (uint256 redeemedAmount, uint256 potentialAmount)
     {
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.state == ProposalState.Executed);
+        require(proposal.state == ProposalState.ExecutedInQueue || proposal.state == ProposalState.ExecutedInBoost);
         uint256 totalWinningStakes = proposalStakes[_proposalId][proposal.winningVote];
         Staker storage staker = proposalStakers[_proposalId][_beneficiary];
         if (
@@ -873,27 +877,26 @@ contract DXDVotingMachine {
         executeParams.boostedExecutionBar =
             (executeParams.totalReputation / 10000) *
             params.boostedVoteRequiredPercentage;
-        ExecutionState executionState = ExecutionState.None;
         executeParams.averageDownstakesOfBoosted;
         executeParams.confidenceThreshold;
 
         if (proposalVotes[_proposalId][proposal.winningVote] > executeParams.executionBar) {
             // someone crossed the absolute vote execution bar.
             if (proposal.state == ProposalState.Queued) {
-                executionState = ExecutionState.QueueBarCrossed;
+                proposal.executionState = ExecutionState.QueueBarCrossed;
             } else if (proposal.state == ProposalState.PreBoosted) {
-                executionState = ExecutionState.PreBoostedBarCrossed;
+                proposal.executionState = ExecutionState.PreBoostedBarCrossed;
             } else {
-                executionState = ExecutionState.BoostedBarCrossed;
+                proposal.executionState = ExecutionState.BoostedBarCrossed;
             }
-            proposal.state = ProposalState.Executed;
+            proposal.state = ProposalState.ExecutedInQueue;
         } else {
             if (proposal.state == ProposalState.Queued) {
                 // solhint-disable-next-line not-rely-on-time
                 if ((block.timestamp - proposal.times[0]) >= params.queuedVotePeriodLimit) {
                     proposal.state = ProposalState.ExpiredInQueue;
                     proposal.winningVote = NO;
-                    executionState = ExecutionState.QueueTimeOut;
+                    proposal.executionState = ExecutionState.QueueTimeOut;
                 } else {
                     executeParams.confidenceThreshold = threshold(proposal.paramsHash, proposal.schemeId);
                     if (_score(_proposalId) > executeParams.confidenceThreshold) {
@@ -950,34 +953,32 @@ contract DXDVotingMachine {
             // solhint-disable-next-line not-rely-on-time
             if ((block.timestamp - proposal.times[1]) >= proposal.currentBoostedVotePeriodLimit) {
                 if (proposalVotes[_proposalId][proposal.winningVote] >= executeParams.boostedExecutionBar) {
-                    proposal.state = ProposalState.Executed;
-                    executionState = ExecutionState.BoostedBarCrossed;
+                    proposal.state = ProposalState.ExecutedInBoost;
+                    proposal.executionState = ExecutionState.BoostedBarCrossed;
                 } else {
                     proposal.state = ProposalState.ExpiredInQueue;
                     proposal.winningVote = NO;
-                    executionState = ExecutionState.BoostedTimeOut;
+                    proposal.executionState = ExecutionState.BoostedTimeOut;
                 }
             }
         }
 
-        if (executionState != ExecutionState.None) {
+        if (proposal.executionState != ExecutionState.None) {
             if (
-                (executionState == ExecutionState.BoostedTimeOut) ||
-                (executionState == ExecutionState.BoostedBarCrossed)
+                (proposal.executionState == ExecutionState.BoostedTimeOut) ||
+                (proposal.executionState == ExecutionState.BoostedBarCrossed)
             ) {
-                schemes[proposal.schemeId].orgBoostedProposalsCnt =
-                    schemes[proposal.schemeId].orgBoostedProposalsCnt -
-                    1;
+                schemes[proposal.schemeId].orgBoostedProposalsCnt--;
                 //remove a value from average = ((average * nbValues) - value) / (nbValues - 1);
-                uint256 boostedProposals = schemes[proposal.schemeId].orgBoostedProposalsCnt;
-                if (boostedProposals == 0) {
+                if (schemes[proposal.schemeId].orgBoostedProposalsCnt == 0) {
                     schemes[proposal.schemeId].averagesDownstakesOfBoosted = 0;
                 } else {
                     executeParams.averageDownstakesOfBoosted = schemes[proposal.schemeId].averagesDownstakesOfBoosted;
                     schemes[proposal.schemeId].averagesDownstakesOfBoosted =
-                        ((executeParams.averageDownstakesOfBoosted * (boostedProposals + 1)) -
+                        ((executeParams.averageDownstakesOfBoosted *
+                            (schemes[proposal.schemeId].orgBoostedProposalsCnt + 1)) -
                             proposalStakes[_proposalId][NO]) /
-                        boostedProposals;
+                        schemes[proposal.schemeId].orgBoostedProposalsCnt;
                 }
             }
             emit ExecuteProposal(
@@ -986,23 +987,25 @@ contract DXDVotingMachine {
                 proposal.winningVote,
                 executeParams.totalReputation
             );
-            emit GPExecuteProposal(_proposalId, executionState);
             proposal.daoBounty = proposal.daoBountyRemain;
 
             try ProposalExecuteInterface(proposal.callbacks).executeProposal(_proposalId, proposal.winningVote) {
                 emit ProposalExecuteResult(bytes("0"));
             } catch Error(string memory errorMessage) {
+                proposal.executionState = ExecutionState.Failed;
                 emit ProposalExecuteResult(bytes(errorMessage));
             } catch Panic(uint256 errorMessage) {
+                proposal.executionState = ExecutionState.Failed;
                 emit ProposalExecuteResult(abi.encodePacked(errorMessage));
             } catch (bytes memory errorMessage) {
+                proposal.executionState = ExecutionState.Failed;
                 emit ProposalExecuteResult(errorMessage);
             }
         }
         if (tmpProposal.state != proposal.state) {
             emit StateChange(_proposalId, proposal.state);
         }
-        return (executionState != ExecutionState.None);
+        return (proposal.executionState != ExecutionState.None || proposal.executionState != ExecutionState.Failed);
     }
 
     /**

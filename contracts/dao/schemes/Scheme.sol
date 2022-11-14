@@ -32,8 +32,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         None,
         Submitted,
         Rejected,
-        ExecutionSucceeded,
-        ExecutionTimeout
+        Passed
     }
 
     struct Proposal {
@@ -53,7 +52,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     DAOAvatar public avatar;
     PermissionRegistry public permissionRegistry;
     string public schemeName;
-    uint256 public maxSecondsForExecution;
     uint256 public maxRepPercentageChange;
 
     // Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
@@ -67,8 +65,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @param _votingMachine the voting machine address
      * @param _controller The controller address
      * @param _permissionRegistry The address of the permission registry contract
-     * @param _maxSecondsForExecution The maximum amount of time in seconds for a proposal without executed since
-     * submitted time
      * @param _maxRepPercentageChange The maximum percentage allowed to be changed in REP total supply after proposal
      * execution
      */
@@ -78,33 +74,17 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         address _controller,
         address _permissionRegistry,
         string calldata _schemeName,
-        uint256 _maxSecondsForExecution,
         uint256 _maxRepPercentageChange
     ) external {
         require(address(avatar) == address(0), "Scheme: cannot init twice");
         require(_avatar != address(0), "Scheme: avatar cannot be zero");
         require(_controller != address(0), "Scheme: controller cannot be zero");
-        require(_maxSecondsForExecution >= 86400, "Scheme: _maxSecondsForExecution cant be less than 86400 seconds");
         avatar = DAOAvatar(_avatar);
         votingMachine = IDXDVotingMachine(_votingMachine);
         controller = DAOController(_controller);
         permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
-        maxSecondsForExecution = _maxSecondsForExecution;
         maxRepPercentageChange = _maxRepPercentageChange;
-    }
-
-    /**
-     * @dev Set the max amount of seconds that a proposal has to be executed, only callable from the avatar address
-     * @param _maxSecondsForExecution New max proposal time in seconds to be used
-     */
-    function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external virtual {
-        require(
-            msg.sender == address(avatar) || msg.sender == address(this),
-            "Scheme: setMaxSecondsForExecution is callable only from the avatar or the scheme"
-        );
-        require(_maxSecondsForExecution >= 86400, "Scheme: _maxSecondsForExecution cant be less than 86400 seconds");
-        maxSecondsForExecution = _maxSecondsForExecution;
     }
 
     /**
@@ -178,13 +158,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             "WalletScheme: scheme cannot make avatar calls"
         );
 
-        if (proposal.submittedTime + maxSecondsForExecution < block.timestamp) {
-            // If the amount of time passed since submission plus max proposal time is lower than block timestamp
-            // the proposal timeout execution is reached and proposal cant be executed from now on
-
-            proposal.state = ProposalState.ExecutionTimeout;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionTimeout));
-        } else if (_winningOption == 1) {
+        if (_winningOption == 1) {
             proposal.state = ProposalState.Rejected;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
         } else {
@@ -221,7 +195,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
                 }
             }
 
-            proposal.state = ProposalState.ExecutionSucceeded;
+            proposal.state = ProposalState.Passed;
 
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
             require(
@@ -234,7 +208,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
 
             require(permissionRegistry.checkERC20Limits(address(this)), "WalletScheme: ERC20 limits passed");
 
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.Passed));
         }
         controller.endProposal(_proposalId);
         executingProposal = false;
