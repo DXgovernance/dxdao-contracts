@@ -153,15 +153,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.state == ProposalState.Submitted, "WalletScheme: must be a submitted proposal");
 
-        require(
-            !controller.getSchemeCanMakeAvatarCalls(address(this)),
-            "WalletScheme: scheme cannot make avatar calls"
-        );
-
-        if (_winningOption == 1) {
-            proposal.state = ProposalState.Rejected;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
-        } else {
+        if (_winningOption > 1) {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
 
             permissionRegistry.setERC20Balances();
@@ -195,23 +187,44 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
                 }
             }
 
-            proposal.state = ProposalState.Passed;
-
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
             require(
                 ((oldRepSupply * (uint256(100) + (maxRepPercentageChange))) / 100 >=
                     getNativeReputationTotalSupply()) &&
                     ((oldRepSupply * (uint256(100) - maxRepPercentageChange)) / 100 <=
                         getNativeReputationTotalSupply()),
-                "WalletScheme: maxRepPercentageChange passed"
+                "Scheme: maxRepPercentageChange passed"
             );
 
-            require(permissionRegistry.checkERC20Limits(address(this)), "WalletScheme: ERC20 limits passed");
+            require(permissionRegistry.checkERC20Limits(address(this)), "Scheme: ERC20 limits passed");
+        }
+        executingProposal = false;
+        return true;
+    }
 
+    /**
+     * @dev Finish a proposal and set the final state in storage
+     * @param _proposalId the ID of the voting in the voting machine
+     * @param _winningOption The winning option in the voting machine
+     * @return bool success
+     */
+    function finishProposal(bytes32 _proposalId, uint256 _winningOption)
+        public
+        virtual
+        onlyVotingMachine
+        returns (bool)
+    {
+        Proposal storage proposal = proposals[_proposalId];
+        require(proposal.state == ProposalState.Submitted, "Scheme: must be a submitted proposal");
+
+        if (_winningOption == 1) {
+            proposal.state = ProposalState.Rejected;
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
+        } else {
+            proposal.state = ProposalState.Passed;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.Passed));
         }
         controller.endProposal(_proposalId);
-        executingProposal = false;
         return true;
     }
 
