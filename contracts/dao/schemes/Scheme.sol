@@ -179,6 +179,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
                         callDataFuncSignature,
                         proposal.value[callIndex]
                     );
+
                     (callsSucessResult, returnData) = proposal.to[callIndex].call{value: proposal.value[callIndex]}(
                         proposal.callData[callIndex]
                     );
