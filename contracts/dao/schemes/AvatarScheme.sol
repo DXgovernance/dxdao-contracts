@@ -54,19 +54,8 @@ contract AvatarScheme is Scheme {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.state == ProposalState.Submitted, "AvatarScheme: must be a submitted proposal");
 
-        if ((proposal.submittedTime + maxSecondsForExecution) < block.timestamp) {
-            // If the amount of time passed since submission plus max proposal time is lower than block timestamp
-            // the proposal timeout execution is reached and proposal cant be executed from now on
-
-            proposal.state = ProposalState.ExecutionTimeout;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionTimeout));
-        } else if (_winningOption == 1) {
-            proposal.state = ProposalState.Rejected;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
-        } else {
+        if (_winningOption > 1) {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
-            proposal.state = ProposalState.ExecutionSucceeded;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
 
             controller.avatarCall(
                 address(permissionRegistry),
