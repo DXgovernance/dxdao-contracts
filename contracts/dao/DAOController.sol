@@ -6,12 +6,12 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeab
 import "./DAOAvatar.sol";
 import "./DAOReputation.sol";
 
-/**
- * @title DAO Controller
- * @dev A controller controls and connect the organizations schemes, reputation and avatar.
- * The schemes execute proposals through the controller to the avatar.
- * Each scheme has it own parameters and operation permissions.
- */
+error DAOControllerError(string);
+
+/// @title DAO Controller
+/// @dev A controller controls and connect the organizations schemes, reputation and avatar.
+/// The schemes execute proposals through the controller to the avatar.
+/// Each scheme has it own parameters and operation permissions.
 contract DAOController is Initializable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
@@ -58,34 +58,40 @@ contract DAOController is Initializable {
     }
 
     modifier onlyRegisteredScheme() {
-        require(schemes[msg.sender].isRegistered, "DAOController: Sender is not a registered scheme");
+        if (!schemes[msg.sender].isRegistered) {
+            revert DAOControllerError("Sender is not a registered scheme");
+        }
         _;
     }
 
     modifier onlyRegisteringSchemes() {
-        require(schemes[msg.sender].canManageSchemes, "DAOController: Sender cannot manage schemes");
+        if (!schemes[msg.sender].canManageSchemes) {
+            revert DAOControllerError("Sender cannot manage schemes");
+        }
         _;
     }
 
     modifier onlyAvatarCallScheme() {
-        require(schemes[msg.sender].canMakeAvatarCalls, "DAOController: Sender cannot perform avatar calls");
+        if (!schemes[msg.sender].canMakeAvatarCalls) {
+            revert DAOControllerError("Sender cannot perform avatar calls");
+        }
         _;
     }
 
     modifier onlyChangingReputation() {
-        require(schemes[msg.sender].canChangeReputation, "DAOController: Sender cannot change reputation");
+        if (!schemes[msg.sender].canChangeReputation) {
+            revert DAOControllerError("Sender cannot change reputation");
+        }
         _;
     }
 
-    /**
-     * @dev register a scheme
-     * @param _scheme the address of the scheme
-     * @param _paramsHash a hashed configuration of the usage of the scheme
-     * @param _canManageSchemes whether the scheme is able to manage schemes
-     * @param _canMakeAvatarCalls whether the scheme is able to make avatar calls
-     * @param _canChangeReputation whether the scheme is able to change reputation
-     * @return bool success of the operation
-     */
+    /// @dev register a scheme
+    /// @param _scheme the address of the scheme
+    /// @param _paramsHash a hashed configuration of the usage of the scheme
+    /// @param _canManageSchemes whether the scheme is able to manage schemes
+    /// @param _canMakeAvatarCalls whether the scheme is able to make avatar calls
+    /// @param _canChangeReputation whether the scheme is able to change reputation
+    /// @return bool success of the operation
     function registerScheme(
         address _scheme,
         bytes32 _paramsHash,
@@ -99,10 +105,11 @@ contract DAOController is Initializable {
         if ((!scheme.isRegistered || !scheme.canManageSchemes) && _canManageSchemes) {
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission + 1;
         } else if (scheme.canManageSchemes && !_canManageSchemes) {
-            require(
-                schemesWithManageSchemesPermission > 1,
-                "DAOController: Cannot disable canManageSchemes property from the last scheme with manage schemes permissions"
-            );
+            if (schemesWithManageSchemesPermission <= 1) {
+                revert DAOControllerError(
+                    "Cannot disable canManageSchemes property from the last scheme with manage schemes permissions"
+                );
+            }
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission - 1;
         }
 
@@ -119,11 +126,9 @@ contract DAOController is Initializable {
         return true;
     }
 
-    /**
-     * @dev unregister a scheme
-     * @param _scheme the address of the scheme
-     * @return bool success of the operation
-     */
+    /// @dev unregister a scheme
+    /// @param _scheme the address of the scheme
+    /// @return bool success of the operation
     function unregisterScheme(address _scheme) external onlyRegisteredScheme onlyRegisteringSchemes returns (bool) {
         Scheme memory scheme = schemes[_scheme];
 
@@ -133,10 +138,9 @@ contract DAOController is Initializable {
         }
 
         if (scheme.canManageSchemes) {
-            require(
-                schemesWithManageSchemesPermission > 1,
-                "DAOController: Cannot unregister last scheme with manage schemes permission"
-            );
+            if (schemesWithManageSchemesPermission <= 1) {
+                revert DAOControllerError("Cannot unregister last scheme with manage schemes permission");
+            }
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission - 1;
         }
 
@@ -146,15 +150,13 @@ contract DAOController is Initializable {
         return true;
     }
 
-    /**
-     * @dev perform a generic call to an arbitrary contract
-     * @param _contract  the contract's address to call
-     * @param _data ABI-encoded contract call to call `_contract` address.
-     * @param _avatar the controller's avatar address
-     * @param _value value (ETH) to transfer with the transaction
-     * @return bool -success
-     *         bytes  - the return value of the called _contract's function.
-     */
+    /// @dev perform a generic call to an arbitrary contract
+    /// @param _contract  the contract's address to call
+    /// @param _data ABI-encoded contract call to call `_contract` address.
+    /// @param _avatar the controller's avatar address
+    /// @param _value value (ETH) to transfer with the transaction
+    /// @return bool -success
+    ///         bytes  - the return value of the called _contract's function.
     function avatarCall(
         address _contract,
         bytes calldata _data,
@@ -164,56 +166,49 @@ contract DAOController is Initializable {
         return _avatar.executeCall(_contract, _data, _value);
     }
 
-    /**
-     * @dev Adds a proposal to the active proposals list
-     * @param _proposalId  the proposalId
-     */
+    /// @dev Adds a proposal to the active proposals list
+    /// @param _proposalId  the proposalId
     function startProposal(bytes32 _proposalId) external onlyRegisteredScheme {
-        require(schemeOfProposal[_proposalId] == address(0), "DAOController: _proposalId used by other scheme");
+        if (schemeOfProposal[_proposalId] != address(0)) {
+            revert DAOControllerError("_proposalId used by other scheme");
+        }
         activeProposals.add(_proposalId);
         schemeOfProposal[_proposalId] = msg.sender;
     }
 
-    /**
-     * @dev Moves a proposal from the active proposals list to the inactive list
-     * @param _proposalId  the proposalId
-     */
+    /// @dev Moves a proposal from the active proposals list to the inactive list
+    /// @param _proposalId  the proposalId
     function endProposal(bytes32 _proposalId) external {
-        require(
-            schemeOfProposal[_proposalId] == msg.sender,
-            "DAOController: Sender is not the scheme that originally started the proposal"
-        );
-        require(
-            schemes[msg.sender].isRegistered ||
-                (!schemes[schemeOfProposal[_proposalId]].isRegistered && activeProposals.contains(_proposalId)),
-            "DAOController: Sender is not a registered scheme or proposal is not active"
-        );
+        if (schemeOfProposal[_proposalId] != msg.sender) {
+            revert DAOControllerError("Sender is not the scheme that originally started the proposal");
+        }
+        if (
+            !schemes[msg.sender].isRegistered &&
+            (!schemes[schemeOfProposal[_proposalId]].isRegistered && !activeProposals.contains(_proposalId))
+        ) {
+            revert DAOControllerError("Sender is not a registered scheme or proposal is not active");
+        }
+
         activeProposals.remove(_proposalId);
         inactiveProposals.add(_proposalId);
     }
 
-    /**
-     * @dev Burns dao reputation
-     * @param _amount  the amount of reputation to burn
-     * @param _account  the account to burn reputation from
-     */
+    /// @dev Burns dao reputation
+    /// @param _amount  the amount of reputation to burn
+    /// @param _account  the account to burn reputation from
     function burnReputation(uint256 _amount, address _account) external onlyChangingReputation returns (bool) {
         return reputationToken.burn(_account, _amount);
     }
 
-    /**
-     * @dev Mints dao reputation
-     * @param _amount  the amount of reputation to mint
-     * @param _account  the account to mint reputation from
-     */
+    /// @dev Mints dao reputation
+    /// @param _amount  the amount of reputation to mint
+    /// @param _account  the account to mint reputation from
     function mintReputation(uint256 _amount, address _account) external onlyChangingReputation returns (bool) {
         return reputationToken.mint(_account, _amount);
     }
 
-    /**
-     * @dev Transfer ownership of dao reputation
-     * @param _newOwner  the new owner of the reputation token
-     */
+    /// @dev Transfer ownership of dao reputation
+    /// @param _newOwner  the new owner of the reputation token
     function transferReputationOwnership(address _newOwner)
         external
         onlyRegisteringSchemes
@@ -251,13 +246,11 @@ contract DAOController is Initializable {
         return (schemes[_scheme].isRegistered);
     }
 
-    /**
-     * @dev Returns array of proposals based on index args. Both indexes are inclusive, unles (0,0) that returns all elements
-     * @param _start index to start batching (included).
-     * @param _end last index of batch (included). Zero will default to last element from the list
-     * @param _proposals EnumerableSetUpgradeable set of proposals
-     * @return proposalsArray with proposals list.
-     */
+    /// @dev Returns array of proposals based on index args. Both indexes are inclusive, unles (0,0) that returns all elements
+    /// @param _start index to start batching (included).
+    /// @param _end last index of batch (included). Zero will default to last element from the list
+    /// @param _proposals EnumerableSetUpgradeable set of proposals
+    /// @return proposalsArray with proposals list.
     function _getProposalsBatchRequest(
         uint256 _start,
         uint256 _end,
@@ -267,10 +260,15 @@ contract DAOController is Initializable {
         if (totalCount == 0) {
             return new ProposalAndScheme[](0);
         }
-        require(_start < totalCount, "DAOController: _start cannot be bigger than proposals list length");
-        require(_end < totalCount, "DAOController: _end cannot be bigger than proposals list length");
-        require(_start <= _end, "DAOController: _start cannot be bigger _end");
-
+        if (_start > totalCount) {
+            revert DAOControllerError("_start cannot be bigger than proposals list length");
+        }
+        if (_end > totalCount) {
+            revert DAOControllerError("_end cannot be bigger than proposals list length");
+        }
+        if (_start > _end) {
+            revert DAOControllerError("_start cannot be bigger _end");
+        }
         uint256 total = totalCount - 1;
         uint256 lastIndex = _end == 0 ? total : _end;
         uint256 returnCount = lastIndex + 1 - _start;
@@ -284,12 +282,10 @@ contract DAOController is Initializable {
         return proposalsArray;
     }
 
-    /**
-     * @dev Returns array of active proposals
-     * @param _start index to start batching (included).
-     * @param _end last index of batch (included). Zero will return all
-     * @return activeProposalsArray with active proposals list.
-     */
+    /// @dev Returns array of active proposals
+    /// @param _start index to start batching (included).
+    /// @param _end last index of batch (included). Zero will return all
+    /// @return activeProposalsArray with active proposals list.
     function getActiveProposals(uint256 _start, uint256 _end)
         external
         view
@@ -298,11 +294,9 @@ contract DAOController is Initializable {
         return _getProposalsBatchRequest(_start, _end, activeProposals);
     }
 
-    /**
-     * @dev Returns array of inactive proposals
-     * @param _start index to start batching (included).
-     * @param _end last index of batch (included). Zero will return all
-     */
+    /// @dev Returns array of inactive proposals
+    /// @param _start index to start batching (included).
+    /// @param _end last index of batch (included). Zero will return all
     function getInactiveProposals(uint256 _start, uint256 _end)
         external
         view
@@ -315,16 +309,12 @@ contract DAOController is Initializable {
         return reputationToken;
     }
 
-    /**
-     * @dev Returns the amount of active proposals
-     */
+    /// @dev Returns the amount of active proposals
     function getActiveProposalsCount() public view returns (uint256) {
         return activeProposals.length();
     }
 
-    /**
-     * @dev Returns the amount of inactive proposals
-     */
+    /// @dev Returns the amount of inactive proposals
     function getInactiveProposalsCount() public view returns (uint256) {
         return inactiveProposals.length();
     }

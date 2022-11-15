@@ -331,56 +331,49 @@ contract("WalletScheme", function (accounts) {
     );
   });
 
-  it("MasterWalletScheme - proposal with data or value to wallet scheme address fail", async function () {
-    expectRevert(
+  it("MasterWalletScheme - proposing proposal with different length of to and value fail", async function () {
+    const callData = helpers.testCallFrom(masterWalletScheme.address);
+
+    await expectRevert(
       masterWalletScheme.proposeCalls(
-        [masterWalletScheme.address],
-        ["0x00000000"],
-        [1],
+        [actionMock.address],
+        [callData],
+        [0, 0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "invalid proposal caller"
+      "Scheme_InvalidParameterArrayLength()"
     );
-    expectRevert(
+    await expectRevert(
       masterWalletScheme.proposeCalls(
-        [masterWalletScheme.address],
-        ["0x00000000"],
-        [1],
+        [actionMock.address],
+        [callData, callData],
+        [0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "invalid proposal caller"
+      "Scheme_InvalidParameterArrayLength()"
     );
 
     assert.equal(await masterWalletScheme.getOrganizationProposalsLength(), 0);
   });
 
-  it("MasterWalletScheme - proposing proposal with different length of to and value fail", async function () {
+  it("MasterWalletScheme - cannot make a proposal with more than 2 options", async function () {
     const callData = helpers.testCallFrom(masterWalletScheme.address);
 
-    expectRevert(
+    await expectRevert(
       masterWalletScheme.proposeCalls(
         [actionMock.address],
         [callData],
-        [0, 0],
-        constants.TEST_TITLE,
-        constants.SOME_HASH
-      ),
-      "invalid _value length"
-    );
-    expectRevert(
-      masterWalletScheme.proposeCalls(
-        [actionMock.address],
-        [callData, callData],
         [0],
+        3,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "invalid _callData length"
+      "WalletScheme__TotalOptionsMustBeTwo()"
     );
-
-    assert.equal(await masterWalletScheme.getOrganizationProposalsLength(), 0);
   });
 
   it("MasterWalletScheme - proposal with data - negative decision - proposal rejected", async function () {
@@ -411,7 +404,6 @@ contract("WalletScheme", function (accounts) {
     );
     assert.equal(organizationProposal.descriptionHash, constants.SOME_HASH);
     assert.equal(organizationProposal.title, constants.TEST_TITLE);
-
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], actionMock.address);
     assert.equal(organizationProposal.value[0], 0);
@@ -445,6 +437,51 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], actionMock.address);
     assert.equal(organizationProposal.value[0], 0);
+  });
+
+  it("WalletScheme - check that it cannot make avatar calls", async function () {
+    const newWallet = await WalletScheme.new();
+    await newWallet.initialize(
+      org.avatar.address,
+      org.votingMachine.address,
+      org.controller.address,
+      permissionRegistry.address,
+      "New Wallet",
+      5
+    );
+
+    await org.controller.registerScheme(
+      newWallet.address,
+      defaultParamsHash,
+      false,
+      true,
+      true
+    );
+
+    const callData = helpers.testCallFrom(newWallet.address);
+
+    const tx = await newWallet.proposeCalls(
+      [newWallet.address],
+      [callData],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+    // Check inside the raw logs that the ProposalExecuteResult event logs the signature of the error to be throw
+    await assert(
+      (
+        await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+          from: accounts[2],
+        })
+      ).receipt.rawLogs[2].data.includes(
+        web3.eth.abi
+          .encodeFunctionSignature("WalletScheme__CannotMakeAvatarCalls()")
+          .substring(2)
+      )
+    );
   });
 
   it.skip("MasterWalletScheme - proposal with data - positive decision - proposal executed", async function () {
@@ -663,6 +700,58 @@ contract("WalletScheme", function (accounts) {
     assert.equal(
       (await org.votingMachine.proposals(proposalId)).executionState,
       constants.VOTING_MACHINE_EXECUTION_STATES.Failed
+    );
+  });
+
+  it("Global ETH transfer value not allowed value by permission registry - zero address", async function () {
+    const callData = helpers.testCallFrom(masterWalletScheme.address);
+
+    const tx = await masterWalletScheme.proposeCalls(
+      [constants.ZERO_ADDRESS],
+      [callData],
+      [101],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+    await assert(
+      (
+        await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+          from: accounts[2],
+        })
+      ).receipt.rawLogs[2].data.includes(
+        web3.eth.abi
+          .encodeParameter("string", "PermissionRegistry: Value limit reached")
+          .substring(2)
+      )
+    );
+  });
+
+  it("Global ETH transfer call not allowed value by permission registry - zero address, no value", async function () {
+    const callData = helpers.testCallFrom(masterWalletScheme.address);
+
+    const tx = await masterWalletScheme.proposeCalls(
+      [constants.ZERO_ADDRESS],
+      [callData],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+    await assert(
+      (
+        await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+          from: accounts[2],
+        })
+      ).receipt.rawLogs[2].data.includes(
+        web3.eth.abi
+          .encodeParameter("string", "PermissionRegistry: Call not allowed")
+          .substring(2)
+      )
     );
   });
 
@@ -1042,17 +1131,21 @@ contract("WalletScheme", function (accounts) {
       "_proposalId"
     );
 
-    await expectEvent(
-      await org.votingMachine.vote(
-        proposalIdMintRepToFail,
-        constants.YES_OPTION,
-        0,
-        {
-          from: accounts[2],
-        }
-      ),
-      "ProposalExecuteResult",
-      { 0: "Scheme: maxRepPercentageChange passed" }
+    await assert(
+      (
+        await org.votingMachine.vote(
+          proposalIdMintRepToFail,
+          constants.YES_OPTION,
+          0,
+          {
+            from: accounts[2],
+          }
+        )
+      ).receipt.rawLogs[2].data.includes(
+        web3.eth.abi
+          .encodeFunctionSignature("Scheme__MaxRepPercentageChangePassed()")
+          .substring(2)
+      )
     );
     assert.equal(
       (await masterWalletScheme.getProposal(proposalIdMintRepToFail)).state,
@@ -1108,29 +1201,33 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
-    const proposalIdMintRepToFail = await helpers.getValueFromLogs(
+    const proposalIdBurnRepToFail = await helpers.getValueFromLogs(
       tx,
       "_proposalId"
     );
 
-    await expectEvent(
-      await org.votingMachine.vote(
-        proposalIdMintRepToFail,
-        constants.YES_OPTION,
-        0,
-        {
-          from: accounts[2],
-        }
-      ),
-      "ProposalExecuteResult",
-      { 0: "Scheme: maxRepPercentageChange passed" }
+    await assert(
+      (
+        await org.votingMachine.vote(
+          proposalIdBurnRepToFail,
+          constants.YES_OPTION,
+          0,
+          {
+            from: accounts[2],
+          }
+        )
+      ).receipt.rawLogs[2].data.includes(
+        web3.eth.abi
+          .encodeFunctionSignature("Scheme__MaxRepPercentageChangePassed()")
+          .substring(2)
+      )
     );
     assert.equal(
-      (await masterWalletScheme.getProposal(proposalIdMintRepToFail)).state,
+      (await masterWalletScheme.getProposal(proposalIdBurnRepToFail)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.passed
     );
     assert.equal(
-      (await org.votingMachine.proposals(proposalIdMintRepToFail))
+      (await org.votingMachine.proposals(proposalIdBurnRepToFail))
         .executionState,
       constants.VOTING_MACHINE_EXECUTION_STATES.Failed
     );
@@ -1307,18 +1404,19 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.value[2], 0);
   });
 
-  it("MasterWalletScheme - cant initialize with wrong values", async function () {
+  it("MasterWalletScheme - cant initialize if controller address is zero", async function () {
     const unitializedWalletScheme = await WalletScheme.new();
+
     await expectRevert(
       unitializedWalletScheme.initialize(
-        constants.ZERO_ADDRESS,
+        org.avatar.address,
         accounts[0],
-        org.controller.address,
+        constants.ZERO_ADDRESS,
         permissionRegistry.address,
         "Master Wallet",
         5
       ),
-      "avatar cannot be zero"
+      "Scheme__ControllerAddressCannotBeZero()"
     );
   });
 
@@ -1332,16 +1430,21 @@ contract("WalletScheme", function (accounts) {
         "Master Wallet",
         5
       ),
-      "cannot init twice"
+      "Scheme__CannotInitTwice()"
     );
   });
 
-  it("MasterWalletScheme can receive value in contractt", async function () {
+  it("MasterWalletScheme can receive value in contract", async function () {
     await web3.eth.sendTransaction({
       from: accounts[0],
       to: masterWalletScheme.address,
       value: constants.TEST_VALUE,
     });
+  });
+
+  it("MasterWalletScheme - get scheme type", async function () {
+    const schemeType = await masterWalletScheme.getSchemeType();
+    assert.equal(schemeType, "WalletScheme_v1");
   });
 
   it("QuickWalletScheme can receive value in contract", async function () {
@@ -1665,10 +1768,7 @@ contract("WalletScheme", function (accounts) {
         )
       ).receipt.rawLogs[2].data.includes(
         web3.eth.abi
-          .encodeParameter(
-            "string",
-            "DAOController: Sender cannot manage schemes"
-          )
+          .encodeFunctionSignature("DAOControllerError(string)")
           .substring(2)
       )
     );
@@ -1703,10 +1803,7 @@ contract("WalletScheme", function (accounts) {
         )
       ).receipt.rawLogs[2].data.includes(
         web3.eth.abi
-          .encodeParameter(
-            "string",
-            "DAOController: Sender cannot manage schemes"
-          )
+          .encodeFunctionSignature("DAOControllerError(string)")
           .substring(2)
       )
     );
