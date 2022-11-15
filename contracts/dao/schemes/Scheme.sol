@@ -147,11 +147,11 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         returns (bool)
     {
         // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
-        require(!executingProposal, "WalletScheme: proposal execution already running");
+        require(!executingProposal, "Scheme: proposal execution already running");
         executingProposal = true;
 
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.state == ProposalState.Submitted, "WalletScheme: must be a submitted proposal");
+        require(proposal.state == ProposalState.Submitted, "Scheme: must be a submitted proposal");
 
         if (_winningOption > 1) {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
