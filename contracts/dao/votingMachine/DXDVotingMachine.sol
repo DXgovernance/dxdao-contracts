@@ -1008,7 +1008,7 @@ contract DXDVotingMachine {
         if (tmpProposal.state != proposal.state) {
             emit StateChange(_proposalId, proposal.state);
         }
-        return (proposal.executionState != ExecutionState.None || proposal.executionState != ExecutionState.Failed);
+        return (proposal.executionState != ExecutionState.None && proposal.executionState != ExecutionState.Failed);
     }
 
     /**
