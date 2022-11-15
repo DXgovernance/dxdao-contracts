@@ -61,7 +61,6 @@ contract("DXdao", function (accounts) {
       dxDao.controller.address,
       permissionRegistry.address,
       "Master Scheme",
-      86400,
       5
     );
 
@@ -216,7 +215,7 @@ contract("DXdao", function (accounts) {
 
     assert.equal(
       (await masterAvatarScheme.getProposal(proposalId)).state,
-      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.passed
     );
     const inactiveProposals = await dxDao.controller.getInactiveProposals(0, 0);
     assert.equal(inactiveProposals[0].proposalId, proposalId);

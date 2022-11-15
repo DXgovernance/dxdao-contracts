@@ -1,6 +1,10 @@
 import * as helpers from "../helpers";
 
-const { time, expectRevert } = require("@openzeppelin/test-helpers");
+const {
+  time,
+  expectRevert,
+  expectEvent,
+} = require("@openzeppelin/test-helpers");
 
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const AvatarScheme = artifacts.require("./AvatarScheme.sol");
@@ -16,7 +20,6 @@ contract("PermissionRegistry", function (accounts) {
     actionMock;
 
   const constants = helpers.constants;
-  const executionTimeout = 172800 + 86400; // _queuedVotePeriodLimit + _boostedVotePeriodLimit
 
   beforeEach(async function () {
     actionMock = await ActionMock.new();
@@ -46,7 +49,6 @@ contract("PermissionRegistry", function (accounts) {
       dao.controller.address,
       permissionRegistry.address,
       "Master Wallet",
-      executionTimeout,
       5
     );
 
@@ -57,7 +59,6 @@ contract("PermissionRegistry", function (accounts) {
       dao.controller.address,
       permissionRegistry.address,
       "Quick Wallet",
-      executionTimeout,
       0
     );
 
@@ -165,7 +166,7 @@ contract("PermissionRegistry", function (accounts) {
 
     assert.equal(
       (await masterAvatarScheme.getProposal(proposalId1)).state,
-      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.passed
     );
 
     const tx2 = await quickWalletScheme.proposeCalls(
@@ -179,25 +180,38 @@ contract("PermissionRegistry", function (accounts) {
     const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
 
     // The call to execute is not allowed YET, because we change the delay time to 45 seconds
-    await expectRevert(
-      dao.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
+    await expectEvent(
+      await dao.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
         from: accounts[2],
       }),
-      "PermissionRegistry: Call not allowed yet"
+      "ProposalExecuteResult",
+      { 0: "PermissionRegistry: Call not allowed yet" }
     );
 
     // After increasing the time it will allow the proposal execution
     await time.increase(45);
-    await dao.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
+
+    const tx4 = await quickWalletScheme.proposeCalls(
+      [actionMock.address],
+      [callData],
+      [0],
+      2,
+      constants.TEST_TITLE,
+      constants.SOME_HASH
+    );
+    const proposalId3 = await helpers.getValueFromLogs(tx4, "_proposalId");
+
+    // The call to execute is not allowed YET, because we change the delay time to 45 seconds
+    await dao.votingMachine.vote(proposalId3, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
 
     const organizationProposal = await quickWalletScheme.getProposal(
-      proposalId2
+      proposalId3
     );
     assert.equal(
       organizationProposal.state,
-      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.passed
     );
     assert.equal(organizationProposal.callData[0], callData);
     assert.equal(organizationProposal.to[0], actionMock.address);
@@ -273,7 +287,7 @@ contract("PermissionRegistry", function (accounts) {
 
     assert.equal(
       (await quickWalletScheme.getProposal(proposalId)).state,
-      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.passed
     );
 
     await time.increase(60);

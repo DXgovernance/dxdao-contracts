@@ -12,14 +12,12 @@ const ActionMock = artifacts.require("./ActionMock.sol");
 contract("AvatarScheme", function (accounts) {
   let standardTokenMock,
     permissionRegistry,
-    registrarScheme,
     avatarScheme,
     walletScheme,
     org,
     actionMock;
 
   const constants = helpers.constants;
-  const executionTimeout = 172800 + 86400; // _queuedVotePeriodLimit + _boostedVotePeriodLimit
 
   beforeEach(async function () {
     actionMock = await ActionMock.new();
@@ -49,7 +47,6 @@ contract("AvatarScheme", function (accounts) {
       org.controller.address,
       permissionRegistry.address,
       "Master Wallet",
-      executionTimeout,
       5
     );
 
@@ -60,7 +57,6 @@ contract("AvatarScheme", function (accounts) {
       org.controller.address,
       permissionRegistry.address,
       "Quick Wallet",
-      executionTimeout,
       1
     );
 
@@ -119,7 +115,7 @@ contract("AvatarScheme", function (accounts) {
     const organizationProposal = await avatarScheme.getProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.passed
     );
   });
 });

@@ -71,7 +71,6 @@ contract("DXDGuild", function (accounts) {
       dxDao.controller.address,
       permissionRegistry.address,
       "Master Scheme",
-      86400,
       5
     );
 
@@ -215,7 +214,7 @@ contract("DXDGuild", function (accounts) {
       const proposalInfo = await dxdGuild.getProposal(proposalId);
       assert.equal(
         proposalInfo.state,
-        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.passed
       );
       assert.equal(proposalInfo.to[0], dxDao.votingMachine.address);
       assert.equal(proposalInfo.value[0], 0);

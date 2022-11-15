@@ -72,8 +72,7 @@ export const deployDao = async function (deployConfig) {
   await reputation.transferOwnership(controller.address);
 
   const votingMachine = await DXDVotingMachine.new(
-    deployConfig.votingMachineToken,
-    avatar.address
+    deployConfig.votingMachineToken
   );
 
   const defaultParamsHash = await setDefaultParameters(votingMachine);
@@ -113,7 +112,7 @@ export function testCallWithoutReturnValueFrom(address) {
 
 // Parameters
 export const defaultParameters = {
-  queuedVoteRequiredPercentage: 50,
+  queuedVoteRequiredPercentage: 5000,
   queuedVotePeriodLimit: 60,
   boostedVotePeriodLimit: 60,
   preBoostedVotePeriodLimit: 10,
@@ -122,6 +121,7 @@ export const defaultParameters = {
   proposingRepReward: 0,
   minimumDaoBounty: 100,
   daoBountyConst: 10,
+  boostedVoteRequiredPercentage: 100,
 };
 
 export const defaultParametersArray = [
@@ -134,6 +134,7 @@ export const defaultParametersArray = [
   defaultParameters.proposingRepReward,
   defaultParameters.minimumDaoBounty,
   defaultParameters.daoBountyConst,
+  defaultParameters.boostedVoteRequiredPercentage,
 ];
 
 export const setDefaultParameters = async function (votingMachine) {
