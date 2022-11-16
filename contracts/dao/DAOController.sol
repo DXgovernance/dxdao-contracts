@@ -6,8 +6,6 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeab
 import "./DAOAvatar.sol";
 import "./DAOReputation.sol";
 
-error DAOControllerError(string);
-
 /// @title DAO Controller
 /// @dev A controller controls and connect the organizations schemes, reputation and avatar.
 /// The schemes execute proposals through the controller to the avatar.
@@ -41,6 +39,42 @@ contract DAOController is Initializable {
     event RegisterScheme(address indexed _sender, address indexed _scheme);
     event UnregisterScheme(address indexed _sender, address indexed _scheme);
 
+    /// @notice Sender is not a registered scheme
+    error DAOController__SenderNotRegistered();
+
+    /// @notice Sender cannot manage schemes
+    error DAOController__SenderCannotManageSchemes();
+
+    /// @notice Sender cannot perform avatar calls
+    error DAOController__SenderCannotPerformAvatarCalls();
+
+    /// @notice Sender cannot change reputation
+    error DAOController__SenderCannotChangeReputation();
+
+    /// @notice Cannot disable canManageSchemes property from the last scheme with manage schemes permissions
+    error DAOController__CannotDisableLastSchemeWithManageSchemesPermission();
+
+    /// @notice Cannot unregister last scheme with manage schemes permission
+    error DAOController__CannotUnregisterLastSchemeWithManageSchemesPermission();
+
+    /// @notice arg _proposalId is being used by other scheme
+    error DAOController__IdUsedByOtherScheme();
+
+    /// Sender is not the scheme that originally started the proposal
+    error DAOController__SenderIsNotTheProposer();
+
+    /// Sender is not a registered scheme or proposal is not active
+    error DAOController__SenderIsNotRegisteredOrProposalIsInactive();
+
+    /// @notice arg _start cannot be bigger than proposals list length
+    error DAOController__StartCannotBeBiggerThanListLength();
+
+    /// @notice arg _end cannot be bigger than proposals list length
+    error DAOController__EndCannotBeBiggerThanListLength();
+
+    /// @notice arg _start cannot be bigger than _end
+    error DAOController__StartCannotBeBiggerThanEnd();
+
     function initialize(
         address _scheme,
         address _reputationToken,
@@ -59,28 +93,32 @@ contract DAOController is Initializable {
 
     modifier onlyRegisteredScheme() {
         if (!schemes[msg.sender].isRegistered) {
-            revert DAOControllerError("Sender is not a registered scheme");
+            // revert DAOController("Sender is not a registered scheme");
+            revert DAOController__SenderNotRegistered();
         }
         _;
     }
 
     modifier onlyRegisteringSchemes() {
         if (!schemes[msg.sender].canManageSchemes) {
-            revert DAOControllerError("Sender cannot manage schemes");
+            // revert DAOController("Sender cannot manage schemes");
+            revert DAOController__SenderCannotManageSchemes();
         }
         _;
     }
 
     modifier onlyAvatarCallScheme() {
         if (!schemes[msg.sender].canMakeAvatarCalls) {
-            revert DAOControllerError("Sender cannot perform avatar calls");
+            // revert DAOController("Sender cannot perform avatar calls");
+            revert DAOController__SenderCannotPerformAvatarCalls();
         }
         _;
     }
 
     modifier onlyChangingReputation() {
         if (!schemes[msg.sender].canChangeReputation) {
-            revert DAOControllerError("Sender cannot change reputation");
+            // revert DAOController("Sender cannot change reputation");
+            revert DAOController__SenderCannotChangeReputation();
         }
         _;
     }
@@ -106,9 +144,10 @@ contract DAOController is Initializable {
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission + 1;
         } else if (scheme.canManageSchemes && !_canManageSchemes) {
             if (schemesWithManageSchemesPermission <= 1) {
-                revert DAOControllerError(
-                    "Cannot disable canManageSchemes property from the last scheme with manage schemes permissions"
-                );
+                // revert DAOController(
+                //     "Cannot disable canManageSchemes property from the last scheme with manage schemes permissions"
+                // );
+                revert DAOController__CannotDisableLastSchemeWithManageSchemesPermission();
             }
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission - 1;
         }
@@ -139,7 +178,8 @@ contract DAOController is Initializable {
 
         if (scheme.canManageSchemes) {
             if (schemesWithManageSchemesPermission <= 1) {
-                revert DAOControllerError("Cannot unregister last scheme with manage schemes permission");
+                // revert DAOController("Cannot unregister last scheme with manage schemes permission");
+                revert DAOController__CannotUnregisterLastSchemeWithManageSchemesPermission();
             }
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission - 1;
         }
@@ -170,7 +210,8 @@ contract DAOController is Initializable {
     /// @param _proposalId  the proposalId
     function startProposal(bytes32 _proposalId) external onlyRegisteredScheme {
         if (schemeOfProposal[_proposalId] != address(0)) {
-            revert DAOControllerError("_proposalId used by other scheme");
+            // revert DAOController("_proposalId used by other scheme");
+            revert DAOController__IdUsedByOtherScheme();
         }
         activeProposals.add(_proposalId);
         schemeOfProposal[_proposalId] = msg.sender;
@@ -180,13 +221,15 @@ contract DAOController is Initializable {
     /// @param _proposalId  the proposalId
     function endProposal(bytes32 _proposalId) external {
         if (schemeOfProposal[_proposalId] != msg.sender) {
-            revert DAOControllerError("Sender is not the scheme that originally started the proposal");
+            // revert DAOController("Sender is not the scheme that originally started the proposal");
+            revert DAOController__SenderIsNotTheProposer();
         }
         if (
             !schemes[msg.sender].isRegistered &&
             (!schemes[schemeOfProposal[_proposalId]].isRegistered && !activeProposals.contains(_proposalId))
         ) {
-            revert DAOControllerError("Sender is not a registered scheme or proposal is not active");
+            // revert DAOController("Sender is not a registered scheme or proposal is not active");
+            revert DAOController__SenderIsNotRegisteredOrProposalIsInactive();
         }
 
         activeProposals.remove(_proposalId);
@@ -261,13 +304,16 @@ contract DAOController is Initializable {
             return new ProposalAndScheme[](0);
         }
         if (_start > totalCount) {
-            revert DAOControllerError("_start cannot be bigger than proposals list length");
+            // revert DAOController("_start cannot be bigger than proposals list length");
+            revert DAOController__StartCannotBeBiggerThanListLength();
         }
         if (_end > totalCount) {
-            revert DAOControllerError("_end cannot be bigger than proposals list length");
+            // revert DAOController("_end cannot be bigger than proposals list length");
+            revert DAOController__EndCannotBeBiggerThanListLength();
         }
         if (_start > _end) {
-            revert DAOControllerError("_start cannot be bigger _end");
+            // revert DAOController("_start cannot be bigger _end");
+            revert DAOController__StartCannotBeBiggerThanEnd();
         }
         uint256 total = totalCount - 1;
         uint256 lastIndex = _end == 0 ? total : _end;
