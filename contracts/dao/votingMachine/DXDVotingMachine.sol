@@ -173,12 +173,13 @@ contract DXDVotingMachine {
         uint256 _amount
     );
 
-    event VoteSigned(
-        address votingMachine,
+    event ActionSigned(
         bytes32 proposalId,
         address voter,
         uint256 voteDecision,
         uint256 amount,
+        uint256 nonce,
+        uint256 actionType,
         bytes signature
     );
 
@@ -517,13 +518,9 @@ contract DXDVotingMachine {
         uint256 nonce,
         bytes calldata signature
     ) external returns (bool) {
-        bytes32 stakeHashed = keccak256(
-            abi.encodePacked(
-                SIGNED_ACTION_HASH_EIP712,
-                keccak256(abi.encodePacked(address(this), proposalId, staker, stakeDecision, amount, nonce, "stake"))
-            )
-        );
+        bytes32 stakeHashed = hashAction(proposalId, staker, stakeDecision, amount, nonce, 2);
         address staker = stakeHashed.recover(signature);
+        require(staker == stakeHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
         require(stakesNonce[staker] == nonce);
         stakesNonce[staker] = stakesNonce[staker] + 1;
         return _stake(proposalId, stakeDecision, amount, staker);
@@ -639,32 +636,27 @@ contract DXDVotingMachine {
     /**
      * @dev Share the vote of a proposal for a voting machine on a event log
      *
-     * @param votingMachine the voting machine address
      * @param proposalId id of the proposal
      * @param voter address of voter
      * @param voteDecision the vote decision, NO(1) or YES(2).
      * @param amount the reputation amount to vote with, 0 will use all available REP
      * @param nonce nonce value ,it is part of the signature to ensure that
         a signature can be received only once.
+     * @param actionType 1 == vote and 2 == stake
      * @param signature the encoded vote signature
      */
-    function shareSignedVote(
-        address votingMachine,
+    function shareSignedAction(
         bytes32 proposalId,
         address voter,
         uint256 voteDecision,
         uint256 amount,
         uint256 nonce,
+        uint256 actionType,
         bytes calldata signature
     ) external validDecision(proposalId, voteDecision) {
-        bytes32 voteHashed = keccak256(
-            abi.encodePacked(
-                SIGNED_ACTION_HASH_EIP712,
-                keccak256(abi.encodePacked(address(this), proposalId, voter, voteDecision, amount, nonce, "stake"))
-            )
-        );
-        require(voter == voteHashed.recover(signature), "wrong signer");
-        emit VoteSigned(votingMachine, proposalId, voter, voteDecision, amount, signature);
+        bytes32 voteHashed = hashAction(proposalId, voter, voteDecision, amount, nonce, actionType);
+        require(voter == voteHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
+        emit ActionSigned(proposalId, voter, voteDecision, amount, nonce, actionType, signature);
     }
 
     /**
@@ -689,7 +681,6 @@ contract DXDVotingMachine {
     /**
      * @dev Execute a signed vote
      *
-     * @param votingMachine the voting machine address
      * @param proposalId id of the proposal to execute the vote on
      * @param voter the signer of the vote
      * @param voteDecision the vote decision, NO(1) or YES(2).
@@ -699,7 +690,6 @@ contract DXDVotingMachine {
      * @param signature the signature of the hashed vote
      */
     function executeSignedVote(
-        address votingMachine,
         bytes32 proposalId,
         address voter,
         uint256 voteDecision,
@@ -707,15 +697,9 @@ contract DXDVotingMachine {
         uint256 nonce,
         bytes calldata signature
     ) external {
-        require(votingMachine == address(this), "wrong votingMachine");
         require(_isVotable(proposalId), "not votable proposal");
-        bytes32 voteHashed = keccak256(
-            abi.encodePacked(
-                SIGNED_ACTION_HASH_EIP712,
-                keccak256(abi.encodePacked(address(this), proposalId, voter, voteDecision, amount, nonce, "vote"))
-            )
-        );
-        require(voter == voteHashed.recover(signature), "wrong signer");
+        bytes32 voteHashed = hashAction(proposalId, voter, voteDecision, amount, nonce, 1);
+        require(voter == voteHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
         internalVote(proposalId, voter, voteDecision, amount);
         _refundVote(proposals[proposalId].schemeId);
     }
@@ -834,20 +818,56 @@ contract DXDVotingMachine {
     /**
      * @dev Hash the vote data that is used for signatures
      *
-     * @param votingMachine the voting machine address
      * @param proposalId id of the proposal
-     * @param voter the signer of the vote
-     * @param voteDecision the vote decision, NO(1) or YES(2).
+     * @param signer the signer of the vote
+     * @param option the vote decision, NO(1) or YES(2).
      * @param amount the reputation amount to vote with, 0 will use all available REP
+     * @param nonce nonce value ,it is part of the signature to ensure that
+        a signature can be received only once.
+     * @param actionType the governance action type to hash
      */
-    function hashVote(
-        address votingMachine,
+    function hashAction(
         bytes32 proposalId,
-        address voter,
-        uint256 voteDecision,
-        uint256 amount
-    ) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(votingMachine, proposalId, voter, voteDecision, amount));
+        address signer,
+        uint256 option,
+        uint256 amount,
+        uint256 nonce,
+        uint256 actionType
+    ) public view returns (bytes32) {
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
+        return
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    keccak256(
+                        abi.encode(
+                            keccak256(
+                                "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                            ),
+                            keccak256(bytes("DXDVotingMachine")),
+                            keccak256(bytes("1")),
+                            chainId,
+                            address(this)
+                        )
+                    ),
+                    keccak256(
+                        abi.encode(
+                            keccak256(
+                                "action(bytes32 proposalId,address signer,uint256 option,uint256 amount,uint256 nonce,uint256 actionType)"
+                            ),
+                            proposalId,
+                            signer,
+                            option,
+                            amount,
+                            nonce,
+                            actionType
+                        )
+                    )
+                )
+            );
     }
 
     /**
