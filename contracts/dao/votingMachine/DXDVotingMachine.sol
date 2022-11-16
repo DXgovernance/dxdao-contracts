@@ -29,7 +29,7 @@ contract DXDVotingMachine {
 
     enum ProposalState {
         None,
-        ExpiredInQueue,
+        Expired,
         ExecutedInQueue,
         ExecutedInBoost,
         Queued,
@@ -340,8 +340,8 @@ contract DXDVotingMachine {
         require(
             (proposal.state == ProposalState.ExecutedInQueue) ||
                 (proposal.state == ProposalState.ExecutedInBoost) ||
-                (proposal.state == ProposalState.ExpiredInQueue),
-            "Proposal should be ExecutedInQueue, ExecutedInBoost or ExpiredInQueue"
+                (proposal.state == ProposalState.Expired),
+            "Proposal should be ExecutedInQueue, ExecutedInBoost or Expired"
         );
         Parameters memory params = parameters[proposal.paramsHash];
         //as staker
@@ -351,7 +351,7 @@ contract DXDVotingMachine {
             proposalStakes[_proposalId][YES] -
             calcExecuteCallBounty(_proposalId);
         if (staker.amount > 0) {
-            if (proposal.state == ProposalState.ExpiredInQueue) {
+            if (proposal.state == ProposalState.Expired) {
                 //Stakes of a proposal that expires in Queue are sent back to stakers
                 rewards[0] = staker.amount;
             } else if (staker.vote == proposal.winningVote) {
@@ -370,7 +370,7 @@ contract DXDVotingMachine {
         if (
             proposal.daoRedeemItsWinnings == false &&
             _beneficiary == schemes[proposal.schemeId].avatar &&
-            proposal.state != ProposalState.ExpiredInQueue &&
+            proposal.state != ProposalState.Expired &&
             proposal.winningVote == NO
         ) {
             rewards[0] =
@@ -896,7 +896,7 @@ contract DXDVotingMachine {
             if (proposal.state == ProposalState.Queued) {
                 // solhint-disable-next-line not-rely-on-time
                 if ((block.timestamp - proposal.times[0]) >= params.queuedVotePeriodLimit) {
-                    proposal.state = ProposalState.ExpiredInQueue;
+                    proposal.state = ProposalState.Expired;
                     proposal.winningVote = NO;
                     proposal.executionState = ExecutionState.QueueTimeOut;
                 } else {
@@ -958,7 +958,7 @@ contract DXDVotingMachine {
                     proposal.state = ProposalState.ExecutedInBoost;
                     proposal.executionState = ExecutionState.BoostedBarCrossed;
                 } else {
-                    proposal.state = ProposalState.ExpiredInQueue;
+                    proposal.state = ProposalState.Expired;
                     proposal.winningVote = NO;
                     proposal.executionState = ExecutionState.BoostedTimeOut;
                 }
