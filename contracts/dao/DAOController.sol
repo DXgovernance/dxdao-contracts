@@ -93,7 +93,6 @@ contract DAOController is Initializable {
 
     modifier onlyRegisteredScheme() {
         if (!schemes[msg.sender].isRegistered) {
-            // revert DAOController("Sender is not a registered scheme");
             revert DAOController__SenderNotRegistered();
         }
         _;
@@ -101,7 +100,6 @@ contract DAOController is Initializable {
 
     modifier onlyRegisteringSchemes() {
         if (!schemes[msg.sender].canManageSchemes) {
-            // revert DAOController("Sender cannot manage schemes");
             revert DAOController__SenderCannotManageSchemes();
         }
         _;
@@ -109,7 +107,6 @@ contract DAOController is Initializable {
 
     modifier onlyAvatarCallScheme() {
         if (!schemes[msg.sender].canMakeAvatarCalls) {
-            // revert DAOController("Sender cannot perform avatar calls");
             revert DAOController__SenderCannotPerformAvatarCalls();
         }
         _;
@@ -117,7 +114,6 @@ contract DAOController is Initializable {
 
     modifier onlyChangingReputation() {
         if (!schemes[msg.sender].canChangeReputation) {
-            // revert DAOController("Sender cannot change reputation");
             revert DAOController__SenderCannotChangeReputation();
         }
         _;
@@ -144,9 +140,6 @@ contract DAOController is Initializable {
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission + 1;
         } else if (scheme.canManageSchemes && !_canManageSchemes) {
             if (schemesWithManageSchemesPermission <= 1) {
-                // revert DAOController(
-                //     "Cannot disable canManageSchemes property from the last scheme with manage schemes permissions"
-                // );
                 revert DAOController__CannotDisableLastSchemeWithManageSchemesPermission();
             }
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission - 1;
@@ -178,7 +171,6 @@ contract DAOController is Initializable {
 
         if (scheme.canManageSchemes) {
             if (schemesWithManageSchemesPermission <= 1) {
-                // revert DAOController("Cannot unregister last scheme with manage schemes permission");
                 revert DAOController__CannotUnregisterLastSchemeWithManageSchemesPermission();
             }
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission - 1;
@@ -210,7 +202,6 @@ contract DAOController is Initializable {
     /// @param _proposalId  the proposalId
     function startProposal(bytes32 _proposalId) external onlyRegisteredScheme {
         if (schemeOfProposal[_proposalId] != address(0)) {
-            // revert DAOController("_proposalId used by other scheme");
             revert DAOController__IdUsedByOtherScheme();
         }
         activeProposals.add(_proposalId);
@@ -221,14 +212,12 @@ contract DAOController is Initializable {
     /// @param _proposalId  the proposalId
     function endProposal(bytes32 _proposalId) external {
         if (schemeOfProposal[_proposalId] != msg.sender) {
-            // revert DAOController("Sender is not the scheme that originally started the proposal");
             revert DAOController__SenderIsNotTheProposer();
         }
         if (
             !schemes[msg.sender].isRegistered &&
             (!schemes[schemeOfProposal[_proposalId]].isRegistered && !activeProposals.contains(_proposalId))
         ) {
-            // revert DAOController("Sender is not a registered scheme or proposal is not active");
             revert DAOController__SenderIsNotRegisteredOrProposalIsInactive();
         }
 
@@ -304,15 +293,12 @@ contract DAOController is Initializable {
             return new ProposalAndScheme[](0);
         }
         if (_start > totalCount) {
-            // revert DAOController("_start cannot be bigger than proposals list length");
             revert DAOController__StartCannotBeBiggerThanListLength();
         }
         if (_end > totalCount) {
-            // revert DAOController("_end cannot be bigger than proposals list length");
             revert DAOController__EndCannotBeBiggerThanListLength();
         }
         if (_start > _end) {
-            // revert DAOController("_start cannot be bigger _end");
             revert DAOController__StartCannotBeBiggerThanEnd();
         }
         uint256 total = totalCount - 1;
