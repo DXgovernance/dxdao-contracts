@@ -19,7 +19,7 @@ export const SOME_TOKEN_URI =
   "http://www.someTokenImplementation.com/tokens/19";
 export const MIN_SECONDS_FOR_EXECUTION = 86400;
 export const YES_OPTION = "2";
-export const NO_OPTION = 1;
+export const NO_OPTION = "1";
 
 export const WALLET_SCHEME_PROPOSAL_STATES = {
   none: "0",

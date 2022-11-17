@@ -1,7 +1,6 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert } from "chai";
 import * as helpers from "../../helpers";
-const { fixSignature } = require("../../helpers/sign");
 
 const {
   BN,
@@ -446,9 +445,7 @@ contract("DXDVotingMachine", function (accounts) {
           1,
           1
         );
-        const votesignature = fixSignature(
-          await web3.eth.sign(voteHash, accounts[3])
-        );
+        const votesignature = await web3.eth.sign(voteHash, accounts[3]);
         assert.equal(
           accounts[3],
           web3.eth.accounts.recover(voteHash, votesignature)
@@ -603,9 +600,7 @@ contract("DXDVotingMachine", function (accounts) {
           1,
           1
         );
-        const votesignature = fixSignature(
-          await web3.eth.sign(voteHash, accounts[3])
-        );
+        const votesignature = await web3.eth.sign(voteHash, accounts[3]);
         assert.equal(
           accounts[3],
           web3.eth.accounts.recover(voteHash, votesignature)
@@ -663,17 +658,16 @@ contract("DXDVotingMachine", function (accounts) {
         );
       });
 
-      it.skip("positive signed decision with all rep available", async function () {
+      it("positive signed decision with all rep available", async function () {
         const voteHash = await dxdVotingMachine.hashAction(
           proposalId,
           accounts[3],
           constants.YES_OPTION,
           0,
+          1,
           1
         );
-        const votesignature = fixSignature(
-          await web3.eth.sign(voteHash, accounts[3])
-        );
+        const votesignature = await web3.eth.sign(voteHash, accounts[3]);
         assert.equal(
           accounts[3],
           web3.eth.accounts.recover(voteHash, votesignature)
@@ -695,6 +689,7 @@ contract("DXDVotingMachine", function (accounts) {
           voteInfoFromLog.voter,
           voteInfoFromLog.voteDecision,
           voteInfoFromLog.amount,
+          voteInfoFromLog.nonce,
           voteInfoFromLog.signature,
           { from: accounts[4] }
         );
@@ -716,9 +711,7 @@ contract("DXDVotingMachine", function (accounts) {
           1,
           1
         );
-        const votesignature = fixSignature(
-          await web3.eth.sign(voteHash, accounts[3])
-        );
+        const votesignature = await web3.eth.sign(voteHash, accounts[3]);
         assert.equal(
           accounts[3],
           web3.eth.accounts.recover(voteHash, votesignature)
@@ -755,7 +748,7 @@ contract("DXDVotingMachine", function (accounts) {
         proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
       });
 
-      it.skip("positive signal decision", async function () {
+      it("positive signal decision", async function () {
         assert.equal(
           (await dxdVotingMachine.votesSignaled(proposalId, accounts[3]))
             .voteDecision,
@@ -1133,152 +1126,6 @@ contract("DXDVotingMachine", function (accounts) {
       assert.equal(schemeProposal.value[0], 0);
     });
 
-    it.skip("should calculate average downstake of Boosted Proposals", async function () {
-      // First proposal
-      const firstProposalTx = await masterAvatarScheme.proposeCalls(
-        [actionMock.address],
-        [helpers.testCallFrom(org.avatar.address)],
-        [0],
-        2,
-        constants.TEST_TITLE,
-        constants.SOME_HASH
-      );
-
-      const firstProposalId = await helpers.getValueFromLogs(
-        firstProposalTx,
-        "_proposalId"
-      );
-
-      const firstUpStake = await dxdVotingMachine.stake(
-        firstProposalId,
-        constants.YES_OPTION,
-        1000,
-        {
-          from: accounts[1],
-        }
-      );
-
-      expectEvent(firstUpStake.receipt, "StateChange", {
-        _proposalId: firstProposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
-      });
-
-      // Second proposal
-
-      const secondProposalTx = await masterAvatarScheme.proposeCalls(
-        [actionMock.address],
-        [helpers.testCallFrom(org.avatar.address)],
-        [0],
-        2,
-        constants.TEST_TITLE,
-        constants.SOME_HASH
-      );
-
-      const secondProposalId = await helpers.getValueFromLogs(
-        secondProposalTx,
-        "_proposalId"
-      );
-
-      const secondUpStake = await dxdVotingMachine.stake(
-        secondProposalId,
-        constants.YES_OPTION,
-        1000,
-        { from: accounts[1] }
-      );
-
-      expectEvent(secondUpStake.receipt, "StateChange", {
-        _proposalId: secondProposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
-      });
-
-      await time.increase(3600 + 1);
-
-      await dxdVotingMachine.vote(secondProposalId, constants.YES_OPTION, 0, {
-        from: accounts[2],
-        gasPrice: constants.GAS_PRICE,
-      });
-
-      // await time.increase(86400 + 1);
-
-      //check boosted
-      assert.equal(
-        (await dxdVotingMachine.proposals(secondProposalId)).state,
-        "5"
-      );
-
-      await dxdVotingMachine.stake(proposalId, constants.NO_OPTION, 2000, {
-        from: accounts[0],
-      });
-
-      const upStake = await dxdVotingMachine.stake(
-        proposalId,
-        constants.YES_OPTION,
-        7900,
-        {
-          from: accounts[1],
-        }
-      );
-
-      const totalStaked = (await dxdVotingMachine.proposals(proposalId))
-        .totalStakes;
-
-      assert.equal(totalStaked, 9900);
-
-      expectEvent(upStake.receipt, "StateChange", {
-        _proposalId: proposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
-      });
-
-      await time.increase(3600 + 1);
-
-      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
-        from: accounts[1],
-        gasPrice: constants.GAS_PRICE,
-      });
-
-      //check boosted
-      assert.equal((await dxdVotingMachine.proposals(proposalId)).state, "5");
-
-      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
-        from: accounts[0],
-        gasPrice: constants.GAS_PRICE,
-      });
-
-      await time.increase(86400 + 1);
-
-      const orgId = (await dxdVotingMachine.proposals(proposalId)).schemeId;
-
-      const totalDownStaked =
-        await dxdVotingMachine.averagesDownstakesOfBoosted(orgId);
-
-      assert.equal(totalDownStaked, 1015);
-
-      const executeTx = await dxdVotingMachine.execute(proposalId, {
-        from: accounts[1],
-        gasPrice: constants.GAS_PRICE,
-      });
-
-      // Check it changed to executed
-      await expectEvent.inTransaction(
-        executeTx.tx,
-        dxdVotingMachine.contract,
-        "StateChange",
-        {
-          _proposalId: proposalId,
-          _proposalState:
-            constants.VOTING_MACHINE_PROPOSAL_STATES.ExecutedInBoost,
-        }
-      );
-
-      const proposalState = (await masterAvatarScheme.getProposal(proposalId))
-        .state;
-
-      assert.equal(
-        proposalState,
-        constants.WALLET_SCHEME_PROPOSAL_STATES.passed
-      );
-    });
-
     it("execution state is preBoosted after the vote execution bar has been crossed", async function () {
       const proposalId = await helpers.getValueFromLogs(
         await masterAvatarScheme.proposeCalls(
@@ -1345,7 +1192,7 @@ contract("DXDVotingMachine", function (accounts) {
       );
     });
 
-    it.skip("execution state is Boosted after the vote execution bar has been crossed", async function () {
+    it("execution state is Boosted after the vote execution bar has been crossed", async function () {
       const proposalId = await helpers.getValueFromLogs(
         await masterAvatarScheme.proposeCalls(
           [actionMock.address],
@@ -1378,7 +1225,9 @@ contract("DXDVotingMachine", function (accounts) {
         _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
       });
 
-      await time.increase(3600 + 1);
+      await time.increase(
+        helpers.defaultParameters.preBoostedVotePeriodLimit + 1
+      );
 
       await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
         from: accounts[1],
@@ -1386,7 +1235,10 @@ contract("DXDVotingMachine", function (accounts) {
       });
 
       // check boosted
-      assert.equal((await dxdVotingMachine.proposals(proposalId)).state, "5");
+      assert.equal(
+        (await dxdVotingMachine.proposals(proposalId)).state,
+        constants.VOTING_MACHINE_PROPOSAL_STATES.Boosted
+      );
 
       // vote enough times to pass the execution bar threshold
       await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
@@ -1400,8 +1252,10 @@ contract("DXDVotingMachine", function (accounts) {
       });
 
       // check executed
-      assert.equal((await dxdVotingMachine.proposals(proposalId)).state, "2");
-
+      assert.equal(
+        (await dxdVotingMachine.proposals(proposalId)).state,
+        constants.VOTING_MACHINE_PROPOSAL_STATES.ExecutedInQueue
+      );
       const proposalState = (await masterAvatarScheme.getProposal(proposalId))
         .state;
 
@@ -1475,92 +1329,6 @@ contract("DXDVotingMachine", function (accounts) {
         proposalState,
         constants.WALLET_SCHEME_PROPOSAL_STATES.passed
       );
-    });
-    it.skip("should emit confidenceLevelChange event", async function () {
-      const proposalId = await helpers.getValueFromLogs(
-        await masterAvatarScheme.proposeCalls(
-          [actionMock.address],
-          [helpers.testCallFrom(org.avatar.address)],
-          [0],
-          2,
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
-        "_proposalId"
-      );
-
-      const proposalId2 = await helpers.getValueFromLogs(
-        await masterAvatarScheme.proposeCalls(
-          [actionMock.address],
-          [helpers.testCallFrom(org.avatar.address)],
-          [0],
-          2,
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
-        "_proposalId"
-      );
-
-      await dxdVotingMachine.stake(proposalId2, constants.YES_OPTION, 1500, {
-        from: accounts[1],
-      });
-
-      await time.increase(3600 + 1);
-
-      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
-        from: accounts[1],
-        gasPrice: constants.GAS_PRICE,
-      });
-
-      await dxdVotingMachine.execute(proposalId2, {
-        from: accounts[1],
-        gasPrice: constants.GAS_PRICE,
-      });
-
-      // check boosted
-      assert.equal((await dxdVotingMachine.proposals(proposalId2)).state, "5");
-
-      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
-        from: accounts[1],
-        gasPrice: constants.GAS_PRICE,
-      });
-
-      const upStake = await dxdVotingMachine.stake(
-        proposalId,
-        constants.YES_OPTION,
-        100,
-        {
-          from: accounts[1],
-        }
-      );
-
-      // check preBoosted
-      expectEvent(upStake.receipt, "StateChange", {
-        _proposalId: proposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
-      });
-
-      await dxdVotingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
-        from: accounts[0],
-        gasPrice: constants.GAS_PRICE,
-      });
-
-      await dxdVotingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
-        from: accounts[3],
-        gasPrice: constants.GAS_PRICE,
-      });
-
-      // check executed
-      assert.equal((await dxdVotingMachine.proposals(proposalId2)).state, "2");
-
-      const downStake = await dxdVotingMachine.stake(proposalId, 2, 50, {
-        from: accounts[0],
-      });
-
-      expectEvent(downStake.receipt, "ConfidenceLevelChange", {
-        _proposalId: proposalId,
-        _confidenceThreshold: "1099511627776",
-      });
     });
   });
 
