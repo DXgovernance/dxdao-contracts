@@ -9,12 +9,14 @@
     "migrations/",
     "test/",
     "truffle.js",
-    "tsconfig.json"
+    "tsconfig.json",
+    "types/"
   ],
   "scripts": {
     "test": "npx hardhat test",
     "coverage": "./scripts/coverage.sh",
-    "compile": "rm -rf artifacts cache contracts/hardhat-dependency-compiler && npx hardhat compile",
+    "typechain": "hardhat typechain",
+    "build": "rm -rf artifacts cache contracts/hardhat-dependency-compiler && npx hardhat compile",
     "deploy": "node scripts/deploy.js",
     "solidity-linter": "./scripts/solhint.sh",
     "solidity-contract-size": "yarn hardhat size-contracts",
@@ -34,6 +36,8 @@
     "@openzeppelin/contract-loader": "^0.6.1",
     "@openzeppelin/hardhat-upgrades": "^1.6.0",
     "@truffle/contract": "^4.2.21",
+    "@typechain/ethers-v5": "^9.0.0",
+    "@typechain/hardhat": "^5.0.0",
     "babel-plugin-syntax-async-functions": "^6.13.0",
     "babel-polyfill": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
@@ -69,6 +73,7 @@
     "solidity-coverage": "^0.8.2",
     "truffle": "^5.1.28",
     "truffle-hdwallet-provider": "^1.0.17",
+    "typechain": "7.0.0",
     "uint32": "^0.2.1"
   },
   "repository": {

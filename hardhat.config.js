@@ -11,6 +11,8 @@ require("@nomiclabs/hardhat-etherscan");
 require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
 require("hardhat-deploy");
+require("@typechain/hardhat");
+require("@nomiclabs/hardhat-ethers");
 
 require("./scripts/nanoUniversalDeployerDeploy");
 require("./scripts/keylessDeploy");
@@ -169,6 +171,11 @@ module.exports = {
       "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol",
       "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
     ],
+  },
+  typechain: {
+    outDir: "types",
+    target: "ethers-v5",
+    alwaysGenerateOverloads: false,
   },
   namedAccounts: {
     deployer: 0,
