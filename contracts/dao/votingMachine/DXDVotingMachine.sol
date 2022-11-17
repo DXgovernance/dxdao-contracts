@@ -940,7 +940,6 @@ contract DXDVotingMachine {
                             //change proposal mode to Boosted mode.
                             proposal.state = ProposalState.Boosted;
 
-                            // ONLY CHANGE IN DXD VOTING MACHINE TO BOOST AUTOMATICALLY
                             proposal.times[1] = proposal.times[2] + params.preBoostedVotePeriodLimit;
 
                             schemes[proposal.schemeId].orgBoostedProposalsCnt++;
