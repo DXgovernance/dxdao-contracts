@@ -776,7 +776,7 @@ contract("DXDVotingMachine", function (accounts) {
             .amount,
           60000
         );
-        expect(signalVoteTx.receipt.gasUsed).to.be.closeTo(50000, 25000);
+
         const voteInfoFromLog = signalVoteTx.logs[0].args;
         await dxdVotingMachine.executeSignaledVote(
           voteInfoFromLog.proposalId,
