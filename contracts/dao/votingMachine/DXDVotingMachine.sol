@@ -11,14 +11,22 @@ import "./DXDVotingMachineCallbacksInterface.sol";
 import "./ProposalExecuteInterface.sol";
 
 /**
- * @title GenesisProtocol implementation designed for DXdao
+ * @title Fork of Genesis Protocol Voting Machine for DXdao
  *
- * New Features:
- *  - Payable Votes: Any dao can send funds and configure the gas and maxGasPrice to be refunded per vote to each scheme it has registered
- *  - Signed Votes: Votes can be signed for this or any voting machine, they can be shared on this voting machine and
- *    execute votes signed for this voting machine.
- *  - Signal Votes: Voters can signal their decisions with near 50k gas, the signaled votes can be executed on
- *    chain by anyone.
+ * @dev A voting machine is used to to determine the outcome of a dao proposal.
+ * The proposals are submitted through schemes.
+ * Each scheme has voting parameters and a staking token balance and ETH balance.
+ * The proposals can be executed in two final states, Queue or Boost.
+ * A boosted proposal is a proposal that received a favorable stake on an option.
+ * An stake is deposit done in the staking token, this adds a financial incentive
+ * and risk on a proposal to be executed faster.
+ * A proposal in queue needs at least 50% (or more) of votes in favour in order to
+ * be executed.
+ * A proposal in boost state might need a % of votes in favour in order to be executed.
+ * If a proposal ended and it has staked tokens on it the tokens can be redeemed by
+ * the stakers.
+ * If a staker staked on the winning option it receives a reward.
+ * If a staker staked on a loosing option it lose his stake.
  */
 contract DXDVotingMachine {
     using ECDSA for bytes32;
@@ -47,7 +55,7 @@ contract DXDVotingMachine {
         BoostedBarCrossed
     }
 
-    //Scheme's parameters
+    /// Scheme voting parameters
     struct Parameters {
         uint256 queuedVoteRequiredPercentage; // the absolute vote percentages bar. 5000 = 50%
         uint256 queuedVotePeriodLimit; //the time limit for a proposal to be in an absolute voting mode.
@@ -231,9 +239,8 @@ contract DXDVotingMachine {
             )
         );
 
-    mapping(address => uint256) public stakesNonce; //stakes Nonce
+    mapping(address => uint256) public stakesNonce;
 
-    // Event used to share vote signatures on chain
     mapping(bytes32 => mapping(address => VoteDecision)) public votesSignaled;
 
     // The number of choices of each proposal
@@ -583,16 +590,6 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Cancel the vote of the msg.sender.
-     * cancel vote is not allow in genesisProtocol so this function doing nothing.
-     * This function is here in order to comply to the IntVoteInterface .
-     */
-    function cancelVote(bytes32 _proposalId) external view votable(_proposalId) {
-        //this is not allowed
-        return;
-    }
-
-    /**
      * @dev execute check if the proposal has been decided, and if so, execute the proposal
      * @param _proposalId the id of the proposal
      * @return bool true - the proposal has been executed
@@ -797,7 +794,7 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Execute a signed vote on a votable proposal
+     * @dev Execute a signaled vote on a votable proposal
      *
      * @param proposalId id of the proposal to vote
      * @param voter the signer of the vote
@@ -1328,13 +1325,5 @@ contract DXDVotingMachine {
      */
     function state(bytes32 _proposalId) external view returns (ProposalState) {
         return proposals[_proposalId].state;
-    }
-
-    /**
-     * @dev isAbstainAllow returns if the voting machine allow abstain (0)
-     * @return bool true or false
-     */
-    function isAbstainAllow() external pure returns (bool) {
-        return false;
     }
 }
