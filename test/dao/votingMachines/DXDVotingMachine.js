@@ -1434,4 +1434,170 @@ contract("DXDVotingMachine", function (accounts) {
       expectEvent.notEmitted(downStake.receipt, "Stake");
     });
   });
+
+  describe("Other tests", function () {
+    it("should be shifted to boost", async function () {
+      const tx = await masterAvatarScheme.proposeCalls(
+        [actionMock.address],
+        [helpers.testCallFrom(org.avatar.address)],
+        [0],
+        2,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      );
+      const testProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+      await dxdVotingMachine.stake(testProposalId, constants.YES_OPTION, 1000, {
+        from: accounts[1],
+      });
+
+      assert.equal(await dxdVotingMachine.shouldBoost(testProposalId), true);
+    });
+
+    it("should not be shifted to boost", async function () {
+      const tx = await masterAvatarScheme.proposeCalls(
+        [actionMock.address],
+        [helpers.testCallFrom(org.avatar.address)],
+        [0],
+        2,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      );
+      const testProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+      assert.equal(await dxdVotingMachine.shouldBoost(testProposalId), false);
+    });
+
+    it("should return vote info", async function () {
+      const proposalId = await helpers.getValueFromLogs(
+        await masterAvatarScheme.proposeCalls(
+          [actionMock.address],
+          [helpers.testCallFrom(org.avatar.address)],
+          [0],
+          2,
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+      });
+
+      const voteInfo = await dxdVotingMachine.voteInfo(proposalId, accounts[1]);
+      assert.equal(constants.YES_OPTION, Number(voteInfo[0]));
+      assert.equal(10000, Number(voteInfo[1]));
+    });
+
+    it("should return vote status", async function () {
+      const proposalId = await helpers.getValueFromLogs(
+        await masterAvatarScheme.proposeCalls(
+          [actionMock.address],
+          [helpers.testCallFrom(org.avatar.address)],
+          [0],
+          2,
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+      });
+
+      const voteStatus = await dxdVotingMachine.voteStatus(
+        proposalId,
+        constants.YES_OPTION
+      );
+
+      assert.equal(10000, Number(voteStatus));
+    });
+
+    it("should return true if the proposal is votable", async function () {
+      const proposalId = await helpers.getValueFromLogs(
+        await masterAvatarScheme.proposeCalls(
+          [actionMock.address],
+          [helpers.testCallFrom(org.avatar.address)],
+          [0],
+          2,
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+
+      const isVotable = await dxdVotingMachine.isVotable(proposalId);
+      assert.equal(true, isVotable);
+    });
+
+    it("should return false if the proposal is not votable", async function () {
+      const proposalId = await helpers.getValueFromLogs(
+        await masterAvatarScheme.proposeCalls(
+          [actionMock.address],
+          [helpers.testCallFrom(org.avatar.address)],
+          [0],
+          2,
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+      });
+
+      await time.increase(86400 + 1);
+
+      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+      });
+
+      const isVotable = await dxdVotingMachine.isVotable(proposalId);
+      assert.equal(false, isVotable);
+    });
+
+    it("sould return the reputation", async function () {
+      const proposalId = await helpers.getValueFromLogs(
+        await masterAvatarScheme.proposeCalls(
+          [actionMock.address],
+          [helpers.testCallFrom(org.avatar.address)],
+          [0],
+          2,
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+
+      const reputation = await masterAvatarScheme.reputationOf(
+        accounts[1],
+        proposalId
+      );
+
+      assert.equal(10000, Number(reputation));
+    });
+
+    it("sould return the total reputation", async function () {
+      const proposalId = await helpers.getValueFromLogs(
+        await masterAvatarScheme.proposeCalls(
+          [actionMock.address],
+          [helpers.testCallFrom(org.avatar.address)],
+          [0],
+          2,
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+
+      const reputation = await masterAvatarScheme.getTotalReputationSupply(
+        proposalId
+      );
+
+      assert.equal(100000, Number(reputation));
+    });
+  });
 });
