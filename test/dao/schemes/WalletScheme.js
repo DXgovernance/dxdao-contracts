@@ -1730,6 +1730,10 @@ contract("WalletScheme", function (accounts) {
       .unregisterScheme(masterWalletScheme.address)
       .encodeABI();
 
+    const encodedDAOControllerError = web3.eth.abi
+      .encodeFunctionSignature("DAOControllerError(string)")
+      .substring(2);
+
     var tx = await quickWalletScheme.proposeCalls(
       [org.controller.address],
       [callDataRegisterScheme],
@@ -1756,22 +1760,17 @@ contract("WalletScheme", function (accounts) {
       "_proposalId"
     );
 
-    await assert(
-      (
-        await org.votingMachine.vote(
-          proposalIdAddScheme,
-          constants.YES_OPTION,
-          0,
-          {
-            from: accounts[2],
-          }
-        )
-      ).receipt.rawLogs[2].data.includes(
-        web3.eth.abi
-          .encodeFunctionSignature("DAOControllerError(string)")
-          .substring(2)
-      )
+    const votingTx1 = await org.votingMachine.vote(
+      proposalIdAddScheme,
+      constants.YES_OPTION,
+      0,
+      {
+        from: accounts[2],
+      }
     );
+    const txRawVotingData1 = await votingTx1.receipt.rawLogs[2].data;
+    assert.equal(true, txRawVotingData1.includes(encodedDAOControllerError));
+
     assert.equal(
       (await quickWalletScheme.getProposal(proposalIdAddScheme)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.passed
@@ -1791,22 +1790,16 @@ contract("WalletScheme", function (accounts) {
       "0x0000000000000000000000000000000000000000000000000000000000000000"
     );
 
-    await assert(
-      (
-        await org.votingMachine.vote(
-          proposalIdRemoveScheme,
-          constants.YES_OPTION,
-          0,
-          {
-            from: accounts[2],
-          }
-        )
-      ).receipt.rawLogs[2].data.includes(
-        web3.eth.abi
-          .encodeFunctionSignature("DAOControllerError(string)")
-          .substring(2)
-      )
+    const votingTx2 = await org.votingMachine.vote(
+      proposalIdRemoveScheme,
+      constants.YES_OPTION,
+      0,
+      {
+        from: accounts[2],
+      }
     );
+    const txRawVotingData2 = await votingTx2.receipt.rawLogs[2].data;
+    assert.equal(true, txRawVotingData2.includes(encodedDAOControllerError));
 
     assert.equal(
       (await quickWalletScheme.getProposal(proposalIdRemoveScheme)).state,
