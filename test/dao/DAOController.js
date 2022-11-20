@@ -106,7 +106,7 @@ contract("DAOController", function (accounts) {
 
     await expectRevert(
       registerCall,
-      "Cannot disable canManageSchemes property from the last scheme with manage schemes permissions"
+      "DAOController__CannotDisableLastSchemeWithManageSchemesPermission"
     );
   });
 
@@ -145,7 +145,7 @@ contract("DAOController", function (accounts) {
     );
   });
 
-  it('registerScheme() should reject with: "Sender is not a registered scheme"', async function () {
+  it('registerScheme() should reject with: "DAOController__SenderNotRegistered"', async function () {
     const newSchemeAddress = accounts[10];
     await expectRevert(
       controller.registerScheme(
@@ -156,11 +156,11 @@ contract("DAOController", function (accounts) {
         true,
         { from: newSchemeAddress }
       ),
-      "Sender is not a registered scheme"
+      "DAOController__SenderNotRegistered"
     );
   });
 
-  it('registerScheme() should reject with: "Sender cannot manage schemes"', async function () {
+  it('registerScheme() should reject with: "DAOController__SenderCannotManageSchemes"', async function () {
     const schemeThatCanNotManageSchemes = accounts[10];
     await controller.registerScheme(
       schemeThatCanNotManageSchemes,
@@ -181,11 +181,11 @@ contract("DAOController", function (accounts) {
           from: schemeThatCanNotManageSchemes,
         }
       ),
-      "Sender cannot manage schemes"
+      "DAOController__SenderCannotManageSchemes"
     );
   });
 
-  it('avatarCall() should reject with: "Sender cannot perform avatar calls"', async function () {
+  it('avatarCall() should reject with: "DAOController__SenderCannotPerformAvatarCalls"', async function () {
     const schemeThatCanNotMakeAvatarCalls = accounts[10];
     await controller.registerScheme(
       schemeThatCanNotMakeAvatarCalls,
@@ -207,7 +207,7 @@ contract("DAOController", function (accounts) {
           from: schemeThatCanNotMakeAvatarCalls,
         }
       ),
-      "Sender cannot perform avatar calls"
+      "DAOController__SenderCannotPerformAvatarCalls"
     );
   });
 
@@ -231,7 +231,7 @@ contract("DAOController", function (accounts) {
       controller.startProposal(proposalId, {
         from: newSchemeAddress,
       }),
-      "_proposalId used by other scheme"
+      "DAOController__IdUsedByOtherScheme"
     );
   });
 
@@ -262,7 +262,7 @@ contract("DAOController", function (accounts) {
       controller.endProposal(proposalId, {
         from: accounts[2],
       }),
-      "Sender is not the scheme that originally started the proposal"
+      "DAOController__SenderIsNotTheProposer"
     );
   });
 
@@ -282,7 +282,7 @@ contract("DAOController", function (accounts) {
 
     await expectRevert(
       controller.endProposal(proposalId),
-      "Sender is not a registered scheme or proposal is not active"
+      "DAOController__SenderIsNotRegisteredOrProposalIsInactive"
     );
   });
 
@@ -332,16 +332,16 @@ contract("DAOController", function (accounts) {
 
     await expectRevert(
       controller.getActiveProposals(TOTAL_PROPOSALS + 1, 0),
-      "_start cannot be bigger than proposals list length"
+      "DAOController__StartCannotBeBiggerThanListLength"
     );
     await expectRevert(
       controller.getActiveProposals(0, TOTAL_PROPOSALS + 1),
-      "_end cannot be bigger than proposals list length"
+      "DAOController__EndCannotBeBiggerThanListLength"
     );
 
     await expectRevert(
       controller.getActiveProposals(8, 7),
-      "_start cannot be bigger _end"
+      "DAOController__StartCannotBeBiggerThanEnd"
     );
   });
 
@@ -477,7 +477,7 @@ contract("DAOController", function (accounts) {
       controller.startProposal(web3.utils.randomHex(32), {
         from: schemeAddress,
       }),
-      "Sender is not a registered scheme"
+      "DAOController__SenderNotRegistered"
     );
   });
 
@@ -492,7 +492,7 @@ contract("DAOController", function (accounts) {
     await controller.unregisterScheme(schemeAddress);
     await expectRevert(
       controller.unregisterScheme(schemeAddress, { from: schemeAddress }),
-      "Sender is not a registered scheme"
+      "DAOController__SenderNotRegistered"
     );
   });
 
@@ -515,14 +515,14 @@ contract("DAOController", function (accounts) {
 
     await expectRevert(
       controller.unregisterScheme(schemeAddress, { from: schemeAddress }),
-      "Sender cannot manage schemes"
+      "DAOController__SenderCannotManageSchemes"
     );
   });
 
   it("unregisterScheme() should fail if try to unregister last scheme with manage schemes permission", async () => {
     await expectRevert(
       controller.unregisterScheme(schemeAddress, { from: schemeAddress }),
-      "Cannot unregister last scheme with manage schemes permission"
+      "DAOController__CannotUnregisterLastSchemeWithManageSchemesPermission"
     );
   });
 
@@ -593,7 +593,7 @@ contract("DAOController", function (accounts) {
         avatar.address,
         0
       ),
-      "Sender is not a registered scheme"
+      "DAOController__SenderNotRegistered"
     );
   });
 
@@ -615,7 +615,7 @@ contract("DAOController", function (accounts) {
         avatar.address,
         0
       ),
-      "Sender cannot perform avatar calls"
+      "DAOController__SenderCannotPerformAvatarCalls"
     );
   });
 
@@ -649,7 +649,7 @@ contract("DAOController", function (accounts) {
 
     await expectRevert(
       controller.burnReputation(100, accounts[2]),
-      "Sender cannot change reputation"
+      "DAOController__SenderCannotChangeReputation"
     );
   });
 
@@ -677,7 +677,7 @@ contract("DAOController", function (accounts) {
 
     await expectRevert(
       controller.mintReputation(100, accounts[2]),
-      "Sender cannot change reputation"
+      "DAOController__SenderCannotChangeReputation"
     );
   });
   it("mintReputation() should call mint function from rep token", async () => {
@@ -715,7 +715,7 @@ contract("DAOController", function (accounts) {
 
     await expectRevert(
       controller.transferReputationOwnership(accounts[6]),
-      "Sender cannot manage schemes"
+      "DAOController__SenderCannotManageSchemes"
     );
   });
 
@@ -730,7 +730,7 @@ contract("DAOController", function (accounts) {
 
     await expectRevert(
       controller.transferReputationOwnership(accounts[6]),
-      "Sender cannot perform avatar calls"
+      "DAOController__SenderCannotPerformAvatarCalls"
     );
   });
 
@@ -745,7 +745,7 @@ contract("DAOController", function (accounts) {
 
     await expectRevert(
       controller.transferReputationOwnership(accounts[6]),
-      "Sender cannot change reputation"
+      "DAOController__SenderCannotChangeReputation"
     );
   });
 
