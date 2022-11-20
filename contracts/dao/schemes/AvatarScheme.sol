@@ -77,7 +77,7 @@ contract AvatarScheme is Scheme {
         }
         executingProposal = true;
 
-        Proposal storage proposal = proposals[_proposalId];
+        Proposal memory proposal = proposals[_proposalId];
         if (proposal.state != ProposalState.Submitted) {
             revert AvatarScheme__ProposalMustBeSubmitted();
         }

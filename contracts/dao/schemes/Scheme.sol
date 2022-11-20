@@ -201,7 +201,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         }
         executingProposal = true;
 
-        Proposal storage proposal = proposals[_proposalId];
+        Proposal memory proposal = proposals[_proposalId];
 
         if (proposal.state != ProposalState.Submitted) {
             revert Scheme__ProposalMustBeSubmitted();
