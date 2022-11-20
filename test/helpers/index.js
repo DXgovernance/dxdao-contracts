@@ -239,4 +239,19 @@ export function getRandomNumber(min, max = min) {
   return Math.floor(Math.random() * (max - min + 1) + min); // The maximum is inclusive and the minimum is inclusive
 }
 
+export function customErrorMessageExistInRawLogs(
+  eventDataStringMessage,
+  txReceipt
+) {
+  const encodedErrorSignature = web3.eth.abi
+    .encodeFunctionSignature(eventDataStringMessage)
+    .substring(2);
+  return (
+    0 <
+    txReceipt.rawLogs.findIndex(rawLog => {
+      return rawLog.data.includes(encodedErrorSignature);
+    })
+  );
+}
+
 export { constants };

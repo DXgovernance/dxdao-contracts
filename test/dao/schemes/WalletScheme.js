@@ -1730,10 +1730,6 @@ contract("WalletScheme", function (accounts) {
       .unregisterScheme(masterWalletScheme.address)
       .encodeABI();
 
-    const encodedDAOControllerError = web3.eth.abi
-      .encodeFunctionSignature("DAOControllerError(string)")
-      .substring(2);
-
     var tx = await quickWalletScheme.proposeCalls(
       [org.controller.address],
       [callDataRegisterScheme],
@@ -1768,8 +1764,15 @@ contract("WalletScheme", function (accounts) {
         from: accounts[2],
       }
     );
+
     const txRawVotingData1 = await votingTx1.receipt.rawLogs[2].data;
-    assert.equal(true, txRawVotingData1.includes(encodedDAOControllerError));
+
+    assert(
+      helpers.customErrorMessageExistInRawLogs(
+        "DAOControllerError(string)",
+        votingTx1.receipt
+      )
+    );
 
     assert.equal(
       (await quickWalletScheme.getProposal(proposalIdAddScheme)).state,
@@ -1798,8 +1801,13 @@ contract("WalletScheme", function (accounts) {
         from: accounts[2],
       }
     );
-    const txRawVotingData2 = await votingTx2.receipt.rawLogs[2].data;
-    assert.equal(true, txRawVotingData2.includes(encodedDAOControllerError));
+
+    assert(
+      helpers.customErrorMessageExistInRawLogs(
+        "DAOControllerError(string)",
+        votingTx2.receipt
+      )
+    );
 
     assert.equal(
       (await quickWalletScheme.getProposal(proposalIdRemoveScheme)).state,
