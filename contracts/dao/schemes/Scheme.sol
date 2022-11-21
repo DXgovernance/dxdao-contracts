@@ -68,12 +68,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     /// @notice Emitted if controller address is zero
     error Scheme__ControllerAddressCannotBeZero();
 
-    /// @notice Emitted if maxSecondsForExecution is set lower than 86400
-    error Scheme__MaxSecondsForExecutionTooLow();
-
-    /// @notice Emitted when setMaxSecondsForExecution is being called from an address different than the avatar or the scheme
-    error Scheme__SetMaxSecondsForExecutionInvalidCaller();
-
     /// @notice _to, _callData and _value must have all the same length
     error Scheme_InvalidParameterArrayLength();
 
@@ -273,7 +267,9 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         returns (bool)
     {
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.state == ProposalState.Submitted, "Scheme: must be a submitted proposal");
+        if (proposal.state != ProposalState.Submitted) {
+            revert Scheme__ProposalMustBeSubmitted();
+        }
 
         if (_winningOption == 1) {
             proposal.state = ProposalState.Rejected;
