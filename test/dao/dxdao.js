@@ -178,7 +178,7 @@ contract("DXdao", function (accounts) {
       dxDao.votingMachine.vote(proposalId, 0, 0, {
         from: accounts[2],
       }),
-      "wrong decision value"
+      "DXDVotingMachine__WrongDecisionValue()"
     );
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
   });
