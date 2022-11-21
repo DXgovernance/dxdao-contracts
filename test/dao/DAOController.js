@@ -48,10 +48,7 @@ contract("DAOController", function (accounts) {
 
     standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
 
-    const votingMachine = await DXDVotingMachine.new(
-      standardTokenMock.address,
-      avatar.address
-    );
+    const votingMachine = await DXDVotingMachine.new(standardTokenMock.address);
 
     defaultParamsHash = await helpers.setDefaultParameters(votingMachine);
 

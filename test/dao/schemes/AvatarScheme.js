@@ -1,13 +1,12 @@
 import { artifacts } from "hardhat";
 import * as helpers from "../../helpers";
 import { assert } from "chai";
-import {
-  MIN_SECONDS_FOR_EXECUTION,
-  NULL_HASH,
-  SOME_HASH,
-  TEST_VALUE,
-} from "../../helpers/constants";
-const { time, expectRevert } = require("@openzeppelin/test-helpers");
+import { NULL_HASH, SOME_HASH } from "../../helpers/constants";
+const {
+  time,
+  expectRevert,
+  expectEvent,
+} = require("@openzeppelin/test-helpers");
 
 const AvatarScheme = artifacts.require("./AvatarScheme.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
@@ -24,7 +23,6 @@ contract("AvatarScheme", function (accounts) {
     actionMock;
 
   const constants = helpers.constants;
-  const executionTimeout = 172800 + 86400; // _queuedVotePeriodLimit + _boostedVotePeriodLimit
 
   beforeEach(async function () {
     actionMock = await ActionMock.new();
@@ -54,7 +52,6 @@ contract("AvatarScheme", function (accounts) {
       org.controller.address,
       permissionRegistry.address,
       "Master Wallet",
-      executionTimeout,
       5
     );
 
@@ -65,7 +62,6 @@ contract("AvatarScheme", function (accounts) {
       org.controller.address,
       permissionRegistry.address,
       "Quick Wallet",
-      executionTimeout,
       1
     );
 
@@ -113,19 +109,13 @@ contract("AvatarScheme", function (accounts) {
       constants.SOME_HASH
     );
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
     const organizationProposal = await avatarScheme.getProposal(proposalId);
     assert.equal(
       organizationProposal.state,
-      constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+      constants.WALLET_SCHEME_PROPOSAL_STATES.passed
     );
   });
 
@@ -151,15 +141,9 @@ contract("AvatarScheme", function (accounts) {
       mintRepTx,
       "_proposalId"
     );
-    await org.votingMachine.vote(
-      proposalIdMintRep,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalIdMintRep, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     currentReputation = await org.reputation.balanceOf(accounts[1]);
 
@@ -184,15 +168,9 @@ contract("AvatarScheme", function (accounts) {
       burnRepTx,
       "_proposalId"
     );
-    await org.votingMachine.vote(
-      proposalIdBurnRep,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
+    await org.votingMachine.vote(proposalIdBurnRep, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     currentReputation = await org.reputation.balanceOf(accounts[1]);
 
@@ -245,124 +223,7 @@ contract("AvatarScheme", function (accounts) {
     assert.equal(organizationProposals.length, numberOfProposalsCreated);
   });
 
-  it("can setMaxSecondsForExecution", async function () {
-    const secondsToSet = MIN_SECONDS_FOR_EXECUTION + TEST_VALUE;
-    const callData = helpers.encodeMaxSecondsForExecution(secondsToSet);
-
-    await permissionRegistry.setETHPermission(
-      org.avatar.address,
-      avatarScheme.address,
-      callData.substring(0, 10),
-      0,
-      true
-    );
-
-    const trx = await avatarScheme.proposeCalls(
-      [avatarScheme.address],
-      [callData],
-      [0],
-      2,
-      constants.TEST_TITLE,
-      constants.SOME_HASH
-    );
-    const proposalId = await helpers.getValueFromLogs(trx, "_proposalId");
-
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
-
-    const maxSecondsForExecution = await avatarScheme.maxSecondsForExecution();
-    assert.equal(maxSecondsForExecution.toNumber(), secondsToSet);
-  });
-
-  it("can setMaxSecondsForExecution exactly 86400", async function () {
-    const callData = helpers.encodeMaxSecondsForExecution(
-      MIN_SECONDS_FOR_EXECUTION
-    );
-
-    await permissionRegistry.setETHPermission(
-      org.avatar.address,
-      avatarScheme.address,
-      callData.substring(0, 10),
-      0,
-      true
-    );
-
-    const trx = await avatarScheme.proposeCalls(
-      [avatarScheme.address],
-      [callData],
-      [0],
-      2,
-      constants.TEST_TITLE,
-      constants.SOME_HASH
-    );
-    const proposalId = await helpers.getValueFromLogs(trx, "_proposalId");
-
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
-
-    const maxSecondsForExecution = await avatarScheme.maxSecondsForExecution();
-    assert.equal(maxSecondsForExecution.toNumber(), MIN_SECONDS_FOR_EXECUTION);
-  });
-
-  it("cannot setMaxSecondsForExecution if less than 86400", async function () {
-    const callData = helpers.encodeMaxSecondsForExecution(
-      MIN_SECONDS_FOR_EXECUTION - 1
-    );
-
-    await permissionRegistry.setETHPermission(
-      org.avatar.address,
-      avatarScheme.address,
-      callData.substring(0, 10),
-      0,
-      true
-    );
-
-    const trx = await avatarScheme.proposeCalls(
-      [avatarScheme.address],
-      [callData],
-      [0],
-      2,
-      constants.TEST_TITLE,
-      constants.SOME_HASH
-    );
-    const proposalId = await helpers.getValueFromLogs(trx, "_proposalId");
-
-    await expectRevert.unspecified(
-      org.votingMachine.vote(
-        proposalId,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      )
-    );
-  });
-
-  it("setMaxSecondsForExecution only callable from the avatar", async function () {
-    await expectRevert(
-      avatarScheme.setMaxSecondsForExecution(TEST_VALUE),
-      "Scheme__SetMaxSecondsForExecutionInvalidCaller()"
-    );
-  });
-
   it("should change the state of the proposal to ExecutionTimeout", async function () {
-    const defaultMaxSecondsForExecution = 259200;
     const callData = helpers.testCallFrom(org.avatar.address);
 
     await permissionRegistry.setETHPermission(
@@ -382,25 +243,14 @@ contract("AvatarScheme", function (accounts) {
     );
 
     const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-
-    // Wait for maxSecondsForExecution
-    await time.increase(defaultMaxSecondsForExecution);
-
-    await org.votingMachine.vote(
-      proposalId,
-      constants.YES_OPTION,
-      0,
-      constants.ZERO_ADDRESS,
-      {
-        from: accounts[2],
-      }
-    );
-
+    await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
     const organizationProposal = await avatarScheme.getProposal(proposalId);
 
     assert.equal(
       organizationProposal.state,
-      constants.WALLET_SCHEME_PROPOSAL_STATES.executionTimeout
+      constants.WALLET_SCHEME_PROPOSAL_STATES.passed
     );
   });
 
@@ -448,17 +298,33 @@ contract("AvatarScheme", function (accounts) {
       "_proposalId"
     );
 
-    await expectRevert(
-      org.votingMachine.vote(
-        proposalIdMintRep,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      ),
-      "AvatarScheme__MaxRepPercentageChangePassed()"
+    // Check inside the raw logs that the ProposalExecuteResult event logs the signature of the error to be throw
+    await assert(
+      (
+        await org.votingMachine.vote(
+          proposalIdMintRep,
+          constants.YES_OPTION,
+          0,
+          {
+            from: accounts[2],
+          }
+        )
+      ).receipt.rawLogs[2].data.includes(
+        web3.eth.abi
+          .encodeFunctionSignature(
+            "AvatarScheme__MaxRepPercentageChangePassed()"
+          )
+          .substring(2)
+      )
+    );
+    assert.equal(
+      (await avatarScheme.getProposal(proposalIdMintRep)).state,
+      constants.WALLET_SCHEME_PROPOSAL_STATES.passed
+    );
+
+    assert.equal(
+      (await org.votingMachine.proposals(proposalIdMintRep)).executionState,
+      constants.VOTING_MACHINE_EXECUTION_STATES.Failed
     );
   });
 
@@ -495,17 +361,33 @@ contract("AvatarScheme", function (accounts) {
       "_proposalId"
     );
 
-    await expectRevert(
-      org.votingMachine.vote(
-        proposalIdBurnRep,
-        constants.YES_OPTION,
-        0,
-        constants.ZERO_ADDRESS,
-        {
-          from: accounts[2],
-        }
-      ),
-      "AvatarScheme__MaxRepPercentageChangePassed()"
+    // Check inside the raw logs that the ProposalExecuteResult event logs the signature of the error to be throw
+    await assert(
+      (
+        await org.votingMachine.vote(
+          proposalIdBurnRep,
+          constants.YES_OPTION,
+          0,
+          {
+            from: accounts[2],
+          }
+        )
+      ).receipt.rawLogs[2].data.includes(
+        web3.eth.abi
+          .encodeFunctionSignature(
+            "AvatarScheme__MaxRepPercentageChangePassed()"
+          )
+          .substring(2)
+      )
+    );
+    assert.equal(
+      (await avatarScheme.getProposal(proposalIdBurnRep)).state,
+      constants.WALLET_SCHEME_PROPOSAL_STATES.passed
+    );
+
+    assert.equal(
+      (await org.votingMachine.proposals(proposalIdBurnRep)).executionState,
+      constants.VOTING_MACHINE_EXECUTION_STATES.Failed
     );
   });
 });

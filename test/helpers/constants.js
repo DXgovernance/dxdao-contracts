@@ -18,21 +18,41 @@ export const ERC20_TRANSFER_SIGNATURE = "0xa9059cbb";
 export const SOME_TOKEN_URI =
   "http://www.someTokenImplementation.com/tokens/19";
 export const MIN_SECONDS_FOR_EXECUTION = 86400;
-export const YES_OPTION = 2;
-export const NO_OPTION = 1;
+export const YES_OPTION = "2";
+export const NO_OPTION = "1";
 
 export const WALLET_SCHEME_PROPOSAL_STATES = {
-  none: 0,
-  submitted: 1,
-  rejected: 2,
-  executionSuccedd: 3,
-  executionTimeout: 4,
+  none: "0",
+  submitted: "1",
+  rejected: "2",
+  passed: "3",
 };
 
 export const GUILD_PROPOSAL_STATES = {
-  None: 0,
-  Submitted: 1,
-  Rejected: 2,
-  Executed: 3,
-  Failed: 4,
+  None: "0",
+  Submitted: "1",
+  Rejected: "2",
+  Executed: "3",
+  Failed: "4",
+};
+
+export const VOTING_MACHINE_PROPOSAL_STATES = {
+  None: "0",
+  Expired: "1",
+  ExecutedInQueue: "2",
+  ExecutedInBoost: "3",
+  Queued: "4",
+  PreBoosted: "5",
+  Boosted: "6",
+  QuietEndingPeriod: "7",
+};
+
+export const VOTING_MACHINE_EXECUTION_STATES = {
+  None: "0",
+  Failed: "1",
+  QueueBarCrossed: "2",
+  QueueTimeOut: "3",
+  PreBoostedBarCrossed: "4",
+  BoostedTimeOut: "5",
+  BoostedBarCrossed: "6",
 };

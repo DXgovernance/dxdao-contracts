@@ -1185,10 +1185,7 @@ contract("ERC20Guild", function (accounts) {
       await erc20Guild.endProposal(guildProposalId);
 
       const { state } = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(
-        state,
-        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
-      );
+      assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.passed);
     });
 
     it("when there is a tie between an action and no action, reject", async function () {
@@ -1281,10 +1278,7 @@ contract("ERC20Guild", function (accounts) {
       await erc20Guild.endProposal(guildProposalId);
 
       const { state } = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(
-        state,
-        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
-      );
+      assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.passed);
     });
   });
 

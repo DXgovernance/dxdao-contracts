@@ -32,8 +32,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         None,
         Submitted,
         Rejected,
-        ExecutionSucceeded,
-        ExecutionTimeout
+        Passed
     }
 
     struct Proposal {
@@ -53,7 +52,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     DAOAvatar public avatar;
     PermissionRegistry public permissionRegistry;
     string public schemeName;
-    uint256 public maxSecondsForExecution;
     uint256 public maxRepPercentageChange;
 
     // Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
@@ -103,8 +101,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @param _votingMachine the voting machine address
      * @param _controller The controller address
      * @param _permissionRegistry The address of the permission registry contract
-     * @param _maxSecondsForExecution The maximum amount of time in seconds for a proposal without executed since
-     * submitted time
      * @param _maxRepPercentageChange The maximum percentage allowed to be changed in REP total supply after proposal
      * execution
      */
@@ -114,7 +110,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         address _controller,
         address _permissionRegistry,
         string calldata _schemeName,
-        uint256 _maxSecondsForExecution,
         uint256 _maxRepPercentageChange
     ) external {
         if (address(avatar) != address(0)) {
@@ -129,33 +124,12 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             revert Scheme__ControllerAddressCannotBeZero();
         }
 
-        if (_maxSecondsForExecution < 86400) {
-            revert Scheme__MaxSecondsForExecutionTooLow();
-        }
-
         avatar = DAOAvatar(_avatar);
         votingMachine = IDXDVotingMachine(_votingMachine);
         controller = DAOController(_controller);
         permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
-        maxSecondsForExecution = _maxSecondsForExecution;
         maxRepPercentageChange = _maxRepPercentageChange;
-    }
-
-    /**
-     * @dev Set the max amount of seconds that a proposal has to be executed, only callable from the avatar address
-     * @param _maxSecondsForExecution New max proposal time in seconds to be used
-     */
-    function setMaxSecondsForExecution(uint256 _maxSecondsForExecution) external virtual {
-        if (msg.sender != address(avatar) && msg.sender != address(this)) {
-            revert Scheme__SetMaxSecondsForExecutionInvalidCaller();
-        }
-
-        if (_maxSecondsForExecution < 86400) {
-            revert Scheme__MaxSecondsForExecutionTooLow();
-        }
-
-        maxSecondsForExecution = _maxSecondsForExecution;
     }
 
     /**
@@ -227,22 +201,13 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         }
         executingProposal = true;
 
-        Proposal storage proposal = proposals[_proposalId];
+        Proposal memory proposal = proposals[_proposalId];
 
         if (proposal.state != ProposalState.Submitted) {
             revert Scheme__ProposalMustBeSubmitted();
         }
 
-        if (proposal.submittedTime + maxSecondsForExecution < block.timestamp) {
-            // If the amount of time passed since submission plus max proposal time is lower than block timestamp
-            // the proposal timeout execution is reached and proposal cant be executed from now on
-
-            proposal.state = ProposalState.ExecutionTimeout;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionTimeout));
-        } else if (_winningOption == 1) {
-            proposal.state = ProposalState.Rejected;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
-        } else {
+        if (_winningOption > 1) {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
 
             permissionRegistry.setERC20Balances();
@@ -268,6 +233,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
                         callDataFuncSignature,
                         proposal.value[callIndex]
                     );
+
                     (callsSucessResult, returnData) = proposal.to[callIndex].call{value: proposal.value[callIndex]}(
                         proposal.callData[callIndex]
                     );
@@ -277,8 +243,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
                     }
                 }
             }
-
-            proposal.state = ProposalState.ExecutionSucceeded;
 
             // Cant mint or burn more REP than the allowed percentaged set in the wallet scheme initialization
             if (
@@ -291,11 +255,34 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             if (!permissionRegistry.checkERC20Limits(address(this))) {
                 revert Scheme__ERC20LimitsPassed();
             }
+        }
+        executingProposal = false;
+        return true;
+    }
 
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.ExecutionSucceeded));
+    /**
+     * @dev Finish a proposal and set the final state in storage
+     * @param _proposalId the ID of the voting in the voting machine
+     * @param _winningOption The winning option in the voting machine
+     * @return bool success
+     */
+    function finishProposal(bytes32 _proposalId, uint256 _winningOption)
+        public
+        virtual
+        onlyVotingMachine
+        returns (bool)
+    {
+        Proposal storage proposal = proposals[_proposalId];
+        require(proposal.state == ProposalState.Submitted, "Scheme: must be a submitted proposal");
+
+        if (_winningOption == 1) {
+            proposal.state = ProposalState.Rejected;
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
+        } else {
+            proposal.state = ProposalState.Passed;
+            emit ProposalStateChange(_proposalId, uint256(ProposalState.Passed));
         }
         controller.endProposal(_proposalId);
-        executingProposal = false;
         return true;
     }
 

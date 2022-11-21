@@ -19,24 +19,6 @@ contract DXDVotingMachineCallbacks {
 
     mapping(bytes32 => uint256) public proposalSnapshots;
 
-    function mintReputation(
-        uint256 _amount,
-        address _beneficiary,
-        bytes32
-    ) external onlyVotingMachine returns (bool success) {
-        if (_amount > 0) controller.mintReputation(_amount, _beneficiary);
-        return success;
-    }
-
-    function burnReputation(
-        uint256 _amount,
-        address _beneficiary,
-        bytes32
-    ) external onlyVotingMachine returns (bool success) {
-        if (_amount > 0) controller.burnReputation(_amount, _beneficiary);
-        return success;
-    }
-
     function getReputation() public view returns (DAOReputation) {
         return controller.getDaoReputation();
     }

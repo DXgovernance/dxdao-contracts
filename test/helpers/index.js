@@ -73,8 +73,7 @@ export const deployDao = async function (deployConfig) {
   await reputation.transferOwnership(controller.address);
 
   const votingMachine = await DXDVotingMachine.new(
-    deployConfig.votingMachineToken,
-    avatar.address
+    deployConfig.votingMachineToken
   );
 
   const defaultParamsHash = await setDefaultParameters(votingMachine);
@@ -114,18 +113,16 @@ export function testCallWithoutReturnValueFrom(address) {
 
 // Parameters
 export const defaultParameters = {
-  voteOnBehalf: constants.ZERO_ADDRESS,
-  queuedVoteRequiredPercentage: 50,
+  queuedVoteRequiredPercentage: 5000,
   queuedVotePeriodLimit: 60,
   boostedVotePeriodLimit: 60,
   preBoostedVotePeriodLimit: 10,
   thresholdConst: 2000,
   quietEndingPeriod: 10,
   proposingRepReward: 0,
-  votersReputationLossRatio: 0,
   minimumDaoBounty: 100,
   daoBountyConst: 10,
-  activationTime: 0,
+  boostedVoteRequiredPercentage: 100,
 };
 
 export const defaultParametersArray = [
@@ -136,22 +133,15 @@ export const defaultParametersArray = [
   defaultParameters.thresholdConst,
   defaultParameters.quietEndingPeriod,
   defaultParameters.proposingRepReward,
-  defaultParameters.votersReputationLossRatio,
   defaultParameters.minimumDaoBounty,
   defaultParameters.daoBountyConst,
-  defaultParameters.activationTime,
+  defaultParameters.boostedVoteRequiredPercentage,
 ];
 
 export const setDefaultParameters = async function (votingMachine) {
-  await votingMachine.setParameters(
-    defaultParametersArray,
-    defaultParameters.voteOnBehalf
-  );
+  await votingMachine.setParameters(defaultParametersArray);
 
-  return await votingMachine.getParametersHash(
-    defaultParametersArray,
-    defaultParameters.voteOnBehalf
-  );
+  return await votingMachine.getParametersHash(defaultParametersArray);
 };
 
 export function encodeERC20Transfer(to, value) {
@@ -247,6 +237,21 @@ export function getRandomNumber(min, max = min) {
 
   max = Math.floor(max);
   return Math.floor(Math.random() * (max - min + 1) + min); // The maximum is inclusive and the minimum is inclusive
+}
+
+export function customErrorMessageExistInRawLogs(
+  eventDataStringMessage,
+  txReceipt
+) {
+  const encodedErrorSignature = web3.eth.abi
+    .encodeFunctionSignature(eventDataStringMessage)
+    .substring(2);
+  return (
+    0 <
+    txReceipt.rawLogs.findIndex(rawLog => {
+      return rawLog.data.includes(encodedErrorSignature);
+    })
+  );
 }
 
 export { constants };

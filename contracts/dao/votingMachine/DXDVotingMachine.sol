@@ -11,14 +11,22 @@ import "./DXDVotingMachineCallbacksInterface.sol";
 import "./ProposalExecuteInterface.sol";
 
 /**
- * @title GenesisProtocol implementation designed for DXdao
+ * @title Fork of Genesis Protocol Voting Machine for DXdao
  *
- * New Features:
- *  - Payable Votes: Any organization can send funds and configure the gas and maxGasPrice to be refunded per vote.
- *  - Signed Votes: Votes can be signed for this or any voting machine, they can be shared on this voting machine and
- *    execute votes signed for this voting machine.
- *  - Signal Votes: Voters can signal their decisions with near 50k gas, the signaled votes can be executed on
- *    chain by anyone.
+ * @dev A voting machine is used to to determine the outcome of a dao proposal.
+ * The proposals are submitted through schemes.
+ * Each scheme has voting parameters and a staking token balance and ETH balance.
+ * The proposals can be executed in two final states, Queue or Boost.
+ * A boosted proposal is a proposal that received a favorable stake on an option.
+ * An stake is deposit done in the staking token, this adds a financial incentive
+ * and risk on a proposal to be executed faster.
+ * A proposal in queue needs at least 50% (or more) of votes in favour in order to
+ * be executed.
+ * A proposal in boost state might need a % of votes in favour in order to be executed.
+ * If a proposal ended and it has staked tokens on it the tokens can be redeemed by
+ * the stakers.
+ * If a staker staked on the winning option it receives a reward.
+ * If a staker staked on a loosing option it lose his stake.
  */
 contract DXDVotingMachine {
     using ECDSA for bytes32;
@@ -29,8 +37,9 @@ contract DXDVotingMachine {
 
     enum ProposalState {
         None,
-        ExpiredInQueue,
-        Executed,
+        Expired,
+        ExecutedInQueue,
+        ExecutedInBoost,
         Queued,
         PreBoosted,
         Boosted,
@@ -38,6 +47,7 @@ contract DXDVotingMachine {
     }
     enum ExecutionState {
         None,
+        Failed,
         QueueBarCrossed,
         QueueTimeOut,
         PreBoostedBarCrossed,
@@ -45,9 +55,9 @@ contract DXDVotingMachine {
         BoostedBarCrossed
     }
 
-    //Organization's parameters
+    /// Scheme voting parameters
     struct Parameters {
-        uint256 queuedVoteRequiredPercentage; // the absolute vote percentages bar.
+        uint256 queuedVoteRequiredPercentage; // the absolute vote percentages bar. 5000 = 50%
         uint256 queuedVotePeriodLimit; //the time limit for a proposal to be in an absolute voting mode.
         uint256 boostedVotePeriodLimit; //the time limit for a proposal to be in boost mode.
         uint256 preBoostedVotePeriodLimit; //the time limit for a proposal
@@ -58,32 +68,30 @@ contract DXDVotingMachine {
         //in the threshold calculation to prevent overflow
         uint256 quietEndingPeriod; //quite ending period
         uint256 proposingRepReward; //proposer reputation reward.
-        uint256 votersReputationLossRatio; //Unsuccessful pre booster
-        //voters lose votersReputationLossRatio% of their reputation.
         uint256 minimumDaoBounty;
         uint256 daoBountyConst; //The DAO downstake for each proposal is calculate according to the formula
         //(daoBountyConst * averageBoostDownstakes)/100 .
-        uint256 activationTime; //the point in time after which proposals can be created.
-        //if this address is set so only this address is allowed to vote of behalf of someone else.
-        address voteOnBehalf;
+        uint256 boostedVoteRequiredPercentage; // The required % of votes needed in a boosted proposal to be
+        // executed on that scheme
     }
 
     struct Voter {
-        uint256 vote; // YES(1) ,NO(2)
+        uint256 vote; // NO(1), YES(2)
         uint256 reputation; // amount of voter's reputation
         bool preBoosted;
     }
 
     struct Staker {
-        uint256 vote; // YES(1) ,NO(2)
+        uint256 vote; // NO(1), YES(2)
         uint256 amount; // amount of staker's stake
         uint256 amount4Bounty; // amount of staker's stake used for bounty reward calculation.
     }
 
     struct Proposal {
-        bytes32 organizationId; // the organization unique identifier the proposal is target to.
+        bytes32 schemeId; // the scheme unique identifier the proposal is target to.
         address callbacks; // should fulfill voting callbacks interface.
         ProposalState state;
+        ExecutionState executionState;
         uint256 winningVote; //the winning vote.
         address proposer;
         //the proposal boosted period limit . it is updated for the case of quiteWindow mode.
@@ -100,10 +108,14 @@ contract DXDVotingMachine {
         bool daoRedeemItsWinnings;
     }
 
-    struct OrganizationRefunds {
-        uint256 balance;
+    struct Scheme {
+        address avatar;
+        uint256 stakingTokenBalance;
+        uint256 voteGasBalance;
         uint256 voteGas;
         uint256 maxGasPrice;
+        uint256 averagesDownstakesOfBoosted;
+        uint256 orgBoostedProposalsCnt;
     }
 
     struct VoteDecision {
@@ -114,7 +126,6 @@ contract DXDVotingMachine {
     struct ExecuteFunctionParams {
         uint256 totalReputation;
         uint256 executionBar;
-        uint256 _boostedVoteRequiredPercentage;
         uint256 boostedExecutionBar;
         uint256 averageDownstakesOfBoosted;
         uint256 confidenceThreshold;
@@ -122,7 +133,7 @@ contract DXDVotingMachine {
 
     event NewProposal(
         bytes32 indexed _proposalId,
-        address indexed _organization,
+        address indexed _avatar,
         uint256 _numOfChoices,
         address _proposer,
         bytes32 _paramsHash
@@ -130,64 +141,60 @@ contract DXDVotingMachine {
 
     event ExecuteProposal(
         bytes32 indexed _proposalId,
-        address indexed _organization,
+        address indexed _avatar,
         uint256 _decision,
         uint256 _totalReputation
     );
 
     event VoteProposal(
         bytes32 indexed _proposalId,
-        address indexed _organization,
+        address indexed _avatar,
         address indexed _voter,
         uint256 _vote,
         uint256 _reputation
     );
 
-    event CancelProposal(bytes32 indexed _proposalId, address indexed _organization);
-    event CancelVoting(bytes32 indexed _proposalId, address indexed _organization, address indexed _voter);
+    event CancelProposal(bytes32 indexed _proposalId, address indexed _avatar);
+    event CancelVoting(bytes32 indexed _proposalId, address indexed _avatar, address indexed _voter);
 
     event Stake(
         bytes32 indexed _proposalId,
-        address indexed _organization,
+        address indexed _avatar,
         address indexed _staker,
         uint256 _vote,
         uint256 _amount
     );
 
-    event Redeem(
-        bytes32 indexed _proposalId,
-        address indexed _organization,
-        address indexed _beneficiary,
-        uint256 _amount
-    );
+    event Redeem(bytes32 indexed _proposalId, address indexed _avatar, address indexed _beneficiary, uint256 _amount);
 
     event RedeemDaoBounty(
         bytes32 indexed _proposalId,
-        address indexed _organization,
+        address indexed _avatar,
         address indexed _beneficiary,
         uint256 _amount
     );
 
     event RedeemReputation(
         bytes32 indexed _proposalId,
-        address indexed _organization,
+        address indexed _avatar,
         address indexed _beneficiary,
         uint256 _amount
     );
 
-    event VoteSigned(
-        address votingMachine,
+    event ActionSigned(
         bytes32 proposalId,
         address voter,
         uint256 voteDecision,
         uint256 amount,
+        uint256 nonce,
+        uint256 actionType,
         bytes signature
     );
 
     event StateChange(bytes32 indexed _proposalId, ProposalState _proposalState);
-    event GPExecuteProposal(bytes32 indexed _proposalId, ExecutionState _executionState);
     event ExpirationCallBounty(bytes32 indexed _proposalId, address indexed _beneficiary, uint256 _amount);
     event ConfidenceLevelChange(bytes32 indexed _proposalId, uint256 _confidenceThreshold);
+    event ProposalExecuteResult(string);
 
     // Event used to signal votes to be executed on chain
     event VoteSignaled(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount);
@@ -206,42 +213,34 @@ contract DXDVotingMachine {
 
     mapping(bytes32 => Parameters) public parameters; // A mapping from hashes to parameters
     mapping(bytes32 => Proposal) public proposals; // Mapping from the ID of the proposal to the proposal itself.
-    mapping(bytes32 => uint256) public orgBoostedProposalsCnt;
-    //organizationId => organization
-    mapping(bytes32 => address) public organizations;
-    //organizationId => averageBoostDownstakes
-    mapping(bytes32 => uint256) public averagesDownstakesOfBoosted;
+
+    //schemeId => scheme
+    mapping(bytes32 => Scheme) public schemes;
+
     uint256 public constant NUM_OF_CHOICES = 2;
     uint256 public constant NO = 1;
     uint256 public constant YES = 2;
     uint256 public proposalsCnt; // Total number of proposals
     IERC20 public stakingToken;
-    address private constant GEN_TOKEN_ADDRESS = 0x543Ff227F64Aa17eA132Bf9886cAb5DB55DCAddf;
     uint256 private constant MAX_BOOSTED_PROPOSALS = 4096;
-    address public avatarOwner;
 
     // Digest describing the data the user signs according EIP 712.
     // Needs to match what is passed to Metamask.
-    bytes32 public constant DELEGATION_HASH_EIP712 =
+    bytes32 public constant SIGNED_ACTION_HASH_EIP712 =
         keccak256(
             abi.encodePacked(
-                "address GenesisProtocolAddress",
+                "address DXDVotingMachineAddress",
                 "bytes32 ProposalId",
+                "address Signer",
                 "uint256 Vote",
                 "uint256 AmountToStake",
-                "uint256 Nonce"
+                "uint256 Nonce",
+                "string Action"
             )
         );
 
-    mapping(address => uint256) public stakesNonce; //stakes Nonce
+    mapping(address => uint256) public stakesNonce;
 
-    // organization id scheme => parameters hash => required % of votes in boosted proposal.
-    // 100 == 1%, 2500 == 25%.
-    mapping(bytes32 => mapping(bytes32 => uint256)) public boostedVoteRequiredPercentage;
-
-    mapping(address => OrganizationRefunds) public organizationRefunds;
-
-    // Event used to share vote signatures on chain
     mapping(bytes32 => mapping(address => VoteDecision)) public votesSignaled;
 
     // The number of choices of each proposal
@@ -272,66 +271,9 @@ contract DXDVotingMachine {
     /**
      * @dev Constructor
      */
-    constructor(IERC20 _stakingToken, address _avatarOwner) {
-        //The GEN token (staking token) address is hard coded in the contract by GEN_TOKEN_ADDRESS .
-        //This will work for a network which already hosted the GEN token on this address (e.g mainnet).
-        //If such contract address does not exist in the network (e.g ganache)
-        //the contract will use the _stakingToken param as the
-        //staking token address.
-
+    constructor(IERC20 _stakingToken) {
         require(address(_stakingToken) != address(0), "wrong _stakingToken");
-        if (address(GEN_TOKEN_ADDRESS).isContract()) {
-            stakingToken = IERC20(GEN_TOKEN_ADDRESS);
-        } else {
-            stakingToken = _stakingToken;
-        }
-        avatarOwner = _avatarOwner;
-    }
-
-    /**
-     * @dev Allows the voting machine to receive ether to be used to refund voting costs
-     */
-    receive() external payable {
-        require(
-            organizationRefunds[msg.sender].voteGas > 0,
-            "DXDVotingMachine: Address not registered in organizationRefounds"
-        );
-        organizationRefunds[msg.sender].balance = organizationRefunds[msg.sender].balance + msg.value;
-    }
-
-    /**
-     * @dev Allows the avatarOwner to claim staking tokens from the voting machine
-     */
-    function claimStakingTokens() external {
-        require(msg.sender == avatarOwner, "DXDVotingMachine: Only avatar owner can claim staking tokens");
-        stakingToken.transfer(avatarOwner, stakingToken.balanceOf(address(this)));
-    }
-
-    /**
-     * @dev executeBoosted try to execute a boosted or QuietEndingPeriod proposal if it is expired
-     * it rewards the msg.sender with P % of the proposal's upstakes upon a successful call to this function.
-     * P = t/150, where t is the number of seconds passed since the the proposal's timeout.
-     * P is capped by 10%.
-     * @param _proposalId the id of the proposal
-     * @return expirationCallBounty the bounty amount for the expiration call
-     */
-    function executeBoosted(bytes32 _proposalId) external returns (uint256 expirationCallBounty) {
-        Proposal storage proposal = proposals[_proposalId];
-        require(
-            proposal.state == ProposalState.Boosted || proposal.state == ProposalState.QuietEndingPeriod,
-            "proposal state in not Boosted nor QuietEndingPeriod"
-        );
-        require(_execute(_proposalId), "proposal need to expire");
-
-        proposal.secondsFromTimeOutTillExecuteBoosted =
-            block.timestamp -
-            (// solhint-disable-next-line not-rely-on-time
-            proposal.currentBoostedVotePeriodLimit + proposal.times[1]);
-
-        expirationCallBounty = calcExecuteCallBounty(_proposalId);
-        proposal.totalStakes = proposal.totalStakes - expirationCallBounty;
-        require(stakingToken.transfer(msg.sender, expirationCallBounty), "transfer to msg.sender failed");
-        emit ExpirationCallBounty(_proposalId, msg.sender, expirationCallBounty);
+        stakingToken = IERC20(_stakingToken);
     }
 
     /**
@@ -345,24 +287,24 @@ contract DXDVotingMachine {
      *    _params[4] -_thresholdConst
      *    _params[5] -_quietEndingPeriod
      *    _params[6] -_proposingRepReward
-     *    _params[7] -_votersReputationLossRatio
-     *    _params[8] -_minimumDaoBounty
-     *    _params[9] -_daoBountyConst
-     *    _params[10] -_activationTime
-     * @param _voteOnBehalf - authorized to vote on behalf of others.
+     *    _params[7] -_minimumDaoBounty
+     *    _params[8] -_daoBountyConst
+     *    _params[9] - _boostedVoteRequiredPercentage
      */
     function setParameters(
-        uint256[11] calldata _params, //use array here due to stack too deep issue.
-        address _voteOnBehalf
+        uint256[10] calldata _params //use array here due to stack too deep issue.
     ) external returns (bytes32) {
-        require(_params[0] <= 100 && _params[0] >= 50, "50 <= queuedVoteRequiredPercentage <= 100");
+        require(_params[0] <= 10000 && _params[0] >= 5000, "5000 <= queuedVoteRequiredPercentage <= 10000");
         require(_params[4] <= 16000 && _params[4] > 1000, "1000 < thresholdConst <= 16000");
-        require(_params[7] <= 100, "votersReputationLossRatio <= 100");
         require(_params[2] >= _params[5], "boostedVotePeriodLimit >= quietEndingPeriod");
-        require(_params[8] > 0, "minimumDaoBounty should be > 0");
-        require(_params[9] > 0, "daoBountyConst should be > 0");
+        require(_params[7] > 0, "minimumDaoBounty should be > 0");
+        require(_params[8] > 0, "daoBountyConst should be > 0");
+        require(
+            _params[0] > _params[9],
+            "queuedVoteRequiredPercentage should eb higher than boostedVoteRequiredPercentage"
+        );
 
-        bytes32 paramsHash = getParametersHash(_params, _voteOnBehalf);
+        bytes32 paramsHash = getParametersHash(_params);
         //set a limit for power for a given alpha to prevent overflow
         uint256 limitExponent = 172; //for alpha less or equal 2
         uint256 j = 2;
@@ -383,11 +325,9 @@ contract DXDVotingMachine {
             limitExponentValue: limitExponent,
             quietEndingPeriod: _params[5],
             proposingRepReward: _params[6],
-            votersReputationLossRatio: _params[7],
-            minimumDaoBounty: _params[8],
-            daoBountyConst: _params[9],
-            activationTime: _params[10],
-            voteOnBehalf: _voteOnBehalf
+            minimumDaoBounty: _params[7],
+            daoBountyConst: _params[8],
+            boostedVoteRequiredPercentage: _params[9]
         });
         return paramsHash;
     }
@@ -400,15 +340,16 @@ contract DXDVotingMachine {
      * @param _beneficiary - the beneficiary address
      * @return rewards -
      *           [0] stakerTokenReward
-     *           [1] voterReputationReward
-     *           [2] proposerReputationReward
+     *           [1] proposerReputationReward
      */
     // solhint-disable-next-line function-max-lines,code-complexity
     function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint256[3] memory rewards) {
         Proposal storage proposal = proposals[_proposalId];
         require(
-            (proposal.state == ProposalState.Executed) || (proposal.state == ProposalState.ExpiredInQueue),
-            "Proposal should be Executed or ExpiredInQueue"
+            (proposal.state == ProposalState.ExecutedInQueue) ||
+                (proposal.state == ProposalState.ExecutedInBoost) ||
+                (proposal.state == ProposalState.Expired),
+            "Proposal should be ExecutedInQueue, ExecutedInBoost or Expired"
         );
         Parameters memory params = parameters[proposal.paramsHash];
         //as staker
@@ -418,7 +359,7 @@ contract DXDVotingMachine {
             proposalStakes[_proposalId][YES] -
             calcExecuteCallBounty(_proposalId);
         if (staker.amount > 0) {
-            if (proposal.state == ProposalState.ExpiredInQueue) {
+            if (proposal.state == ProposalState.Expired) {
                 //Stakes of a proposal that expires in Queue are sent back to stakers
                 rewards[0] = staker.amount;
             } else if (staker.vote == proposal.winningVote) {
@@ -436,8 +377,8 @@ contract DXDVotingMachine {
         //dao redeem its winnings
         if (
             proposal.daoRedeemItsWinnings == false &&
-            _beneficiary == organizations[proposal.organizationId] &&
-            proposal.state != ProposalState.ExpiredInQueue &&
+            _beneficiary == schemes[proposal.schemeId].avatar &&
+            proposal.state != ProposalState.Expired &&
             proposal.winningVote == NO
         ) {
             rewards[0] =
@@ -447,48 +388,26 @@ contract DXDVotingMachine {
             proposal.daoRedeemItsWinnings = true;
         }
 
-        //as voter
-        Voter storage voter = proposalVoters[_proposalId][_beneficiary];
-        if ((voter.reputation != 0) && (voter.preBoosted)) {
-            if (proposal.state == ProposalState.ExpiredInQueue) {
-                //give back reputation for the voter
-                rewards[1] = ((voter.reputation * params.votersReputationLossRatio) / 100);
-            } else if (proposal.winningVote == voter.vote) {
-                uint256 lostReputation;
-                if (proposal.winningVote == YES) {
-                    lostReputation = proposalPreBoostedVotes[_proposalId][NO];
-                } else {
-                    lostReputation = proposalPreBoostedVotes[_proposalId][YES];
-                }
-                lostReputation = (lostReputation * params.votersReputationLossRatio) / 100;
-                rewards[1] =
-                    ((voter.reputation * params.votersReputationLossRatio) / 100) +
-                    ((voter.reputation * lostReputation) / proposalPreBoostedVotes[_proposalId][proposal.winningVote]);
-            }
-            voter.reputation = 0;
-        }
         //as proposer
         if ((proposal.proposer == _beneficiary) && (proposal.winningVote == YES) && (proposal.proposer != address(0))) {
-            rewards[2] = params.proposingRepReward;
+            rewards[1] = params.proposingRepReward;
             proposal.proposer = address(0);
         }
         if (rewards[0] != 0) {
             proposal.totalStakes = proposal.totalStakes - rewards[0];
+            schemes[proposal.schemeId].stakingTokenBalance =
+                schemes[proposal.schemeId].stakingTokenBalance -
+                rewards[0];
             require(stakingToken.transfer(_beneficiary, rewards[0]), "transfer to beneficiary failed");
-            emit Redeem(_proposalId, organizations[proposal.organizationId], _beneficiary, rewards[0]);
+            emit Redeem(_proposalId, schemes[proposal.schemeId].avatar, _beneficiary, rewards[0]);
         }
-        if (rewards[1] + rewards[2] != 0) {
+        if (rewards[1] > 0) {
             DXDVotingMachineCallbacksInterface(proposal.callbacks).mintReputation(
-                rewards[1] + rewards[2],
+                rewards[1],
                 _beneficiary,
                 _proposalId
             );
-            emit RedeemReputation(
-                _proposalId,
-                organizations[proposal.organizationId],
-                _beneficiary,
-                rewards[1] + rewards[2]
-            );
+            emit RedeemReputation(_proposalId, schemes[proposal.schemeId].avatar, _beneficiary, rewards[1]);
         }
     }
 
@@ -499,14 +418,14 @@ contract DXDVotingMachine {
      * @param _proposalId the ID of the proposal
      * @param _beneficiary - the beneficiary address
      * @return redeemedAmount - redeem token amount
-     * @return potentialAmount - potential redeem token amount(if there is enough tokens bounty at the organization )
+     * @return potentialAmount - potential redeem token amount(if there is enough tokens bounty at the dao owner of the scheme )
      */
     function redeemDaoBounty(bytes32 _proposalId, address _beneficiary)
         public
         returns (uint256 redeemedAmount, uint256 potentialAmount)
     {
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.state == ProposalState.Executed);
+        require(proposal.state == ProposalState.ExecutedInQueue || proposal.state == ProposalState.ExecutedInBoost);
         uint256 totalWinningStakes = proposalStakes[_proposalId][proposal.winningVote];
         Staker storage staker = proposalStakers[_proposalId][_beneficiary];
         if (
@@ -518,12 +437,13 @@ contract DXDVotingMachine {
             //as staker
             potentialAmount = (staker.amount4Bounty * proposal.daoBounty) / totalWinningStakes;
         }
-        if ((potentialAmount != 0) && (stakingToken.balanceOf(address(this)) >= potentialAmount)) {
+        if ((potentialAmount != 0) && (schemes[proposal.schemeId].stakingTokenBalance >= potentialAmount)) {
             staker.amount4Bounty = 0;
+            schemes[proposal.schemeId].stakingTokenBalance -= potentialAmount;
             proposal.daoBountyRemain = proposal.daoBountyRemain - potentialAmount;
             require(stakingToken.transfer(_beneficiary, potentialAmount), "fail transfer of daoBounty");
             redeemedAmount = potentialAmount;
-            emit RedeemDaoBounty(_proposalId, organizations[proposal.organizationId], _beneficiary, redeemedAmount);
+            emit RedeemDaoBounty(_proposalId, schemes[proposal.schemeId].avatar, _beneficiary, redeemedAmount);
         }
     }
 
@@ -547,19 +467,19 @@ contract DXDVotingMachine {
      */
     function shouldBoost(bytes32 _proposalId) public view returns (bool) {
         Proposal memory proposal = proposals[_proposalId];
-        return (_score(_proposalId) > threshold(proposal.paramsHash, proposal.organizationId));
+        return (_score(_proposalId) > threshold(proposal.paramsHash, proposal.schemeId));
     }
 
     /**
-     * @dev threshold return the organization's score threshold which required by
+     * @dev threshold return the scheme's score threshold which required by
      * a proposal to shift to boosted state.
      * This threshold is dynamically set and it depend on the number of boosted proposal.
-     * @param _organizationId the organization identifier
-     * @param _paramsHash the organization parameters hash
-     * @return uint256 organization's score threshold as real number.
+     * @param _schemeId the scheme identifier
+     * @param _paramsHash the scheme parameters hash
+     * @return uint256 scheme's score threshold as real number.
      */
-    function threshold(bytes32 _paramsHash, bytes32 _organizationId) public view returns (uint256) {
-        uint256 power = orgBoostedProposalsCnt[_organizationId];
+    function threshold(bytes32 _paramsHash, bytes32 _schemeId) public view returns (uint256) {
+        uint256 power = schemes[_schemeId].orgBoostedProposalsCnt;
         Parameters storage params = parameters[_paramsHash];
 
         if (power > params.limitExponentValue) {
@@ -572,7 +492,7 @@ contract DXDVotingMachine {
     /**
      * @dev staking function
      * @param _proposalId id of the proposal
-     * @param _vote  NO(2) or YES(1).
+     * @param _vote  NO(1) or YES(2).
      * @param _amount the betting amount
      * @return bool true - the proposal has been executed
      *              false - otherwise.
@@ -587,125 +507,86 @@ contract DXDVotingMachine {
 
     /**
      * @dev stakeWithSignature function
-     * @param _proposalId id of the proposal
-     * @param _vote  NO(2) or YES(1).
-     * @param _amount the betting amount
-     * @param _nonce nonce value ,it is part of the signature to ensure that
-              a signature can be received only once.
-     * @param _signatureType signature type
-              1 - for web3.eth.sign
-              2 - for eth_signTypedData according to EIP #712.
-     * @param _signature  - signed data by the staker
+     * @param proposalId id of the proposal
+     * @param staker address of staker
+     * @param stakeDecision  NO(1) or YES(2).
+     * @param amount the betting amount
+     * @param nonce nonce value ,it is part of the signature to ensure that
+        a signature can be received only once.
+     * @param signature  - signed data by the staker
      * @return bool true - the proposal has been executed
      *              false - otherwise.
      */
     function stakeWithSignature(
-        bytes32 _proposalId,
-        uint256 _vote,
-        uint256 _amount,
-        uint256 _nonce,
-        uint256 _signatureType,
-        bytes calldata _signature
+        bytes32 proposalId,
+        address staker,
+        uint256 stakeDecision,
+        uint256 amount,
+        uint256 nonce,
+        bytes calldata signature
     ) external returns (bool) {
-        // Recreate the digest the user signed
-        bytes32 delegationDigest;
-        if (_signatureType == 2) {
-            delegationDigest = keccak256(
-                abi.encodePacked(
-                    DELEGATION_HASH_EIP712,
-                    keccak256(abi.encodePacked(address(this), _proposalId, _vote, _amount, _nonce))
-                )
-            );
-        } else {
-            delegationDigest = keccak256(abi.encodePacked(address(this), _proposalId, _vote, _amount, _nonce))
-                .toEthSignedMessageHash();
-        }
-        address staker = delegationDigest.recover(_signature);
-        //a garbage staker address due to wrong signature will revert due to lack of approval and funds.
-        require(staker != address(0), "staker address cannot be 0");
-        require(stakesNonce[staker] == _nonce);
+        bytes32 stakeHashed = hashAction(proposalId, staker, stakeDecision, amount, nonce, 2);
+        address staker = stakeHashed.recover(signature);
+        require(staker == stakeHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
+        require(stakesNonce[staker] == nonce);
         stakesNonce[staker] = stakesNonce[staker] + 1;
-        return _stake(_proposalId, _vote, _amount, staker);
+        return _stake(proposalId, stakeDecision, amount, staker);
     }
 
     /**
-     * @dev Config the vote refund for each organization
+     * @dev Config the vote refund for each scheme
+     * Allows the voting machine to receive ether to be used to refund voting costs
      * @param _voteGas the amount of gas that will be used as vote cost
      * @param _maxGasPrice the maximum amount of gas price to be paid, if the gas used is higher than this value only a
      * portion of the total gas would be refunded
      */
-    function setOrganizationRefund(uint256 _voteGas, uint256 _maxGasPrice) external {
-        organizationRefunds[msg.sender].voteGas = _voteGas;
-        organizationRefunds[msg.sender].maxGasPrice = _maxGasPrice;
+    function setSchemeRefund(
+        address avatar,
+        address scheme,
+        uint256 _voteGas,
+        uint256 _maxGasPrice
+    ) external payable {
+        bytes32 schemeId;
+        if (msg.sender == scheme) {
+            schemeId = keccak256(abi.encodePacked(msg.sender, avatar));
+        } else if (msg.sender == avatar) {
+            schemeId = keccak256(abi.encodePacked(scheme, msg.sender));
+        }
+        require(schemeId != bytes32(0), "DXDVotingMachine: Only scheme or avatar can set scheme refund");
+        schemes[schemeId].voteGasBalance = schemes[schemeId].voteGasBalance + msg.value;
+        schemes[schemeId].voteGas = _voteGas;
+        schemes[schemeId].maxGasPrice = _maxGasPrice;
     }
 
     /**
-     * @dev Withdraw organization refund balance
+     * @dev Withdraw scheme refund balance
      */
-    function withdrawRefundBalance() public {
-        require(
-            organizationRefunds[msg.sender].voteGas > 0,
-            "DXDVotingMachine: Address not registered in organizationRefounds"
-        );
-        require(organizationRefunds[msg.sender].balance > 0, "DXDVotingMachine: Organization refund balance is zero");
-        uint256 organizationBalance = organizationRefunds[msg.sender].balance;
-        organizationRefunds[msg.sender].balance = 0;
-        payable(msg.sender).transfer(organizationBalance);
-    }
-
-    /**
-     * @dev Config the required % of votes needed in a boosted proposal in a scheme, only callable by the avatar
-     * @param _scheme the scheme address to be configured
-     * @param _paramsHash the parameters configuration hashed of the scheme
-     * @param _boostedVotePeriodLimit the required % of votes needed in a boosted proposal to be executed on that scheme
-     */
-    function setBoostedVoteRequiredPercentage(
-        address _scheme,
-        bytes32 _paramsHash,
-        uint256 _boostedVotePeriodLimit
-    ) external {
-        boostedVoteRequiredPercentage[keccak256(abi.encodePacked(_scheme, msg.sender))][
-            _paramsHash
-        ] = _boostedVotePeriodLimit;
+    function withdrawRefundBalance(address scheme) public {
+        bytes32 schemeId = keccak256(abi.encodePacked(msg.sender, scheme));
+        require(schemes[schemeId].voteGas > 0, "DXDVotingMachine: Address not registered in scheme refounds");
+        require(schemes[schemeId].voteGasBalance > 0, "DXDVotingMachine: Scheme refund balance is zero");
+        uint256 voteGasBalance = schemes[schemeId].voteGasBalance;
+        schemes[schemeId].voteGasBalance = 0;
+        payable(msg.sender).transfer(voteGasBalance);
     }
 
     /**
      * @dev voting function from old voting machine changing only the logic to refund vote after vote done
      *
      * @param _proposalId id of the proposal
-     * @param _vote NO(2) or YES(1).
+     * @param _vote NO(1) or YES(2).
      * @param _amount the reputation amount to vote with, 0 will use all available REP
-     * @param _voter voter address
      * @return bool if the proposal has been executed or not
      */
     function vote(
         bytes32 _proposalId,
         uint256 _vote,
-        uint256 _amount,
-        address _voter
+        uint256 _amount
     ) external votable(_proposalId) returns (bool) {
         Proposal storage proposal = proposals[_proposalId];
-        Parameters memory params = parameters[proposal.paramsHash];
-        address voter;
-        if (params.voteOnBehalf != address(0)) {
-            require(msg.sender == params.voteOnBehalf, "address not allowed to vote on behalf");
-            voter = _voter;
-        } else {
-            voter = msg.sender;
-        }
-        bool voteResult = internalVote(_proposalId, voter, _vote, _amount);
-        _refundVote(proposal.organizationId);
+        bool voteResult = internalVote(_proposalId, msg.sender, _vote, _amount);
+        _refundVote(proposal.schemeId);
         return voteResult;
-    }
-
-    /**
-     * @dev Cancel the vote of the msg.sender.
-     * cancel vote is not allow in genesisProtocol so this function doing nothing.
-     * This function is here in order to comply to the IntVoteInterface .
-     */
-    function cancelVote(bytes32 _proposalId) external view votable(_proposalId) {
-        //this is not allowed
-        return;
     }
 
     /**
@@ -752,31 +633,34 @@ contract DXDVotingMachine {
     /**
      * @dev Share the vote of a proposal for a voting machine on a event log
      *
-     * @param votingMachine the voting machine address
      * @param proposalId id of the proposal
      * @param voter address of voter
-     * @param voteDecision the vote decision, NO(2) or YES(1).
+     * @param voteDecision the vote decision, NO(1) or YES(2).
      * @param amount the reputation amount to vote with, 0 will use all available REP
+     * @param nonce nonce value ,it is part of the signature to ensure that
+        a signature can be received only once.
+     * @param actionType 1 == vote and 2 == stake
      * @param signature the encoded vote signature
      */
-    function shareSignedVote(
-        address votingMachine,
+    function shareSignedAction(
         bytes32 proposalId,
         address voter,
         uint256 voteDecision,
         uint256 amount,
+        uint256 nonce,
+        uint256 actionType,
         bytes calldata signature
     ) external validDecision(proposalId, voteDecision) {
-        bytes32 voteHashed = hashVote(votingMachine, proposalId, voter, voteDecision, amount);
+        bytes32 voteHashed = hashAction(proposalId, voter, voteDecision, amount, nonce, actionType);
         require(voter == voteHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
-        emit VoteSigned(votingMachine, proposalId, voter, voteDecision, amount, signature);
+        emit ActionSigned(proposalId, voter, voteDecision, amount, nonce, actionType, signature);
     }
 
     /**
      * @dev Signal the vote of a proposal in this voting machine to be executed later
      *
      * @param proposalId id of the proposal to vote
-     * @param voteDecision the vote decisions, NO(2) or YES(1).
+     * @param voteDecision the vote decisions, NO(1) or YES(2).
      * @param amount the reputation amount to vote with, 0 will use all available REP
      */
     function signalVote(
@@ -794,32 +678,27 @@ contract DXDVotingMachine {
     /**
      * @dev Execute a signed vote
      *
-     * @param votingMachine the voting machine address
      * @param proposalId id of the proposal to execute the vote on
      * @param voter the signer of the vote
-     * @param voteDecision the vote decision, NO(2) or YES(1).
+     * @param voteDecision the vote decision, NO(1) or YES(2).
      * @param amount the reputation amount to vote with, 0 will use all available REP
+     * @param nonce nonce value ,it is part of the signature to ensure that
+        a signature can be received only once.
      * @param signature the signature of the hashed vote
      */
     function executeSignedVote(
-        address votingMachine,
         bytes32 proposalId,
         address voter,
         uint256 voteDecision,
         uint256 amount,
+        uint256 nonce,
         bytes calldata signature
     ) external {
-        require(votingMachine == address(this), "wrong votingMachine");
         require(_isVotable(proposalId), "not votable proposal");
-        require(
-            voter ==
-                hashVote(votingMachine, proposalId, voter, voteDecision, amount).toEthSignedMessageHash().recover(
-                    signature
-                ),
-            "wrong signer"
-        );
+        bytes32 voteHashed = hashAction(proposalId, voter, voteDecision, amount, nonce, 1);
+        require(voter == voteHashed.toEthSignedMessageHash().recover(signature), "wrong signer");
         internalVote(proposalId, voter, voteDecision, amount);
-        _refundVote(proposals[proposalId].organizationId);
+        _refundVote(proposals[proposalId].schemeId);
     }
 
     /**
@@ -827,32 +706,15 @@ contract DXDVotingMachine {
      * generated by calculating keccak256 of a incremented counter.
      * @param _paramsHash parameters hash
      * @param _proposer address
-     * @param _organization address
+     * @param _avatar address
      */
     function propose(
         uint256,
         bytes32 _paramsHash,
         address _proposer,
-        address _organization
+        address _avatar
     ) external returns (bytes32) {
-        return _propose(NUM_OF_CHOICES, _paramsHash, _proposer, _organization);
-    }
-
-    /**
-     * @dev register a new proposal with the given parameters. Every proposal has a unique ID which is being
-     * generated by calculating keccak256 of a incremented counter.
-     * @param _choicesAmount the total amount of choices for the proposal
-     * @param _paramsHash parameters hash
-     * @param _proposer address
-     * @param _organization address
-     */
-    function proposeMultipleChoice(
-        uint256 _choicesAmount,
-        bytes32 _paramsHash,
-        address _proposer,
-        address _organization
-    ) external returns (bytes32) {
-        return _propose(_choicesAmount, _paramsHash, _proposer, _organization);
+        return _propose(NUM_OF_CHOICES, _paramsHash, _proposer, _avatar);
     }
 
     /**
@@ -926,19 +788,13 @@ contract DXDVotingMachine {
         });
         if ((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued)) {
             proposalPreBoostedVotes[_proposalId][_vote] = rep + proposalPreBoostedVotes[_proposalId][_vote];
-            uint256 reputationDeposit = (params.votersReputationLossRatio * rep) / 100;
-            DXDVotingMachineCallbacksInterface(proposal.callbacks).burnReputation(
-                reputationDeposit,
-                _voter,
-                _proposalId
-            );
         }
-        emit VoteProposal(_proposalId, organizations[proposal.organizationId], _voter, _vote, rep);
+        emit VoteProposal(_proposalId, schemes[proposal.schemeId].avatar, _voter, _vote, rep);
         return _execute(_proposalId);
     }
 
     /**
-     * @dev Execute a signed vote on a votable proposal
+     * @dev Execute a signaled vote on a votable proposal
      *
      * @param proposalId id of the proposal to vote
      * @param voter the signer of the vote
@@ -953,26 +809,62 @@ contract DXDVotingMachine {
             votesSignaled[proposalId][voter].amount
         );
         delete votesSignaled[proposalId][voter];
-        _refundVote(proposals[proposalId].organizationId);
+        _refundVote(proposals[proposalId].schemeId);
     }
 
     /**
      * @dev Hash the vote data that is used for signatures
      *
-     * @param votingMachine the voting machine address
      * @param proposalId id of the proposal
-     * @param voter the signer of the vote
-     * @param voteDecision the vote decision, NO(2) or YES(1).
+     * @param signer the signer of the vote
+     * @param option the vote decision, NO(1) or YES(2).
      * @param amount the reputation amount to vote with, 0 will use all available REP
+     * @param nonce nonce value ,it is part of the signature to ensure that
+        a signature can be received only once.
+     * @param actionType the governance action type to hash
      */
-    function hashVote(
-        address votingMachine,
+    function hashAction(
         bytes32 proposalId,
-        address voter,
-        uint256 voteDecision,
-        uint256 amount
-    ) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(votingMachine, proposalId, voter, voteDecision, amount));
+        address signer,
+        uint256 option,
+        uint256 amount,
+        uint256 nonce,
+        uint256 actionType
+    ) public view returns (bytes32) {
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
+        return
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    keccak256(
+                        abi.encode(
+                            keccak256(
+                                "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                            ),
+                            keccak256(bytes("DXDVotingMachine")),
+                            keccak256(bytes("1")),
+                            chainId,
+                            address(this)
+                        )
+                    ),
+                    keccak256(
+                        abi.encode(
+                            keccak256(
+                                "action(bytes32 proposalId,address signer,uint256 option,uint256 amount,uint256 nonce,uint256 actionType)"
+                            ),
+                            proposalId,
+                            signer,
+                            option,
+                            amount,
+                            nonce,
+                            actionType
+                        )
+                    )
+                )
+            );
     }
 
     /**
@@ -999,37 +891,33 @@ contract DXDVotingMachine {
         executeParams.totalReputation = DXDVotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(
             _proposalId
         );
-        //first divide by 100 to prevent overflow
-        executeParams.executionBar = (executeParams.totalReputation / 100) * params.queuedVoteRequiredPercentage;
-        executeParams._boostedVoteRequiredPercentage = boostedVoteRequiredPercentage[proposal.organizationId][
-            proposal.paramsHash
-        ];
+        //first divide by 10000 to prevent overflow
+        executeParams.executionBar = (executeParams.totalReputation / 10000) * params.queuedVoteRequiredPercentage;
         executeParams.boostedExecutionBar =
             (executeParams.totalReputation / 10000) *
-            executeParams._boostedVoteRequiredPercentage;
-        ExecutionState executionState = ExecutionState.None;
+            params.boostedVoteRequiredPercentage;
         executeParams.averageDownstakesOfBoosted;
         executeParams.confidenceThreshold;
 
         if (proposalVotes[_proposalId][proposal.winningVote] > executeParams.executionBar) {
             // someone crossed the absolute vote execution bar.
             if (proposal.state == ProposalState.Queued) {
-                executionState = ExecutionState.QueueBarCrossed;
+                proposal.executionState = ExecutionState.QueueBarCrossed;
             } else if (proposal.state == ProposalState.PreBoosted) {
-                executionState = ExecutionState.PreBoostedBarCrossed;
+                proposal.executionState = ExecutionState.PreBoostedBarCrossed;
             } else {
-                executionState = ExecutionState.BoostedBarCrossed;
+                proposal.executionState = ExecutionState.BoostedBarCrossed;
             }
-            proposal.state = ProposalState.Executed;
+            proposal.state = ProposalState.ExecutedInQueue;
         } else {
             if (proposal.state == ProposalState.Queued) {
                 // solhint-disable-next-line not-rely-on-time
                 if ((block.timestamp - proposal.times[0]) >= params.queuedVotePeriodLimit) {
-                    proposal.state = ProposalState.ExpiredInQueue;
+                    proposal.state = ProposalState.Expired;
                     proposal.winningVote = NO;
-                    executionState = ExecutionState.QueueTimeOut;
+                    proposal.executionState = ExecutionState.QueueTimeOut;
                 } else {
-                    executeParams.confidenceThreshold = threshold(proposal.paramsHash, proposal.organizationId);
+                    executeParams.confidenceThreshold = threshold(proposal.paramsHash, proposal.schemeId);
                     if (_score(_proposalId) > executeParams.confidenceThreshold) {
                         //change proposal mode to PreBoosted mode.
                         proposal.state = ProposalState.PreBoosted;
@@ -1041,28 +929,26 @@ contract DXDVotingMachine {
             }
 
             if (proposal.state == ProposalState.PreBoosted) {
-                executeParams.confidenceThreshold = threshold(proposal.paramsHash, proposal.organizationId);
+                executeParams.confidenceThreshold = threshold(proposal.paramsHash, proposal.schemeId);
                 // solhint-disable-next-line not-rely-on-time
                 if ((block.timestamp - proposal.times[2]) >= params.preBoostedVotePeriodLimit) {
                     if (_score(_proposalId) > executeParams.confidenceThreshold) {
-                        if (orgBoostedProposalsCnt[proposal.organizationId] < MAX_BOOSTED_PROPOSALS) {
+                        if (schemes[proposal.schemeId].orgBoostedProposalsCnt < MAX_BOOSTED_PROPOSALS) {
                             //change proposal mode to Boosted mode.
                             proposal.state = ProposalState.Boosted;
 
-                            // ONLY CHANGE IN DXD VOTING MACHINE TO BOOST AUTOMATICALLY
                             proposal.times[1] = proposal.times[2] + params.preBoostedVotePeriodLimit;
 
-                            orgBoostedProposalsCnt[proposal.organizationId]++;
+                            schemes[proposal.schemeId].orgBoostedProposalsCnt++;
                             //add a value to average -> average = average + ((value - average) / nbValues)
-                            executeParams.averageDownstakesOfBoosted = averagesDownstakesOfBoosted[
-                                proposal.organizationId
-                            ];
+                            executeParams.averageDownstakesOfBoosted = schemes[proposal.schemeId]
+                                .averagesDownstakesOfBoosted;
                             // solium-disable-next-line indentation
-                            averagesDownstakesOfBoosted[proposal.organizationId] = uint256(
+                            schemes[proposal.schemeId].averagesDownstakesOfBoosted = uint256(
                                 int256(executeParams.averageDownstakesOfBoosted) +
                                     ((int256(proposalStakes[_proposalId][NO]) -
                                         int256(executeParams.averageDownstakesOfBoosted)) /
-                                        int256(orgBoostedProposalsCnt[proposal.organizationId]))
+                                        int256(schemes[proposal.schemeId].orgBoostedProposalsCnt))
                             );
                         }
                     } else {
@@ -1085,50 +971,60 @@ contract DXDVotingMachine {
             // solhint-disable-next-line not-rely-on-time
             if ((block.timestamp - proposal.times[1]) >= proposal.currentBoostedVotePeriodLimit) {
                 if (proposalVotes[_proposalId][proposal.winningVote] >= executeParams.boostedExecutionBar) {
-                    proposal.state = ProposalState.Executed;
-                    executionState = ExecutionState.BoostedBarCrossed;
+                    proposal.state = ProposalState.ExecutedInBoost;
+                    proposal.executionState = ExecutionState.BoostedBarCrossed;
                 } else {
-                    proposal.state = ProposalState.ExpiredInQueue;
+                    proposal.state = ProposalState.Expired;
                     proposal.winningVote = NO;
-                    executionState = ExecutionState.BoostedTimeOut;
+                    proposal.executionState = ExecutionState.BoostedTimeOut;
                 }
             }
         }
 
-        if (executionState != ExecutionState.None) {
+        if (proposal.executionState != ExecutionState.None) {
             if (
-                (executionState == ExecutionState.BoostedTimeOut) ||
-                (executionState == ExecutionState.BoostedBarCrossed)
+                (proposal.executionState == ExecutionState.BoostedTimeOut) ||
+                (proposal.executionState == ExecutionState.BoostedBarCrossed)
             ) {
-                orgBoostedProposalsCnt[tmpProposal.organizationId] =
-                    orgBoostedProposalsCnt[tmpProposal.organizationId] -
-                    1;
+                schemes[proposal.schemeId].orgBoostedProposalsCnt--;
                 //remove a value from average = ((average * nbValues) - value) / (nbValues - 1);
-                uint256 boostedProposals = orgBoostedProposalsCnt[tmpProposal.organizationId];
-                if (boostedProposals == 0) {
-                    averagesDownstakesOfBoosted[proposal.organizationId] = 0;
+                if (schemes[proposal.schemeId].orgBoostedProposalsCnt == 0) {
+                    schemes[proposal.schemeId].averagesDownstakesOfBoosted = 0;
                 } else {
-                    executeParams.averageDownstakesOfBoosted = averagesDownstakesOfBoosted[proposal.organizationId];
-                    averagesDownstakesOfBoosted[proposal.organizationId] =
-                        ((executeParams.averageDownstakesOfBoosted * (boostedProposals + 1)) -
+                    executeParams.averageDownstakesOfBoosted = schemes[proposal.schemeId].averagesDownstakesOfBoosted;
+                    schemes[proposal.schemeId].averagesDownstakesOfBoosted =
+                        ((executeParams.averageDownstakesOfBoosted *
+                            (schemes[proposal.schemeId].orgBoostedProposalsCnt + 1)) -
                             proposalStakes[_proposalId][NO]) /
-                        boostedProposals;
+                        schemes[proposal.schemeId].orgBoostedProposalsCnt;
                 }
             }
             emit ExecuteProposal(
                 _proposalId,
-                organizations[proposal.organizationId],
+                schemes[proposal.schemeId].avatar,
                 proposal.winningVote,
                 executeParams.totalReputation
             );
-            emit GPExecuteProposal(_proposalId, executionState);
             proposal.daoBounty = proposal.daoBountyRemain;
-            ProposalExecuteInterface(proposal.callbacks).executeProposal(_proposalId, proposal.winningVote);
+
+            try ProposalExecuteInterface(proposal.callbacks).executeProposal(_proposalId, proposal.winningVote) {
+                emit ProposalExecuteResult("");
+            } catch Error(string memory errorMessage) {
+                proposal.executionState = ExecutionState.Failed;
+                emit ProposalExecuteResult(string(errorMessage));
+            } catch Panic(uint256 errorMessage) {
+                proposal.executionState = ExecutionState.Failed;
+                emit ProposalExecuteResult(string(abi.encodePacked(errorMessage)));
+            } catch (bytes memory errorMessage) {
+                proposal.executionState = ExecutionState.Failed;
+                emit ProposalExecuteResult(string(errorMessage));
+            }
+            ProposalExecuteInterface(proposal.callbacks).finishProposal(_proposalId, proposal.winningVote);
         }
         if (tmpProposal.state != proposal.state) {
             emit StateChange(_proposalId, proposal.state);
         }
-        return (executionState != ExecutionState.None);
+        return (proposal.executionState != ExecutionState.None && proposal.executionState != ExecutionState.Failed);
     }
 
     /**
@@ -1158,7 +1054,7 @@ contract DXDVotingMachine {
     /**
      * @dev staking function
      * @param _proposalId id of the proposal
-     * @param _vote  NO(2) or YES(1).
+     * @param _vote  NO(1) or YES(2).
      * @param _amount the betting amount
      * @return bool true - the proposal has been executed
      *              false - otherwise.
@@ -1189,6 +1085,7 @@ contract DXDVotingMachine {
 
         uint256 amount = _amount;
         require(stakingToken.transferFrom(_staker, address(this), amount), "fail transfer from staker");
+        schemes[proposal.schemeId].stakingTokenBalance += amount;
         proposal.totalStakes = proposal.totalStakes + amount; //update totalRedeemableStakes
         staker.amount = staker.amount + amount;
         // This is to prevent average downstakes calculation overflow
@@ -1205,7 +1102,7 @@ contract DXDVotingMachine {
         staker.vote = _vote;
 
         proposalStakes[_proposalId][_vote] = amount + proposalStakes[_proposalId][_vote];
-        emit Stake(_proposalId, organizations[proposal.organizationId], _staker, _vote, _amount);
+        emit Stake(_proposalId, schemes[proposal.schemeId].avatar, _staker, _vote, _amount);
         return _execute(_proposalId);
     }
 
@@ -1215,26 +1112,24 @@ contract DXDVotingMachine {
      * @param _choicesAmount the total amount of choices for the proposal
      * @param _paramsHash parameters hash
      * @param _proposer address
-     * @param _organization address
+     * @param _avatar address
      */
     function _propose(
         uint256 _choicesAmount,
         bytes32 _paramsHash,
         address _proposer,
-        address _organization
+        address _avatar
     ) internal returns (bytes32) {
         require(_choicesAmount >= NUM_OF_CHOICES);
-        // solhint-disable-next-line not-rely-on-time
-        require(block.timestamp > parameters[_paramsHash].activationTime, "not active yet");
         //Check parameters existence.
-        require(parameters[_paramsHash].queuedVoteRequiredPercentage >= 50);
+        require(parameters[_paramsHash].queuedVoteRequiredPercentage >= 5000);
         // Generate a unique ID:
         bytes32 proposalId = keccak256(abi.encodePacked(this, proposalsCnt));
         proposalsCnt = proposalsCnt + 1;
         // Open proposal:
         Proposal memory proposal;
         proposal.callbacks = msg.sender;
-        proposal.organizationId = keccak256(abi.encodePacked(msg.sender, _organization));
+        proposal.schemeId = keccak256(abi.encodePacked(msg.sender, _avatar));
 
         proposal.state = ProposalState.Queued;
         // solhint-disable-next-line not-rely-on-time
@@ -1243,36 +1138,34 @@ contract DXDVotingMachine {
         proposal.proposer = _proposer;
         proposal.winningVote = NO;
         proposal.paramsHash = _paramsHash;
-        if (organizations[proposal.organizationId] == address(0)) {
-            if (_organization == address(0)) {
-                organizations[proposal.organizationId] = msg.sender;
+        if (schemes[proposal.schemeId].avatar == address(0)) {
+            if (_avatar == address(0)) {
+                schemes[proposal.schemeId].avatar = msg.sender;
             } else {
-                organizations[proposal.organizationId] = _organization;
+                schemes[proposal.schemeId].avatar = _avatar;
             }
         }
         //calc dao bounty
         uint256 daoBounty = (parameters[_paramsHash].daoBountyConst *
-            averagesDownstakesOfBoosted[proposal.organizationId]) / 100;
+            schemes[proposal.schemeId].averagesDownstakesOfBoosted) / 100;
         proposal.daoBountyRemain = daoBounty.max(parameters[_paramsHash].minimumDaoBounty);
         proposals[proposalId] = proposal;
         proposalStakes[proposalId][NO] = proposal.daoBountyRemain; //dao downstake on the proposal
         numOfChoices[proposalId] = _choicesAmount;
-        emit NewProposal(proposalId, organizations[proposal.organizationId], _choicesAmount, _proposer, _paramsHash);
+        emit NewProposal(proposalId, schemes[proposal.schemeId].avatar, _choicesAmount, _proposer, _paramsHash);
         return proposalId;
     }
 
     /**
      * @dev Refund a vote gas cost to an address
      *
-     * @param organizationId the id of the organization that should do the refund
+     * @param schemeId the id of the scheme that should do the refund
      */
-    function _refundVote(bytes32 organizationId) internal {
-        address orgAddress = organizations[organizationId];
-        if (organizationRefunds[orgAddress].voteGas > 0) {
-            uint256 gasRefund = organizationRefunds[orgAddress].voteGas *
-                tx.gasprice.min(organizationRefunds[orgAddress].maxGasPrice);
-            if (organizationRefunds[orgAddress].balance >= gasRefund) {
-                organizationRefunds[orgAddress].balance = organizationRefunds[orgAddress].balance - gasRefund;
+    function _refundVote(bytes32 schemeId) internal {
+        if (schemes[schemeId].voteGas > 0) {
+            uint256 gasRefund = schemes[schemeId].voteGas * tx.gasprice.min(schemes[schemeId].maxGasPrice);
+            if (schemes[schemeId].voteGasBalance >= gasRefund) {
+                schemes[schemeId].voteGasBalance -= gasRefund;
                 payable(msg.sender).transfer(gasRefund);
             }
         }
@@ -1282,29 +1175,21 @@ contract DXDVotingMachine {
      * @dev hashParameters returns a hash of the given parameters
      */
     function getParametersHash(
-        uint256[11] memory _params, //use array here due to stack too deep issue.
-        address _voteOnBehalf
+        uint256[10] memory _params //use array here due to stack too deep issue.
     ) public pure returns (bytes32) {
-        //double call to keccak256 to avoid deep stack issue when call with too many params.
         return
             keccak256(
                 abi.encodePacked(
-                    keccak256(
-                        abi.encodePacked(
-                            _params[0],
-                            _params[1],
-                            _params[2],
-                            _params[3],
-                            _params[4],
-                            _params[5],
-                            _params[6],
-                            _params[7],
-                            _params[8],
-                            _params[9],
-                            _params[10]
-                        )
-                    ),
-                    _voteOnBehalf
+                    _params[0],
+                    _params[1],
+                    _params[2],
+                    _params[3],
+                    _params[4],
+                    _params[5],
+                    _params[6],
+                    _params[7],
+                    _params[8],
+                    _params[9]
                 )
             );
     }
@@ -1319,12 +1204,12 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev getProposalOrganization return the organizationId for a given proposal
+     * @dev getProposalScheme return the schemeId for a given proposal
      * @param _proposalId the ID of the proposal
-     * @return bytes32 organization identifier
+     * @return bytes32 scheme identifier
      */
-    function getProposalOrganization(bytes32 _proposalId) external view returns (bytes32) {
-        return (proposals[_proposalId].organizationId);
+    function getProposalScheme(bytes32 _proposalId) external view returns (bytes32) {
+        return (proposals[_proposalId].schemeId);
     }
 
     /**
@@ -1344,21 +1229,7 @@ contract DXDVotingMachine {
                max - maximum number of choices
      */
     function getAllowedRangeOfChoices() external pure returns (uint256 min, uint256 max) {
-        return (YES, NO);
-    }
-
-    /**
-     * @dev Get the required % of votes needed in a boosted proposal in a scheme
-     * @param avatar the avatar address
-     * @param scheme the scheme address
-     * @param paramsHash the parameters configuration hashed of the scheme
-     */
-    function getBoostedVoteRequiredPercentage(
-        address avatar,
-        address scheme,
-        bytes32 paramsHash
-    ) external view returns (uint256) {
-        return boostedVoteRequiredPercentage[keccak256(abi.encodePacked(scheme, avatar))][paramsHash];
+        return (NO, YES);
     }
 
     /**
@@ -1389,10 +1260,10 @@ contract DXDVotingMachine {
         )
     {
         return (
-            proposalPreBoostedVotes[_proposalId][YES],
             proposalPreBoostedVotes[_proposalId][NO],
-            proposalStakes[_proposalId][YES],
-            proposalStakes[_proposalId][NO]
+            proposalPreBoostedVotes[_proposalId][YES],
+            proposalStakes[_proposalId][NO],
+            proposalStakes[_proposalId][YES]
         );
     }
 
@@ -1419,12 +1290,12 @@ contract DXDVotingMachine {
         )
     {
         return (
-            proposalVotes[_proposalId][YES],
             proposalVotes[_proposalId][NO],
-            proposalPreBoostedVotes[_proposalId][YES],
+            proposalVotes[_proposalId][YES],
             proposalPreBoostedVotes[_proposalId][NO],
-            proposalStakes[_proposalId][YES],
-            proposalStakes[_proposalId][NO]
+            proposalPreBoostedVotes[_proposalId][YES],
+            proposalStakes[_proposalId][NO],
+            proposalStakes[_proposalId][YES]
         );
     }
 
@@ -1454,13 +1325,5 @@ contract DXDVotingMachine {
      */
     function state(bytes32 _proposalId) external view returns (ProposalState) {
         return proposals[_proposalId].state;
-    }
-
-    /**
-     * @dev isAbstainAllow returns if the voting machine allow abstain (0)
-     * @return bool true or false
-     */
-    function isAbstainAllow() external pure returns (bool) {
-        return false;
     }
 }

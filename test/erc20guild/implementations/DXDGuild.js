@@ -56,20 +56,6 @@ contract("DXDGuild", function (accounts) {
       ],
     });
 
-    // Parameters
-    const voteOnBehalf = constants.ZERO_ADDRESS;
-    const _queuedVoteRequiredPercentage = 50;
-    const _queuedVotePeriodLimit = 60;
-    const _boostedVotePeriodLimit = 60;
-    const _preBoostedVotePeriodLimit = 0;
-    const _thresholdConst = 2000;
-    const _quietEndingPeriod = 0;
-    const _proposingRepReward = 0;
-    const _votersReputationLossRatio = 10;
-    const _minimumDaoBounty = 15;
-    const _daoBountyConst = 10;
-    const _activationTime = 0;
-
     const defaultParamsHash = await helpers.setDefaultParameters(
       dxDao.votingMachine
     );
@@ -85,7 +71,6 @@ contract("DXDGuild", function (accounts) {
       dxDao.controller.address,
       permissionRegistry.address,
       "Master Scheme",
-      86400,
       5
     );
 
@@ -151,11 +136,11 @@ contract("DXDGuild", function (accounts) {
     it("execute a positive vote on the voting machine from the dxd-guild", async function () {
       const positiveVoteData = web3.eth.abi.encodeFunctionCall(
         dxDao.votingMachine.abi.find(x => x.name === "vote"),
-        [walletSchemeProposalId, 2, 0, constants.ZERO_ADDRESS]
+        [walletSchemeProposalId, 2, 0]
       );
       const negativeVoteData = web3.eth.abi.encodeFunctionCall(
         dxDao.votingMachine.abi.find(x => x.name === "vote"),
-        [walletSchemeProposalId, 1, 0, constants.ZERO_ADDRESS]
+        [walletSchemeProposalId, 1, 0]
       );
 
       await expectRevert(
@@ -229,7 +214,7 @@ contract("DXDGuild", function (accounts) {
       const proposalInfo = await dxdGuild.getProposal(proposalId);
       assert.equal(
         proposalInfo.state,
-        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.passed
       );
       assert.equal(proposalInfo.to[0], dxDao.votingMachine.address);
       assert.equal(proposalInfo.value[0], 0);
