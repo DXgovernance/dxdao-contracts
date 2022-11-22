@@ -18,7 +18,6 @@ require("./scripts/actions-dxdao-contracts");
 require("./scripts/deploy-dxdao-contracts");
 require("./scripts/deploymentTemplates/dxvote-develop");
 require("./scripts/deploymentTemplates/guilds-goerli");
-const docsConfig = require("./docs/config");
 
 const moment = require("moment");
 
@@ -155,5 +154,11 @@ module.exports = {
       "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
     ],
   },
-  docgen: docsConfig,
+  docgen: {
+    pages: "files",
+    outputDir: "docs/contracts",
+    clear: true,
+    runOnCompile: false,
+    exclude: ["test", "utils", "hardhat-dependency-compiler"],
+  },
 };
