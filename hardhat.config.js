@@ -11,12 +11,14 @@ require("@openzeppelin/hardhat-upgrades");
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
+require("solidity-docgen");
 
 require("./scripts/create2");
 require("./scripts/actions-dxdao-contracts");
 require("./scripts/deploy-dxdao-contracts");
 require("./scripts/deploymentTemplates/dxvote-develop");
 require("./scripts/deploymentTemplates/guilds-goerli");
+const docsConfig = require("./docs/config");
 
 const moment = require("moment");
 
@@ -153,4 +155,5 @@ module.exports = {
       "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
     ],
   },
+  docgen: docsConfig,
 };
