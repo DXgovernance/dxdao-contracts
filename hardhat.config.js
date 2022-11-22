@@ -11,6 +11,7 @@ require("@openzeppelin/hardhat-upgrades");
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
+require("solidity-docgen");
 
 require("./scripts/create2");
 require("./scripts/actions-dxdao-contracts");
@@ -152,5 +153,12 @@ module.exports = {
       "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol",
       "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
     ],
+  },
+  docgen: {
+    pages: "files",
+    outputDir: "docs/contracts",
+    clear: true,
+    runOnCompile: false,
+    exclude: ["test", "utils", "hardhat-dependency-compiler"],
   },
 };

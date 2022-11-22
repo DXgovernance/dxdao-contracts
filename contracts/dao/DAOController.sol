@@ -187,8 +187,8 @@ contract DAOController is Initializable {
     /// @param _data ABI-encoded contract call to call `_contract` address.
     /// @param _avatar the controller's avatar address
     /// @param _value value (ETH) to transfer with the transaction
-    /// @return bool -success
-    ///         bytes  - the return value of the called _contract's function.
+    /// @return bool success
+    /// @return bytes the return value of the called _contract's function.
     function avatarCall(
         address _contract,
         bytes calldata _data,
