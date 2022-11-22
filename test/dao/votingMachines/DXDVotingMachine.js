@@ -462,7 +462,7 @@ contract("DXDVotingMachine", function (accounts) {
             votesignature,
             { from: accounts[3] }
           ),
-          "wrong signer"
+          "DXDVotingMachine__WrongSigner()"
         );
 
         await expectRevert(
@@ -476,7 +476,7 @@ contract("DXDVotingMachine", function (accounts) {
             votesignature,
             { from: accounts[3] }
           ),
-          "wrong signer"
+          "DXDVotingMachine__WrongSigner()"
         );
       });
 
@@ -587,7 +587,7 @@ contract("DXDVotingMachine", function (accounts) {
             votesignature,
             { from: accounts[1] }
           ),
-          "wrong signer"
+          "DXDVotingMachine__WrongSigner()"
         );
       });
 
@@ -628,7 +628,7 @@ contract("DXDVotingMachine", function (accounts) {
             voteInfoFromLog.signature,
             { from: accounts[4] }
           ),
-          "wrong signer"
+          "DXDVotingMachine__WrongSigner()"
         );
 
         await expectRevert(
@@ -641,7 +641,7 @@ contract("DXDVotingMachine", function (accounts) {
             voteInfoFromLog.signature,
             { from: accounts[4] }
           ),
-          "wrong signer"
+          "DXDVotingMachine__WrongSigner()"
         );
 
         await expectRevert(
@@ -654,7 +654,7 @@ contract("DXDVotingMachine", function (accounts) {
             voteInfoFromLog.signature,
             { from: accounts[4] }
           ),
-          "wrong signer"
+          "DXDVotingMachine__WrongSigner()"
         );
       });
 
@@ -758,7 +758,7 @@ contract("DXDVotingMachine", function (accounts) {
           dxdVotingMachine.signalVote(proposalId, 3, 60000, {
             from: accounts[3],
           }),
-          "wrong decision value"
+          "DXDVotingMachine__WrongDecisionValue()"
         );
         const signalVoteTx = await dxdVotingMachine.signalVote(
           proposalId,
