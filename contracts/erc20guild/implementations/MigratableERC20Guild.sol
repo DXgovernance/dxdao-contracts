@@ -19,21 +19,20 @@ contract MigratableERC20Guild is ERC20Guild {
 
     uint256 public lastMigrationTimestamp;
 
-    // @dev Constructor
-    // @param _token The ERC20 token that will be used as source of voting power
-    // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
-    // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
+    /// @dev Constructor
+    /// @param _token The ERC20 token that will be used as source of voting power
+    /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting
+    /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // action
-    // @param _votingPowerForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
-    // @param _name The name of the ERC20Guild
-    // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
-    // @param _lockTime The minimum amount of seconds that the tokens would be locked
-    // @param _permissionRegistry The address of the permission registry contract to be used
+    /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    /// @param _name The name of the ERC20Guild
+    /// @param _lockTime The minimum amount of seconds that the tokens would be locked
+    /// @param _permissionRegistry The address of the permission registry contract to be used
     constructor(
         address _token,
         uint256 _proposalTime,
-        uint256 _votingPowerForProposalExecution,
-        uint256 _votingPowerForProposalCreation,
+        uint256 _votingPowerPercentageForProposalExecution,
+        uint256 _votingPowerPercentageForProposalCreation,
         string memory _name,
         uint256 _lockTime,
         address _permissionRegistry
@@ -41,17 +40,17 @@ contract MigratableERC20Guild is ERC20Guild {
         ERC20Guild(
             _token,
             _proposalTime,
-            _votingPowerForProposalExecution,
-            _votingPowerForProposalCreation,
+            _votingPowerPercentageForProposalExecution,
+            _votingPowerPercentageForProposalCreation,
             _name,
             _lockTime,
             _permissionRegistry
         )
     {}
 
-    // @dev Change the token vault used, this will change the voting token too.
+    /// @dev Change the token vault used, this will change the voting token too.
     // The token vault admin has to be the guild.
-    // @param newTokenVault The address of the new token vault
+    /// @param newTokenVault The address of the new token vault
     function changeTokenVault(address newTokenVault) external virtual {
         require(msg.sender == address(this), "MigratableERC2Guild: The vault can be changed only by the guild");
         tokenVault = TokenVault(newTokenVault);
@@ -64,8 +63,8 @@ contract MigratableERC20Guild is ERC20Guild {
         lastMigrationTimestamp = block.timestamp;
     }
 
-    // @dev Lock tokens in the guild to be used as voting power in the official vault
-    // @param tokenAmount The amount of tokens to be locked
+    /// @dev Lock tokens in the guild to be used as voting power in the official vault
+    /// @param tokenAmount The amount of tokens to be locked
     function lockTokens(uint256 tokenAmount) external virtual override {
         tokenVault.deposit(msg.sender, tokenAmount);
         if (tokensLockedByVault[address(tokenVault)][msg.sender].amount == 0) totalMembers = totalMembers.add(1);
@@ -77,8 +76,8 @@ contract MigratableERC20Guild is ERC20Guild {
         emit TokensLocked(msg.sender, tokenAmount);
     }
 
-    // @dev Withdraw tokens locked in the guild form the official vault, this will decrease the voting power
-    // @param tokenAmount The amount of tokens to be withdrawn
+    /// @dev Withdraw tokens locked in the guild form the official vault, this will decrease the voting power
+    /// @param tokenAmount The amount of tokens to be withdrawn
     function withdrawTokens(uint256 tokenAmount) external virtual override {
         require(
             votingPowerOf(msg.sender) >= tokenAmount,
@@ -97,9 +96,9 @@ contract MigratableERC20Guild is ERC20Guild {
         emit TokensWithdrawn(msg.sender, tokenAmount);
     }
 
-    // @dev Lock tokens in the guild to be used as voting power in an external vault
-    // @param tokenAmount The amount of tokens to be locked
-    // @param _tokenVault The token vault to be used
+    /// @dev Lock tokens in the guild to be used as voting power in an external vault
+    /// @param tokenAmount The amount of tokens to be locked
+    /// @param _tokenVault The token vault to be used
     function lockExternalTokens(uint256 tokenAmount, address _tokenVault) external virtual {
         require(
             address(tokenVault) != _tokenVault,
@@ -114,9 +113,9 @@ contract MigratableERC20Guild is ERC20Guild {
         emit TokensLocked(msg.sender, tokenAmount);
     }
 
-    // @dev Withdraw tokens locked in the guild from an external vault
-    // @param tokenAmount The amount of tokens to be withdrawn
-    // @param _tokenVault The token vault to be used
+    /// @dev Withdraw tokens locked in the guild from an external vault
+    /// @param tokenAmount The amount of tokens to be withdrawn
+    /// @param _tokenVault The token vault to be used
     function withdrawExternalTokens(uint256 tokenAmount, address _tokenVault) external virtual {
         require(
             address(tokenVault) != _tokenVault,
@@ -134,11 +133,11 @@ contract MigratableERC20Guild is ERC20Guild {
         emit TokensWithdrawn(msg.sender, tokenAmount);
     }
 
-    // @dev Executes a proposal that is not votable anymore and can be finished
+    /// @dev Executes a proposal that is not votable anymore and can be finished
     // If this function is called by the guild guardian the proposal can end sooner after proposal endTime
     // If this function is not called by the guild guardian the proposal can end sooner after proposal endTime plus
     // the extraTimeForGuardian
-    // @param proposalId The id of the proposal to be executed
+    /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public virtual override {
         if (proposals[proposalId].startTime < lastMigrationTimestamp) {
             proposals[proposalId].state = ProposalState.Failed;
@@ -148,18 +147,18 @@ contract MigratableERC20Guild is ERC20Guild {
         }
     }
 
-    // @dev Get the voting power of an account
-    // @param account The address of the account
+    /// @dev Get the voting power of an account
+    /// @param account The address of the account
     function votingPowerOf(address account) public view virtual override returns (uint256) {
         return tokensLockedByVault[address(tokenVault)][account].amount;
     }
 
-    // @dev Get the locked timestamp of a voter tokens
+    /// @dev Get the locked timestamp of a voter tokens
     function getVoterLockTimestamp(address voter) public view virtual override returns (uint256) {
         return tokensLockedByVault[address(tokenVault)][voter].timestamp;
     }
 
-    // @dev Get the totalLocked
+    /// @dev Get the totalLocked
     function getTotalLocked() public view virtual override returns (uint256) {
         return totalLockedByVault[address(tokenVault)];
     }

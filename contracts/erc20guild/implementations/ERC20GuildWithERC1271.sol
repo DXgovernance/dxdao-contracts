@@ -20,21 +20,21 @@ contract ERC20GuildWithERC1271 is ERC20GuildUpgradeable, IERC1271Upgradeable {
     // Once a hash is signed by the guild it can be verified with a signature from any voter with balance
     mapping(bytes32 => bool) public EIP1271SignedHashes;
 
-    // @dev Set a hash of an call to be validated using EIP1271
-    // @param _hash The EIP1271 hash to be added or removed
-    // @param isValid If the hash is valid or not
+    /// @dev Set a hash of an call to be validated using EIP1271
+    /// @param _hash The EIP1271 hash to be added or removed
+    /// @param isValid If the hash is valid or not
     function setEIP1271SignedHash(bytes32 _hash, bool isValid) external virtual {
         require(msg.sender == address(this), "ERC20GuildWithERC1271: Only callable by the guild");
         EIP1271SignedHashes[_hash] = isValid;
     }
 
-    // @dev Gets the validity of a EIP1271 hash
-    // @param _hash The EIP1271 hash
+    /// @dev Gets the validity of a EIP1271 hash
+    /// @param _hash The EIP1271 hash
     function getEIP1271SignedHash(bytes32 _hash) external view virtual returns (bool) {
         return EIP1271SignedHashes[_hash];
     }
 
-    // @dev Get if the hash and signature are valid EIP1271 signatures
+    /// @dev Get if the hash and signature are valid EIP1271 signatures
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue) {
         return
             ((votingPowerOf(hash.recover(signature)) > 0) && EIP1271SignedHashes[hash])

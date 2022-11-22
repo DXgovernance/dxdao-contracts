@@ -12,7 +12,10 @@ require("@nomiclabs/hardhat-etherscan");
 require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
 require("solidity-docgen");
+require("hardhat-deploy");
 
+require("./scripts/nanoUniversalDeployerDeploy");
+require("./scripts/keylessDeploy");
 require("./scripts/create2");
 require("./scripts/actions-dxdao-contracts");
 require("./scripts/deploy-dxdao-contracts");
@@ -59,9 +62,12 @@ const MNEMONIC_KEY =
 // # Account #10: 0xf8a3681248934f1139be67e0c22a6af450eb9d7c (10000 ETH)
 // # Private Key #10: 0x8188d555d06262bfa3a343fa809b59b6368f02aa5a1ac5a3d2cb24e18e2b556e
 
+const MNEMONIC_PHRASE = process.env.MNEMONIC_PHRASE;
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
+const INFURA_API_KEY = process.env.INFURA_API_KEY;
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
 const INFURA_PROJECT_ID = "5730f284ad6741b183c921ebb0509880";
 const MNEMONIC = process.env.KEY_MNEMONIC || MNEMONIC_KEY;
-const ETHERSCAN_API_KEY = process.env.KEY_ETHERSCAN;
 
 const hardharNetworks = process.env.CI
   ? {
@@ -146,7 +152,19 @@ module.exports = {
     enabled: process.env.REPORT_GAS ? true : false,
   },
   networks: hardharNetworks,
-  etherscan: { apiKey: ETHERSCAN_API_KEY },
+  etherscan: {
+    apiKey: ETHERSCAN_API_KEY,
+    customChains: [
+      {
+        network: "xdai",
+        chainId: 100,
+        urls: {
+          apiURL: "https://api.gnosisscan.io/api",
+          browserURL: "https://gnosisscan.io",
+        },
+      },
+    ],
+  },
   dependencyCompiler: {
     keep: true,
     paths: [
@@ -154,6 +172,21 @@ module.exports = {
       "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
     ],
   },
+
+  namedAccounts: {
+    deployer: 0,
+    tokenHolder: 1,
+  },
+  deterministicDeployment: {
+    1337: {
+      factory: "0x4e59b44847b379578588920ca78fbf26c0b4956c",
+      deployer: "0x3fab184622dc19b6109349b94811493bf2a45362",
+      funding: "1000000000000000000000",
+      signedTx:
+        "0xf8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222",
+    },
+  },
+
   docgen: {
     pages: "files",
     outputDir: "docs/contracts",

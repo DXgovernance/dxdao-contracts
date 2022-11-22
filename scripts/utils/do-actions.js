@@ -173,7 +173,7 @@ const doActions = async function (actions, networkContracts) {
           action.data.to.map(_to => networkContracts.addresses[_to] || _to),
           action.data.callData,
           action.data.value,
-          action.data.totalActions,
+          action.data.totalOptions,
           action.data.title,
           contentHash.fromIpfs(guildProposalDescriptionHash).toString(),
           { from: action.from }
