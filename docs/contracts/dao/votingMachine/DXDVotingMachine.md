@@ -30,7 +30,6 @@ enum ProposalState {
   Boosted,
   QuietEndingPeriod
 }
-
 ```
 
 ### ExecutionState
@@ -45,7 +44,6 @@ enum ExecutionState {
   BoostedTimeOut,
   BoostedBarCrossed
 }
-
 ```
 
 ### Parameters
@@ -64,7 +62,6 @@ struct Parameters {
   uint256 daoBountyConst;
   uint256 boostedVoteRequiredPercentage;
 }
-
 ```
 
 ### Voter
@@ -75,7 +72,6 @@ struct Voter {
   uint256 reputation;
   bool preBoosted;
 }
-
 ```
 
 ### Staker
@@ -86,7 +82,6 @@ struct Staker {
   uint256 amount;
   uint256 amount4Bounty;
 }
-
 ```
 
 ### Proposal
@@ -123,7 +118,6 @@ struct Scheme {
   uint256 averagesDownstakesOfBoosted;
   uint256 orgBoostedProposalsCnt;
 }
-
 ```
 
 ### VoteDecision
@@ -133,7 +127,6 @@ struct VoteDecision {
   uint256 voteDecision;
   uint256 amount;
 }
-
 ```
 
 ### ExecuteFunctionParams
@@ -146,7 +139,6 @@ struct ExecuteFunctionParams {
   uint256 averageDownstakesOfBoosted;
   uint256 confidenceThreshold;
 }
-
 ```
 
 ### NewProposal
@@ -361,7 +353,7 @@ modifier votable(bytes32 _proposalId)
 
 _Check that the proposal is votable
 a proposal is votable if it is in one of the following states:
-PreBoosted,Boosted,QuietEndingPeriod or Queued_
+ PreBoosted,Boosted,QuietEndingPeriod or Queued_
 
 ### validDecision
 
@@ -387,21 +379,9 @@ _hash the parameters, save them if necessary, and return the hash value_
 
 #### Parameters
 
-| Name     | Type        | Description        |
-| -------- | ----------- | ------------------ |
-| \_params | uint256[10] | a parameters array |
-
-    _params[0] - _queuedVoteRequiredPercentage,
-    _params[1] - _queuedVotePeriodLimit, //the time limit for a proposal to be in an absolute voting mode.
-    _params[2] - _boostedVotePeriodLimit, //the time limit for a proposal to be in an relative voting mode.
-    _params[3] - _preBoostedVotePeriodLimit, //the time limit for a proposal to be in an preparation
-                  state (stable) before boosted.
-    _params[4] -_thresholdConst
-    _params[5] -_quietEndingPeriod
-    _params[6] -_proposingRepReward
-    _params[7] -_minimumDaoBounty
-    _params[8] -_daoBountyConst
-    _params[9] - _boostedVoteRequiredPercentage |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _params | uint256[10] | a parameters array    _params[0] - _queuedVoteRequiredPercentage,    _params[1] - _queuedVotePeriodLimit, //the time limit for a proposal to be in an absolute voting mode.    _params[2] - _boostedVotePeriodLimit, //the time limit for a proposal to be in an relative voting mode.    _params[3] - _preBoostedVotePeriodLimit, //the time limit for a proposal to be in an preparation                  state (stable) before boosted.    _params[4] -_thresholdConst    _params[5] -_quietEndingPeriod    _params[6] -_proposingRepReward    _params[7] -_minimumDaoBounty    _params[8] -_daoBountyConst    _params[9] - _boostedVoteRequiredPercentage |
 
 ### redeem
 
@@ -415,19 +395,16 @@ users to redeem on behalf of someone else._
 
 #### Parameters
 
-| Name          | Type    | Description               |
-| ------------- | ------- | ------------------------- |
-| \_proposalId  | bytes32 | the ID of the proposal    |
-| \_beneficiary | address | - the beneficiary address |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
+| _beneficiary | address | - the beneficiary address |
 
 #### Return Values
 
-| Name    | Type       | Description |
-| ------- | ---------- | ----------- |
-| rewards | uint256[3] | -           |
-
-           [0] stakerTokenReward
-           [1] proposerReputationReward |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| rewards | uint256[3] | -           [0] stakerTokenReward           [1] proposerReputationReward |
 
 ### redeemDaoBounty
 
@@ -441,16 +418,16 @@ users to redeem on behalf of someone else._
 
 #### Parameters
 
-| Name          | Type    | Description               |
-| ------------- | ------- | ------------------------- |
-| \_proposalId  | bytes32 | the ID of the proposal    |
-| \_beneficiary | address | - the beneficiary address |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
+| _beneficiary | address | - the beneficiary address |
 
 #### Return Values
 
-| Name            | Type    | Description                                                                                       |
-| --------------- | ------- | ------------------------------------------------------------------------------------------------- |
-| redeemedAmount  | uint256 | - redeem token amount                                                                             |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| redeemedAmount | uint256 | - redeem token amount |
 | potentialAmount | uint256 | - potential redeem token amount(if there is enough tokens bounty at the dao owner of the scheme ) |
 
 ### calcExecuteCallBounty
@@ -463,15 +440,15 @@ _calcExecuteCallBounty calculate the execute boosted call bounty_
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
 
 #### Return Values
 
-| Name | Type    | Description               |
-| ---- | ------- | ------------------------- |
-| [0]  | uint256 | uint256 executeCallBounty |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 executeCallBounty |
 
 ### shouldBoost
 
@@ -483,15 +460,15 @@ _shouldBoost check if a proposal should be shifted to boosted phase._
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
 
 #### Return Values
 
-| Name | Type | Description         |
-| ---- | ---- | ------------------- |
-| [0]  | bool | bool true or false. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool true or false. |
 
 ### threshold
 
@@ -505,16 +482,16 @@ This threshold is dynamically set and it depend on the number of boosted proposa
 
 #### Parameters
 
-| Name         | Type    | Description                |
-| ------------ | ------- | -------------------------- |
-| \_paramsHash | bytes32 | the scheme parameters hash |
-| \_schemeId   | bytes32 | the scheme identifier      |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _paramsHash | bytes32 | the scheme parameters hash |
+| _schemeId | bytes32 | the scheme identifier |
 
 #### Return Values
 
-| Name | Type    | Description                                      |
-| ---- | ------- | ------------------------------------------------ |
-| [0]  | uint256 | uint256 scheme's score threshold as real number. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 scheme's score threshold as real number. |
 
 ### stake
 
@@ -526,18 +503,17 @@ _staking function_
 
 #### Parameters
 
-| Name         | Type    | Description        |
-| ------------ | ------- | ------------------ |
-| \_proposalId | bytes32 | id of the proposal |
-| \_vote       | uint256 | NO(1) or YES(2).   |
-| \_amount     | uint256 | the betting amount |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | id of the proposal |
+| _vote | uint256 | NO(1) or YES(2). |
+| _amount | uint256 | the betting amount |
 
 #### Return Values
 
-| Name               | Type | Description                                |
-| ------------------ | ---- | ------------------------------------------ |
-| [0]                | bool | bool true - the proposal has been executed |
-| false - otherwise. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool true - the proposal has been executed              false - otherwise. |
 
 ### stakeWithSignature
 
@@ -549,22 +525,20 @@ _stakeWithSignature function_
 
 #### Parameters
 
-| Name                                   | Type    | Description                                             |
-| -------------------------------------- | ------- | ------------------------------------------------------- |
-| proposalId                             | bytes32 | id of the proposal                                      |
-| staker                                 | address | address of staker                                       |
-| stakeDecision                          | uint256 | NO(1) or YES(2).                                        |
-| amount                                 | uint256 | the betting amount                                      |
-| nonce                                  | uint256 | nonce value ,it is part of the signature to ensure that |
-| a signature can be received only once. |
-| signature                              | bytes   | - signed data by the staker                             |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposalId | bytes32 | id of the proposal |
+| staker | address | address of staker |
+| stakeDecision | uint256 | NO(1) or YES(2). |
+| amount | uint256 | the betting amount |
+| nonce | uint256 | nonce value ,it is part of the signature to ensure that         a signature can be received only once. |
+| signature | bytes | - signed data by the staker |
 
 #### Return Values
 
-| Name               | Type | Description                                |
-| ------------------ | ---- | ------------------------------------------ |
-| [0]                | bool | bool true - the proposal has been executed |
-| false - otherwise. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool true - the proposal has been executed              false - otherwise. |
 
 ### setSchemeRefund
 
@@ -577,13 +551,12 @@ Allows the voting machine to receive ether to be used to refund voting costs_
 
 #### Parameters
 
-| Name                                       | Type    | Description                                                                                  |
-| ------------------------------------------ | ------- | -------------------------------------------------------------------------------------------- |
-| avatar                                     | address |                                                                                              |
-| scheme                                     | address |                                                                                              |
-| \_voteGas                                  | uint256 | the amount of gas that will be used as vote cost                                             |
-| \_maxGasPrice                              | uint256 | the maximum amount of gas price to be paid, if the gas used is higher than this value only a |
-| portion of the total gas would be refunded |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| avatar | address |  |
+| scheme | address |  |
+| _voteGas | uint256 | the amount of gas that will be used as vote cost |
+| _maxGasPrice | uint256 | the maximum amount of gas price to be paid, if the gas used is higher than this value only a portion of the total gas would be refunded |
 
 ### withdrawRefundBalance
 
@@ -603,17 +576,17 @@ _voting function from old voting machine changing only the logic to refund vote 
 
 #### Parameters
 
-| Name         | Type    | Description                                                      |
-| ------------ | ------- | ---------------------------------------------------------------- |
-| \_proposalId | bytes32 | id of the proposal                                               |
-| \_vote       | uint256 | NO(1) or YES(2).                                                 |
-| \_amount     | uint256 | the reputation amount to vote with, 0 will use all available REP |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | id of the proposal |
+| _vote | uint256 | NO(1) or YES(2). |
+| _amount | uint256 | the reputation amount to vote with, 0 will use all available REP |
 
 #### Return Values
 
-| Name | Type | Description                                   |
-| ---- | ---- | --------------------------------------------- |
-| [0]  | bool | bool if the proposal has been executed or not |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool if the proposal has been executed or not |
 
 ### execute
 
@@ -625,16 +598,15 @@ _execute check if the proposal has been decided, and if so, execute the proposal
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the id of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the id of the proposal |
 
 #### Return Values
 
-| Name               | Type | Description                                |
-| ------------------ | ---- | ------------------------------------------ |
-| [0]                | bool | bool true - the proposal has been executed |
-| false - otherwise. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool true - the proposal has been executed              false - otherwise. |
 
 ### voteInfo
 
@@ -646,18 +618,17 @@ _voteInfo returns the vote and the amount of reputation of the user committed to
 
 #### Parameters
 
-| Name         | Type    | Description              |
-| ------------ | ------- | ------------------------ |
-| \_proposalId | bytes32 | the ID of the proposal   |
-| \_voter      | address | the address of the voter |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
+| _voter | address | the address of the voter |
 
 #### Return Values
 
-| Name                                                                           | Type    | Description                    |
-| ------------------------------------------------------------------------------ | ------- | ------------------------------ |
-| [0]                                                                            | uint256 | uint256 vote - the voters vote |
-| uint256 reputation - amount of reputation committed by \_voter to \_proposalId |
-| [1]                                                                            | uint256 |                                |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 vote - the voters vote        uint256 reputation - amount of reputation committed by _voter to _proposalId |
+| [1] | uint256 |  |
 
 ### voteStatus
 
@@ -669,16 +640,16 @@ _voteStatus returns the reputation voted for a proposal for a specific voting ch
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
-| \_choice     | uint256 | the index in the       |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
+| _choice | uint256 | the index in the |
 
 #### Return Values
 
-| Name | Type    | Description                           |
-| ---- | ------- | ------------------------------------- |
-| [0]  | uint256 | voted reputation for the given choice |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | voted reputation for the given choice |
 
 ### isVotable
 
@@ -690,15 +661,15 @@ _isVotable check if the proposal is votable_
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
 
 #### Return Values
 
-| Name | Type | Description        |
-| ---- | ---- | ------------------ |
-| [0]  | bool | bool true or false |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool true or false |
 
 ### shareSignedAction
 
@@ -710,16 +681,15 @@ _Share the vote of a proposal for a voting machine on a event log_
 
 #### Parameters
 
-| Name                                   | Type    | Description                                                      |
-| -------------------------------------- | ------- | ---------------------------------------------------------------- |
-| proposalId                             | bytes32 | id of the proposal                                               |
-| voter                                  | address | address of voter                                                 |
-| voteDecision                           | uint256 | the vote decision, NO(1) or YES(2).                              |
-| amount                                 | uint256 | the reputation amount to vote with, 0 will use all available REP |
-| nonce                                  | uint256 | nonce value ,it is part of the signature to ensure that          |
-| a signature can be received only once. |
-| actionType                             | uint256 | 1 == vote and 2 == stake                                         |
-| signature                              | bytes   | the encoded vote signature                                       |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposalId | bytes32 | id of the proposal |
+| voter | address | address of voter |
+| voteDecision | uint256 | the vote decision, NO(1) or YES(2). |
+| amount | uint256 | the reputation amount to vote with, 0 will use all available REP |
+| nonce | uint256 | nonce value ,it is part of the signature to ensure that         a signature can be received only once. |
+| actionType | uint256 | 1 == vote and 2 == stake |
+| signature | bytes | the encoded vote signature |
 
 ### signalVote
 
@@ -731,11 +701,11 @@ _Signal the vote of a proposal in this voting machine to be executed later_
 
 #### Parameters
 
-| Name         | Type    | Description                                                      |
-| ------------ | ------- | ---------------------------------------------------------------- |
-| proposalId   | bytes32 | id of the proposal to vote                                       |
-| voteDecision | uint256 | the vote decisions, NO(1) or YES(2).                             |
-| amount       | uint256 | the reputation amount to vote with, 0 will use all available REP |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposalId | bytes32 | id of the proposal to vote |
+| voteDecision | uint256 | the vote decisions, NO(1) or YES(2). |
+| amount | uint256 | the reputation amount to vote with, 0 will use all available REP |
 
 ### executeSignedVote
 
@@ -747,15 +717,14 @@ _Execute a signed vote_
 
 #### Parameters
 
-| Name                                   | Type    | Description                                                      |
-| -------------------------------------- | ------- | ---------------------------------------------------------------- |
-| proposalId                             | bytes32 | id of the proposal to execute the vote on                        |
-| voter                                  | address | the signer of the vote                                           |
-| voteDecision                           | uint256 | the vote decision, NO(1) or YES(2).                              |
-| amount                                 | uint256 | the reputation amount to vote with, 0 will use all available REP |
-| nonce                                  | uint256 | nonce value ,it is part of the signature to ensure that          |
-| a signature can be received only once. |
-| signature                              | bytes   | the signature of the hashed vote                                 |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposalId | bytes32 | id of the proposal to execute the vote on |
+| voter | address | the signer of the vote |
+| voteDecision | uint256 | the vote decision, NO(1) or YES(2). |
+| amount | uint256 | the reputation amount to vote with, 0 will use all available REP |
+| nonce | uint256 | nonce value ,it is part of the signature to ensure that         a signature can be received only once. |
+| signature | bytes | the signature of the hashed vote |
 
 ### propose
 
@@ -768,12 +737,12 @@ generated by calculating keccak256 of a incremented counter._
 
 #### Parameters
 
-| Name         | Type    | Description     |
-| ------------ | ------- | --------------- |
-|              | uint256 |                 |
-| \_paramsHash | bytes32 | parameters hash |
-| \_proposer   | address | address         |
-| \_avatar     | address | address         |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+|  | uint256 |  |
+| _paramsHash | bytes32 | parameters hash |
+| _proposer | address | address |
+| _avatar | address | address |
 
 ### internalVote
 
@@ -785,22 +754,18 @@ _Vote for a proposal, if the voter already voted, cancel the last vote and set a
 
 #### Parameters
 
-| Name                                                  | Type    | Description                                                      |
-| ----------------------------------------------------- | ------- | ---------------------------------------------------------------- |
-| \_proposalId                                          | bytes32 | id of the proposal                                               |
-| \_voter                                               | address | used in case the vote is cast for someone else                   |
-| \_vote                                                | uint256 | a value between 0 to and the proposal's number of choices.       |
-| \_rep                                                 | uint256 | how many reputation the voter would like to stake for this vote. |
-| if \_rep==0 so the voter full reputation will be use. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | id of the proposal |
+| _voter | address | used in case the vote is cast for someone else |
+| _vote | uint256 | a value between 0 to and the proposal's number of choices. |
+| _rep | uint256 | how many reputation the voter would like to stake for this vote.         if  _rep==0 so the voter full reputation will be use. |
 
 #### Return Values
 
-| Name | Type | Description                                        |
-| ---- | ---- | -------------------------------------------------- |
-| [0]  | bool | true in case of proposal execution otherwise false |
-
-throws if proposal is not open or if it has been executed
-NB: executes the proposal if a decision has been reached |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | true in case of proposal execution otherwise false throws if proposal is not open or if it has been executed NB: executes the proposal if a decision has been reached |
 
 ### executeSignaledVote
 
@@ -812,10 +777,10 @@ _Execute a signaled vote on a votable proposal_
 
 #### Parameters
 
-| Name       | Type    | Description                |
-| ---------- | ------- | -------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | proposalId | bytes32 | id of the proposal to vote |
-| voter      | address | the signer of the vote     |
+| voter | address | the signer of the vote |
 
 ### hashAction
 
@@ -827,15 +792,14 @@ _Hash the vote data that is used for signatures_
 
 #### Parameters
 
-| Name                                   | Type    | Description                                                      |
-| -------------------------------------- | ------- | ---------------------------------------------------------------- |
-| proposalId                             | bytes32 | id of the proposal                                               |
-| signer                                 | address | the signer of the vote                                           |
-| option                                 | uint256 | the vote decision, NO(1) or YES(2).                              |
-| amount                                 | uint256 | the reputation amount to vote with, 0 will use all available REP |
-| nonce                                  | uint256 | nonce value ,it is part of the signature to ensure that          |
-| a signature can be received only once. |
-| actionType                             | uint256 | the governance action type to hash                               |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposalId | bytes32 | id of the proposal |
+| signer | address | the signer of the vote |
+| option | uint256 | the vote decision, NO(1) or YES(2). |
+| amount | uint256 | the reputation amount to vote with, 0 will use all available REP |
+| nonce | uint256 | nonce value ,it is part of the signature to ensure that         a signature can be received only once. |
+| actionType | uint256 | the governance action type to hash |
 
 ### score
 
@@ -847,17 +811,17 @@ _score return the proposal score_
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
 
 #### Return Values
 
-| Name | Type    | Description             |
-| ---- | ------- | ----------------------- |
-| [0]  | uint256 | uint256 proposal score. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 proposal score. |
 
-### \_execute
+### _execute
 
 ```solidity
 function _execute(bytes32 _proposalId) internal returns (bool)
@@ -867,59 +831,58 @@ _execute check if the proposal has been decided, and if so, execute the proposal
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the id of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the id of the proposal |
 
 #### Return Values
 
-| Name               | Type | Description                                |
-| ------------------ | ---- | ------------------------------------------ |
-| [0]                | bool | bool true - the proposal has been executed |
-| false - otherwise. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool true - the proposal has been executed              false - otherwise. |
 
-### \_score
+### _score
 
 ```solidity
 function _score(bytes32 _proposalId) internal view returns (uint256)
 ```
 
-\__score return the proposal score (Confidence level)
+__score return the proposal score (Confidence level)
 For dual choice proposal S = (S+)/(S-)_
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
 
 #### Return Values
 
-| Name | Type    | Description                            |
-| ---- | ------- | -------------------------------------- |
-| [0]  | uint256 | uint256 proposal score as real number. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 proposal score as real number. |
 
-### \_isVotable
+### _isVotable
 
 ```solidity
 function _isVotable(bytes32 _proposalId) internal view returns (bool)
 ```
 
-\__isVotable check if the proposal is votable_
+__isVotable check if the proposal is votable_
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
 
 #### Return Values
 
-| Name | Type | Description        |
-| ---- | ---- | ------------------ |
-| [0]  | bool | bool true or false |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool true or false |
 
-### \_stake
+### _stake
 
 ```solidity
 function _stake(bytes32 _proposalId, uint256 _vote, uint256 _amount, address _staker) internal returns (bool)
@@ -929,21 +892,20 @@ _staking function_
 
 #### Parameters
 
-| Name         | Type    | Description        |
-| ------------ | ------- | ------------------ |
-| \_proposalId | bytes32 | id of the proposal |
-| \_vote       | uint256 | NO(1) or YES(2).   |
-| \_amount     | uint256 | the betting amount |
-| \_staker     | address |                    |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | id of the proposal |
+| _vote | uint256 | NO(1) or YES(2). |
+| _amount | uint256 | the betting amount |
+| _staker | address |  |
 
 #### Return Values
 
-| Name               | Type | Description                                |
-| ------------------ | ---- | ------------------------------------------ |
-| [0]                | bool | bool true - the proposal has been executed |
-| false - otherwise. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool true - the proposal has been executed              false - otherwise. |
 
-### \_propose
+### _propose
 
 ```solidity
 function _propose(uint256 _choicesAmount, bytes32 _paramsHash, address _proposer, address _avatar) internal returns (bytes32)
@@ -954,14 +916,14 @@ generated by calculating keccak256 of a incremented counter._
 
 #### Parameters
 
-| Name            | Type    | Description                                  |
-| --------------- | ------- | -------------------------------------------- |
-| \_choicesAmount | uint256 | the total amount of choices for the proposal |
-| \_paramsHash    | bytes32 | parameters hash                              |
-| \_proposer      | address | address                                      |
-| \_avatar        | address | address                                      |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _choicesAmount | uint256 | the total amount of choices for the proposal |
+| _paramsHash | bytes32 | parameters hash |
+| _proposer | address | address |
+| _avatar | address | address |
 
-### \_refundVote
+### _refundVote
 
 ```solidity
 function _refundVote(bytes32 schemeId) internal
@@ -971,8 +933,8 @@ _Refund a vote gas cost to an address_
 
 #### Parameters
 
-| Name     | Type    | Description                                    |
-| -------- | ------- | ---------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | schemeId | bytes32 | the id of the scheme that should do the refund |
 
 ### getParametersHash
@@ -993,14 +955,14 @@ _getProposalTimes returns proposals times variables._
 
 #### Parameters
 
-| Name         | Type    | Description        |
-| ------------ | ------- | ------------------ |
-| \_proposalId | bytes32 | id of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | id of the proposal |
 
 #### Return Values
 
-| Name  | Type       | Description |
-| ----- | ---------- | ----------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | times | uint256[3] | times array |
 
 ### getProposalScheme
@@ -1013,15 +975,15 @@ _getProposalScheme return the schemeId for a given proposal_
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
 
 #### Return Values
 
-| Name | Type    | Description               |
-| ---- | ------- | ------------------------- |
-| [0]  | bytes32 | bytes32 scheme identifier |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bytes32 | bytes32 scheme identifier |
 
 ### getStaker
 
@@ -1033,17 +995,17 @@ _getStaker return the vote and stake amount for a given proposal and staker_
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
-| \_staker     | address | staker address         |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
+| _staker | address | staker address |
 
 #### Return Values
 
-| Name | Type    | Description    |
-| ---- | ------- | -------------- |
-| [0]  | uint256 | uint256 vote   |
-| [1]  | uint256 | uint256 amount |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 vote |
+| [1] | uint256 | uint256 amount |
 
 ### getAllowedRangeOfChoices
 
@@ -1055,11 +1017,10 @@ _getAllowedRangeOfChoices returns the allowed range of choices for a voting mach
 
 #### Return Values
 
-| Name                            | Type    | Description                 |
-| ------------------------------- | ------- | --------------------------- |
-| min                             | uint256 | - minimum number of choices |
-| max - maximum number of choices |
-| max                             | uint256 |                             |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| min | uint256 | - minimum number of choices                max - maximum number of choices |
+| max | uint256 |  |
 
 ### getNumberOfChoices
 
@@ -1071,15 +1032,15 @@ _getNumberOfChoices returns the number of choices possible in this proposal_
 
 #### Parameters
 
-| Name         | Type    | Description     |
-| ------------ | ------- | --------------- |
-| \_proposalId | bytes32 | the proposal id |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the proposal id |
 
 #### Return Values
 
-| Name | Type    | Description                             |
-| ---- | ------- | --------------------------------------- |
-| [0]  | uint256 | uint256 that contains number of choices |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 that contains number of choices |
 
 ### proposalStatus
 
@@ -1091,18 +1052,18 @@ _proposalStatus return the total votes and stakes for a given proposal_
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
 
 #### Return Values
 
-| Name | Type    | Description                 |
-| ---- | ------- | --------------------------- |
-| [0]  | uint256 | uint256 preBoostedVotes YES |
-| [1]  | uint256 | uint256 preBoostedVotes NO  |
-| [2]  | uint256 | uint256 total stakes YES    |
-| [3]  | uint256 | uint256 total stakes NO     |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 preBoostedVotes YES |
+| [1] | uint256 | uint256 preBoostedVotes NO |
+| [2] | uint256 | uint256 total stakes YES |
+| [3] | uint256 | uint256 total stakes NO |
 
 ### proposalStatusWithVotes
 
@@ -1114,20 +1075,20 @@ _proposalStatusWithVotes return the total votes, preBoostedVotes and stakes for 
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
 
 #### Return Values
 
-| Name | Type    | Description                 |
-| ---- | ------- | --------------------------- |
-| [0]  | uint256 | uint256 votes YES           |
-| [1]  | uint256 | uint256 votes NO            |
-| [2]  | uint256 | uint256 preBoostedVotes YES |
-| [3]  | uint256 | uint256 preBoostedVotes NO  |
-| [4]  | uint256 | uint256 total stakes YES    |
-| [5]  | uint256 | uint256 total stakes NO     |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 votes YES |
+| [1] | uint256 | uint256 votes NO |
+| [2] | uint256 | uint256 preBoostedVotes YES |
+| [3] | uint256 | uint256 preBoostedVotes NO |
+| [4] | uint256 | uint256 total stakes YES |
+| [5] | uint256 | uint256 total stakes NO |
 
 ### voteStake
 
@@ -1139,16 +1100,16 @@ _voteStake return the amount stakes for a given proposal and vote_
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
-| \_vote       | uint256 | vote number            |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
+| _vote | uint256 | vote number |
 
 #### Return Values
 
-| Name | Type    | Description          |
-| ---- | ------- | -------------------- |
-| [0]  | uint256 | uint256 stake amount |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 stake amount |
 
 ### winningVote
 
@@ -1160,15 +1121,15 @@ _winningVote return the winningVote for a given proposal_
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
 
 #### Return Values
 
-| Name | Type    | Description         |
-| ---- | ------- | ------------------- |
-| [0]  | uint256 | uint256 winningVote |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 winningVote |
 
 ### state
 
@@ -1180,12 +1141,13 @@ _state return the state for a given proposal_
 
 #### Parameters
 
-| Name         | Type    | Description            |
-| ------------ | ------- | ---------------------- |
-| \_proposalId | bytes32 | the ID of the proposal |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the proposal |
 
 #### Return Values
 
-| Name | Type                                | Description                  |
-| ---- | ----------------------------------- | ---------------------------- |
-| [0]  | enum DXDVotingMachine.ProposalState | ProposalState proposal state |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | enum DXDVotingMachine.ProposalState | ProposalState proposal state |
+

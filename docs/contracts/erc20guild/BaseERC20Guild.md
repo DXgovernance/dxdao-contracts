@@ -18,7 +18,6 @@ enum ProposalState {
   Executed,
   Failed
 }
-
 ```
 
 ### token
@@ -136,7 +135,6 @@ struct TokenLock {
   uint256 amount;
   uint256 timestamp;
 }
-
 ```
 
 ### tokensLocked
@@ -158,7 +156,6 @@ struct Vote {
   uint256 action;
   uint256 votingPower;
 }
-
 ```
 
 ### Proposal
@@ -274,7 +271,7 @@ function lockTokens(uint256 tokenAmount) external virtual
 function withdrawTokens(uint256 tokenAmount) external virtual
 ```
 
-### \_setVote
+### _setVote
 
 ```solidity
 function _setVote(address voter, bytes32 proposalId, uint256 action, uint256 votingPower) internal
@@ -435,3 +432,4 @@ function getVoterLockTimestamp(address voter) public view virtual returns (uint2
 ```solidity
 function hashVote(address voter, bytes32 proposalId, uint256 action, uint256 votingPower) public pure virtual returns (bytes32)
 ```
+

@@ -6,7 +6,7 @@ _An implementation of Scheme where the scheme has only 2 options and execute cal
 Option 1 will mark the proposal as rejected and not execute any calls.
 Option 2 will execute all the calls that where submitted in the proposeCalls._
 
-### AvatarScheme\_\_ProposalExecutionAlreadyRunning
+### AvatarScheme__ProposalExecutionAlreadyRunning
 
 ```solidity
 error AvatarScheme__ProposalExecutionAlreadyRunning()
@@ -14,7 +14,7 @@ error AvatarScheme__ProposalExecutionAlreadyRunning()
 
 Emitted when the proposal is already being executed
 
-### AvatarScheme\_\_ProposalMustBeSubmitted
+### AvatarScheme__ProposalMustBeSubmitted
 
 ```solidity
 error AvatarScheme__ProposalMustBeSubmitted()
@@ -22,7 +22,7 @@ error AvatarScheme__ProposalMustBeSubmitted()
 
 Emitted when the proposal wasn't submitted
 
-### AvatarScheme\_\_SetEthPermissionUsedFailed
+### AvatarScheme__SetEthPermissionUsedFailed
 
 ```solidity
 error AvatarScheme__SetEthPermissionUsedFailed()
@@ -30,7 +30,7 @@ error AvatarScheme__SetEthPermissionUsedFailed()
 
 Emitted when the call to setETHPermissionUsed fails
 
-### AvatarScheme\_\_AvatarCallFailed
+### AvatarScheme__AvatarCallFailed
 
 ```solidity
 error AvatarScheme__AvatarCallFailed(string reason)
@@ -38,7 +38,7 @@ error AvatarScheme__AvatarCallFailed(string reason)
 
 Emitted when the avatarCall failed. Returns the revert error
 
-### AvatarScheme\_\_MaxRepPercentageChangePassed
+### AvatarScheme__MaxRepPercentageChangePassed
 
 ```solidity
 error AvatarScheme__MaxRepPercentageChangePassed()
@@ -46,7 +46,7 @@ error AvatarScheme__MaxRepPercentageChangePassed()
 
 Emitted when exceeded the maximum rep supply % change
 
-### AvatarScheme\_\_ERC20LimitsPassed
+### AvatarScheme__ERC20LimitsPassed
 
 ```solidity
 error AvatarScheme__ERC20LimitsPassed()
@@ -54,7 +54,7 @@ error AvatarScheme__ERC20LimitsPassed()
 
 Emitted when ERC20 limits passed
 
-### AvatarScheme\_\_TotalOptionsMustBeTwo
+### AvatarScheme__TotalOptionsMustBeTwo
 
 ```solidity
 error AvatarScheme__TotalOptionsMustBeTwo()
@@ -72,19 +72,19 @@ _Propose calls to be executed, the calls have to be allowed by the permission re
 
 #### Parameters
 
-| Name              | Type      | Description                           |
-| ----------------- | --------- | ------------------------------------- |
-| \_to              | address[] | - The addresses to call               |
-| \_callData        | bytes[]   | - The abi encode data for the calls   |
-| \_value           | uint256[] | value(ETH) to transfer with the calls |
-| \_totalOptions    | uint256   | The amount of options to be voted on  |
-| \_title           | string    | title of proposal                     |
-| \_descriptionHash | string    | proposal description hash             |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _to | address[] | - The addresses to call |
+| _callData | bytes[] | - The abi encode data for the calls |
+| _value | uint256[] | value(ETH) to transfer with the calls |
+| _totalOptions | uint256 | The amount of options to be voted on |
+| _title | string | title of proposal |
+| _descriptionHash | string | proposal description hash |
 
 #### Return Values
 
-| Name       | Type    | Description                      |
-| ---------- | ------- | -------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | proposalId | bytes32 | id which represents the proposal |
 
 ### executeProposal
@@ -97,16 +97,16 @@ _execution of proposals, can only be called by the voting machine in which the v
 
 #### Parameters
 
-| Name            | Type    | Description                                |
-| --------------- | ------- | ------------------------------------------ |
-| \_proposalId    | bytes32 | the ID of the voting in the voting machine |
-| \_winningOption | uint256 | The winning option in the voting machine   |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the voting in the voting machine |
+| _winningOption | uint256 | The winning option in the voting machine |
 
 #### Return Values
 
-| Name | Type | Description  |
-| ---- | ---- | ------------ |
-| [0]  | bool | bool success |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool success |
 
 ### getSchemeType
 
@@ -115,3 +115,4 @@ function getSchemeType() external view returns (string)
 ```
 
 _Get the scheme type_
+

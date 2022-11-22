@@ -79,3 +79,4 @@ function getVoterLockTimestamp(address voter) public view virtual returns (uint2
 ```solidity
 function getTotalLocked() public view virtual returns (uint256)
 ```
+

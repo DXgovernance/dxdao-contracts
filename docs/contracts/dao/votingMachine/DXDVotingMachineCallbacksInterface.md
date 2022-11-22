@@ -37,3 +37,4 @@ function reputationOf(address _owner, bytes32 _proposalId) external view returns
 ```solidity
 function balanceOfStakingToken(address _stakingToken, bytes32 _proposalId) external view returns (uint256)
 ```
+

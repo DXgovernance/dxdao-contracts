@@ -15,22 +15,21 @@ struct Snapshots {
   uint256[] ids;
   uint256[] values;
 }
-
 ```
 
-### \_votesSnapshots
+### _votesSnapshots
 
 ```solidity
 mapping(address => struct SnapshotERC20Guild.Snapshots) _votesSnapshots
 ```
 
-### \_totalLockedSnapshots
+### _totalLockedSnapshots
 
 ```solidity
 struct SnapshotERC20Guild.Snapshots _totalLockedSnapshots
 ```
 
-### \_currentSnapshotId
+### _currentSnapshotId
 
 ```solidity
 uint256 _currentSnapshotId
@@ -108,32 +107,33 @@ function getProposalSnapshotId(bytes32 proposalId) external view returns (uint25
 function getCurrentSnapshotId() external view returns (uint256)
 ```
 
-### \_valueAt
+### _valueAt
 
 ```solidity
 function _valueAt(uint256 snapshotId, struct SnapshotERC20Guild.Snapshots snapshots) private view returns (bool, uint256)
 ```
 
-### \_updateAccountSnapshot
+### _updateAccountSnapshot
 
 ```solidity
 function _updateAccountSnapshot(address account) private
 ```
 
-### \_updateTotalSupplySnapshot
+### _updateTotalSupplySnapshot
 
 ```solidity
 function _updateTotalSupplySnapshot() private
 ```
 
-### \_updateSnapshot
+### _updateSnapshot
 
 ```solidity
 function _updateSnapshot(struct SnapshotERC20Guild.Snapshots snapshots, uint256 currentValue) private
 ```
 
-### \_lastSnapshotId
+### _lastSnapshotId
 
 ```solidity
 function _lastSnapshotId(uint256[] ids) private view returns (uint256)
 ```
+

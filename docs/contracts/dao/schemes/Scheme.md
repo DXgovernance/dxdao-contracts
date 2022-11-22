@@ -25,7 +25,6 @@ enum ProposalState {
   Rejected,
   Passed
 }
-
 ```
 
 ### Proposal
@@ -91,7 +90,7 @@ bool executingProposal
 event ProposalStateChange(bytes32 _proposalId, uint256 _state)
 ```
 
-### Scheme\_\_CannotInitTwice
+### Scheme__CannotInitTwice
 
 ```solidity
 error Scheme__CannotInitTwice()
@@ -99,7 +98,7 @@ error Scheme__CannotInitTwice()
 
 Emitted when its initialized twice
 
-### Scheme\_\_AvatarAddressCannotBeZero
+### Scheme__AvatarAddressCannotBeZero
 
 ```solidity
 error Scheme__AvatarAddressCannotBeZero()
@@ -107,7 +106,7 @@ error Scheme__AvatarAddressCannotBeZero()
 
 Emitted if avatar address is zero
 
-### Scheme\_\_ControllerAddressCannotBeZero
+### Scheme__ControllerAddressCannotBeZero
 
 ```solidity
 error Scheme__ControllerAddressCannotBeZero()
@@ -115,7 +114,7 @@ error Scheme__ControllerAddressCannotBeZero()
 
 Emitted if controller address is zero
 
-### Scheme\_\_MaxSecondsForExecutionTooLow
+### Scheme__MaxSecondsForExecutionTooLow
 
 ```solidity
 error Scheme__MaxSecondsForExecutionTooLow()
@@ -123,7 +122,7 @@ error Scheme__MaxSecondsForExecutionTooLow()
 
 Emitted if maxSecondsForExecution is set lower than 86400
 
-### Scheme\_\_SetMaxSecondsForExecutionInvalidCaller
+### Scheme__SetMaxSecondsForExecutionInvalidCaller
 
 ```solidity
 error Scheme__SetMaxSecondsForExecutionInvalidCaller()
@@ -137,9 +136,9 @@ Emitted when setMaxSecondsForExecution is being called from an address different
 error Scheme_InvalidParameterArrayLength()
 ```
 
-\_to, \_callData and \_value must have all the same length
+_to, _callData and _value must have all the same length
 
-### Scheme\_\_InvalidTotalOptionsOrActionsCallsLength
+### Scheme__InvalidTotalOptionsOrActionsCallsLength
 
 ```solidity
 error Scheme__InvalidTotalOptionsOrActionsCallsLength()
@@ -147,7 +146,7 @@ error Scheme__InvalidTotalOptionsOrActionsCallsLength()
 
 Emitted when the totalOptions paramers is invalid
 
-### Scheme\_\_ProposalExecutionAlreadyRunning
+### Scheme__ProposalExecutionAlreadyRunning
 
 ```solidity
 error Scheme__ProposalExecutionAlreadyRunning()
@@ -155,7 +154,7 @@ error Scheme__ProposalExecutionAlreadyRunning()
 
 Emitted when the proposal is already being executed
 
-### Scheme\_\_ProposalMustBeSubmitted
+### Scheme__ProposalMustBeSubmitted
 
 ```solidity
 error Scheme__ProposalMustBeSubmitted()
@@ -163,7 +162,7 @@ error Scheme__ProposalMustBeSubmitted()
 
 Emitted when the proposal isn't submitted
 
-### Scheme\_\_CallFailed
+### Scheme__CallFailed
 
 ```solidity
 error Scheme__CallFailed(string reason)
@@ -171,7 +170,7 @@ error Scheme__CallFailed(string reason)
 
 Emitted when the call failed. Returns the revert error
 
-### Scheme\_\_MaxRepPercentageChangePassed
+### Scheme__MaxRepPercentageChangePassed
 
 ```solidity
 error Scheme__MaxRepPercentageChangePassed()
@@ -179,7 +178,7 @@ error Scheme__MaxRepPercentageChangePassed()
 
 Emitted when the maxRepPercentageChange is exceeded
 
-### Scheme\_\_ERC20LimitsPassed
+### Scheme__ERC20LimitsPassed
 
 ```solidity
 error Scheme__ERC20LimitsPassed()
@@ -197,15 +196,14 @@ _initialize_
 
 #### Parameters
 
-| Name                     | Type            | Description                                                                     |
-| ------------------------ | --------------- | ------------------------------------------------------------------------------- |
-| \_avatar                 | address payable | the avatar address                                                              |
-| \_votingMachine          | address         | the voting machine address                                                      |
-| \_controller             | address         | The controller address                                                          |
-| \_permissionRegistry     | address         | The address of the permission registry contract                                 |
-| \_schemeName             | string          |                                                                                 |
-| \_maxRepPercentageChange | uint256         | The maximum percentage allowed to be changed in REP total supply after proposal |
-| execution                |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _avatar | address payable | the avatar address |
+| _votingMachine | address | the voting machine address |
+| _controller | address | The controller address |
+| _permissionRegistry | address | The address of the permission registry contract |
+| _schemeName | string |  |
+| _maxRepPercentageChange | uint256 | The maximum percentage allowed to be changed in REP total supply after proposal execution |
 
 ### proposeCalls
 
@@ -217,19 +215,19 @@ _Propose calls to be executed, the calls have to be allowed by the permission re
 
 #### Parameters
 
-| Name              | Type      | Description                           |
-| ----------------- | --------- | ------------------------------------- |
-| \_to              | address[] | - The addresses to call               |
-| \_callData        | bytes[]   | - The abi encode data for the calls   |
-| \_value           | uint256[] | value(ETH) to transfer with the calls |
-| \_totalOptions    | uint256   | The amount of options to be voted on  |
-| \_title           | string    | title of proposal                     |
-| \_descriptionHash | string    | proposal description hash             |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _to | address[] | - The addresses to call |
+| _callData | bytes[] | - The abi encode data for the calls |
+| _value | uint256[] | value(ETH) to transfer with the calls |
+| _totalOptions | uint256 | The amount of options to be voted on |
+| _title | string | title of proposal |
+| _descriptionHash | string | proposal description hash |
 
 #### Return Values
 
-| Name       | Type    | Description                      |
-| ---------- | ------- | -------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | proposalId | bytes32 | id which represents the proposal |
 
 ### executeProposal
@@ -242,16 +240,16 @@ _execution of proposals, can only be called by the voting machine in which the v
 
 #### Parameters
 
-| Name            | Type    | Description                                |
-| --------------- | ------- | ------------------------------------------ |
-| \_proposalId    | bytes32 | the ID of the voting in the voting machine |
-| \_winningOption | uint256 | The winning option in the voting machine   |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the voting in the voting machine |
+| _winningOption | uint256 | The winning option in the voting machine |
 
 #### Return Values
 
-| Name | Type | Description  |
-| ---- | ---- | ------------ |
-| [0]  | bool | bool success |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool success |
 
 ### finishProposal
 
@@ -263,16 +261,16 @@ _Finish a proposal and set the final state in storage_
 
 #### Parameters
 
-| Name            | Type    | Description                                |
-| --------------- | ------- | ------------------------------------------ |
-| \_proposalId    | bytes32 | the ID of the voting in the voting machine |
-| \_winningOption | uint256 | The winning option in the voting machine   |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the ID of the voting in the voting machine |
+| _winningOption | uint256 | The winning option in the voting machine |
 
 #### Return Values
 
-| Name | Type | Description  |
-| ---- | ---- | ------------ |
-| [0]  | bool | bool success |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool success |
 
 ### getProposal
 
@@ -284,8 +282,8 @@ _Get the information of a proposal by id_
 
 #### Parameters
 
-| Name       | Type    | Description            |
-| ---------- | ------- | ---------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | proposalId | bytes32 | the ID of the proposal |
 
 ### getProposalByIndex
@@ -298,8 +296,8 @@ _Get the information of a proposal by index_
 
 #### Parameters
 
-| Name          | Type    | Description                                     |
-| ------------- | ------- | ----------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | proposalIndex | uint256 | the index of the proposal in the proposals list |
 
 ### getFuncSignature
@@ -312,8 +310,8 @@ _Get call data signature_
 
 #### Parameters
 
-| Name | Type  | Description                                     |
-| ---- | ----- | ----------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | data | bytes | The bytes data of the data to get the signature |
 
 ### getOrganizationProposalsLength
@@ -339,3 +337,4 @@ function getSchemeType() external view virtual returns (string)
 ```
 
 _Get the scheme type_
+

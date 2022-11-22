@@ -49,3 +49,4 @@ function removeGuild(address guildAddress) external
 ```solidity
 function getGuildsAddresses() external view returns (address[])
 ```
+

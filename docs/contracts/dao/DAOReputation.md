@@ -1,6 +1,6 @@
 # Solidity API
 
-## DAOReputation\_\_NoTransfer
+## DAOReputation__NoTransfer
 
 ```solidity
 error DAOReputation__NoTransfer()
@@ -28,7 +28,7 @@ event Burn(address _from, uint256 _amount)
 function initialize(string name, string symbol) external
 ```
 
-### \_transfer
+### _transfer
 
 ```solidity
 function _transfer(address sender, address recipient, uint256 amount) internal virtual
@@ -46,16 +46,16 @@ Generates `_amount` reputation that are assigned to `_account`
 
 #### Parameters
 
-| Name      | Type    | Description                                          |
-| --------- | ------- | ---------------------------------------------------- |
-| \_account | address | The address that will be assigned the new reputation |
-| \_amount  | uint256 | The quantity of reputation generated                 |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _account | address | The address that will be assigned the new reputation |
+| _amount | uint256 | The quantity of reputation generated |
 
 #### Return Values
 
-| Name | Type | Description                                    |
-| ---- | ---- | ---------------------------------------------- |
-| [0]  | bool | True if the reputation are generated correctly |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | True if the reputation are generated correctly |
 
 ### mintMultiple
 
@@ -73,16 +73,16 @@ Burns `_amount` reputation from `_account`
 
 #### Parameters
 
-| Name      | Type    | Description                               |
-| --------- | ------- | ----------------------------------------- |
-| \_account | address | The address that will lose the reputation |
-| \_amount  | uint256 | The quantity of reputation to burn        |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _account | address | The address that will lose the reputation |
+| _amount | uint256 | The quantity of reputation to burn |
 
 #### Return Values
 
-| Name | Type | Description                                 |
-| ---- | ---- | ------------------------------------------- |
-| [0]  | bool | True if the reputation are burned correctly |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | True if the reputation are burned correctly |
 
 ### burnMultiple
 
@@ -97,3 +97,4 @@ function getCurrentSnapshotId() public view returns (uint256)
 ```
 
 _Get the current snapshotId_
+

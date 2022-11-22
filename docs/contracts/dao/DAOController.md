@@ -31,7 +31,6 @@ struct ProposalAndScheme {
   bytes32 proposalId;
   address scheme;
 }
-
 ```
 
 ### reputationToken
@@ -50,7 +49,6 @@ struct Scheme {
   bool canMakeAvatarCalls;
   bool canChangeReputation;
 }
-
 ```
 
 ### schemes
@@ -77,7 +75,7 @@ event RegisterScheme(address _sender, address _scheme)
 event UnregisterScheme(address _sender, address _scheme)
 ```
 
-### DAOController\_\_SenderNotRegistered
+### DAOController__SenderNotRegistered
 
 ```solidity
 error DAOController__SenderNotRegistered()
@@ -85,7 +83,7 @@ error DAOController__SenderNotRegistered()
 
 Sender is not a registered scheme
 
-### DAOController\_\_SenderCannotManageSchemes
+### DAOController__SenderCannotManageSchemes
 
 ```solidity
 error DAOController__SenderCannotManageSchemes()
@@ -93,7 +91,7 @@ error DAOController__SenderCannotManageSchemes()
 
 Sender cannot manage schemes
 
-### DAOController\_\_SenderCannotPerformAvatarCalls
+### DAOController__SenderCannotPerformAvatarCalls
 
 ```solidity
 error DAOController__SenderCannotPerformAvatarCalls()
@@ -101,7 +99,7 @@ error DAOController__SenderCannotPerformAvatarCalls()
 
 Sender cannot perform avatar calls
 
-### DAOController\_\_SenderCannotChangeReputation
+### DAOController__SenderCannotChangeReputation
 
 ```solidity
 error DAOController__SenderCannotChangeReputation()
@@ -109,7 +107,7 @@ error DAOController__SenderCannotChangeReputation()
 
 Sender cannot change reputation
 
-### DAOController\_\_CannotDisableLastSchemeWithManageSchemesPermission
+### DAOController__CannotDisableLastSchemeWithManageSchemesPermission
 
 ```solidity
 error DAOController__CannotDisableLastSchemeWithManageSchemesPermission()
@@ -117,7 +115,7 @@ error DAOController__CannotDisableLastSchemeWithManageSchemesPermission()
 
 Cannot disable canManageSchemes property from the last scheme with manage schemes permissions
 
-### DAOController\_\_CannotUnregisterLastSchemeWithManageSchemesPermission
+### DAOController__CannotUnregisterLastSchemeWithManageSchemesPermission
 
 ```solidity
 error DAOController__CannotUnregisterLastSchemeWithManageSchemesPermission()
@@ -125,15 +123,15 @@ error DAOController__CannotUnregisterLastSchemeWithManageSchemesPermission()
 
 Cannot unregister last scheme with manage schemes permission
 
-### DAOController\_\_IdUsedByOtherScheme
+### DAOController__IdUsedByOtherScheme
 
 ```solidity
 error DAOController__IdUsedByOtherScheme()
 ```
 
-arg \_proposalId is being used by other scheme
+arg _proposalId is being used by other scheme
 
-### DAOController\_\_SenderIsNotTheProposer
+### DAOController__SenderIsNotTheProposer
 
 ```solidity
 error DAOController__SenderIsNotTheProposer()
@@ -141,7 +139,7 @@ error DAOController__SenderIsNotTheProposer()
 
 Sender is not the scheme that originally started the proposal
 
-### DAOController\_\_SenderIsNotRegisteredOrProposalIsInactive
+### DAOController__SenderIsNotRegisteredOrProposalIsInactive
 
 ```solidity
 error DAOController__SenderIsNotRegisteredOrProposalIsInactive()
@@ -149,29 +147,29 @@ error DAOController__SenderIsNotRegisteredOrProposalIsInactive()
 
 Sender is not a registered scheme or proposal is not active
 
-### DAOController\_\_StartCannotBeBiggerThanListLength
+### DAOController__StartCannotBeBiggerThanListLength
 
 ```solidity
 error DAOController__StartCannotBeBiggerThanListLength()
 ```
 
-arg \_start cannot be bigger than proposals list length
+arg _start cannot be bigger than proposals list length
 
-### DAOController\_\_EndCannotBeBiggerThanListLength
+### DAOController__EndCannotBeBiggerThanListLength
 
 ```solidity
 error DAOController__EndCannotBeBiggerThanListLength()
 ```
 
-arg \_end cannot be bigger than proposals list length
+arg _end cannot be bigger than proposals list length
 
-### DAOController\_\_StartCannotBeBiggerThanEnd
+### DAOController__StartCannotBeBiggerThanEnd
 
 ```solidity
 error DAOController__StartCannotBeBiggerThanEnd()
 ```
 
-arg \_start cannot be bigger than \_end
+arg _start cannot be bigger than _end
 
 ### initialize
 
@@ -213,19 +211,19 @@ _register a scheme_
 
 #### Parameters
 
-| Name                  | Type    | Description                                       |
-| --------------------- | ------- | ------------------------------------------------- |
-| \_scheme              | address | the address of the scheme                         |
-| \_paramsHash          | bytes32 | a hashed configuration of the usage of the scheme |
-| \_canManageSchemes    | bool    | whether the scheme is able to manage schemes      |
-| \_canMakeAvatarCalls  | bool    | whether the scheme is able to make avatar calls   |
-| \_canChangeReputation | bool    | whether the scheme is able to change reputation   |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _scheme | address | the address of the scheme |
+| _paramsHash | bytes32 | a hashed configuration of the usage of the scheme |
+| _canManageSchemes | bool | whether the scheme is able to manage schemes |
+| _canMakeAvatarCalls | bool | whether the scheme is able to make avatar calls |
+| _canChangeReputation | bool | whether the scheme is able to change reputation |
 
 #### Return Values
 
-| Name | Type | Description                   |
-| ---- | ---- | ----------------------------- |
-| [0]  | bool | bool success of the operation |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool success of the operation |
 
 ### unregisterScheme
 
@@ -237,15 +235,15 @@ _unregister a scheme_
 
 #### Parameters
 
-| Name     | Type    | Description               |
-| -------- | ------- | ------------------------- |
-| \_scheme | address | the address of the scheme |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _scheme | address | the address of the scheme |
 
 #### Return Values
 
-| Name | Type | Description                   |
-| ---- | ---- | ----------------------------- |
-| [0]  | bool | bool success of the operation |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool success of the operation |
 
 ### avatarCall
 
@@ -257,19 +255,19 @@ _perform a generic call to an arbitrary contract_
 
 #### Parameters
 
-| Name       | Type               | Description                                            |
-| ---------- | ------------------ | ------------------------------------------------------ |
-| \_contract | address            | the contract's address to call                         |
-| \_data     | bytes              | ABI-encoded contract call to call `_contract` address. |
-| \_avatar   | contract DAOAvatar | the controller's avatar address                        |
-| \_value    | uint256            | value (ETH) to transfer with the transaction           |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _contract | address | the contract's address to call |
+| _data | bytes | ABI-encoded contract call to call `_contract` address. |
+| _avatar | contract DAOAvatar | the controller's avatar address |
+| _value | uint256 | value (ETH) to transfer with the transaction |
 
 #### Return Values
 
-| Name | Type  | Description                                                 |
-| ---- | ----- | ----------------------------------------------------------- |
-| [0]  | bool  | bool success                                                |
-| [1]  | bytes | bytes the return value of the called \_contract's function. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool success |
+| [1] | bytes | bytes the return value of the called _contract's function. |
 
 ### startProposal
 
@@ -281,9 +279,9 @@ _Adds a proposal to the active proposals list_
 
 #### Parameters
 
-| Name         | Type    | Description    |
-| ------------ | ------- | -------------- |
-| \_proposalId | bytes32 | the proposalId |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the proposalId |
 
 ### endProposal
 
@@ -295,9 +293,9 @@ _Moves a proposal from the active proposals list to the inactive list_
 
 #### Parameters
 
-| Name         | Type    | Description    |
-| ------------ | ------- | -------------- |
-| \_proposalId | bytes32 | the proposalId |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | the proposalId |
 
 ### burnReputation
 
@@ -309,10 +307,10 @@ _Burns dao reputation_
 
 #### Parameters
 
-| Name      | Type    | Description                         |
-| --------- | ------- | ----------------------------------- |
-| \_amount  | uint256 | the amount of reputation to burn    |
-| \_account | address | the account to burn reputation from |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _amount | uint256 | the amount of reputation to burn |
+| _account | address | the account to burn reputation from |
 
 ### mintReputation
 
@@ -324,10 +322,10 @@ _Mints dao reputation_
 
 #### Parameters
 
-| Name      | Type    | Description                         |
-| --------- | ------- | ----------------------------------- |
-| \_amount  | uint256 | the amount of reputation to mint    |
-| \_account | address | the account to mint reputation from |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _amount | uint256 | the amount of reputation to mint |
+| _account | address | the account to mint reputation from |
 
 ### transferReputationOwnership
 
@@ -339,9 +337,9 @@ _Transfer ownership of dao reputation_
 
 #### Parameters
 
-| Name       | Type    | Description                           |
-| ---------- | ------- | ------------------------------------- |
-| \_newOwner | address | the new owner of the reputation token |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _newOwner | address | the new owner of the reputation token |
 
 ### isSchemeRegistered
 
@@ -379,13 +377,13 @@ function getSchemeCanChangeReputation(address _scheme) external view returns (bo
 function getSchemesCountWithManageSchemesPermissions() external view returns (uint256)
 ```
 
-### \_isSchemeRegistered
+### _isSchemeRegistered
 
 ```solidity
 function _isSchemeRegistered(address _scheme) private view returns (bool)
 ```
 
-### \_getProposalsBatchRequest
+### _getProposalsBatchRequest
 
 ```solidity
 function _getProposalsBatchRequest(uint256 _start, uint256 _end, struct EnumerableSetUpgradeable.Bytes32Set _proposals) internal view returns (struct DAOController.ProposalAndScheme[] proposalsArray)
@@ -395,16 +393,16 @@ _Returns array of proposals based on index args. Both indexes are inclusive, unl
 
 #### Parameters
 
-| Name        | Type                                       | Description                                                                     |
-| ----------- | ------------------------------------------ | ------------------------------------------------------------------------------- |
-| \_start     | uint256                                    | index to start batching (included).                                             |
-| \_end       | uint256                                    | last index of batch (included). Zero will default to last element from the list |
-| \_proposals | struct EnumerableSetUpgradeable.Bytes32Set | EnumerableSetUpgradeable set of proposals                                       |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _start | uint256 | index to start batching (included). |
+| _end | uint256 | last index of batch (included). Zero will default to last element from the list |
+| _proposals | struct EnumerableSetUpgradeable.Bytes32Set | EnumerableSetUpgradeable set of proposals |
 
 #### Return Values
 
-| Name           | Type                                     | Description          |
-| -------------- | ---------------------------------------- | -------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | proposalsArray | struct DAOController.ProposalAndScheme[] | with proposals list. |
 
 ### getActiveProposals
@@ -417,15 +415,15 @@ _Returns array of active proposals_
 
 #### Parameters
 
-| Name    | Type    | Description                                          |
-| ------- | ------- | ---------------------------------------------------- |
-| \_start | uint256 | index to start batching (included).                  |
-| \_end   | uint256 | last index of batch (included). Zero will return all |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _start | uint256 | index to start batching (included). |
+| _end | uint256 | last index of batch (included). Zero will return all |
 
 #### Return Values
 
-| Name                 | Type                                     | Description                 |
-| -------------------- | ---------------------------------------- | --------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | activeProposalsArray | struct DAOController.ProposalAndScheme[] | with active proposals list. |
 
 ### getInactiveProposals
@@ -438,10 +436,10 @@ _Returns array of inactive proposals_
 
 #### Parameters
 
-| Name    | Type    | Description                                          |
-| ------- | ------- | ---------------------------------------------------- |
-| \_start | uint256 | index to start batching (included).                  |
-| \_end   | uint256 | last index of batch (included). Zero will return all |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _start | uint256 | index to start batching (included). |
+| _end | uint256 | last index of batch (included). Zero will return all |
 
 ### getDaoReputation
 
@@ -464,3 +462,4 @@ function getInactiveProposalsCount() public view returns (uint256)
 ```
 
 _Returns the amount of inactive proposals_
+

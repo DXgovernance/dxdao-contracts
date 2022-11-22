@@ -49,3 +49,4 @@ function getGuildGuardian() external view returns (address)
 ```solidity
 function getExtraTimeForGuardian() external view returns (uint256)
 ```
+

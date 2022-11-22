@@ -30,7 +30,6 @@ enum ProposalState {
   Executed,
   Failed
 }
-
 ```
 
 ### Vote
@@ -40,7 +39,6 @@ struct Vote {
   uint256 action;
   uint256 votingPower;
 }
-
 ```
 
 ### Proposal
@@ -323,3 +321,4 @@ function isValidSignature(bytes32 hash, bytes signature) external view returns (
 ```solidity
 function hashVote(address voter, bytes32 proposalId, uint256 action, uint256 votingPower) external pure returns (bytes32)
 ```
+

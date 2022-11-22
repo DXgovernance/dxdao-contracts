@@ -85,3 +85,4 @@ function getTotalLocked() public view virtual returns (uint256)
 ```solidity
 function getSnapshotVotingPowerForProposalExecution(bytes32 proposalId) public view virtual returns (uint256)
 ```
+

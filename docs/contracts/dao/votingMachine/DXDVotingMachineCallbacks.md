@@ -49,3 +49,4 @@ function getTotalReputationSupply(bytes32 _proposalId) external view returns (ui
 ```solidity
 function reputationOf(address _owner, bytes32 _proposalId) external view returns (uint256)
 ```
+
