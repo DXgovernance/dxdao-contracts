@@ -1526,7 +1526,7 @@ contract("ERC20Guild", function (accounts) {
       });
     });
 
-    it("try to set eth permission used between calls to avoid checks and fail", async function () {
+    it("try to set eth permission used inside proposal execution to erc20guild fail", async function () {
       await web3.eth.sendTransaction({
         to: erc20Guild.address,
         value: 300,
@@ -1595,9 +1595,10 @@ contract("ERC20Guild", function (accounts) {
       });
 
       await time.increase(time.duration.seconds(31));
+
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "PermissionRegistry: Value limit reached"
+        "ERC20Guild: Proposal call failed"
       );
     });
 
