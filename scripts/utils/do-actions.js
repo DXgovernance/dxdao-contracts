@@ -164,7 +164,11 @@ const doActions = async function (actions, networkContracts) {
       case "guild-createProposal":
         const guildProposalDescriptionHash = (
           await ipfs.add(
-            JSON.stringify({ description: action.data.proposalBody, url: "" })
+            JSON.stringify({
+              description: action.data.description,
+              url: "",
+              voteOptions: action.data.voteOptions,
+            })
           )
         ).cid.toString();
         const guildProposalCreationTx = await (
@@ -175,7 +179,7 @@ const doActions = async function (actions, networkContracts) {
           action.data.value,
           action.data.totalOptions,
           action.data.title,
-          contentHash.fromIpfs(guildProposalDescriptionHash).toString(),
+          guildProposalDescriptionHash,
           { from: action.from }
         );
         if (!proposals[action.data.guildName])
