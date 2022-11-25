@@ -4,10 +4,9 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
-  @title DAO Avatar
-  @dev The avatar, representing the DAO, owned by the DAO, controls the reputation and funds of the DAO.
-*/
-
+ * @title DAO Avatar
+ * @dev The avatar, representing the DAO, owned by the DAO, controls the reputation and funds of the DAO.
+ */
 contract DAOAvatar is OwnableUpgradeable {
     /// @notice Emitted when the call was executed
     event CallExecuted(address indexed _to, bytes _data, uint256 _value, bool _success);

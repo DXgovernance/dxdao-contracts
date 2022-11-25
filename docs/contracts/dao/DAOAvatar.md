@@ -2,6 +2,8 @@
 
 ## DAOAvatar
 
+_The avatar, representing the DAO, owned by the DAO, controls the reputation and funds of the DAO._
+
 ### CallExecuted
 
 ```solidity
