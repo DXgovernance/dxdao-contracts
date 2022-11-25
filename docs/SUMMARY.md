@@ -14,6 +14,8 @@
       * [DXDVotingMachineCallbacksInterface](/docs/contracts/dao/votingMachine/DXDVotingMachineCallbacksInterface.md)
       * [IDXDVotingMachine](/docs/contracts/dao/votingMachine/IDXDVotingMachine.md)
       * [ProposalExecuteInterface](/docs/contracts/dao/votingMachine/ProposalExecuteInterface.md)
+  * /deploy
+    * [NanoUniversalDeployer](/docs/contracts/deploy/NanoUniversalDeployer.md)
   * /erc20guild
     * [BaseERC20Guild](/docs/contracts/erc20guild/BaseERC20Guild.md)
     * [ERC20Guild](/docs/contracts/erc20guild/ERC20Guild.md)

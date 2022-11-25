@@ -114,22 +114,6 @@ error Scheme__ControllerAddressCannotBeZero()
 
 Emitted if controller address is zero
 
-### Scheme__MaxSecondsForExecutionTooLow
-
-```solidity
-error Scheme__MaxSecondsForExecutionTooLow()
-```
-
-Emitted if maxSecondsForExecution is set lower than 86400
-
-### Scheme__SetMaxSecondsForExecutionInvalidCaller
-
-```solidity
-error Scheme__SetMaxSecondsForExecutionInvalidCaller()
-```
-
-Emitted when setMaxSecondsForExecution is being called from an address different than the avatar or the scheme
-
 ### Scheme_InvalidParameterArrayLength
 
 ```solidity

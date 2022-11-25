@@ -225,6 +225,144 @@ event ConfidenceLevelChange(bytes32 _proposalId, uint256 _confidenceThreshold)
 event ProposalExecuteResult(string)
 ```
 
+### DXDVotingMachine__ProposalIsNotVotable
+
+```solidity
+error DXDVotingMachine__ProposalIsNotVotable()
+```
+
+### DXDVotingMachine__WrongDecisionValue
+
+```solidity
+error DXDVotingMachine__WrongDecisionValue()
+```
+
+### DXDVotingMachine__WrongStakingToken
+
+```solidity
+error DXDVotingMachine__WrongStakingToken()
+```
+
+### DXDVotingMachine__SetParametersError
+
+```solidity
+error DXDVotingMachine__SetParametersError(string)
+```
+
+### DXDVotingMachine__WrongProposalStateToRedeem
+
+```solidity
+error DXDVotingMachine__WrongProposalStateToRedeem()
+```
+
+Emited when proposal is not in ExecutedInQueue, ExecutedInBoost or Expired status
+
+### DXDVotingMachine__TransferFailed
+
+```solidity
+error DXDVotingMachine__TransferFailed(address to, uint256 amount)
+```
+
+### DXDVotingMachine__WrongProposalStateToRedeemDaoBounty
+
+```solidity
+error DXDVotingMachine__WrongProposalStateToRedeemDaoBounty()
+```
+
+Emited when proposal is not in ExecutedInQueue or ExecutedInBoost status
+
+### DXDVotingMachine__WrongSigner
+
+```solidity
+error DXDVotingMachine__WrongSigner()
+```
+
+### DXDVotingMachine__InvalidNonce
+
+```solidity
+error DXDVotingMachine__InvalidNonce()
+```
+
+### DXDVotingMachine__OnlySchemeOrAvatarCanSetSchemeRefound
+
+```solidity
+error DXDVotingMachine__OnlySchemeOrAvatarCanSetSchemeRefound()
+```
+
+### DXDVotingMachine__AddressNotRegisteredInSchemeRefounds
+
+```solidity
+error DXDVotingMachine__AddressNotRegisteredInSchemeRefounds()
+```
+
+### DXDVotingMachine__SchemeRefundBalanceIsZero
+
+```solidity
+error DXDVotingMachine__SchemeRefundBalanceIsZero()
+```
+
+### DXDVotingMachine__ProposalAlreadyVoted
+
+```solidity
+error DXDVotingMachine__ProposalAlreadyVoted()
+```
+
+### DXDVotingMachine__VoterMustHaveReputation
+
+```solidity
+error DXDVotingMachine__VoterMustHaveReputation()
+```
+
+### DXDVotingMachine__NotEnoughtReputation
+
+```solidity
+error DXDVotingMachine__NotEnoughtReputation()
+```
+
+### DXDVotingMachine__WrongVoteShared
+
+```solidity
+error DXDVotingMachine__WrongVoteShared()
+```
+
+### DXDVotingMachine__StakingAmountShouldBeBiggerThanZero
+
+```solidity
+error DXDVotingMachine__StakingAmountShouldBeBiggerThanZero()
+```
+
+### DXDVotingMachine__TransferFromStakerFailed
+
+```solidity
+error DXDVotingMachine__TransferFromStakerFailed()
+```
+
+### DXDVotingMachine__StakingAmountIsTooHight
+
+```solidity
+error DXDVotingMachine__StakingAmountIsTooHight()
+```
+
+### DXDVotingMachine__TotalStakesIsToHight
+
+```solidity
+error DXDVotingMachine__TotalStakesIsToHight()
+```
+
+### DXDVotingMachine__InvalidChoicesAmount
+
+```solidity
+error DXDVotingMachine__InvalidChoicesAmount()
+```
+
+Emited when _choicesAmount is less than NUM_OF_CHOICES
+
+### DXDVotingMachine__InvalidParameters
+
+```solidity
+error DXDVotingMachine__InvalidParameters()
+```
+
 ### VoteSignaled
 
 ```solidity
