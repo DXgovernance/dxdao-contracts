@@ -202,6 +202,8 @@ contract("WalletScheme", function (accounts) {
       value: 1000,
     });
 
+    await permissionRegistry.transferOwnership(org.avatar.address);
+
     const newWalletScheme = await WalletScheme.new();
     await newWalletScheme.initialize(
       org.avatar.address,

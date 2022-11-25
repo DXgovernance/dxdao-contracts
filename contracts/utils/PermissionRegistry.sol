@@ -182,26 +182,29 @@ contract PermissionRegistry is OwnableUpgradeable {
         bytes4 functionSignature,
         uint256 valueTransferred
     ) public {
+        if (msg.sender != owner()) {
+            require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
+        }
         if (valueTransferred > 0) {
-            _setValueTransferred(ethPermissions[from][address(0)][bytes4(0)], valueTransferred);
+            _addValueTransferred(ethPermissions[from][address(0)][bytes4(0)], valueTransferred);
         }
 
         (, uint256 fromTime) = getETHPermission(from, to, functionSignature);
 
         if (fromTime > 0) {
             require(fromTime < block.timestamp, "PermissionRegistry: Call not allowed yet");
-            _setValueTransferred(ethPermissions[from][to][functionSignature], valueTransferred);
+            _addValueTransferred(ethPermissions[from][to][functionSignature], valueTransferred);
         } else if (functionSignature != bytes4(0)) {
             revert("PermissionRegistry: Call not allowed");
         }
     }
 
     /**
-     * @dev Sets the value transferred in a a permission on the actual block.
+     * @dev Add the value transferred in a a permission on the actual block.
      * @param permission The permission to add the value transferred
      * @param valueTransferred The value to be transferred
      */
-    function _setValueTransferred(ETHPermission storage permission, uint256 valueTransferred) internal {
+    function _addValueTransferred(ETHPermission storage permission, uint256 valueTransferred) internal {
         if (permission.valueTransferedOnBlock < block.number) {
             permission.valueTransferedOnBlock = block.number;
             permission.valueTransferred = valueTransferred;

@@ -17,8 +17,8 @@ const deployGuilds = async function (guilds, networkContracts) {
       networkContracts.addresses[guildToDeploy.token],
       guildToDeploy.proposalTime,
       guildToDeploy.timeForExecution,
-      guildToDeploy.votingPowerForProposalExecution,
-      guildToDeploy.votingPowerForProposalCreation,
+      guildToDeploy.votingPowerPercentageForProposalExecution,
+      guildToDeploy.votingPowerPercentageForProposalCreation,
       guildToDeploy.name,
       guildToDeploy.voteGas,
       guildToDeploy.maxGasPrice,
@@ -28,8 +28,15 @@ const deployGuilds = async function (guilds, networkContracts) {
     );
     await waitBlocks(1);
 
-    if (guildToDeploy.contractName === "SnapshotRepERC20Guild")
+    if (guildToDeploy.contractName === "SnapshotRepERC20Guild") {
       await newGuild.transferOwnership(newGuild.address);
+
+      const ERC20SnapshotRep = await hre.artifacts.require("ERC20SnapshotRep");
+      const rep = await ERC20SnapshotRep.at(
+        networkContracts.addresses[guildToDeploy.token]
+      );
+      await rep.transferOwnership(newGuild.address);
+    }
 
     networkContracts.addresses[guildToDeploy.name] = newGuild.address;
     networkContracts.addresses[guildToDeploy.name + "-vault"] =

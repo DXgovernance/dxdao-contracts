@@ -15,7 +15,7 @@ interface IERC20Guild {
     }
 
     struct Vote {
-        uint256 action;
+        uint256 option;
         uint256 votingPower;
     }
 
@@ -40,8 +40,8 @@ interface IERC20Guild {
         address _token,
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votingPowerForProposalExecution,
-        uint256 _votingPowerForProposalCreation,
+        uint256 _votingPowerPercentageForProposalExecution,
+        uint256 _votingPowerPercentageForProposalCreation,
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
@@ -53,8 +53,8 @@ interface IERC20Guild {
     function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votingPowerForProposalExecution,
-        uint256 _votingPowerForProposalCreation,
+        uint256 _votingPowerPercentageForProposalExecution,
+        uint256 _votingPowerPercentageForProposalCreation,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
@@ -76,7 +76,7 @@ interface IERC20Guild {
         address[] memory to,
         bytes[] memory data,
         uint256[] memory value,
-        uint256 totalActions,
+        uint256 totalOptions,
         string memory title,
         string memory contentHash
     ) external returns (bytes32);
@@ -85,19 +85,19 @@ interface IERC20Guild {
 
     function setVote(
         bytes32 proposalId,
-        uint256 action,
+        uint256 option,
         uint256 votingPower
     ) external;
 
     function setVotes(
         bytes32[] memory proposalIds,
-        uint256[] memory actions,
+        uint256[] memory options,
         uint256[] memory votingPowers
     ) external;
 
     function setSignedVote(
         bytes32 proposalId,
-        uint256 action,
+        uint256 option,
         uint256 votingPower,
         address voter,
         bytes memory signature
@@ -105,7 +105,7 @@ interface IERC20Guild {
 
     function setSignedVotes(
         bytes32[] memory proposalIds,
-        uint256[] memory actions,
+        uint256[] memory options,
         uint256[] memory votingPowers,
         address[] memory voters,
         bytes[] memory signatures
@@ -162,7 +162,7 @@ interface IERC20Guild {
     function getProposalVotesOfVoter(bytes32 proposalId, address voter)
         external
         view
-        returns (uint256 action, uint256 votingPower);
+        returns (uint256 option, uint256 votingPower);
 
     function getVotingPowerForProposalCreation() external view returns (uint256);
 
@@ -179,7 +179,7 @@ interface IERC20Guild {
     function hashVote(
         address voter,
         bytes32 proposalId,
-        uint256 action,
+        uint256 option,
         uint256 votingPower
     ) external pure returns (bytes32);
 }

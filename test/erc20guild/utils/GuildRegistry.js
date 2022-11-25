@@ -10,6 +10,7 @@ contract("GuildRegistry", accounts => {
     guildRegistry = await GuildRegistry.new({
       from: accounts[0],
     });
+    guildRegistry.initialize();
   });
 
   describe("Retrieve Guild Registry information", () => {
