@@ -1,14 +1,11 @@
 # Solidity API
 
-## DAOReputation__NoTransfer
-
-```solidity
-error DAOReputation__NoTransfer()
-```
-
-Error when trying to transfer reputation
-
 ## DAOReputation
+
+_An ERC20 token that is non-transferable, owned and controlled by the DAO.
+Used by the DAO to vote on proposals.
+It uses a snapshot mechanism to keep track of the reputation at the moment of
+each modification of the supply of the token (every mint an burn)._
 
 ### Mint
 
@@ -21,6 +18,14 @@ event Mint(address _to, uint256 _amount)
 ```solidity
 event Burn(address _from, uint256 _amount)
 ```
+
+### DAOReputation__NoTransfer
+
+```solidity
+error DAOReputation__NoTransfer()
+```
+
+Error when trying to transfer reputation
 
 ### initialize
 
@@ -39,7 +44,7 @@ _Not allow the transfer of tokens_
 ### mint
 
 ```solidity
-function mint(address _account, uint256 _amount) external returns (bool)
+function mint(address _account, uint256 _amount) external returns (bool success)
 ```
 
 Generates `_amount` reputation that are assigned to `_account`
@@ -55,18 +60,33 @@ Generates `_amount` reputation that are assigned to `_account`
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | True if the reputation are generated correctly |
+| success | bool | True if the reputation are generated correctly |
 
 ### mintMultiple
 
 ```solidity
-function mintMultiple(address[] _accounts, uint256[] _amount) external returns (bool)
+function mintMultiple(address[] _accounts, uint256[] _amount) external returns (bool success)
 ```
+
+Mint reputation for multiple accounts
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _accounts | address[] | The accounts that will be assigned the new reputation |
+| _amount | uint256[] | The quantity of reputation generated for each account |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| success | bool | True if the reputation are generated correctly |
 
 ### burn
 
 ```solidity
-function burn(address _account, uint256 _amount) external returns (bool)
+function burn(address _account, uint256 _amount) external returns (bool success)
 ```
 
 Burns `_amount` reputation from `_account`
@@ -82,13 +102,28 @@ Burns `_amount` reputation from `_account`
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | True if the reputation are burned correctly |
+| success | bool | True if the reputation are burned correctly |
 
 ### burnMultiple
 
 ```solidity
-function burnMultiple(address[] _accounts, uint256 _amount) external returns (bool)
+function burnMultiple(address[] _accounts, uint256[] _amount) external returns (bool success)
 ```
+
+Burn reputation from multiple accounts
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _accounts | address[] | The accounts that will lose the reputation |
+| _amount | uint256[] | The quantity of reputation to burn for each account |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| success | bool | True if the reputation are generated correctly |
 
 ### getCurrentSnapshotId
 

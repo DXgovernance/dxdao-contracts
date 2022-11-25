@@ -18,27 +18,6 @@ struct EnumerableSetUpgradeable.Bytes32Set activeProposals
 struct EnumerableSetUpgradeable.Bytes32Set inactiveProposals
 ```
 
-### schemeOfProposal
-
-```solidity
-mapping(bytes32 => address) schemeOfProposal
-```
-
-### ProposalAndScheme
-
-```solidity
-struct ProposalAndScheme {
-  bytes32 proposalId;
-  address scheme;
-}
-```
-
-### reputationToken
-
-```solidity
-contract DAOReputation reputationToken
-```
-
 ### Scheme
 
 ```solidity
@@ -51,10 +30,35 @@ struct Scheme {
 }
 ```
 
+### ProposalAndScheme
+
+```solidity
+struct ProposalAndScheme {
+  bytes32 proposalId;
+  address scheme;
+}
+```
+
+### schemeOfProposal
+
+```solidity
+mapping(bytes32 => address) schemeOfProposal
+```
+
+Mapping that return scheme address for the given proposal ID
+
 ### schemes
 
 ```solidity
 mapping(address => struct DAOController.Scheme) schemes
+```
+
+Mapping that return scheme struct for the given scheme address
+
+### reputationToken
+
+```solidity
+contract DAOReputation reputationToken
 ```
 
 ### schemesWithManageSchemesPermission
@@ -183,11 +187,15 @@ function initialize(address _scheme, address _reputationToken, bytes32 _paramsHa
 modifier onlyRegisteredScheme()
 ```
 
+_Verify if scheme is registered_
+
 ### onlyRegisteringSchemes
 
 ```solidity
 modifier onlyRegisteringSchemes()
 ```
+
+_Verify if scheme can manage schemes_
 
 ### onlyAvatarCallScheme
 
@@ -195,19 +203,23 @@ modifier onlyRegisteringSchemes()
 modifier onlyAvatarCallScheme()
 ```
 
+_Verify if scheme can make avatar calls_
+
 ### onlyChangingReputation
 
 ```solidity
 modifier onlyChangingReputation()
 ```
 
+_Verify if scheme can change reputation_
+
 ### registerScheme
 
 ```solidity
-function registerScheme(address _scheme, bytes32 _paramsHash, bool _canManageSchemes, bool _canMakeAvatarCalls, bool _canChangeReputation) external returns (bool)
+function registerScheme(address _scheme, bytes32 _paramsHash, bool _canManageSchemes, bool _canMakeAvatarCalls, bool _canChangeReputation) external returns (bool success)
 ```
 
-_register a scheme_
+_Register a scheme_
 
 #### Parameters
 
@@ -223,15 +235,15 @@ _register a scheme_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | bool success of the operation |
+| success | bool | success of the operation |
 
 ### unregisterScheme
 
 ```solidity
-function unregisterScheme(address _scheme) external returns (bool)
+function unregisterScheme(address _scheme) external returns (bool success)
 ```
 
-_unregister a scheme_
+_Unregister a scheme_
 
 #### Parameters
 
@@ -243,15 +255,15 @@ _unregister a scheme_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | bool success of the operation |
+| success | bool | success of the operation |
 
 ### avatarCall
 
 ```solidity
-function avatarCall(address _contract, bytes _data, contract DAOAvatar _avatar, uint256 _value) external returns (bool, bytes)
+function avatarCall(address _contract, bytes _data, contract DAOAvatar _avatar, uint256 _value) external returns (bool success, bytes data)
 ```
 
-_perform a generic call to an arbitrary contract_
+_Perform a generic call to an arbitrary contract_
 
 #### Parameters
 
@@ -266,8 +278,8 @@ _perform a generic call to an arbitrary contract_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | bool success |
-| [1] | bytes | bytes the return value of the called _contract's function. |
+| success | bool | Whether call was executed successfully or not |
+| data | bytes | Call data returned |
 
 ### startProposal
 
@@ -300,7 +312,7 @@ _Moves a proposal from the active proposals list to the inactive list_
 ### burnReputation
 
 ```solidity
-function burnReputation(uint256 _amount, address _account) external returns (bool)
+function burnReputation(uint256 _amount, address _account) external returns (bool success)
 ```
 
 _Burns dao reputation_
@@ -312,10 +324,16 @@ _Burns dao reputation_
 | _amount | uint256 | the amount of reputation to burn |
 | _account | address | the account to burn reputation from |
 
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| success | bool | True if the reputation are burned correctly |
+
 ### mintReputation
 
 ```solidity
-function mintReputation(uint256 _amount, address _account) external returns (bool)
+function mintReputation(uint256 _amount, address _account) external returns (bool success)
 ```
 
 _Mints dao reputation_
@@ -326,6 +344,12 @@ _Mints dao reputation_
 | ---- | ---- | ----------- |
 | _amount | uint256 | the amount of reputation to mint |
 | _account | address | the account to mint reputation from |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| success | bool | True if the reputation are generated correctly |
 
 ### transferReputationOwnership
 
@@ -344,38 +368,116 @@ _Transfer ownership of dao reputation_
 ### isSchemeRegistered
 
 ```solidity
-function isSchemeRegistered(address _scheme) external view returns (bool)
+function isSchemeRegistered(address _scheme) external view returns (bool isRegistered)
 ```
+
+_Return whether a scheme is registered or not_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _scheme | address | the address of the scheme |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| isRegistered | bool | whether a scheme is registered or not |
 
 ### getSchemeParameters
 
 ```solidity
-function getSchemeParameters(address _scheme) external view returns (bytes32)
+function getSchemeParameters(address _scheme) external view returns (bytes32 paramsHash)
 ```
+
+_Return scheme paramsHash_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _scheme | address | the address of the scheme |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| paramsHash | bytes32 | scheme.paramsHash |
 
 ### getSchemeCanManageSchemes
 
 ```solidity
-function getSchemeCanManageSchemes(address _scheme) external view returns (bool)
+function getSchemeCanManageSchemes(address _scheme) external view returns (bool canManageSchemes)
 ```
+
+_Return if scheme can manage schemes_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _scheme | address | the address of the scheme |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| canManageSchemes | bool | scheme.canManageSchemes |
 
 ### getSchemeCanMakeAvatarCalls
 
 ```solidity
-function getSchemeCanMakeAvatarCalls(address _scheme) external view returns (bool)
+function getSchemeCanMakeAvatarCalls(address _scheme) external view returns (bool canMakeAvatarCalls)
 ```
+
+_Return if scheme can make avatar calls_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _scheme | address | the address of the scheme |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| canMakeAvatarCalls | bool | scheme.canMakeAvatarCalls |
 
 ### getSchemeCanChangeReputation
 
 ```solidity
-function getSchemeCanChangeReputation(address _scheme) external view returns (bool)
+function getSchemeCanChangeReputation(address _scheme) external view returns (bool canChangeReputation)
 ```
 
-### getSchemesCountWithManageSchemesPermissions
+_Return if scheme can change reputation_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _scheme | address | the address of the scheme |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| canChangeReputation | bool | scheme.canChangeReputation |
+
+### getSchemesWithManageSchemesPermissionsCount
 
 ```solidity
-function getSchemesCountWithManageSchemesPermissions() external view returns (uint256)
+function getSchemesWithManageSchemesPermissionsCount() external view returns (uint256 schemesWithManageSchemesPermissionCount)
 ```
+
+_Return the amount of schemes with manage schemes permission_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| schemesWithManageSchemesPermissionCount | uint256 | schemes with manage schemes permission count |
 
 ### _isSchemeRegistered
 
@@ -444,22 +546,38 @@ _Returns array of inactive proposals_
 ### getDaoReputation
 
 ```solidity
-function getDaoReputation() external view returns (contract DAOReputation)
+function getDaoReputation() external view returns (contract DAOReputation tokenAddress)
 ```
+
+_Function to get reputation token_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenAddress | contract DAOReputation | The reputation token set on controller.initialize |
 
 ### getActiveProposalsCount
 
 ```solidity
-function getActiveProposalsCount() public view returns (uint256)
+function getActiveProposalsCount() public view returns (uint256 activeProposalsCount)
 ```
 
-_Returns the amount of active proposals_
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| activeProposalsCount | uint256 | The amount of active proposals |
 
 ### getInactiveProposalsCount
 
 ```solidity
-function getInactiveProposalsCount() public view returns (uint256)
+function getInactiveProposalsCount() public view returns (uint256 inactiveProposalsCount)
 ```
 
-_Returns the amount of inactive proposals_
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| inactiveProposalsCount | uint256 | The amount of inactive proposals |
 
