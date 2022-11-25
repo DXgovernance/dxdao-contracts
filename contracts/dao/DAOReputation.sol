@@ -27,11 +27,7 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     /**
      * @dev Not allow the transfer of tokens
      */
-    function _transfer(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) internal virtual override {
+    function _transfer(address sender, address recipient, uint256 amount) internal virtual override {
         revert DAOReputation__NoTransfer();
     }
 
