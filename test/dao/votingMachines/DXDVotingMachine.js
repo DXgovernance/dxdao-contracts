@@ -160,7 +160,6 @@ contract("DXDVotingMachine", function (accounts) {
           to: org.avatar.address,
           value: web3.utils.toWei("1"),
         });
-
         const setRefundConfData = web3.eth.abi.encodeFunctionCall(
           DXDVotingMachine.abi.find(x => x.name === "setSchemeRefund"),
           [
@@ -170,7 +169,6 @@ contract("DXDVotingMachine", function (accounts) {
             constants.GAS_PRICE,
           ]
         );
-
         await permissionRegistry.setETHPermission(
           org.avatar.address,
           dxdVotingMachine.address,
@@ -178,7 +176,6 @@ contract("DXDVotingMachine", function (accounts) {
           constants.MAX_UINT_256,
           true
         );
-
         await permissionRegistry.setETHPermission(
           org.avatar.address,
           constants.ZERO_ADDRESS,
@@ -186,7 +183,6 @@ contract("DXDVotingMachine", function (accounts) {
           web3.utils.toWei("1"),
           true
         );
-
         const setRefundConfTx = await masterAvatarScheme.proposeCalls(
           [dxdVotingMachine.address],
           [setRefundConfData],
@@ -195,16 +191,13 @@ contract("DXDVotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         );
-
         setRefundConfProposalId = await helpers.getValueFromLogs(
           setRefundConfTx,
           "_proposalId"
         );
-
         const schemeId = (
           await dxdVotingMachine.proposals(setRefundConfProposalId)
         ).schemeId;
-
         await dxdVotingMachine.vote(
           setRefundConfProposalId,
           constants.YES_OPTION,
@@ -216,7 +209,6 @@ contract("DXDVotingMachine", function (accounts) {
         assert.equal("0", schemeData.voteGasBalance.toString());
         assert.equal(VOTE_GAS, schemeData.voteGas);
         assert.equal(constants.GAS_PRICE, schemeData.maxGasPrice);
-
         await permissionRegistry.setETHPermission(
           org.avatar.address,
           actionMock.address,
