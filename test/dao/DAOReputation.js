@@ -74,11 +74,7 @@ contract("DAOReputation", async accounts => {
     // Mint tokens to addresses first
     await daoReputation.mintMultiple(addresses, amounts);
     // Burn the tokens to addresses
-    const amountToBurn = 100;
-    const burnMultiple = await daoReputation.burnMultiple(
-      addresses,
-      amountToBurn
-    );
+    const burnMultiple = await daoReputation.burnMultiple(addresses, amounts);
     expect(burnMultiple, true);
 
     const reputationBalance0 = await daoReputation.balanceOf(addresses[0]);
@@ -86,7 +82,7 @@ contract("DAOReputation", async accounts => {
     const reputationBalance2 = await daoReputation.balanceOf(addresses[2]);
 
     assert.equal(reputationBalance0.toNumber(), 0);
-    assert.equal(reputationBalance1.toNumber(), 100);
-    assert.equal(reputationBalance2.toNumber(), 200);
+    assert.equal(reputationBalance1.toNumber(), 0);
+    assert.equal(reputationBalance2.toNumber(), 0);
   });
 });
