@@ -29,7 +29,7 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     }
 
     /**
-     * @notice Generates `_amount` reputation that are assigned to `_account`
+     * @dev Generates `_amount` reputation that are assigned to `_account`
      * @param _account The address that will be assigned the new reputation
      * @param _amount The quantity of reputation generated
      * @return success True if the reputation are generated correctly
@@ -42,7 +42,7 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     }
 
     /**
-     * @notice Mint reputation for multiple accounts
+     * @dev Mint reputation for multiple accounts
      * @param _accounts The accounts that will be assigned the new reputation
      * @param _amount The quantity of reputation generated for each account
      * @return success True if the reputation are generated correctly
@@ -59,7 +59,7 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     }
 
     /**
-     * @notice Burns `_amount` reputation from `_account`
+     * @dev Burns `_amount` reputation from `_account`
      * @param _account The address that will lose the reputation
      * @param _amount The quantity of reputation to burn
      * @return success True if the reputation are burned correctly
@@ -72,7 +72,7 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     }
 
     /**
-     * @notice Burn reputation from multiple accounts
+     * @dev Burn reputation from multiple accounts
      * @param _accounts The accounts that will lose the reputation
      * @param _amount The quantity of reputation to burn for each account
      * @return success True if the reputation are generated correctly

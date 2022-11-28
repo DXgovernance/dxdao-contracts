@@ -47,7 +47,7 @@ _Not allow the transfer of tokens_
 function mint(address _account, uint256 _amount) external returns (bool success)
 ```
 
-Generates `_amount` reputation that are assigned to `_account`
+_Generates `_amount` reputation that are assigned to `_account`_
 
 #### Parameters
 
@@ -68,7 +68,7 @@ Generates `_amount` reputation that are assigned to `_account`
 function mintMultiple(address[] _accounts, uint256[] _amount) external returns (bool success)
 ```
 
-Mint reputation for multiple accounts
+_Mint reputation for multiple accounts_
 
 #### Parameters
 
@@ -89,7 +89,7 @@ Mint reputation for multiple accounts
 function burn(address _account, uint256 _amount) external returns (bool success)
 ```
 
-Burns `_amount` reputation from `_account`
+_Burns `_amount` reputation from `_account`_
 
 #### Parameters
 
@@ -110,7 +110,7 @@ Burns `_amount` reputation from `_account`
 function burnMultiple(address[] _accounts, uint256[] _amount) external returns (bool success)
 ```
 
-Burn reputation from multiple accounts
+_Burn reputation from multiple accounts_
 
 #### Parameters
 
