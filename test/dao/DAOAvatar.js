@@ -4,6 +4,16 @@ const DAOAvatar = artifacts.require("./DAOAvatar.sol");
 const BigNumber = require("bignumber.js");
 
 contract("DAOAvatar", function (accounts) {
+  it("Should fail with 'Initializable: contract is already initialized'", async () => {
+    const owner = accounts[0];
+    const avatar = await DAOAvatar.new();
+    await avatar.initialize(owner);
+    await expectRevert(
+      avatar.initialize(owner),
+      "Initializable: contract is already initialized"
+    );
+  });
+
   it("Should revert call", async function () {
     const owner = accounts[0];
 
