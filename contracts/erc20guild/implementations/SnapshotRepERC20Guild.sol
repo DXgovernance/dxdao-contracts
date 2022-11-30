@@ -69,7 +69,11 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
     /// @param proposalId The id of the proposal to set the vote
     /// @param option The proposal option to be voted
     /// @param votingPower The votingPower to use in the proposal
-    function setVote(bytes32 proposalId, uint256 option, uint256 votingPower) public virtual override {
+    function setVote(
+        bytes32 proposalId,
+        uint256 option,
+        uint256 votingPower
+    ) public virtual override {
         require(
             proposals[proposalId].endTime > block.timestamp,
             "SnapshotRepERC20Guild: Proposal ended, cannot be voted"
@@ -234,10 +238,12 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
     /// @dev Get the voting power of multiple addresses at a certain snapshotId
     /// @param accounts The addresses of the accounts
     /// @param snapshotIds The snapshotIds to be used
-    function votingPowerOfMultipleAt(
-        address[] memory accounts,
-        uint256[] memory snapshotIds
-    ) external view virtual returns (uint256[] memory) {
+    function votingPowerOfMultipleAt(address[] memory accounts, uint256[] memory snapshotIds)
+        external
+        view
+        virtual
+        returns (uint256[] memory)
+    {
         uint256[] memory votes = new uint256[](accounts.length);
         for (uint256 i = 0; i < accounts.length; i++) votes[i] = votingPowerOfAt(accounts[i], snapshotIds[i]);
         return votes;

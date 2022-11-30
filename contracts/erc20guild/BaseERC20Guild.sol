@@ -343,7 +343,11 @@ contract BaseERC20Guild {
     /// @param proposalId The id of the proposal to set the vote
     /// @param option The proposal option to be voted
     /// @param votingPower The votingPower to use in the proposal
-    function setVote(bytes32 proposalId, uint256 option, uint256 votingPower) public virtual {
+    function setVote(
+        bytes32 proposalId,
+        uint256 option,
+        uint256 votingPower
+    ) public virtual {
         require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
         require(
             (votingPowerOf(msg.sender) >= votingPower) &&
@@ -427,7 +431,12 @@ contract BaseERC20Guild {
     /// @param proposalId The id of the proposal to set the vote
     /// @param option The proposal option to be voted
     /// @param votingPower The amount of votingPower to use as voting for the proposal
-    function _setVote(address voter, bytes32 proposalId, uint256 option, uint256 votingPower) internal {
+    function _setVote(
+        address voter,
+        bytes32 proposalId,
+        uint256 option,
+        uint256 votingPower
+    ) internal {
         proposals[proposalId].totalVotes[option] =
             proposals[proposalId].totalVotes[option] -
             proposalVotes[proposalId][voter].votingPower +
@@ -543,10 +552,12 @@ contract BaseERC20Guild {
     /// @param voter The address of the voter to get the votes
     /// @return option The selected option of teh voter
     /// @return votingPower The amount of voting power used in the vote
-    function getProposalVotesOfVoter(
-        bytes32 proposalId,
-        address voter
-    ) external view virtual returns (uint256 option, uint256 votingPower) {
+    function getProposalVotesOfVoter(bytes32 proposalId, address voter)
+        external
+        view
+        virtual
+        returns (uint256 option, uint256 votingPower)
+    {
         return (proposalVotes[proposalId][voter].option, proposalVotes[proposalId][voter].votingPower);
     }
 
