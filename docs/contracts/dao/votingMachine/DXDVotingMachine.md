@@ -417,13 +417,15 @@ proposalId    =>   address =>  staker
 mapping(bytes32 => struct DXDVotingMachine.Parameters) parameters
 ```
 
+A mapping from hashes to parameters
+
 ### proposals
 
 ```solidity
 mapping(bytes32 => struct DXDVotingMachine.Proposal) proposals
 ```
 
-A mapping from hashes to parameters
+Mapping from the ID of the proposal to the proposal itself.
 
 ### schemes
 
@@ -514,7 +516,7 @@ modifier votable(bytes32 _proposalId)
 
 _Check that the proposal is votable.
 A proposal is votable if it is in one of the following states:
-PreBoosted,Boosted,QuietEndingPeriod or Queued_
+PreBoosted, Boosted, QuietEndingPeriod or Queued_
 
 ### validDecision
 
@@ -548,7 +550,7 @@ _Hash the parameters, save them if necessary, and return the hash value_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _params | uint256[10] | a parameters array    _params[0] - _queuedVoteRequiredPercentage,    _params[1] - _queuedVotePeriodLimit, //the time limit for a proposal to be in an absolute voting mode.    _params[2] - _boostedVotePeriodLimit, //the time limit for a proposal to be in an relative voting mode.    _params[3] - _preBoostedVotePeriodLimit, //the time limit for a proposal to be in an preparation state (stable) before boosted.    _params[4] -_thresholdConst    _params[5] -_quietEndingPeriod    _params[6] -_proposingRepReward    _params[7] -_minimumDaoBounty    _params[8] -_daoBountyConst    _params[9] - _boostedVoteRequiredPercentage |
+| _params | uint256[10] | A parameters array    _params[0] - _queuedVoteRequiredPercentage,    _params[1] - _queuedVotePeriodLimit, //the time limit for a proposal to be in an absolute voting mode.    _params[2] - _boostedVotePeriodLimit, //the time limit for a proposal to be in an relative voting mode.    _params[3] - _preBoostedVotePeriodLimit, //the time limit for a proposal to be in an preparation state (stable) before boosted.    _params[4] -_thresholdConst    _params[5] -_quietEndingPeriod    _params[6] -_proposingRepReward    _params[7] -_minimumDaoBounty    _params[8] -_daoBountyConst    _params[9] - _boostedVoteRequiredPercentage |
 
 #### Return Values
 
@@ -619,7 +621,7 @@ _Calculate the execute boosted call bounty_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| executeCallBounty | uint256 | TODO: add description |
+| executeCallBounty | uint256 | The execute boosted call bounty |
 
 ### shouldBoost
 
@@ -661,7 +663,7 @@ This threshold is dynamically set and it depend on the number of boosted proposa
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| schemeThreshold | uint256 | scheme's score threshold as real number. |
+| schemeThreshold | uint256 | Scheme's score threshold as real number. |
 
 ### stake
 
@@ -708,7 +710,7 @@ _stakeWithSignature function_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalExecuted | bool | true if the proposal was executed, false otherwise. |
+| proposalExecuted | bool | True if the proposal was executed, false otherwise. |
 
 ### setSchemeRefund
 
@@ -726,8 +728,8 @@ _Config the vote refund for each scheme_
 | ---- | ---- | ----------- |
 | avatar | address | Avatar contract address |
 | scheme | address | Scheme contract address to set vote refund config |
-| _voteGas | uint256 | the amount of gas that will be used as vote cost |
-| _maxGasPrice | uint256 | the maximum amount of gas price to be paid, if the gas used is higher than this value only a portion of the total gas would be refunded |
+| _voteGas | uint256 | The amount of gas that will be used as vote cost |
+| _maxGasPrice | uint256 | The maximum amount of gas price to be paid, if the gas used is higher than this value only a portion of the total gas would be refunded |
 
 ### withdrawRefundBalance
 
@@ -819,8 +821,8 @@ _Returns the reputation voted for a proposal for a specific voting choice._
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | the ID of the proposal |
-| _choice | uint256 | The index in the |
+| _proposalId | bytes32 | The ID of the proposal |
+| _choice | uint256 | The index in the voting choice |
 
 #### Return Values
 
@@ -880,7 +882,7 @@ _Signal the vote of a proposal in this voting machine to be executed later_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | id of the proposal to vote |
+| proposalId | bytes32 | Id of the proposal to vote |
 | voteDecision | uint256 | The vote decisions, NO(1) or YES(2). |
 | amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
 
@@ -896,12 +898,12 @@ _Execute a signed vote_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | id of the proposal to execute the vote on |
+| proposalId | bytes32 | Id of the proposal to execute the vote on |
 | voter | address | The signer of the vote |
 | voteDecision | uint256 | The vote decision, NO(1) or YES(2). |
 | amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
 | nonce | uint256 | Nonce value ,it is part of the signature to ensure that a signature can be received only once. |
-| signature | bytes | the signature of the hashed vote |
+| signature | bytes | The signature of the hashed vote |
 
 ### propose
 
@@ -1001,13 +1003,13 @@ _Return the proposal score_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | the ID of the proposal |
+| _proposalId | bytes32 | The ID of the proposal |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalScore | uint256 | proposal score as real number. |
+| proposalScore | uint256 | Proposal score as real number. |
 
 ### _execute
 
@@ -1021,13 +1023,13 @@ _Check if the proposal has been decided, and if so, execute the proposal_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | the id of the proposal |
+| _proposalId | bytes32 | The id of the proposal |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalExecuted | bool | true if the proposal was executed, false otherwise. |
+| proposalExecuted | bool | True if the proposal was executed, false otherwise. |
 
 ### _score
 
@@ -1188,7 +1190,7 @@ _Return the schemeId for a given proposal_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| schemeId | bytes32 | scheme identifier |
+| schemeId | bytes32 | Scheme identifier |
 
 ### getStaker
 
@@ -1267,8 +1269,8 @@ _Return the total votes and stakes for a given proposal_
 | ---- | ---- | ----------- |
 | preBoostedVotesNo | uint256 | preBoostedVotes NO |
 | preBoostedVotesYes | uint256 | preBoostedVotes YES |
-| totalStakesNo | uint256 | total stakes NO |
-| totalStakesYes | uint256 | total stakes YES |
+| totalStakesNo | uint256 | Total stakes NO |
+| totalStakesYes | uint256 | Total stakes YES |
 
 ### proposalStatusWithVotes
 
@@ -1288,12 +1290,12 @@ _Return the total votes, preBoostedVotes and stakes for a given proposal_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| votesNo | uint256 | proposal votes NO |
-| votesYes | uint256 | proposal votes YES |
-| preBoostedVotesNo | uint256 | proposal pre boosted votes NO |
-| preBoostedVotesYes | uint256 | proposal pre boosted votes YES |
-| totalStakesNo | uint256 | proposal total stakes NO |
-| totalStakesYes | uint256 | proposal total stakes YES |
+| votesNo | uint256 | Proposal votes NO |
+| votesYes | uint256 | Proposal votes YES |
+| preBoostedVotesNo | uint256 | Proposal pre boosted votes NO |
+| preBoostedVotesYes | uint256 | Proposal pre boosted votes YES |
+| totalStakesNo | uint256 | Proposal total stakes NO |
+| totalStakesYes | uint256 | Proposal total stakes YES |
 
 ### voteStake
 
@@ -1308,7 +1310,7 @@ _Return the amount stakes for a given proposal and vote_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _proposalId | bytes32 | The ID of the proposal |
-| _vote | uint256 | vote number |
+| _vote | uint256 | Vote number |
 
 #### Return Values
 

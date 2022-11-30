@@ -55,51 +55,50 @@ contract DXDVotingMachine {
         BoostedBarCrossed
     }
 
-    /// Scheme voting parameters
+    // Scheme voting parameters
     struct Parameters {
-        uint256 queuedVoteRequiredPercentage; /// the absolute vote percentages bar. 5000 = 50%
-        uint256 queuedVotePeriodLimit; //the time limit for a proposal to be in an absolute voting mode.
-        uint256 boostedVotePeriodLimit; //the time limit for a proposal to be in boost mode.
-        uint256 preBoostedVotePeriodLimit; //the time limit for a proposal
-        /// to be in an preparation state (stable) before boosted.
-        uint256 thresholdConst; //constant  for threshold calculation .
-        /// threshold =thresholdConst ** (numberOfBoostedProposals)
-        uint256 limitExponentValue; /// an upper limit for numberOfBoostedProposals
-        /// in the threshold calculation to prevent overflow
-        uint256 quietEndingPeriod; //quite ending period
-        uint256 proposingRepReward; //proposer reputation reward.
+        uint256 queuedVoteRequiredPercentage; // The absolute vote percentages bar. 5000 = 50%
+        uint256 queuedVotePeriodLimit; // The time limit for a proposal to be in an absolute voting mode.
+        uint256 boostedVotePeriodLimit; // The time limit for a proposal to be in boost mode.
+        uint256 preBoostedVotePeriodLimit; // The time limit for a proposal to be in an preparation state (stable) before boosted.
+        uint256 thresholdConst; // Constant for threshold calculation.
+        // threshold =thresholdConst ** (numberOfBoostedProposals)
+        uint256 limitExponentValue; // An upper limit for numberOfBoostedProposals
+        // in the threshold calculation to prevent overflow
+        uint256 quietEndingPeriod; // Quite ending period
+        uint256 proposingRepReward; // Proposer reputation reward.
         uint256 minimumDaoBounty;
-        uint256 daoBountyConst; //The DAO downstake for each proposal is calculate according to the formula
-        /// (daoBountyConst * averageBoostDownstakes)/100 .
-        uint256 boostedVoteRequiredPercentage; /// The required % of votes needed in a boosted proposal to be
-        /// executed on that scheme
+        uint256 daoBountyConst; // The DAO downstake for each proposal is calculate according to the formula
+        // (daoBountyConst * averageBoostDownstakes)/100 .
+        uint256 boostedVoteRequiredPercentage; // The required % of votes needed in a boosted proposal to be
+        // executed on that scheme
     }
 
     struct Voter {
-        uint256 vote; /// NO(1), YES(2)
-        uint256 reputation; /// amount of voter's reputation
+        uint256 vote; // NO(1), YES(2)
+        uint256 reputation; // amount of voter's reputation
         bool preBoosted;
     }
 
     struct Staker {
-        uint256 vote; /// NO(1), YES(2)
-        uint256 amount; /// amount of staker's stake
-        uint256 amount4Bounty; /// amount of staker's stake used for bounty reward calculation.
+        uint256 vote; // NO(1), YES(2)
+        uint256 amount; // Amount of staker's stake
+        uint256 amount4Bounty; // Amount of staker's stake used for bounty reward calculation.
     }
 
     struct Proposal {
-        bytes32 schemeId; /// the scheme unique identifier the proposal is target to.
-        address callbacks; /// should fulfill voting callbacks interface.
+        bytes32 schemeId; // The scheme unique identifier the proposal is target to.
+        address callbacks; // Should fulfill voting callbacks interface.
         ProposalState state;
         ExecutionState executionState;
-        uint256 winningVote; /// the winning vote.
+        uint256 winningVote; // She winning vote.
         address proposer;
-        /// the proposal boosted period limit . it is updated for the case of quiteWindow mode.
+        // The proposal boosted period limit . it is updated for the case of quiteWindow mode.
         uint256 currentBoostedVotePeriodLimit;
         bytes32 paramsHash;
-        uint256 daoBountyRemain; /// use for checking sum zero bounty claims.it is set at the proposing time.
+        uint256 daoBountyRemain; // Use for checking sum zero bounty claims.it is set at the proposing time.
         uint256 daoBounty;
-        uint256 totalStakes; /// Total number of tokens staked which can be redeemable by stakers.
+        uint256 totalStakes; // Total number of tokens staked which can be redeemable by stakers.
         uint256 confidenceThreshold;
         uint256 secondsFromTimeOutTillExecuteBoosted;
         uint256[3] times;
@@ -229,7 +228,7 @@ contract DXDVotingMachine {
     error DXDVotingMachine__InvalidChoicesAmount();
     error DXDVotingMachine__InvalidParameters();
 
-    /// Mappings of a proposal various properties
+    // Mappings of a proposal various properties
 
     ///      proposalId   =>      vote   =>    reputation
     mapping(bytes32 => mapping(uint256 => uint256)) proposalVotes;
@@ -242,8 +241,10 @@ contract DXDVotingMachine {
     ///      proposalId    =>   address =>  staker
     mapping(bytes32 => mapping(address => Staker)) proposalStakers;
 
-    mapping(bytes32 => Parameters) public parameters; /// A mapping from hashes to parameters
-    mapping(bytes32 => Proposal) public proposals; /// Mapping from the ID of the proposal to the proposal itself.
+    /// A mapping from hashes to parameters
+    mapping(bytes32 => Parameters) public parameters;
+    /// Mapping from the ID of the proposal to the proposal itself.
+    mapping(bytes32 => Proposal) public proposals;
 
     /// schemeId => scheme
     mapping(bytes32 => Scheme) public schemes;
@@ -251,7 +252,8 @@ contract DXDVotingMachine {
     uint256 public constant NUM_OF_CHOICES = 2;
     uint256 public constant NO = 1;
     uint256 public constant YES = 2;
-    uint256 public proposalsCnt; /// Total number of proposals
+    uint256 public proposalsCnt;
+    /// Total number of proposals
     IERC20 public stakingToken;
     uint256 private constant MAX_BOOSTED_PROPOSALS = 4096;
 
@@ -277,8 +279,8 @@ contract DXDVotingMachine {
     /// @notice The number of choices of each proposal
     mapping(bytes32 => uint256) internal numOfChoices;
 
-    //When implementing this interface please do not only override function and modifier,
-    //but also to keep the modifiers on the overridden functions.
+    // When implementing this interface please do not only override function and modifier,
+    // but also to keep the modifiers on the overridden functions.
     modifier onlyProposalOwner(bytes32 _proposalId) {
         revert();
         _;
@@ -287,7 +289,7 @@ contract DXDVotingMachine {
     /**
      * @dev Check that the proposal is votable.
      * A proposal is votable if it is in one of the following states:
-     * PreBoosted,Boosted,QuietEndingPeriod or Queued
+     * PreBoosted, Boosted, QuietEndingPeriod or Queued
      */
     modifier votable(bytes32 _proposalId) {
         if (!_isVotable(_proposalId)) {
@@ -316,7 +318,7 @@ contract DXDVotingMachine {
 
     /**
      * @dev Hash the parameters, save them if necessary, and return the hash value
-     * @param _params a parameters array
+     * @param _params A parameters array
      *    _params[0] - _queuedVoteRequiredPercentage,
      *    _params[1] - _queuedVotePeriodLimit, //the time limit for a proposal to be in an absolute voting mode.
      *    _params[2] - _boostedVotePeriodLimit, //the time limit for a proposal to be in an relative voting mode.
@@ -399,7 +401,7 @@ contract DXDVotingMachine {
             revert DXDVotingMachine__WrongProposalStateToRedeem();
         }
         Parameters memory params = parameters[proposal.paramsHash];
-        /// as staker
+        // as staker
         Staker storage staker = proposalStakers[_proposalId][_beneficiary];
         uint256 totalWinningStakes = proposalStakes[_proposalId][proposal.winningVote];
         uint256 totalStakesLeftAfterCallBounty = proposalStakes[_proposalId][NO] +
@@ -407,7 +409,7 @@ contract DXDVotingMachine {
             calcExecuteCallBounty(_proposalId);
         if (staker.amount > 0) {
             if (proposal.state == ProposalState.Expired) {
-                /// Stakes of a proposal that expires in Queue are sent back to stakers
+                // Stakes of a proposal that expires in Queue are sent back to stakers
                 rewards[0] = staker.amount;
             } else if (staker.vote == proposal.winningVote) {
                 if (staker.vote == YES) {
@@ -421,7 +423,7 @@ contract DXDVotingMachine {
             }
             staker.amount = 0;
         }
-        /// dao redeem its winnings
+        // dao redeem its winnings
         if (
             proposal.daoRedeemItsWinnings == false &&
             _beneficiary == schemes[proposal.schemeId].avatar &&
@@ -435,7 +437,7 @@ contract DXDVotingMachine {
             proposal.daoRedeemItsWinnings = true;
         }
 
-        /// as proposer
+        // as proposer
         if ((proposal.proposer == _beneficiary) && (proposal.winningVote == YES) && (proposal.proposer != address(0))) {
             rewards[1] = params.proposingRepReward;
             proposal.proposer = address(0);
@@ -506,7 +508,7 @@ contract DXDVotingMachine {
     /**
      * @dev Calculate the execute boosted call bounty
      * @param _proposalId The ID of the proposal
-     * @return executeCallBounty TODO: add description
+     * @return executeCallBounty The execute boosted call bounty
      */
     function calcExecuteCallBounty(bytes32 _proposalId) public view returns (uint256 executeCallBounty) {
         uint256 maxRewardSeconds = 1500;
@@ -531,7 +533,7 @@ contract DXDVotingMachine {
      * This threshold is dynamically set and it depend on the number of boosted proposal.
      * @param _schemeId The scheme identifier
      * @param _paramsHash The scheme parameters hash
-     * @return schemeThreshold scheme's score threshold as real number.
+     * @return schemeThreshold Scheme's score threshold as real number.
      */
     function threshold(bytes32 _paramsHash, bytes32 _schemeId) public view returns (uint256 schemeThreshold) {
         uint256 power = schemes[_schemeId].orgBoostedProposalsCnt;
@@ -563,7 +565,7 @@ contract DXDVotingMachine {
      * @param amount The betting amount
      * @param nonce Nonce value ,it is part of the signature to ensure that a signature can be received only once.
      * @param signature  Signed data by the staker
-     * @return proposalExecuted true if the proposal was executed, false otherwise.
+     * @return proposalExecuted True if the proposal was executed, false otherwise.
      */
     function stakeWithSignature(
         bytes32 proposalId,
@@ -592,8 +594,8 @@ contract DXDVotingMachine {
      * @notice Allows the voting machine to receive ether to be used to refund voting costs
      * @param avatar Avatar contract address
      * @param scheme Scheme contract address to set vote refund config
-     * @param _voteGas the amount of gas that will be used as vote cost
-     * @param _maxGasPrice the maximum amount of gas price to be paid, if the gas used is higher than this value only a portion of the total gas would be refunded
+     * @param _voteGas The amount of gas that will be used as vote cost
+     * @param _maxGasPrice The maximum amount of gas price to be paid, if the gas used is higher than this value only a portion of the total gas would be refunded
      */
     function setSchemeRefund(address avatar, address scheme, uint256 _voteGas, uint256 _maxGasPrice) external payable {
         bytes32 schemeId;
@@ -674,8 +676,8 @@ contract DXDVotingMachine {
 
     /**
      * @dev Returns the reputation voted for a proposal for a specific voting choice.
-     * @param _proposalId the ID of the proposal
-     * @param _choice The index in the
+     * @param _proposalId The ID of the proposal
+     * @param _choice The index in the voting choice
      * @return voted Reputation for the given choice
      */
     function voteStatus(bytes32 _proposalId, uint256 _choice) external view returns (uint256 voted) {
@@ -720,7 +722,7 @@ contract DXDVotingMachine {
 
     /**
      * @dev Signal the vote of a proposal in this voting machine to be executed later
-     * @param proposalId id of the proposal to vote
+     * @param proposalId Id of the proposal to vote
      * @param voteDecision The vote decisions, NO(1) or YES(2).
      * @param amount The reputation amount to vote with, 0 will use all available REP
      */
@@ -743,12 +745,12 @@ contract DXDVotingMachine {
 
     /**
      * @dev Execute a signed vote
-     * @param proposalId id of the proposal to execute the vote on
+     * @param proposalId Id of the proposal to execute the vote on
      * @param voter The signer of the vote
      * @param voteDecision The vote decision, NO(1) or YES(2).
      * @param amount The reputation amount to vote with, 0 will use all available REP
      * @param nonce Nonce value ,it is part of the signature to ensure that a signature can be received only once.
-     * @param signature the signature of the hashed vote
+     * @param signature The signature of the hashed vote
      */
     function executeSignedVote(
         bytes32 proposalId,
@@ -811,7 +813,7 @@ contract DXDVotingMachine {
         Parameters memory params = parameters[proposals[_proposalId].paramsHash];
         Proposal storage proposal = proposals[_proposalId];
 
-        /// Check voter has enough reputation:
+        // Check voter has enough reputation:
         uint256 reputation = DXDVotingMachineCallbacksInterface(proposal.callbacks).reputationOf(_voter, _proposalId);
 
         if (reputation <= 0) {
@@ -825,14 +827,14 @@ contract DXDVotingMachine {
         if (rep == 0) {
             rep = reputation;
         }
-        /// If this voter has already voted, return false.
+        // If this voter has already voted, return false.
         if (proposalVoters[_proposalId][_voter].reputation != 0) {
             return false;
         }
-        /// The voting itself:
+        // The voting itself:
         proposalVotes[_proposalId][_vote] = rep + proposalVotes[_proposalId][_vote];
-        //check if the current winningVote changed or there is a tie.
-        //for the case there is a tie the current winningVote set to NO.
+        // check if the current winningVote changed or there is a tie.
+        // for the case there is a tie the current winningVote set to NO.
         if (
             (proposalVotes[_proposalId][_vote] > proposalVotes[_proposalId][proposal.winningVote]) ||
             ((proposalVotes[_proposalId][NO] == proposalVotes[_proposalId][proposal.winningVote]) &&
@@ -845,7 +847,7 @@ contract DXDVotingMachine {
                 // solhint-disable-next-line not-rely-on-time
                 proposal.state == ProposalState.QuietEndingPeriod
             ) {
-                //quietEndingPeriod
+                // quietEndingPeriod
                 if (proposal.state != ProposalState.QuietEndingPeriod) {
                     proposal.currentBoostedVotePeriodLimit = params.quietEndingPeriod;
                     proposal.state = ProposalState.QuietEndingPeriod;
@@ -947,8 +949,8 @@ contract DXDVotingMachine {
 
     /**
      * @dev Return the proposal score
-     * @param _proposalId the ID of the proposal
-     * @return proposalScore proposal score as real number.
+     * @param _proposalId The ID of the proposal
+     * @return proposalScore Proposal score as real number.
      */
     function score(bytes32 _proposalId) public view returns (uint256 proposalScore) {
         return _score(_proposalId);
@@ -956,8 +958,8 @@ contract DXDVotingMachine {
 
     /**
      * @dev Check if the proposal has been decided, and if so, execute the proposal
-     * @param _proposalId the id of the proposal
-     * @return proposalExecuted true if the proposal was executed, false otherwise.
+     * @param _proposalId The id of the proposal
+     * @return proposalExecuted True if the proposal was executed, false otherwise.
      */
     // solhint-disable-next-line function-max-lines,code-complexity
     function _execute(bytes32 _proposalId) internal votable(_proposalId) returns (bool proposalExecuted) {
@@ -968,7 +970,7 @@ contract DXDVotingMachine {
         executeParams.totalReputation = DXDVotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(
             _proposalId
         );
-        /// first divide by 10000 to prevent overflow
+        // first divide by 10000 to prevent overflow
         executeParams.executionBar = (executeParams.totalReputation / 10000) * params.queuedVoteRequiredPercentage;
         executeParams.boostedExecutionBar =
             (executeParams.totalReputation / 10000) *
@@ -977,7 +979,7 @@ contract DXDVotingMachine {
         executeParams.confidenceThreshold;
 
         if (proposalVotes[_proposalId][proposal.winningVote] > executeParams.executionBar) {
-            /// someone crossed the absolute vote execution bar.
+            // someone crossed the absolute vote execution bar.
             if (proposal.state == ProposalState.Queued) {
                 proposal.executionState = ExecutionState.QueueBarCrossed;
             } else if (proposal.state == ProposalState.PreBoosted) {
@@ -996,7 +998,7 @@ contract DXDVotingMachine {
                 } else {
                     executeParams.confidenceThreshold = threshold(proposal.paramsHash, proposal.schemeId);
                     if (_score(_proposalId) > executeParams.confidenceThreshold) {
-                        /// change proposal mode to PreBoosted mode.
+                        // change proposal mode to PreBoosted mode.
                         proposal.state = ProposalState.PreBoosted;
                         // solhint-disable-next-line not-rely-on-time
                         proposal.times[2] = block.timestamp;
@@ -1011,16 +1013,16 @@ contract DXDVotingMachine {
                 if ((block.timestamp - proposal.times[2]) >= params.preBoostedVotePeriodLimit) {
                     if (_score(_proposalId) > executeParams.confidenceThreshold) {
                         if (schemes[proposal.schemeId].orgBoostedProposalsCnt < MAX_BOOSTED_PROPOSALS) {
-                            //change proposal mode to Boosted mode.
+                            // change proposal mode to Boosted mode.
                             proposal.state = ProposalState.Boosted;
 
                             proposal.times[1] = proposal.times[2] + params.preBoostedVotePeriodLimit;
 
                             schemes[proposal.schemeId].orgBoostedProposalsCnt++;
-                            //add a value to average -> average = average + ((value - average) / nbValues)
+                            // add a value to average -> average = average + ((value - average) / nbValues)
                             executeParams.averageDownstakesOfBoosted = schemes[proposal.schemeId]
                                 .averagesDownstakesOfBoosted;
-                            /// solium-disable-next-line indentation
+                            // solium-disable-next-line indentation
                             schemes[proposal.schemeId].averagesDownstakesOfBoosted = uint256(
                                 int256(executeParams.averageDownstakesOfBoosted) +
                                     ((int256(proposalStakes[_proposalId][NO]) -
@@ -1032,7 +1034,7 @@ contract DXDVotingMachine {
                         proposal.state = ProposalState.Queued;
                     }
                 } else {
-                    //check the Confidence level is stable
+                    // check the Confidence level is stable
                     uint256 proposalScore = _score(_proposalId);
                     if (proposalScore <= proposal.confidenceThreshold.min(executeParams.confidenceThreshold)) {
                         proposal.state = ProposalState.Queued;
@@ -1064,7 +1066,7 @@ contract DXDVotingMachine {
                 (proposal.executionState == ExecutionState.BoostedBarCrossed)
             ) {
                 schemes[proposal.schemeId].orgBoostedProposalsCnt--;
-                //remove a value from average = ((average * nbValues) - value) / (nbValues - 1);
+                // Remove a value from average = ((average * nbValues) - value) / (nbValues - 1);
                 if (schemes[proposal.schemeId].orgBoostedProposalsCnt == 0) {
                     schemes[proposal.schemeId].averagesDownstakesOfBoosted = 0;
                 } else {
@@ -1111,7 +1113,7 @@ contract DXDVotingMachine {
      * @return proposalScore Proposal score as real number.
      */
     function _score(bytes32 _proposalId) internal view returns (uint256 proposalScore) {
-        /// proposal.stakes[NO] cannot be zero as the dao downstake > 0 for each proposal.
+        // proposal.stakes[NO] cannot be zero as the dao downstake > 0 for each proposal.
         return uint216(proposalStakes[_proposalId][YES]).fraction(uint216(proposalStakes[_proposalId][NO]));
     }
 
@@ -1142,7 +1144,7 @@ contract DXDVotingMachine {
         uint256 _amount,
         address _staker
     ) internal validDecision(_proposalId, _vote) returns (bool proposalExecuted) {
-        /// 0 is not a valid vote.
+        // 0 is not a valid vote.
 
         if (_amount <= 0) {
             revert DXDVotingMachine__StakingAmountShouldBeBiggerThanZero();
@@ -1157,7 +1159,7 @@ contract DXDVotingMachine {
             return false;
         }
 
-        /// enable to increase stake only on the previous stake vote
+        // enable to increase stake only on the previous stake vote
         Staker storage staker = proposalStakers[_proposalId][_staker];
         if ((staker.amount > 0) && (staker.vote != _vote)) {
             return false;
@@ -1172,8 +1174,8 @@ contract DXDVotingMachine {
         schemes[proposal.schemeId].stakingTokenBalance += amount;
         proposal.totalStakes = proposal.totalStakes + amount; //update totalRedeemableStakes
         staker.amount = staker.amount + amount;
-        /// This is to prevent average downstakes calculation overflow
-        /// Note that GEN cap is 100000000 ether.
+        // This is to prevent average downstakes calculation overflow
+        // Note that GEN cap is 100000000 ether.
 
         if (staker.amount > 0x100000000000000000000000000000000) {
             revert DXDVotingMachine__StakingAmountIsTooHight();
@@ -1210,14 +1212,14 @@ contract DXDVotingMachine {
         if (_choicesAmount < NUM_OF_CHOICES) {
             revert DXDVotingMachine__InvalidChoicesAmount();
         }
-        /// Check parameters existence.
+        // Check parameters existence.
         if (parameters[_paramsHash].queuedVoteRequiredPercentage < 5000) {
             revert DXDVotingMachine__InvalidParameters();
         }
-        /// Generate a unique ID:
+        // Generate a unique ID:
         bytes32 proposalId = keccak256(abi.encodePacked(this, proposalsCnt));
         proposalsCnt = proposalsCnt + 1;
-        /// Open proposal:
+        // Open proposal:
         Proposal memory proposal;
         proposal.callbacks = msg.sender;
         proposal.schemeId = keccak256(abi.encodePacked(msg.sender, _avatar));
@@ -1236,7 +1238,7 @@ contract DXDVotingMachine {
                 schemes[proposal.schemeId].avatar = _avatar;
             }
         }
-        //calc dao bounty
+        // calc dao bounty
         uint256 daoBounty = (parameters[_paramsHash].daoBountyConst *
             schemes[proposal.schemeId].averagesDownstakesOfBoosted) / 100;
         proposal.daoBountyRemain = daoBounty.max(parameters[_paramsHash].minimumDaoBounty);
@@ -1267,7 +1269,7 @@ contract DXDVotingMachine {
      * @return paramsHash Hash of the given parameters
      */
     function getParametersHash(
-        uint256[10] memory _params /// use array here due to stack too deep issue.
+        uint256[10] memory _params // use array here due to stack too deep issue.
     ) public pure returns (bytes32 paramsHash) {
         return
             keccak256(
@@ -1298,7 +1300,7 @@ contract DXDVotingMachine {
     /**
      * @dev Return the schemeId for a given proposal
      * @param _proposalId ID of the proposal
-     * @return schemeId scheme identifier
+     * @return schemeId Scheme identifier
      */
     function getProposalSchemeId(bytes32 _proposalId) external view returns (bytes32 schemeId) {
         return (proposals[_proposalId].schemeId);
@@ -1338,8 +1340,8 @@ contract DXDVotingMachine {
      * @param _proposalId The ID of the proposal
      * @return preBoostedVotesNo preBoostedVotes NO
      * @return preBoostedVotesYes preBoostedVotes YES
-     * @return totalStakesNo total stakes NO
-     * @return totalStakesYes total stakes YES
+     * @return totalStakesNo Total stakes NO
+     * @return totalStakesYes Total stakes YES
      */
     function proposalStatus(
         bytes32 _proposalId
@@ -1359,12 +1361,12 @@ contract DXDVotingMachine {
     /**
      * @dev Return the total votes, preBoostedVotes and stakes for a given proposal
      * @param _proposalId The ID of the proposal
-     * @return votesNo proposal votes NO
-     * @return votesYes proposal votes YES
-     * @return preBoostedVotesNo proposal pre boosted votes NO
-     * @return preBoostedVotesYes proposal pre boosted votes YES
-     * @return totalStakesNo proposal total stakes NO
-     * @return totalStakesYes proposal total stakes YES
+     * @return votesNo Proposal votes NO
+     * @return votesYes Proposal votes YES
+     * @return preBoostedVotesNo Proposal pre boosted votes NO
+     * @return preBoostedVotesYes Proposal pre boosted votes YES
+     * @return totalStakesNo Proposal total stakes NO
+     * @return totalStakesYes Proposal total stakes YES
      */
     function proposalStatusWithVotes(
         bytes32 _proposalId
@@ -1393,7 +1395,7 @@ contract DXDVotingMachine {
     /**
      * @dev Return the amount stakes for a given proposal and vote
      * @param _proposalId The ID of the proposal
-     * @param _vote vote number
+     * @param _vote Vote number
      * @return totalStakeAmount Total stake amount
      */
     function voteStake(bytes32 _proposalId, uint256 _vote) external view returns (uint256 totalStakeAmount) {
