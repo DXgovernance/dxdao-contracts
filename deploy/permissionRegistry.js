@@ -13,7 +13,12 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const permissionRegistry = await PermissionRegistry.at(
     permissionRegistryDeploy.address
   );
-  await permissionRegistry.initialize();
+
+  try {
+    await permissionRegistry.initialize();
+  } catch (e) {
+    console.warn("Permission registry is already deployed.");
+  }
 
   if (process.env.ETHERSCAN_API_KEY && hre.network.name !== "hardhat") {
     try {

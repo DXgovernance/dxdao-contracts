@@ -7,11 +7,10 @@ export async function createAndSetupGuildToken(accounts, balances) {
   const [, ...restOfBalances] = balances;
   const totalSupply = balances.reduce((a, b) => a + b, 0);
   const guildToken = await ERC20Mock.new(
-    firstAccount,
-    totalSupply,
     "Test Token",
     "TT",
-    "18"
+    totalSupply,
+    firstAccount
   );
 
   await Promise.all(

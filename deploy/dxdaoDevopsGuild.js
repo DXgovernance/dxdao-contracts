@@ -2,7 +2,7 @@ const moment = require("moment");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
   const { deploy } = deployments;
-  const { deployer } = await getNamedAccounts();
+  const { deployer, tokenHolder } = await getNamedAccounts();
   const deploySalt = process.env.DEPLOY_SALT;
   const deployExtraSalt = "dxdaoDevOps";
 
@@ -33,7 +33,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     devOpsRepTokenDeploy.address
   );
   await devOpsRepToken.initialize("DXdao DevOps Reputation Token", "DREP");
-  await devOpsRepToken.mint("0x0b17cf48420400e1D71F8231d4a8e43B3566BB5B", 1000);
+  await devOpsRepToken.mint(tokenHolder, 1000);
 
   const dxdaoDevOpsGuildDeploy = await deploy("SnapshotRepERC20Guild", {
     name: "DevOpsGuild",

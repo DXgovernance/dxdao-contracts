@@ -12,8 +12,9 @@ require("@nomiclabs/hardhat-etherscan");
 require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
 require("@semaphore-protocol/hardhat");
-
+require("solidity-docgen");
 require("hardhat-deploy");
+
 require("./scripts/nanoUniversalDeployerDeploy");
 require("./scripts/keylessDeploy");
 require("./scripts/create2");
@@ -63,9 +64,9 @@ const MNEMONIC_KEY =
 // # Account #10: 0xf8a3681248934f1139be67e0c22a6af450eb9d7c (10000 ETH)
 // # Private Key #10: 0x8188d555d06262bfa3a343fa809b59b6368f02aa5a1ac5a3d2cb24e18e2b556e
 
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 const INFURA_PROJECT_ID = "5730f284ad6741b183c921ebb0509880";
 const MNEMONIC = process.env.KEY_MNEMONIC || MNEMONIC_KEY;
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
 const hardharNetworks = process.env.CI
   ? {
@@ -77,9 +78,6 @@ const hardharNetworks = process.env.CI
         gasLimit: 9000000,
         gasPrice: 10000000000, // 10 gwei
         timeout: 60000,
-      },
-      namedAccounts: {
-        deployer: 0,
       },
     }
   : {
@@ -113,7 +111,7 @@ const hardharNetworks = process.env.CI
         timeout: 600000, // 10 minutes
       },
       xdai: {
-        url: "https://poa-xdai-archival.gateway.pokt.network/v1/lb/61d897d4a065f5003a113d9a",
+        url: "https://rpc.xdaichain.com/",
         accounts: { mnemonic: MNEMONIC },
         chainId: 100,
         gasLimit: 17000000,
@@ -139,43 +137,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.4.25",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: "0.5.17",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: "0.6.8",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: "0.7.6",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: "0.8.8",
+        version: "0.8.17",
         settings: {
           optimizer: {
             enabled: true,
@@ -193,23 +155,24 @@ module.exports = {
         },
       },
     ],
-    overrides: {
-      "contracts/utils/GnosisSafe/GnosisProxy.sol": { version: "0.5.14" },
-      "contracts/utils/GnosisSafe/GnosisSafe.sol": { version: "0.5.14" },
-      "contracts/utils/Create2Deployer.sol": {
-        version: "0.5.17",
-        evmVersion: "istanbul",
-        optimizer: { enabled: false, runs: 200 },
-      },
-      "contracts/omen/OMNToken.sol": { version: "0.8.8" },
-      "contracts/erc20guild/IERC20Guild.sol": { version: "0.8.8" },
-    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS ? true : false,
   },
   networks: hardharNetworks,
-  etherscan: { apiKey: ETHERSCAN_API_KEY },
+  etherscan: {
+    apiKey: ETHERSCAN_API_KEY,
+    customChains: [
+      {
+        network: "xdai",
+        chainId: 100,
+        urls: {
+          apiURL: "https://api.gnosisscan.io/api",
+          browserURL: "https://gnosisscan.io",
+        },
+      },
+    ],
+  },
   dependencyCompiler: {
     keep: true,
     paths: [
@@ -217,8 +180,10 @@ module.exports = {
       "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
     ],
   },
+
   namedAccounts: {
     deployer: 0,
+    tokenHolder: 1,
   },
   deterministicDeployment: {
     1337: {
@@ -226,7 +191,16 @@ module.exports = {
       deployer: "0x3fab184622dc19b6109349b94811493bf2a45362",
       funding: "1000000000000000000000",
       signedTx:
+        // eslint-disable-next-line max-len
         "0xf8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222",
     },
+  },
+
+  docgen: {
+    pages: "files",
+    outputDir: "docs/contracts",
+    clear: true,
+    runOnCompile: false,
+    exclude: ["test", "utils", "hardhat-dependency-compiler"],
   },
 };
