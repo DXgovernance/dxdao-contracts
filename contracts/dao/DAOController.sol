@@ -291,7 +291,7 @@ contract DAOController is Initializable {
     }
 
     /**
-     * @dev Return whether a scheme is registered or not
+     * @dev Returns whether a scheme is registered or not
      * @param _scheme The address of the scheme
      * @return isRegistered Whether a scheme is registered or not
      */
@@ -300,7 +300,7 @@ contract DAOController is Initializable {
     }
 
     /**
-     * @dev Return scheme paramsHash
+     * @dev Returns scheme paramsHash
      * @param _scheme The address of the scheme
      * @return paramsHash scheme.paramsHash
      */
@@ -309,7 +309,7 @@ contract DAOController is Initializable {
     }
 
     /**
-     * @dev Return if scheme can manage schemes
+     * @dev Returns if scheme can manage schemes
      * @param _scheme The address of the scheme
      * @return canManageSchemes scheme.canManageSchemes
      */
@@ -318,7 +318,7 @@ contract DAOController is Initializable {
     }
 
     /**
-     * @dev Return if scheme can make avatar calls
+     * @dev Returns if scheme can make avatar calls
      * @param _scheme The address of the scheme
      * @return canMakeAvatarCalls scheme.canMakeAvatarCalls
      */
@@ -327,7 +327,7 @@ contract DAOController is Initializable {
     }
 
     /**
-     * @dev Return if scheme can change reputation
+     * @dev Returns if scheme can change reputation
      * @param _scheme The address of the scheme
      * @return canChangeReputation scheme.canChangeReputation
      */
@@ -336,7 +336,7 @@ contract DAOController is Initializable {
     }
 
     /**
-     * @dev Return the amount of schemes with manage schemes permission
+     * @dev Returns the amount of schemes with manage schemes permission
      * @return schemesWithManageSchemesPermissionCount Schemes with manage schemes permission count
      */
     function getSchemesWithManageSchemesPermissionsCount()

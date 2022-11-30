@@ -387,7 +387,7 @@ _Transfer ownership of dao reputation_
 function isSchemeRegistered(address _scheme) external view returns (bool isRegistered)
 ```
 
-_Return whether a scheme is registered or not_
+_Returns whether a scheme is registered or not_
 
 #### Parameters
 
@@ -407,7 +407,7 @@ _Return whether a scheme is registered or not_
 function getSchemeParameters(address _scheme) external view returns (bytes32 paramsHash)
 ```
 
-_Return scheme paramsHash_
+_Returns scheme paramsHash_
 
 #### Parameters
 
@@ -427,7 +427,7 @@ _Return scheme paramsHash_
 function getSchemeCanManageSchemes(address _scheme) external view returns (bool canManageSchemes)
 ```
 
-_Return if scheme can manage schemes_
+_Returns if scheme can manage schemes_
 
 #### Parameters
 
@@ -447,7 +447,7 @@ _Return if scheme can manage schemes_
 function getSchemeCanMakeAvatarCalls(address _scheme) external view returns (bool canMakeAvatarCalls)
 ```
 
-_Return if scheme can make avatar calls_
+_Returns if scheme can make avatar calls_
 
 #### Parameters
 
@@ -467,7 +467,7 @@ _Return if scheme can make avatar calls_
 function getSchemeCanChangeReputation(address _scheme) external view returns (bool canChangeReputation)
 ```
 
-_Return if scheme can change reputation_
+_Returns if scheme can change reputation_
 
 #### Parameters
 
@@ -487,7 +487,7 @@ _Return if scheme can change reputation_
 function getSchemesWithManageSchemesPermissionsCount() external view returns (uint256 schemesWithManageSchemesPermissionCount)
 ```
 
-_Return the amount of schemes with manage schemes permission_
+_Returns the amount of schemes with manage schemes permission_
 
 #### Return Values
 

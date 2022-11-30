@@ -649,7 +649,7 @@ _Check if a proposal should be shifted to boosted phase._
 function threshold(bytes32 _paramsHash, bytes32 _schemeId) public view returns (uint256 schemeThreshold)
 ```
 
-_Return the scheme's score threshold which is required by a proposal to shift to boosted state.
+_Returns the scheme's score threshold which is required by a proposal to shift to boosted state.
 This threshold is dynamically set and it depend on the number of boosted proposal._
 
 #### Parameters
@@ -997,7 +997,7 @@ _Hash the vote data that is used for signatures_
 function score(bytes32 _proposalId) public view returns (uint256 proposalScore)
 ```
 
-_Return the proposal score_
+_Returns the proposal score_
 
 #### Parameters
 
@@ -1037,7 +1037,7 @@ _Check if the proposal has been decided, and if so, execute the proposal_
 function _score(bytes32 _proposalId) internal view returns (uint256 proposalScore)
 ```
 
-_Return the proposal score (Confidence level)
+_Returns the proposal score (Confidence level)
 For dual choice proposal S = (S+)/(S-)_
 
 #### Parameters
@@ -1178,7 +1178,7 @@ _Returns proposals times variables._
 function getProposalSchemeId(bytes32 _proposalId) external view returns (bytes32 schemeId)
 ```
 
-_Return the schemeId for a given proposal_
+_Returns the schemeId for a given proposal_
 
 #### Parameters
 
@@ -1198,7 +1198,7 @@ _Return the schemeId for a given proposal_
 function getStaker(bytes32 _proposalId, address _staker) external view returns (uint256 vote, uint256 amount)
 ```
 
-_Return the vote and stake amount for a given proposal and staker_
+_Returns the vote and stake amount for a given proposal and staker_
 
 #### Parameters
 
@@ -1255,7 +1255,7 @@ _Returns the number of choices possible in this proposal_
 function proposalStatus(bytes32 _proposalId) external view returns (uint256 preBoostedVotesNo, uint256 preBoostedVotesYes, uint256 totalStakesNo, uint256 totalStakesYes)
 ```
 
-_Return the total votes and stakes for a given proposal_
+_Returns the total votes and stakes for a given proposal_
 
 #### Parameters
 
@@ -1278,7 +1278,7 @@ _Return the total votes and stakes for a given proposal_
 function proposalStatusWithVotes(bytes32 _proposalId) external view returns (uint256 votesNo, uint256 votesYes, uint256 preBoostedVotesNo, uint256 preBoostedVotesYes, uint256 totalStakesNo, uint256 totalStakesYes)
 ```
 
-_Return the total votes, preBoostedVotes and stakes for a given proposal_
+_Returns the total votes, preBoostedVotes and stakes for a given proposal_
 
 #### Parameters
 
@@ -1303,7 +1303,7 @@ _Return the total votes, preBoostedVotes and stakes for a given proposal_
 function voteStake(bytes32 _proposalId, uint256 _vote) external view returns (uint256 totalStakeAmount)
 ```
 
-_Return the amount stakes for a given proposal and vote_
+_Returns the amount stakes for a given proposal and vote_
 
 #### Parameters
 
@@ -1324,7 +1324,7 @@ _Return the amount stakes for a given proposal and vote_
 function winningVote(bytes32 _proposalId) external view returns (uint256 winningVote)
 ```
 
-_Return the winningVote for a given proposal_
+_Returns the winningVote for a given proposal_
 
 #### Parameters
 
@@ -1344,7 +1344,7 @@ _Return the winningVote for a given proposal_
 function state(bytes32 _proposalId) external view returns (enum DXDVotingMachine.ProposalState state)
 ```
 
-_Return the state for a given proposal_
+_Returns the state for a given proposal_
 
 #### Parameters
 

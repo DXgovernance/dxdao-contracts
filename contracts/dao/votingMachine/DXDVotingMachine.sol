@@ -91,7 +91,7 @@ contract DXDVotingMachine {
         address callbacks; // Should fulfill voting callbacks interface.
         ProposalState state;
         ExecutionState executionState;
-        uint256 winningVote; // She winning vote.
+        uint256 winningVote; // The winning vote.
         address proposer;
         // The proposal boosted period limit . it is updated for the case of quiteWindow mode.
         uint256 currentBoostedVotePeriodLimit;
@@ -529,7 +529,7 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Return the scheme's score threshold which is required by a proposal to shift to boosted state.
+     * @dev Returns the scheme's score threshold which is required by a proposal to shift to boosted state.
      * This threshold is dynamically set and it depend on the number of boosted proposal.
      * @param _schemeId The scheme identifier
      * @param _paramsHash The scheme parameters hash
@@ -958,7 +958,7 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Return the proposal score
+     * @dev Returns the proposal score
      * @param _proposalId The ID of the proposal
      * @return proposalScore Proposal score as real number.
      */
@@ -1117,7 +1117,7 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Return the proposal score (Confidence level)
+     * @dev Returns the proposal score (Confidence level)
      * For dual choice proposal S = (S+)/(S-)
      * @param _proposalId The ID of the proposal
      * @return proposalScore Proposal score as real number.
@@ -1308,7 +1308,7 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Return the schemeId for a given proposal
+     * @dev Returns the schemeId for a given proposal
      * @param _proposalId ID of the proposal
      * @return schemeId Scheme identifier
      */
@@ -1317,7 +1317,7 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Return the vote and stake amount for a given proposal and staker
+     * @dev Returns the vote and stake amount for a given proposal and staker
      * @param _proposalId The ID of the proposal
      * @param _staker Staker address
      * @return vote Proposal staker vote
@@ -1346,7 +1346,7 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Return the total votes and stakes for a given proposal
+     * @dev Returns the total votes and stakes for a given proposal
      * @param _proposalId The ID of the proposal
      * @return preBoostedVotesNo preBoostedVotes NO
      * @return preBoostedVotesYes preBoostedVotes YES
@@ -1372,7 +1372,7 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Return the total votes, preBoostedVotes and stakes for a given proposal
+     * @dev Returns the total votes, preBoostedVotes and stakes for a given proposal
      * @param _proposalId The ID of the proposal
      * @return votesNo Proposal votes NO
      * @return votesYes Proposal votes YES
@@ -1404,7 +1404,7 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Return the amount stakes for a given proposal and vote
+     * @dev Returns the amount stakes for a given proposal and vote
      * @param _proposalId The ID of the proposal
      * @param _vote Vote number
      * @return totalStakeAmount Total stake amount
@@ -1414,7 +1414,7 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Return the winningVote for a given proposal
+     * @dev Returns the winningVote for a given proposal
      * @param _proposalId The ID of the proposal
      * @return winningVote Winning vote for given proposal
      */
@@ -1423,7 +1423,7 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Return the state for a given proposal
+     * @dev Returns the state for a given proposal
      * @param _proposalId The ID of the proposal
      * @return state ProposalState proposal state
      */
