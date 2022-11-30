@@ -84,6 +84,8 @@ uint256 maxRepPercentageChange
 bool executingProposal
 ```
 
+Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
+
 ### ProposalStateChange
 
 ```solidity
@@ -113,22 +115,6 @@ error Scheme__ControllerAddressCannotBeZero()
 ```
 
 Emitted if controller address is zero
-
-### Scheme__MaxSecondsForExecutionTooLow
-
-```solidity
-error Scheme__MaxSecondsForExecutionTooLow()
-```
-
-Emitted if maxSecondsForExecution is set lower than 86400
-
-### Scheme__SetMaxSecondsForExecutionInvalidCaller
-
-```solidity
-error Scheme__SetMaxSecondsForExecutionInvalidCaller()
-```
-
-Emitted when setMaxSecondsForExecution is being called from an address different than the avatar or the scheme
 
 ### Scheme_InvalidParameterArrayLength
 
@@ -192,18 +178,18 @@ Emitted if the ERC20 limits are exceeded
 function initialize(address payable _avatar, address _votingMachine, address _controller, address _permissionRegistry, string _schemeName, uint256 _maxRepPercentageChange) external
 ```
 
-_initialize_
+_Initialize Scheme contract_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _avatar | address payable | the avatar address |
-| _votingMachine | address | the voting machine address |
+| _avatar | address payable | The avatar address |
+| _votingMachine | address | The voting machine address |
 | _controller | address | The controller address |
 | _permissionRegistry | address | The address of the permission registry contract |
-| _schemeName | string |  |
-| _maxRepPercentageChange | uint256 | The maximum percentage allowed to be changed in REP total supply after proposal execution |
+| _schemeName | string | The name of the scheme |
+| _maxRepPercentageChange | uint256 | The maximum percentage allowed to be changed in REP total supply after proposal execution |
 
 ### proposeCalls
 
@@ -217,44 +203,44 @@ _Propose calls to be executed, the calls have to be allowed by the permission re
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _to | address[] | - The addresses to call |
-| _callData | bytes[] | - The abi encode data for the calls |
-| _value | uint256[] | value(ETH) to transfer with the calls |
+| _to | address[] | The addresses to call |
+| _callData | bytes[] | The abi encode data for the calls |
+| _value | uint256[] | Value (ETH) to transfer with the calls |
 | _totalOptions | uint256 | The amount of options to be voted on |
-| _title | string | title of proposal |
-| _descriptionHash | string | proposal description hash |
+| _title | string | Title of proposal |
+| _descriptionHash | string | Proposal description hash |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | id which represents the proposal |
+| proposalId | bytes32 | ID which represents the proposal |
 
 ### executeProposal
 
 ```solidity
-function executeProposal(bytes32 _proposalId, uint256 _winningOption) public virtual returns (bool)
+function executeProposal(bytes32 _proposalId, uint256 _winningOption) public virtual returns (bool success)
 ```
 
-_execution of proposals, can only be called by the voting machine in which the vote is held._
+_Execution of proposals, can only be called by the voting machine in which the vote is held._
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | the ID of the voting in the voting machine |
+| _proposalId | bytes32 | The ID of the voting in the voting machine |
 | _winningOption | uint256 | The winning option in the voting machine |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | bool success |
+| success | bool | Success of the execution |
 
 ### finishProposal
 
 ```solidity
-function finishProposal(bytes32 _proposalId, uint256 _winningOption) public virtual returns (bool)
+function finishProposal(bytes32 _proposalId, uint256 _winningOption) public virtual returns (bool success)
 ```
 
 _Finish a proposal and set the final state in storage_
@@ -263,19 +249,19 @@ _Finish a proposal and set the final state in storage_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | the ID of the voting in the voting machine |
+| _proposalId | bytes32 | The ID of the voting in the voting machine |
 | _winningOption | uint256 | The winning option in the voting machine |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | bool success |
+| success | bool | Proposal finish successfully |
 
 ### getProposal
 
 ```solidity
-function getProposal(bytes32 proposalId) external view returns (struct Scheme.Proposal)
+function getProposal(bytes32 proposalId) external view returns (struct Scheme.Proposal proposal)
 ```
 
 _Get the information of a proposal by id_
@@ -284,12 +270,18 @@ _Get the information of a proposal by id_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | the ID of the proposal |
+| proposalId | bytes32 | The ID of the proposal |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposal | struct Scheme.Proposal | The proposal for given `proposalId` |
 
 ### getProposalByIndex
 
 ```solidity
-function getProposalByIndex(uint256 proposalIndex) external view returns (struct Scheme.Proposal)
+function getProposalByIndex(uint256 proposalIndex) external view returns (struct Scheme.Proposal proposal)
 ```
 
 _Get the information of a proposal by index_
@@ -298,12 +290,18 @@ _Get the information of a proposal by index_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalIndex | uint256 | the index of the proposal in the proposals list |
+| proposalIndex | uint256 | The index of the proposal in the proposals list |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposal | struct Scheme.Proposal | The proposal located at given `proposalIndex` |
 
 ### getFuncSignature
 
 ```solidity
-function getFuncSignature(bytes data) public pure returns (bytes4)
+function getFuncSignature(bytes data) public pure returns (bytes4 functionSignature)
 ```
 
 _Get call data signature_
@@ -314,21 +312,39 @@ _Get call data signature_
 | ---- | ---- | ----------- |
 | data | bytes | The bytes data of the data to get the signature |
 
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| functionSignature | bytes4 | The signature for given data hash |
+
 ### getOrganizationProposalsLength
 
 ```solidity
-function getOrganizationProposalsLength() external view returns (uint256)
+function getOrganizationProposalsLength() external view returns (uint256 proposalsLength)
 ```
 
 _Get the proposals length_
 
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposalsLength | uint256 | The amount of proposals |
+
 ### getOrganizationProposals
 
 ```solidity
-function getOrganizationProposals() external view returns (bytes32[])
+function getOrganizationProposals() external view returns (bytes32[] proposalsIds)
 ```
 
 _Get the proposals ids_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposalsIds | bytes32[] | List containing all proposals ids |
 
 ### getSchemeType
 

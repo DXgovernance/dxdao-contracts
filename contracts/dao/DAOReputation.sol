@@ -11,38 +11,51 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20Snapshot
  * It uses a snapshot mechanism to keep track of the reputation at the moment of
  * each modification of the supply of the token (every mint an burn).
  */
-
-///@notice Error when trying to transfer reputation
-error DAOReputation__NoTransfer();
-
 contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     event Mint(address indexed _to, uint256 _amount);
     event Burn(address indexed _from, uint256 _amount);
+
+    /// @notice Error when trying to transfer reputation
+    error DAOReputation__NoTransfer();
 
     function initialize(string memory name, string memory symbol) external initializer {
         __ERC20_init(name, symbol);
         __Ownable_init();
     }
 
-    /**
-     * @dev Not allow the transfer of tokens
-     */
-    function _transfer(address sender, address recipient, uint256 amount) internal virtual override {
+    /// @dev Not allow the transfer of tokens
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) internal virtual override {
         revert DAOReputation__NoTransfer();
     }
 
-    /// @notice Generates `_amount` reputation that are assigned to `_account`
-    /// @param _account The address that will be assigned the new reputation
-    /// @param _amount The quantity of reputation generated
-    /// @return True if the reputation are generated correctly
-    function mint(address _account, uint256 _amount) external onlyOwner returns (bool) {
+    /**
+     * @dev Generates `_amount` reputation that are assigned to `_account`
+     * @param _account The address that will be assigned the new reputation
+     * @param _amount The quantity of reputation generated
+     * @return success True if the reputation are generated correctly
+     */
+    function mint(address _account, uint256 _amount) external onlyOwner returns (bool success) {
         _mint(_account, _amount);
         _snapshot();
         emit Mint(_account, _amount);
         return true;
     }
 
-    function mintMultiple(address[] memory _accounts, uint256[] memory _amount) external onlyOwner returns (bool) {
+    /**
+     * @dev Mint reputation for multiple accounts
+     * @param _accounts The accounts that will be assigned the new reputation
+     * @param _amount The quantity of reputation generated for each account
+     * @return success True if the reputation are generated correctly
+     */
+    function mintMultiple(address[] memory _accounts, uint256[] memory _amount)
+        external
+        onlyOwner
+        returns (bool success)
+    {
         for (uint256 i = 0; i < _accounts.length; i++) {
             _mint(_accounts[i], _amount[i]);
             emit Mint(_accounts[i], _amount[i]);
@@ -50,18 +63,30 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         return true;
     }
 
-    /// @notice Burns `_amount` reputation from `_account`
-    /// @param _account The address that will lose the reputation
-    /// @param _amount The quantity of reputation to burn
-    /// @return True if the reputation are burned correctly
-    function burn(address _account, uint256 _amount) external onlyOwner returns (bool) {
+    /**
+     * @dev Burns `_amount` reputation from `_account`
+     * @param _account The address that will lose the reputation
+     * @param _amount The quantity of reputation to burn
+     * @return success True if the reputation are burned correctly
+     */
+    function burn(address _account, uint256 _amount) external onlyOwner returns (bool success) {
         _burn(_account, _amount);
         _snapshot();
         emit Burn(_account, _amount);
         return true;
     }
 
-    function burnMultiple(address[] memory _accounts, uint256[] memory _amount) external onlyOwner returns (bool) {
+    /**
+     * @dev Burn reputation from multiple accounts
+     * @param _accounts The accounts that will lose the reputation
+     * @param _amount The quantity of reputation to burn for each account
+     * @return success True if the reputation are generated correctly
+     */
+    function burnMultiple(address[] memory _accounts, uint256[] memory _amount)
+        external
+        onlyOwner
+        returns (bool success)
+    {
         for (uint256 i = 0; i < _accounts.length; i++) {
             _burn(_accounts[i], _amount[i]);
             emit Burn(_accounts[i], _amount[i]);
@@ -69,9 +94,7 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         return true;
     }
 
-    /**
-     * @dev Get the current snapshotId
-     */
+    /// @dev Get the current snapshotId
     function getCurrentSnapshotId() public view returns (uint256) {
         return _getCurrentSnapshotId();
     }

@@ -71,7 +71,7 @@ contract("DAOController", function (accounts) {
 
   it("Should initialize and set correct default scheme params", async function () {
     const schemesWithManageSchemesPermission =
-      await controller.getSchemesCountWithManageSchemesPermissions();
+      await controller.getSchemesWithManageSchemesPermissionsCount();
     const defaultSchemeParamsHash = await controller.getSchemeParameters(
       schemeAddress
     );
@@ -124,7 +124,7 @@ contract("DAOController", function (accounts) {
     let currentSchemesWithManagePermission = [schemeAddress, newSchemeAddress]
       .length;
     const schemesWithManageSchemesPermission =
-      await controller.getSchemesCountWithManageSchemesPermissions();
+      await controller.getSchemesWithManageSchemesPermissionsCount();
     expect(schemesWithManageSchemesPermission.toNumber()).to.equal(
       currentSchemesWithManagePermission
     );
@@ -139,7 +139,7 @@ contract("DAOController", function (accounts) {
     );
 
     const schemesWithManageSchemesPermissionAfterChange =
-      await controller.getSchemesCountWithManageSchemesPermissions();
+      await controller.getSchemesWithManageSchemesPermissionsCount();
     expect(schemesWithManageSchemesPermissionAfterChange.toNumber()).to.equal(
       currentSchemesWithManagePermission - 1
     );
@@ -546,7 +546,7 @@ contract("DAOController", function (accounts) {
 
     expect(
       (
-        await controller.getSchemesCountWithManageSchemesPermissions()
+        await controller.getSchemesWithManageSchemesPermissionsCount()
       ).toNumber()
     ).to.equal(2);
 
@@ -797,7 +797,7 @@ contract("DAOController", function (accounts) {
     );
 
     let schemesWithManageSchemesPermission =
-      await controller.getSchemesCountWithManageSchemesPermissions();
+      await controller.getSchemesWithManageSchemesPermissionsCount();
     expect(schemesWithManageSchemesPermission.toNumber()).to.equal(1);
 
     await controller.registerScheme(
@@ -810,7 +810,7 @@ contract("DAOController", function (accounts) {
     );
 
     schemesWithManageSchemesPermission =
-      await controller.getSchemesCountWithManageSchemesPermissions();
+      await controller.getSchemesWithManageSchemesPermissionsCount();
     expect(schemesWithManageSchemesPermission.toNumber()).to.equal(2);
   });
 });

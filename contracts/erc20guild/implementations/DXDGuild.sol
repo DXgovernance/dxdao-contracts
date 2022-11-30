@@ -17,8 +17,9 @@ contract DXDGuild is ERC20GuildUpgradeable, OwnableUpgradeable {
     /// @param _token The ERC20 token that will be used as source of voting power
     /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     /// @param _timeForExecution The amount of time in seconds that a proposal action will have to execute successfully
-    /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
-    // action
+    // solhint-disable-next-line max-line-length
+    /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal action
+    // solhint-disable-next-line max-line-length
     /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
     /// @param _voteGas The amount of gas in wei unit used for vote refunds
     /// @param _maxGasPrice The maximum gas price used for vote refunds

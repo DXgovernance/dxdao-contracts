@@ -2,11 +2,15 @@
 
 ## DAOAvatar
 
+_The avatar, representing the DAO, owned by the DAO, controls the reputation and funds of the DAO._
+
 ### CallExecuted
 
 ```solidity
 event CallExecuted(address _to, bytes _data, uint256 _value, bool _success)
 ```
+
+Emitted when the call was executed
 
 ### receive
 
@@ -20,10 +24,18 @@ receive() external payable
 function initialize(address _owner) public
 ```
 
+_Initialize the avatar contract._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _owner | address | The address of the owner |
+
 ### executeCall
 
 ```solidity
-function executeCall(address _to, bytes _data, uint256 _value) public returns (bool, bytes)
+function executeCall(address _to, bytes _data, uint256 _value) public returns (bool success, bytes data)
 ```
 
 _Perform a call to an arbitrary contract_
@@ -40,6 +52,6 @@ _Perform a call to an arbitrary contract_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | (bool, bytes) (Success or fail, Call data returned) |
-| [1] | bytes |  |
+| success | bool | Whether call was executed successfully or not |
+| data | bytes | Call data returned |
 

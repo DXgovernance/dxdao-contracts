@@ -110,7 +110,7 @@ contract("DAOReputation", async accounts => {
       ownableAccessError
     );
     await expectRevert(
-      daoReputation.burnMultiple(addresses, 100, { from: notTheOwner }),
+      daoReputation.burnMultiple(addresses, [1, 2, 3], { from: notTheOwner }),
       ownableAccessError
     );
   });
