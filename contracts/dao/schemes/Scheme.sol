@@ -95,6 +95,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @param _votingMachine The voting machine address
      * @param _controller The controller address
      * @param _permissionRegistry The address of the permission registry contract
+     * @param _schemeName The name of the scheme
      * @param _maxRepPercentageChange The maximum percentage allowed to be changed in REP total supply after proposal execution
      */
     function initialize(

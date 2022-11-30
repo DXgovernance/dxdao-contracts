@@ -188,7 +188,7 @@ _Initialize Scheme contract_
 | _votingMachine | address | The voting machine address |
 | _controller | address | The controller address |
 | _permissionRegistry | address | The address of the permission registry contract |
-| _schemeName | string |  |
+| _schemeName | string | The name of the scheme |
 | _maxRepPercentageChange | uint256 | The maximum percentage allowed to be changed in REP total supply after proposal execution |
 
 ### proposeCalls
