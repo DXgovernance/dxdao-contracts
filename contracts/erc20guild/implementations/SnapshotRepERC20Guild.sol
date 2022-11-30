@@ -25,8 +25,9 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
     /// @param _token The ERC20 token that will be used as source of voting power
     /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     /// @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
-    /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
-    // action
+    // solhint-disable-next-line max-line-length
+    /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal action
+    // solhint-disable-next-line max-line-length
     /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
     /// @param _name The name of the ERC20Guild
     /// @param _voteGas The amount of gas in wei unit used for vote refunds
@@ -68,11 +69,7 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
     /// @param proposalId The id of the proposal to set the vote
     /// @param option The proposal option to be voted
     /// @param votingPower The votingPower to use in the proposal
-    function setVote(
-        bytes32 proposalId,
-        uint256 option,
-        uint256 votingPower
-    ) public virtual override {
+    function setVote(bytes32 proposalId, uint256 option, uint256 votingPower) public virtual override {
         require(
             proposals[proposalId].endTime > block.timestamp,
             "SnapshotRepERC20Guild: Proposal ended, cannot be voted"
@@ -237,12 +234,10 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
     /// @dev Get the voting power of multiple addresses at a certain snapshotId
     /// @param accounts The addresses of the accounts
     /// @param snapshotIds The snapshotIds to be used
-    function votingPowerOfMultipleAt(address[] memory accounts, uint256[] memory snapshotIds)
-        external
-        view
-        virtual
-        returns (uint256[] memory)
-    {
+    function votingPowerOfMultipleAt(
+        address[] memory accounts,
+        uint256[] memory snapshotIds
+    ) external view virtual returns (uint256[] memory) {
         uint256[] memory votes = new uint256[](accounts.length);
         for (uint256 i = 0; i < accounts.length; i++) votes[i] = votingPowerOfAt(accounts[i], snapshotIds[i]);
         return votes;
