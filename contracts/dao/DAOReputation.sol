@@ -24,7 +24,11 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     }
 
     /// @dev Not allow the transfer of tokens
-    function _transfer(address sender, address recipient, uint256 amount) internal virtual override {
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) internal virtual override {
         revert DAOReputation__NoTransfer();
     }
 
@@ -47,10 +51,11 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      * @param _amount The quantity of reputation generated for each account
      * @return success True if the reputation are generated correctly
      */
-    function mintMultiple(
-        address[] memory _accounts,
-        uint256[] memory _amount
-    ) external onlyOwner returns (bool success) {
+    function mintMultiple(address[] memory _accounts, uint256[] memory _amount)
+        external
+        onlyOwner
+        returns (bool success)
+    {
         for (uint256 i = 0; i < _accounts.length; i++) {
             _mint(_accounts[i], _amount[i]);
             emit Mint(_accounts[i], _amount[i]);
@@ -77,10 +82,11 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      * @param _amount The quantity of reputation to burn for each account
      * @return success True if the reputation are generated correctly
      */
-    function burnMultiple(
-        address[] memory _accounts,
-        uint256[] memory _amount
-    ) external onlyOwner returns (bool success) {
+    function burnMultiple(address[] memory _accounts, uint256[] memory _amount)
+        external
+        onlyOwner
+        returns (bool success)
+    {
         for (uint256 i = 0; i < _accounts.length; i++) {
             _burn(_accounts[i], _amount[i]);
             emit Burn(_accounts[i], _amount[i]);

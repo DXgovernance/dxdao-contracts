@@ -472,10 +472,10 @@ contract DXDVotingMachine {
      * @return redeemedAmount Redeem token amount
      * @return potentialAmount Potential redeem token amount (if there is enough tokens bounty at the dao owner of the scheme )
      */
-    function redeemDaoBounty(
-        bytes32 _proposalId,
-        address _beneficiary
-    ) public returns (uint256 redeemedAmount, uint256 potentialAmount) {
+    function redeemDaoBounty(bytes32 _proposalId, address _beneficiary)
+        public
+        returns (uint256 redeemedAmount, uint256 potentialAmount)
+    {
         Proposal storage proposal = proposals[_proposalId];
         if (proposal.state != ProposalState.ExecutedInQueue && proposal.state != ProposalState.ExecutedInBoost) {
             revert DXDVotingMachine__WrongProposalStateToRedeemDaoBounty();
@@ -543,7 +543,7 @@ contract DXDVotingMachine {
             power = params.limitExponentValue;
         }
 
-        return params.thresholdConst ** power;
+        return params.thresholdConst**power;
     }
 
     /**
@@ -553,7 +553,11 @@ contract DXDVotingMachine {
      * @param _amount The betting amount
      * @return proposalExecuted true if the proposal was executed, false otherwise.
      */
-    function stake(bytes32 _proposalId, uint256 _vote, uint256 _amount) external returns (bool proposalExecuted) {
+    function stake(
+        bytes32 _proposalId,
+        uint256 _vote,
+        uint256 _amount
+    ) external returns (bool proposalExecuted) {
         return _stake(_proposalId, _vote, _amount, msg.sender);
     }
 
@@ -597,7 +601,12 @@ contract DXDVotingMachine {
      * @param _voteGas The amount of gas that will be used as vote cost
      * @param _maxGasPrice The maximum amount of gas price to be paid, if the gas used is higher than this value only a portion of the total gas would be refunded
      */
-    function setSchemeRefund(address avatar, address scheme, uint256 _voteGas, uint256 _maxGasPrice) external payable {
+    function setSchemeRefund(
+        address avatar,
+        address scheme,
+        uint256 _voteGas,
+        uint256 _maxGasPrice
+    ) external payable {
         bytes32 schemeId;
         if (msg.sender == scheme) {
             schemeId = keccak256(abi.encodePacked(msg.sender, avatar));
@@ -666,10 +675,11 @@ contract DXDVotingMachine {
      * @return voterVote The voters vote
      * @return voterReputation Amount of reputation committed by _voter to _proposalId
      */
-    function voteInfo(
-        bytes32 _proposalId,
-        address _voter
-    ) external view returns (uint256 voterVote, uint256 voterReputation) {
+    function voteInfo(bytes32 _proposalId, address _voter)
+        external
+        view
+        returns (uint256 voterVote, uint256 voterReputation)
+    {
         Voter memory voter = proposalVoters[_proposalId][_voter];
         return (voter.vote, voter.reputation);
     }
@@ -1343,12 +1353,15 @@ contract DXDVotingMachine {
      * @return totalStakesNo Total stakes NO
      * @return totalStakesYes Total stakes YES
      */
-    function proposalStatus(
-        bytes32 _proposalId
-    )
+    function proposalStatus(bytes32 _proposalId)
         external
         view
-        returns (uint256 preBoostedVotesNo, uint256 preBoostedVotesYes, uint256 totalStakesNo, uint256 totalStakesYes)
+        returns (
+            uint256 preBoostedVotesNo,
+            uint256 preBoostedVotesYes,
+            uint256 totalStakesNo,
+            uint256 totalStakesYes
+        )
     {
         return (
             proposalPreBoostedVotes[_proposalId][NO],
@@ -1368,9 +1381,7 @@ contract DXDVotingMachine {
      * @return totalStakesNo Proposal total stakes NO
      * @return totalStakesYes Proposal total stakes YES
      */
-    function proposalStatusWithVotes(
-        bytes32 _proposalId
-    )
+    function proposalStatusWithVotes(bytes32 _proposalId)
         external
         view
         returns (

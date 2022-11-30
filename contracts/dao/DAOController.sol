@@ -120,7 +120,11 @@ contract DAOController is Initializable {
      * @param _reputationToken The address of the reputation token
      * @param _paramsHash A hashed configuration of the usage of the default scheme created on initialization
      */
-    function initialize(address _scheme, address _reputationToken, bytes32 _paramsHash) public initializer {
+    function initialize(
+        address _scheme,
+        address _reputationToken,
+        bytes32 _paramsHash
+    ) public initializer {
         schemes[_scheme] = Scheme({
             paramsHash: _paramsHash,
             isRegistered: true,
@@ -178,9 +182,12 @@ contract DAOController is Initializable {
      * @param _scheme The address of the scheme to unregister/delete from `schemes` mapping
      * @return success Success of the operation
      */
-    function unregisterScheme(
-        address _scheme
-    ) external onlyRegisteredScheme onlyRegisteringSchemes returns (bool success) {
+    function unregisterScheme(address _scheme)
+        external
+        onlyRegisteredScheme
+        onlyRegisteringSchemes
+        returns (bool success)
+    {
         Scheme memory scheme = schemes[_scheme];
 
         //check if the scheme is registered
@@ -274,9 +281,12 @@ contract DAOController is Initializable {
      * @dev Transfer ownership of dao reputation
      * @param _newOwner The new owner of the reputation token
      */
-    function transferReputationOwnership(
-        address _newOwner
-    ) external onlyRegisteringSchemes onlyAvatarCallScheme onlyChangingReputation {
+    function transferReputationOwnership(address _newOwner)
+        external
+        onlyRegisteringSchemes
+        onlyAvatarCallScheme
+        onlyChangingReputation
+    {
         reputationToken.transferOwnership(_newOwner);
     }
 
@@ -385,10 +395,11 @@ contract DAOController is Initializable {
      * @param _end Last index of batch (included). Zero will return all
      * @return activeProposalsArray List of (`ProposalAndScheme`) active proposals within the range `_start` to `_end`..
      */
-    function getActiveProposals(
-        uint256 _start,
-        uint256 _end
-    ) external view returns (ProposalAndScheme[] memory activeProposalsArray) {
+    function getActiveProposals(uint256 _start, uint256 _end)
+        external
+        view
+        returns (ProposalAndScheme[] memory activeProposalsArray)
+    {
         return _getProposalsBatchRequest(_start, _end, activeProposals);
     }
 
@@ -397,10 +408,11 @@ contract DAOController is Initializable {
      * @param _start index to start batching (included).
      * @param _end last index of batch (included). Zero will return all
      */
-    function getInactiveProposals(
-        uint256 _start,
-        uint256 _end
-    ) external view returns (ProposalAndScheme[] memory inactiveProposalsArray) {
+    function getInactiveProposals(uint256 _start, uint256 _end)
+        external
+        view
+        returns (ProposalAndScheme[] memory inactiveProposalsArray)
+    {
         return _getProposalsBatchRequest(_start, _end, inactiveProposals);
     }
 
