@@ -1,5 +1,6 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert, expect } from "chai";
+import { constants } from "../../helpers";
 const { createProposal } = require("../../helpers/guild");
 
 const { Identity } = require("@semaphore-protocol/identity");
@@ -17,7 +18,7 @@ const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 
 require("chai").should();
 
-const proposalTime = 30;
+const proposalTime = 240;
 const votingPowerPercentageForProposalExecution = 5000; // 50%
 const votingPowerPercentageForProposalCreation = 1000; // 10%
 const wasmFilePath = "test/utils/semaphore/semaphore.wasm";
@@ -39,7 +40,7 @@ contract("AnonERC20Guild", function (accounts) {
           publicCommitment: "",
         };
         identities[i].publicCommitment =
-          identities[i].privateCommitment.generateCommitment();
+          identities[i].privateCommitment.getCommitment();
       }
       return identities;
     }
@@ -80,7 +81,7 @@ contract("AnonERC20Guild", function (accounts) {
     await anonERC20Guild.initialize(
       guildToken.address,
       proposalTime,
-      30, // _timeForExecution,
+      proposalTime / 2,
       votingPowerPercentageForProposalExecution,
       votingPowerPercentageForProposalCreation,
       "AnonERC20 Guild",
@@ -194,7 +195,7 @@ contract("AnonERC20Guild", function (accounts) {
 
       assert.equal(
         (await anonERC20Guild.getProposal(burnProposalId)).state,
-        "3"
+        constants.GUILD_PROPOSAL_STATES.Executed
       );
       const proposalId3 = await createProposal({
         guild: anonERC20Guild,

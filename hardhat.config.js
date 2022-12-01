@@ -203,4 +203,8 @@ module.exports = {
     runOnCompile: false,
     exclude: ["test", "utils", "hardhat-dependency-compiler"],
   },
+
+  mocha: {
+    timeout: 180000,
+  },
 };
