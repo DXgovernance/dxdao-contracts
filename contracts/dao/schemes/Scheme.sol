@@ -157,9 +157,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         // Get the proposal id that will be used from the voting machine
         bytes32 proposalId = votingMachine.propose(_totalOptions, voteParams, msg.sender, address(avatar));
 
-        // TODO: Since we removed this fn from controller. Should we replace with something here?
-        // controller.startProposal(proposalId);
-
         // Add the proposal to the proposals mapping, proposals list and proposals information mapping
         proposals[proposalId] = Proposal({
             to: _to,
@@ -275,8 +272,6 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             proposal.state = ProposalState.Passed;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.Passed));
         }
-        // TODO: Since we removed this fn from controller. Should we replace with something here?
-        // controller.endProposal(_proposalId);
         return true;
     }
 
