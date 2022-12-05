@@ -58,6 +58,7 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     {
         for (uint256 i = 0; i < _accounts.length; i++) {
             _mint(_accounts[i], _amount[i]);
+            _snapshot();
             emit Mint(_accounts[i], _amount[i]);
         }
         return true;
@@ -89,6 +90,7 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     {
         for (uint256 i = 0; i < _accounts.length; i++) {
             _burn(_accounts[i], _amount[i]);
+            _snapshot();
             emit Burn(_accounts[i], _amount[i]);
         }
         return true;
