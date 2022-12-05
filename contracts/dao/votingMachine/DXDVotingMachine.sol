@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "./DXDVotingMachineCallbacksInterface.sol";
+import "./IDXDVotingMachineCallbacks.sol";
 import "./ProposalExecuteInterface.sol";
 
 /**
@@ -799,7 +799,7 @@ contract DXDVotingMachine {
         Proposal storage proposal = proposals[_proposalId];
 
         // Check voter has enough reputation:
-        uint256 reputation = DXDVotingMachineCallbacksInterface(proposal.callbacks).reputationOf(_voter, _proposalId);
+        uint256 reputation = IDXDVotingMachineCallbacks(proposal.callbacks).reputationOf(_voter, _proposalId);
 
         if (reputation <= 0) {
             revert DXDVotingMachine__VoterMustHaveReputation();
@@ -952,7 +952,7 @@ contract DXDVotingMachine {
         Parameters memory params = parameters[proposal.paramsHash];
         Proposal memory tmpProposal = proposal;
         ExecuteFunctionParams memory executeParams;
-        executeParams.totalReputation = DXDVotingMachineCallbacksInterface(proposal.callbacks).getTotalReputationSupply(
+        executeParams.totalReputation = IDXDVotingMachineCallbacks(proposal.callbacks).getTotalReputationSupply(
             _proposalId
         );
         // first divide by 10000 to prevent overflow
