@@ -14,10 +14,6 @@ import "./DAOReputation.sol";
  */
 contract DAOController is Initializable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
-    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
-
-    EnumerableSetUpgradeable.Bytes32Set private activeProposals;
-    EnumerableSetUpgradeable.Bytes32Set private inactiveProposals;
 
     struct Scheme {
         bytes32 paramsHash; // a hash voting parameters of the scheme
@@ -73,15 +69,6 @@ contract DAOController is Initializable {
 
     /// @notice Sender is not a registered scheme or proposal is not active
     error DAOController__SenderIsNotRegisteredOrProposalIsInactive();
-
-    /// @notice arg _start cannot be bigger than proposals list length
-    error DAOController__StartCannotBeBiggerThanListLength();
-
-    /// @notice arg _end cannot be bigger than proposals list length
-    error DAOController__EndCannotBeBiggerThanListLength();
-
-    /// @notice arg _start cannot be bigger than _end
-    error DAOController__StartCannotBeBiggerThanEnd();
 
     /// @dev Verify if scheme is registered
     modifier onlyRegisteredScheme() {
@@ -227,37 +214,6 @@ contract DAOController is Initializable {
     }
 
     /**
-     * @dev Adds a proposal to the active proposals list
-     * @param _proposalId  The proposalId
-     */
-    function startProposal(bytes32 _proposalId) external onlyRegisteredScheme {
-        if (schemeOfProposal[_proposalId] != address(0)) {
-            revert DAOController__IdUsedByOtherScheme();
-        }
-        activeProposals.add(_proposalId);
-        schemeOfProposal[_proposalId] = msg.sender;
-    }
-
-    /**
-     * @dev Moves a proposal from the active proposals list to the inactive list
-     * @param _proposalId  The proposalId
-     */
-    function endProposal(bytes32 _proposalId) external {
-        if (schemeOfProposal[_proposalId] != msg.sender) {
-            revert DAOController__SenderIsNotTheProposer();
-        }
-        if (
-            !schemes[msg.sender].isRegistered &&
-            (!schemes[schemeOfProposal[_proposalId]].isRegistered && !activeProposals.contains(_proposalId))
-        ) {
-            revert DAOController__SenderIsNotRegisteredOrProposalIsInactive();
-        }
-
-        activeProposals.remove(_proposalId);
-        inactiveProposals.add(_proposalId);
-    }
-
-    /**
      * @dev Burns dao reputation
      * @param _amount  The amount of reputation to burn
      * @param _account  The account to burn reputation from
@@ -352,91 +308,10 @@ contract DAOController is Initializable {
     }
 
     /**
-     * @dev Returns array of proposals based on index args. Both indexes are inclusive, unles (0,0) that returns all elements
-     * @param _start Index to start batching (included).
-     * @param _end Last index of batch (included). Zero will default to last element from the list
-     * @param _proposals EnumerableSetUpgradeable set of proposals
-     * @return proposalsArray Proposals list from `_proposals` within the range `_start` to `_end`.
-     */
-    function _getProposalsBatchRequest(
-        uint256 _start,
-        uint256 _end,
-        EnumerableSetUpgradeable.Bytes32Set storage _proposals
-    ) internal view returns (ProposalAndScheme[] memory proposalsArray) {
-        uint256 totalCount = uint256(_proposals.length());
-        if (totalCount == 0) {
-            return new ProposalAndScheme[](0);
-        }
-        if (_start > totalCount) {
-            revert DAOController__StartCannotBeBiggerThanListLength();
-        }
-        if (_end > totalCount) {
-            revert DAOController__EndCannotBeBiggerThanListLength();
-        }
-        if (_start > _end) {
-            revert DAOController__StartCannotBeBiggerThanEnd();
-        }
-        uint256 total = totalCount - 1;
-        uint256 lastIndex = _end == 0 ? total : _end;
-        uint256 returnCount = lastIndex + 1 - _start;
-
-        proposalsArray = new ProposalAndScheme[](returnCount);
-        uint256 i = 0;
-        for (i; i < returnCount; i++) {
-            proposalsArray[i].proposalId = _proposals.at(i + _start);
-            proposalsArray[i].scheme = schemeOfProposal[_proposals.at(i + _start)];
-        }
-        return proposalsArray;
-    }
-
-    /**
-     * @dev Returns array of active proposals
-     * @param _start Index to start batching (included).
-     * @param _end Last index of batch (included). Zero will return all
-     * @return activeProposalsArray List of (`ProposalAndScheme`) active proposals within the range `_start` to `_end`..
-     */
-    function getActiveProposals(uint256 _start, uint256 _end)
-        external
-        view
-        returns (ProposalAndScheme[] memory activeProposalsArray)
-    {
-        return _getProposalsBatchRequest(_start, _end, activeProposals);
-    }
-
-    /**
-     * @dev Returns array of inactive proposals
-     * @param _start index to start batching (included).
-     * @param _end last index of batch (included). Zero will return all
-     */
-    function getInactiveProposals(uint256 _start, uint256 _end)
-        external
-        view
-        returns (ProposalAndScheme[] memory inactiveProposalsArray)
-    {
-        return _getProposalsBatchRequest(_start, _end, inactiveProposals);
-    }
-
-    /**
      * @dev Function to get reputation token
      * @return tokenAddress The reputation token set on controller.initialize
      */
     function getDaoReputation() external view returns (DAOReputation tokenAddress) {
         return reputationToken;
-    }
-
-    /**
-     * @dev Function to get the amount of active proposals
-     * @return activeProposalsCount The amount of active proposals
-     */
-    function getActiveProposalsCount() public view returns (uint256 activeProposalsCount) {
-        return activeProposals.length();
-    }
-
-    /**
-     * @dev Function to get the amount of inactive proposals
-     * @return inactiveProposalsCount The amount of inactive proposals
-     */
-    function getInactiveProposalsCount() public view returns (uint256 inactiveProposalsCount) {
-        return inactiveProposals.length();
     }
 }
