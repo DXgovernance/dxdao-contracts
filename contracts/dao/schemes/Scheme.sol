@@ -157,7 +157,8 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         // Get the proposal id that will be used from the voting machine
         bytes32 proposalId = votingMachine.propose(_totalOptions, voteParams, msg.sender, address(avatar));
 
-        controller.startProposal(proposalId);
+        // TODO: Since we removed this fn from controller. Should we replace with something here?
+        // controller.startProposal(proposalId);
 
         // Add the proposal to the proposals mapping, proposals list and proposals information mapping
         proposals[proposalId] = Proposal({
@@ -183,12 +184,10 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @param _winningOption The winning option in the voting machine
      * @return success Success of the execution
      */
-    function executeProposal(bytes32 _proposalId, uint256 _winningOption)
-        public
-        virtual
-        onlyVotingMachine
-        returns (bool success)
-    {
+    function executeProposal(
+        bytes32 _proposalId,
+        uint256 _winningOption
+    ) public virtual onlyVotingMachine returns (bool success) {
         // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
         if (executingProposal) {
             revert Scheme__ProposalExecutionAlreadyRunning();
@@ -260,12 +259,10 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @param _winningOption The winning option in the voting machine
      * @return success Proposal finish successfully
      */
-    function finishProposal(bytes32 _proposalId, uint256 _winningOption)
-        public
-        virtual
-        onlyVotingMachine
-        returns (bool success)
-    {
+    function finishProposal(
+        bytes32 _proposalId,
+        uint256 _winningOption
+    ) public virtual onlyVotingMachine returns (bool success) {
         Proposal storage proposal = proposals[_proposalId];
         if (proposal.state != ProposalState.Submitted) {
             revert Scheme__ProposalMustBeSubmitted();
@@ -278,7 +275,8 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             proposal.state = ProposalState.Passed;
             emit ProposalStateChange(_proposalId, uint256(ProposalState.Passed));
         }
-        controller.endProposal(_proposalId);
+        // TODO: Since we removed this fn from controller. Should we replace with something here?
+        // controller.endProposal(_proposalId);
         return true;
     }
 
