@@ -7,12 +7,6 @@ const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 import * as helpers from "../helpers";
 
-const createProposalId = () => web3.utils.randomHex(32);
-const getRandomProposalIds = (n = 10) =>
-  Array.from(Array(n))
-    .fill()
-    .map(() => createProposalId());
-
 contract("DAOController", function (accounts) {
   let reputation,
     controller,
