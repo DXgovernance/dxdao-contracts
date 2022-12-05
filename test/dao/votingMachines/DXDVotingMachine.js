@@ -429,12 +429,13 @@ contract("DXDVotingMachine", function (accounts) {
       });
 
       it("fail sharing invalid vote signature", async function () {
+        const signerNonce = await dxdVotingMachine.signerNonce(accounts[3]);
         const voteHash = await dxdVotingMachine.hashAction(
           proposalId,
           accounts[3],
           constants.YES_OPTION,
           70000,
-          1,
+          signerNonce,
           1
         );
         const votesignature = await web3.eth.sign(voteHash, accounts[3]);
@@ -473,12 +474,13 @@ contract("DXDVotingMachine", function (accounts) {
       });
 
       it("Can share a vote signed by a different user", async function () {
+        const signerNonce = await dxdVotingMachine.signerNonce(accounts[3]);
         const voteHashOnChain = await dxdVotingMachine.hashAction(
           proposalId,
           accounts[3],
           constants.YES_OPTION,
           70000,
-          1,
+          signerNonce,
           1
         );
 
@@ -511,7 +513,7 @@ contract("DXDVotingMachine", function (accounts) {
             signer: accounts[3],
             option: constants.YES_OPTION,
             amount: 70000,
-            nonce: 1,
+            nonce: signerNonce,
             actionType: 1,
           },
         };
@@ -535,7 +537,7 @@ contract("DXDVotingMachine", function (accounts) {
           accounts[3],
           constants.YES_OPTION,
           70000,
-          1,
+          signerNonce,
           1,
           votesignature,
           { from: accounts[1] }
@@ -546,18 +548,19 @@ contract("DXDVotingMachine", function (accounts) {
           voter: accounts[3],
           voteDecision: constants.YES_OPTION,
           amount: "70000",
-          nonce: "1",
+          nonce: signerNonce,
           signature: votesignature,
         });
       });
 
       it("Cannot share a vote with the incorrect signature", async function () {
+        const signerNonce = await dxdVotingMachine.signerNonce(accounts[3]);
         const voteHash = await dxdVotingMachine.hashAction(
           proposalId,
           accounts[3],
           constants.YES_OPTION,
           70000,
-          1,
+          signerNonce,
           1
         );
 
@@ -584,12 +587,13 @@ contract("DXDVotingMachine", function (accounts) {
       });
 
       it("fail executing vote with invalid data", async function () {
+        const signerNonce = await dxdVotingMachine.signerNonce(accounts[3]);
         const voteHash = await dxdVotingMachine.hashAction(
           proposalId,
           accounts[3],
           constants.YES_OPTION,
           70000,
-          1,
+          signerNonce,
           1
         );
         const votesignature = await web3.eth.sign(voteHash, accounts[3]);
@@ -603,7 +607,7 @@ contract("DXDVotingMachine", function (accounts) {
           accounts[3],
           constants.YES_OPTION,
           70000,
-          1,
+          signerNonce,
           1,
           votesignature,
           { from: accounts[3] }
@@ -616,7 +620,6 @@ contract("DXDVotingMachine", function (accounts) {
             voteInfoFromLog.voter,
             constants.NO_OPTION,
             voteInfoFromLog.amount,
-            voteInfoFromLog.nonce,
             voteInfoFromLog.signature,
             { from: accounts[4] }
           ),
@@ -629,7 +632,6 @@ contract("DXDVotingMachine", function (accounts) {
             voteInfoFromLog.voter,
             voteInfoFromLog.voteDecision,
             voteInfoFromLog.amount - 1,
-            voteInfoFromLog.nonce,
             voteInfoFromLog.signature,
             { from: accounts[4] }
           ),
@@ -642,7 +644,6 @@ contract("DXDVotingMachine", function (accounts) {
             accounts[1],
             voteInfoFromLog.voteDecision,
             voteInfoFromLog.amount,
-            voteInfoFromLog.nonce,
             voteInfoFromLog.signature,
             { from: accounts[4] }
           ),
@@ -651,12 +652,13 @@ contract("DXDVotingMachine", function (accounts) {
       });
 
       it("positive signed decision with all rep available", async function () {
+        const signerNonce = await dxdVotingMachine.signerNonce(accounts[3]);
         const voteHash = await dxdVotingMachine.hashAction(
           proposalId,
           accounts[3],
           constants.YES_OPTION,
           0,
-          1,
+          signerNonce,
           1
         );
         const votesignature = await web3.eth.sign(voteHash, accounts[3]);
@@ -670,7 +672,7 @@ contract("DXDVotingMachine", function (accounts) {
           accounts[3],
           constants.YES_OPTION,
           0,
-          1,
+          signerNonce,
           1,
           votesignature,
           { from: accounts[3] }
@@ -681,7 +683,6 @@ contract("DXDVotingMachine", function (accounts) {
           voteInfoFromLog.voter,
           voteInfoFromLog.voteDecision,
           voteInfoFromLog.amount,
-          voteInfoFromLog.nonce,
           voteInfoFromLog.signature,
           { from: accounts[4] }
         );
@@ -695,12 +696,13 @@ contract("DXDVotingMachine", function (accounts) {
 
       it("negative signed decision with less rep than the one held", async function () {
         // The voter has 70 rep but votes with 60 rep
+        const signerNonce = await dxdVotingMachine.signerNonce(accounts[3]);
         const voteHash = await dxdVotingMachine.hashAction(
           proposalId,
           accounts[3],
           constants.NO_OPTION,
           60000,
-          1,
+          signerNonce,
           1
         );
         const votesignature = await web3.eth.sign(voteHash, accounts[3]);
@@ -714,7 +716,6 @@ contract("DXDVotingMachine", function (accounts) {
           accounts[3],
           constants.NO_OPTION,
           60000,
-          1,
           votesignature,
           { from: accounts[4] }
         );
@@ -896,6 +897,73 @@ contract("DXDVotingMachine", function (accounts) {
       );
       assert.equal(schemeProposal.to[0], actionMock.address);
       assert.equal(schemeProposal.value[0], 0);
+    });
+
+    it("sign stake and boosted proposal should succeed with enough votes", async function () {
+      const tx = await masterAvatarScheme.proposeCalls(
+        [actionMock.address],
+        [helpers.testCallFrom(org.avatar.address)],
+        [0],
+        2,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      );
+      const testProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+
+      const signerNonce = await dxdVotingMachine.signerNonce(accounts[1]);
+      const stakeHash = await dxdVotingMachine.hashAction(
+        testProposalId,
+        accounts[1],
+        constants.YES_OPTION,
+        1000,
+        signerNonce,
+        2
+      );
+      const stakeSignature = await web3.eth.sign(stakeHash, accounts[1]);
+      assert.equal(
+        accounts[1],
+        web3.eth.accounts.recover(stakeHash, stakeSignature)
+      );
+
+      const stakeTx = await dxdVotingMachine.executeSignedStake(
+        testProposalId,
+        accounts[1],
+        constants.YES_OPTION,
+        1000,
+        stakeSignature,
+        { from: accounts[4] }
+      );
+
+      expectEvent(stakeTx.receipt, "StateChange", {
+        _proposalId: testProposalId,
+        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
+      });
+
+      await dxdVotingMachine.vote(testProposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+        gasPrice: constants.GAS_PRICE,
+      });
+
+      await dxdVotingMachine.vote(testProposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
+      await time.increase(86400 + 1);
+      const executeTx = await dxdVotingMachine.execute(testProposalId, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
+      // Check it changed to executed in redeem
+      await expectEvent.inTransaction(
+        executeTx.tx,
+        dxdVotingMachine.contract,
+        "StateChange",
+        {
+          _proposalId: testProposalId,
+          _proposalState:
+            constants.VOTING_MACHINE_PROPOSAL_STATES.ExecutedInBoost,
+        }
+      );
     });
 
     it("steal staked tokens with fake org", async function () {
