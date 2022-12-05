@@ -160,8 +160,6 @@ contract("DXdao", function (accounts) {
 
     proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
 
-    // Scheme does not call controller.startProposal anymore so counter not active.
-    // TODO: Should we triger votingmachine counter (startProposal) from scheme as we did with controller?
     const activeProposals = await dxDao.votingMachine.getActiveProposals(
       0,
       0,
