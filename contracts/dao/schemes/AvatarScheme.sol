@@ -154,7 +154,6 @@ contract AvatarScheme is Scheme {
                 revert AvatarScheme__ERC20LimitsPassed();
             }
         }
-        controller.endProposal(_proposalId);
         executingProposal = false;
         return true;
     }
