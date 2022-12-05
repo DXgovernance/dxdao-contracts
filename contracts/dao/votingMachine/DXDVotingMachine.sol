@@ -264,7 +264,7 @@ contract DXDVotingMachine {
             )
         );
 
-    mapping(address => uint256) public stakesNonce;
+    mapping(address => uint256) public signerNonce;
 
     mapping(bytes32 => mapping(address => VoteDecision)) public votesSignaled;
 
@@ -537,34 +537,28 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev stakeWithSignature function
+     * @dev executeSignedStake function
      * @param proposalId Id of the proposal
      * @param staker Address of staker
      * @param stakeDecision  NO(1) or YES(2).
      * @param amount The betting amount
-     * @param nonce Nonce value ,it is part of the signature to ensure that a signature can be received only once.
      * @param signature  Signed data by the staker
      * @return proposalExecuted True if the proposal was executed, false otherwise.
      */
-    function stakeWithSignature(
+    function executeSignedStake(
         bytes32 proposalId,
         address staker,
         uint256 stakeDecision,
         uint256 amount,
-        uint256 nonce,
         bytes calldata signature
     ) external returns (bool proposalExecuted) {
-        bytes32 stakeHashed = hashAction(proposalId, staker, stakeDecision, amount, nonce, 2);
-        address staker = stakeHashed.recover(signature);
+        bytes32 stakeHashed = hashAction(proposalId, staker, stakeDecision, amount, signerNonce[staker], 2);
 
         if (staker != stakeHashed.toEthSignedMessageHash().recover(signature)) {
             revert DXDVotingMachine__WrongSigner();
         }
 
-        if (stakesNonce[staker] != nonce) {
-            revert DXDVotingMachine__InvalidNonce();
-        }
-        stakesNonce[staker] = stakesNonce[staker] + 1;
+        signerNonce[staker] = signerNonce[staker] + 1;
         return _stake(proposalId, stakeDecision, amount, staker);
     }
 
@@ -702,6 +696,7 @@ contract DXDVotingMachine {
         if (voter != voteHashed.toEthSignedMessageHash().recover(signature)) {
             revert DXDVotingMachine__WrongSigner();
         }
+
         emit ActionSigned(proposalId, voter, voteDecision, amount, nonce, actionType, signature);
     }
 
@@ -734,7 +729,6 @@ contract DXDVotingMachine {
      * @param voter The signer of the vote
      * @param voteDecision The vote decision, NO(1) or YES(2).
      * @param amount The reputation amount to vote with, 0 will use all available REP
-     * @param nonce Nonce value ,it is part of the signature to ensure that a signature can be received only once.
      * @param signature The signature of the hashed vote
      */
     function executeSignedVote(
@@ -742,17 +736,18 @@ contract DXDVotingMachine {
         address voter,
         uint256 voteDecision,
         uint256 amount,
-        uint256 nonce,
         bytes calldata signature
     ) external {
         if (!_isVotable(proposalId)) {
             revert DXDVotingMachine__ProposalIsNotVotable();
         }
-        bytes32 voteHashed = hashAction(proposalId, voter, voteDecision, amount, nonce, 1);
+        bytes32 voteHashed = hashAction(proposalId, voter, voteDecision, amount, signerNonce[voter], 1);
 
         if (voter != voteHashed.toEthSignedMessageHash().recover(signature)) {
             revert DXDVotingMachine__WrongSigner();
         }
+
+        signerNonce[voter] = signerNonce[voter] + 1;
         internalVote(proposalId, voter, voteDecision, amount);
         _refundVote(proposals[proposalId].schemeId);
     }
