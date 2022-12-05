@@ -167,7 +167,7 @@ contract("DXdao", function (accounts) {
       0,
       dxDao.avatar.address
     );
-    assert.equal(activeProposals[0].proposalId, proposalId);
+    assert.equal(activeProposals[0], proposalId);
   });
 
   it.skip("Deploy DXvote", function (done) {
@@ -204,8 +204,7 @@ contract("DXdao", function (accounts) {
       0,
       dxDao.avatar.address
     );
-    assert.equal(inactiveProposals[0].proposalId, proposalId);
-    assert.equal(inactiveProposals[0].schemeId, masterAvatarScheme.address);
+    assert.equal(inactiveProposals[0], proposalId);
     assert.deepEqual(
       await dxDao.votingMachine.getActiveProposals(0, 0, dxDao.avatar.address),
       []
@@ -234,8 +233,7 @@ contract("DXdao", function (accounts) {
       0,
       dxDao.avatar.address
     );
-    assert.equal(inactiveProposals[0].proposalId, proposalId);
-    assert.equal(inactiveProposals[0].schemeId, masterAvatarScheme.address);
+    assert.equal(inactiveProposals[0], proposalId);
     assert.deepEqual(
       await dxDao.votingMachine.getActiveProposals(0, 0, dxDao.avatar.address),
       []

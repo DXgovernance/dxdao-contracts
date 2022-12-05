@@ -462,10 +462,10 @@ contract DXDVotingMachine {
      * @return redeemedAmount Redeem token amount
      * @return potentialAmount Potential redeem token amount (if there is enough tokens bounty at the dao owner of the scheme )
      */
-    function redeemDaoBounty(
-        bytes32 _proposalId,
-        address _beneficiary
-    ) public returns (uint256 redeemedAmount, uint256 potentialAmount) {
+    function redeemDaoBounty(bytes32 _proposalId, address _beneficiary)
+        public
+        returns (uint256 redeemedAmount, uint256 potentialAmount)
+    {
         Proposal storage proposal = proposals[_proposalId];
         if (proposal.state != ProposalState.ExecutedInQueue && proposal.state != ProposalState.ExecutedInBoost) {
             revert DXDVotingMachine__WrongProposalStateToRedeemDaoBounty();
@@ -533,7 +533,7 @@ contract DXDVotingMachine {
             power = params.limitExponentValue;
         }
 
-        return params.thresholdConst ** power;
+        return params.thresholdConst**power;
     }
 
     /**
@@ -543,7 +543,11 @@ contract DXDVotingMachine {
      * @param _amount The betting amount
      * @return proposalExecuted true if the proposal was executed, false otherwise.
      */
-    function stake(bytes32 _proposalId, uint256 _vote, uint256 _amount) external returns (bool proposalExecuted) {
+    function stake(
+        bytes32 _proposalId,
+        uint256 _vote,
+        uint256 _amount
+    ) external returns (bool proposalExecuted) {
         return _stake(_proposalId, _vote, _amount, msg.sender);
     }
 
@@ -587,7 +591,12 @@ contract DXDVotingMachine {
      * @param _voteGas The amount of gas that will be used as vote cost
      * @param _maxGasPrice The maximum amount of gas price to be paid, if the gas used is higher than this value only a portion of the total gas would be refunded
      */
-    function setSchemeRefund(address avatar, address scheme, uint256 _voteGas, uint256 _maxGasPrice) external payable {
+    function setSchemeRefund(
+        address avatar,
+        address scheme,
+        uint256 _voteGas,
+        uint256 _maxGasPrice
+    ) external payable {
         bytes32 schemeId;
         if (msg.sender == scheme) {
             schemeId = keccak256(abi.encodePacked(msg.sender, avatar));
@@ -656,10 +665,11 @@ contract DXDVotingMachine {
      * @return voterVote The voters vote
      * @return voterReputation Amount of reputation committed by _voter to _proposalId
      */
-    function voteInfo(
-        bytes32 _proposalId,
-        address _voter
-    ) external view returns (uint256 voterVote, uint256 voterReputation) {
+    function voteInfo(bytes32 _proposalId, address _voter)
+        external
+        view
+        returns (uint256 voterVote, uint256 voterReputation)
+    {
         Voter memory voter = proposalVoters[_proposalId][_voter];
         return (voter.vote, voter.reputation);
     }
@@ -1342,12 +1352,15 @@ contract DXDVotingMachine {
      * @return totalStakesNo Total stakes NO
      * @return totalStakesYes Total stakes YES
      */
-    function proposalStatus(
-        bytes32 _proposalId
-    )
+    function proposalStatus(bytes32 _proposalId)
         external
         view
-        returns (uint256 preBoostedVotesNo, uint256 preBoostedVotesYes, uint256 totalStakesNo, uint256 totalStakesYes)
+        returns (
+            uint256 preBoostedVotesNo,
+            uint256 preBoostedVotesYes,
+            uint256 totalStakesNo,
+            uint256 totalStakesYes
+        )
     {
         return (
             proposalPreBoostedVotes[_proposalId][NO],
@@ -1367,9 +1380,7 @@ contract DXDVotingMachine {
      * @return totalStakesNo Proposal total stakes NO
      * @return totalStakesYes Proposal total stakes YES
      */
-    function proposalStatusWithVotes(
-        bytes32 _proposalId
-    )
+    function proposalStatusWithVotes(bytes32 _proposalId)
         external
         view
         returns (
@@ -1420,7 +1431,7 @@ contract DXDVotingMachine {
     }
 
     /**
-     * @dev Returns array of proposals based on index args. Both indexes are inclusive, unles (0,0) that returns all elements
+     * @dev Returns array of proposal ids based on index args. Both indexes are inclusive, unles (0,0) that returns all elements
      * @param _start index to start batching (included).
      * @param _end last index of batch (included). Zero will default to last element from the list
      * @param _proposals EnumerableSetUpgradeable set of proposal ids
@@ -1430,10 +1441,10 @@ contract DXDVotingMachine {
         uint256 _start,
         uint256 _end,
         EnumerableSetUpgradeable.Bytes32Set storage _proposals
-    ) internal view returns (Proposal[] memory proposalsArray) {
+    ) internal view returns (bytes32[] memory proposalsArray) {
         uint256 totalCount = uint256(_proposals.length());
         if (totalCount == 0) {
-            return new Proposal[](0);
+            return new bytes32[](0);
         }
         if (_start > totalCount) {
             revert DXDVotingMachine__StartCannotBeBiggerThanListLength();
@@ -1449,16 +1460,16 @@ contract DXDVotingMachine {
         uint256 lastIndex = _end == 0 ? total : _end;
         uint256 returnCount = lastIndex + 1 - _start;
 
-        proposalsArray = new Proposal[](returnCount);
+        proposalsArray = new bytes32[](returnCount);
         uint256 i = 0;
         for (i; i < returnCount; i++) {
-            proposalsArray[i] = proposals[_proposals.at(i + _start)];
+            proposalsArray[i] = _proposals.at(i + _start);
         }
         return proposalsArray;
     }
 
     /**
-     * @dev Returns array of active proposals
+     * @dev Returns array of active proposal ids
      * @param _start index to start batching (included).
      * @param _end last index of batch (included). Zero will return all
      * @param _avatar the avatar contract address
@@ -1468,12 +1479,12 @@ contract DXDVotingMachine {
         uint256 _start,
         uint256 _end,
         address _avatar
-    ) external view returns (Proposal[] memory activeProposalsArray) {
+    ) external view returns (bytes32[] memory activeProposalsArray) {
         return _getProposalsBatchRequest(_start, _end, activeProposals[_avatar]);
     }
 
     /**
-     * @dev Returns array of inactive proposals
+     * @dev Returns array of inactive proposal ids
      * @param _start index to start batching (included).
      * @param _end last index of batch (included). Zero will return all
      * @param _avatar the avatar contract address
@@ -1483,7 +1494,7 @@ contract DXDVotingMachine {
         uint256 _start,
         uint256 _end,
         address _avatar
-    ) external view returns (Proposal[] memory inactiveProposalsArray) {
+    ) external view returns (bytes32[] memory inactiveProposalsArray) {
         return _getProposalsBatchRequest(_start, _end, inactiveProposals[_avatar]);
     }
 

@@ -1591,5 +1591,39 @@ contract("DXDVotingMachine", function (accounts) {
 
       assert.equal(100000, Number(reputation));
     });
+
+    it("getActiveProposals(0,0) should return all active proposals", async () => {
+      const proposalId0 = await helpers.getValueFromLogs(
+        await masterAvatarScheme.proposeCalls(
+          [actionMock.address],
+          [helpers.testCallFrom(org.avatar.address)],
+          [0],
+          2,
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+      const proposalId1 = await helpers.getValueFromLogs(
+        await masterAvatarScheme.proposeCalls(
+          [actionMock.address],
+          [helpers.testCallFrom(org.avatar.address)],
+          [0],
+          2,
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        ),
+        "_proposalId"
+      );
+
+      const activeProposals = await dxdVotingMachine.getActiveProposals(
+        0,
+        0,
+        org.avatar.address
+      );
+
+      assert.equal(activeProposals[0], proposalId0);
+      assert.equal(activeProposals[1], proposalId1);
+    });
   });
 });

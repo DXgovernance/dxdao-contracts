@@ -181,10 +181,12 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @param _winningOption The winning option in the voting machine
      * @return success Success of the execution
      */
-    function executeProposal(
-        bytes32 _proposalId,
-        uint256 _winningOption
-    ) public virtual onlyVotingMachine returns (bool success) {
+    function executeProposal(bytes32 _proposalId, uint256 _winningOption)
+        public
+        virtual
+        onlyVotingMachine
+        returns (bool success)
+    {
         // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
         if (executingProposal) {
             revert Scheme__ProposalExecutionAlreadyRunning();
@@ -256,10 +258,12 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
      * @param _winningOption The winning option in the voting machine
      * @return success Proposal finish successfully
      */
-    function finishProposal(
-        bytes32 _proposalId,
-        uint256 _winningOption
-    ) public virtual onlyVotingMachine returns (bool success) {
+    function finishProposal(bytes32 _proposalId, uint256 _winningOption)
+        public
+        virtual
+        onlyVotingMachine
+        returns (bool success)
+    {
         Proposal storage proposal = proposals[_proposalId];
         if (proposal.state != ProposalState.Submitted) {
             revert Scheme__ProposalMustBeSubmitted();
