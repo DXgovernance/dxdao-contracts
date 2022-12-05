@@ -953,10 +953,10 @@ contract("DXDVotingMachine", function (accounts) {
         5
       );
       await dxdVotingMachine.setParameters([
-        5000, 10, 1, 1, 1001, 1, 0, 1000, 1, 0,
+        5000, 10, 1, 1, 1001, 1, 1000, 1, 0,
       ]);
       const fakeParamsHash = await dxdVotingMachine.getParametersHash([
-        5000, 10, 1, 1, 1001, 1, 0, 1000, 1, 0,
+        5000, 10, 1, 1, 1001, 1, 1000, 1, 0,
       ]);
       await fakeOrg.controller.registerScheme(
         fakeOrgScheme.address,

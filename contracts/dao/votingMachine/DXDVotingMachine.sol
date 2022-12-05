@@ -66,7 +66,6 @@ contract DXDVotingMachine {
         uint256 limitExponentValue; // An upper limit for numberOfBoostedProposals
         // in the threshold calculation to prevent overflow
         uint256 quietEndingPeriod; // Quite ending period
-        uint256 proposingRepReward; // Proposer reputation reward.
         uint256 minimumDaoBounty;
         uint256 daoBountyConst; // The DAO downstake for each proposal is calculate according to the formula
         // (daoBountyConst * averageBoostDownstakes)/100 .
@@ -168,13 +167,6 @@ contract DXDVotingMachine {
     event Redeem(bytes32 indexed _proposalId, address indexed _avatar, address indexed _beneficiary, uint256 _amount);
 
     event RedeemDaoBounty(
-        bytes32 indexed _proposalId,
-        address indexed _avatar,
-        address indexed _beneficiary,
-        uint256 _amount
-    );
-
-    event RedeemReputation(
         bytes32 indexed _proposalId,
         address indexed _avatar,
         address indexed _beneficiary,
@@ -325,14 +317,13 @@ contract DXDVotingMachine {
      *    _params[3] - _preBoostedVotePeriodLimit, //the time limit for a proposal to be in an preparation state (stable) before boosted.
      *    _params[4] -_thresholdConst
      *    _params[5] -_quietEndingPeriod
-     *    _params[6] -_proposingRepReward
-     *    _params[7] -_minimumDaoBounty
-     *    _params[8] -_daoBountyConst
-     *    _params[9] - _boostedVoteRequiredPercentage
+     *    _params[6] -_minimumDaoBounty
+     *    _params[7] -_daoBountyConst
+     *    _params[8] - _boostedVoteRequiredPercentage
      * @return paramsHash Hash of the given parameters
      */
     function setParameters(
-        uint256[10] calldata _params //use array here due to stack too deep issue.
+        uint256[9] calldata _params //use array here due to stack too deep issue.
     ) external returns (bytes32 paramsHash) {
         if (_params[0] > 10000 || _params[0] < 5000) {
             revert DXDVotingMachine__SetParametersError("5000 <= queuedVoteRequiredPercentage <= 10000");
@@ -343,13 +334,13 @@ contract DXDVotingMachine {
         if (_params[2] < _params[5]) {
             revert DXDVotingMachine__SetParametersError("boostedVotePeriodLimit >= quietEndingPeriod");
         }
-        if (_params[7] <= 0) {
+        if (_params[6] <= 0) {
             revert DXDVotingMachine__SetParametersError("minimumDaoBounty should be > 0");
         }
-        if (_params[8] <= 0) {
+        if (_params[7] <= 0) {
             revert DXDVotingMachine__SetParametersError("daoBountyConst should be > 0");
         }
-        if (_params[0] <= _params[9]) {
+        if (_params[0] <= _params[8]) {
             revert DXDVotingMachine__SetParametersError(
                 "queuedVoteRequiredPercentage should eb higher than boostedVoteRequiredPercentage"
             );
@@ -375,10 +366,9 @@ contract DXDVotingMachine {
             thresholdConst: uint216(_params[4]).fraction(uint216(1000)),
             limitExponentValue: limitExponent,
             quietEndingPeriod: _params[5],
-            proposingRepReward: _params[6],
-            minimumDaoBounty: _params[7],
-            daoBountyConst: _params[8],
-            boostedVoteRequiredPercentage: _params[9]
+            minimumDaoBounty: _params[6],
+            daoBountyConst: _params[7],
+            boostedVoteRequiredPercentage: _params[8]
         });
         return paramsHash;
     }
@@ -388,10 +378,10 @@ contract DXDVotingMachine {
      *      The function use a beneficiary address as a parameter (and not msg.sender) to enable users to redeem on behalf of someone else.
      * @param _proposalId The ID of the proposal
      * @param _beneficiary The beneficiary address
-     * @return rewards [0]=stakerTokenReward [1]=proposerReputationReward
+     * @return reward The staking token reward
      */
     // solhint-disable-next-line function-max-lines,code-complexity
-    function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint256[2] memory rewards) {
+    function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint256 reward) {
         Proposal storage proposal = proposals[_proposalId];
         if (
             (proposal.state != ProposalState.ExecutedInQueue) &&
@@ -410,15 +400,15 @@ contract DXDVotingMachine {
         if (staker.amount > 0) {
             if (proposal.state == ProposalState.Expired) {
                 // Stakes of a proposal that expires in Queue are sent back to stakers
-                rewards[0] = staker.amount;
+                reward = staker.amount;
             } else if (staker.vote == proposal.winningVote) {
                 if (staker.vote == YES) {
                     if (proposal.daoBounty < totalStakesLeftAfterCallBounty) {
                         uint256 _totalStakes = totalStakesLeftAfterCallBounty - proposal.daoBounty;
-                        rewards[0] = (staker.amount * _totalStakes) / totalWinningStakes;
+                        reward = (staker.amount * _totalStakes) / totalWinningStakes;
                     }
                 } else {
-                    rewards[0] = (staker.amount * totalStakesLeftAfterCallBounty) / totalWinningStakes;
+                    reward = (staker.amount * totalStakesLeftAfterCallBounty) / totalWinningStakes;
                 }
             }
             staker.amount = 0;
@@ -430,37 +420,22 @@ contract DXDVotingMachine {
             proposal.state != ProposalState.Expired &&
             proposal.winningVote == NO
         ) {
-            rewards[0] =
-                rewards[0] +
+            reward =
+                reward +
                 ((proposal.daoBounty * totalStakesLeftAfterCallBounty) / totalWinningStakes) -
                 proposal.daoBounty;
             proposal.daoRedeemItsWinnings = true;
         }
 
-        // as proposer
-        if ((proposal.proposer == _beneficiary) && (proposal.winningVote == YES) && (proposal.proposer != address(0))) {
-            rewards[1] = params.proposingRepReward;
-            proposal.proposer = address(0);
-        }
-        if (rewards[0] != 0) {
-            proposal.totalStakes = proposal.totalStakes - rewards[0];
-            schemes[proposal.schemeId].stakingTokenBalance =
-                schemes[proposal.schemeId].stakingTokenBalance -
-                rewards[0];
+        if (reward != 0) {
+            proposal.totalStakes = proposal.totalStakes - reward;
+            schemes[proposal.schemeId].stakingTokenBalance = schemes[proposal.schemeId].stakingTokenBalance - reward;
 
-            bool transferSuccess = stakingToken.transfer(_beneficiary, rewards[0]);
+            bool transferSuccess = stakingToken.transfer(_beneficiary, reward);
             if (!transferSuccess) {
-                revert DXDVotingMachine__TransferFailed(_beneficiary, rewards[0]);
+                revert DXDVotingMachine__TransferFailed(_beneficiary, reward);
             }
-            emit Redeem(_proposalId, schemes[proposal.schemeId].avatar, _beneficiary, rewards[0]);
-        }
-        if (rewards[1] > 0) {
-            DXDVotingMachineCallbacksInterface(proposal.callbacks).mintReputation(
-                rewards[1],
-                _beneficiary,
-                _proposalId
-            );
-            emit RedeemReputation(_proposalId, schemes[proposal.schemeId].avatar, _beneficiary, rewards[1]);
+            emit Redeem(_proposalId, schemes[proposal.schemeId].avatar, _beneficiary, reward);
         }
     }
 
@@ -1275,12 +1250,10 @@ contract DXDVotingMachine {
 
     /**
      * @dev Returns a hash of the given parameters
-     * @param _params Array of params (10) to hash
+     * @param _params Array of params (9) to hash
      * @return paramsHash Hash of the given parameters
      */
-    function getParametersHash(
-        uint256[10] memory _params // use array here due to stack too deep issue.
-    ) public pure returns (bytes32 paramsHash) {
+    function getParametersHash(uint256[9] memory _params) public pure returns (bytes32 paramsHash) {
         return
             keccak256(
                 abi.encodePacked(
@@ -1292,8 +1265,7 @@ contract DXDVotingMachine {
                     _params[5],
                     _params[6],
                     _params[7],
-                    _params[8],
-                    _params[9]
+                    _params[8]
                 )
             );
     }
