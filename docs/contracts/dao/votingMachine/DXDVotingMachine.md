@@ -57,7 +57,6 @@ struct Parameters {
   uint256 thresholdConst;
   uint256 limitExponentValue;
   uint256 quietEndingPeriod;
-  uint256 proposingRepReward;
   uint256 minimumDaoBounty;
   uint256 daoBountyConst;
   uint256 boostedVoteRequiredPercentage;
@@ -187,12 +186,6 @@ event Redeem(bytes32 _proposalId, address _avatar, address _beneficiary, uint256
 
 ```solidity
 event RedeemDaoBounty(bytes32 _proposalId, address _avatar, address _beneficiary, uint256 _amount)
-```
-
-### RedeemReputation
-
-```solidity
-event RedeemReputation(bytes32 _proposalId, address _avatar, address _beneficiary, uint256 _amount)
 ```
 
 ### ActionSigned
@@ -371,6 +364,30 @@ Emited when _choicesAmount is less than NUM_OF_CHOICES
 error DXDVotingMachine__InvalidParameters()
 ```
 
+### DXDVotingMachine__StartCannotBeBiggerThanListLength
+
+```solidity
+error DXDVotingMachine__StartCannotBeBiggerThanListLength()
+```
+
+arg _start cannot be bigger than proposals list length
+
+### DXDVotingMachine__EndCannotBeBiggerThanListLength
+
+```solidity
+error DXDVotingMachine__EndCannotBeBiggerThanListLength()
+```
+
+arg _end cannot be bigger than proposals list length
+
+### DXDVotingMachine__StartCannotBeBiggerThanEnd
+
+```solidity
+error DXDVotingMachine__StartCannotBeBiggerThanEnd()
+```
+
+arg _start cannot be bigger than _end
+
 ### proposalVotes
 
 ```solidity
@@ -434,6 +451,22 @@ mapping(bytes32 => struct DXDVotingMachine.Scheme) schemes
 ```
 
 schemeId => scheme
+
+### activeProposals
+
+```solidity
+mapping(address => struct EnumerableSetUpgradeable.Bytes32Set) activeProposals
+```
+
+Store activeProposals for each avatar
+
+### inactiveProposals
+
+```solidity
+mapping(address => struct EnumerableSetUpgradeable.Bytes32Set) inactiveProposals
+```
+
+Store inactiveProposals for each avatar
 
 ### NUM_OF_CHOICES
 
@@ -541,7 +574,7 @@ _Constructor_
 ### setParameters
 
 ```solidity
-function setParameters(uint256[10] _params) external returns (bytes32 paramsHash)
+function setParameters(uint256[9] _params) external returns (bytes32 paramsHash)
 ```
 
 _Hash the parameters, save them if necessary, and return the hash value_
@@ -550,7 +583,7 @@ _Hash the parameters, save them if necessary, and return the hash value_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _params | uint256[10] | A parameters array    _params[0] - _queuedVoteRequiredPercentage,    _params[1] - _queuedVotePeriodLimit, //the time limit for a proposal to be in an absolute voting mode.    _params[2] - _boostedVotePeriodLimit, //the time limit for a proposal to be in an relative voting mode.    _params[3] - _preBoostedVotePeriodLimit, //the time limit for a proposal to be in an preparation state (stable) before boosted.    _params[4] -_thresholdConst    _params[5] -_quietEndingPeriod    _params[6] -_proposingRepReward    _params[7] -_minimumDaoBounty    _params[8] -_daoBountyConst    _params[9] - _boostedVoteRequiredPercentage |
+| _params | uint256[9] | A parameters array    _params[0] - _queuedVoteRequiredPercentage,    _params[1] - _queuedVotePeriodLimit, //the time limit for a proposal to be in an absolute voting mode.    _params[2] - _boostedVotePeriodLimit, //the time limit for a proposal to be in an relative voting mode.    _params[3] - _preBoostedVotePeriodLimit, //the time limit for a proposal to be in an preparation state (stable) before boosted.    _params[4] -_thresholdConst    _params[5] -_quietEndingPeriod    _params[6] -_minimumDaoBounty    _params[7] -_daoBountyConst    _params[8] - _boostedVoteRequiredPercentage |
 
 #### Return Values
 
@@ -561,7 +594,7 @@ _Hash the parameters, save them if necessary, and return the hash value_
 ### redeem
 
 ```solidity
-function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint256[2] rewards)
+function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint256 reward)
 ```
 
 _Redeem a reward for a successful stake, vote or proposing.
@@ -578,7 +611,7 @@ _Redeem a reward for a successful stake, vote or proposing.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| rewards | uint256[2] | [0]=stakerTokenReward [1]=proposerReputationReward |
+| reward | uint256 | The staking token reward |
 
 ### redeemDaoBounty
 
@@ -1135,7 +1168,7 @@ _Refund a vote gas cost to an address_
 ### getParametersHash
 
 ```solidity
-function getParametersHash(uint256[10] _params) public pure returns (bytes32 paramsHash)
+function getParametersHash(uint256[9] _params) public pure returns (bytes32 paramsHash)
 ```
 
 _Returns a hash of the given parameters_
@@ -1144,7 +1177,7 @@ _Returns a hash of the given parameters_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _params | uint256[10] | Array of params (10) to hash |
+| _params | uint256[9] | Array of params (9) to hash |
 
 #### Return Values
 
@@ -1191,6 +1224,26 @@ _Returns the schemeId for a given proposal_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | schemeId | bytes32 | Scheme identifier |
+
+### getProposalAvatar
+
+```solidity
+function getProposalAvatar(bytes32 _proposalId) public view returns (address avatarAddress)
+```
+
+_Returns the Avatar address for a given proposalId_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | ID of the proposal |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| avatarAddress | address | Avatar address |
 
 ### getStaker
 
@@ -1357,4 +1410,110 @@ _Returns the state for a given proposal_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | state | enum DXDVotingMachine.ProposalState | ProposalState proposal state |
+
+### _getProposalsBatchRequest
+
+```solidity
+function _getProposalsBatchRequest(uint256 _start, uint256 _end, struct EnumerableSetUpgradeable.Bytes32Set _proposals) internal view returns (bytes32[] proposalsArray)
+```
+
+_Returns array of proposal ids based on index args. Both indexes are inclusive, unles (0,0) that returns all elements_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _start | uint256 | index to start batching (included). |
+| _end | uint256 | last index of batch (included). Zero will default to last element from the list |
+| _proposals | struct EnumerableSetUpgradeable.Bytes32Set | EnumerableSetUpgradeable set of proposal ids |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposalsArray | bytes32[] | with proposals list. |
+
+### getActiveProposals
+
+```solidity
+function getActiveProposals(uint256 _start, uint256 _end, address _avatar) external view returns (bytes32[] activeProposalsArray)
+```
+
+_Returns array of active proposal ids_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _start | uint256 | The index to start batching (included). |
+| _end | uint256 | The last index of batch (included). Zero will return all |
+| _avatar | address | The avatar address to get active proposals from |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| activeProposalsArray | bytes32[] | List of active proposal ids |
+
+### getInactiveProposals
+
+```solidity
+function getInactiveProposals(uint256 _start, uint256 _end, address _avatar) external view returns (bytes32[] inactiveProposalsArray)
+```
+
+_Returns array of inactive proposal ids_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _start | uint256 | The index to start batching (included). |
+| _end | uint256 | The last index of batch (included). Zero will return all |
+| _avatar | address | The avatar address to get active proposals from |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| inactiveProposalsArray | bytes32[] | List of inactive proposal ids |
+
+### getActiveProposalsCount
+
+```solidity
+function getActiveProposalsCount(address _avatar) public view returns (uint256 activeProposalsCount)
+```
+
+_Returns the amount of active proposals_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _avatar | address | The avatar address |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| activeProposalsCount | uint256 | The total count of active proposals for given avatar address |
+
+### getInactiveProposalsCount
+
+```solidity
+function getInactiveProposalsCount(address _avatar) public view returns (uint256 inactiveProposalsCount)
+```
+
+_Returns the amount of inactive proposals_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _avatar | address | The avatar address |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| inactiveProposalsCount | uint256 | The total count of active proposals for given avatar address |
 
