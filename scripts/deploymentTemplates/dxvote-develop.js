@@ -65,7 +65,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
             permissions: [
               {
                 asset: "0x0000000000000000000000000000000000000000",
-                to: "DXDVotingMachine",
+                to: "VotingMachine",
                 functionSignature: "0xaaaaaaaa",
                 value:
                   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
@@ -317,7 +317,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           from: "0xaF8eB8C3A5d9d900AA0B98e3Df0bcC17d3C5F698",
           data: {
             asset: "DXD",
-            address: "DXDVotingMachine",
+            address: "VotingMachine",
             amount: web3.utils.toWei("100"),
           },
         },
