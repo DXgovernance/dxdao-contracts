@@ -8,11 +8,11 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 
-import "./IDXDVotingMachineCallbacks.sol";
+import "./IVotingMachineCallbacks.sol";
 import "./ProposalExecuteInterface.sol";
 
 /**
- * @title Fork of Genesis Protocol Voting Machine for DXdao
+ * @title Holographic Consensus Voting Machine
  *
  * @dev A voting machine is used to to determine the outcome of a dao proposal.
  * The proposals are submitted through schemes.
@@ -29,7 +29,7 @@ import "./ProposalExecuteInterface.sol";
  * If a staker staked on the winning option it receives a reward.
  * If a staker staked on a loosing option it lose his stake.
  */
-contract DXDVotingMachine {
+contract VotingMachine {
     using ECDSA for bytes32;
     using Math for uint256;
     using RealMath for uint216;
@@ -193,42 +193,42 @@ contract DXDVotingMachine {
     /// @notice Event used to signal votes to be executed on chain
     event VoteSignaled(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount);
 
-    error DXDVotingMachine__ProposalIsNotVotable();
-    error DXDVotingMachine__WrongDecisionValue();
-    error DXDVotingMachine__WrongStakingToken();
-    error DXDVotingMachine__SetParametersError(string);
+    error VotingMachine__ProposalIsNotVotable();
+    error VotingMachine__WrongDecisionValue();
+    error VotingMachine__WrongStakingToken();
+    error VotingMachine__SetParametersError(string);
 
     /// @notice Emited when proposal is not in ExecutedInQueue, ExecutedInBoost or Expired status
-    error DXDVotingMachine__WrongProposalStateToRedeem();
-    error DXDVotingMachine__TransferFailed(address to, uint256 amount);
+    error VotingMachine__WrongProposalStateToRedeem();
+    error VotingMachine__TransferFailed(address to, uint256 amount);
 
     /// @notice Emited when proposal is not in ExecutedInQueue or ExecutedInBoost status
-    error DXDVotingMachine__WrongProposalStateToRedeemDaoBounty();
-    error DXDVotingMachine__WrongSigner();
-    error DXDVotingMachine__InvalidNonce();
-    error DXDVotingMachine__OnlySchemeOrAvatarCanSetSchemeRefound();
-    error DXDVotingMachine__AddressNotRegisteredInSchemeRefounds();
-    error DXDVotingMachine__SchemeRefundBalanceIsZero();
-    error DXDVotingMachine__ProposalAlreadyVoted();
-    error DXDVotingMachine__VoterMustHaveReputation();
-    error DXDVotingMachine__NotEnoughtReputation();
-    error DXDVotingMachine__WrongVoteShared();
-    error DXDVotingMachine__StakingAmountShouldBeBiggerThanZero();
-    error DXDVotingMachine__TransferFromStakerFailed();
-    error DXDVotingMachine__StakingAmountIsTooHight();
-    error DXDVotingMachine__TotalStakesIsToHight();
+    error VotingMachine__WrongProposalStateToRedeemDaoBounty();
+    error VotingMachine__WrongSigner();
+    error VotingMachine__InvalidNonce();
+    error VotingMachine__OnlySchemeOrAvatarCanSetSchemeRefound();
+    error VotingMachine__AddressNotRegisteredInSchemeRefounds();
+    error VotingMachine__SchemeRefundBalanceIsZero();
+    error VotingMachine__ProposalAlreadyVoted();
+    error VotingMachine__VoterMustHaveReputation();
+    error VotingMachine__NotEnoughtReputation();
+    error VotingMachine__WrongVoteShared();
+    error VotingMachine__StakingAmountShouldBeBiggerThanZero();
+    error VotingMachine__TransferFromStakerFailed();
+    error VotingMachine__StakingAmountIsTooHight();
+    error VotingMachine__TotalStakesIsToHight();
 
     /// @notice Emited when _choicesAmount is less than NUM_OF_CHOICES
-    error DXDVotingMachine__InvalidChoicesAmount();
-    error DXDVotingMachine__InvalidParameters();
+    error VotingMachine__InvalidChoicesAmount();
+    error VotingMachine__InvalidParameters();
 
     /// @notice arg _start cannot be bigger than proposals list length
-    error DXDVotingMachine__StartCannotBeBiggerThanListLength();
+    error VotingMachine__StartCannotBeBiggerThanListLength();
     /// @notice arg _end cannot be bigger than proposals list length
-    error DXDVotingMachine__EndCannotBeBiggerThanListLength();
+    error VotingMachine__EndCannotBeBiggerThanListLength();
 
     /// @notice arg _start cannot be bigger than _end
-    error DXDVotingMachine__StartCannotBeBiggerThanEnd();
+    error VotingMachine__StartCannotBeBiggerThanEnd();
 
     // Mappings of a proposal various properties
 
@@ -269,7 +269,7 @@ contract DXDVotingMachine {
     bytes32 public constant SIGNED_ACTION_HASH_EIP712 =
         keccak256(
             abi.encodePacked(
-                "address DXDVotingMachineAddress",
+                "address VotingMachineAddress",
                 "bytes32 ProposalId",
                 "address Signer",
                 "uint256 Vote",
@@ -300,14 +300,14 @@ contract DXDVotingMachine {
      */
     modifier votable(bytes32 _proposalId) {
         if (!_isVotable(_proposalId)) {
-            revert DXDVotingMachine__ProposalIsNotVotable();
+            revert VotingMachine__ProposalIsNotVotable();
         }
         _;
     }
 
     modifier validDecision(bytes32 proposalId, uint256 decision) {
         if (decision > getNumberOfChoices(proposalId) || decision <= 0) {
-            revert DXDVotingMachine__WrongDecisionValue();
+            revert VotingMachine__WrongDecisionValue();
         }
         _;
     }
@@ -318,7 +318,7 @@ contract DXDVotingMachine {
      */
     constructor(IERC20 _stakingToken) {
         if (address(_stakingToken) == address(0)) {
-            revert DXDVotingMachine__WrongStakingToken();
+            revert VotingMachine__WrongStakingToken();
         }
         stakingToken = IERC20(_stakingToken);
     }
@@ -341,22 +341,22 @@ contract DXDVotingMachine {
         uint256[9] calldata _params //use array here due to stack too deep issue.
     ) external returns (bytes32 paramsHash) {
         if (_params[0] > 10000 || _params[0] < 5000) {
-            revert DXDVotingMachine__SetParametersError("5000 <= queuedVoteRequiredPercentage <= 10000");
+            revert VotingMachine__SetParametersError("5000 <= queuedVoteRequiredPercentage <= 10000");
         }
         if (_params[4] > 16000 || _params[4] <= 1000) {
-            revert DXDVotingMachine__SetParametersError("1000 < thresholdConst <= 16000");
+            revert VotingMachine__SetParametersError("1000 < thresholdConst <= 16000");
         }
         if (_params[2] < _params[5]) {
-            revert DXDVotingMachine__SetParametersError("boostedVotePeriodLimit >= quietEndingPeriod");
+            revert VotingMachine__SetParametersError("boostedVotePeriodLimit >= quietEndingPeriod");
         }
         if (_params[6] <= 0) {
-            revert DXDVotingMachine__SetParametersError("minimumDaoBounty should be > 0");
+            revert VotingMachine__SetParametersError("minimumDaoBounty should be > 0");
         }
         if (_params[7] <= 0) {
-            revert DXDVotingMachine__SetParametersError("daoBountyConst should be > 0");
+            revert VotingMachine__SetParametersError("daoBountyConst should be > 0");
         }
         if (_params[0] <= _params[8]) {
-            revert DXDVotingMachine__SetParametersError(
+            revert VotingMachine__SetParametersError(
                 "queuedVoteRequiredPercentage should eb higher than boostedVoteRequiredPercentage"
             );
         }
@@ -403,7 +403,7 @@ contract DXDVotingMachine {
             (proposal.state != ProposalState.ExecutedInBoost) &&
             (proposal.state != ProposalState.Expired)
         ) {
-            revert DXDVotingMachine__WrongProposalStateToRedeem();
+            revert VotingMachine__WrongProposalStateToRedeem();
         }
         Parameters memory params = parameters[proposal.paramsHash];
         // as staker
@@ -448,7 +448,7 @@ contract DXDVotingMachine {
 
             bool transferSuccess = stakingToken.transfer(_beneficiary, reward);
             if (!transferSuccess) {
-                revert DXDVotingMachine__TransferFailed(_beneficiary, reward);
+                revert VotingMachine__TransferFailed(_beneficiary, reward);
             }
             emit Redeem(_proposalId, schemes[proposal.schemeId].avatar, _beneficiary, reward);
         }
@@ -468,7 +468,7 @@ contract DXDVotingMachine {
     {
         Proposal storage proposal = proposals[_proposalId];
         if (proposal.state != ProposalState.ExecutedInQueue && proposal.state != ProposalState.ExecutedInBoost) {
-            revert DXDVotingMachine__WrongProposalStateToRedeemDaoBounty();
+            revert VotingMachine__WrongProposalStateToRedeemDaoBounty();
         }
         uint256 totalWinningStakes = proposalStakes[_proposalId][proposal.winningVote];
         Staker storage staker = proposalStakers[_proposalId][_beneficiary];
@@ -488,7 +488,7 @@ contract DXDVotingMachine {
 
             bool transferSuccess = stakingToken.transfer(_beneficiary, potentialAmount);
             if (!transferSuccess) {
-                revert DXDVotingMachine__TransferFailed(_beneficiary, potentialAmount);
+                revert VotingMachine__TransferFailed(_beneficiary, potentialAmount);
             }
             redeemedAmount = potentialAmount;
             emit RedeemDaoBounty(_proposalId, schemes[proposal.schemeId].avatar, _beneficiary, redeemedAmount);
@@ -570,7 +570,7 @@ contract DXDVotingMachine {
         bytes32 stakeHashed = hashAction(proposalId, staker, stakeDecision, amount, signerNonce[staker], 2);
 
         if (staker != stakeHashed.toEthSignedMessageHash().recover(signature)) {
-            revert DXDVotingMachine__WrongSigner();
+            revert VotingMachine__WrongSigner();
         }
 
         signerNonce[staker] = signerNonce[staker] + 1;
@@ -599,7 +599,7 @@ contract DXDVotingMachine {
         }
 
         if (!(schemeId != bytes32(0))) {
-            revert DXDVotingMachine__OnlySchemeOrAvatarCanSetSchemeRefound();
+            revert VotingMachine__OnlySchemeOrAvatarCanSetSchemeRefound();
         }
         schemes[schemeId].voteGasBalance = schemes[schemeId].voteGasBalance + msg.value;
         schemes[schemeId].voteGas = _voteGas;
@@ -614,11 +614,11 @@ contract DXDVotingMachine {
         bytes32 schemeId = keccak256(abi.encodePacked(msg.sender, scheme));
 
         if (schemes[schemeId].voteGas <= 0) {
-            revert DXDVotingMachine__AddressNotRegisteredInSchemeRefounds();
+            revert VotingMachine__AddressNotRegisteredInSchemeRefounds();
         }
 
         if (schemes[schemeId].voteGasBalance <= 0) {
-            revert DXDVotingMachine__SchemeRefundBalanceIsZero();
+            revert VotingMachine__SchemeRefundBalanceIsZero();
         }
         uint256 voteGasBalance = schemes[schemeId].voteGasBalance;
         schemes[schemeId].voteGasBalance = 0;
@@ -709,7 +709,7 @@ contract DXDVotingMachine {
         bytes32 voteHashed = hashAction(proposalId, voter, voteDecision, amount, nonce, actionType);
 
         if (voter != voteHashed.toEthSignedMessageHash().recover(signature)) {
-            revert DXDVotingMachine__WrongSigner();
+            revert VotingMachine__WrongSigner();
         }
 
         emit ActionSigned(proposalId, voter, voteDecision, amount, nonce, actionType, signature);
@@ -727,11 +727,11 @@ contract DXDVotingMachine {
         uint256 amount
     ) external validDecision(proposalId, voteDecision) {
         if (!_isVotable(proposalId)) {
-            revert DXDVotingMachine__ProposalIsNotVotable();
+            revert VotingMachine__ProposalIsNotVotable();
         }
 
         if (votesSignaled[proposalId][msg.sender].voteDecision != 0) {
-            revert DXDVotingMachine__ProposalAlreadyVoted();
+            revert VotingMachine__ProposalAlreadyVoted();
         }
         votesSignaled[proposalId][msg.sender].voteDecision = voteDecision;
         votesSignaled[proposalId][msg.sender].amount = amount;
@@ -754,12 +754,12 @@ contract DXDVotingMachine {
         bytes calldata signature
     ) external {
         if (!_isVotable(proposalId)) {
-            revert DXDVotingMachine__ProposalIsNotVotable();
+            revert VotingMachine__ProposalIsNotVotable();
         }
         bytes32 voteHashed = hashAction(proposalId, voter, voteDecision, amount, signerNonce[voter], 1);
 
         if (voter != voteHashed.toEthSignedMessageHash().recover(signature)) {
-            revert DXDVotingMachine__WrongSigner();
+            revert VotingMachine__WrongSigner();
         }
 
         signerNonce[voter] = signerNonce[voter] + 1;
@@ -809,14 +809,14 @@ contract DXDVotingMachine {
         Proposal storage proposal = proposals[_proposalId];
 
         // Check voter has enough reputation:
-        uint256 reputation = IDXDVotingMachineCallbacks(proposal.callbacks).reputationOf(_voter, _proposalId);
+        uint256 reputation = IVotingMachineCallbacks(proposal.callbacks).reputationOf(_voter, _proposalId);
 
         if (reputation <= 0) {
-            revert DXDVotingMachine__VoterMustHaveReputation();
+            revert VotingMachine__VoterMustHaveReputation();
         }
 
         if (reputation < _rep) {
-            revert DXDVotingMachine__NotEnoughtReputation();
+            revert VotingMachine__NotEnoughtReputation();
         }
         uint256 rep = _rep;
         if (rep == 0) {
@@ -872,11 +872,11 @@ contract DXDVotingMachine {
      */
     function executeSignaledVote(bytes32 proposalId, address voter) external {
         if (!_isVotable(proposalId)) {
-            revert DXDVotingMachine__ProposalIsNotVotable();
+            revert VotingMachine__ProposalIsNotVotable();
         }
 
         if (votesSignaled[proposalId][voter].voteDecision <= 0) {
-            revert DXDVotingMachine__WrongVoteShared();
+            revert VotingMachine__WrongVoteShared();
         }
         internalVote(
             proposalId,
@@ -919,7 +919,7 @@ contract DXDVotingMachine {
                             keccak256(
                                 "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
                             ),
-                            keccak256(bytes("DXDVotingMachine")),
+                            keccak256(bytes("VotingMachine")),
                             keccak256(bytes("1")),
                             chainId,
                             address(this)
@@ -962,7 +962,7 @@ contract DXDVotingMachine {
         Parameters memory params = parameters[proposal.paramsHash];
         Proposal memory tmpProposal = proposal;
         ExecuteFunctionParams memory executeParams;
-        executeParams.totalReputation = IDXDVotingMachineCallbacks(proposal.callbacks).getTotalReputationSupply(
+        executeParams.totalReputation = IVotingMachineCallbacks(proposal.callbacks).getTotalReputationSupply(
             _proposalId
         );
         // first divide by 10000 to prevent overflow
@@ -1144,7 +1144,7 @@ contract DXDVotingMachine {
         // 0 is not a valid vote.
 
         if (_amount <= 0) {
-            revert DXDVotingMachine__StakingAmountShouldBeBiggerThanZero();
+            revert VotingMachine__StakingAmountShouldBeBiggerThanZero();
         }
 
         if (_execute(_proposalId)) {
@@ -1166,7 +1166,7 @@ contract DXDVotingMachine {
 
         bool transferSuccess = stakingToken.transferFrom(_staker, address(this), amount);
         if (!transferSuccess) {
-            revert DXDVotingMachine__TransferFromStakerFailed();
+            revert VotingMachine__TransferFromStakerFailed();
         }
         schemes[proposal.schemeId].stakingTokenBalance += amount;
         proposal.totalStakes = proposal.totalStakes + amount; //update totalRedeemableStakes
@@ -1175,11 +1175,11 @@ contract DXDVotingMachine {
         // Note that GEN cap is 100000000 ether.
 
         if (staker.amount > 0x100000000000000000000000000000000) {
-            revert DXDVotingMachine__StakingAmountIsTooHight();
+            revert VotingMachine__StakingAmountIsTooHight();
         }
 
         if (proposal.totalStakes > uint256(0x100000000000000000000000000000000)) {
-            revert DXDVotingMachine__TotalStakesIsToHight();
+            revert VotingMachine__TotalStakesIsToHight();
         }
 
         if (_vote == YES) {
@@ -1207,11 +1207,11 @@ contract DXDVotingMachine {
         address _avatar
     ) internal returns (bytes32 proposalId) {
         if (_choicesAmount < NUM_OF_CHOICES) {
-            revert DXDVotingMachine__InvalidChoicesAmount();
+            revert VotingMachine__InvalidChoicesAmount();
         }
         // Check parameters existence.
         if (parameters[_paramsHash].queuedVoteRequiredPercentage < 5000) {
-            revert DXDVotingMachine__InvalidParameters();
+            revert VotingMachine__InvalidParameters();
         }
         // Generate a unique ID:
         bytes32 proposalId = keccak256(abi.encodePacked(this, proposalsCnt));
@@ -1442,13 +1442,13 @@ contract DXDVotingMachine {
             return new bytes32[](0);
         }
         if (_start > totalCount) {
-            revert DXDVotingMachine__StartCannotBeBiggerThanListLength();
+            revert VotingMachine__StartCannotBeBiggerThanListLength();
         }
         if (_end > totalCount) {
-            revert DXDVotingMachine__EndCannotBeBiggerThanListLength();
+            revert VotingMachine__EndCannotBeBiggerThanListLength();
         }
         if (_start > _end) {
-            revert DXDVotingMachine__StartCannotBeBiggerThanEnd();
+            revert VotingMachine__StartCannotBeBiggerThanEnd();
         }
 
         uint256 total = totalCount - 1;

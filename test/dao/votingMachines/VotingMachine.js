@@ -15,9 +15,9 @@ const WalletScheme = artifacts.require("./WalletScheme.sol");
 const AvatarScheme = artifacts.require("./AvatarScheme.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
-const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
+const VotingMachine = artifacts.require("./VotingMachine.sol");
 
-contract("DXDVotingMachine", function (accounts) {
+contract("VotingMachine", function (accounts) {
   let permissionRegistry,
     masterAvatarScheme,
     registrarScheme,
@@ -177,7 +177,7 @@ contract("DXDVotingMachine", function (accounts) {
           value: web3.utils.toWei("1"),
         });
         const setRefundConfData = web3.eth.abi.encodeFunctionCall(
-          DXDVotingMachine.abi.find(x => x.name === "setSchemeRefund"),
+          VotingMachine.abi.find(x => x.name === "setSchemeRefund"),
           [
             org.avatar.address,
             masterAvatarScheme.address,
@@ -237,7 +237,7 @@ contract("DXDVotingMachine", function (accounts) {
       it("pay for gasRefund from voting machine only when gasRefund balance is enough", async function () {
         // Send enough eth just for three votes
         const setRefundConfData = web3.eth.abi.encodeFunctionCall(
-          DXDVotingMachine.abi.find(x => x.name === "setSchemeRefund"),
+          VotingMachine.abi.find(x => x.name === "setSchemeRefund"),
           [
             org.avatar.address,
             masterAvatarScheme.address,
@@ -471,7 +471,7 @@ contract("DXDVotingMachine", function (accounts) {
             votesignature,
             { from: accounts[3] }
           ),
-          "DXDVotingMachine__WrongSigner()"
+          "VotingMachine__WrongSigner()"
         );
 
         await expectRevert(
@@ -485,7 +485,7 @@ contract("DXDVotingMachine", function (accounts) {
             votesignature,
             { from: accounts[3] }
           ),
-          "DXDVotingMachine__WrongSigner()"
+          "VotingMachine__WrongSigner()"
         );
       });
 
@@ -519,7 +519,7 @@ contract("DXDVotingMachine", function (accounts) {
           },
           primaryType: "action",
           domain: {
-            name: "DXDVotingMachine",
+            name: "VotingMachine",
             version: "1",
             chainId: "31337",
             verifyingContract: dxdVotingMachine.address,
@@ -598,7 +598,7 @@ contract("DXDVotingMachine", function (accounts) {
             votesignature,
             { from: accounts[1] }
           ),
-          "DXDVotingMachine__WrongSigner()"
+          "VotingMachine__WrongSigner()"
         );
       });
 
@@ -639,7 +639,7 @@ contract("DXDVotingMachine", function (accounts) {
             voteInfoFromLog.signature,
             { from: accounts[4] }
           ),
-          "DXDVotingMachine__WrongSigner()"
+          "VotingMachine__WrongSigner()"
         );
 
         await expectRevert(
@@ -651,7 +651,7 @@ contract("DXDVotingMachine", function (accounts) {
             voteInfoFromLog.signature,
             { from: accounts[4] }
           ),
-          "DXDVotingMachine__WrongSigner()"
+          "VotingMachine__WrongSigner()"
         );
 
         await expectRevert(
@@ -663,7 +663,7 @@ contract("DXDVotingMachine", function (accounts) {
             voteInfoFromLog.signature,
             { from: accounts[4] }
           ),
-          "DXDVotingMachine__WrongSigner()"
+          "VotingMachine__WrongSigner()"
         );
       });
 
@@ -767,7 +767,7 @@ contract("DXDVotingMachine", function (accounts) {
           dxdVotingMachine.signalVote(proposalId, 3, 60000, {
             from: accounts[3],
           }),
-          "DXDVotingMachine__WrongDecisionValue()"
+          "VotingMachine__WrongDecisionValue()"
         );
         const signalVoteTx = await dxdVotingMachine.signalVote(
           proposalId,

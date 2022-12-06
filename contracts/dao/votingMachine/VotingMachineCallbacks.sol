@@ -5,15 +5,15 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../DAOController.sol";
 import "../DAOReputation.sol";
 import "hardhat/console.sol";
-import "./IDXDVotingMachine.sol";
+import "./IVotingMachine.sol";
 
-contract DXDVotingMachineCallbacks {
-    IDXDVotingMachine public votingMachine;
+contract VotingMachineCallbacks {
+    IVotingMachine public votingMachine;
 
     DAOController public controller;
 
     modifier onlyVotingMachine() {
-        require(msg.sender == address(votingMachine), "DXDVotingMachineCallbacks: only VotingMachine");
+        require(msg.sender == address(votingMachine), "VotingMachineCallbacks: only VotingMachine");
         _;
     }
 

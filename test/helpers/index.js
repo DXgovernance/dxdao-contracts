@@ -5,7 +5,7 @@ const { LogDecoder } = require("@maticnetwork/eth-decoder");
 const DAOAvatar = artifacts.require("./DAOAvatar.sol");
 const DAOController = artifacts.require("./DAOController.sol");
 const DAOReputation = artifacts.require("./DAOReputation.sol");
-const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
+const VotingMachine = artifacts.require("./VotingMachine.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
@@ -17,7 +17,7 @@ export const logDecoder = new LogDecoder([
   DAOAvatar.abi,
   DAOController.abi,
   DAOReputation.abi,
-  DXDVotingMachine.abi,
+  VotingMachine.abi,
   WalletScheme.abi,
   PermissionRegistry.abi,
   ERC20VestingFactory.abi,
@@ -72,7 +72,7 @@ export const deployDao = async function (deployConfig) {
   }
   await reputation.transferOwnership(controller.address);
 
-  const votingMachine = await DXDVotingMachine.new(
+  const votingMachine = await VotingMachine.new(
     deployConfig.votingMachineToken
   );
 

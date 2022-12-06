@@ -3,7 +3,7 @@ const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const DAOReputation = artifacts.require("./DAOReputation.sol");
 const DAOController = artifacts.require("./DAOController.sol");
 const DAOAvatar = artifacts.require("./DAOAvatar.sol");
-const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
+const VotingMachine = artifacts.require("./VotingMachine.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 import * as helpers from "../helpers";
 
@@ -42,7 +42,7 @@ contract("DAOController", function (accounts) {
 
     standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
 
-    const votingMachine = await DXDVotingMachine.new(standardTokenMock.address);
+    const votingMachine = await VotingMachine.new(standardTokenMock.address);
 
     defaultParamsHash = await helpers.setDefaultParameters(votingMachine);
 
