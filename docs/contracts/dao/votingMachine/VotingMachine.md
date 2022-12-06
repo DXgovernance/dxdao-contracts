@@ -1,6 +1,6 @@
 # Solidity API
 
-## DXDVotingMachine
+## VotingMachine
 
 _A voting machine is used to to determine the outcome of a dao proposal.
 The proposals are submitted through schemes.
@@ -89,8 +89,8 @@ struct Staker {
 struct Proposal {
   bytes32 schemeId;
   address callbacks;
-  enum DXDVotingMachine.ProposalState state;
-  enum DXDVotingMachine.ExecutionState executionState;
+  enum VotingMachine.ProposalState state;
+  enum VotingMachine.ExecutionState executionState;
   uint256 winningVote;
   address proposer;
   uint256 currentBoostedVotePeriodLimit;
@@ -197,7 +197,7 @@ event ActionSigned(bytes32 proposalId, address voter, uint256 voteDecision, uint
 ### StateChange
 
 ```solidity
-event StateChange(bytes32 _proposalId, enum DXDVotingMachine.ProposalState _proposalState)
+event StateChange(bytes32 _proposalId, enum VotingMachine.ProposalState _proposalState)
 ```
 
 ### ExpirationCallBounty
@@ -226,143 +226,167 @@ event VoteSignaled(bytes32 proposalId, address voter, uint256 voteDecision, uint
 
 Event used to signal votes to be executed on chain
 
-### DXDVotingMachine__ProposalIsNotVotable
+### VotingMachine__ProposalIsNotVotable
 
 ```solidity
-error DXDVotingMachine__ProposalIsNotVotable()
+error VotingMachine__ProposalIsNotVotable()
 ```
 
-### DXDVotingMachine__WrongDecisionValue
+### VotingMachine__WrongDecisionValue
 
 ```solidity
-error DXDVotingMachine__WrongDecisionValue()
+error VotingMachine__WrongDecisionValue()
 ```
 
-### DXDVotingMachine__WrongStakingToken
+### VotingMachine__WrongStakingToken
 
 ```solidity
-error DXDVotingMachine__WrongStakingToken()
+error VotingMachine__WrongStakingToken()
 ```
 
-### DXDVotingMachine__SetParametersError
+### VotingMachine__SetParametersError
 
 ```solidity
-error DXDVotingMachine__SetParametersError(string)
+error VotingMachine__SetParametersError(string)
 ```
 
-### DXDVotingMachine__WrongProposalStateToRedeem
+### VotingMachine__WrongProposalStateToRedeem
 
 ```solidity
-error DXDVotingMachine__WrongProposalStateToRedeem()
+error VotingMachine__WrongProposalStateToRedeem()
 ```
 
 Emited when proposal is not in ExecutedInQueue, ExecutedInBoost or Expired status
 
-### DXDVotingMachine__TransferFailed
+### VotingMachine__TransferFailed
 
 ```solidity
-error DXDVotingMachine__TransferFailed(address to, uint256 amount)
+error VotingMachine__TransferFailed(address to, uint256 amount)
 ```
 
-### DXDVotingMachine__WrongProposalStateToRedeemDaoBounty
+### VotingMachine__WrongProposalStateToRedeemDaoBounty
 
 ```solidity
-error DXDVotingMachine__WrongProposalStateToRedeemDaoBounty()
+error VotingMachine__WrongProposalStateToRedeemDaoBounty()
 ```
 
 Emited when proposal is not in ExecutedInQueue or ExecutedInBoost status
 
-### DXDVotingMachine__WrongSigner
+### VotingMachine__WrongSigner
 
 ```solidity
-error DXDVotingMachine__WrongSigner()
+error VotingMachine__WrongSigner()
 ```
 
-### DXDVotingMachine__InvalidNonce
+### VotingMachine__InvalidNonce
 
 ```solidity
-error DXDVotingMachine__InvalidNonce()
+error VotingMachine__InvalidNonce()
 ```
 
-### DXDVotingMachine__OnlySchemeOrAvatarCanSetSchemeRefound
+### VotingMachine__OnlySchemeOrAvatarCanSetSchemeRefound
 
 ```solidity
-error DXDVotingMachine__OnlySchemeOrAvatarCanSetSchemeRefound()
+error VotingMachine__OnlySchemeOrAvatarCanSetSchemeRefound()
 ```
 
-### DXDVotingMachine__AddressNotRegisteredInSchemeRefounds
+### VotingMachine__AddressNotRegisteredInSchemeRefounds
 
 ```solidity
-error DXDVotingMachine__AddressNotRegisteredInSchemeRefounds()
+error VotingMachine__AddressNotRegisteredInSchemeRefounds()
 ```
 
-### DXDVotingMachine__SchemeRefundBalanceIsZero
+### VotingMachine__SchemeRefundBalanceIsZero
 
 ```solidity
-error DXDVotingMachine__SchemeRefundBalanceIsZero()
+error VotingMachine__SchemeRefundBalanceIsZero()
 ```
 
-### DXDVotingMachine__ProposalAlreadyVoted
+### VotingMachine__ProposalAlreadyVoted
 
 ```solidity
-error DXDVotingMachine__ProposalAlreadyVoted()
+error VotingMachine__ProposalAlreadyVoted()
 ```
 
-### DXDVotingMachine__VoterMustHaveReputation
+### VotingMachine__VoterMustHaveReputation
 
 ```solidity
-error DXDVotingMachine__VoterMustHaveReputation()
+error VotingMachine__VoterMustHaveReputation()
 ```
 
-### DXDVotingMachine__NotEnoughtReputation
+### VotingMachine__NotEnoughtReputation
 
 ```solidity
-error DXDVotingMachine__NotEnoughtReputation()
+error VotingMachine__NotEnoughtReputation()
 ```
 
-### DXDVotingMachine__WrongVoteShared
+### VotingMachine__WrongVoteShared
 
 ```solidity
-error DXDVotingMachine__WrongVoteShared()
+error VotingMachine__WrongVoteShared()
 ```
 
-### DXDVotingMachine__StakingAmountShouldBeBiggerThanZero
+### VotingMachine__StakingAmountShouldBeBiggerThanZero
 
 ```solidity
-error DXDVotingMachine__StakingAmountShouldBeBiggerThanZero()
+error VotingMachine__StakingAmountShouldBeBiggerThanZero()
 ```
 
-### DXDVotingMachine__TransferFromStakerFailed
+### VotingMachine__TransferFromStakerFailed
 
 ```solidity
-error DXDVotingMachine__TransferFromStakerFailed()
+error VotingMachine__TransferFromStakerFailed()
 ```
 
-### DXDVotingMachine__StakingAmountIsTooHight
+### VotingMachine__StakingAmountIsTooHight
 
 ```solidity
-error DXDVotingMachine__StakingAmountIsTooHight()
+error VotingMachine__StakingAmountIsTooHight()
 ```
 
-### DXDVotingMachine__TotalStakesIsToHight
+### VotingMachine__TotalStakesIsToHight
 
 ```solidity
-error DXDVotingMachine__TotalStakesIsToHight()
+error VotingMachine__TotalStakesIsToHight()
 ```
 
-### DXDVotingMachine__InvalidChoicesAmount
+### VotingMachine__InvalidChoicesAmount
 
 ```solidity
-error DXDVotingMachine__InvalidChoicesAmount()
+error VotingMachine__InvalidChoicesAmount()
 ```
 
 Emited when _choicesAmount is less than NUM_OF_CHOICES
 
-### DXDVotingMachine__InvalidParameters
+### VotingMachine__InvalidParameters
 
 ```solidity
-error DXDVotingMachine__InvalidParameters()
+error VotingMachine__InvalidParameters()
 ```
+
+### VotingMachine__StartCannotBeBiggerThanListLength
+
+```solidity
+error VotingMachine__StartCannotBeBiggerThanListLength()
+```
+
+arg _start cannot be bigger than proposals list length
+
+### VotingMachine__EndCannotBeBiggerThanListLength
+
+```solidity
+error VotingMachine__EndCannotBeBiggerThanListLength()
+```
+
+arg _end cannot be bigger than proposals list length
+
+### VotingMachine__StartCannotBeBiggerThanEnd
+
+```solidity
+error VotingMachine__StartCannotBeBiggerThanEnd()
+```
+
+arg _start cannot be bigger than _end
 
 ### proposalVotes
 
@@ -383,7 +407,7 @@ proposalId   =>    vote   => reputation
 ### proposalVoters
 
 ```solidity
-mapping(bytes32 => mapping(address => struct DXDVotingMachine.Voter)) proposalVoters
+mapping(bytes32 => mapping(address => struct VotingMachine.Voter)) proposalVoters
 ```
 
 proposalId   =>    address => voter
@@ -399,7 +423,7 @@ proposalId  =>    address  => stakes
 ### proposalStakers
 
 ```solidity
-mapping(bytes32 => mapping(address => struct DXDVotingMachine.Staker)) proposalStakers
+mapping(bytes32 => mapping(address => struct VotingMachine.Staker)) proposalStakers
 ```
 
 proposalId    =>   address =>  staker
@@ -407,7 +431,7 @@ proposalId    =>   address =>  staker
 ### parameters
 
 ```solidity
-mapping(bytes32 => struct DXDVotingMachine.Parameters) parameters
+mapping(bytes32 => struct VotingMachine.Parameters) parameters
 ```
 
 A mapping from hashes to parameters
@@ -415,7 +439,7 @@ A mapping from hashes to parameters
 ### proposals
 
 ```solidity
-mapping(bytes32 => struct DXDVotingMachine.Proposal) proposals
+mapping(bytes32 => struct VotingMachine.Proposal) proposals
 ```
 
 Mapping from the ID of the proposal to the proposal itself.
@@ -423,10 +447,26 @@ Mapping from the ID of the proposal to the proposal itself.
 ### schemes
 
 ```solidity
-mapping(bytes32 => struct DXDVotingMachine.Scheme) schemes
+mapping(bytes32 => struct VotingMachine.Scheme) schemes
 ```
 
 schemeId => scheme
+
+### activeProposals
+
+```solidity
+mapping(address => struct EnumerableSetUpgradeable.Bytes32Set) activeProposals
+```
+
+Store activeProposals for each avatar
+
+### inactiveProposals
+
+```solidity
+mapping(address => struct EnumerableSetUpgradeable.Bytes32Set) inactiveProposals
+```
+
+Store inactiveProposals for each avatar
 
 ### NUM_OF_CHOICES
 
@@ -475,16 +515,16 @@ bytes32 SIGNED_ACTION_HASH_EIP712
 Digest describing the data the user signs according EIP 712.
 Needs to match what is passed to Metamask.
 
-### stakesNonce
+### signerNonce
 
 ```solidity
-mapping(address => uint256) stakesNonce
+mapping(address => uint256) signerNonce
 ```
 
 ### votesSignaled
 
 ```solidity
-mapping(bytes32 => mapping(address => struct DXDVotingMachine.VoteDecision)) votesSignaled
+mapping(bytes32 => mapping(address => struct VotingMachine.VoteDecision)) votesSignaled
 ```
 
 ### numOfChoices
@@ -554,7 +594,7 @@ _Hash the parameters, save them if necessary, and return the hash value_
 ### redeem
 
 ```solidity
-function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint256 stakerReward)
+function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint256 reward)
 ```
 
 _Redeem a reward for a successful stake, vote or proposing.
@@ -571,7 +611,7 @@ _Redeem a reward for a successful stake, vote or proposing.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| stakerReward | uint256 | The staking token reward |
+| reward | uint256 | The staking token reward |
 
 ### redeemDaoBounty
 
@@ -680,13 +720,13 @@ _Staking function_
 | ---- | ---- | ----------- |
 | proposalExecuted | bool | true if the proposal was executed, false otherwise. |
 
-### stakeWithSignature
+### executeSignedStake
 
 ```solidity
-function stakeWithSignature(bytes32 proposalId, address staker, uint256 stakeDecision, uint256 amount, uint256 nonce, bytes signature) external returns (bool proposalExecuted)
+function executeSignedStake(bytes32 proposalId, address staker, uint256 stakeDecision, uint256 amount, bytes signature) external returns (bool proposalExecuted)
 ```
 
-_stakeWithSignature function_
+_executeSignedStake function_
 
 #### Parameters
 
@@ -696,7 +736,6 @@ _stakeWithSignature function_
 | staker | address | Address of staker |
 | stakeDecision | uint256 | NO(1) or YES(2). |
 | amount | uint256 | The betting amount |
-| nonce | uint256 | Nonce value ,it is part of the signature to ensure that a signature can be received only once. |
 | signature | bytes | Signed data by the staker |
 
 #### Return Values
@@ -882,7 +921,7 @@ _Signal the vote of a proposal in this voting machine to be executed later_
 ### executeSignedVote
 
 ```solidity
-function executeSignedVote(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount, uint256 nonce, bytes signature) external
+function executeSignedVote(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount, bytes signature) external
 ```
 
 _Execute a signed vote_
@@ -895,7 +934,6 @@ _Execute a signed vote_
 | voter | address | The signer of the vote |
 | voteDecision | uint256 | The vote decision, NO(1) or YES(2). |
 | amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
-| nonce | uint256 | Nonce value ,it is part of the signature to ensure that a signature can be received only once. |
 | signature | bytes | The signature of the hashed vote |
 
 ### propose
@@ -1185,6 +1223,26 @@ _Returns the schemeId for a given proposal_
 | ---- | ---- | ----------- |
 | schemeId | bytes32 | Scheme identifier |
 
+### getProposalAvatar
+
+```solidity
+function getProposalAvatar(bytes32 _proposalId) public view returns (address avatarAddress)
+```
+
+_Returns the Avatar address for a given proposalId_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _proposalId | bytes32 | ID of the proposal |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| avatarAddress | address | Avatar address |
+
 ### getStaker
 
 ```solidity
@@ -1334,7 +1392,7 @@ _Returns the winningVote for a given proposal_
 ### state
 
 ```solidity
-function state(bytes32 _proposalId) external view returns (enum DXDVotingMachine.ProposalState state)
+function state(bytes32 _proposalId) external view returns (enum VotingMachine.ProposalState state)
 ```
 
 _Returns the state for a given proposal_
@@ -1349,5 +1407,111 @@ _Returns the state for a given proposal_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| state | enum DXDVotingMachine.ProposalState | ProposalState proposal state |
+| state | enum VotingMachine.ProposalState | ProposalState proposal state |
+
+### _getProposalsBatchRequest
+
+```solidity
+function _getProposalsBatchRequest(uint256 _start, uint256 _end, struct EnumerableSetUpgradeable.Bytes32Set _proposals) internal view returns (bytes32[] proposalsArray)
+```
+
+_Returns array of proposal ids based on index args. Both indexes are inclusive, unles (0,0) that returns all elements_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _start | uint256 | index to start batching (included). |
+| _end | uint256 | last index of batch (included). Zero will default to last element from the list |
+| _proposals | struct EnumerableSetUpgradeable.Bytes32Set | EnumerableSetUpgradeable set of proposal ids |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposalsArray | bytes32[] | with proposals list. |
+
+### getActiveProposals
+
+```solidity
+function getActiveProposals(uint256 _start, uint256 _end, address _avatar) external view returns (bytes32[] activeProposalsArray)
+```
+
+_Returns array of active proposal ids_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _start | uint256 | The index to start batching (included). |
+| _end | uint256 | The last index of batch (included). Zero will return all |
+| _avatar | address | The avatar address to get active proposals from |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| activeProposalsArray | bytes32[] | List of active proposal ids |
+
+### getInactiveProposals
+
+```solidity
+function getInactiveProposals(uint256 _start, uint256 _end, address _avatar) external view returns (bytes32[] inactiveProposalsArray)
+```
+
+_Returns array of inactive proposal ids_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _start | uint256 | The index to start batching (included). |
+| _end | uint256 | The last index of batch (included). Zero will return all |
+| _avatar | address | The avatar address to get active proposals from |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| inactiveProposalsArray | bytes32[] | List of inactive proposal ids |
+
+### getActiveProposalsCount
+
+```solidity
+function getActiveProposalsCount(address _avatar) public view returns (uint256 activeProposalsCount)
+```
+
+_Returns the amount of active proposals_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _avatar | address | The avatar address |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| activeProposalsCount | uint256 | The total count of active proposals for given avatar address |
+
+### getInactiveProposalsCount
+
+```solidity
+function getInactiveProposalsCount(address _avatar) public view returns (uint256 inactiveProposalsCount)
+```
+
+_Returns the amount of inactive proposals_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _avatar | address | The avatar address |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| inactiveProposalsCount | uint256 | The total count of active proposals for given avatar address |
 

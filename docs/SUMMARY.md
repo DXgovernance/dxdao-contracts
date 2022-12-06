@@ -13,7 +13,11 @@
       * [DXDVotingMachineCallbacks](/docs/contracts/dao/votingMachine/DXDVotingMachineCallbacks.md)
       * [DXDVotingMachineCallbacksInterface](/docs/contracts/dao/votingMachine/DXDVotingMachineCallbacksInterface.md)
       * [IDXDVotingMachine](/docs/contracts/dao/votingMachine/IDXDVotingMachine.md)
+      * [IVotingMachine](/docs/contracts/dao/votingMachine/IVotingMachine.md)
+      * [IVotingMachineCallbacks](/docs/contracts/dao/votingMachine/IVotingMachineCallbacks.md)
       * [ProposalExecuteInterface](/docs/contracts/dao/votingMachine/ProposalExecuteInterface.md)
+      * [VotingMachine](/docs/contracts/dao/votingMachine/VotingMachine.md)
+      * [VotingMachineCallbacks](/docs/contracts/dao/votingMachine/VotingMachineCallbacks.md)
   * /deploy
     * [NanoUniversalDeployer](/docs/contracts/deploy/NanoUniversalDeployer.md)
   * /erc20guild
