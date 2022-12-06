@@ -1470,10 +1470,10 @@ contract DXDVotingMachine {
 
     /**
      * @dev Returns array of active proposal ids
-     * @param _start index to start batching (included).
-     * @param _end last index of batch (included). Zero will return all
-     * @param _avatar the avatar contract address
-     * @return activeProposalsArray with active proposals list.
+     * @param _start The index to start batching (included).
+     * @param _end The last index of batch (included). Zero will return all
+     * @param _avatar The avatar address to get active proposals from
+     * @return activeProposalsArray List of active proposal ids
      */
     function getActiveProposals(
         uint256 _start,
@@ -1485,10 +1485,10 @@ contract DXDVotingMachine {
 
     /**
      * @dev Returns array of inactive proposal ids
-     * @param _start index to start batching (included).
-     * @param _end last index of batch (included). Zero will return all
-     * @param _avatar the avatar contract address
-     * @return inactiveProposalsArray with inactive proposals list.
+     * @param _start The index to start batching (included).
+     * @param _end The last index of batch (included). Zero will return all
+     * @param _avatar The avatar address to get active proposals from
+     * @return inactiveProposalsArray List of inactive proposal ids
      */
     function getInactiveProposals(
         uint256 _start,
