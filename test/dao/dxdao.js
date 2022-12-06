@@ -174,19 +174,19 @@ contract("DXdao", function (accounts) {
     else done();
   });
 
-  it("Wallet - execute proposeVote -option 0 - check action - with DXDVotingMachine", async function () {
+  it("Wallet - execute proposeVote -option 0 - check action - with VotingMachine", async function () {
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
 
     await expectRevert(
       dxDao.votingMachine.vote(proposalId, 0, 0, {
         from: accounts[2],
       }),
-      "DXDVotingMachine__WrongDecisionValue()"
+      "VotingMachine__WrongDecisionValue()"
     );
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
   });
 
-  it("Wallet - execute proposeVote - option NO - check action - with DXDVotingMachine", async function () {
+  it("Wallet - execute proposeVote - option NO - check action - with VotingMachine", async function () {
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
 
     await dxDao.votingMachine.vote(proposalId, constants.NO_OPTION, 0, {
@@ -210,7 +210,7 @@ contract("DXdao", function (accounts) {
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
   });
 
-  it("Wallet - execute proposeVote - option YES - check action - with DXDVotingMachine", async function () {
+  it("Wallet - execute proposeVote - option YES - check action - with VotingMachine", async function () {
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
 
     const executionProposalTx = await dxDao.votingMachine.vote(

@@ -6,18 +6,6 @@ _A controller controls and connect the organizations schemes, reputation and ava
 The schemes execute proposals through the controller to the avatar.
 Each scheme has it own parameters and operation permissions._
 
-### activeProposals
-
-```solidity
-struct EnumerableSetUpgradeable.Bytes32Set activeProposals
-```
-
-### inactiveProposals
-
-```solidity
-struct EnumerableSetUpgradeable.Bytes32Set inactiveProposals
-```
-
 ### Scheme
 
 ```solidity
@@ -157,30 +145,6 @@ error DAOController__SenderIsNotRegisteredOrProposalIsInactive()
 
 Sender is not a registered scheme or proposal is not active
 
-### DAOController__StartCannotBeBiggerThanListLength
-
-```solidity
-error DAOController__StartCannotBeBiggerThanListLength()
-```
-
-arg _start cannot be bigger than proposals list length
-
-### DAOController__EndCannotBeBiggerThanListLength
-
-```solidity
-error DAOController__EndCannotBeBiggerThanListLength()
-```
-
-arg _end cannot be bigger than proposals list length
-
-### DAOController__StartCannotBeBiggerThanEnd
-
-```solidity
-error DAOController__StartCannotBeBiggerThanEnd()
-```
-
-arg _start cannot be bigger than _end
-
 ### onlyRegisteredScheme
 
 ```solidity
@@ -296,34 +260,6 @@ _Perform a generic call to an arbitrary contract_
 | ---- | ---- | ----------- |
 | success | bool | Whether call was executed successfully or not |
 | data | bytes | Call data returned |
-
-### startProposal
-
-```solidity
-function startProposal(bytes32 _proposalId) external
-```
-
-_Adds a proposal to the active proposals list_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _proposalId | bytes32 | The proposalId |
-
-### endProposal
-
-```solidity
-function endProposal(bytes32 _proposalId) external
-```
-
-_Moves a proposal from the active proposals list to the inactive list_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _proposalId | bytes32 | The proposalId |
 
 ### burnReputation
 
@@ -501,64 +437,6 @@ _Returns the amount of schemes with manage schemes permission_
 function _isSchemeRegistered(address _scheme) private view returns (bool)
 ```
 
-### _getProposalsBatchRequest
-
-```solidity
-function _getProposalsBatchRequest(uint256 _start, uint256 _end, struct EnumerableSetUpgradeable.Bytes32Set _proposals) internal view returns (struct DAOController.ProposalAndScheme[] proposalsArray)
-```
-
-_Returns array of proposals based on index args. Both indexes are inclusive, unles (0,0) that returns all elements_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _start | uint256 | Index to start batching (included). |
-| _end | uint256 | Last index of batch (included). Zero will default to last element from the list |
-| _proposals | struct EnumerableSetUpgradeable.Bytes32Set | EnumerableSetUpgradeable set of proposals |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| proposalsArray | struct DAOController.ProposalAndScheme[] | Proposals list from `_proposals` within the range `_start` to `_end`. |
-
-### getActiveProposals
-
-```solidity
-function getActiveProposals(uint256 _start, uint256 _end) external view returns (struct DAOController.ProposalAndScheme[] activeProposalsArray)
-```
-
-_Returns array of active proposals_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _start | uint256 | Index to start batching (included). |
-| _end | uint256 | Last index of batch (included). Zero will return all |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| activeProposalsArray | struct DAOController.ProposalAndScheme[] | List of (`ProposalAndScheme`) active proposals within the range `_start` to `_end`.. |
-
-### getInactiveProposals
-
-```solidity
-function getInactiveProposals(uint256 _start, uint256 _end) external view returns (struct DAOController.ProposalAndScheme[] inactiveProposalsArray)
-```
-
-_Returns array of inactive proposals_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _start | uint256 | index to start batching (included). |
-| _end | uint256 | last index of batch (included). Zero will return all |
-
 ### getDaoReputation
 
 ```solidity
@@ -572,32 +450,4 @@ _Function to get reputation token_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenAddress | contract DAOReputation | The reputation token set on controller.initialize |
-
-### getActiveProposalsCount
-
-```solidity
-function getActiveProposalsCount() public view returns (uint256 activeProposalsCount)
-```
-
-_Function to get the amount of active proposals_
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| activeProposalsCount | uint256 | The amount of active proposals |
-
-### getInactiveProposalsCount
-
-```solidity
-function getInactiveProposalsCount() public view returns (uint256 inactiveProposalsCount)
-```
-
-_Function to get the amount of inactive proposals_
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| inactiveProposalsCount | uint256 | The amount of inactive proposals |
 

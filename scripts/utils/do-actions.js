@@ -11,7 +11,7 @@ const doActions = async function (actions, networkContracts) {
 
   const ContributionReward = await hre.artifacts.require("ContributionReward");
   const WalletScheme = await hre.artifacts.require("WalletScheme");
-  const DXDVotingMachine = await hre.artifacts.require("DXDVotingMachine");
+  const VotingMachine = await hre.artifacts.require("VotingMachine");
   const ERC20Guild = await hre.artifacts.require("ERC20Guild");
   const ERC20 = await hre.artifacts.require("ERC20");
 
@@ -115,9 +115,7 @@ const doActions = async function (actions, networkContracts) {
         break;
       case "vote":
         await (
-          await DXDVotingMachine.at(
-            networkContracts.addresses["DXDVotingMachine"]
-          )
+          await VotingMachine.at(networkContracts.addresses["VotingMachine"])
         ).vote(
           proposals.dao[action.data.proposal],
           action.data.decision,
@@ -128,9 +126,7 @@ const doActions = async function (actions, networkContracts) {
         break;
       case "stake":
         await (
-          await DXDVotingMachine.at(
-            networkContracts.addresses["DXDVotingMachine"]
-          )
+          await VotingMachine.at(networkContracts.addresses["VotingMachine"])
         ).stake(
           proposals.dao[action.data.proposal],
           action.data.decision,
@@ -141,9 +137,7 @@ const doActions = async function (actions, networkContracts) {
       case "execute":
         try {
           await (
-            await DXDVotingMachine.at(
-              networkContracts.addresses["DXDVotingMachine"]
-            )
+            await VotingMachine.at(networkContracts.addresses["VotingMachine"])
           ).execute(proposals.dao[action.data.proposal], {
             from: action.from,
             gas: 9000000,
@@ -154,9 +148,7 @@ const doActions = async function (actions, networkContracts) {
         break;
       case "redeem":
         await (
-          await DXDVotingMachine.at(
-            networkContracts.addresses["DXDVotingMachine"]
-          )
+          await VotingMachine.at(networkContracts.addresses["VotingMachine"])
         ).redeem(proposals.dao[action.data.proposal], action.from, {
           from: action.from,
         });

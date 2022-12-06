@@ -7,7 +7,7 @@ import "../../utils/PermissionRegistry.sol";
 import "../DAOReputation.sol";
 import "../DAOAvatar.sol";
 import "../DAOController.sol";
-import "../votingMachine/DXDVotingMachineCallbacks.sol";
+import "../votingMachine/VotingMachineCallbacks.sol";
 
 /**
  * @title Scheme.
@@ -25,7 +25,7 @@ import "../votingMachine/DXDVotingMachineCallbacks.sol";
  * Once the governance process ends on the voting machine the voting machine can execute the proposal winning option.
  * If the wining option cant be executed successfully, it can be finished without execution once the maxTimesForExecution time passes.
  */
-abstract contract Scheme is DXDVotingMachineCallbacks {
+abstract contract Scheme is VotingMachineCallbacks {
     using Address for address;
 
     enum ProposalState {
@@ -119,7 +119,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         }
 
         avatar = DAOAvatar(_avatar);
-        votingMachine = IDXDVotingMachine(_votingMachine);
+        votingMachine = IVotingMachine(_votingMachine);
         controller = DAOController(_controller);
         permissionRegistry = PermissionRegistry(_permissionRegistry);
         schemeName = _schemeName;
