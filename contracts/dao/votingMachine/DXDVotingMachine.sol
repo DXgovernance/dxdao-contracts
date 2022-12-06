@@ -1499,8 +1499,8 @@ contract DXDVotingMachine {
     }
 
     /**
-     *  @dev Returns the amount of active proposals
-     *  @param _avatar The avatar address
+     * @dev Returns the amount of active proposals
+     * @param _avatar The avatar address
      * @return activeProposalsCount The total count of active proposals for given avatar address
      */
     function getActiveProposalsCount(address _avatar) public view returns (uint256 activeProposalsCount) {
@@ -1508,8 +1508,8 @@ contract DXDVotingMachine {
     }
 
     /**
-     *  @dev Returns the amount of inactive proposals
-     *  @param _avatar The avatar address
+     * @dev Returns the amount of inactive proposals
+     * @param _avatar The avatar address
      * @return inactiveProposalsCount The total count of active proposals for given avatar address
      */
     function getInactiveProposalsCount(address _avatar) public view returns (uint256 inactiveProposalsCount) {

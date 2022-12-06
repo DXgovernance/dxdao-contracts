@@ -30,6 +30,22 @@ contract("DXDVotingMachine", function (accounts) {
   const constants = helpers.constants;
   const VOTE_GAS = 360000;
   const TOTAL_GAS_REFUND_PER_VOTE = new BN(VOTE_GAS * constants.GAS_PRICE);
+
+  const range = (n = 1) => [...Array(n).keys()];
+  const createSchemeProposals = (amount = 1) =>
+    Promise.all(
+      range(amount).map(async () => {
+        const tx = await masterAvatarScheme.proposeCalls(
+          [actionMock.address],
+          [helpers.testCallFrom(org.avatar.address)],
+          [0],
+          2,
+          constants.TEST_TITLE,
+          constants.SOME_HASH
+        );
+        return helpers.getValueFromLogs(tx, "_proposalId");
+      })
+    );
   beforeEach(async function () {
     actionMock = await ActionMock.new();
     stakingToken = await ERC20Mock.new(
@@ -1592,38 +1608,60 @@ contract("DXDVotingMachine", function (accounts) {
       assert.equal(100000, Number(reputation));
     });
 
-    it("getActiveProposals(0,0) should return all active proposals", async () => {
-      const proposalId0 = await helpers.getValueFromLogs(
-        await masterAvatarScheme.proposeCalls(
-          [actionMock.address],
-          [helpers.testCallFrom(org.avatar.address)],
-          [0],
-          2,
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
-        "_proposalId"
-      );
-      const proposalId1 = await helpers.getValueFromLogs(
-        await masterAvatarScheme.proposeCalls(
-          [actionMock.address],
-          [helpers.testCallFrom(org.avatar.address)],
-          [0],
-          2,
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
-        "_proposalId"
-      );
-
+    it("Should return active proposals", async () => {
+      const proposalsAmount = 50;
+      const proposalIds = await createSchemeProposals(proposalsAmount);
       const activeProposals = await dxdVotingMachine.getActiveProposals(
         0,
         0,
         org.avatar.address
       );
+      range(proposalsAmount).forEach(index => {
+        assert.equal(activeProposals[index], proposalIds[index]);
+      });
+      assert.equal(
+        await dxdVotingMachine.getActiveProposalsCount(org.avatar.address),
+        proposalsAmount
+      );
+    });
 
-      assert.equal(activeProposals[0], proposalId0);
-      assert.equal(activeProposals[1], proposalId1);
+    it("Should return inactive proposals", async () => {
+      const proposalsAmount = 2;
+      const inactiveAmount = 1;
+      const [testProposalId] = await createSchemeProposals(proposalsAmount);
+
+      await dxdVotingMachine.stake(testProposalId, constants.YES_OPTION, 1000, {
+        from: accounts[1],
+      });
+
+      await dxdVotingMachine.vote(testProposalId, constants.YES_OPTION, 0, {
+        from: accounts[2],
+        gasPrice: constants.GAS_PRICE,
+      });
+
+      await dxdVotingMachine.vote(testProposalId, constants.YES_OPTION, 0, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
+
+      await time.increase(86400 + 1);
+
+      await dxdVotingMachine.execute(testProposalId, {
+        from: accounts[1],
+        gasPrice: constants.GAS_PRICE,
+      });
+
+      const inactiveProposals = await dxdVotingMachine.getInactiveProposals(
+        0,
+        0,
+        org.avatar.address
+      );
+
+      assert.equal(inactiveProposals[0], testProposalId);
+      assert.equal(
+        await dxdVotingMachine.getInactiveProposalsCount(org.avatar.address),
+        inactiveAmount
+      );
     });
   });
 });
