@@ -1,3 +1,4 @@
+import { ZERO_ADDRESS } from "@openzeppelin/test-helpers/src/constants";
 import * as helpers from "../../helpers";
 const {
   createAndSetupGuildToken,
@@ -14,7 +15,7 @@ const DXDGuild = artifacts.require("DXDGuild.sol");
 const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
 const ERC20Mock = artifacts.require("ERC20Mock.sol");
-const WalletScheme = artifacts.require("WalletScheme.sol");
+const AvatarScheme = artifacts.require("AvatarScheme.sol");
 
 require("chai").should();
 
@@ -24,10 +25,8 @@ contract("DXDGuild", function (accounts) {
   const VOTE_GAS = new BN("50000"); // 50k
   const MAX_GAS_PRICE = new BN("8000000000"); // 8 gwei
 
-  let walletScheme,
-    org,
+  let dxDao,
     actionMock,
-    votingMachine,
     guildToken,
     dxdGuild,
     tokenVault,
@@ -41,59 +40,46 @@ contract("DXDGuild", function (accounts) {
     dxdGuild = await DXDGuild.new();
 
     const votingMachineToken = await ERC20Mock.new(
-      accounts[0],
-      0,
-      "Test Token",
-      "TT",
-      "18"
+      "DXDao",
+      "DXD",
+      1000,
+      accounts[0]
     );
 
-    votingMachine = await helpers.setUpVotingMachine(
-      votingMachineToken.address,
-      0,
-      constants.NULL_ADDRESS
-    );
+    dxDao = await helpers.deployDao({
+      owner: accounts[0],
+      votingMachineToken: votingMachineToken.address,
+      repHolders: [
+        { address: accounts[0], amount: 20 },
+        { address: accounts[1], amount: 10 },
+        { address: dxdGuild.address, amount: 70 },
+      ],
+    });
 
-    org = await helpers.setupOrganization(
-      [accounts[0], accounts[1], accounts[2], dxdGuild.address],
-      [0, 0, 0, 0],
-      [10, 10, 10, 40]
+    const defaultParamsHash = await helpers.setDefaultParameters(
+      dxDao.votingMachine
     );
 
     const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
     await permissionRegistry.initialize();
 
-    walletScheme = await WalletScheme.new();
-    await walletScheme.initialize(
-      org.avatar.address,
-      votingMachine.address,
-      votingMachine.params,
-      org.controller.address,
+    const masterAvatarScheme = await AvatarScheme.new();
+
+    await masterAvatarScheme.initialize(
+      dxDao.avatar.address,
+      dxDao.votingMachine.address,
+      dxDao.controller.address,
       permissionRegistry.address,
-      "God Wallet Scheme",
-      86400,
+      "Master Scheme",
       5
     );
 
-    await org.daoCreator.setSchemes(
-      org.avatar.address,
-      [walletScheme.address],
-      [votingMachine.params],
-      [
-        helpers.encodePermission({
-          canGenericCall: true,
-          canUpgrade: true,
-          canChangeConstraints: true,
-          canRegisterSchemes: true,
-        }),
-      ],
-      "metaData"
-    );
-
-    await helpers.setDefaultControllerPermissions(
-      permissionRegistry,
-      org.avatar.address,
-      org.controller
+    await dxDao.controller.registerScheme(
+      masterAvatarScheme.address,
+      defaultParamsHash,
+      true,
+      true,
+      true
     );
 
     actionMock = await ActionMock.new();
@@ -110,7 +96,7 @@ contract("DXDGuild", function (accounts) {
       10,
       TIMELOCK,
       permissionRegistry.address,
-      votingMachine.address
+      dxDao.votingMachine.address
     );
 
     await time.increase(time.duration.seconds(1));
@@ -128,17 +114,18 @@ contract("DXDGuild", function (accounts) {
     await dxdGuild.lockTokens(250, { from: accounts[4] });
 
     await permissionRegistry.setETHPermission(
-      org.avatar.address,
+      dxDao.avatar.address,
       actionMock.address,
-      helpers.testCallFrom(org.avatar.address).substring(0, 10),
+      helpers.testCallFrom(dxDao.avatar.address).substring(0, 10),
       0,
       true
     );
 
-    const tx = await walletScheme.proposeCalls(
+    const tx = await masterAvatarScheme.proposeCalls(
       [actionMock.address],
-      [helpers.testCallFrom(org.avatar.address)],
+      [helpers.testCallFrom(dxDao.avatar.address)],
       [0],
+      2,
       "Test Title",
       constants.SOME_HASH
     );
@@ -147,19 +134,18 @@ contract("DXDGuild", function (accounts) {
 
   describe("DXDGuild", function () {
     it("execute a positive vote on the voting machine from the dxd-guild", async function () {
-      const DXDVotingMachineContract = await new web3.eth.Contract(
-        votingMachine.contract.abi
+      const positiveVoteData = web3.eth.abi.encodeFunctionCall(
+        dxDao.votingMachine.abi.find(x => x.name === "vote"),
+        [walletSchemeProposalId, 2, 0]
       );
-      const positiveVoteData = DXDVotingMachineContract.methods
-        .vote(walletSchemeProposalId, 1, 0, constants.NULL_ADDRESS)
-        .encodeABI();
-      const negativeVoteData = DXDVotingMachineContract.methods
-        .vote(walletSchemeProposalId, 2, 0, constants.NULL_ADDRESS)
-        .encodeABI();
+      const negativeVoteData = web3.eth.abi.encodeFunctionCall(
+        dxDao.votingMachine.abi.find(x => x.name === "vote"),
+        [walletSchemeProposalId, 1, 0]
+      );
 
       await expectRevert(
         dxdGuild.createProposal(
-          [votingMachine.address, votingMachine.address],
+          [dxDao.votingMachine.address, dxDao.votingMachine.address],
           [positiveVoteData, negativeVoteData],
           [0, 0],
           2,
@@ -170,7 +156,7 @@ contract("DXDGuild", function (accounts) {
         "ERC20Guild: Not enough votingPower to create proposal"
       );
       const tx = await dxdGuild.createProposal(
-        [votingMachine.address, votingMachine.address],
+        [dxDao.votingMachine.address, dxDao.votingMachine.address],
         [positiveVoteData, negativeVoteData],
         [0, 0],
         2,
@@ -228,9 +214,9 @@ contract("DXDGuild", function (accounts) {
       const proposalInfo = await dxdGuild.getProposal(proposalId);
       assert.equal(
         proposalInfo.state,
-        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
+        constants.WALLET_SCHEME_PROPOSAL_STATES.passed
       );
-      assert.equal(proposalInfo.to[0], votingMachine.address);
+      assert.equal(proposalInfo.to[0], dxDao.votingMachine.address);
       assert.equal(proposalInfo.value[0], 0);
     });
   });
