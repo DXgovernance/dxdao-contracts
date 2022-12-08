@@ -605,14 +605,13 @@ contract BaseERC20Guild {
     }
 
     /// @dev Execute signed vote
-    /// @param root hash root of the merkle tree
+    /// @param rootHash hash root of the merkle tree
     /// @param voter address of voter
-    /// @param votesHashes hashes of the votes
-    /// @param proofs merkleTree proofs array
-    /// @param proposalIds ids to vote on
-    /// @param options array of options containing option to vote on
-    /// @param votingPowers rray of votingPower per vote
-    /// @param voteIndexesToExecute array of bools containing weather
+    /// @param voteHash hashes of the votes
+    /// @param proof merkleTree proofs array
+    /// @param proposalId ids to vote on
+    /// @param option array of options containing option to vote on
+    /// @param votingPower rray of votingPower per vote
     /// @param signature Signed rootHash
     function executeSignedVote(
         bytes32 rootHash,
@@ -654,7 +653,7 @@ contract BaseERC20Guild {
     /// @param proposalIds array of proposal ids to vote on
     /// @param options array of options containing option to vote on
     /// @param votingPowers array of votingPower per vote
-    function executeVotes(
+    function setMultipleVotes(
         bytes32[] memory proposalIds,
         uint256[] memory options,
         uint256[] memory votingPowers

@@ -3,6 +3,7 @@ import { assert, expect } from "chai";
 import { utils } from "ethers";
 import * as helpers from "../helpers";
 import MerkleTree from "merkletreejs";
+// import { describe } from "pm2";
 const keccak256 = require("keccak256");
 
 const { fixSignature } = require("../helpers/sign");
@@ -2557,6 +2558,52 @@ contract("ERC20Guild", function (accounts) {
       expect(proposal.totalVotes[1]).to.equal(
         votingData.votingPower.toString()
       );
+    });
+  });
+
+  describe.only("Multivote", function () {
+    let proposalId1, proposalId2, proposalId3, votes, voter;
+    beforeEach(async function () {
+      proposalId1 = await createProposal(genericProposal);
+      proposalId2 = await createProposal(genericProposal);
+      proposalId3 = await createProposal(genericProposal);
+
+      voter = accounts[2];
+      const voterPower = await erc20Guild.votingPowerOf(voter);
+      votes = [
+        {
+          proposalId: proposalId1,
+          option: "1",
+          votingPower: voterPower.toString(),
+        },
+        {
+          proposalId: proposalId2,
+          option: "0",
+          votingPower: voterPower.toString(),
+        },
+        {
+          proposalId: proposalId3,
+          option: "1",
+          votingPower: voterPower.toString(),
+        },
+      ];
+    });
+
+    it("Should set multiple votes", async function () {
+      const proposalIds = votes.map(v => v.proposalId);
+      const options = votes.map(v => v.option);
+      const votingPower = votes.map(v => v.votingPower);
+
+      await erc20Guild.setMultipleVotes(proposalIds, options, votingPower, {
+        from: voter,
+      });
+
+      for (const vote of votes) {
+        const proposal = await erc20Guild.getProposal(vote.proposalId);
+        expect(proposal.totalVotes[vote.option].toString()).to.equal(
+          vote.votingPower
+        );
+      }
     });
   });
 });
