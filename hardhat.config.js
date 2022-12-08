@@ -179,6 +179,8 @@ module.exports = {
   namedAccounts: {
     deployer: 0,
     tokenHolder: 1,
+    tokenHolder2: 2,
+    tokenHolder3: 3,
   },
   deterministicDeployment: {
     1337: {
