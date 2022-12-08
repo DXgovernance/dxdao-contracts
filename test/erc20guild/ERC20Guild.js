@@ -3,6 +3,7 @@ import { assert, expect } from "chai";
 import { utils } from "ethers";
 import * as helpers from "../helpers";
 import MerkleTree from "merkletreejs";
+const keccak256 = require("keccak256");
 
 const { fixSignature } = require("../helpers/sign");
 const {
@@ -2486,103 +2487,76 @@ contract("ERC20Guild", function (accounts) {
     });
   });
 
-  let votingData;
-  let firstProposalId;
-  let secondProposalId;
-
-  describe.only("merkle trees", () => {
+  describe.only("Merkle trees", () => {
+    let votingData;
+    let firstProposalId;
+    let secondProposalId;
     beforeEach(async () => {
       await lockTokens();
-
-      firstProposalId = await createProposal(genericProposal);
-      secondProposalId = await createProposal(genericProposal);
 
       const voter = accounts[1];
       const votingPower = await erc20Guild.votingPowerOf(voter);
       const option = "1";
 
-      const firstVote = [
+      firstProposalId = await createProposal(genericProposal);
+      secondProposalId = await createProposal(genericProposal);
+
+      const firstVoteHash = await erc20Guild.hashVote(
         voter,
         firstProposalId,
         option,
-        votingPower.toString(),
-      ];
-
-      const firstVoteHash = utils.solidityKeccak256(
-        ["address", "bytes32", "uint256", "uint256"],
-        firstVote
+        votingPower.toString()
       );
 
-      const secondVote = [
+      const secondVoteHash = await erc20Guild.hashVote(
         voter,
         secondProposalId,
         option,
-        votingPower.toString(),
-      ];
-
-      const secondVoteHash = utils.solidityKeccak256(
-        ["address", "bytes32", "uint256", "uint256"],
-        secondVote
+        votingPower.toString()
       );
 
-      const tree = new MerkleTree(
-        [firstVoteHash, secondVoteHash],
-        utils.keccak256,
-        { sort: true }
-      );
+      const leaves = [firstVoteHash, secondVoteHash];
+
+      const tree = new MerkleTree(leaves, keccak256, {
+        sort: true,
+      });
 
       const root = tree.getHexRoot();
 
-      const proof = tree.getHexProof(firstVoteHash);
-
       votingData = {
+        tree,
         root,
         voter,
-        voteHash: firstVoteHash,
-        proof,
-        proposalId: firstProposalId,
-        option: 1,
+        firstVoteHash,
+        secondVoteHash,
+        option,
         votingPower: votingPower,
       };
     });
 
-    // it("basic merkle proof", async () => {
-    //   const root = votingData.root;
-    //   const hash = votingData.voteHashes[0];
-    //   const proof = votingData.proofs[0];
+    it("Should execute signed vote", async () => {
+      const proof = votingData.tree.getHexProof(votingData.secondVoteHash);
 
-    //   const isValid = await erc20Guild.validateMerkleTreeLeaf(
-    //     root,
-    //     hash,
-    //     proof
-    //   );
-    //   console.log(isValid);
-    //   // expect(isValid.logs[0].args.validated).to.equal(true);
-    // });
+      const signature = fixSignature(
+        await web3.eth.sign(votingData.root, votingData.voter)
+      );
 
-    it("can vote multiple votes", async () => {
-      console.log(votingData);
       await erc20Guild.executeSignedVote(
         votingData.root,
         votingData.voter,
-        votingData.voteHash,
-        votingData.proof,
-        votingData.proposalId,
+        votingData.secondVoteHash,
+        proof,
+        secondProposalId,
         votingData.option,
-        votingData.votingPower
+        votingData.votingPower,
+        signature
       );
 
-      const firstProposalData = await erc20Guild.getProposal(firstProposalId);
+      const proposal = await erc20Guild.getProposal(secondProposalId);
 
-      expect(firstProposalData.totalVotes[1]).to.equal(
+      expect(proposal.totalVotes[1]).to.equal(
         votingData.votingPower.toString()
       );
-
-      // const secondProposalData = await erc20Guild.getProposal(secondProposalId);
-
-      // expect(secondProposalData.totalVotes[1]).to.equal(
-      //   votingData.votingPowers[1].toString()
-      // );
     });
   });
 });
