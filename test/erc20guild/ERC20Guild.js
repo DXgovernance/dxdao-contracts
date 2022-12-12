@@ -106,12 +106,12 @@ contract("ERC20Guild", function (accounts) {
           value: [new BN("0"), new BN("0")],
         },
         {
-          to: [actionMockA.address, constants.NULL_ADDRESS],
+          to: [actionMockA.address, constants.ZERO_ADDRESS],
           data: [helpers.testCallFrom(erc20Guild.address), "0x00"],
           value: [new BN("101"), new BN("0")],
         },
         {
-          to: [actionMockB.address, constants.NULL_ADDRESS],
+          to: [actionMockB.address, constants.ZERO_ADDRESS],
           data: [helpers.testCallFrom(erc20Guild.address, 666), "0x00"],
           value: [new BN("10"), new BN("0")],
         },
@@ -163,7 +163,7 @@ contract("ERC20Guild", function (accounts) {
             await new web3.eth.Contract(PermissionRegistry.abi).methods
               .setETHPermission(
                 erc20Guild.address,
-                constants.NULL_ADDRESS,
+                constants.ZERO_ADDRESS,
                 constants.NULL_SIGNATURE,
                 200,
                 true
@@ -244,7 +244,7 @@ contract("ERC20Guild", function (accounts) {
       erc20Guild = await ERC20Guild.new();
       await expectRevert(
         erc20Guild.initialize(
-          constants.NULL_ADDRESS,
+          constants.ZERO_ADDRESS,
           30,
           30,
           5000,
@@ -704,7 +704,7 @@ contract("ERC20Guild", function (accounts) {
           [0],
           1,
           "Guild Test Proposal",
-          constants.NULL_ADDRESS,
+          constants.ZERO_ADDRESS,
           { from: accounts[3] }
         ),
         "ERC20Guild: Wrong length of to, data or value arrays"
@@ -719,7 +719,7 @@ contract("ERC20Guild", function (accounts) {
           [],
           1,
           "Guild Test Proposal",
-          constants.NULL_ADDRESS,
+          constants.ZERO_ADDRESS,
           { from: accounts[3] }
         ),
         "ERC20Guild: Wrong length of to, data or value arrays"
@@ -734,7 +734,7 @@ contract("ERC20Guild", function (accounts) {
           [],
           1,
           "Guild Test Proposal",
-          constants.NULL_ADDRESS,
+          constants.ZERO_ADDRESS,
           { from: accounts[3] }
         ),
         "ERC20Guild: to, data value arrays cannot be empty"
@@ -1197,10 +1197,7 @@ contract("ERC20Guild", function (accounts) {
       await erc20Guild.endProposal(guildProposalId);
 
       const { state } = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(
-        state,
-        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
-      );
+      assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.passed);
     });
 
     it("when there is a tie between an action and no action, reject", async function () {
@@ -1293,10 +1290,7 @@ contract("ERC20Guild", function (accounts) {
       await erc20Guild.endProposal(guildProposalId);
 
       const { state } = await erc20Guild.getProposal(guildProposalId);
-      assert.equal(
-        state,
-        constants.WALLET_SCHEME_PROPOSAL_STATES.executionSuccedd
-      );
+      assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.passed);
     });
   });
 
@@ -1307,13 +1301,7 @@ contract("ERC20Guild", function (accounts) {
       await lockTokens();
       await allowActionMockA();
 
-      testToken = await ERC20Mock.new(
-        accounts[1],
-        1000,
-        "TestToken",
-        "TTT",
-        "18"
-      );
+      testToken = await ERC20Mock.new("TestToken", "TTT", 1000, accounts[1]);
       await testToken.transfer(erc20Guild.address, 300, { from: accounts[1] });
 
       const setTestPermissions = await createProposal({
@@ -1538,7 +1526,7 @@ contract("ERC20Guild", function (accounts) {
       });
     });
 
-    it("try to set eth permission used between calls to avoid checks and fail", async function () {
+    it("try to set eth permission used inside proposal execution to erc20guild fail", async function () {
       await web3.eth.sendTransaction({
         to: erc20Guild.address,
         value: 300,
@@ -1607,9 +1595,10 @@ contract("ERC20Guild", function (accounts) {
       });
 
       await time.increase(time.duration.seconds(31));
+
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
-        "PermissionRegistry: Value limit reached"
+        "ERC20Guild: Proposal call failed"
       );
     });
 
@@ -1666,9 +1655,9 @@ contract("ERC20Guild", function (accounts) {
         guild: erc20Guild,
         options: [
           {
-            to: [actionMockA.address, actionMockA.address],
-            data: ["0x00", "0x00"],
-            value: [50, 51],
+            to: [actionMockA.address],
+            data: ["0x00"],
+            value: [101],
           },
         ],
         account: accounts[3],
@@ -1679,7 +1668,6 @@ contract("ERC20Guild", function (accounts) {
         option: 1,
         account: accounts[3],
       });
-
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,

@@ -226,11 +226,15 @@ An ERC20Guild with the functionality to migrate the ERC20 voting token used, the
 
 #### SnapshotERC20Guild
 
-An ERC20Guild that keeps track of the voting power by saving a snapshot of the voting power each time a lock/withdraw of tokens happens. The voting power to be used on a proposal would be the one that the guild had at the moment of the proposal creation.
+An ERC20Guild that keeps track of the voting power by saving a snapshot of the voting power each time a mint/burn of tokens happens. The voting power to be used on a proposal would be the one that the guild had at the moment of the proposal creation.
 
 #### SnapshotERC20REPGuild
 
 An ERC20Guild designed to with with a ERC20 Reputation Token, a token that is not transferable only can be minted and burned by the guild itself. Very similar to the REP token used by dxdao, this allows the guild to be used as a "mini" dxdao, a stepping stone to later growth to a governance 2.0 stack.
+
+### Contracts Documentation
+
+[See auto-generated solidity documentation here](/docs/SUMMARY.md)
 
 ### Utils
 

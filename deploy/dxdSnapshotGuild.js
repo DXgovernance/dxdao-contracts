@@ -13,9 +13,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
       ? "0xb90D6bec20993Be5d72A5ab353343f7a0281f158"
       : process.env.DXD_ADDRESS;
 
-  const SnapshotERC20Guild = await hre.artifacts.require(
-    "SnapshotERC20Guild"
-  );
+  const SnapshotERC20Guild = await hre.artifacts.require("SnapshotERC20Guild");
   const GuildRegistry = await hre.artifacts.require("GuildRegistry");
   const PermissionRegistry = await hre.artifacts.require("PermissionRegistry");
 
