@@ -13,10 +13,12 @@
     "types/"
   ],
   "scripts": {
-    "test": "npx hardhat test",
+    "clean": "rm -rf artifacts cache contracts/hardhat-dependency-compiler",
+    "compile": "hardhat compile",
+    "setup": "hardhat typechain",
+
+    "test": "hardhat test",
     "coverage": "./scripts/coverage.sh",
-    "typechain": "hardhat typechain",
-    "build": "rm -rf artifacts cache contracts/hardhat-dependency-compiler && npx hardhat compile",
     "deploy": "node scripts/deploy.js",
     "solidity-linter": "./scripts/solhint.sh",
     "solidity-contract-size": "yarn hardhat size-contracts",
