@@ -7,6 +7,7 @@ require("babel-register")({
 require("@nomiclabs/hardhat-truffle5");
 require("hardhat-gas-reporter");
 require("solidity-coverage");
+require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
@@ -19,6 +20,7 @@ require("./scripts/actions-dxdao-contracts");
 require("./scripts/deploy-dxdao-contracts");
 require("./scripts/deploymentTemplates/dxvote-develop");
 require("./scripts/deploymentTemplates/guilds-goerli");
+require("./scripts/Create2Deployer");
 
 const moment = require("moment");
 
@@ -182,5 +184,8 @@ module.exports = {
       signedTx:
         "0xf8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222",
     },
+    4: {
+      factory: ""
+    }
   },
 };

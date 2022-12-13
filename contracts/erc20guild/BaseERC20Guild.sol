@@ -11,41 +11,12 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "../utils/PermissionRegistry.sol";
 import "../utils/TokenVault.sol";
 
-/*
-  @title BaseERC20Guild
-  @author github:AugustoL
-  @dev Extends an ERC20 functionality into a Guild, adding a simple governance system over an ERC20 token.
-  An ERC20Guild is a simple organization that execute arbitrary calls if a minimum amount of votes is reached in a 
-  proposal option while the proposal is active.
-  The token used for voting needs to be locked for a minimum period of time in order to be used as voting power.
-  Every time tokens are locked the timestamp of the lock is updated and increased the lock time seconds.
-  Once the lock time passed the voter can withdraw his tokens.
-  Each proposal has options, the voter can vote only once per proposal and cannot change the chosen option, only
-  increase the voting power of his vote.
-  A proposal ends when the minimum amount of total voting power is reached on a proposal option before the proposal
-  finish.
-  When a proposal ends successfully it executes the calls of the winning option.
-  The winning option has a certain amount of time to be executed successfully if that time passes and the option didn't
-  executed successfully, it is marked as failed.
-  The guild can execute only allowed functions, if a function is not allowed it will need to set the allowance for it.
-  The allowed functions have a timestamp that marks from what time the function can be executed.
-  A limit to a maximum amount of active proposals can be set, an active proposal is a proposal that is in Active state.
-  Gas can be refunded to the account executing the vote, for this to happen the voteGas and maxGasPrice values need to
-  be set.
-  Signed votes can be executed in behalf of other users, to sign a vote the voter needs to hash it with the function
-  hashVote, after signing the hash teh voter can share it to other account to be executed.
-  Multiple votes and signed votes can be executed in one transaction.
-  The guild can sign EIP1271 messages, to do this the guild needs to call itself and allow the signature to be verified 
-  with and extra signature of any account with voting power.
-*/
 contract BaseERC20Guild {
     using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
     using AddressUpgradeable for address;
 
-    // This configuration value is defined as constant to be protected against a malicious proposal
-    // changing it.
     uint8 public constant MAX_OPTIONS_PER_PROPOSAL = 10;
 
     enum ProposalState {
@@ -159,19 +130,7 @@ contract BaseERC20Guild {
     bool internal isExecutingProposal;
 
     fallback() external payable {}
-
-    // @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initialized
-    // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
-    // @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
-    // @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
-    // option
-    // @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
-    // @param _voteGas The amount of gas in wei unit used for vote refunds.
-    // Can't be higher than the gas used by setVote (117000)
-    // @param _maxGasPrice The maximum gas price used for vote refunds
-    // @param _maxActiveProposals The maximum amount of proposals to be active at the same time
-    // @param _lockTime The minimum amount of seconds that the tokens would be locked
-    function setConfig(
+        function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
         uint256 _votingPowerPercentageForProposalExecution,
@@ -203,13 +162,6 @@ contract BaseERC20Guild {
         minimumTokensLockedForProposalCreation = _minimumTokensLockedForProposalCreation;
     }
 
-    // @dev Create a proposal with an static call data and extra information
-    // @param to The receiver addresses of each call to be executed
-    // @param data The data to be executed on each call to be executed
-    // @param value The ETH value to be sent on each call to be executed
-    // @param totalOptions The amount of options that would be offered to the voters
-    // @param title The title of the proposal
-    // @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
         address[] memory to,
         bytes[] memory data,
