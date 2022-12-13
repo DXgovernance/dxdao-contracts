@@ -2003,21 +2003,7 @@ contract("VotingMachine", function (accounts) {
     });
   });
 
-  describe("Other tests", function () {
-    it("should not be shifted to boost", async function () {
-      const tx = await masterAvatarScheme.proposeCalls(
-        [actionMock.address],
-        [helpers.testCallFrom(org.avatar.address)],
-        [0],
-        2,
-        constants.TEST_TITLE,
-        constants.SOME_HASH
-      );
-      const testProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-
-      assert.equal(await dxdVotingMachine.shouldBoost(testProposalId), false);
-    });
-
+  describe("Getters", function () {
     it("should return vote info", async function () {
       const proposalId = await helpers.getValueFromLogs(
         await masterAvatarScheme.proposeCalls(
@@ -2107,47 +2093,6 @@ contract("VotingMachine", function (accounts) {
 
       const isVotable = await dxdVotingMachine.isVotable(proposalId);
       assert.equal(false, isVotable);
-    });
-
-    it("sould return the reputation", async function () {
-      const proposalId = await helpers.getValueFromLogs(
-        await masterAvatarScheme.proposeCalls(
-          [actionMock.address],
-          [helpers.testCallFrom(org.avatar.address)],
-          [0],
-          2,
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
-        "_proposalId"
-      );
-
-      const reputation = await masterAvatarScheme.reputationOf(
-        accounts[1],
-        proposalId
-      );
-
-      assert.equal(10000, Number(reputation));
-    });
-
-    it("sould return the total reputation", async function () {
-      const proposalId = await helpers.getValueFromLogs(
-        await masterAvatarScheme.proposeCalls(
-          [actionMock.address],
-          [helpers.testCallFrom(org.avatar.address)],
-          [0],
-          2,
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
-        "_proposalId"
-      );
-
-      const reputation = await masterAvatarScheme.getTotalReputationSupply(
-        proposalId
-      );
-
-      assert.equal(100000, Number(reputation));
     });
 
     it("Should return active proposals", async () => {

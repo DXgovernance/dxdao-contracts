@@ -2283,4 +2283,45 @@ contract("WalletScheme", function (accounts) {
       assert.equal(organizationProposal.value[0], 0);
     });
   });
+
+  it("sould return the reputation", async function () {
+    const proposalId = await helpers.getValueFromLogs(
+      await quickWalletScheme.proposeCalls(
+        [actionMock.address],
+        [helpers.testCallFrom(org.avatar.address)],
+        [0],
+        2,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      ),
+      "_proposalId"
+    );
+
+    const reputation = await quickWalletScheme.reputationOf(
+      accounts[1],
+      proposalId
+    );
+
+    assert.equal(10000, Number(reputation));
+  });
+
+  it("sould return the total reputation", async function () {
+    const proposalId = await helpers.getValueFromLogs(
+      await quickWalletScheme.proposeCalls(
+        [actionMock.address],
+        [helpers.testCallFrom(org.avatar.address)],
+        [0],
+        2,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      ),
+      "_proposalId"
+    );
+
+    const reputation = await quickWalletScheme.getTotalReputationSupply(
+      proposalId
+    );
+
+    assert.equal(100000, Number(reputation));
+  });
 });
