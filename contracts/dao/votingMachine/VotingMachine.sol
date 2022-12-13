@@ -26,7 +26,7 @@ import "./ProposalExecuteInterface.sol";
  * A proposal in boost state might need a % of votes in favour in order to be executed.
  * If a proposal ended and it has staked tokens on it the tokens can be redeemed by
  * the stakers.
- * If a staker staked on the winning option it receives a reward.
+ * If a staker staked on the winning option it receives his stake plus a reward.
  * If a staker staked on a loosing option it lose his stake.
  */
 contract VotingMachine {
@@ -68,9 +68,7 @@ contract VotingMachine {
         uint256 limitExponentValue; // An upper limit for numberOfBoostedProposals
         // in the threshold calculation to prevent overflow
         uint256 quietEndingPeriod; // Quite ending period
-        uint256 minimumDaoBounty;
-        uint256 daoBountyConst; // The DAO downstake for each proposal is calculate according to the formula
-        // (daoBountyConst * averageBoostDownstakes)/100 .
+        uint256 daoBounty;
         uint256 boostedVoteRequiredPercentage; // The required % of votes needed in a boosted proposal to be
         // executed on that scheme
     }
@@ -84,7 +82,6 @@ contract VotingMachine {
     struct Staker {
         uint256 vote; // NO(1), YES(2)
         uint256 amount; // Amount of staker's stake
-        uint256 amount4Bounty; // Amount of staker's stake used for bounty reward calculation.
     }
 
     struct Proposal {
@@ -97,16 +94,13 @@ contract VotingMachine {
         // The proposal boosted period limit . it is updated for the case of quiteWindow mode.
         uint256 currentBoostedVotePeriodLimit;
         bytes32 paramsHash;
-        uint256 daoBountyRemain; // Use for checking sum zero bounty claims.it is set at the proposing time.
         uint256 daoBounty;
         uint256 totalStakes; // Total number of tokens staked which can be redeemable by stakers.
-        uint256 confidenceThreshold;
         uint256 secondsFromTimeOutTillExecuteBoosted;
         uint256[3] times;
         // times[0] - submittedTime
         // times[1] - boostedPhaseTime
         // times[2] - preBoostedPhaseTime;
-        bool daoRedeemItsWinnings;
     }
 
     struct Scheme {
@@ -115,8 +109,8 @@ contract VotingMachine {
         uint256 voteGasBalance;
         uint256 voteGas;
         uint256 maxGasPrice;
-        uint256 averagesDownstakesOfBoosted;
-        uint256 orgBoostedProposalsCnt;
+        uint256 boostedProposalsCounter;
+        uint256 preBoostedProposalsCounter;
     }
 
     struct VoteDecision {
@@ -128,8 +122,6 @@ contract VotingMachine {
         uint256 totalReputation;
         uint256 executionBar;
         uint256 boostedExecutionBar;
-        uint256 averageDownstakesOfBoosted;
-        uint256 confidenceThreshold;
     }
 
     event NewProposal(
@@ -175,6 +167,8 @@ contract VotingMachine {
         uint256 _amount
     );
 
+    event UnclaimedDaoBounty(address indexed avatar, address beneficiary, uint256 amount);
+
     event ActionSigned(
         bytes32 proposalId,
         address voter,
@@ -187,7 +181,6 @@ contract VotingMachine {
 
     event StateChange(bytes32 indexed _proposalId, ProposalState _proposalState);
     event ExpirationCallBounty(bytes32 indexed _proposalId, address indexed _beneficiary, uint256 _amount);
-    event ConfidenceLevelChange(bytes32 indexed _proposalId, uint256 _confidenceThreshold);
     event ProposalExecuteResult(string);
 
     /// @notice Event used to signal votes to be executed on chain
@@ -286,13 +279,6 @@ contract VotingMachine {
     /// @notice The number of choices of each proposal
     mapping(bytes32 => uint256) internal numOfChoices;
 
-    // When implementing this interface please do not only override function and modifier,
-    // but also to keep the modifiers on the overridden functions.
-    modifier onlyProposalOwner(bytes32 _proposalId) {
-        revert();
-        _;
-    }
-
     /**
      * @dev Check that the proposal is votable.
      * A proposal is votable if it is in one of the following states:
@@ -332,13 +318,12 @@ contract VotingMachine {
      *    _params[3] - _preBoostedVotePeriodLimit, //the time limit for a proposal to be in an preparation state (stable) before boosted.
      *    _params[4] -_thresholdConst
      *    _params[5] -_quietEndingPeriod
-     *    _params[6] -_minimumDaoBounty
-     *    _params[7] -_daoBountyConst
-     *    _params[8] - _boostedVoteRequiredPercentage
+     *    _params[6] -_daoBounty
+     *    _params[7] - _boostedVoteRequiredPercentage
      * @return paramsHash Hash of the given parameters
      */
     function setParameters(
-        uint256[9] calldata _params //use array here due to stack too deep issue.
+        uint256[8] calldata _params //use array here due to stack too deep issue.
     ) external returns (bytes32 paramsHash) {
         if (_params[0] > 10000 || _params[0] < 5000) {
             revert VotingMachine__SetParametersError("5000 <= queuedVoteRequiredPercentage <= 10000");
@@ -350,12 +335,9 @@ contract VotingMachine {
             revert VotingMachine__SetParametersError("boostedVotePeriodLimit >= quietEndingPeriod");
         }
         if (_params[6] <= 0) {
-            revert VotingMachine__SetParametersError("minimumDaoBounty should be > 0");
+            revert VotingMachine__SetParametersError("daoBounty should be > 0");
         }
-        if (_params[7] <= 0) {
-            revert VotingMachine__SetParametersError("daoBountyConst should be > 0");
-        }
-        if (_params[0] <= _params[8]) {
+        if (_params[0] <= _params[7]) {
             revert VotingMachine__SetParametersError(
                 "queuedVoteRequiredPercentage should eb higher than boostedVoteRequiredPercentage"
             );
@@ -381,9 +363,8 @@ contract VotingMachine {
             thresholdConst: uint216(_params[4]).fraction(uint216(1000)),
             limitExponentValue: limitExponent,
             quietEndingPeriod: _params[5],
-            minimumDaoBounty: _params[6],
-            daoBountyConst: _params[7],
-            boostedVoteRequiredPercentage: _params[8]
+            daoBounty: _params[6],
+            boostedVoteRequiredPercentage: _params[7]
         });
         return paramsHash;
     }
@@ -405,41 +386,37 @@ contract VotingMachine {
         ) {
             revert VotingMachine__WrongProposalStateToRedeem();
         }
+
         Parameters memory params = parameters[proposal.paramsHash];
-        // as staker
         Staker storage staker = proposalStakers[_proposalId][_beneficiary];
-        uint256 totalWinningStakes = proposalStakes[_proposalId][proposal.winningVote];
-        uint256 totalStakesLeftAfterCallBounty = proposalStakes[_proposalId][NO] +
+
+        // Default reward is the stakes amount
+        uint256 reward = staker.amount;
+        uint256 totalStakesWithoutDaoBounty = proposalStakes[_proposalId][NO] +
             proposalStakes[_proposalId][YES] -
-            calcExecuteCallBounty(_proposalId);
+            proposal.daoBounty;
+
+        // If there is staked unclaimed
         if (staker.amount > 0) {
-            if (proposal.state == ProposalState.Expired) {
-                // Stakes of a proposal that expires in Queue are sent back to stakers
-                reward = staker.amount;
-            } else if (staker.vote == proposal.winningVote) {
+            // If proposal ended and the stake was in the winning option
+            if ((proposal.state != ProposalState.Expired) && (staker.vote == proposal.winningVote)) {
+                // The reward would be a % (of the staked on the winning option) of all the stakes
+                reward =
+                    (staker.amount * totalStakesWithoutDaoBounty) /
+                    proposalStakes[_proposalId][proposal.winningVote];
+
+                // If the winning option was yes the reward also include a % (of the staked on the winning option)
+                // of the minimum dao bounty
                 if (staker.vote == YES) {
-                    if (proposal.daoBounty < totalStakesLeftAfterCallBounty) {
-                        uint256 _totalStakes = totalStakesLeftAfterCallBounty - proposal.daoBounty;
-                        reward = (staker.amount * _totalStakes) / totalWinningStakes;
-                    }
-                } else {
-                    reward = (staker.amount * totalStakesLeftAfterCallBounty) / totalWinningStakes;
+                    uint256 daoBountyReward = (staker.amount * params.daoBounty) /
+                        proposalStakes[_proposalId][proposal.winningVote];
+
+                    if (daoBountyReward < stakingToken.allowance(getProposalAvatar(_proposalId), address(this)))
+                        stakingToken.transferFrom(getProposalAvatar(_proposalId), _beneficiary, daoBountyReward);
+                    else emit UnclaimedDaoBounty(getProposalAvatar(_proposalId), _beneficiary, daoBountyReward);
                 }
             }
             staker.amount = 0;
-        }
-        // dao redeem its winnings
-        if (
-            proposal.daoRedeemItsWinnings == false &&
-            _beneficiary == schemes[proposal.schemeId].avatar &&
-            proposal.state != ProposalState.Expired &&
-            proposal.winningVote == NO
-        ) {
-            reward =
-                reward +
-                ((proposal.daoBounty * totalStakesLeftAfterCallBounty) / totalWinningStakes) -
-                proposal.daoBounty;
-            proposal.daoRedeemItsWinnings = true;
         }
 
         if (reward != 0) {
@@ -455,57 +432,14 @@ contract VotingMachine {
     }
 
     /**
-     * @dev redeemDaoBounty a reward for a successful stake.
-     * The function use a beneficiary address as a parameter (and not msg.sender) to enable users to redeem on behalf of someone else.
+     * @dev Returns the proposal score (Confidence level)
+     * For dual choice proposal S = (S+)/(S-)
      * @param _proposalId The ID of the proposal
-     * @param _beneficiary The beneficiary address
-     * @return redeemedAmount Redeem token amount
-     * @return potentialAmount Potential redeem token amount (if there is enough tokens bounty at the dao owner of the scheme )
+     * @return proposalScore Proposal score as real number.
      */
-    function redeemDaoBounty(bytes32 _proposalId, address _beneficiary)
-        public
-        returns (uint256 redeemedAmount, uint256 potentialAmount)
-    {
-        Proposal storage proposal = proposals[_proposalId];
-        if (proposal.state != ProposalState.ExecutedInQueue && proposal.state != ProposalState.ExecutedInBoost) {
-            revert VotingMachine__WrongProposalStateToRedeemDaoBounty();
-        }
-        uint256 totalWinningStakes = proposalStakes[_proposalId][proposal.winningVote];
-        Staker storage staker = proposalStakers[_proposalId][_beneficiary];
-        if (
-            (staker.amount4Bounty > 0) &&
-            (staker.vote == proposal.winningVote) &&
-            (proposal.winningVote == YES) &&
-            (totalWinningStakes != 0)
-        ) {
-            //as staker
-            potentialAmount = (staker.amount4Bounty * proposal.daoBounty) / totalWinningStakes;
-        }
-        if ((potentialAmount != 0) && (schemes[proposal.schemeId].stakingTokenBalance >= potentialAmount)) {
-            staker.amount4Bounty = 0;
-            schemes[proposal.schemeId].stakingTokenBalance -= potentialAmount;
-            proposal.daoBountyRemain = proposal.daoBountyRemain - potentialAmount;
-
-            bool transferSuccess = stakingToken.transfer(_beneficiary, potentialAmount);
-            if (!transferSuccess) {
-                revert VotingMachine__TransferFailed(_beneficiary, potentialAmount);
-            }
-            redeemedAmount = potentialAmount;
-            emit RedeemDaoBounty(_proposalId, schemes[proposal.schemeId].avatar, _beneficiary, redeemedAmount);
-        }
-    }
-
-    /**
-     * @dev Calculate the execute boosted call bounty
-     * @param _proposalId The ID of the proposal
-     * @return executeCallBounty The execute boosted call bounty
-     */
-    function calcExecuteCallBounty(bytes32 _proposalId) public view returns (uint256 executeCallBounty) {
-        uint256 maxRewardSeconds = 1500;
-        uint256 rewardSeconds = uint256(maxRewardSeconds).min(
-            proposals[_proposalId].secondsFromTimeOutTillExecuteBoosted
-        );
-        return (rewardSeconds * proposalStakes[_proposalId][YES]) / (maxRewardSeconds * 10);
+    function score(bytes32 _proposalId) public view returns (uint256 proposalScore) {
+        // proposal.stakes[NO] cannot be zero as the dao downstake > 0 for each proposal.
+        return uint216(proposalStakes[_proposalId][YES]).fraction(uint216(proposalStakes[_proposalId][NO]));
     }
 
     /**
@@ -515,7 +449,7 @@ contract VotingMachine {
      */
     function shouldBoost(bytes32 _proposalId) public view returns (bool shouldProposalBeBoosted) {
         Proposal memory proposal = proposals[_proposalId];
-        return (_score(_proposalId) > threshold(proposal.paramsHash, proposal.schemeId));
+        return (score(_proposalId) > threshold(proposal.paramsHash, proposal.schemeId));
     }
 
     /**
@@ -526,14 +460,47 @@ contract VotingMachine {
      * @return schemeThreshold Scheme's score threshold as real number.
      */
     function threshold(bytes32 _paramsHash, bytes32 _schemeId) public view returns (uint256 schemeThreshold) {
-        uint256 power = schemes[_schemeId].orgBoostedProposalsCnt;
-        Parameters storage params = parameters[_paramsHash];
+        return
+            calculateThreshold(
+                parameters[_paramsHash].thresholdConst,
+                parameters[_paramsHash].limitExponentValue,
+                schemes[_schemeId].boostedProposalsCounter
+            );
+    }
 
-        if (power > params.limitExponentValue) {
-            power = params.limitExponentValue;
-        }
+    /**
+     * @dev Returns the a score threshold which is required by a proposal to shift to boosted state.
+     * @param thresholdConst The threshold constant to be used that increments the score exponentially
+     * @param limitExponentValue The limit of the scheme boosted proposals counter
+     * @param boostedProposalsCounter The amount of boosted proposals in scheme
+     * @return threshold Score threshold as real number.
+     */
+    function calculateThreshold(
+        uint256 thresholdConst,
+        uint256 limitExponentValue,
+        uint256 boostedProposalsCounter
+    ) public view returns (uint256 threshold) {
+        return thresholdConst.pow(boostedProposalsCounter.min(limitExponentValue));
+    }
 
-        return params.thresholdConst**power;
+    /**
+     * @dev Calculate the amount needed to boost a proposal
+     * @param _proposalId the ID of the proposal
+     * @return toBoost Stake amount needed to boost proposal and move it to preBoost
+     */
+    function calculateBoostChange(bytes32 _proposalId) public view returns (uint256 toBoost) {
+        Proposal memory proposal = proposals[_proposalId];
+        uint256 thresholdWithPreBoosted = calculateThreshold(
+            parameters[proposals[_proposalId].paramsHash].thresholdConst,
+            parameters[proposals[_proposalId].paramsHash].limitExponentValue,
+            schemes[proposals[_proposalId].schemeId].boostedProposalsCounter +
+                schemes[proposals[_proposalId].schemeId].preBoostedProposalsCounter
+        );
+        uint256 downstakeThreshold = (thresholdWithPreBoosted + 2).mul(proposalStakes[_proposalId][NO]);
+
+        if (downstakeThreshold > proposalStakes[_proposalId][YES])
+            return (downstakeThreshold - proposalStakes[_proposalId][YES]);
+        else return (0);
     }
 
     /**
@@ -943,15 +910,6 @@ contract VotingMachine {
     }
 
     /**
-     * @dev Returns the proposal score
-     * @param _proposalId The ID of the proposal
-     * @return proposalScore Proposal score as real number.
-     */
-    function score(bytes32 _proposalId) public view returns (uint256 proposalScore) {
-        return _score(_proposalId);
-    }
-
-    /**
      * @dev Check if the proposal has been decided, and if so, execute the proposal
      * @param _proposalId The id of the proposal
      * @return proposalExecuted True if the proposal was executed, false otherwise.
@@ -970,8 +928,6 @@ contract VotingMachine {
         executeParams.boostedExecutionBar =
             (executeParams.totalReputation / 10000) *
             params.boostedVoteRequiredPercentage;
-        executeParams.averageDownstakesOfBoosted;
-        executeParams.confidenceThreshold;
 
         if (proposalVotes[_proposalId][proposal.winningVote] > executeParams.executionBar) {
             // someone crossed the absolute vote execution bar.
@@ -979,6 +935,7 @@ contract VotingMachine {
                 proposal.executionState = ExecutionState.QueueBarCrossed;
             } else if (proposal.state == ProposalState.PreBoosted) {
                 proposal.executionState = ExecutionState.PreBoostedBarCrossed;
+                schemes[proposal.schemeId].preBoostedProposalsCounter--;
             } else {
                 proposal.executionState = ExecutionState.BoostedBarCrossed;
             }
@@ -991,51 +948,35 @@ contract VotingMachine {
                     proposal.winningVote = NO;
                     proposal.executionState = ExecutionState.QueueTimeOut;
                 } else {
-                    executeParams.confidenceThreshold = threshold(proposal.paramsHash, proposal.schemeId);
-                    if (_score(_proposalId) > executeParams.confidenceThreshold) {
+                    if (shouldBoost(_proposalId)) {
                         // change proposal mode to PreBoosted mode.
                         proposal.state = ProposalState.PreBoosted;
                         // solhint-disable-next-line not-rely-on-time
                         proposal.times[2] = block.timestamp;
-                        proposal.confidenceThreshold = executeParams.confidenceThreshold;
+                        schemes[proposal.schemeId].preBoostedProposalsCounter++;
                     }
                 }
             }
 
             if (proposal.state == ProposalState.PreBoosted) {
-                executeParams.confidenceThreshold = threshold(proposal.paramsHash, proposal.schemeId);
                 // solhint-disable-next-line not-rely-on-time
                 if ((block.timestamp - proposal.times[2]) >= params.preBoostedVotePeriodLimit) {
-                    if (_score(_proposalId) > executeParams.confidenceThreshold) {
-                        if (schemes[proposal.schemeId].orgBoostedProposalsCnt < MAX_BOOSTED_PROPOSALS) {
+                    if (shouldBoost(_proposalId)) {
+                        if (schemes[proposal.schemeId].boostedProposalsCounter < MAX_BOOSTED_PROPOSALS) {
                             // change proposal mode to Boosted mode.
                             proposal.state = ProposalState.Boosted;
-
                             proposal.times[1] = proposal.times[2] + params.preBoostedVotePeriodLimit;
-
-                            schemes[proposal.schemeId].orgBoostedProposalsCnt++;
-                            // add a value to average -> average = average + ((value - average) / nbValues)
-                            executeParams.averageDownstakesOfBoosted = schemes[proposal.schemeId]
-                                .averagesDownstakesOfBoosted;
-                            // solium-disable-next-line indentation
-                            schemes[proposal.schemeId].averagesDownstakesOfBoosted = uint256(
-                                int256(executeParams.averageDownstakesOfBoosted) +
-                                    ((int256(proposalStakes[_proposalId][NO]) -
-                                        int256(executeParams.averageDownstakesOfBoosted)) /
-                                        int256(schemes[proposal.schemeId].orgBoostedProposalsCnt))
-                            );
+                            schemes[proposal.schemeId].boostedProposalsCounter++;
                         }
                     } else {
                         proposal.state = ProposalState.Queued;
                     }
+                    schemes[proposal.schemeId].preBoostedProposalsCounter--;
                 } else {
                     // check the Confidence level is stable
-                    uint256 proposalScore = _score(_proposalId);
-                    if (proposalScore <= proposal.confidenceThreshold.min(executeParams.confidenceThreshold)) {
+                    if (score(_proposalId) <= threshold(proposal.paramsHash, proposal.schemeId)) {
                         proposal.state = ProposalState.Queued;
-                    } else if (proposal.confidenceThreshold > proposalScore) {
-                        proposal.confidenceThreshold = executeParams.confidenceThreshold;
-                        emit ConfidenceLevelChange(_proposalId, executeParams.confidenceThreshold);
+                        schemes[proposal.schemeId].preBoostedProposalsCounter--;
                     }
                 }
             }
@@ -1060,18 +1001,7 @@ contract VotingMachine {
                 (proposal.executionState == ExecutionState.BoostedTimeOut) ||
                 (proposal.executionState == ExecutionState.BoostedBarCrossed)
             ) {
-                schemes[proposal.schemeId].orgBoostedProposalsCnt--;
-                // Remove a value from average = ((average * nbValues) - value) / (nbValues - 1);
-                if (schemes[proposal.schemeId].orgBoostedProposalsCnt == 0) {
-                    schemes[proposal.schemeId].averagesDownstakesOfBoosted = 0;
-                } else {
-                    executeParams.averageDownstakesOfBoosted = schemes[proposal.schemeId].averagesDownstakesOfBoosted;
-                    schemes[proposal.schemeId].averagesDownstakesOfBoosted =
-                        ((executeParams.averageDownstakesOfBoosted *
-                            (schemes[proposal.schemeId].orgBoostedProposalsCnt + 1)) -
-                            proposalStakes[_proposalId][NO]) /
-                        schemes[proposal.schemeId].orgBoostedProposalsCnt;
-                }
+                schemes[proposal.schemeId].boostedProposalsCounter--;
             }
             activeProposals[getProposalAvatar(_proposalId)].remove(_proposalId);
             inactiveProposals[getProposalAvatar(_proposalId)].add(_proposalId);
@@ -1081,7 +1011,6 @@ contract VotingMachine {
                 proposal.winningVote,
                 executeParams.totalReputation
             );
-            proposal.daoBounty = proposal.daoBountyRemain;
 
             try ProposalExecuteInterface(proposal.callbacks).executeProposal(_proposalId, proposal.winningVote) {
                 emit ProposalExecuteResult("");
@@ -1101,17 +1030,6 @@ contract VotingMachine {
             emit StateChange(_proposalId, proposal.state);
         }
         return (proposal.executionState != ExecutionState.None && proposal.executionState != ExecutionState.Failed);
-    }
-
-    /**
-     * @dev Returns the proposal score (Confidence level)
-     * For dual choice proposal S = (S+)/(S-)
-     * @param _proposalId The ID of the proposal
-     * @return proposalScore Proposal score as real number.
-     */
-    function _score(bytes32 _proposalId) internal view returns (uint256 proposalScore) {
-        // proposal.stakes[NO] cannot be zero as the dao downstake > 0 for each proposal.
-        return uint216(proposalStakes[_proposalId][YES]).fraction(uint216(proposalStakes[_proposalId][NO]));
     }
 
     /**
@@ -1172,7 +1090,6 @@ contract VotingMachine {
         proposal.totalStakes = proposal.totalStakes + amount; //update totalRedeemableStakes
         staker.amount = staker.amount + amount;
         // This is to prevent average downstakes calculation overflow
-        // Note that GEN cap is 100000000 ether.
 
         if (staker.amount > 0x100000000000000000000000000000000) {
             revert VotingMachine__StakingAmountIsTooHight();
@@ -1182,9 +1099,6 @@ contract VotingMachine {
             revert VotingMachine__TotalStakesIsToHight();
         }
 
-        if (_vote == YES) {
-            staker.amount4Bounty = staker.amount4Bounty + amount;
-        }
         staker.vote = _vote;
 
         proposalStakes[_proposalId][_vote] = amount + proposalStakes[_proposalId][_vote];
@@ -1235,12 +1149,9 @@ contract VotingMachine {
                 schemes[proposal.schemeId].avatar = _avatar;
             }
         }
-        // calc dao bounty
-        uint256 daoBounty = (parameters[_paramsHash].daoBountyConst *
-            schemes[proposal.schemeId].averagesDownstakesOfBoosted) / 100;
-        proposal.daoBountyRemain = daoBounty.max(parameters[_paramsHash].minimumDaoBounty);
+        proposal.daoBounty = parameters[_paramsHash].daoBounty;
+        proposalStakes[proposalId][NO] = proposal.daoBounty; //dao downstake on the proposal
         proposals[proposalId] = proposal;
-        proposalStakes[proposalId][NO] = proposal.daoBountyRemain; //dao downstake on the proposal
         numOfChoices[proposalId] = _choicesAmount;
         activeProposals[getProposalAvatar(proposalId)].add(proposalId);
         emit NewProposal(proposalId, schemes[proposal.schemeId].avatar, _choicesAmount, _proposer, _paramsHash);
@@ -1263,10 +1174,10 @@ contract VotingMachine {
 
     /**
      * @dev Returns a hash of the given parameters
-     * @param _params Array of params (9) to hash
+     * @param _params Array of params (8) to hash
      * @return paramsHash Hash of the given parameters
      */
-    function getParametersHash(uint256[9] memory _params) public pure returns (bytes32 paramsHash) {
+    function getParametersHash(uint256[8] memory _params) public pure returns (bytes32 paramsHash) {
         return
             keccak256(
                 abi.encodePacked(
@@ -1277,8 +1188,7 @@ contract VotingMachine {
                     _params[4],
                     _params[5],
                     _params[6],
-                    _params[7],
-                    _params[8]
+                    _params[7]
                 )
             );
     }
@@ -1340,32 +1250,6 @@ contract VotingMachine {
     }
 
     /**
-     * @dev Returns the total votes and stakes for a given proposal
-     * @param _proposalId The ID of the proposal
-     * @return preBoostedVotesNo preBoostedVotes NO
-     * @return preBoostedVotesYes preBoostedVotes YES
-     * @return totalStakesNo Total stakes NO
-     * @return totalStakesYes Total stakes YES
-     */
-    function proposalStatus(bytes32 _proposalId)
-        external
-        view
-        returns (
-            uint256 preBoostedVotesNo,
-            uint256 preBoostedVotesYes,
-            uint256 totalStakesNo,
-            uint256 totalStakesYes
-        )
-    {
-        return (
-            proposalPreBoostedVotes[_proposalId][NO],
-            proposalPreBoostedVotes[_proposalId][YES],
-            proposalStakes[_proposalId][NO],
-            proposalStakes[_proposalId][YES]
-        );
-    }
-
-    /**
      * @dev Returns the total votes, preBoostedVotes and stakes for a given proposal
      * @param _proposalId The ID of the proposal
      * @return votesNo Proposal votes NO
@@ -1375,7 +1259,7 @@ contract VotingMachine {
      * @return totalStakesNo Proposal total stakes NO
      * @return totalStakesYes Proposal total stakes YES
      */
-    function proposalStatusWithVotes(bytes32 _proposalId)
+    function proposalStatus(bytes32 _proposalId)
         external
         view
         returns (
@@ -1509,5 +1393,12 @@ contract VotingMachine {
      */
     function getInactiveProposalsCount(address _avatar) public view returns (uint256 inactiveProposalsCount) {
         return inactiveProposals[_avatar].length();
+    }
+
+    /**
+     * @dev Helper function used in test to execute a real math lib multiplication
+     */
+    function multiplyRealMath(uint256 a, uint256 b) public pure returns (uint256) {
+        return a.mul(b);
     }
 }
