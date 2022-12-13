@@ -215,10 +215,10 @@ contract("WalletScheme", function (accounts) {
     );
 
     await org.votingMachine.setParameters([
-      6000, 86400, 3600, 1800, 1050, 60, 15, 10, 100,
+      6000, 86400, 3600, 1800, 1050, 60, 10, 100,
     ]);
     const newParamsHash = await org.votingMachine.getParametersHash([
-      6000, 86400, 3600, 1800, 1050, 60, 15, 10, 100,
+      6000, 86400, 3600, 1800, 1050, 60, 10, 100,
     ]);
 
     const registerSchemeData = web3.eth.abi.encodeFunctionCall(
