@@ -118,12 +118,6 @@ contract VotingMachine {
         uint256 amount;
     }
 
-    struct ExecuteFunctionParams {
-        uint256 totalReputation;
-        uint256 executionBar;
-        uint256 boostedExecutionBar;
-    }
-
     event NewProposal(
         bytes32 indexed _proposalId,
         address indexed _avatar,
@@ -919,17 +913,12 @@ contract VotingMachine {
         Proposal storage proposal = proposals[_proposalId];
         Parameters memory params = parameters[proposal.paramsHash];
         Proposal memory tmpProposal = proposal;
-        ExecuteFunctionParams memory executeParams;
-        executeParams.totalReputation = IVotingMachineCallbacks(proposal.callbacks).getTotalReputationSupply(
-            _proposalId
-        );
-        // first divide by 10000 to prevent overflow
-        executeParams.executionBar = (executeParams.totalReputation / 10000) * params.queuedVoteRequiredPercentage;
-        executeParams.boostedExecutionBar =
-            (executeParams.totalReputation / 10000) *
-            params.boostedVoteRequiredPercentage;
+        uint256 totalReputation = IVotingMachineCallbacks(proposal.callbacks).getTotalReputationSupply(_proposalId);
 
-        if (proposalVotes[_proposalId][proposal.winningVote] > executeParams.executionBar) {
+        if (
+            proposalVotes[_proposalId][proposal.winningVote] >
+            (totalReputation / 10000) * params.queuedVoteRequiredPercentage
+        ) {
             // someone crossed the absolute vote execution bar.
             if (proposal.state == ProposalState.Queued) {
                 proposal.executionState = ExecutionState.QueueBarCrossed;
@@ -985,7 +974,10 @@ contract VotingMachine {
         if ((proposal.state == ProposalState.Boosted) || (proposal.state == ProposalState.QuietEndingPeriod)) {
             // solhint-disable-next-line not-rely-on-time
             if ((block.timestamp - proposal.times[1]) >= proposal.currentBoostedVotePeriodLimit) {
-                if (proposalVotes[_proposalId][proposal.winningVote] >= executeParams.boostedExecutionBar) {
+                if (
+                    proposalVotes[_proposalId][proposal.winningVote] >=
+                    (totalReputation / 10000) * params.boostedVoteRequiredPercentage
+                ) {
                     proposal.state = ProposalState.ExecutedInBoost;
                     proposal.executionState = ExecutionState.BoostedBarCrossed;
                 } else {
@@ -1005,12 +997,7 @@ contract VotingMachine {
             }
             activeProposals[getProposalAvatar(_proposalId)].remove(_proposalId);
             inactiveProposals[getProposalAvatar(_proposalId)].add(_proposalId);
-            emit ExecuteProposal(
-                _proposalId,
-                schemes[proposal.schemeId].avatar,
-                proposal.winningVote,
-                executeParams.totalReputation
-            );
+            emit ExecuteProposal(_proposalId, schemes[proposal.schemeId].avatar, proposal.winningVote, totalReputation);
 
             try ProposalExecuteInterface(proposal.callbacks).executeProposal(_proposalId, proposal.winningVote) {
                 emit ProposalExecuteResult("");
