@@ -141,9 +141,6 @@ contract VotingMachine {
         uint256 _reputation
     );
 
-    event CancelProposal(bytes32 indexed _proposalId, address indexed _avatar);
-    event CancelVoting(bytes32 indexed _proposalId, address indexed _avatar, address indexed _voter);
-
     event Stake(
         bytes32 indexed _proposalId,
         address indexed _avatar,
