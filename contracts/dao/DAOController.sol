@@ -61,9 +61,6 @@ contract DAOController is Initializable {
     /// @notice Cannot unregister last scheme with manage schemes permission
     error DAOController__CannotUnregisterLastSchemeWithManageSchemesPermission();
 
-    /// @notice arg _proposalId is being used by other scheme
-    error DAOController__IdUsedByOtherScheme();
-
     /// @notice Sender is not the scheme that originally started the proposal
     error DAOController__SenderIsNotTheProposer();
 
