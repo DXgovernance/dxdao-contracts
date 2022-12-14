@@ -215,10 +215,10 @@ contract("WalletScheme", function (accounts) {
     );
 
     await org.votingMachine.setParameters([
-      6000, 86400, 3600, 1800, 1050, 60, 15, 10, 100,
+      6000, 86400, 3600, 1800, 1050, 60, 10, 100,
     ]);
     const newParamsHash = await org.votingMachine.getParametersHash([
-      6000, 86400, 3600, 1800, 1050, 60, 15, 10, 100,
+      6000, 86400, 3600, 1800, 1050, 60, 10, 100,
     ]);
 
     const registerSchemeData = web3.eth.abi.encodeFunctionCall(
@@ -2282,5 +2282,46 @@ contract("WalletScheme", function (accounts) {
       assert.equal(organizationProposal.to[0], testToken.address);
       assert.equal(organizationProposal.value[0], 0);
     });
+  });
+
+  it("sould return the reputation", async function () {
+    const proposalId = await helpers.getValueFromLogs(
+      await quickWalletScheme.proposeCalls(
+        [actionMock.address],
+        [helpers.testCallFrom(org.avatar.address)],
+        [0],
+        2,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      ),
+      "_proposalId"
+    );
+
+    const reputation = await quickWalletScheme.reputationOf(
+      accounts[1],
+      proposalId
+    );
+
+    assert.equal(10000, Number(reputation));
+  });
+
+  it("sould return the total reputation", async function () {
+    const proposalId = await helpers.getValueFromLogs(
+      await quickWalletScheme.proposeCalls(
+        [actionMock.address],
+        [helpers.testCallFrom(org.avatar.address)],
+        [0],
+        2,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      ),
+      "_proposalId"
+    );
+
+    const reputation = await quickWalletScheme.getTotalReputationSupply(
+      proposalId
+    );
+
+    assert.equal(100000, Number(reputation));
   });
 });
