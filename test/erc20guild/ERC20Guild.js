@@ -2488,7 +2488,7 @@ contract("ERC20Guild", function (accounts) {
     });
   });
 
-  describe.only("Merkle trees", () => {
+  describe.only("Offchain voting", () => {
     let votingData;
     let firstProposalId;
     let secondProposalId;
@@ -2535,7 +2535,7 @@ contract("ERC20Guild", function (accounts) {
       };
     });
 
-    it("Should execute signed vote", async () => {
+    it("Should execute one signed vote", async () => {
       const proof = votingData.tree.getHexProof(votingData.secondVoteHash);
 
       const signature = fixSignature(
@@ -2556,6 +2556,38 @@ contract("ERC20Guild", function (accounts) {
       const proposal = await erc20Guild.getProposal(secondProposalId);
 
       expect(proposal.totalVotes[1]).to.equal(
+        votingData.votingPower.toString()
+      );
+    });
+
+    it("Should execute multiple signed votes from same tree", async () => {
+      const firstProof = votingData.tree.getHexProof(votingData.firstVoteHash);
+      const secondProof = votingData.tree.getHexProof(
+        votingData.secondVoteHash
+      );
+
+      const signature = fixSignature(
+        await web3.eth.sign(votingData.root, votingData.voter)
+      );
+
+      await erc20Guild.executeSignedVotesBatches(
+        [votingData.root, votingData.root],
+        [votingData.voter, votingData.voter],
+        [votingData.firstVoteHash, votingData.secondVoteHash],
+        [firstProof, secondProof],
+        [firstProposalId, secondProposalId],
+        [votingData.option, votingData.option],
+        [votingData.votingPower, votingData.votingPower],
+        [signature, signature]
+      );
+
+      const firstProposal = await erc20Guild.getProposal(firstProposalId);
+      const secondProposal = await erc20Guild.getProposal(secondProposalId);
+
+      expect(firstProposal.totalVotes[votingData.option]).to.equal(
+        votingData.votingPower.toString()
+      );
+      expect(secondProposal.totalVotes[votingData.option]).to.equal(
         votingData.votingPower.toString()
       );
     });
