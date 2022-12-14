@@ -35,8 +35,8 @@ contract DAOAvatar is OwnableUpgradeable {
         bytes memory _data,
         uint256 _value
     ) public onlyOwner returns (bool success, bytes memory data) {
-        (bool success, bytes memory dataReturned) = _to.call{value: _value}(_data);
+        (success, data) = _to.call{value: _value}(_data);
         emit CallExecuted(_to, _data, _value, success);
-        return (success, dataReturned);
+        return (success, data);
     }
 }

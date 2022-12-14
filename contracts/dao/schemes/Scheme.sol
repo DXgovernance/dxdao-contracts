@@ -155,7 +155,7 @@ abstract contract Scheme is VotingMachineCallbacks {
         bytes32 voteParams = controller.getSchemeParameters(address(this));
 
         // Get the proposal id that will be used from the voting machine
-        bytes32 proposalId = votingMachine.propose(_totalOptions, voteParams, msg.sender, address(avatar));
+        proposalId = votingMachine.propose(_totalOptions, voteParams, msg.sender, address(avatar));
 
         // Add the proposal to the proposals mapping, proposals list and proposals information mapping
         proposals[proposalId] = Proposal({

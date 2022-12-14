@@ -71,7 +71,7 @@ contract WalletScheme is Scheme {
     /**
      * @dev Get the scheme type
      */
-    function getSchemeType() external view override returns (string memory) {
+    function getSchemeType() external pure override returns (string memory) {
         return "WalletScheme_v1";
     }
 }
