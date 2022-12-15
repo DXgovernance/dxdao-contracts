@@ -1,18 +1,27 @@
 module.exports = async ({ getNamedAccounts, deployments }) => {
-  const { deploy } = deployments;
-  const { deployer } = await getNamedAccounts();
+  const { save } = deployments;
+  const { deployer: deployerAddress } = await getNamedAccounts();
   const deploySalt = process.env.DEPLOY_SALT;
 
-  const DAOAvatar = await hre.artifacts.require("DAOAvatar");
+  const Create2Deployer = await hre.artifacts.require("Create2Deployer");
+  const deployerDeployed = await deployments.get("Create2Deployer");
+  const deployer = await Create2Deployer.at(deployerDeployed.address);
 
-  const daoAvatarDeploy = await deploy("DAOAvatar", {
-    name: "DAOAvatar",
-    from: deployer,
-    args: [],
-    deterministicDeployment: deploySalt,
+  const DAOAvatar = await hre.artifacts.require("DAOAvatar");
+  const tx = await deployer.deploy(DAOAvatar.bytecode, deploySalt, {
+    from: deployerAddress,
+  });
+  const daoAvatarAddress = tx.logs[0].args[0];
+
+  save("DAOAvatar", {
+    abi: DAOAvatar.abi,
+    address: daoAvatarAddress,
+    receipt: tx.receipt,
+    bytecode: DAOAvatar.bytecode,
+    deployedBytecode: DAOAvatar.deployedBytecode,
   });
 
-  const daoAvatar = await DAOAvatar.at(daoAvatarDeploy.address);
+  const daoAvatar = await DAOAvatar.at(daoAvatarAddress);
 
   const controllerDeployed = await deployments.get("DAOController");
 
@@ -33,5 +42,5 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 };
 
 module.exports.tags = ["DAOAvatar"];
-module.exports.dependencies = ["Controller"];
+module.exports.dependencies = ["Create2", "Controller"];
 

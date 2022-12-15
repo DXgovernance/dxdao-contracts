@@ -1,31 +1,43 @@
 module.exports = async ({ getNamedAccounts, deployments }) => {
-  const { deploy } = deployments;
-  const { deployer } = await getNamedAccounts();
+  const { deploy, save } = deployments;
+  const { deployer: deployerAddress } = await getNamedAccounts();
   const deploySalt = process.env.DEPLOY_SALT;
+
+  const Create2Deployer = await hre.artifacts.require("Create2Deployer");
+  const deployerDeployed = await deployments.get("Create2Deployer");
+  const deployer = await Create2Deployer.at(deployerDeployed.address);
 
   const WalletScheme = await hre.artifacts.require("WalletScheme");
 
-  const masterWalletSchemeDeploy = await deploy("WalletScheme", {
-    name: "MasterWalletScheme",
-    from: deployer,
-    args: [],
-    deterministicDeployment: `${deploySalt}`,
+  const tx = await deployer.deploy(WalletScheme.bytecode, deploySalt, {
+    from: deployerAddress,
+  });
+  const masterWalletSchemeAddress = tx.logs[0].args[0];
+
+  save("MasterWalletScheme", {
+    abi: WalletScheme.abi,
+    address: masterWalletSchemeAddress,
+    receipt: tx.receipt,
+    bytecode: WalletScheme.bytecode,
+    deployedBytecode: WalletScheme.deployedBytecode,
   });
 
-  const quickWalletSchemeDeploy = await deploy("WalletScheme", {
-    name: "QuickWalletScheme",
-    from: deployer,
-    args: [],
-    deterministicDeployment: `${deploySalt}01`,
+  const tx2 = await deployer.deploy(WalletScheme.bytecode, `${deploySalt}01`, {
+    from: deployerAddress,
+  });
+  const quickWalletSchemeAddress = tx2.logs[0].args[0];
+
+  save("QuickWalletScheme", {
+    abi: WalletScheme.abi,
+    address: quickWalletSchemeAddress,
+    receipt: tx2.receipt,
+    bytecode: WalletScheme.bytecode,
+    deployedBytecode: WalletScheme.deployedBytecode,
   });
 
-  const masterWalletScheme = await WalletScheme.at(
-    masterWalletSchemeDeploy.address
-  );
+  const masterWalletScheme = await WalletScheme.at(masterWalletSchemeAddress);
 
-  const quickWalletScheme = await WalletScheme.at(
-    quickWalletSchemeDeploy.address
-  );
+  const quickWalletScheme = await WalletScheme.at(quickWalletSchemeAddress);
 
   const avatarDeployed = await deployments.get("DAOAvatar");
   const dxdVotingMachineDeployed = await deployments.get("DXDVotingMachine");
@@ -132,6 +144,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
 module.exports.tags = ["WalletScheme"];
 module.exports.dependencies = [
+  "Create2",
   "DAOAvatar",
   "DXDVotingMachine",
   "Controller",

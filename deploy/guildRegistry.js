@@ -1,16 +1,27 @@
 module.exports = async ({ getNamedAccounts, deployments }) => {
-  const { deploy } = deployments;
-  const { deployer } = await getNamedAccounts();
+  const { save } = deployments;
+  const { deployer: deployerAddress } = await getNamedAccounts();
   const deploySalt = process.env.DEPLOY_SALT;
-  const GuildRegistry = await hre.artifacts.require("GuildRegistry");
 
-  const guildRegistryDeploy = await deploy("GuildRegistry", {
-    name: "GuildRegistry",
-    from: deployer,
-    args: [],
-    deterministicDeployment: deploySalt,
+  const Create2Deployer = await hre.artifacts.require("Create2Deployer");
+  const deployerDeployed = await deployments.get("Create2Deployer");
+  const deployer = await Create2Deployer.at(deployerDeployed.address);
+
+  const GuildRegistry = await hre.artifacts.require("GuildRegistry");
+  const tx = await deployer.deploy(GuildRegistry.bytecode, deploySalt, {
+    from: deployerAddress,
   });
-  const guildRegistry = await GuildRegistry.at(guildRegistryDeploy.address);
+  const contractAddress = tx.logs[0].args[0];
+
+  save("GuildRegistry", {
+    abi: GuildRegistry.abi,
+    address: contractAddress,
+    receipt: tx.receipt,
+    bytecode: GuildRegistry.bytecode,
+    deployedBytecode: GuildRegistry.deployedBytecode,
+  });
+
+  const guildRegistry = await GuildRegistry.at(contractAddress);
 
   try {
     await guildRegistry.initialize();
@@ -33,4 +44,5 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 };
 
 module.exports.tags = ["GuildRegistry"];
+module.exports.dependencies = ["Create2"];
 module.exports.runAtEnd = false;

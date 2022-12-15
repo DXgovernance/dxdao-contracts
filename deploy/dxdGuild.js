@@ -2,8 +2,12 @@ const moment = require("moment");
 const hre = require("hardhat");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
-  const { deploy } = deployments;
-  const { deployer } = await getNamedAccounts();
+  const { save } = deployments;
+  const { deployer: deployerAddress } = await getNamedAccounts();
+
+  const Create2Deployer = await hre.artifacts.require("Create2Deployer");
+  const deployerDeployed = await deployments.get("Create2Deployer");
+  const deployer = await Create2Deployer.at(deployerDeployed.address);
 
   const dxdToken =
     hre.network.name === "mainnet"
@@ -26,12 +30,23 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   );
   const DXDGuild = await hre.artifacts.require("DXDGuild");
 
-  const dxdGuildDeployed = await deploy("DXDGuild", {
-    from: deployer,
-    args: [],
-    deterministicDeployment: deploySalt,
+  const tx = await deployer.deploy(
+    DXDGuild.bytecode,
+    deploySalt,
+    {
+      from: deployerAddress,
+    }
+  );
+  const dxdGuildAddress = tx.logs[0].args[0];
+  const dxdGuild = await DXDGuild.at(dxdGuildAddress);
+
+  save("DevOpsToken", {
+    abi: DXDGuild.abi,
+    address: dxdGuildAddress,
+    receipt: tx.receipt,
+    bytecode: DXDGuild.bytecode,
+    deployedBytecode: DXDGuild.deployedBytecode,
   });
-  const dxdGuild = await DXDGuild.at(dxdGuildDeployed.address);
 
   await dxdGuild.initialize(
     dxdToken,
@@ -61,5 +76,5 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   console.log(`DXDGuild address ${dxdGuild.address}`);
 };
 
-module.exports.dependencies = ["DXDToken", "PermissionRegistry"];
+module.exports.dependencies = ["Create2", "DXDToken", "PermissionRegistry"];
 module.exports.tags = ["DXDGuild"];

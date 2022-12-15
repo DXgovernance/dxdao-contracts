@@ -1,18 +1,27 @@
 module.exports = async ({ getNamedAccounts, deployments }) => {
-  const { deploy } = deployments;
-  const { deployer } = await getNamedAccounts();
+  const { save } = deployments;
+  const { deployer: deployerAddress } = await getNamedAccounts();
   const deploySalt = process.env.DEPLOY_SALT;
 
-  const AvatarScheme = await hre.artifacts.require("AvatarScheme");
+  const Create2Deployer = await hre.artifacts.require("Create2Deployer");
+  const deployerDeployed = await deployments.get("Create2Deployer");
+  const deployer = await Create2Deployer.at(deployerDeployed.address);
 
-  const avatarSchemeDeploy = await deploy("AvatarScheme", {
-    name: "AvatarScheme",
-    from: deployer,
-    args: [],
-    deterministicDeployment: deploySalt,
+  const AvatarScheme = await hre.artifacts.require("AvatarScheme");
+  const tx = await deployer.deploy(AvatarScheme.bytecode, deploySalt, {
+    from: deployerAddress,
+  });
+  const avatarSchemeAddress = tx.logs[0].args[0];
+
+  save("AvatarScheme", {
+    abi: AvatarScheme.abi,
+    address: avatarSchemeAddress,
+    receipt: tx.receipt,
+    bytecode: AvatarScheme.bytecode,
+    deployedBytecode: AvatarScheme.deployedBytecode,
   });
 
-  const avatarScheme = await AvatarScheme.at(avatarSchemeDeploy.address);
+  const avatarScheme = await AvatarScheme.at(avatarSchemeAddress);
 
   const avatarDeployed = await deployments.get("DAOAvatar");
   const dxdVotingMachineDeployed = await deployments.get("DXDVotingMachine");
@@ -96,6 +105,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
 module.exports.tags = ["AvatarScheme"];
 module.exports.dependencies = [
+  "Create2",
   "DAOAvatar",
   "DXDVotingMachine",
   "Controller",

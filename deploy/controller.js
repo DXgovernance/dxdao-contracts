@@ -1,19 +1,29 @@
 module.exports = async ({ getNamedAccounts, deployments }) => {
-  const { deploy } = deployments;
-  const { deployer } = await getNamedAccounts();
+  const { save } = deployments;
+  const { deployer: deployerAddress } = await getNamedAccounts();
   const deploySalt = process.env.DEPLOY_SALT;
+
+  const Create2Deployer = await hre.artifacts.require("Create2Deployer");
+  const deployerDeployed = await deployments.get("Create2Deployer");
+  const deployer = await Create2Deployer.at(deployerDeployed.address);
 
   const Controller = await hre.artifacts.require("DAOController");
   const DAOReputation = await hre.artifacts.require("DAOReputation");
 
-  const controllerDeploy = await deploy("DAOController", {
-    name: "Controller",
-    from: deployer,
-    args: [],
-    deterministicDeployment: deploySalt,
+  const tx = await deployer.deploy(Controller.bytecode, deploySalt, {
+    from: deployerAddress,
+  });
+  const controllerAddress = tx.logs[0].args[0];
+
+  save("DAOController", {
+    abi: Controller.abi,
+    address: controllerAddress,
+    receipt: tx.receipt,
+    bytecode: Controller.bytecode,
+    deployedBytecode: Controller.deployedBytecode,
   });
 
-  const controller = await Controller.at(controllerDeploy.address);
+  const controller = await Controller.at(controllerAddress);
 
   const dxdVotingMachineDeployed = await deployments.get("DXDVotingMachine");
   const daoReputationDeployed = await deployments.get("DAOReputation");
@@ -57,7 +67,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   );
 
   await controller.initialize(
-    deployer,
+    deployerAddress,
     daoReputationDeployed.address,
     defaultParamsHash
   );
@@ -77,5 +87,5 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 };
 
 module.exports.tags = ["Controller"];
-module.exports.dependencies = ["DAOReputation", "DXDVotingMachine"];
+module.exports.dependencies = ["Create2", "DAOReputation", "DXDVotingMachine"];
 

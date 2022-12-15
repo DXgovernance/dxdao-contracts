@@ -1,10 +1,14 @@
 const moment = require("moment");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
-  const { deploy } = deployments;
-  const { deployer, tokenHolder } = await getNamedAccounts();
+  const { save } = deployments;
+  const { deployer: deployerAddress, tokenHolder } = await getNamedAccounts();
   const deploySalt = process.env.DEPLOY_SALT;
   const deployExtraSalt = "dxdaoDevOps";
+
+  const Create2Deployer = await hre.artifacts.require("Create2Deployer");
+  const deployerDeployed = await deployments.get("Create2Deployer");
+  const deployer = await Create2Deployer.at(deployerDeployed.address);
 
   const SnapshotRepERC20Guild = await hre.artifacts.require(
     "SnapshotRepERC20Guild"
@@ -23,27 +27,52 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const guildRegistryDeployed = await deployments.get("GuildRegistry");
   const guildRegistry = await GuildRegistry.at(guildRegistryDeployed.address);
 
-  const devOpsRepTokenDeploy = await deploy("ERC20SnapshotRep", {
-    name: "DevOpsToken",
-    from: deployer,
-    args: [],
-    deterministicDeployment: hre.web3.utils.sha3(deploySalt + deployExtraSalt),
-  });
-  const devOpsRepToken = await ERC20SnapshotRep.at(
-    devOpsRepTokenDeploy.address
+  const tx = await deployer.deploy(
+    ERC20SnapshotRep.bytecode,
+    hre.web3.utils.sha3(deploySalt + deployExtraSalt),
+    {
+      from: deployerAddress,
+    }
   );
+  const devOpsRepTokenAddress = tx.logs[0].args[0];
+
+  save("DevOpsToken", {
+    abi: ERC20SnapshotRep.abi,
+    address: devOpsRepTokenAddress,
+    receipt: tx.receipt,
+    bytecode: ERC20SnapshotRep.bytecode,
+    deployedBytecode: ERC20SnapshotRep.deployedBytecode,
+  });
+
+  const devOpsRepToken = await ERC20SnapshotRep.at(devOpsRepTokenAddress);
   await devOpsRepToken.initialize("DXdao DevOps Reputation Token", "DREP");
   await devOpsRepToken.mint(tokenHolder, 1000);
 
-  const dxdaoDevOpsGuildDeploy = await deploy("SnapshotRepERC20Guild", {
-    name: "DevOpsGuild",
-    from: deployer,
-    args: [],
-    deterministicDeployment: hre.web3.utils.sha3(deploySalt + deployExtraSalt),
-  });
-  const dxdaoDevOpsGuild = await SnapshotRepERC20Guild.at(
-    dxdaoDevOpsGuildDeploy.address
+  // const dxdaoDevOpsGuildDeploy = await deploy("SnapshotRepERC20Guild", {
+  //   name: "DevOpsGuild",
+  //   from: deployer,
+  //   args: [],
+  //   deterministicDeployment: hre.web3.utils.sha3(deploySalt + deployExtraSalt),
+  // });
+
+  const guildTx = await deployer.deploy(
+    SnapshotRepERC20Guild.bytecode,
+    hre.web3.utils.sha3(deploySalt + deployExtraSalt),
+    {
+      from: deployerAddress,
+    }
   );
+  const guildAddress = guildTx.logs[0].args[0];
+
+  save("DevOpsGuild", {
+    abi: SnapshotRepERC20Guild.abi,
+    address: guildAddress,
+    receipt: guildTx.receipt,
+    bytecode: SnapshotRepERC20Guild.bytecode,
+    deployedBytecode: SnapshotRepERC20Guild.deployedBytecode,
+  });
+
+  const dxdaoDevOpsGuild = await SnapshotRepERC20Guild.at(guildAddress);
 
   await dxdaoDevOpsGuild.initialize(
     devOpsRepToken.address,
@@ -81,5 +110,9 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   console.log(`DXdaoDevOpsGuild address ${dxdaoDevOpsGuild.address}`);
 };
 
-module.exports.dependencies = ["PermissionRegistry", "GuildRegistry"];
+module.exports.dependencies = [
+  "Create2",
+  "PermissionRegistry",
+  "GuildRegistry",
+];
 module.exports.tags = ["DXdaoDevOpsGuild"];

@@ -1,6 +1,6 @@
 module.exports = async ({ getNamedAccounts, deployments }) => {
-  const { deploy } = deployments;
-  const { deployer, tokenHolder } = await getNamedAccounts();
+  const { deployer: deployerAddress, tokenHolder } = await getNamedAccounts();
+  const deploySalt = process.env.DEPLOY_SALT;
 
   function testCallFrom(address, number = 1) {
     return new web3.eth.Contract(ActionMock.abi).methods
@@ -12,13 +12,17 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     "0x1000000000000000000000000000000000000000000000000000000000000000";
   const TEST_TITLE = "Awesome Proposal Title";
 
+  const Create2Deployer = await hre.artifacts.require("Create2Deployer");
+  const deployerDeployed = await deployments.get("Create2Deployer");
+  const deployer = await Create2Deployer.at(deployerDeployed.address);
+
   const ActionMock = await hre.artifacts.require("ActionMock");
-  const actionMockDeployed = await deploy("ActionMock", {
-    name: "ActionMock",
-    from: deployer,
-    args: [],
+  const tx = await deployer.deploy(ActionMock.bytecode, deploySalt, {
+    from: deployerAddress,
   });
-  const actionMock = await ActionMock.at(actionMockDeployed.address);
+  const actionMockAddress = tx.logs[0].args[0];
+  
+  const actionMock = await ActionMock.at(actionMockAddress);
 
   const Controller = await hre.artifacts.require("DAOController");
   const controllerDeployed = await deployments.get("DAOController");
@@ -39,7 +43,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   );
   await permissionRegistry.setETHPermission(
     avatarSchemeDeployed.address,
-    actionMockDeployed.address,
+    actionMockAddress,
     web3.eth.abi.encodeFunctionSignature("test(address,uint256)"),
     0,
     true
@@ -71,6 +75,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
 module.exports.tags = ["DAOProposals"];
 module.exports.dependencies = [
+  "Create2",
   "AvatarScheme",
   "DAOAvatar",
   "Controller",
