@@ -38,10 +38,10 @@ contract DAOController is Initializable {
     uint256 public schemesWithManageSchemesPermission;
 
     /// @notice Emited once scheme has been registered
-    event RegisterScheme(address indexed _sender, address indexed _scheme);
+    event RegisterScheme(address indexed sender, address indexed scheme);
 
     /// @notice Emited once scheme has been unregistered
-    event UnregisterScheme(address indexed _sender, address indexed _scheme);
+    event UnregisterScheme(address indexed sender, address indexed scheme);
 
     /// @notice Sender is not a registered scheme
     error DAOController__SenderNotRegistered();
@@ -60,9 +60,6 @@ contract DAOController is Initializable {
 
     /// @notice Cannot unregister last scheme with manage schemes permission
     error DAOController__CannotUnregisterLastSchemeWithManageSchemesPermission();
-
-    /// @notice arg _proposalId is being used by other scheme
-    error DAOController__IdUsedByOtherScheme();
 
     /// @notice Sender is not the scheme that originally started the proposal
     error DAOController__SenderIsNotTheProposer();
@@ -103,82 +100,82 @@ contract DAOController is Initializable {
 
     /**
      * @dev Initialize the Controller contract.
-     * @param _scheme The address of the scheme
-     * @param _reputationToken The address of the reputation token
-     * @param _paramsHash A hashed configuration of the usage of the default scheme created on initialization
+     * @param scheme The address of the scheme
+     * @param reputationTokenAddress The address of the reputation token
+     * @param paramsHash A hashed configuration of the usage of the default scheme created on initialization
      */
     function initialize(
-        address _scheme,
-        address _reputationToken,
-        bytes32 _paramsHash
+        address scheme,
+        address reputationTokenAddress,
+        bytes32 paramsHash
     ) public initializer {
-        schemes[_scheme] = Scheme({
-            paramsHash: _paramsHash,
+        schemes[scheme] = Scheme({
+            paramsHash: paramsHash,
             isRegistered: true,
             canManageSchemes: true,
             canMakeAvatarCalls: true,
             canChangeReputation: true
         });
         schemesWithManageSchemesPermission = 1;
-        reputationToken = DAOReputation(_reputationToken);
+        reputationToken = DAOReputation(reputationTokenAddress);
     }
 
     /**
      * @dev Register a scheme
-     * @param _scheme The address of the scheme
-     * @param _paramsHash A hashed configuration of the usage of the scheme
-     * @param _canManageSchemes Whether the scheme is able to manage schemes
-     * @param _canMakeAvatarCalls Whether the scheme is able to make avatar calls
-     * @param _canChangeReputation Whether the scheme is able to change reputation
+     * @param schemeAddress The address of the scheme
+     * @param paramsHash A hashed configuration of the usage of the scheme
+     * @param canManageSchemes Whether the scheme is able to manage schemes
+     * @param canMakeAvatarCalls Whether the scheme is able to make avatar calls
+     * @param canChangeReputation Whether the scheme is able to change reputation
      * @return success Success of the operation
      */
     function registerScheme(
-        address _scheme,
-        bytes32 _paramsHash,
-        bool _canManageSchemes,
-        bool _canMakeAvatarCalls,
-        bool _canChangeReputation
+        address schemeAddress,
+        bytes32 paramsHash,
+        bool canManageSchemes,
+        bool canMakeAvatarCalls,
+        bool canChangeReputation
     ) external onlyRegisteredScheme onlyRegisteringSchemes returns (bool success) {
-        Scheme memory scheme = schemes[_scheme];
+        Scheme memory scheme = schemes[schemeAddress];
 
         // Add or change the scheme:
-        if ((!scheme.isRegistered || !scheme.canManageSchemes) && _canManageSchemes) {
+        if ((!scheme.isRegistered || !scheme.canManageSchemes) && canManageSchemes) {
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission + 1;
-        } else if (scheme.canManageSchemes && !_canManageSchemes) {
+        } else if (scheme.canManageSchemes && !canManageSchemes) {
             if (schemesWithManageSchemesPermission <= 1) {
                 revert DAOController__CannotDisableLastSchemeWithManageSchemesPermission();
             }
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission - 1;
         }
 
-        schemes[_scheme] = Scheme({
-            paramsHash: _paramsHash,
+        schemes[schemeAddress] = Scheme({
+            paramsHash: paramsHash,
             isRegistered: true,
-            canManageSchemes: _canManageSchemes,
-            canMakeAvatarCalls: _canMakeAvatarCalls,
-            canChangeReputation: _canChangeReputation
+            canManageSchemes: canManageSchemes,
+            canMakeAvatarCalls: canMakeAvatarCalls,
+            canChangeReputation: canChangeReputation
         });
 
-        emit RegisterScheme(msg.sender, _scheme);
+        emit RegisterScheme(msg.sender, schemeAddress);
 
         return true;
     }
 
     /**
      * @dev Unregister a scheme
-     * @param _scheme The address of the scheme to unregister/delete from `schemes` mapping
+     * @param schemeAddress The address of the scheme to unregister/delete from `schemes` mapping
      * @return success Success of the operation
      */
-    function unregisterScheme(address _scheme)
+    function unregisterScheme(address schemeAddress)
         external
         onlyRegisteredScheme
         onlyRegisteringSchemes
         returns (bool success)
     {
-        Scheme memory scheme = schemes[_scheme];
+        Scheme memory scheme = schemes[schemeAddress];
 
         //check if the scheme is registered
-        if (_isSchemeRegistered(_scheme) == false) {
+        if (_isSchemeRegistered(schemeAddress) == false) {
             return false;
         }
 
@@ -188,107 +185,107 @@ contract DAOController is Initializable {
             }
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission - 1;
         }
-        delete schemes[_scheme];
+        delete schemes[schemeAddress];
 
-        emit UnregisterScheme(msg.sender, _scheme);
+        emit UnregisterScheme(msg.sender, schemeAddress);
 
         return true;
     }
 
     /**
      * @dev Perform a generic call to an arbitrary contract
-     * @param _contract  The contract's address to call
-     * @param _data ABI-encoded contract call to call `_contract` address.
-     * @param _avatar The controller's avatar address
-     * @param _value Value (ETH) to transfer with the transaction
-     * @return success Whether call was executed successfully or not
-     * @return data Call data returned
+     * @param to  The contract's address to call
+     * @param data ABI-encoded contract call to call `_contract` address.
+     * @param avatar The controller's avatar address
+     * @param value Value (ETH) to transfer with the transaction
+     * @return callSuccess Whether call was executed successfully or not
+     * @return callData Call data returned
      */
     function avatarCall(
-        address _contract,
-        bytes calldata _data,
-        DAOAvatar _avatar,
-        uint256 _value
-    ) external onlyRegisteredScheme onlyAvatarCallScheme returns (bool success, bytes memory data) {
-        return _avatar.executeCall(_contract, _data, _value);
+        address to,
+        bytes calldata data,
+        DAOAvatar avatar,
+        uint256 value
+    ) external onlyRegisteredScheme onlyAvatarCallScheme returns (bool callSuccess, bytes memory callData) {
+        return avatar.executeCall(to, data, value);
     }
 
     /**
      * @dev Burns dao reputation
-     * @param _amount  The amount of reputation to burn
-     * @param _account  The account to burn reputation from
+     * @param amount  The amount of reputation to burn
+     * @param account  The account to burn reputation from
      * @return success True if the reputation are burned correctly
      */
-    function burnReputation(uint256 _amount, address _account) external onlyChangingReputation returns (bool success) {
-        return reputationToken.burn(_account, _amount);
+    function burnReputation(uint256 amount, address account) external onlyChangingReputation returns (bool success) {
+        return reputationToken.burn(account, amount);
     }
 
     /**
      * @dev Mints dao reputation
-     * @param _amount  The amount of reputation to mint
-     * @param _account  The account to mint reputation from
+     * @param amount  The amount of reputation to mint
+     * @param account  The account to mint reputation from
      * @return success True if the reputation are generated correctly
      */
-    function mintReputation(uint256 _amount, address _account) external onlyChangingReputation returns (bool success) {
-        return reputationToken.mint(_account, _amount);
+    function mintReputation(uint256 amount, address account) external onlyChangingReputation returns (bool success) {
+        return reputationToken.mint(account, amount);
     }
 
     /**
      * @dev Transfer ownership of dao reputation
-     * @param _newOwner The new owner of the reputation token
+     * @param newOwner The new owner of the reputation token
      */
-    function transferReputationOwnership(address _newOwner)
+    function transferReputationOwnership(address newOwner)
         external
         onlyRegisteringSchemes
         onlyAvatarCallScheme
         onlyChangingReputation
     {
-        reputationToken.transferOwnership(_newOwner);
+        reputationToken.transferOwnership(newOwner);
     }
 
     /**
      * @dev Returns whether a scheme is registered or not
-     * @param _scheme The address of the scheme
+     * @param scheme The address of the scheme
      * @return isRegistered Whether a scheme is registered or not
      */
-    function isSchemeRegistered(address _scheme) external view returns (bool isRegistered) {
-        return _isSchemeRegistered(_scheme);
+    function isSchemeRegistered(address scheme) external view returns (bool isRegistered) {
+        return _isSchemeRegistered(scheme);
     }
 
     /**
      * @dev Returns scheme paramsHash
-     * @param _scheme The address of the scheme
+     * @param scheme The address of the scheme
      * @return paramsHash scheme.paramsHash
      */
-    function getSchemeParameters(address _scheme) external view returns (bytes32 paramsHash) {
-        return schemes[_scheme].paramsHash;
+    function getSchemeParameters(address scheme) external view returns (bytes32 paramsHash) {
+        return schemes[scheme].paramsHash;
     }
 
     /**
      * @dev Returns if scheme can manage schemes
-     * @param _scheme The address of the scheme
+     * @param scheme The address of the scheme
      * @return canManageSchemes scheme.canManageSchemes
      */
-    function getSchemeCanManageSchemes(address _scheme) external view returns (bool canManageSchemes) {
-        return schemes[_scheme].canManageSchemes;
+    function getSchemeCanManageSchemes(address scheme) external view returns (bool canManageSchemes) {
+        return schemes[scheme].canManageSchemes;
     }
 
     /**
      * @dev Returns if scheme can make avatar calls
-     * @param _scheme The address of the scheme
+     * @param scheme The address of the scheme
      * @return canMakeAvatarCalls scheme.canMakeAvatarCalls
      */
-    function getSchemeCanMakeAvatarCalls(address _scheme) external view returns (bool canMakeAvatarCalls) {
-        return schemes[_scheme].canMakeAvatarCalls;
+    function getSchemeCanMakeAvatarCalls(address scheme) external view returns (bool canMakeAvatarCalls) {
+        return schemes[scheme].canMakeAvatarCalls;
     }
 
     /**
      * @dev Returns if scheme can change reputation
-     * @param _scheme The address of the scheme
+     * @param scheme The address of the scheme
      * @return canChangeReputation scheme.canChangeReputation
      */
-    function getSchemeCanChangeReputation(address _scheme) external view returns (bool canChangeReputation) {
-        return schemes[_scheme].canChangeReputation;
+    function getSchemeCanChangeReputation(address scheme) external view returns (bool canChangeReputation) {
+        return schemes[scheme].canChangeReputation;
     }
 
     /**
@@ -303,8 +300,8 @@ contract DAOController is Initializable {
         return schemesWithManageSchemesPermission;
     }
 
-    function _isSchemeRegistered(address _scheme) private view returns (bool) {
-        return (schemes[_scheme].isRegistered);
+    function _isSchemeRegistered(address scheme) private view returns (bool) {
+        return (schemes[scheme].isRegistered);
     }
 
     /**

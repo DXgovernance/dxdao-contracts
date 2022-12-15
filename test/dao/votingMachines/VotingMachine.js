@@ -43,7 +43,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         );
-        return helpers.getValueFromLogs(tx, "_proposalId");
+        return helpers.getValueFromLogs(tx, "proposalId");
       })
     );
 
@@ -202,6 +202,7 @@ contract("VotingMachine", function (accounts) {
       ERC20Mock.abi.find(x => x.name === "approve"),
       [dxdVotingMachine.address, web3.utils.toWei("100")]
     );
+
     const proposalToApproveStakeTokens = await helpers.getValueFromLogs(
       await masterAvatarScheme.proposeCalls(
         [stakingToken.address],
@@ -211,7 +212,7 @@ contract("VotingMachine", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "_proposalId"
+      "proposalId"
     );
     await dxdVotingMachine.vote(
       proposalToApproveStakeTokens,
@@ -265,7 +266,7 @@ contract("VotingMachine", function (accounts) {
         );
         setRefundConfProposalId = await helpers.getValueFromLogs(
           setRefundConfTx,
-          "_proposalId"
+          "proposalId"
         );
         const schemeId = (
           await dxdVotingMachine.proposals(setRefundConfProposalId)
@@ -312,7 +313,7 @@ contract("VotingMachine", function (accounts) {
         );
         const fundVotingMachineProposalId = await helpers.getValueFromLogs(
           fundVotingMachineTx,
-          "_proposalId"
+          "proposalId"
         );
         const schemeId = (
           await dxdVotingMachine.proposals(setRefundConfProposalId)
@@ -340,7 +341,7 @@ contract("VotingMachine", function (accounts) {
           constants.SOME_HASH
         );
 
-        let proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+        let proposalId = await helpers.getValueFromLogs(tx, "proposalId");
         assert.equal(
           TOTAL_GAS_REFUND_PER_VOTE * 2,
           Number((await dxdVotingMachine.schemes(schemeId)).voteGasBalance)
@@ -400,7 +401,7 @@ contract("VotingMachine", function (accounts) {
       });
 
       it("Can view rep of votes and amount staked on proposal", async function () {
-        const statusInfo = await dxdVotingMachine.proposalStatus(
+        const statusInfo = await dxdVotingMachine.getProposalStatus(
           setRefundConfProposalId
         );
 
@@ -424,7 +425,7 @@ contract("VotingMachine", function (accounts) {
             constants.TEST_TITLE,
             constants.SOME_HASH
           ),
-          "_proposalId"
+          "proposalId"
         );
 
         const vote = await dxdVotingMachine.vote(
@@ -437,11 +438,11 @@ contract("VotingMachine", function (accounts) {
         );
 
         await expectEvent(vote.receipt, "VoteProposal", {
-          _proposalId: proposalId,
-          _avatar: org.avatar.address,
-          _voter: accounts[1],
-          _vote: constants.YES_OPTION.toString(),
-          _reputation: "10000",
+          proposalId: proposalId,
+          avatar: org.avatar.address,
+          voter: accounts[1],
+          option: constants.YES_OPTION.toString(),
+          reputation: "10000",
         });
 
         const secondVote = await dxdVotingMachine.vote(
@@ -499,7 +500,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         );
-        proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+        proposalId = await helpers.getValueFromLogs(tx, "proposalId");
       });
 
       it("fail sharing invalid vote signature", async function () {
@@ -620,7 +621,7 @@ contract("VotingMachine", function (accounts) {
         expectEvent(voteTx, "ActionSigned", {
           proposalId: proposalId,
           voter: accounts[3],
-          voteDecision: constants.YES_OPTION,
+          option: constants.YES_OPTION,
           amount: "70000",
           nonce: signerNonce,
           signature: votesignature,
@@ -704,7 +705,7 @@ contract("VotingMachine", function (accounts) {
           dxdVotingMachine.executeSignedVote(
             voteInfoFromLog.proposalId,
             voteInfoFromLog.voter,
-            voteInfoFromLog.voteDecision,
+            voteInfoFromLog.option,
             voteInfoFromLog.amount - 1,
             voteInfoFromLog.signature,
             { from: accounts[4] }
@@ -716,7 +717,7 @@ contract("VotingMachine", function (accounts) {
           dxdVotingMachine.executeSignedVote(
             voteInfoFromLog.proposalId,
             accounts[1],
-            voteInfoFromLog.voteDecision,
+            voteInfoFromLog.option,
             voteInfoFromLog.amount,
             voteInfoFromLog.signature,
             { from: accounts[4] }
@@ -755,7 +756,7 @@ contract("VotingMachine", function (accounts) {
         await dxdVotingMachine.executeSignedVote(
           voteInfoFromLog.proposalId,
           voteInfoFromLog.voter,
-          voteInfoFromLog.voteDecision,
+          voteInfoFromLog.option,
           voteInfoFromLog.amount,
           voteInfoFromLog.signature,
           { from: accounts[4] }
@@ -812,13 +813,13 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         );
-        proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+        proposalId = await helpers.getValueFromLogs(tx, "proposalId");
       });
 
       it("positive signal decision", async function () {
         assert.equal(
           (await dxdVotingMachine.votesSignaled(proposalId, accounts[3]))
-            .voteDecision,
+            .option,
           0
         );
         await expectRevert(
@@ -835,7 +836,7 @@ contract("VotingMachine", function (accounts) {
         );
         assert.equal(
           (await dxdVotingMachine.votesSignaled(proposalId, accounts[3]))
-            .voteDecision,
+            .option,
           constants.YES_OPTION
         );
         assert.equal(
@@ -852,7 +853,7 @@ contract("VotingMachine", function (accounts) {
         );
         assert.equal(
           (await dxdVotingMachine.votesSignaled(proposalId, accounts[3]))
-            .voteDecision,
+            .option,
           0
         );
         const schemeProposal = await masterAvatarScheme.getProposal(proposalId);
@@ -865,7 +866,7 @@ contract("VotingMachine", function (accounts) {
       it("negative signal decision", async function () {
         assert.equal(
           (await dxdVotingMachine.votesSignaled(proposalId, accounts[3]))
-            .voteDecision,
+            .option,
           0
         );
         const signalVoteTx = await dxdVotingMachine.signalVote(
@@ -876,7 +877,7 @@ contract("VotingMachine", function (accounts) {
         );
         assert.equal(
           (await dxdVotingMachine.votesSignaled(proposalId, accounts[3]))
-            .voteDecision,
+            .option,
           constants.NO_OPTION
         );
         assert.equal(
@@ -894,7 +895,7 @@ contract("VotingMachine", function (accounts) {
         );
         assert.equal(
           (await dxdVotingMachine.votesSignaled(proposalId, accounts[3]))
-            .voteDecision,
+            .option,
           0
         );
         const schemeProposal = await masterAvatarScheme.getProposal(proposalId);
@@ -916,7 +917,7 @@ contract("VotingMachine", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const testProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const testProposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
       const stakesToBoost = await dxdVotingMachine.calculateBoostChange(
         testProposalId
@@ -932,8 +933,8 @@ contract("VotingMachine", function (accounts) {
       );
 
       expectEvent(stakeTx.receipt, "StateChange", {
-        _proposalId: testProposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
+        proposalId: testProposalId,
+        proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
       });
 
       await dxdVotingMachine.vote(testProposalId, constants.YES_OPTION, 0, {
@@ -956,8 +957,8 @@ contract("VotingMachine", function (accounts) {
         dxdVotingMachine.contract,
         "StateChange",
         {
-          _proposalId: testProposalId,
-          _proposalState:
+          proposalId: testProposalId,
+          proposalState:
             constants.VOTING_MACHINE_PROPOSAL_STATES.ExecutedInBoost,
         }
       );
@@ -987,7 +988,7 @@ contract("VotingMachine", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const testProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const testProposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
       const stakesToBoost = await dxdVotingMachine.calculateBoostChange(
         testProposalId
@@ -1018,8 +1019,8 @@ contract("VotingMachine", function (accounts) {
       );
 
       expectEvent(stakeTx.receipt, "StateChange", {
-        _proposalId: testProposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
+        proposalId: testProposalId,
+        proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
       });
 
       await dxdVotingMachine.vote(testProposalId, constants.YES_OPTION, 0, {
@@ -1042,8 +1043,8 @@ contract("VotingMachine", function (accounts) {
         dxdVotingMachine.contract,
         "StateChange",
         {
-          _proposalId: testProposalId,
-          _proposalState:
+          proposalId: testProposalId,
+          proposalState:
             constants.VOTING_MACHINE_PROPOSAL_STATES.ExecutedInBoost,
         }
       );
@@ -1058,7 +1059,7 @@ contract("VotingMachine", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const testProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const testProposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
       assert.equal(await stakingToken.balanceOf(dxdVotingMachine.address), "0");
 
@@ -1142,7 +1143,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
       await dxdVotingMachine.stake(
         fakeProposalId,
@@ -1173,8 +1174,8 @@ contract("VotingMachine", function (accounts) {
       // attack ends
 
       expectEvent(stakeTx.receipt, "StateChange", {
-        _proposalId: testProposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
+        proposalId: testProposalId,
+        proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
       });
 
       await dxdVotingMachine.vote(testProposalId, constants.YES_OPTION, 0, {
@@ -1196,8 +1197,8 @@ contract("VotingMachine", function (accounts) {
         dxdVotingMachine.contract,
         "StateChange",
         {
-          _proposalId: testProposalId,
-          _proposalState:
+          proposalId: testProposalId,
+          proposalState:
             constants.VOTING_MACHINE_PROPOSAL_STATES.ExecutedInBoost,
         }
       );
@@ -1229,7 +1230,7 @@ contract("VotingMachine", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const testProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const testProposalId = await helpers.getValueFromLogs(tx, "proposalId");
       const stakesToBoost = await dxdVotingMachine.calculateBoostChange(
         testProposalId
       );
@@ -1244,8 +1245,8 @@ contract("VotingMachine", function (accounts) {
       );
 
       expectEvent(stakeTx.receipt, "StateChange", {
-        _proposalId: testProposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
+        proposalId: testProposalId,
+        proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
       });
 
       await dxdVotingMachine.vote(testProposalId, constants.YES_OPTION, 1, {
@@ -1265,8 +1266,8 @@ contract("VotingMachine", function (accounts) {
         dxdVotingMachine.contract,
         "StateChange",
         {
-          _proposalId: testProposalId,
-          _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.Expired,
+          proposalId: testProposalId,
+          proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.Expired,
         }
       );
 
@@ -1296,7 +1297,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
 
       const stakesToBoost = await dxdVotingMachine.calculateBoostChange(
@@ -1319,8 +1320,8 @@ contract("VotingMachine", function (accounts) {
 
       // check preBoosted
       expectEvent(upStake.receipt, "StateChange", {
-        _proposalId: proposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
+        proposalId: proposalId,
+        proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
       });
 
       // vote enough times to pass the execution bar threshold
@@ -1366,7 +1367,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
 
       const stakesToBoost = await dxdVotingMachine.calculateBoostChange(
@@ -1389,8 +1390,8 @@ contract("VotingMachine", function (accounts) {
 
       // check preBoosted
       expectEvent(upStake.receipt, "StateChange", {
-        _proposalId: proposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
+        proposalId: proposalId,
+        proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
       });
 
       await time.increase(
@@ -1454,7 +1455,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
     });
 
@@ -1473,8 +1474,8 @@ contract("VotingMachine", function (accounts) {
       );
 
       expectEvent(stake.receipt, "StateChange", {
-        _proposalId: stakeProposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
+        proposalId: stakeProposalId,
+        proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
       });
 
       await time.increase(
@@ -1504,9 +1505,8 @@ contract("VotingMachine", function (accounts) {
       );
 
       expectEvent(executeStake.receipt, "StateChange", {
-        _proposalId: stakeProposalId,
-        _proposalState:
-          constants.VOTING_MACHINE_PROPOSAL_STATES.ExecutedInBoost,
+        proposalId: stakeProposalId,
+        proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.ExecutedInBoost,
       });
 
       expectEvent.notEmitted(executeStake.receipt, "Stake");
@@ -1522,11 +1522,11 @@ contract("VotingMachine", function (accounts) {
       );
 
       expectEvent(upStake.receipt, "Stake", {
-        _proposalId: stakeProposalId,
-        _avatar: org.avatar.address,
-        _staker: accounts[1],
-        _vote: constants.YES_OPTION.toString(),
-        _amount: "100",
+        proposalId: stakeProposalId,
+        avatar: org.avatar.address,
+        staker: accounts[1],
+        option: constants.YES_OPTION.toString(),
+        amount: "100",
       });
 
       const downStake = await dxdVotingMachine.stake(
@@ -1552,7 +1552,7 @@ contract("VotingMachine", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const testProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const testProposalId = await helpers.getValueFromLogs(tx, "proposalId");
       const testProposal = await dxdVotingMachine.proposals(testProposalId);
 
       const signerNonce = await dxdVotingMachine.signerNonce(accounts[1]);
@@ -1580,8 +1580,8 @@ contract("VotingMachine", function (accounts) {
       );
 
       expectEvent(stakeTx.receipt, "StateChange", {
-        _proposalId: testProposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
+        proposalId: testProposalId,
+        proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.PreBoosted,
       });
 
       await time.increase(
@@ -1599,8 +1599,8 @@ contract("VotingMachine", function (accounts) {
       );
 
       expectEvent(voteTx.receipt, "StateChange", {
-        _proposalId: testProposalId,
-        _proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.Boosted,
+        proposalId: testProposalId,
+        proposalState: constants.VOTING_MACHINE_PROPOSAL_STATES.Boosted,
       });
 
       await time.increase(helpers.defaultParameters.boostedVotePeriodLimit + 1);
@@ -1615,8 +1615,8 @@ contract("VotingMachine", function (accounts) {
         dxdVotingMachine.contract,
         "StateChange",
         {
-          _proposalId: testProposalId,
-          _proposalState:
+          proposalId: testProposalId,
+          proposalState:
             constants.VOTING_MACHINE_PROPOSAL_STATES.ExecutedInBoost,
         }
       );
@@ -1658,7 +1658,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
       const testProposalId2 = await helpers.getValueFromLogs(
         await masterAvatarScheme.proposeCalls(
@@ -1669,7 +1669,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
       const testProposalId3 = await helpers.getValueFromLogs(
         await masterAvatarScheme.proposeCalls(
@@ -1680,7 +1680,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
       const testProposalId4 = await helpers.getValueFromLogs(
         await masterAvatarScheme.proposeCalls(
@@ -1691,7 +1691,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
       const testProposalId5 = await helpers.getValueFromLogs(
         await masterAvatarScheme.proposeCalls(
@@ -1702,17 +1702,15 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
       const schemeId = (await dxdVotingMachine.proposals(testProposalId1))
         .schemeId;
       const paramsHash = (await dxdVotingMachine.proposals(testProposalId1))
         .paramsHash;
       const schemeParameters = await dxdVotingMachine.parameters(paramsHash);
-      const threshold0BoostedProposal = await dxdVotingMachine.threshold(
-        paramsHash,
-        schemeId
-      );
+      const threshold0BoostedProposal =
+        await dxdVotingMachine.getSchemeThreshold(paramsHash, schemeId);
       const stakesToBoostFirstProposal =
         await dxdVotingMachine.multiplyRealMath(
           threshold0BoostedProposal,
@@ -1853,7 +1851,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
       const testProposalId2 = await helpers.getValueFromLogs(
         await masterAvatarScheme.proposeCalls(
@@ -1864,7 +1862,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
       const testProposalId3 = await helpers.getValueFromLogs(
         await masterAvatarScheme.proposeCalls(
@@ -1875,7 +1873,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
 
       const paramsHash = (await dxdVotingMachine.proposals(testProposalId1))
@@ -1944,9 +1942,10 @@ contract("VotingMachine", function (accounts) {
 
       // Downstake on the proposal to get it back to queue
       const stakesToUnBoostSecondProposal = (
-        await dxdVotingMachine.proposalStatus(testProposalId2)
+        await dxdVotingMachine.getProposalStatus(testProposalId2)
       ).totalStakesYes.sub(
-        (await dxdVotingMachine.proposalStatus(testProposalId2)).totalStakesNo
+        (await dxdVotingMachine.getProposalStatus(testProposalId2))
+          .totalStakesNo
       );
       await dxdVotingMachine.stake(
         testProposalId2,
@@ -2014,41 +2013,16 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
 
       await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
         from: accounts[1],
       });
 
-      const voteInfo = await dxdVotingMachine.voteInfo(proposalId, accounts[1]);
+      const voteInfo = await dxdVotingMachine.getVoter(proposalId, accounts[1]);
       assert.equal(constants.YES_OPTION, Number(voteInfo[0]));
       assert.equal(10000, Number(voteInfo[1]));
-    });
-
-    it("should return vote status", async function () {
-      const proposalId = await helpers.getValueFromLogs(
-        await masterAvatarScheme.proposeCalls(
-          [actionMock.address],
-          [helpers.testCallFrom(org.avatar.address)],
-          [0],
-          2,
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
-        "_proposalId"
-      );
-
-      await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {
-        from: accounts[1],
-      });
-
-      const voteStatus = await dxdVotingMachine.voteStatus(
-        proposalId,
-        constants.YES_OPTION
-      );
-
-      assert.equal(10000, Number(voteStatus));
     });
 
     it("should return true if the proposal is votable", async function () {
@@ -2061,7 +2035,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
 
       const isVotable = await dxdVotingMachine.isVotable(proposalId);
@@ -2078,7 +2052,7 @@ contract("VotingMachine", function (accounts) {
           constants.TEST_TITLE,
           constants.SOME_HASH
         ),
-        "_proposalId"
+        "proposalId"
       );
 
       await dxdVotingMachine.vote(proposalId, constants.YES_OPTION, 0, {

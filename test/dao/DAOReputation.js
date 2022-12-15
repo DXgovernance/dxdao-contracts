@@ -42,8 +42,8 @@ contract("DAOReputation", async accounts => {
     const reputationBalance = await daoReputation.balanceOf(repHolder);
     expect(mint, true);
     await expectEvent(mint.receipt, "Mint", {
-      _to: repHolder,
-      _amount: amount.toString(),
+      to: repHolder,
+      amount: amount.toString(),
     });
     expect(reputationBalance.toNumber(), amount);
   });
@@ -60,8 +60,8 @@ contract("DAOReputation", async accounts => {
 
     expect(burn, true);
     await expectEvent(burn.receipt, "Burn", {
-      _from: repHolder,
-      _amount: amount.toString(),
+      from: repHolder,
+      amount: amount.toString(),
     });
     expect(reputationBalance.toNumber(), 0);
   });

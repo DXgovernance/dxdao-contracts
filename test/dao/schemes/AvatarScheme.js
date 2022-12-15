@@ -108,7 +108,7 @@ contract("AvatarScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -139,7 +139,7 @@ contract("AvatarScheme", function (accounts) {
     );
     const proposalIdMintRep = await helpers.getValueFromLogs(
       mintRepTx,
-      "_proposalId"
+      "proposalId"
     );
     await org.votingMachine.vote(proposalIdMintRep, constants.YES_OPTION, 0, {
       from: accounts[2],
@@ -166,7 +166,7 @@ contract("AvatarScheme", function (accounts) {
     );
     const proposalIdBurnRep = await helpers.getValueFromLogs(
       burnRepTx,
-      "_proposalId"
+      "proposalId"
     );
     await org.votingMachine.vote(proposalIdBurnRep, constants.YES_OPTION, 0, {
       from: accounts[2],
@@ -242,7 +242,7 @@ contract("AvatarScheme", function (accounts) {
       constants.SOME_HASH
     );
 
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -295,7 +295,7 @@ contract("AvatarScheme", function (accounts) {
     );
     const proposalIdMintRep = await helpers.getValueFromLogs(
       mintRepTx,
-      "_proposalId"
+      "proposalId"
     );
 
     // Check inside the raw logs that the ProposalExecuteResult event logs the signature of the error to be throw
@@ -358,7 +358,7 @@ contract("AvatarScheme", function (accounts) {
     );
     const proposalIdBurnRep = await helpers.getValueFromLogs(
       burnRepTx,
-      "_proposalId"
+      "proposalId"
     );
 
     // Check inside the raw logs that the ProposalExecuteResult event logs the signature of the error to be throw

@@ -10,13 +10,13 @@ each modification of the supply of the token (every mint an burn)._
 ### Mint
 
 ```solidity
-event Mint(address _to, uint256 _amount)
+event Mint(address to, uint256 amount)
 ```
 
 ### Burn
 
 ```solidity
-event Burn(address _from, uint256 _amount)
+event Burn(address from, uint256 amount)
 ```
 
 ### DAOReputation__NoTransfer
@@ -44,17 +44,17 @@ _Not allow the transfer of tokens_
 ### mint
 
 ```solidity
-function mint(address _account, uint256 _amount) external returns (bool success)
+function mint(address account, uint256 amount) external returns (bool success)
 ```
 
-_Generates `_amount` reputation that are assigned to `_account`_
+_Generates `amount` reputation that are assigned to `account`_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _account | address | The address that will be assigned the new reputation |
-| _amount | uint256 | The quantity of reputation generated |
+| account | address | The address that will be assigned the new reputation |
+| amount | uint256 | The quantity of reputation generated |
 
 #### Return Values
 
@@ -65,7 +65,7 @@ _Generates `_amount` reputation that are assigned to `_account`_
 ### mintMultiple
 
 ```solidity
-function mintMultiple(address[] _accounts, uint256[] _amount) external returns (bool success)
+function mintMultiple(address[] accounts, uint256[] amount) external returns (bool success)
 ```
 
 _Mint reputation for multiple accounts_
@@ -74,8 +74,8 @@ _Mint reputation for multiple accounts_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _accounts | address[] | The accounts that will be assigned the new reputation |
-| _amount | uint256[] | The quantity of reputation generated for each account |
+| accounts | address[] | The accounts that will be assigned the new reputation |
+| amount | uint256[] | The quantity of reputation generated for each account |
 
 #### Return Values
 
@@ -86,17 +86,17 @@ _Mint reputation for multiple accounts_
 ### burn
 
 ```solidity
-function burn(address _account, uint256 _amount) external returns (bool success)
+function burn(address account, uint256 amount) external returns (bool success)
 ```
 
-_Burns `_amount` reputation from `_account`_
+_Burns ` amount` reputation from ` account`_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _account | address | The address that will lose the reputation |
-| _amount | uint256 | The quantity of reputation to burn |
+| account | address | The address that will lose the reputation |
+| amount | uint256 | The quantity of reputation to burn |
 
 #### Return Values
 
@@ -107,7 +107,7 @@ _Burns `_amount` reputation from `_account`_
 ### burnMultiple
 
 ```solidity
-function burnMultiple(address[] _accounts, uint256[] _amount) external returns (bool success)
+function burnMultiple(address[] accounts, uint256[] amount) external returns (bool success)
 ```
 
 _Burn reputation from multiple accounts_
@@ -116,8 +116,8 @@ _Burn reputation from multiple accounts_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _accounts | address[] | The accounts that will lose the reputation |
-| _amount | uint256[] | The quantity of reputation to burn for each account |
+| accounts | address[] | The accounts that will lose the reputation |
+| amount | uint256[] | The quantity of reputation to burn for each account |
 
 #### Return Values
 

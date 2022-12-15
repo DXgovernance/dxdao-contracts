@@ -51,10 +51,10 @@ contract("DAOAvatar", function (accounts) {
     });
 
     await expectEvent(tx.receipt, "CallExecuted", {
-      _to: ANY_ADDRESS,
-      _data: callData,
-      _value: value.toString(),
-      _success: true,
+      to: ANY_ADDRESS,
+      data: callData,
+      value: value.toString(),
+      callSuccess: true,
     });
   });
 });

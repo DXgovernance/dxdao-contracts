@@ -9,34 +9,34 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
  */
 contract DAOAvatar is OwnableUpgradeable {
     /// @notice Emitted when the call was executed
-    event CallExecuted(address indexed _to, bytes _data, uint256 _value, bool _success);
+    event CallExecuted(address indexed to, bytes data, uint256 value, bool callSuccess, bytes callData);
 
     receive() external payable {}
 
     /**
      * @dev Initialize the avatar contract.
-     * @param _owner The address of the owner
+     * @param owner The address of the owner
      */
-    function initialize(address _owner) public initializer {
+    function initialize(address owner) public initializer {
         __Ownable_init();
-        transferOwnership(_owner);
+        transferOwnership(owner);
     }
 
     /**
      * @dev Perform a call to an arbitrary contract
-     * @param _to  The contract's address to call
-     * @param _data ABI-encoded contract call to call `_to` address.
-     * @param _value Value (ETH) to transfer with the transaction
-     * @return success Whether call was executed successfully or not
-     * @return data Call data returned
+     * @param to  The contract's address to call
+     * @param data ABI-encoded contract call to call `_to` address.
+     * @param value Value (ETH) to transfer with the transaction
+     * @return callSuccess Whether call was executed successfully or not
+     * @return callData Call data returned
      */
     function executeCall(
-        address _to,
-        bytes memory _data,
-        uint256 _value
-    ) public onlyOwner returns (bool success, bytes memory data) {
-        (bool success, bytes memory dataReturned) = _to.call{value: _value}(_data);
-        emit CallExecuted(_to, _data, _value, success);
-        return (success, dataReturned);
+        address to,
+        bytes memory data,
+        uint256 value
+    ) public onlyOwner returns (bool callSuccess, bytes memory callData) {
+        (callSuccess, callData) = to.call{value: value}(data);
+        emit CallExecuted(to, data, value, callSuccess, callData);
+        return (callSuccess, callData);
     }
 }

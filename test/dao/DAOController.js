@@ -280,8 +280,8 @@ contract("DAOController", function (accounts) {
 
     // A scheme can unregister another scheme
     await expectEvent(tx.receipt, "UnregisterScheme", {
-      _sender: schemeAddress,
-      _scheme: schemeToUnregister,
+      sender: schemeAddress,
+      scheme: schemeToUnregister,
     });
   });
 
@@ -358,8 +358,8 @@ contract("DAOController", function (accounts) {
     )[0];
 
     expect(avatarCallEvent.name).to.equal("CallExecuted");
-    expect(avatarCallEvent.args._to).to.equal(actionMock.address);
-    expect(avatarCallEvent.args._data).to.equal(dataCall);
+    expect(avatarCallEvent.args.to).to.equal(actionMock.address);
+    expect(avatarCallEvent.args.data).to.equal(dataCall);
   });
 
   it("burnReputation() should fail from onlyChangingReputation modifyer", async () => {

@@ -89,7 +89,7 @@ Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
 ### ProposalStateChange
 
 ```solidity
-event ProposalStateChange(bytes32 _proposalId, uint256 _state)
+event ProposalStateChange(bytes32 proposalId, uint256 state)
 ```
 
 ### Scheme__CannotInitTwice
@@ -122,7 +122,7 @@ Emitted if controller address is zero
 error Scheme_InvalidParameterArrayLength()
 ```
 
-_to, _callData and _value must have all the same length
+to, callData and value must have all the same length
 
 ### Scheme__InvalidTotalOptionsOrActionsCallsLength
 
@@ -175,7 +175,7 @@ Emitted if the ERC20 limits are exceeded
 ### initialize
 
 ```solidity
-function initialize(address payable _avatar, address _votingMachine, address _controller, address _permissionRegistry, string _schemeName, uint256 _maxRepPercentageChange) external
+function initialize(address payable avatarAddress, address votingMachineAddress, address controllerAddress, address permissionRegistryAddress, string _schemeName, uint256 _maxRepPercentageChange) external
 ```
 
 _Initialize Scheme contract_
@@ -184,17 +184,17 @@ _Initialize Scheme contract_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _avatar | address payable | The avatar address |
-| _votingMachine | address | The voting machine address |
-| _controller | address | The controller address |
-| _permissionRegistry | address | The address of the permission registry contract |
+| avatarAddress | address payable | The avatar address |
+| votingMachineAddress | address | The voting machine address |
+| controllerAddress | address | The controller address |
+| permissionRegistryAddress | address | The address of the permission registry contract |
 | _schemeName | string | The name of the scheme |
 | _maxRepPercentageChange | uint256 | The maximum percentage allowed to be changed in REP total supply after proposal execution |
 
 ### proposeCalls
 
 ```solidity
-function proposeCalls(address[] _to, bytes[] _callData, uint256[] _value, uint256 _totalOptions, string _title, string _descriptionHash) public virtual returns (bytes32 proposalId)
+function proposeCalls(address[] to, bytes[] callData, uint256[] value, uint256 totalOptions, string title, string descriptionHash) public virtual returns (bytes32 proposalId)
 ```
 
 _Propose calls to be executed, the calls have to be allowed by the permission registry_
@@ -203,12 +203,12 @@ _Propose calls to be executed, the calls have to be allowed by the permission re
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _to | address[] | The addresses to call |
-| _callData | bytes[] | The abi encode data for the calls |
-| _value | uint256[] | Value (ETH) to transfer with the calls |
-| _totalOptions | uint256 | The amount of options to be voted on |
-| _title | string | Title of proposal |
-| _descriptionHash | string | Proposal description hash |
+| to | address[] | The addresses to call |
+| callData | bytes[] | The abi encode data for the calls |
+| value | uint256[] | Value (ETH) to transfer with the calls |
+| totalOptions | uint256 | The amount of options to be voted on |
+| title | string | Title of proposal |
+| descriptionHash | string | Proposal description hash |
 
 #### Return Values
 
@@ -219,7 +219,7 @@ _Propose calls to be executed, the calls have to be allowed by the permission re
 ### executeProposal
 
 ```solidity
-function executeProposal(bytes32 _proposalId, uint256 _winningOption) public virtual returns (bool success)
+function executeProposal(bytes32 proposalId, uint256 winningOption) public virtual returns (bool success)
 ```
 
 _Execution of proposals, can only be called by the voting machine in which the vote is held._
@@ -228,8 +228,8 @@ _Execution of proposals, can only be called by the voting machine in which the v
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the voting in the voting machine |
-| _winningOption | uint256 | The winning option in the voting machine |
+| proposalId | bytes32 | The ID of the voting in the voting machine |
+| winningOption | uint256 | The winning option in the voting machine |
 
 #### Return Values
 
@@ -240,7 +240,7 @@ _Execution of proposals, can only be called by the voting machine in which the v
 ### finishProposal
 
 ```solidity
-function finishProposal(bytes32 _proposalId, uint256 _winningOption) public virtual returns (bool success)
+function finishProposal(bytes32 proposalId, uint256 winningOption) public virtual returns (bool success)
 ```
 
 _Finish a proposal and set the final state in storage_
@@ -249,8 +249,8 @@ _Finish a proposal and set the final state in storage_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the voting in the voting machine |
-| _winningOption | uint256 | The winning option in the voting machine |
+| proposalId | bytes32 | The ID of the voting in the voting machine |
+| winningOption | uint256 | The winning option in the voting machine |
 
 #### Return Values
 
