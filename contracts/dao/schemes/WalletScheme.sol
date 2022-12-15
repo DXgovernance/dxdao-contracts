@@ -26,36 +26,36 @@ contract WalletScheme is Scheme {
 
     /**
      * @dev Propose calls to be executed, the calls have to be allowed by the permission registry
-     * @param _to - The addresses to call
-     * @param _callData - The abi encode data for the calls
-     * @param _value value(ETH) to transfer with the calls
-     * @param _totalOptions The amount of options to be voted on
-     * @param _title title of proposal
-     * @param _descriptionHash proposal description hash
+     * @param to - The addresses to call
+     * @param callData - The abi encode data for the calls
+     * @param value value(ETH) to transfer with the calls
+     * @param totalOptions The amount of options to be voted on
+     * @param title title of proposal
+     * @param descriptionHash proposal description hash
      * @return proposalId id which represents the proposal
      */
     function proposeCalls(
-        address[] calldata _to,
-        bytes[] calldata _callData,
-        uint256[] calldata _value,
-        uint256 _totalOptions,
-        string calldata _title,
-        string calldata _descriptionHash
+        address[] calldata to,
+        bytes[] calldata callData,
+        uint256[] calldata value,
+        uint256 totalOptions,
+        string calldata title,
+        string calldata descriptionHash
     ) public override returns (bytes32 proposalId) {
-        if (_totalOptions != 2) {
+        if (totalOptions != 2) {
             revert WalletScheme__TotalOptionsMustBeTwo();
         }
 
-        return super.proposeCalls(_to, _callData, _value, _totalOptions, _title, _descriptionHash);
+        return super.proposeCalls(to, callData, value, totalOptions, title, descriptionHash);
     }
 
     /**
      * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
-     * @param _proposalId the ID of the voting in the voting machine
-     * @param _winningOption The winning option in the voting machine
+     * @param proposalId the ID of the voting in the voting machine
+     * @param winningOption The winning option in the voting machine
      * @return bool success
      */
-    function executeProposal(bytes32 _proposalId, uint256 _winningOption)
+    function executeProposal(bytes32 proposalId, uint256 winningOption)
         public
         override
         onlyVotingMachine
@@ -65,7 +65,7 @@ contract WalletScheme is Scheme {
             revert WalletScheme__CannotMakeAvatarCalls();
         }
 
-        return super.executeProposal(_proposalId, _winningOption);
+        return super.executeProposal(proposalId, winningOption);
     }
 
     /**

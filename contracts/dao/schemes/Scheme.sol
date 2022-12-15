@@ -57,7 +57,7 @@ abstract contract Scheme is VotingMachineCallbacks {
     /// @notice Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
     bool internal executingProposal;
 
-    event ProposalStateChange(bytes32 indexed _proposalId, uint256 indexed _state);
+    event ProposalStateChange(bytes32 indexed proposalId, uint256 indexed state);
 
     /// @notice Emitted when its initialized twice
     error Scheme__CannotInitTwice();
@@ -68,7 +68,7 @@ abstract contract Scheme is VotingMachineCallbacks {
     /// @notice Emitted if controller address is zero
     error Scheme__ControllerAddressCannotBeZero();
 
-    /// @notice _to, _callData and _value must have all the same length
+    /// @notice to, callData and value must have all the same length
     error Scheme_InvalidParameterArrayLength();
 
     /// @notice Emitted when the totalOptions paramers is invalid
@@ -91,18 +91,18 @@ abstract contract Scheme is VotingMachineCallbacks {
 
     /**
      * @dev Initialize Scheme contract
-     * @param _avatar The avatar address
-     * @param _votingMachine The voting machine address
-     * @param _controller The controller address
-     * @param _permissionRegistry The address of the permission registry contract
+     * @param avatarAddress The avatar address
+     * @param votingMachineAddress The voting machine address
+     * @param controllerAddress The controller address
+     * @param permissionRegistryAddress The address of the permission registry contract
      * @param _schemeName The name of the scheme
      * @param _maxRepPercentageChange The maximum percentage allowed to be changed in REP total supply after proposal execution
      */
     function initialize(
-        address payable _avatar,
-        address _votingMachine,
-        address _controller,
-        address _permissionRegistry,
+        address payable avatarAddress,
+        address votingMachineAddress,
+        address controllerAddress,
+        address permissionRegistryAddress,
         string calldata _schemeName,
         uint256 _maxRepPercentageChange
     ) external {
@@ -110,62 +110,62 @@ abstract contract Scheme is VotingMachineCallbacks {
             revert Scheme__CannotInitTwice();
         }
 
-        if (_avatar == address(0)) {
+        if (avatarAddress == address(0)) {
             revert Scheme__AvatarAddressCannotBeZero();
         }
 
-        if (_controller == address(0)) {
+        if (controllerAddress == address(0)) {
             revert Scheme__ControllerAddressCannotBeZero();
         }
 
-        avatar = DAOAvatar(_avatar);
-        votingMachine = IVotingMachine(_votingMachine);
-        controller = DAOController(_controller);
-        permissionRegistry = PermissionRegistry(_permissionRegistry);
+        avatar = DAOAvatar(avatarAddress);
+        votingMachine = IVotingMachine(votingMachineAddress);
+        controller = DAOController(controllerAddress);
+        permissionRegistry = PermissionRegistry(permissionRegistryAddress);
         schemeName = _schemeName;
         maxRepPercentageChange = _maxRepPercentageChange;
     }
 
     /**
      * @dev Propose calls to be executed, the calls have to be allowed by the permission registry
-     * @param _to The addresses to call
-     * @param _callData The abi encode data for the calls
-     * @param _value Value (ETH) to transfer with the calls
-     * @param _totalOptions The amount of options to be voted on
-     * @param _title Title of proposal
-     * @param _descriptionHash Proposal description hash
+     * @param to The addresses to call
+     * @param callData The abi encode data for the calls
+     * @param value Value (ETH) to transfer with the calls
+     * @param totalOptions The amount of options to be voted on
+     * @param title Title of proposal
+     * @param descriptionHash Proposal description hash
      * @return proposalId ID which represents the proposal
      */
     function proposeCalls(
-        address[] calldata _to,
-        bytes[] calldata _callData,
-        uint256[] calldata _value,
-        uint256 _totalOptions,
-        string calldata _title,
-        string calldata _descriptionHash
+        address[] calldata to,
+        bytes[] calldata callData,
+        uint256[] calldata value,
+        uint256 totalOptions,
+        string calldata title,
+        string calldata descriptionHash
     ) public virtual returns (bytes32 proposalId) {
-        if (_to.length != _callData.length || _to.length != _value.length) {
+        if (to.length != callData.length || to.length != value.length) {
             revert Scheme_InvalidParameterArrayLength();
         }
 
-        if ((_value.length % (_totalOptions - 1)) != 0) {
+        if ((value.length % (totalOptions - 1)) != 0) {
             revert Scheme__InvalidTotalOptionsOrActionsCallsLength();
         }
 
         bytes32 voteParams = controller.getSchemeParameters(address(this));
 
         // Get the proposal id that will be used from the voting machine
-        proposalId = votingMachine.propose(_totalOptions, voteParams, msg.sender, address(avatar));
+        proposalId = votingMachine.propose(totalOptions, voteParams, msg.sender, address(avatar));
 
         // Add the proposal to the proposals mapping, proposals list and proposals information mapping
         proposals[proposalId] = Proposal({
-            to: _to,
-            callData: _callData,
-            value: _value,
+            to: to,
+            callData: callData,
+            value: value,
             state: ProposalState.Submitted,
-            totalOptions: _totalOptions,
-            title: _title,
-            descriptionHash: _descriptionHash,
+            totalOptions: totalOptions,
+            title: title,
+            descriptionHash: descriptionHash,
             submittedTime: block.timestamp
         });
         // slither-disable-next-line all
@@ -177,11 +177,11 @@ abstract contract Scheme is VotingMachineCallbacks {
 
     /**
      * @dev Execution of proposals, can only be called by the voting machine in which the vote is held.
-     * @param _proposalId The ID of the voting in the voting machine
-     * @param _winningOption The winning option in the voting machine
+     * @param proposalId The ID of the voting in the voting machine
+     * @param winningOption The winning option in the voting machine
      * @return success Success of the execution
      */
-    function executeProposal(bytes32 _proposalId, uint256 _winningOption)
+    function executeProposal(bytes32 proposalId, uint256 winningOption)
         public
         virtual
         onlyVotingMachine
@@ -193,18 +193,18 @@ abstract contract Scheme is VotingMachineCallbacks {
         }
         executingProposal = true;
 
-        Proposal memory proposal = proposals[_proposalId];
+        Proposal memory proposal = proposals[proposalId];
 
         if (proposal.state != ProposalState.Submitted) {
             revert Scheme__ProposalMustBeSubmitted();
         }
 
-        if (_winningOption > 1) {
+        if (winningOption > 1) {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
 
             permissionRegistry.setERC20Balances();
 
-            uint256 callIndex = (proposal.to.length / (proposal.totalOptions - 1)) * (_winningOption - 2);
+            uint256 callIndex = (proposal.to.length / (proposal.totalOptions - 1)) * (winningOption - 2);
             uint256 lastCallIndex = callIndex + (proposal.to.length / (proposal.totalOptions - 1));
             bool callsSucessResult = false;
             bytes memory returnData;
@@ -254,27 +254,27 @@ abstract contract Scheme is VotingMachineCallbacks {
 
     /**
      * @dev Finish a proposal and set the final state in storage
-     * @param _proposalId The ID of the voting in the voting machine
-     * @param _winningOption The winning option in the voting machine
+     * @param proposalId The ID of the voting in the voting machine
+     * @param winningOption The winning option in the voting machine
      * @return success Proposal finish successfully
      */
-    function finishProposal(bytes32 _proposalId, uint256 _winningOption)
+    function finishProposal(bytes32 proposalId, uint256 winningOption)
         public
         virtual
         onlyVotingMachine
         returns (bool success)
     {
-        Proposal storage proposal = proposals[_proposalId];
+        Proposal storage proposal = proposals[proposalId];
         if (proposal.state != ProposalState.Submitted) {
             revert Scheme__ProposalMustBeSubmitted();
         }
 
-        if (_winningOption == 1) {
+        if (winningOption == 1) {
             proposal.state = ProposalState.Rejected;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
+            emit ProposalStateChange(proposalId, uint256(ProposalState.Rejected));
         } else {
             proposal.state = ProposalState.Passed;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.Passed));
+            emit ProposalStateChange(proposalId, uint256(ProposalState.Passed));
         }
         return true;
     }
