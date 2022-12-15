@@ -1,7 +1,7 @@
 pragma solidity ^0.5.17;
 
 contract Create2Deployer {
-    event Deployed(address addr, uint256 salt);
+    event Deployed(address addr, bytes32 bytecodeHash);
 
     function deploy(bytes memory code, uint256 salt) public {
         address addr;
@@ -12,6 +12,6 @@ contract Create2Deployer {
             }
         }
 
-        emit Deployed(addr, salt);
+        emit Deployed(addr, keccak256(code));
     }
 }
