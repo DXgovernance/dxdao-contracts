@@ -10,6 +10,17 @@ module.exports = async () => {
     deterministicDeployment: deploySalt,
   });
 
+  if (process.env.ETHERSCAN_API_KEY && hre.network.name !== "hardhat") {
+    try {
+      await hre.run("verify:verify", {
+        address: create2Deploy.address,
+        constructorArguments: [],
+      });
+    } catch (error) {
+      console.error("Error verifying contract", error);
+    }
+  }
+
   console.log(`Create2Deployer address ${create2Deploy.address}`);
 };
 
