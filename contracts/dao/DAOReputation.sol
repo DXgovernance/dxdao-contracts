@@ -12,8 +12,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20Snapshot
  * each modification of the supply of the token (every mint an burn).
  */
 contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
-    event Mint(address indexed _to, uint256 _amount);
-    event Burn(address indexed _from, uint256 _amount);
+    event Mint(address indexed to, uint256 amount);
+    event Burn(address indexed from, uint256 amount);
 
     /// @notice Error when trying to transfer reputation
     error DAOReputation__NoTransfer();
@@ -33,65 +33,65 @@ contract DAOReputation is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     }
 
     /**
-     * @dev Generates `_amount` reputation that are assigned to `_account`
-     * @param _account The address that will be assigned the new reputation
-     * @param _amount The quantity of reputation generated
+     * @dev Generates `amount` reputation that are assigned to `account`
+     * @param account The address that will be assigned the new reputation
+     * @param amount The quantity of reputation generated
      * @return success True if the reputation are generated correctly
      */
-    function mint(address _account, uint256 _amount) external onlyOwner returns (bool success) {
-        _mint(_account, _amount);
+    function mint(address account, uint256 amount) external onlyOwner returns (bool success) {
+        _mint(account, amount);
         _snapshot();
-        emit Mint(_account, _amount);
+        emit Mint(account, amount);
         return true;
     }
 
     /**
      * @dev Mint reputation for multiple accounts
-     * @param _accounts The accounts that will be assigned the new reputation
-     * @param _amount The quantity of reputation generated for each account
+     * @param accounts The accounts that will be assigned the new reputation
+     * @param amount The quantity of reputation generated for each account
      * @return success True if the reputation are generated correctly
      */
-    function mintMultiple(address[] memory _accounts, uint256[] memory _amount)
+    function mintMultiple(address[] memory accounts, uint256[] memory amount)
         external
         onlyOwner
         returns (bool success)
     {
-        for (uint256 i = 0; i < _accounts.length; i++) {
-            _mint(_accounts[i], _amount[i]);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            _mint(accounts[i], amount[i]);
             _snapshot();
-            emit Mint(_accounts[i], _amount[i]);
+            emit Mint(accounts[i], amount[i]);
         }
         return true;
     }
 
     /**
-     * @dev Burns `_amount` reputation from `_account`
-     * @param _account The address that will lose the reputation
-     * @param _amount The quantity of reputation to burn
+     * @dev Burns ` amount` reputation from ` account`
+     * @param  account The address that will lose the reputation
+     * @param  amount The quantity of reputation to burn
      * @return success True if the reputation are burned correctly
      */
-    function burn(address _account, uint256 _amount) external onlyOwner returns (bool success) {
-        _burn(_account, _amount);
+    function burn(address account, uint256 amount) external onlyOwner returns (bool success) {
+        _burn(account, amount);
         _snapshot();
-        emit Burn(_account, _amount);
+        emit Burn(account, amount);
         return true;
     }
 
     /**
      * @dev Burn reputation from multiple accounts
-     * @param _accounts The accounts that will lose the reputation
-     * @param _amount The quantity of reputation to burn for each account
+     * @param  accounts The accounts that will lose the reputation
+     * @param  amount The quantity of reputation to burn for each account
      * @return success True if the reputation are generated correctly
      */
-    function burnMultiple(address[] memory _accounts, uint256[] memory _amount)
+    function burnMultiple(address[] memory accounts, uint256[] memory amount)
         external
         onlyOwner
         returns (bool success)
     {
-        for (uint256 i = 0; i < _accounts.length; i++) {
-            _burn(_accounts[i], _amount[i]);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            _burn(accounts[i], amount[i]);
             _snapshot();
-            emit Burn(_accounts[i], _amount[i]);
+            emit Burn(accounts[i], amount[i]);
         }
         return true;
     }
