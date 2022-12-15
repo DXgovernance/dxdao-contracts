@@ -5,12 +5,12 @@
 ### executeProposal
 
 ```solidity
-function executeProposal(bytes32 _proposalId, uint256 _decision) external returns (bool)
+function executeProposal(bytes32 proposalId, uint256 winningOption) external returns (bool)
 ```
 
 ### finishProposal
 
 ```solidity
-function finishProposal(bytes32 _proposalId, uint256 _decision) external returns (bool)
+function finishProposal(bytes32 proposalId, uint256 winningOption) external returns (bool)
 ```
 

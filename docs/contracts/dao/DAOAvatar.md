@@ -7,7 +7,7 @@ _The avatar, representing the DAO, owned by the DAO, controls the reputation and
 ### CallExecuted
 
 ```solidity
-event CallExecuted(address _to, bytes _data, uint256 _value, bool _success)
+event CallExecuted(address to, bytes data, uint256 value, bool callSuccess, bytes callData)
 ```
 
 Emitted when the call was executed
@@ -21,7 +21,7 @@ receive() external payable
 ### initialize
 
 ```solidity
-function initialize(address _owner) public
+function initialize(address owner) public
 ```
 
 _Initialize the avatar contract._
@@ -30,12 +30,12 @@ _Initialize the avatar contract._
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _owner | address | The address of the owner |
+| owner | address | The address of the owner |
 
 ### executeCall
 
 ```solidity
-function executeCall(address _to, bytes _data, uint256 _value) public returns (bool success, bytes data)
+function executeCall(address to, bytes data, uint256 value) public returns (bool callSuccess, bytes callData)
 ```
 
 _Perform a call to an arbitrary contract_
@@ -44,14 +44,14 @@ _Perform a call to an arbitrary contract_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _to | address | The contract's address to call |
-| _data | bytes | ABI-encoded contract call to call `_to` address. |
-| _value | uint256 | Value (ETH) to transfer with the transaction |
+| to | address | The contract's address to call |
+| data | bytes | ABI-encoded contract call to call `_to` address. |
+| value | uint256 | Value (ETH) to transfer with the transaction |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| success | bool | Whether call was executed successfully or not |
-| data | bytes | Call data returned |
+| callSuccess | bool | Whether call was executed successfully or not |
+| callData | bytes | Call data returned |
 

@@ -14,7 +14,7 @@ be executed.
 A proposal in boost state might need a % of votes in favour in order to be executed.
 If a proposal ended and it has staked tokens on it the tokens can be redeemed by
 the stakers.
-If a staker staked on the winning option it receives a reward.
+If a staker staked on the winning option it receives his stake plus a reward.
 If a staker staked on a loosing option it lose his stake._
 
 ### ProposalState
@@ -57,8 +57,7 @@ struct Parameters {
   uint256 thresholdConst;
   uint256 limitExponentValue;
   uint256 quietEndingPeriod;
-  uint256 minimumDaoBounty;
-  uint256 daoBountyConst;
+  uint256 daoBounty;
   uint256 boostedVoteRequiredPercentage;
 }
 ```
@@ -67,7 +66,7 @@ struct Parameters {
 
 ```solidity
 struct Voter {
-  uint256 vote;
+  uint256 option;
   uint256 reputation;
   bool preBoosted;
 }
@@ -77,9 +76,8 @@ struct Voter {
 
 ```solidity
 struct Staker {
-  uint256 vote;
+  uint256 option;
   uint256 amount;
-  uint256 amount4Bounty;
 }
 ```
 
@@ -95,13 +93,10 @@ struct Proposal {
   address proposer;
   uint256 currentBoostedVotePeriodLimit;
   bytes32 paramsHash;
-  uint256 daoBountyRemain;
   uint256 daoBounty;
   uint256 totalStakes;
-  uint256 confidenceThreshold;
   uint256 secondsFromTimeOutTillExecuteBoosted;
   uint256[3] times;
-  bool daoRedeemItsWinnings;
 }
 ```
 
@@ -114,102 +109,66 @@ struct Scheme {
   uint256 voteGasBalance;
   uint256 voteGas;
   uint256 maxGasPrice;
-  uint256 averagesDownstakesOfBoosted;
-  uint256 orgBoostedProposalsCnt;
+  uint256 boostedProposalsCounter;
+  uint256 preBoostedProposalsCounter;
 }
 ```
 
-### VoteDecision
+### Vote
 
 ```solidity
-struct VoteDecision {
-  uint256 voteDecision;
+struct Vote {
+  uint256 option;
   uint256 amount;
-}
-```
-
-### ExecuteFunctionParams
-
-```solidity
-struct ExecuteFunctionParams {
-  uint256 totalReputation;
-  uint256 executionBar;
-  uint256 boostedExecutionBar;
-  uint256 averageDownstakesOfBoosted;
-  uint256 confidenceThreshold;
 }
 ```
 
 ### NewProposal
 
 ```solidity
-event NewProposal(bytes32 _proposalId, address _avatar, uint256 _numOfChoices, address _proposer, bytes32 _paramsHash)
+event NewProposal(bytes32 proposalId, address avatar, uint256 numOfOptions, address proposer, bytes32 paramsHash)
 ```
 
 ### ExecuteProposal
 
 ```solidity
-event ExecuteProposal(bytes32 _proposalId, address _avatar, uint256 _decision, uint256 _totalReputation)
+event ExecuteProposal(bytes32 proposalId, address avatar, uint256 option, uint256 totalReputation)
 ```
 
 ### VoteProposal
 
 ```solidity
-event VoteProposal(bytes32 _proposalId, address _avatar, address _voter, uint256 _vote, uint256 _reputation)
-```
-
-### CancelProposal
-
-```solidity
-event CancelProposal(bytes32 _proposalId, address _avatar)
-```
-
-### CancelVoting
-
-```solidity
-event CancelVoting(bytes32 _proposalId, address _avatar, address _voter)
+event VoteProposal(bytes32 proposalId, address avatar, address voter, uint256 option, uint256 reputation)
 ```
 
 ### Stake
 
 ```solidity
-event Stake(bytes32 _proposalId, address _avatar, address _staker, uint256 _vote, uint256 _amount)
+event Stake(bytes32 proposalId, address avatar, address staker, uint256 option, uint256 amount)
 ```
 
 ### Redeem
 
 ```solidity
-event Redeem(bytes32 _proposalId, address _avatar, address _beneficiary, uint256 _amount)
+event Redeem(bytes32 proposalId, address avatar, address beneficiary, uint256 amount)
 ```
 
-### RedeemDaoBounty
+### UnclaimedDaoBounty
 
 ```solidity
-event RedeemDaoBounty(bytes32 _proposalId, address _avatar, address _beneficiary, uint256 _amount)
+event UnclaimedDaoBounty(address avatar, address beneficiary, uint256 amount)
 ```
 
 ### ActionSigned
 
 ```solidity
-event ActionSigned(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount, uint256 nonce, uint256 actionType, bytes signature)
+event ActionSigned(bytes32 proposalId, address voter, uint256 option, uint256 amount, uint256 nonce, uint256 actionType, bytes signature)
 ```
 
 ### StateChange
 
 ```solidity
-event StateChange(bytes32 _proposalId, enum VotingMachine.ProposalState _proposalState)
-```
-
-### ExpirationCallBounty
-
-```solidity
-event ExpirationCallBounty(bytes32 _proposalId, address _beneficiary, uint256 _amount)
-```
-
-### ConfidenceLevelChange
-
-```solidity
-event ConfidenceLevelChange(bytes32 _proposalId, uint256 _confidenceThreshold)
+event StateChange(bytes32 proposalId, enum VotingMachine.ProposalState proposalState)
 ```
 
 ### ProposalExecuteResult
@@ -221,7 +180,7 @@ event ProposalExecuteResult(string)
 ### VoteSignaled
 
 ```solidity
-event VoteSignaled(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount)
+event VoteSignaled(bytes32 proposalId, address voter, uint256 option, uint256 amount)
 ```
 
 Event used to signal votes to be executed on chain
@@ -350,13 +309,13 @@ error VotingMachine__StakingAmountIsTooHight()
 error VotingMachine__TotalStakesIsToHight()
 ```
 
-### VotingMachine__InvalidChoicesAmount
+### VotingMachine__InvalidOptionsAmount
 
 ```solidity
-error VotingMachine__InvalidChoicesAmount()
+error VotingMachine__InvalidOptionsAmount()
 ```
 
-Emited when _choicesAmount is less than NUM_OF_CHOICES
+Emited when optionsAmount is less than NUM_OF_OPTIONS
 
 ### VotingMachine__InvalidParameters
 
@@ -370,7 +329,7 @@ error VotingMachine__InvalidParameters()
 error VotingMachine__StartCannotBeBiggerThanListLength()
 ```
 
-arg _start cannot be bigger than proposals list length
+arg start cannot be bigger than proposals list length
 
 ### VotingMachine__EndCannotBeBiggerThanListLength
 
@@ -378,7 +337,7 @@ arg _start cannot be bigger than proposals list length
 error VotingMachine__EndCannotBeBiggerThanListLength()
 ```
 
-arg _end cannot be bigger than proposals list length
+arg end cannot be bigger than proposals list length
 
 ### VotingMachine__StartCannotBeBiggerThanEnd
 
@@ -386,7 +345,7 @@ arg _end cannot be bigger than proposals list length
 error VotingMachine__StartCannotBeBiggerThanEnd()
 ```
 
-arg _start cannot be bigger than _end
+arg start cannot be bigger than end
 
 ### proposalVotes
 
@@ -394,7 +353,7 @@ arg _start cannot be bigger than _end
 mapping(bytes32 => mapping(uint256 => uint256)) proposalVotes
 ```
 
-proposalId   =>      vote   =>    reputation
+proposalId   =>      option   =>    reputation
 
 ### proposalPreBoostedVotes
 
@@ -402,7 +361,7 @@ proposalId   =>      vote   =>    reputation
 mapping(bytes32 => mapping(uint256 => uint256)) proposalPreBoostedVotes
 ```
 
-proposalId   =>    vote   => reputation
+proposalId   =>    option   => reputation
 
 ### proposalVoters
 
@@ -468,10 +427,10 @@ mapping(address => struct EnumerableSetUpgradeable.Bytes32Set) inactiveProposals
 
 Store inactiveProposals for each avatar
 
-### NUM_OF_CHOICES
+### NUM_OF_OPTIONS
 
 ```solidity
-uint256 NUM_OF_CHOICES
+uint256 NUM_OF_OPTIONS
 ```
 
 ### NO
@@ -524,43 +483,37 @@ mapping(address => uint256) signerNonce
 ### votesSignaled
 
 ```solidity
-mapping(bytes32 => mapping(address => struct VotingMachine.VoteDecision)) votesSignaled
+mapping(bytes32 => mapping(address => struct VotingMachine.Vote)) votesSignaled
 ```
 
-### numOfChoices
+### numOfOptions
 
 ```solidity
-mapping(bytes32 => uint256) numOfChoices
+mapping(bytes32 => uint256) numOfOptions
 ```
 
-The number of choices of each proposal
-
-### onlyProposalOwner
-
-```solidity
-modifier onlyProposalOwner(bytes32 _proposalId)
-```
+The number of options of each proposal
 
 ### votable
 
 ```solidity
-modifier votable(bytes32 _proposalId)
+modifier votable(bytes32 proposalId)
 ```
 
 _Check that the proposal is votable.
 A proposal is votable if it is in one of the following states:
 PreBoosted, Boosted, QuietEndingPeriod or Queued_
 
-### validDecision
+### validOption
 
 ```solidity
-modifier validDecision(bytes32 proposalId, uint256 decision)
+modifier validOption(bytes32 proposalId, uint256 option)
 ```
 
 ### constructor
 
 ```solidity
-constructor(contract IERC20 _stakingToken) public
+constructor(contract IERC20 stakingTokenAddress) public
 ```
 
 _Constructor_
@@ -569,12 +522,12 @@ _Constructor_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _stakingToken | contract IERC20 | ERC20 token used as staking token |
+| stakingTokenAddress | contract IERC20 | ERC20 token used as staking token |
 
 ### setParameters
 
 ```solidity
-function setParameters(uint256[9] _params) external returns (bytes32 paramsHash)
+function setParameters(uint256[8] params) external returns (bytes32 paramsHash)
 ```
 
 _Hash the parameters, save them if necessary, and return the hash value_
@@ -583,7 +536,7 @@ _Hash the parameters, save them if necessary, and return the hash value_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _params | uint256[9] | A parameters array    _params[0] - _queuedVoteRequiredPercentage,    _params[1] - _queuedVotePeriodLimit, //the time limit for a proposal to be in an absolute voting mode.    _params[2] - _boostedVotePeriodLimit, //the time limit for a proposal to be in an relative voting mode.    _params[3] - _preBoostedVotePeriodLimit, //the time limit for a proposal to be in an preparation state (stable) before boosted.    _params[4] -_thresholdConst    _params[5] -_quietEndingPeriod    _params[6] -_minimumDaoBounty    _params[7] -_daoBountyConst    _params[8] - _boostedVoteRequiredPercentage |
+| params | uint256[8] | A parameters array    params[0] - queuedVoteRequiredPercentage,    params[1] - queuedVotePeriodLimit, //the time limit for a proposal to be in an absolute voting mode.    params[2] - boostedVotePeriodLimit, //the time limit for a proposal to be in an relative voting mode.    params[3] - preBoostedVotePeriodLimit, //the time limit for a proposal to be in an preparation state (stable) before boosted.    params[4] -_thresholdConst    params[5] -_quietEndingPeriod    params[6] -_daoBounty    params[7] - boostedVoteRequiredPercentage |
 
 #### Return Values
 
@@ -594,7 +547,7 @@ _Hash the parameters, save them if necessary, and return the hash value_
 ### redeem
 
 ```solidity
-function redeem(bytes32 _proposalId, address _beneficiary) public returns (uint256 reward)
+function redeem(bytes32 proposalId, address beneficiary) external returns (uint256 reward)
 ```
 
 _Redeem a reward for a successful stake, vote or proposing.
@@ -604,8 +557,8 @@ _Redeem a reward for a successful stake, vote or proposing.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
-| _beneficiary | address | The beneficiary address |
+| proposalId | bytes32 | The ID of the proposal |
+| beneficiary | address | The beneficiary address |
 
 #### Return Values
 
@@ -613,53 +566,31 @@ _Redeem a reward for a successful stake, vote or proposing.
 | ---- | ---- | ----------- |
 | reward | uint256 | The staking token reward |
 
-### redeemDaoBounty
+### score
 
 ```solidity
-function redeemDaoBounty(bytes32 _proposalId, address _beneficiary) public returns (uint256 redeemedAmount, uint256 potentialAmount)
+function score(bytes32 proposalId) public view returns (uint256 proposalScore)
 ```
 
-_redeemDaoBounty a reward for a successful stake.
-The function use a beneficiary address as a parameter (and not msg.sender) to enable users to redeem on behalf of someone else._
+_Returns the proposal score (Confidence level)
+For dual options proposal S = (S+)/(S-)_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
-| _beneficiary | address | The beneficiary address |
+| proposalId | bytes32 | The ID of the proposal |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| redeemedAmount | uint256 | Redeem token amount |
-| potentialAmount | uint256 | Potential redeem token amount (if there is enough tokens bounty at the dao owner of the scheme ) |
-
-### calcExecuteCallBounty
-
-```solidity
-function calcExecuteCallBounty(bytes32 _proposalId) public view returns (uint256 executeCallBounty)
-```
-
-_Calculate the execute boosted call bounty_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| executeCallBounty | uint256 | The execute boosted call bounty |
+| proposalScore | uint256 | Proposal score as real number. |
 
 ### shouldBoost
 
 ```solidity
-function shouldBoost(bytes32 _proposalId) public view returns (bool shouldProposalBeBoosted)
+function shouldBoost(bytes32 proposalId) public view returns (bool shouldProposalBeBoosted)
 ```
 
 _Check if a proposal should be shifted to boosted phase._
@@ -668,7 +599,7 @@ _Check if a proposal should be shifted to boosted phase._
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | the ID of the proposal |
+| proposalId | bytes32 | the ID of the proposal |
 
 #### Return Values
 
@@ -676,10 +607,10 @@ _Check if a proposal should be shifted to boosted phase._
 | ---- | ---- | ----------- |
 | shouldProposalBeBoosted | bool | True or false depending on whether the proposal should be boosted or not. |
 
-### threshold
+### getSchemeThreshold
 
 ```solidity
-function threshold(bytes32 _paramsHash, bytes32 _schemeId) public view returns (uint256 schemeThreshold)
+function getSchemeThreshold(bytes32 paramsHash, bytes32 schemeId) public view returns (uint256 schemeThreshold)
 ```
 
 _Returns the scheme's score threshold which is required by a proposal to shift to boosted state.
@@ -689,8 +620,8 @@ This threshold is dynamically set and it depend on the number of boosted proposa
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _paramsHash | bytes32 | The scheme parameters hash |
-| _schemeId | bytes32 | The scheme identifier |
+| paramsHash | bytes32 | The scheme parameters hash |
+| schemeId | bytes32 | The scheme identifier |
 
 #### Return Values
 
@@ -698,10 +629,52 @@ This threshold is dynamically set and it depend on the number of boosted proposa
 | ---- | ---- | ----------- |
 | schemeThreshold | uint256 | Scheme's score threshold as real number. |
 
+### calculateThreshold
+
+```solidity
+function calculateThreshold(uint256 thresholdConst, uint256 limitExponentValue, uint256 boostedProposalsCounter) public pure returns (uint256 threshold)
+```
+
+_Returns the a score threshold which is required by a proposal to shift to boosted state._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| thresholdConst | uint256 | The threshold constant to be used that increments the score exponentially |
+| limitExponentValue | uint256 | The limit of the scheme boosted proposals counter |
+| boostedProposalsCounter | uint256 | The amount of boosted proposals in scheme |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| threshold | uint256 | Score threshold as real number. |
+
+### calculateBoostChange
+
+```solidity
+function calculateBoostChange(bytes32 proposalId) public view returns (uint256 toBoost)
+```
+
+_Calculate the amount needed to boost a proposal_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposalId | bytes32 | the ID of the proposal |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| toBoost | uint256 | Stake amount needed to boost proposal and move it to preBoost |
+
 ### stake
 
 ```solidity
-function stake(bytes32 _proposalId, uint256 _vote, uint256 _amount) external returns (bool proposalExecuted)
+function stake(bytes32 proposalId, uint256 option, uint256 amount) external returns (bool proposalExecuted)
 ```
 
 _Staking function_
@@ -710,9 +683,9 @@ _Staking function_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | id of the proposal |
-| _vote | uint256 | NO(1) or YES(2). |
-| _amount | uint256 | The betting amount |
+| proposalId | bytes32 | id of the proposal |
+| option | uint256 | NO(1) or YES(2). |
+| amount | uint256 | The betting amount |
 
 #### Return Values
 
@@ -723,7 +696,7 @@ _Staking function_
 ### executeSignedStake
 
 ```solidity
-function executeSignedStake(bytes32 proposalId, address staker, uint256 stakeDecision, uint256 amount, bytes signature) external returns (bool proposalExecuted)
+function executeSignedStake(bytes32 proposalId, address staker, uint256 option, uint256 amount, bytes signature) external returns (bool proposalExecuted)
 ```
 
 _executeSignedStake function_
@@ -734,7 +707,7 @@ _executeSignedStake function_
 | ---- | ---- | ----------- |
 | proposalId | bytes32 | Id of the proposal |
 | staker | address | Address of staker |
-| stakeDecision | uint256 | NO(1) or YES(2). |
+| option | uint256 | NO(1) or YES(2). |
 | amount | uint256 | The betting amount |
 | signature | bytes | Signed data by the staker |
 
@@ -747,7 +720,7 @@ _executeSignedStake function_
 ### setSchemeRefund
 
 ```solidity
-function setSchemeRefund(address avatar, address scheme, uint256 _voteGas, uint256 _maxGasPrice) external payable
+function setSchemeRefund(address avatar, address scheme, uint256 voteGas, uint256 maxGasPrice) external payable
 ```
 
 Allows the voting machine to receive ether to be used to refund voting costs
@@ -760,13 +733,13 @@ _Config the vote refund for each scheme_
 | ---- | ---- | ----------- |
 | avatar | address | Avatar contract address |
 | scheme | address | Scheme contract address to set vote refund config |
-| _voteGas | uint256 | The amount of gas that will be used as vote cost |
-| _maxGasPrice | uint256 | The maximum amount of gas price to be paid, if the gas used is higher than this value only a portion of the total gas would be refunded |
+| voteGas | uint256 | The amount of gas that will be used as vote cost |
+| maxGasPrice | uint256 | The maximum amount of gas price to be paid, if the gas used is higher than this value only a portion of the total gas would be refunded |
 
 ### withdrawRefundBalance
 
 ```solidity
-function withdrawRefundBalance(address scheme) public
+function withdrawRefundBalance(address scheme) external
 ```
 
 _Withdraw scheme refund balance_
@@ -780,7 +753,7 @@ _Withdraw scheme refund balance_
 ### vote
 
 ```solidity
-function vote(bytes32 _proposalId, uint256 _vote, uint256 _amount) external returns (bool proposalExecuted)
+function vote(bytes32 proposalId, uint256 option, uint256 amount) external returns (bool proposalExecuted)
 ```
 
 _Voting function from old voting machine changing only the logic to refund vote after vote done_
@@ -789,9 +762,9 @@ _Voting function from old voting machine changing only the logic to refund vote 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | id of the proposal |
-| _vote | uint256 | NO(1) or YES(2). |
-| _amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
+| proposalId | bytes32 | id of the proposal |
+| option | uint256 | NO(1) or YES(2). |
+| amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
 
 #### Return Values
 
@@ -802,7 +775,7 @@ _Voting function from old voting machine changing only the logic to refund vote 
 ### execute
 
 ```solidity
-function execute(bytes32 _proposalId) external returns (bool proposalExecuted)
+function execute(bytes32 proposalId) external returns (bool proposalExecuted)
 ```
 
 _Check if the proposal has been decided, and if so, execute the proposal_
@@ -811,7 +784,7 @@ _Check if the proposal has been decided, and if so, execute the proposal_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | The id of the proposal |
+| proposalId | bytes32 | The id of the proposal |
 
 #### Return Values
 
@@ -819,73 +792,10 @@ _Check if the proposal has been decided, and if so, execute the proposal_
 | ---- | ---- | ----------- |
 | proposalExecuted | bool | True if the proposal was executed, false otherwise. |
 
-### voteInfo
-
-```solidity
-function voteInfo(bytes32 _proposalId, address _voter) external view returns (uint256 voterVote, uint256 voterReputation)
-```
-
-_Returns the vote and the amount of reputation of the user committed to this proposal_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _proposalId | bytes32 | the ID of the proposal |
-| _voter | address | The address of the voter |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| voterVote | uint256 | The voters vote |
-| voterReputation | uint256 | Amount of reputation committed by _voter to _proposalId |
-
-### voteStatus
-
-```solidity
-function voteStatus(bytes32 _proposalId, uint256 _choice) external view returns (uint256 voted)
-```
-
-_Returns the reputation voted for a proposal for a specific voting choice._
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
-| _choice | uint256 | The index in the voting choice |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| voted | uint256 | Reputation for the given choice |
-
-### isVotable
-
-```solidity
-function isVotable(bytes32 _proposalId) external view returns (bool isProposalVotable)
-```
-
-_Check if the proposal is votable_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isProposalVotable | bool | True or false depending on whether the proposal is voteable |
-
 ### shareSignedAction
 
 ```solidity
-function shareSignedAction(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount, uint256 nonce, uint256 actionType, bytes signature) external
+function shareSignedAction(bytes32 proposalId, address voter, uint256 option, uint256 amount, uint256 nonce, uint256 actionType, bytes signature) external
 ```
 
 _Share the vote of a proposal for a voting machine on a event log_
@@ -896,7 +806,7 @@ _Share the vote of a proposal for a voting machine on a event log_
 | ---- | ---- | ----------- |
 | proposalId | bytes32 | id of the proposal |
 | voter | address | Address of voter |
-| voteDecision | uint256 | The vote decision, NO(1) or YES(2). |
+| option | uint256 | The vote option, NO(1) or YES(2). |
 | amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
 | nonce | uint256 | Nonce value ,it is part of the signature to ensure that a signature can be received only once. |
 | actionType | uint256 | 1=vote, 2=stake |
@@ -905,7 +815,7 @@ _Share the vote of a proposal for a voting machine on a event log_
 ### signalVote
 
 ```solidity
-function signalVote(bytes32 proposalId, uint256 voteDecision, uint256 amount) external
+function signalVote(bytes32 proposalId, uint256 option, uint256 amount) external
 ```
 
 _Signal the vote of a proposal in this voting machine to be executed later_
@@ -915,13 +825,13 @@ _Signal the vote of a proposal in this voting machine to be executed later_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | proposalId | bytes32 | Id of the proposal to vote |
-| voteDecision | uint256 | The vote decisions, NO(1) or YES(2). |
+| option | uint256 | The vote option, NO(1) or YES(2). |
 | amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
 
 ### executeSignedVote
 
 ```solidity
-function executeSignedVote(bytes32 proposalId, address voter, uint256 voteDecision, uint256 amount, bytes signature) external
+function executeSignedVote(bytes32 proposalId, address voter, uint256 option, uint256 amount, bytes signature) external
 ```
 
 _Execute a signed vote_
@@ -932,14 +842,14 @@ _Execute a signed vote_
 | ---- | ---- | ----------- |
 | proposalId | bytes32 | Id of the proposal to execute the vote on |
 | voter | address | The signer of the vote |
-| voteDecision | uint256 | The vote decision, NO(1) or YES(2). |
+| option | uint256 | The vote option, NO(1) or YES(2). |
 | amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
 | signature | bytes | The signature of the hashed vote |
 
 ### propose
 
 ```solidity
-function propose(uint256 _totalOptions, bytes32 _paramsHash, address _proposer, address _avatar) external returns (bytes32 proposalId)
+function propose(uint256 totalOptions, bytes32 paramsHash, address proposer, address avatar) external returns (bytes32 proposalId)
 ```
 
 _Register a new proposal with the given parameters. Every proposal has a unique ID which is being generated by calculating keccak256 of a incremented counter._
@@ -948,10 +858,10 @@ _Register a new proposal with the given parameters. Every proposal has a unique 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _totalOptions | uint256 | The amount of options to be voted on |
-| _paramsHash | bytes32 | parameters hash |
-| _proposer | address | address |
-| _avatar | address | address |
+| totalOptions | uint256 | The amount of options to be voted on |
+| paramsHash | bytes32 | parameters hash |
+| proposer | address | address |
+| avatar | address | address |
 
 #### Return Values
 
@@ -959,10 +869,10 @@ _Register a new proposal with the given parameters. Every proposal has a unique 
 | ---- | ---- | ----------- |
 | proposalId | bytes32 | ID of the new proposal registered |
 
-### internalVote
+### _vote
 
 ```solidity
-function internalVote(bytes32 _proposalId, address _voter, uint256 _vote, uint256 _rep) internal returns (bool proposalExecuted)
+function _vote(bytes32 proposalId, address voter, uint256 option, uint256 repAmount) internal returns (bool proposalExecuted)
 ```
 
 _Vote for a proposal, if the voter already voted, cancel the last vote and set a new one instead_
@@ -971,10 +881,10 @@ _Vote for a proposal, if the voter already voted, cancel the last vote and set a
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | id of the proposal |
-| _voter | address | used in case the vote is cast for someone else |
-| _vote | uint256 | a value between 0 to and the proposal's number of choices. |
-| _rep | uint256 | how many reputation the voter would like to stake for this vote. if  _rep==0 the voter full reputation will be use. |
+| proposalId | bytes32 | id of the proposal |
+| voter | address | used in case the vote is cast for someone else |
+| option | uint256 | a value between 0 to and the proposal's number of options. |
+| repAmount | uint256 | how many reputation the voter would like to stake for this vote. if  _rep==0 the voter full reputation will be use. |
 
 #### Return Values
 
@@ -997,55 +907,10 @@ _Execute a signaled vote on a votable proposal_
 | proposalId | bytes32 | id of the proposal to vote |
 | voter | address | The signer of the vote |
 
-### hashAction
-
-```solidity
-function hashAction(bytes32 proposalId, address signer, uint256 option, uint256 amount, uint256 nonce, uint256 actionType) public view returns (bytes32 actionHash)
-```
-
-_Hash the vote data that is used for signatures_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| proposalId | bytes32 | id of the proposal |
-| signer | address | The signer of the vote |
-| option | uint256 | The vote decision, NO(1) or YES(2). |
-| amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
-| nonce | uint256 | Nonce value, it is part of the signature to ensure that a signature can be received only once. |
-| actionType | uint256 | The governance action type to hash |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| actionHash | bytes32 | Hash of the action |
-
-### score
-
-```solidity
-function score(bytes32 _proposalId) public view returns (uint256 proposalScore)
-```
-
-_Returns the proposal score_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| proposalScore | uint256 | Proposal score as real number. |
-
 ### _execute
 
 ```solidity
-function _execute(bytes32 _proposalId) internal returns (bool proposalExecuted)
+function _execute(bytes32 proposalId) internal returns (bool proposalExecuted)
 ```
 
 _Check if the proposal has been decided, and if so, execute the proposal_
@@ -1054,7 +919,7 @@ _Check if the proposal has been decided, and if so, execute the proposal_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | The id of the proposal |
+| proposalId | bytes32 | The id of the proposal |
 
 #### Return Values
 
@@ -1062,31 +927,10 @@ _Check if the proposal has been decided, and if so, execute the proposal_
 | ---- | ---- | ----------- |
 | proposalExecuted | bool | True if the proposal was executed, false otherwise. |
 
-### _score
+### isVotable
 
 ```solidity
-function _score(bytes32 _proposalId) internal view returns (uint256 proposalScore)
-```
-
-_Returns the proposal score (Confidence level)
-For dual choice proposal S = (S+)/(S-)_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| proposalScore | uint256 | Proposal score as real number. |
-
-### _isVotable
-
-```solidity
-function _isVotable(bytes32 _proposalId) internal view returns (bool isProposalVotable)
+function isVotable(bytes32 proposalId) public view returns (bool isProposalVotable)
 ```
 
 _Check if the proposal is votable_
@@ -1095,7 +939,7 @@ _Check if the proposal is votable_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
+| proposalId | bytes32 | The ID of the proposal |
 
 #### Return Values
 
@@ -1106,7 +950,7 @@ _Check if the proposal is votable_
 ### _stake
 
 ```solidity
-function _stake(bytes32 _proposalId, uint256 _vote, uint256 _amount, address _staker) internal returns (bool proposalExecuted)
+function _stake(bytes32 proposalId, uint256 option, uint256 amount, address staker) internal returns (bool proposalExecuted)
 ```
 
 _staking function_
@@ -1115,10 +959,10 @@ _staking function_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | id of the proposal |
-| _vote | uint256 | NO(1) or YES(2). |
-| _amount | uint256 | The betting amount |
-| _staker | address | Address of the staker |
+| proposalId | bytes32 | id of the proposal |
+| option | uint256 | NO(1) or YES(2). |
+| amount | uint256 | The betting amount |
+| staker | address | Address of the staker |
 
 #### Return Values
 
@@ -1129,7 +973,7 @@ _staking function_
 ### _propose
 
 ```solidity
-function _propose(uint256 _choicesAmount, bytes32 _paramsHash, address _proposer, address _avatar) internal returns (bytes32 proposalId)
+function _propose(uint256 optionsAmount, bytes32 paramsHash, address proposer, address avatar) internal returns (bytes32 proposalId)
 ```
 
 _Register a new proposal with the given parameters. Every proposal has a unique ID which is being generated by calculating keccak256 of a incremented counter._
@@ -1138,10 +982,10 @@ _Register a new proposal with the given parameters. Every proposal has a unique 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _choicesAmount | uint256 | the total amount of choices for the proposal |
-| _paramsHash | bytes32 | parameters hash |
-| _proposer | address | Proposer address |
-| _avatar | address | Avatar address |
+| optionsAmount | uint256 | the total amount of options for the proposal |
+| paramsHash | bytes32 | parameters hash |
+| proposer | address | Proposer address |
+| avatar | address | Avatar address |
 
 #### Return Values
 
@@ -1166,7 +1010,7 @@ _Refund a vote gas cost to an address_
 ### getParametersHash
 
 ```solidity
-function getParametersHash(uint256[9] _params) public pure returns (bytes32 paramsHash)
+function getParametersHash(uint256[8] params) public pure returns (bytes32 paramsHash)
 ```
 
 _Returns a hash of the given parameters_
@@ -1175,7 +1019,7 @@ _Returns a hash of the given parameters_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _params | uint256[9] | Array of params (9) to hash |
+| params | uint256[8] | Array of params (8) to hash |
 
 #### Return Values
 
@@ -1183,70 +1027,57 @@ _Returns a hash of the given parameters_
 | ---- | ---- | ----------- |
 | paramsHash | bytes32 | Hash of the given parameters |
 
-### getProposalTimes
+### hashAction
 
 ```solidity
-function getProposalTimes(bytes32 _proposalId) external view returns (uint256[3] times)
+function hashAction(bytes32 proposalId, address signer, uint256 option, uint256 amount, uint256 nonce, uint256 actionType) public view returns (bytes32 actionHash)
 ```
 
-_Returns proposals times variables._
+_Hash the vote data that is used for signatures_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | ID of the proposal |
+| proposalId | bytes32 | id of the proposal |
+| signer | address | The signer of the vote |
+| option | uint256 | The vote option, NO(1) or YES(2). |
+| amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
+| nonce | uint256 | Nonce value, it is part of the signature to ensure that a signature can be received only once. |
+| actionType | uint256 | The governance action type to hash |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| times | uint256[3] | Times array |
+| actionHash | bytes32 | Hash of the action |
 
-### getProposalSchemeId
+### getVoter
 
 ```solidity
-function getProposalSchemeId(bytes32 _proposalId) external view returns (bytes32 schemeId)
+function getVoter(bytes32 proposalId, address voter) external view returns (uint256 option, uint256 amount)
 ```
 
-_Returns the schemeId for a given proposal_
+_Returns the vote and the amount of reputation of the user committed to this proposal_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | ID of the proposal |
+| proposalId | bytes32 | the ID of the proposal |
+| voter | address | The address of the voter |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| schemeId | bytes32 | Scheme identifier |
-
-### getProposalAvatar
-
-```solidity
-function getProposalAvatar(bytes32 _proposalId) public view returns (address avatarAddress)
-```
-
-_Returns the Avatar address for a given proposalId_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _proposalId | bytes32 | ID of the proposal |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| avatarAddress | address | Avatar address |
+| option | uint256 | The option voted |
+| amount | uint256 | The amount of rep used in the vote |
 
 ### getStaker
 
 ```solidity
-function getStaker(bytes32 _proposalId, address _staker) external view returns (uint256 vote, uint256 amount)
+function getStaker(bytes32 proposalId, address staker) external view returns (uint256 option, uint256 amount)
 ```
 
 _Returns the vote and stake amount for a given proposal and staker_
@@ -1255,78 +1086,55 @@ _Returns the vote and stake amount for a given proposal and staker_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
-| _staker | address | Staker address |
+| proposalId | bytes32 | The ID of the proposal |
+| staker | address | Staker address |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| vote | uint256 | Proposal staker vote |
-| amount | uint256 | Proposal staker amount |
+| option | uint256 | Staked option |
+| amount | uint256 | Staked amount |
 
-### getAllowedRangeOfChoices
+### getAllowedRangeOfOptions
 
 ```solidity
-function getAllowedRangeOfChoices() external pure returns (uint256 min, uint256 max)
+function getAllowedRangeOfOptions() external pure returns (uint256 min, uint256 max)
 ```
 
-_Returns the allowed range of choices for a voting machine._
+_Returns the allowed range of options for a voting machine._
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| min | uint256 | minimum number of choices |
-| max | uint256 | maximum number of choices |
+| min | uint256 | minimum number of options |
+| max | uint256 | maximum number of options |
 
-### getNumberOfChoices
+### getNumberOfOptions
 
 ```solidity
-function getNumberOfChoices(bytes32 _proposalId) public view returns (uint256 proposalChoicesNum)
+function getNumberOfOptions(bytes32 proposalId) public view returns (uint256 proposalOptionsAmount)
 ```
 
-_Returns the number of choices possible in this proposal_
+_Returns the number of options possible in this proposal_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | The proposal id |
+| proposalId | bytes32 | The proposal id |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalChoicesNum | uint256 | Number of choices for given proposal |
+| proposalOptionsAmount | uint256 | Number of options for given proposal |
 
-### proposalStatus
-
-```solidity
-function proposalStatus(bytes32 _proposalId) external view returns (uint256 preBoostedVotesNo, uint256 preBoostedVotesYes, uint256 totalStakesNo, uint256 totalStakesYes)
-```
-
-_Returns the total votes and stakes for a given proposal_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| preBoostedVotesNo | uint256 | preBoostedVotes NO |
-| preBoostedVotesYes | uint256 | preBoostedVotes YES |
-| totalStakesNo | uint256 | Total stakes NO |
-| totalStakesYes | uint256 | Total stakes YES |
-
-### proposalStatusWithVotes
+### getProposalStatus
 
 ```solidity
-function proposalStatusWithVotes(bytes32 _proposalId) external view returns (uint256 votesNo, uint256 votesYes, uint256 preBoostedVotesNo, uint256 preBoostedVotesYes, uint256 totalStakesNo, uint256 totalStakesYes)
+function getProposalStatus(bytes32 proposalId) external view returns (uint256 votesNo, uint256 votesYes, uint256 preBoostedVotesNo, uint256 preBoostedVotesYes, uint256 totalStakesNo, uint256 totalStakesYes)
 ```
 
 _Returns the total votes, preBoostedVotes and stakes for a given proposal_
@@ -1335,7 +1143,7 @@ _Returns the total votes, preBoostedVotes and stakes for a given proposal_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
+| proposalId | bytes32 | The ID of the proposal |
 
 #### Return Values
 
@@ -1348,71 +1156,30 @@ _Returns the total votes, preBoostedVotes and stakes for a given proposal_
 | totalStakesNo | uint256 | Proposal total stakes NO |
 | totalStakesYes | uint256 | Proposal total stakes YES |
 
-### voteStake
+### getProposalAvatar
 
 ```solidity
-function voteStake(bytes32 _proposalId, uint256 _vote) external view returns (uint256 totalStakeAmount)
+function getProposalAvatar(bytes32 proposalId) public view returns (address avatarAddress)
 ```
 
-_Returns the amount stakes for a given proposal and vote_
+_Returns the Avatar address for a given proposalId_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
-| _vote | uint256 | Vote number |
+| proposalId | bytes32 | ID of the proposal |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| totalStakeAmount | uint256 | Total stake amount |
-
-### winningVote
-
-```solidity
-function winningVote(bytes32 _proposalId) external view returns (uint256 winningVote)
-```
-
-_Returns the winningVote for a given proposal_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| winningVote | uint256 | Winning vote for given proposal |
-
-### state
-
-```solidity
-function state(bytes32 _proposalId) external view returns (enum VotingMachine.ProposalState state)
-```
-
-_Returns the state for a given proposal_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _proposalId | bytes32 | The ID of the proposal |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| state | enum VotingMachine.ProposalState | ProposalState proposal state |
+| avatarAddress | address | Avatar address |
 
 ### _getProposalsBatchRequest
 
 ```solidity
-function _getProposalsBatchRequest(uint256 _start, uint256 _end, struct EnumerableSetUpgradeable.Bytes32Set _proposals) internal view returns (bytes32[] proposalsArray)
+function _getProposalsBatchRequest(uint256 start, uint256 end, struct EnumerableSetUpgradeable.Bytes32Set proposalsSet) internal view returns (bytes32[] proposalsArray)
 ```
 
 _Returns array of proposal ids based on index args. Both indexes are inclusive, unles (0,0) that returns all elements_
@@ -1421,9 +1188,9 @@ _Returns array of proposal ids based on index args. Both indexes are inclusive, 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _start | uint256 | index to start batching (included). |
-| _end | uint256 | last index of batch (included). Zero will default to last element from the list |
-| _proposals | struct EnumerableSetUpgradeable.Bytes32Set | EnumerableSetUpgradeable set of proposal ids |
+| start | uint256 | index to start batching (included). |
+| end | uint256 | last index of batch (included). Zero will default to last element from the list |
+| proposalsSet | struct EnumerableSetUpgradeable.Bytes32Set | EnumerableSetUpgradeable set of proposal ids |
 
 #### Return Values
 
@@ -1434,7 +1201,7 @@ _Returns array of proposal ids based on index args. Both indexes are inclusive, 
 ### getActiveProposals
 
 ```solidity
-function getActiveProposals(uint256 _start, uint256 _end, address _avatar) external view returns (bytes32[] activeProposalsArray)
+function getActiveProposals(uint256 start, uint256 end, address avatar) external view returns (bytes32[] activeProposalsArray)
 ```
 
 _Returns array of active proposal ids_
@@ -1443,9 +1210,9 @@ _Returns array of active proposal ids_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _start | uint256 | The index to start batching (included). |
-| _end | uint256 | The last index of batch (included). Zero will return all |
-| _avatar | address | The avatar address to get active proposals from |
+| start | uint256 | The index to start batching (included). |
+| end | uint256 | The last index of batch (included). Zero will return all |
+| avatar | address | The avatar address to get active proposals from |
 
 #### Return Values
 
@@ -1456,7 +1223,7 @@ _Returns array of active proposal ids_
 ### getInactiveProposals
 
 ```solidity
-function getInactiveProposals(uint256 _start, uint256 _end, address _avatar) external view returns (bytes32[] inactiveProposalsArray)
+function getInactiveProposals(uint256 start, uint256 end, address avatar) external view returns (bytes32[] inactiveProposalsArray)
 ```
 
 _Returns array of inactive proposal ids_
@@ -1465,9 +1232,9 @@ _Returns array of inactive proposal ids_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _start | uint256 | The index to start batching (included). |
-| _end | uint256 | The last index of batch (included). Zero will return all |
-| _avatar | address | The avatar address to get active proposals from |
+| start | uint256 | The index to start batching (included). |
+| end | uint256 | The last index of batch (included). Zero will return all |
+| avatar | address | The avatar address to get active proposals from |
 
 #### Return Values
 
@@ -1478,7 +1245,7 @@ _Returns array of inactive proposal ids_
 ### getActiveProposalsCount
 
 ```solidity
-function getActiveProposalsCount(address _avatar) public view returns (uint256 activeProposalsCount)
+function getActiveProposalsCount(address avatar) public view returns (uint256 activeProposalsCount)
 ```
 
 _Returns the amount of active proposals_
@@ -1487,7 +1254,7 @@ _Returns the amount of active proposals_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _avatar | address | The avatar address |
+| avatar | address | The avatar address |
 
 #### Return Values
 
@@ -1498,7 +1265,7 @@ _Returns the amount of active proposals_
 ### getInactiveProposalsCount
 
 ```solidity
-function getInactiveProposalsCount(address _avatar) public view returns (uint256 inactiveProposalsCount)
+function getInactiveProposalsCount(address avatar) public view returns (uint256 inactiveProposalsCount)
 ```
 
 _Returns the amount of inactive proposals_
@@ -1507,11 +1274,19 @@ _Returns the amount of inactive proposals_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _avatar | address | The avatar address |
+| avatar | address | The avatar address |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | inactiveProposalsCount | uint256 | The total count of active proposals for given avatar address |
+
+### multiplyRealMath
+
+```solidity
+function multiplyRealMath(uint256 a, uint256 b) public pure returns (uint256)
+```
+
+_Helper function used in test to execute a real math lib multiplication_
 

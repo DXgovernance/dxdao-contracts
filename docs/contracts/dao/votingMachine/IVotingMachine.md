@@ -5,6 +5,6 @@
 ### propose
 
 ```solidity
-function propose(uint256, bytes32 _paramsHash, address _proposer, address _organization) external returns (bytes32)
+function propose(uint256, bytes32 paramsHash, address proposer, address organization) external returns (bytes32)
 ```
 
