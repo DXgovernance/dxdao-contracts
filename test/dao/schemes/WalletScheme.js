@@ -249,7 +249,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "_proposalId"
+      "proposalId"
     );
     await org.votingMachine.vote(proposalId1, constants.YES_OPTION, 0, {
       from: accounts[2],
@@ -389,13 +389,13 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     tx = await org.votingMachine.vote(proposalId, constants.NO_OPTION, 0, {
       from: accounts[2],
     });
     const stateChangeEvent = helpers.getEventFromTx(tx, "ProposalStateChange");
 
-    assert.equal(stateChangeEvent.args._state, 2);
+    assert.equal(stateChangeEvent.args.state, 2);
 
     const organizationProposal = await masterWalletScheme.getProposal(
       proposalId
@@ -422,7 +422,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
@@ -470,7 +470,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     // Check inside the raw logs that the ProposalExecuteResult event logs the signature of the error to be throw
     await assert(
@@ -498,7 +498,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "_proposalId"
+      "proposalId"
     );
 
     // Use signed votes to try to execute a proposal inside a proposal execution
@@ -563,7 +563,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "_proposalId"
+      "proposalId"
     );
 
     await expectRevert(
@@ -594,7 +594,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "_proposalId"
+      "proposalId"
     );
     await org.votingMachine.vote(proposalId3, constants.YES_OPTION, 0, {
       from: accounts[2],
@@ -630,7 +630,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await expectEvent(
       await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
         from: accounts[2],
@@ -685,7 +685,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     await expectEvent(
       await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
@@ -716,7 +716,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     await assert(
       (
@@ -742,7 +742,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     await assert(
       (
@@ -783,7 +783,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     await expectEvent(
       await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
@@ -848,7 +848,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -876,7 +876,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
+    const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
     await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -933,7 +933,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     assert.equal(
       await web3.eth.getBalance(masterWalletScheme.address),
       constants.TEST_VALUE
@@ -980,7 +980,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     tx = await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -1030,7 +1030,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdMintRep = await helpers.getValueFromLogs(
       txMintRep,
-      "_proposalId"
+      "proposalId"
     );
 
     await org.votingMachine.vote(proposalIdMintRep, constants.YES_OPTION, 0, {
@@ -1065,7 +1065,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdBurnRep = await helpers.getValueFromLogs(
       txBurnRep,
-      "_proposalId"
+      "proposalId"
     );
 
     await org.votingMachine.vote(proposalIdBurnRep, constants.YES_OPTION, 0, {
@@ -1130,7 +1130,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdMintRepToFail = await helpers.getValueFromLogs(
       failMintTx,
-      "_proposalId"
+      "proposalId"
     );
 
     await assert(
@@ -1205,7 +1205,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdBurnRepToFail = await helpers.getValueFromLogs(
       tx,
-      "_proposalId"
+      "proposalId"
     );
 
     await assert(
@@ -1258,7 +1258,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdAddScheme = await helpers.getValueFromLogs(
       tx,
-      "_proposalId"
+      "proposalId"
     );
     tx = await masterWalletScheme.proposeCalls(
       [org.controller.address],
@@ -1270,7 +1270,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdRemoveScheme = await helpers.getValueFromLogs(
       tx,
-      "_proposalId"
+      "proposalId"
     );
 
     // Add Scheme
@@ -1319,7 +1319,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await org.votingMachine.execute(proposalId);
     const organizationProposal = await masterWalletScheme.getProposal(
       proposalId
@@ -1364,7 +1364,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     assert.equal(
       await web3.eth.getBalance(masterWalletScheme.address),
       constants.TEST_VALUE
@@ -1468,12 +1468,12 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     tx = await org.votingMachine.vote(proposalId, constants.NO_OPTION, 0, {
       from: accounts[2],
     });
     const stateChangeEvent = helpers.getEventFromTx(tx, "ProposalStateChange");
-    assert.equal(stateChangeEvent.args._state, 2);
+    assert.equal(stateChangeEvent.args.state, 2);
 
     const organizationProposal = await quickWalletScheme.getProposal(
       proposalId
@@ -1499,7 +1499,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -1548,7 +1548,7 @@ contract("WalletScheme", function (accounts) {
       constants.NULL_HASH
     );
     true;
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     assert.equal(
       await web3.eth.getBalance(quickWalletScheme.address),
       constants.TEST_VALUE
@@ -1591,7 +1591,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -1624,7 +1624,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     tx = await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -1676,7 +1676,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
-    const proposalIdMintRep = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalIdMintRep = await helpers.getValueFromLogs(tx, "proposalId");
     tx = await quickWalletScheme.proposeCalls(
       [org.controller.address],
       [callDataBurnRep],
@@ -1685,7 +1685,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
-    const proposalIdBurnRep = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalIdBurnRep = await helpers.getValueFromLogs(tx, "proposalId");
 
     // Mint Rep
     await org.votingMachine.vote(proposalIdMintRep, constants.YES_OPTION, 0, {
@@ -1742,7 +1742,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdAddScheme = await helpers.getValueFromLogs(
       tx,
-      "_proposalId"
+      "proposalId"
     );
 
     tx = await quickWalletScheme.proposeCalls(
@@ -1755,7 +1755,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdRemoveScheme = await helpers.getValueFromLogs(
       tx,
-      "_proposalId"
+      "proposalId"
     );
 
     const votingTx1 = await org.votingMachine.vote(
@@ -1881,7 +1881,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -1908,7 +1908,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
+    const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
     await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -1956,7 +1956,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     assert.equal(
       await web3.eth.getBalance(quickWalletScheme.address),
       100000000
@@ -2040,7 +2040,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
       await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
         from: accounts[2],
       });
@@ -2070,7 +2070,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
+      const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
       await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
         from: accounts[2],
         gas: constants.GAS_LIMIT,
@@ -2132,7 +2132,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
       await expectEvent(
         await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
           from: accounts[2],
@@ -2190,7 +2190,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
       await expectEvent(
         await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
           from: accounts[2],
@@ -2237,7 +2237,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
       await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
         from: accounts[2],
       });
@@ -2264,7 +2264,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
+      const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
 
       await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
         from: accounts[2],
@@ -2294,7 +2294,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "_proposalId"
+      "proposalId"
     );
 
     const reputation = await quickWalletScheme.reputationOf(
@@ -2315,7 +2315,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "_proposalId"
+      "proposalId"
     );
 
     const reputation = await quickWalletScheme.getTotalReputationSupply(

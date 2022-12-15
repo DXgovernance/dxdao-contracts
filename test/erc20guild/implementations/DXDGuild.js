@@ -129,7 +129,7 @@ contract("DXDGuild", function (accounts) {
       "Test Title",
       constants.SOME_HASH
     );
-    walletSchemeProposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    walletSchemeProposalId = await helpers.getValueFromLogs(tx, "proposalId");
   });
 
   describe("DXDGuild", function () {

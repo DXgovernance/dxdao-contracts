@@ -158,7 +158,7 @@ contract("DXdao", function (accounts) {
       constants.SOME_HASH
     );
 
-    proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     const activeProposals = await dxDao.votingMachine.getActiveProposals(
       0,
