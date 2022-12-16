@@ -30,7 +30,7 @@ contract("DAOReputation", async accounts => {
   it("should not be able to transfer tokens", async () => {
     await expectRevert(
       daoReputation.transfer(accounts[1], 100),
-      "DAOReputation__NoTransfer()"
+      "ERC20SnapshotRep__NoTransfer()"
     );
   });
 
