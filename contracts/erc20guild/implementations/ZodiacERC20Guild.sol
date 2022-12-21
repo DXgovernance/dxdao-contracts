@@ -85,7 +85,10 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
     /// @param _avatar Address that this module will pass transactions to.
     /// @param _multisend Address of the multisend contract that the avatar contract should use to bundle transactions.
     function setAvatar(address _avatar, address _multisend) external virtual {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself or when initialized");
+        require(
+            msg.sender == address(this) || (msg.sender == avatar && isExecutingProposal),
+            "ERC20Guild: Only callable by ERC20guild itself or when initialized"
+        );
         avatar = _avatar;
         multisend = _multisend;
     }
