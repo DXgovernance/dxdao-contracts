@@ -94,23 +94,8 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
         require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
 
-        uint256 winningOption = 0;
-        uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
-        uint256 i = 1;
-        for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
-            if (
-                proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution() &&
-                proposals[proposalId].totalVotes[i] >= highestVoteAmount
-            ) {
-                if (proposals[proposalId].totalVotes[i] == highestVoteAmount) {
-                    winningOption = 0;
-                } else {
-                    winningOption = i;
-                    highestVoteAmount = proposals[proposalId].totalVotes[i];
-                }
-            }
-        }
-
+        uint256 winningOption = getWinningOption(proposalId);
+        
         if (winningOption == 0) {
             proposals[proposalId].state = ProposalState.Rejected;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
@@ -119,10 +104,6 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
         } else {
             proposals[proposalId].state = ProposalState.Executed;
-
-            uint256 callsPerOption = proposals[proposalId].to.length / (proposals[proposalId].totalVotes.length - 1);
-            i = callsPerOption * (winningOption - 1);
-            uint256 endCall = i + callsPerOption;
 
             // All calls are batched and sent together to the avatar, which will execute all of them through the multisend contract.
             bytes memory data = abi.encodePacked(
@@ -133,14 +114,11 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
                 SET_ERC20_BALANCES_DATA /// data as bytes.
             );
             uint256 totalValue = 0;
+            (uint256 i, uint256 endCall) = getProposalCallsRange(proposalId, winningOption);
 
             for (i; i < endCall; i++) {
                 if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
-                    bytes memory _data = proposals[proposalId].data[i];
-                    bytes4 callDataFuncSignature;
-                    assembly {
-                        callDataFuncSignature := mload(add(_data, 32))
-                    }
+                    bytes4 callDataFuncSignature = getFunctionSignature(proposals[proposalId].data[i]);
 
                     // The permission registry keeps track of all value transferred and checks call permission
                     bytes memory setETHPermissionUsedData = abi.encodeWithSelector(
@@ -171,8 +149,10 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
                 }
             }
 
-            bytes4 methodSelector = IPermissionRegistry.checkERC20Limits.selector;
-            bytes memory checkERC20LimitsData = abi.encodeWithSelector(methodSelector, avatar);
+            bytes memory checkERC20LimitsData = abi.encodeWithSelector(
+                IPermissionRegistry.checkERC20Limits.selector,
+                avatar
+            );
             data = abi.encodePacked(
                 data,
                 abi.encodePacked(
@@ -198,5 +178,35 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
         activeProposalsNow = activeProposalsNow - 1;
+    }
+
+    function getWinningOption(bytes32 proposalId) internal view returns(uint256 winningOption) {
+        uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
+        uint256 votingPowerForProposalExecution = getVotingPowerForProposalExecution();
+        for (uint256 i = 1; i < proposals[proposalId].totalVotes.length; i++) {
+            if (
+                proposals[proposalId].totalVotes[i] >= votingPowerForProposalExecution &&
+                proposals[proposalId].totalVotes[i] >= highestVoteAmount
+            ) {
+                if (proposals[proposalId].totalVotes[i] == highestVoteAmount) {
+                    winningOption = 0;
+                } else {
+                    winningOption = i;
+                    highestVoteAmount = proposals[proposalId].totalVotes[i];
+                }
+            }
+        }
+    }
+
+    function getProposalCallsRange(bytes32 proposalId, uint256 winningOption) internal view returns(uint256 startCall, uint256 endCall) {
+        uint256 callsPerOption = proposals[proposalId].to.length / (proposals[proposalId].totalVotes.length - 1);
+        startCall = callsPerOption * (winningOption - 1);
+        endCall = startCall + callsPerOption;
+    }
+
+    function getFunctionSignature(bytes storage _data) internal view returns(bytes4 callDataFuncSignature) {
+        assembly {
+            callDataFuncSignature := sload(keccak256(_data.slot, 32))
+        }
     }
 }
