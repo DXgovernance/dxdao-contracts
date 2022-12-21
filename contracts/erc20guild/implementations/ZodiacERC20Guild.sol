@@ -10,8 +10,15 @@ import "../ERC20GuildUpgradeable.sol";
 
 interface IPermissionRegistry {
     function setERC20Balances() external;
+
     function checkERC20Limits(address) external;
-    function setETHPermissionUsed(address,address,bytes4,uint256) external;
+
+    function setETHPermissionUsed(
+        address,
+        address,
+        bytes4,
+        uint256
+    ) external;
 }
 
 /*
@@ -21,13 +28,12 @@ interface IPermissionRegistry {
     the signature to be verified with and extra signature of any account with voting power.
 */
 contract ZodiacERC20Guild is ERC20GuildUpgradeable {
-
     bytes constant SET_ERC20_BALANCES_DATA = abi.encodeWithSelector(IPermissionRegistry.setERC20Balances.selector);
     /// @dev Address that this module will pass transactions to.
     address public avatar;
     /// @dev Address of the multisend contract that the avatar contract should use to bundle transactions.
     address public multisend;
-    
+
     /// @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initialized
     /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     /// @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
@@ -53,7 +59,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         uint256 _minimumTokensLockedForProposalCreation
     ) external override {
         require(
-            msg.sender == address(this) || (msg.sender == avatar && isExecutingProposal), 
+            msg.sender == address(this) || (msg.sender == avatar && isExecutingProposal),
             "ERC20Guild: Only callable by ERC20guild itself or when initialized"
         );
         require(_proposalTime > 0, "ERC20Guild: proposal time has to be more than 0");
@@ -78,10 +84,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
     /// @dev Set the ERC20Guild module configuration, can be called only executing a proposal or when it is initialized.
     /// @param _avatar Address that this module will pass transactions to.
     /// @param _multisend Address of the multisend contract that the avatar contract should use to bundle transactions.
-    function setAvatar(
-        address _avatar,
-        address _multisend
-    ) external virtual {
+    function setAvatar(address _avatar, address _multisend) external virtual {
         require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself or when initialized");
         avatar = _avatar;
         multisend = _multisend;
@@ -95,7 +98,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
 
         uint256 winningOption = getWinningOption(proposalId);
-        
+
         if (winningOption == 0) {
             proposals[proposalId].state = ProposalState.Rejected;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
@@ -122,7 +125,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
 
                     // The permission registry keeps track of all value transferred and checks call permission
                     bytes memory setETHPermissionUsedData = abi.encodeWithSelector(
-                        IPermissionRegistry.setETHPermissionUsed.selector, 
+                        IPermissionRegistry.setETHPermissionUsed.selector,
                         avatar,
                         proposals[proposalId].to[i],
                         bytes4(callDataFuncSignature),
@@ -167,9 +170,9 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
             data = abi.encodeWithSignature("multiSend(bytes)", data);
             isExecutingProposal = true;
             bool success = IAvatar(avatar).execTransactionFromModule(
-                multisend, 
-                totalValue, 
-                data, 
+                multisend,
+                totalValue,
+                data,
                 Enum.Operation.DelegateCall
             );
             require(success, "ERC20Guild: Proposal call failed");
@@ -180,7 +183,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         activeProposalsNow = activeProposalsNow - 1;
     }
 
-    function getWinningOption(bytes32 proposalId) internal view returns(uint256 winningOption) {
+    function getWinningOption(bytes32 proposalId) internal view returns (uint256 winningOption) {
         uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
         uint256 votingPowerForProposalExecution = getVotingPowerForProposalExecution();
         for (uint256 i = 1; i < proposals[proposalId].totalVotes.length; i++) {
@@ -198,13 +201,17 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         }
     }
 
-    function getProposalCallsRange(bytes32 proposalId, uint256 winningOption) internal view returns(uint256 startCall, uint256 endCall) {
+    function getProposalCallsRange(bytes32 proposalId, uint256 winningOption)
+        internal
+        view
+        returns (uint256 startCall, uint256 endCall)
+    {
         uint256 callsPerOption = proposals[proposalId].to.length / (proposals[proposalId].totalVotes.length - 1);
         startCall = callsPerOption * (winningOption - 1);
         endCall = startCall + callsPerOption;
     }
 
-    function getFunctionSignature(bytes storage _data) internal view returns(bytes4 callDataFuncSignature) {
+    function getFunctionSignature(bytes storage _data) internal view returns (bytes4 callDataFuncSignature) {
         assembly {
             callDataFuncSignature := sload(keccak256(_data.slot, 32))
         }
