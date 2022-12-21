@@ -170,20 +170,20 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
                     totalValue += proposals[proposalId].value[i];
                 }
             }
-            
+
             bytes4 methodSelector = IPermissionRegistry.checkERC20Limits.selector;
-            bytes memory data2 = abi.encodeWithSelector(methodSelector, avatar);
+            bytes memory checkERC20LimitsData = abi.encodeWithSelector(methodSelector, avatar);
             data = abi.encodePacked(
                 data,
                 abi.encodePacked(
-                    uint8(Enum.Operation.Call), /// operation as an uint8.
+                    uint8(Enum.Operation.Call),
                     permissionRegistry, /// to as an address.
                     uint256(0), /// value as an uint256.
-                    uint256(data2.length),
-                    data2 /// data as bytes.
+                    uint256(checkERC20LimitsData.length),
+                    checkERC20LimitsData /// data as bytes.
                 )
             );
-            
+
             data = abi.encodeWithSignature("multiSend(bytes)", data);
             isExecutingProposal = true;
             bool success = IAvatar(avatar).execTransactionFromModule(
