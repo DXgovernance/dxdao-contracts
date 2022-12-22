@@ -13,6 +13,6 @@ contract Create2Deployer {
             }
         }
 
-        emit Deployed(addr, keccak256(code));
+        emit Deployed(addr, keccak256(abi.encodePacked(code)));
     }
 }

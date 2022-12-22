@@ -13,10 +13,9 @@
     "types/"
   ],
   "scripts": {
-    "clean": "rm -rf artifacts cache contracts/hardhat-dependency-compiler",
-    "compile": "hardhat compile",
+    "clean": "rm -rf artifacts cache contracts/hardhat-dependency-compiler bytecodes",
+    "compile": "hardhat compile && node scripts/updateBytecodes.js",
     "setup": "hardhat typechain",
-
     "test": "hardhat test",
     "coverage": "OVERRIDE_GAS_LIMIT=0xfffffffffff OVERRIDE_GAS_PRICE=1 yarn hardhat coverage",
     "deploy": "node scripts/deploy.js",
@@ -115,3 +114,4 @@
     ]
   }
 }
+
