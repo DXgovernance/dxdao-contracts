@@ -189,16 +189,18 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
     function getWinningOption(bytes32 proposalId) internal view returns (uint256 winningOption) {
         uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
         uint256 votingPowerForProposalExecution = getVotingPowerForProposalExecution();
-        for (uint256 i = 1; i < proposals[proposalId].totalVotes.length; i++) {
+        uint256 totalOptions = proposals[proposalId].totalVotes.length;
+        for (uint256 i = 1; i < totalOptions; i++) {
+            uint256 totalVotesOptionI = proposals[proposalId].totalVotes[i];
             if (
-                proposals[proposalId].totalVotes[i] >= votingPowerForProposalExecution &&
-                proposals[proposalId].totalVotes[i] >= highestVoteAmount
+                totalVotesOptionI >= votingPowerForProposalExecution &&
+                totalVotesOptionI >= highestVoteAmount
             ) {
-                if (proposals[proposalId].totalVotes[i] == highestVoteAmount) {
+                if (totalVotesOptionI == highestVoteAmount) {
                     winningOption = 0;
                 } else {
                     winningOption = i;
-                    highestVoteAmount = proposals[proposalId].totalVotes[i];
+                    highestVoteAmount = totalVotesOptionI;
                 }
             }
         }
@@ -216,7 +218,8 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
 
     function getFunctionSignature(bytes storage _data) internal view returns (bytes4 callDataFuncSignature) {
         assembly {
-            callDataFuncSignature := sload(keccak256(_data.slot, 32))
+            mstore (0, _data.slot)
+            callDataFuncSignature := sload(keccak256(0, 32))
         }
     }
 }
