@@ -112,7 +112,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
             proposals[proposalId].state = ProposalState.Executed;
 
             // All calls are batched and sent together to the avatar, which will execute all of them through the multisend contract.
-            bytes memory data = abi.encodePacked(
+            bytes memory data = abi.encodePacked( /// permissionRegistry.setERC20Balances()
                 uint8(Enum.Operation.Call),
                 permissionRegistry, /// to as an address.
                 uint256(0), /// value as an uint256.
@@ -136,7 +136,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
                     );
                     data = abi.encodePacked(
                         data,
-                        abi.encodePacked(
+                        abi.encodePacked( /// permissionRegistry.setETHPermissionUsed(avatar, to, funcSignature, value)
                             uint8(Enum.Operation.Call),
                             permissionRegistry, /// to as an address.
                             uint256(0), /// value as an uint256.
@@ -161,7 +161,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
             );
             data = abi.encodePacked(
                 data,
-                abi.encodePacked(
+                abi.encodePacked( /// permissionRegistry.checkERC20Limits(avatar)
                     uint8(Enum.Operation.Call),
                     permissionRegistry, /// to as an address.
                     uint256(0), /// value as an uint256.
