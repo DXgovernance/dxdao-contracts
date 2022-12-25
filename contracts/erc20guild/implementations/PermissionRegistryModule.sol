@@ -21,10 +21,12 @@ interface IPermissionRegistry {
   @title PermissionRegistryModule
   @author github:fnanni-0
   @dev This Zodiac Module allows Guild contracts to own several Gnosis Safe while keeping the Permission Registry
-    features, i.e. restricting the safe calls to allowed addresses, functions and values.
+    features, i.e. restricting the safe calls to allowed addresses, functions and values. One instance of this
+    module per Gnosis Safe must be used.
 */
 contract PermissionRegistryModule {
-    bytes constant SET_ERC20_BALANCES_DATA = abi.encodeWithSelector(IPermissionRegistry.setERC20Balances.selector);
+    bytes private constant SET_ERC20_BALANCES_DATA =
+        abi.encodeWithSelector(IPermissionRegistry.setERC20Balances.selector);
 
     /// @dev Address of the permission registry that will regulate this module.
     IPermissionRegistry public permissionRegistry;
