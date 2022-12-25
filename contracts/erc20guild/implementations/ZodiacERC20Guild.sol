@@ -22,13 +22,15 @@ interface IPermissionRegistry {
 }
 
 /*
-  @title ERC20GuildWithERC1271
-  @author github:AugustoL
-  @dev The guild can sign EIP1271 messages, to do this the guild needs to call itself and allow 
-    the signature to be verified with and extra signature of any account with voting power.
+  @title ZodiacERC20Guild
+  @author github:fnanni-0
+  @dev This guild acts as a Zodiac Module. Proposal's transactions are relayed to a Gnosis Safe,
+    never executed from this contract itself. If the owners of the Gnosis Safe are removed and
+    this module is enabled, then the Safe becomes the ERC20 Guild's Safe.
 */
 contract ZodiacERC20Guild is ERC20GuildUpgradeable {
-    bytes constant SET_ERC20_BALANCES_DATA = abi.encodeWithSelector(IPermissionRegistry.setERC20Balances.selector);
+    bytes private constant SET_ERC20_BALANCES_DATA =
+        abi.encodeWithSelector(IPermissionRegistry.setERC20Balances.selector);
     /// @dev Address that this module will pass transactions to.
     address public avatar;
     /// @dev Address of the multisend contract that the avatar contract should use to bundle transactions.
@@ -111,64 +113,29 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         } else {
             proposals[proposalId].state = ProposalState.Executed;
 
-            // All calls are batched and sent together to the avatar, which will execute all of them through the multisend contract.
-            bytes memory data = abi.encodePacked( /// permissionRegistry.setERC20Balances()
-                uint8(Enum.Operation.Call),
-                permissionRegistry, /// to as an address.
-                uint256(0), /// value as an uint256.
-                uint256(SET_ERC20_BALANCES_DATA.length),
-                SET_ERC20_BALANCES_DATA /// data as bytes.
-            );
+            bytes memory data = getCheckERC20LimitsCalldata();
             uint256 totalValue = 0;
             (uint256 i, uint256 endCall) = getProposalCallsRange(proposalId, winningOption);
 
             for (i; i < endCall; i++) {
                 if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
-                    bytes4 callDataFuncSignature = getFunctionSignature(proposals[proposalId].data[i]);
-
-                    // The permission registry keeps track of all value transferred and checks call permission
-                    bytes memory setETHPermissionUsedData = abi.encodeWithSelector(
-                        IPermissionRegistry.setETHPermissionUsed.selector,
-                        avatar,
-                        proposals[proposalId].to[i],
-                        bytes4(callDataFuncSignature),
-                        proposals[proposalId].value[i]
-                    );
+                    Proposal storage proposal = proposals[proposalId];
                     data = abi.encodePacked(
                         data,
-                        abi.encodePacked( /// permissionRegistry.setETHPermissionUsed(avatar, to, funcSignature, value)
-                            uint8(Enum.Operation.Call),
-                            permissionRegistry, /// to as an address.
-                            uint256(0), /// value as an uint256.
-                            uint256(setETHPermissionUsedData.length),
-                            setETHPermissionUsedData /// data as bytes.
-                        ),
+                        getSetETHPermissionUsedCalldata(proposal, i),
                         abi.encodePacked(
                             uint8(Enum.Operation.Call),
-                            proposals[proposalId].to[i], /// to as an address.
-                            proposals[proposalId].value[i], /// value as an uint256.
-                            uint256(proposals[proposalId].data[i].length),
-                            proposals[proposalId].data[i] /// data as bytes.
+                            proposal.to[i], /// to as an address.
+                            proposal.value[i], /// value as an uint256.
+                            uint256(proposal.data[i].length),
+                            proposal.data[i] /// data as bytes.
                         )
                     );
                     totalValue += proposals[proposalId].value[i];
                 }
             }
 
-            bytes memory checkERC20LimitsData = abi.encodeWithSelector(
-                IPermissionRegistry.checkERC20Limits.selector,
-                avatar
-            );
-            data = abi.encodePacked(
-                data,
-                abi.encodePacked( /// permissionRegistry.checkERC20Limits(avatar)
-                    uint8(Enum.Operation.Call),
-                    permissionRegistry, /// to as an address.
-                    uint256(0), /// value as an uint256.
-                    uint256(checkERC20LimitsData.length),
-                    checkERC20LimitsData /// data as bytes.
-                )
-            );
+            data = abi.encodePacked(data, getCheckERC20LimitsCalldata());
 
             data = abi.encodeWithSignature("multiSend(bytes)", data);
             isExecutingProposal = true;
@@ -218,5 +185,64 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
             mstore(0, _data.slot)
             callDataFuncSignature := sload(keccak256(0, 32))
         }
+    }
+
+    /// @dev Encodes permissionRegistry.checkERC20Limits(avatar)
+    function getCheckERC20LimitsCalldata() internal view returns (bytes memory) {
+        bytes memory checkERC20LimitsData = abi.encodeWithSelector(
+            IPermissionRegistry.checkERC20Limits.selector,
+            avatar
+        );
+        return
+            abi.encodePacked(
+                uint8(Enum.Operation.Call),
+                permissionRegistry, /// to as an address.
+                uint256(0), /// value as an uint256.
+                uint256(checkERC20LimitsData.length),
+                checkERC20LimitsData /// data as bytes.
+            );
+    }
+
+    /// @dev Encodes permissionRegistry.setERC20Balances()
+    function getSetERC20BalancesCalldata() internal view returns (bytes memory) {
+        return
+            abi.encodePacked(
+                uint8(Enum.Operation.Call),
+                permissionRegistry, /// to as an address.
+                uint256(0), /// value as an uint256.
+                uint256(SET_ERC20_BALANCES_DATA.length),
+                SET_ERC20_BALANCES_DATA /// data as bytes.
+            );
+    }
+
+    /// @dev Encodes permissionRegistry.setETHPermissionUsed(avatar, to, funcSignature, value)
+    /// @param _proposal Proposal data.
+    /// @param _index Call index.
+    function getSetETHPermissionUsedCalldata(Proposal storage _proposal, uint256 _index)
+        internal
+        view
+        returns (bytes memory)
+    {
+        address to = _proposal.to[_index];
+        uint256 value = _proposal.value[_index];
+        bytes4 callDataFuncSignature = getFunctionSignature(_proposal.data[_index]);
+
+        // The permission registry keeps track of all value transferred and checks call permission
+        bytes memory setETHPermissionUsedData = abi.encodeWithSelector(
+            IPermissionRegistry.setETHPermissionUsed.selector,
+            avatar,
+            to,
+            bytes4(callDataFuncSignature),
+            value
+        );
+
+        return
+            abi.encodePacked(
+                uint8(Enum.Operation.Call),
+                permissionRegistry, /// to as an address.
+                uint256(0), /// value as an uint256.
+                uint256(setETHPermissionUsedData.length),
+                setETHPermissionUsedData /// data as bytes.
+            );
     }
 }
