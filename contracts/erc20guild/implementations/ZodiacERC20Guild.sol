@@ -192,10 +192,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         uint256 totalOptions = proposals[proposalId].totalVotes.length;
         for (uint256 i = 1; i < totalOptions; i++) {
             uint256 totalVotesOptionI = proposals[proposalId].totalVotes[i];
-            if (
-                totalVotesOptionI >= votingPowerForProposalExecution &&
-                totalVotesOptionI >= highestVoteAmount
-            ) {
+            if (totalVotesOptionI >= votingPowerForProposalExecution && totalVotesOptionI >= highestVoteAmount) {
                 if (totalVotesOptionI == highestVoteAmount) {
                     winningOption = 0;
                 } else {
@@ -218,7 +215,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
 
     function getFunctionSignature(bytes storage _data) internal view returns (bytes4 callDataFuncSignature) {
         assembly {
-            mstore (0, _data.slot)
+            mstore(0, _data.slot)
             callDataFuncSignature := sload(keccak256(0, 32))
         }
     }
