@@ -25,9 +25,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   );
 
   const guildRegistryDeployed = await deployments.get("GuildRegistry");
-  const guildRegistry = await GuildRegistry.at(
-    guildRegistryDeployed.address
-  );
+  const guildRegistry = await GuildRegistry.at(guildRegistryDeployed.address);
 
   const tx = await deployer.deploy(
     ERC20SnapshotRep.bytecode,
@@ -100,13 +98,18 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
       await hre.run("verify:verify", {
         address: repToken.address,
         constructorArguments: [],
+        contract: "contracts/utils/ERC20/ERC20SnapshotRep.sol:ERC20SnapshotRep",
       });
+    } catch (error) {
+      console.error("Error verifying Reptoken contract", error);
+    }
+    try {
       await hre.run("verify:verify", {
         address: dxgovGuild.address,
         constructorArguments: [],
       });
     } catch (error) {
-      console.error("Error verifying contract", error);
+      console.error("Error verifying DXGOVGuild contract", error);
     }
   }
 
