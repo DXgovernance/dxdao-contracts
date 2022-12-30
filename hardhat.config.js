@@ -97,8 +97,6 @@ const hardharNetworks = process.env.CI
         url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
         accounts: { mnemonic: MNEMONIC },
         chainId: 1,
-        gasLimit: 9000000,
-        gasPrice: 100000000000, // 100 gwei
         timeout: 60000,
       },
       goerli: {
