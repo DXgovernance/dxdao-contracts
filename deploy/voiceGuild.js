@@ -113,6 +113,14 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   );
 
   await permissionRegistry.setETHPermissionDelay(guild.address, 1);
+  console.log("Setting permissions for native transfer");
+  await permissionRegistry.setETHPermission(
+    guild.address,
+    "0x0000000000000000000000000000000000000000",
+    "0x00000000",
+    hre.web3.utils.toWei("10000"),
+    true
+  );
   await guildRegistry.addGuild(guild.address);
   await repToken.transferOwnership(guild.address);
 
