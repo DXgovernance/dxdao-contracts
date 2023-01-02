@@ -52,7 +52,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
   const guildRegistryDeployed = await deployments.get("GuildRegistry");
   const guildRegistry = await GuildRegistry.at(guildRegistryDeployed.address);
-  console.log("deployer", deployer);
+
   const tx = await deployer.deploy(
     ERC20SnapshotRep.bytecode,
     hre.web3.utils.sha3(deploySalt + deployExtraSalt),
