@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.0 (token/ERC721/presets/ERC721PresetMinterPauserAutoId.sol)
+// SPDX-License-Identifier: AGPL-3.0
 
 pragma solidity ^0.8.0;
 
@@ -7,14 +6,12 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ArraysUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract ERC721AnonRep is Initializable, ContextUpgradeable, OwnableUpgradeable, ERC721EnumerableUpgradeable {
+contract ERC721AnonRep is OwnableUpgradeable, ERC721EnumerableUpgradeable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using ArraysUpgradeable for uint256[];
@@ -46,7 +43,6 @@ contract ERC721AnonRep is Initializable, ContextUpgradeable, OwnableUpgradeable,
         string memory symbol,
         string memory baseTokenURI
     ) public virtual initializer {
-        __Context_init_unchained();
         __ERC165_init_unchained();
         __Ownable_init();
         __ERC721_init_unchained(name, symbol);
@@ -106,7 +102,8 @@ contract ERC721AnonRep is Initializable, ContextUpgradeable, OwnableUpgradeable,
      *
      * - The caller must own `tokenId` or be an approved operator.
      */
-    function burn(uint256 tokenId) public virtual onlyOwner {
+    function burn(uint256 tokenId, address tokenOwner) public virtual onlyOwner {
+        require(ownerOf(tokenId) == tokenOwner, "ERC721AnonRep: Token  does not own token");
         voteCommitments.remove(tokenToPublicCommitments[tokenId]);
         publicCommitmentToToken[tokenToPublicCommitments[tokenId]] = 0;
         tokenToPublicCommitments[tokenId] = 0;
@@ -116,9 +113,9 @@ contract ERC721AnonRep is Initializable, ContextUpgradeable, OwnableUpgradeable,
         _snapshot();
     }
 
-    function burnMultiple(uint256[] memory tokenIds) public virtual onlyOwner {
+    function burnMultiple(uint256[] memory tokenIds, address[] calldata tokenOwners) public virtual onlyOwner {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            burn(tokenIds[i]);
+            burn(tokenIds[i], tokenOwners[i]);
         }
     }
 
