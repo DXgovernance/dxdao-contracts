@@ -10,7 +10,7 @@ const {
   packToSolidityProof,
 } = require("@semaphore-protocol/proof");
 
-const { BN, time } = require("@openzeppelin/test-helpers");
+const { BN, time, expectRevert } = require("@openzeppelin/test-helpers");
 
 const AnonERC20Guild = artifacts.require("AnonERC20Guild.sol");
 const ERC721AnonRep = artifacts.require("ERC721AnonRep.sol");
@@ -27,44 +27,113 @@ const zkeyFilePath = "test/utils/semaphore/semaphore.zkey";
 contract("AnonERC20Guild", function (accounts) {
   let guildToken, anonERC20Guild, permissionRegistry, repHolders;
 
+  function generateIdentities(privateKey, amount) {
+    let identities = [];
+    for (let i = 0; i < amount; i++) {
+      const newIdentity = new Identity(privateKey + i);
+      identities[i] = {
+        privateCommitment: newIdentity,
+        publicCommitment: newIdentity.getCommitment(),
+      };
+    }
+    return identities;
+  }
+
+  async function setVoteForRepHolder(
+    repHolder,
+    proposalId,
+    option,
+    voteAmount
+  ) {
+    // Generate the  group of commitments that is stored on chain to generate the proof off chain
+    const voteCommitments = await guildToken.getVoteCommitments();
+    const burnProposalGroup = new Group(20);
+    voteCommitments.forEach(voteCommitment => {
+      burnProposalGroup.addMember(BigInt(voteCommitment));
+    });
+
+    // Get the proposal group id to be used to generate the proof
+    const proposalGroupId = await anonERC20Guild.proposalGroupIds(proposalId);
+
+    for (let i = 0; i < voteAmount; i++) {
+      const identity = repHolder.identities[i];
+
+      // This zk proof can be sued to prove that 1 identity connected to a REP NFT voted for option 1
+      const voteFromAccount1Proof = await generateProof(
+        identity.privateCommitment,
+        burnProposalGroup,
+        BigInt(proposalGroupId),
+        option,
+        {
+          wasmFilePath,
+          zkeyFilePath,
+        }
+      );
+      const solidityProof = packToSolidityProof(voteFromAccount1Proof.proof);
+
+      // The solidity proof is posted anonymously somewhere
+
+      // This is where the anonymity can be compromised,
+      // the proof sharing should protect the location, time and amount of proofs shared at the same time
+
+      // The solidity proof is validated by the vote executor and executes the vote
+      const setVoteTx = await anonERC20Guild.setVote(
+        proposalId,
+        option,
+        voteFromAccount1Proof.publicSignals.merkleRoot,
+        voteFromAccount1Proof.publicSignals.nullifierHash,
+        solidityProof
+      );
+      assert(setVoteTx.receipt.gasUsed < 350000);
+
+      expectRevert(
+        anonERC20Guild.setVote(
+          proposalId,
+          option,
+          voteFromAccount1Proof.publicSignals.merkleRoot,
+          voteFromAccount1Proof.publicSignals.nullifierHash,
+          solidityProof
+        ),
+        "Semaphore__YouAreUsingTheSameNillifierTwice()"
+      );
+    }
+  }
+
   beforeEach(async function () {
     const semaphoreDeployments = await hre.run("deploy-semaphore", {
       logs: false,
     });
-
-    function generateIdentities(privateKey, amount) {
-      let identities = [];
-      for (let i = 0; i < amount; i++) {
-        identities[i] = {
-          privateCommitment: new Identity(privateKey + i),
-          publicCommitment: "",
-        };
-        identities[i].publicCommitment =
-          identities[i].privateCommitment.getCommitment();
-      }
-      return identities;
-    }
-
-    repHolders = [
-      {
-        address: accounts[0],
-        identities: generateIdentities("privateKey0String", 6),
-      },
-      {
-        address: accounts[1],
-        identities: generateIdentities("privateKey1String", 2),
-      },
-      {
-        address: accounts[2],
-        identities: generateIdentities("privateKey2String", 2),
-      },
-    ];
 
     guildToken = await ERC721AnonRep.new();
     guildToken.initialize("Test ERC721AnonRep Token", "TESRT", {
       from: accounts[0],
     });
 
+    // Each NFT token will be connected to an semaphore identity.
+    // The identity is generated from a private key and a public commitment is stored on chain
+    // The private key is used to generate a zk proof that the identity voted for a proposal
+    repHolders = [
+      {
+        address: accounts[0],
+        identities: generateIdentities("privateKeyString_0", 4),
+      },
+      {
+        address: accounts[1],
+        identities: generateIdentities("privateKeyString_1", 2),
+      },
+      {
+        address: accounts[2],
+        identities: generateIdentities("privateKeyString_2", 2),
+      },
+      {
+        address: accounts[3],
+        identities: generateIdentities("privateKeyString_3", 2),
+      },
+      {
+        address: accounts[4],
+        identities: generateIdentities("privateKeyString_4", 2),
+      },
+    ];
     await Promise.all(
       repHolders.map(repHolder => {
         guildToken.mintMultiple(
@@ -74,6 +143,7 @@ contract("AnonERC20Guild", function (accounts) {
         );
       })
     );
+
     anonERC20Guild = await AnonERC20Guild.new();
     permissionRegistry = await PermissionRegistry.new();
     await permissionRegistry.initialize();
@@ -89,12 +159,15 @@ contract("AnonERC20Guild", function (accounts) {
       semaphoreDeployments.semaphoreAddress
     );
 
+    // The guild token ownership is transferred to the guild contract
+    // Now the guild is the only one that can mint/burn NFT REP tokens
     await guildToken.transferOwnership(anonERC20Guild.address);
   });
 
   describe("ZK votes", () => {
     it("Should execute a proposal with anonymous votes", async () => {
       const accountToBurn = accounts[2];
+      const accountToMint = accounts[5];
       const initialVotingPowerAcc = new BN(2);
 
       const proposalId1 = await createProposal({
@@ -120,81 +193,99 @@ contract("AnonERC20Guild", function (accounts) {
       );
       expect(votingPower1).to.be.bignumber.equal(initialVotingPowerAcc);
 
-      const tokensToBurn = [],
-        commitmentsToBurn = [];
+      const tokensToBurn = [];
 
+      // We get the token address to burn and the corresponding commitment
       for (let i = 0; i < 2; i++) {
         tokensToBurn.push(
           (await guildToken.tokenOfOwnerByIndex(accountToBurn, i)).toString()
         );
-        commitmentsToBurn.push(repHolders[2].identities[i].publicCommitment);
       }
 
       // burn tokensEncodedCall
-      const burnCallData = await new web3.eth.Contract(
-        anonERC20Guild.abi
-      ).methods
-        .burnRep(accountToBurn, tokensToBurn, commitmentsToBurn)
+      const burnCallData = await new web3.eth.Contract(guildToken.abi).methods
+        .burnMultiple(
+          tokensToBurn,
+          tokensToBurn.map(() => accountToBurn)
+        )
         .encodeABI();
 
-      // create proposal to burn tokens
-      const burnProposalId = await createProposal({
+      //Mint
+      repHolders.push({
+        address: accountToMint,
+        identities: generateIdentities("privateKey3String", 2),
+      });
+      const mintCallData = await new web3.eth.Contract(guildToken.abi).methods
+        .mintMultiple(
+          repHolders[3].identities.map(() => accountToMint),
+          repHolders[3].identities.map(identity => identity.publicCommitment)
+        )
+        .encodeABI();
+
+      // create proposal to burn/mint rep tokens
+      const changeREPProposalId = await createProposal({
         guild: anonERC20Guild,
         options: [
           {
-            to: [anonERC20Guild.address],
-            data: [burnCallData],
-            value: [0],
+            to: [guildToken.address, guildToken.address],
+            data: [burnCallData, mintCallData],
+            value: [0, 0],
           },
           {
-            to: [accounts[1]],
-            data: ["0x0"],
-            value: [0],
+            to: [constants.ZERO_ADDRESS, constants.ZERO_ADDRESS],
+            data: [constants.ZERO_DATA, constants.ZERO_DATA],
+            value: [0, 0],
           },
         ],
         account: accounts[0],
       });
 
-      const voteCommitments = await guildToken.getVoteCommitments();
-      const burnProposalGroup = new Group(20);
-      voteCommitments.forEach(voteCommitment => {
-        burnProposalGroup.addMember(BigInt(voteCommitment));
-      });
-
-      const burnProposalGroupId = await anonERC20Guild.proposalGroupIds(
-        burnProposalId
+      await setVoteForRepHolder(repHolders[2], changeREPProposalId, "2", 2);
+      assert.equal(
+        await anonERC20Guild.getProposalTotalVotesOfOption(
+          changeREPProposalId,
+          "2"
+        ),
+        "2"
       );
-      const option = "1";
-      for (let i = 0; i < repHolders[0].identities.length; i++) {
-        const identity = repHolders[0].identities[i];
-        const voteFromAccount1Proof = await generateProof(
-          identity.privateCommitment,
-          burnProposalGroup,
-          BigInt(burnProposalGroupId),
-          option,
-          {
-            wasmFilePath,
-            zkeyFilePath,
-          }
-        );
-        const solidityProof = packToSolidityProof(voteFromAccount1Proof.proof);
+      assert.equal(
+        await anonERC20Guild.getProposalTotalVotesOfOption(
+          changeREPProposalId,
+          "1"
+        ),
+        "0"
+      );
 
-        await anonERC20Guild.setVote(
-          burnProposalId,
-          option,
-          voteFromAccount1Proof.publicSignals.merkleRoot,
-          voteFromAccount1Proof.publicSignals.nullifierHash,
-          solidityProof
-        );
-      }
+      await setVoteForRepHolder(repHolders[0], changeREPProposalId, "1", 3);
+      await setVoteForRepHolder(repHolders[1], changeREPProposalId, "1", 2);
+      await setVoteForRepHolder(repHolders[3], changeREPProposalId, "1", 2);
+
+      assert.equal(
+        await anonERC20Guild.getProposalTotalVotesOfOption(
+          changeREPProposalId,
+          "2"
+        ),
+        "2"
+      );
+      assert.equal(
+        await anonERC20Guild.getProposalTotalVotesOfOption(
+          changeREPProposalId,
+          "1"
+        ),
+        "7"
+      );
+      assert.equal(
+        await anonERC20Guild.getProposalTotalVotes(changeREPProposalId),
+        "9"
+      );
 
       await time.increase(proposalTime);
 
       // execute burn proposal
-      await anonERC20Guild.endProposal(burnProposalId);
+      await anonERC20Guild.endProposal(changeREPProposalId);
 
       assert.equal(
-        (await anonERC20Guild.getProposal(burnProposalId)).state,
+        (await anonERC20Guild.getProposal(changeREPProposalId)).state,
         constants.GUILD_PROPOSAL_STATES.Executed
       );
       const proposalId3 = await createProposal({
@@ -213,13 +304,13 @@ contract("AnonERC20Guild", function (accounts) {
         await anonERC20Guild.getProposalSnapshotId(proposalId3)
       );
 
-      // voting power at snapshotId2 after burn
-      const votingPower2 = await anonERC20Guild.votingPowerOfAt(
-        accountToBurn,
-        snapshotId2
-      );
-
-      expect(votingPower2).to.be.bignumber.equal("0");
+      // Check voting power in the next proposal
+      expect(
+        await anonERC20Guild.votingPowerOfAt(accountToBurn, snapshotId2)
+      ).to.be.bignumber.equal("0");
+      expect(
+        await anonERC20Guild.votingPowerOfAt(accountToMint, snapshotId2)
+      ).to.be.bignumber.equal("2");
     });
   });
 });
