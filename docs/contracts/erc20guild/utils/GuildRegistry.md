@@ -23,7 +23,13 @@ address[] guilds
 ### index
 
 ```solidity
-struct Counters.Counter index
+struct CountersUpgradeable.Counter index
+```
+
+### initialize
+
+```solidity
+function initialize() public
 ```
 
 ### guildsByAddress

@@ -3,15 +3,9 @@ const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const DAOReputation = artifacts.require("./DAOReputation.sol");
 const DAOController = artifacts.require("./DAOController.sol");
 const DAOAvatar = artifacts.require("./DAOAvatar.sol");
-const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
+const VotingMachine = artifacts.require("./VotingMachine.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 import * as helpers from "../helpers";
-
-const createProposalId = () => web3.utils.randomHex(32);
-const getRandomProposalIds = (n = 10) =>
-  Array.from(Array(n))
-    .fill()
-    .map(() => createProposalId());
 
 contract("DAOController", function (accounts) {
   let reputation,
@@ -48,7 +42,7 @@ contract("DAOController", function (accounts) {
 
     standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
 
-    const votingMachine = await DXDVotingMachine.new(standardTokenMock.address);
+    const votingMachine = await VotingMachine.new(standardTokenMock.address);
 
     defaultParamsHash = await helpers.setDefaultParameters(votingMachine);
 
@@ -71,7 +65,7 @@ contract("DAOController", function (accounts) {
 
   it("Should initialize and set correct default scheme params", async function () {
     const schemesWithManageSchemesPermission =
-      await controller.getSchemesCountWithManageSchemesPermissions();
+      await controller.getSchemesWithManageSchemesPermissionsCount();
     const defaultSchemeParamsHash = await controller.getSchemeParameters(
       schemeAddress
     );
@@ -124,7 +118,7 @@ contract("DAOController", function (accounts) {
     let currentSchemesWithManagePermission = [schemeAddress, newSchemeAddress]
       .length;
     const schemesWithManageSchemesPermission =
-      await controller.getSchemesCountWithManageSchemesPermissions();
+      await controller.getSchemesWithManageSchemesPermissionsCount();
     expect(schemesWithManageSchemesPermission.toNumber()).to.equal(
       currentSchemesWithManagePermission
     );
@@ -139,7 +133,7 @@ contract("DAOController", function (accounts) {
     );
 
     const schemesWithManageSchemesPermissionAfterChange =
-      await controller.getSchemesCountWithManageSchemesPermissions();
+      await controller.getSchemesWithManageSchemesPermissionsCount();
     expect(schemesWithManageSchemesPermissionAfterChange.toNumber()).to.equal(
       currentSchemesWithManagePermission - 1
     );
@@ -211,276 +205,6 @@ contract("DAOController", function (accounts) {
     );
   });
 
-  // eslint-disable-next-line max-len
-  it("startProposal() shoul not allow a scheme assign itself as the proposer of a certain proposal ID", async () => {
-    const newSchemeAddress = accounts[1];
-    await controller.registerScheme(
-      newSchemeAddress,
-      defaultParamsHash,
-      true,
-      true,
-      true
-    );
-
-    const proposalId = web3.utils.randomHex(32);
-
-    // start all proposals ids
-    await controller.startProposal(proposalId);
-
-    await expectRevert(
-      controller.startProposal(proposalId, {
-        from: newSchemeAddress,
-      }),
-      "DAOController__IdUsedByOtherScheme"
-    );
-  });
-
-  it("endProposal() should fail if caller is not the scheme that started the proposal", async () => {
-    const newSchemeAddress = accounts[1];
-    await controller.registerScheme(
-      newSchemeAddress,
-      defaultParamsHash,
-      true,
-      true,
-      true
-    );
-
-    const proposalId = web3.utils.randomHex(32);
-
-    await controller.startProposal(proposalId, {
-      from: newSchemeAddress,
-    });
-
-    const activeProposals = await controller.getActiveProposals(0, 0);
-
-    const count = await controller.getActiveProposalsCount();
-
-    expect(activeProposals[0].proposalId).to.equal(proposalId);
-    expect(count.toNumber()).to.equal(1);
-
-    await expectRevert(
-      controller.endProposal(proposalId, {
-        from: accounts[2],
-      }),
-      "DAOController__SenderIsNotTheProposer"
-    );
-  });
-
-  it("endProposal() shoud fail if proposal is not active", async () => {
-    const proposalId = createProposalId();
-    await controller.registerScheme(
-      accounts[2],
-      defaultParamsHash,
-      true,
-      true,
-      true
-    );
-
-    await controller.startProposal(proposalId);
-    await controller.unregisterScheme(schemeAddress);
-    await controller.endProposal(proposalId);
-
-    await expectRevert(
-      controller.endProposal(proposalId),
-      "DAOController__SenderIsNotRegisteredOrProposalIsInactive"
-    );
-  });
-
-  it("getActiveProposals(0,0) should return all active proposals", async () => {
-    const TOTAL_PROPOSALS = 20;
-    const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
-
-    // start all proposals ids
-    await Promise.all(proposalIds.map(id => controller.startProposal(id)));
-
-    // get active proposals
-    const activeProposals = await controller.getActiveProposals(0, 0);
-
-    expect(activeProposals.length).to.equal(TOTAL_PROPOSALS);
-    expect(
-      proposalIds.every(id =>
-        activeProposals.some(({ proposalId }) => proposalId === id)
-      ) // eslint-disable-line
-    ).to.equal(true);
-  });
-
-  it("getActiveProposals(0,9) should return first 10 active proposals", async () => {
-    const TOTAL_PROPOSALS = 100;
-    const EXPECTED_PROPOSALS = 10;
-    const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
-
-    // start all proposals ids
-    await Promise.all(proposalIds.map(id => controller.startProposal(id)));
-
-    // get active proposals
-    const activeProposals = await controller.getActiveProposals(0, 9);
-
-    expect(activeProposals.length).to.equal(EXPECTED_PROPOSALS);
-    expect(
-      activeProposals.every(({ proposalId }) =>
-        proposalIds.some(id => proposalId === id)
-      ) // eslint-disable-line
-    ).to.equal(true);
-  });
-
-  it("getActiveProposals() should fail", async () => {
-    const TOTAL_PROPOSALS = 10;
-    const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
-
-    // start all proposals ids
-    await Promise.all(proposalIds.map(id => controller.startProposal(id)));
-
-    await expectRevert(
-      controller.getActiveProposals(TOTAL_PROPOSALS + 1, 0),
-      "DAOController__StartCannotBeBiggerThanListLength"
-    );
-    await expectRevert(
-      controller.getActiveProposals(0, TOTAL_PROPOSALS + 1),
-      "DAOController__EndCannotBeBiggerThanListLength"
-    );
-
-    await expectRevert(
-      controller.getActiveProposals(8, 7),
-      "DAOController__StartCannotBeBiggerThanEnd"
-    );
-  });
-
-  it("getActiveProposals(20, 34) Should return proposals", async () => {
-    const TOTAL_PROPOSALS = 50;
-    const START = 20;
-    const END = 34;
-    const EXPECTED_PROPOSALS = END - START + 1;
-    const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
-
-    // start all proposals ids
-    await Promise.all(proposalIds.map(id => controller.startProposal(id)));
-
-    // get active proposals
-    const activeProposals = await controller.getActiveProposals(START, END);
-
-    expect(activeProposals.length).to.equal(EXPECTED_PROPOSALS);
-    expect(
-      activeProposals.every(({ proposalId }) =>
-        proposalIds.slice(START, END + 1).some(id => proposalId === id)
-      ) // eslint-disable-line
-    ).to.equal(true);
-  });
-
-  it("getActiveProposals(0,0) should return empty [] if no active proposals", async () => {
-    const activeProposals = await controller.getActiveProposals(0, 0);
-    expect(activeProposals).deep.equal([]);
-  });
-
-  it("getActiveProposals(0, 1) should return first 2 proposals", async () => {
-    const proposalIds = getRandomProposalIds(3);
-    // start all proposals ids
-    await Promise.all(proposalIds.map(id => controller.startProposal(id)));
-    // get active proposals
-    const activeProposals = await controller.getActiveProposals(0, 1);
-
-    expect(activeProposals.length).to.equal(2);
-    [0, 1].forEach(i =>
-      expect(activeProposals[i].proposalId).to.equal(proposalIds[i])
-    );
-
-    expect(activeProposals[0].scheme).to.equal(schemeAddress);
-  });
-
-  it("getInactiveProposals(0,0) should return all inactive proposals", async () => {
-    const TOTAL_PROPOSALS = 20;
-    const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
-
-    // start all proposals ids
-    await Promise.all(proposalIds.map(id => controller.startProposal(id)));
-
-    // end all proposals ids
-    await Promise.all(proposalIds.map(id => controller.endProposal(id)));
-
-    // get inactive proposals
-    const inactiveProposals = await controller.getInactiveProposals(0, 0);
-
-    expect(inactiveProposals.length).to.equal(TOTAL_PROPOSALS);
-    expect(
-      proposalIds.every(id =>
-        inactiveProposals.some(({ proposalId }) => proposalId === id)
-      ) // eslint-disable-line
-    ).to.equal(true);
-  });
-
-  it("getInactiveProposals(0,9) should return first 10 inactive proposals", async () => {
-    const TOTAL_PROPOSALS = 100;
-    const EXPECTED_PROPOSALS = 10;
-    const START = 0;
-    const END = 9;
-    const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
-
-    // start all proposals ids
-    await Promise.all(proposalIds.map(id => controller.startProposal(id)));
-
-    // end all proposals ids
-    await Promise.all(proposalIds.map(id => controller.endProposal(id)));
-
-    // get inactive proposals
-    const inactiveProposals = await controller.getInactiveProposals(START, END);
-
-    expect(inactiveProposals.length).to.equal(EXPECTED_PROPOSALS);
-    expect(
-      inactiveProposals.every(({ proposalId }) =>
-        proposalIds.some(id => proposalId === id)
-      ) // eslint-disable-line
-    ).to.equal(true);
-  });
-
-  it("getActiveProposalsCount() should return correct amount of proposals", async () => {
-    const TOTAL_PROPOSALS = 20;
-
-    // start all proposals ids
-    await Promise.all(
-      getRandomProposalIds(TOTAL_PROPOSALS).map(id =>
-        controller.startProposal(id)
-      ) // eslint-disable-line
-    );
-
-    // get active proposals
-    const activeProposalsCount = await controller.getActiveProposalsCount();
-
-    expect(activeProposalsCount.toNumber()).to.equal(TOTAL_PROPOSALS);
-  });
-
-  it("getInactiveProposalsCount() should return correct amount of proposals", async () => {
-    const TOTAL_PROPOSALS = 20;
-    const proposalIds = getRandomProposalIds(TOTAL_PROPOSALS);
-
-    // start all proposals ids
-    await Promise.all(proposalIds.map(id => controller.startProposal(id)));
-    // end proposals
-    await Promise.all(proposalIds.map(id => controller.endProposal(id)));
-
-    // get inactive proposals
-    const inactiveProposalsCount = await controller.getInactiveProposalsCount();
-
-    expect(inactiveProposalsCount.toNumber()).to.equal(TOTAL_PROPOSALS);
-  });
-
-  it("startProposal() should fail from onlyRegisteredScheme modifyer", async () => {
-    await controller.registerScheme(
-      accounts[2],
-      defaultParamsHash,
-      true,
-      true,
-      true
-    );
-
-    await controller.unregisterScheme(schemeAddress);
-
-    await expectRevert(
-      controller.startProposal(web3.utils.randomHex(32), {
-        from: schemeAddress,
-      }),
-      "DAOController__SenderNotRegistered"
-    );
-  });
-
   it("unregisterScheme() should fail from onlyRegisteredScheme modifyer", async () => {
     await controller.registerScheme(
       accounts[2],
@@ -546,7 +270,7 @@ contract("DAOController", function (accounts) {
 
     expect(
       (
-        await controller.getSchemesCountWithManageSchemesPermissions()
+        await controller.getSchemesWithManageSchemesPermissionsCount()
       ).toNumber()
     ).to.equal(2);
 
@@ -556,8 +280,8 @@ contract("DAOController", function (accounts) {
 
     // A scheme can unregister another scheme
     await expectEvent(tx.receipt, "UnregisterScheme", {
-      _sender: schemeAddress,
-      _scheme: schemeToUnregister,
+      sender: schemeAddress,
+      scheme: schemeToUnregister,
     });
   });
 
@@ -634,8 +358,8 @@ contract("DAOController", function (accounts) {
     )[0];
 
     expect(avatarCallEvent.name).to.equal("CallExecuted");
-    expect(avatarCallEvent.args._to).to.equal(actionMock.address);
-    expect(avatarCallEvent.args._data).to.equal(dataCall);
+    expect(avatarCallEvent.args.to).to.equal(actionMock.address);
+    expect(avatarCallEvent.args.data).to.equal(dataCall);
   });
 
   it("burnReputation() should fail from onlyChangingReputation modifyer", async () => {
@@ -797,7 +521,7 @@ contract("DAOController", function (accounts) {
     );
 
     let schemesWithManageSchemesPermission =
-      await controller.getSchemesCountWithManageSchemesPermissions();
+      await controller.getSchemesWithManageSchemesPermissionsCount();
     expect(schemesWithManageSchemesPermission.toNumber()).to.equal(1);
 
     await controller.registerScheme(
@@ -810,7 +534,7 @@ contract("DAOController", function (accounts) {
     );
 
     schemesWithManageSchemesPermission =
-      await controller.getSchemesCountWithManageSchemesPermissions();
+      await controller.getSchemesWithManageSchemesPermissionsCount();
     expect(schemesWithManageSchemesPermission.toNumber()).to.equal(2);
   });
 });

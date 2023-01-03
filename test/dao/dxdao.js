@@ -158,11 +158,14 @@ contract("DXdao", function (accounts) {
       constants.SOME_HASH
     );
 
-    proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
-    const activeProposals = await dxDao.controller.getActiveProposals(0, 0);
-    assert.equal(activeProposals[0].proposalId, proposalId);
-    assert.equal(activeProposals[0].scheme, masterAvatarScheme.address);
+    const activeProposals = await dxDao.votingMachine.getActiveProposals(
+      0,
+      0,
+      dxDao.avatar.address
+    );
+    assert.equal(activeProposals[0], proposalId);
   });
 
   it.skip("Deploy DXvote", function (done) {
@@ -171,19 +174,19 @@ contract("DXdao", function (accounts) {
     else done();
   });
 
-  it("Wallet - execute proposeVote -option 0 - check action - with DXDVotingMachine", async function () {
+  it("Wallet - execute proposeVote -option 0 - check action - with VotingMachine", async function () {
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
 
     await expectRevert(
       dxDao.votingMachine.vote(proposalId, 0, 0, {
         from: accounts[2],
       }),
-      "DXDVotingMachine__WrongDecisionValue()"
+      "VotingMachine__WrongDecisionValue()"
     );
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
   });
 
-  it("Wallet - execute proposeVote - option NO - check action - with DXDVotingMachine", async function () {
+  it("Wallet - execute proposeVote - option NO - check action - with VotingMachine", async function () {
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
 
     await dxDao.votingMachine.vote(proposalId, constants.NO_OPTION, 0, {
@@ -194,14 +197,20 @@ contract("DXdao", function (accounts) {
       (await masterAvatarScheme.getProposal(proposalId)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.rejected
     );
-    const inactiveProposals = await dxDao.controller.getInactiveProposals(0, 0);
-    assert.equal(inactiveProposals[0].proposalId, proposalId);
-    assert.equal(inactiveProposals[0].scheme, masterAvatarScheme.address);
-    assert.deepEqual(await dxDao.controller.getActiveProposals(0, 0), []);
+    const inactiveProposals = await dxDao.votingMachine.getInactiveProposals(
+      0,
+      0,
+      dxDao.avatar.address
+    );
+    assert.equal(inactiveProposals[0], proposalId);
+    assert.deepEqual(
+      await dxDao.votingMachine.getActiveProposals(0, 0, dxDao.avatar.address),
+      []
+    );
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
   });
 
-  it("Wallet - execute proposeVote - option YES - check action - with DXDVotingMachine", async function () {
+  it("Wallet - execute proposeVote - option YES - check action - with VotingMachine", async function () {
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "100");
 
     const executionProposalTx = await dxDao.votingMachine.vote(
@@ -217,10 +226,16 @@ contract("DXdao", function (accounts) {
       (await masterAvatarScheme.getProposal(proposalId)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.passed
     );
-    const inactiveProposals = await dxDao.controller.getInactiveProposals(0, 0);
-    assert.equal(inactiveProposals[0].proposalId, proposalId);
-    assert.equal(inactiveProposals[0].scheme, masterAvatarScheme.address);
-    assert.deepEqual(await dxDao.controller.getActiveProposals(0, 0), []);
+    const inactiveProposals = await dxDao.votingMachine.getInactiveProposals(
+      0,
+      0,
+      dxDao.avatar.address
+    );
+    assert.equal(inactiveProposals[0], proposalId);
+    assert.deepEqual(
+      await dxDao.votingMachine.getActiveProposals(0, 0, dxDao.avatar.address),
+      []
+    );
     assert.equal(await web3.eth.getBalance(dxDao.avatar.address), "95");
 
     const executionTxEvents = helpers.logDecoder.decodeLogs(

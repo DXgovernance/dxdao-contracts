@@ -199,7 +199,6 @@ module.exports = {
   docgen: {
     pages: "files",
     outputDir: "docs/contracts",
-    clear: true,
     runOnCompile: false,
     exclude: ["test", "utils", "hardhat-dependency-compiler"],
   },

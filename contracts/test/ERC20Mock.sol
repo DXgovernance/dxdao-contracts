@@ -10,9 +10,13 @@ contract ERC20Mock is ERC20PresetFixedSupply {
         string memory symbol,
         uint256 initialBalance,
         address initialAccount
-    ) public ERC20PresetFixedSupply(name, symbol, initialBalance, initialAccount) {}
+    ) ERC20PresetFixedSupply(name, symbol, initialBalance, initialAccount) {}
 
     function nonStandardTransfer(address recipient, uint256 amount) public returns (bool success) {
         return transfer(recipient, amount);
+    }
+
+    function mint(address account, uint256 amount) external {
+        _mint(account, amount);
     }
 }

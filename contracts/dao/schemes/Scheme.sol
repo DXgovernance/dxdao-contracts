@@ -7,7 +7,7 @@ import "../../utils/PermissionRegistry.sol";
 import "../DAOReputation.sol";
 import "../DAOAvatar.sol";
 import "../DAOController.sol";
-import "../votingMachine/DXDVotingMachineCallbacks.sol";
+import "../votingMachine/VotingMachineCallbacks.sol";
 
 /**
  * @title Scheme.
@@ -25,7 +25,7 @@ import "../votingMachine/DXDVotingMachineCallbacks.sol";
  * Once the governance process ends on the voting machine the voting machine can execute the proposal winning option.
  * If the wining option cant be executed successfully, it can be finished without execution once the maxTimesForExecution time passes.
  */
-abstract contract Scheme is DXDVotingMachineCallbacks {
+abstract contract Scheme is VotingMachineCallbacks {
     using Address for address;
 
     enum ProposalState {
@@ -54,10 +54,10 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     string public schemeName;
     uint256 public maxRepPercentageChange;
 
-    // Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
+    /// @notice Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
     bool internal executingProposal;
 
-    event ProposalStateChange(bytes32 indexed _proposalId, uint256 indexed _state);
+    event ProposalStateChange(bytes32 indexed proposalId, uint256 indexed state);
 
     /// @notice Emitted when its initialized twice
     error Scheme__CannotInitTwice();
@@ -68,7 +68,7 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     /// @notice Emitted if controller address is zero
     error Scheme__ControllerAddressCannotBeZero();
 
-    /// @notice _to, _callData and _value must have all the same length
+    /// @notice to, callData and value must have all the same length
     error Scheme_InvalidParameterArrayLength();
 
     /// @notice Emitted when the totalOptions paramers is invalid
@@ -90,19 +90,19 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     error Scheme__ERC20LimitsPassed();
 
     /**
-     * @dev initialize
-     * @param _avatar the avatar address
-     * @param _votingMachine the voting machine address
-     * @param _controller The controller address
-     * @param _permissionRegistry The address of the permission registry contract
-     * @param _maxRepPercentageChange The maximum percentage allowed to be changed in REP total supply after proposal
-     * execution
+     * @dev Initialize Scheme contract
+     * @param avatarAddress The avatar address
+     * @param votingMachineAddress The voting machine address
+     * @param controllerAddress The controller address
+     * @param permissionRegistryAddress The address of the permission registry contract
+     * @param _schemeName The name of the scheme
+     * @param _maxRepPercentageChange The maximum percentage allowed to be changed in REP total supply after proposal execution
      */
     function initialize(
-        address payable _avatar,
-        address _votingMachine,
-        address _controller,
-        address _permissionRegistry,
+        address payable avatarAddress,
+        address votingMachineAddress,
+        address controllerAddress,
+        address permissionRegistryAddress,
         string calldata _schemeName,
         uint256 _maxRepPercentageChange
     ) external {
@@ -110,64 +110,62 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
             revert Scheme__CannotInitTwice();
         }
 
-        if (_avatar == address(0)) {
+        if (avatarAddress == address(0)) {
             revert Scheme__AvatarAddressCannotBeZero();
         }
 
-        if (_controller == address(0)) {
+        if (controllerAddress == address(0)) {
             revert Scheme__ControllerAddressCannotBeZero();
         }
 
-        avatar = DAOAvatar(_avatar);
-        votingMachine = IDXDVotingMachine(_votingMachine);
-        controller = DAOController(_controller);
-        permissionRegistry = PermissionRegistry(_permissionRegistry);
+        avatar = DAOAvatar(avatarAddress);
+        votingMachine = IVotingMachine(votingMachineAddress);
+        controller = DAOController(controllerAddress);
+        permissionRegistry = PermissionRegistry(permissionRegistryAddress);
         schemeName = _schemeName;
         maxRepPercentageChange = _maxRepPercentageChange;
     }
 
     /**
      * @dev Propose calls to be executed, the calls have to be allowed by the permission registry
-     * @param _to - The addresses to call
-     * @param _callData - The abi encode data for the calls
-     * @param _value value(ETH) to transfer with the calls
-     * @param _totalOptions The amount of options to be voted on
-     * @param _title title of proposal
-     * @param _descriptionHash proposal description hash
-     * @return proposalId id which represents the proposal
+     * @param to The addresses to call
+     * @param callData The abi encode data for the calls
+     * @param value Value (ETH) to transfer with the calls
+     * @param totalOptions The amount of options to be voted on
+     * @param title Title of proposal
+     * @param descriptionHash Proposal description hash
+     * @return proposalId ID which represents the proposal
      */
     function proposeCalls(
-        address[] calldata _to,
-        bytes[] calldata _callData,
-        uint256[] calldata _value,
-        uint256 _totalOptions,
-        string calldata _title,
-        string calldata _descriptionHash
+        address[] calldata to,
+        bytes[] calldata callData,
+        uint256[] calldata value,
+        uint256 totalOptions,
+        string calldata title,
+        string calldata descriptionHash
     ) public virtual returns (bytes32 proposalId) {
-        if (_to.length != _callData.length || _to.length != _value.length) {
+        if (to.length != callData.length || to.length != value.length) {
             revert Scheme_InvalidParameterArrayLength();
         }
 
-        if ((_value.length % (_totalOptions - 1)) != 0) {
+        if ((value.length % (totalOptions - 1)) != 0) {
             revert Scheme__InvalidTotalOptionsOrActionsCallsLength();
         }
 
         bytes32 voteParams = controller.getSchemeParameters(address(this));
 
         // Get the proposal id that will be used from the voting machine
-        bytes32 proposalId = votingMachine.propose(_totalOptions, voteParams, msg.sender, address(avatar));
-
-        controller.startProposal(proposalId);
+        proposalId = votingMachine.propose(totalOptions, voteParams, msg.sender, address(avatar));
 
         // Add the proposal to the proposals mapping, proposals list and proposals information mapping
         proposals[proposalId] = Proposal({
-            to: _to,
-            callData: _callData,
-            value: _value,
+            to: to,
+            callData: callData,
+            value: value,
             state: ProposalState.Submitted,
-            totalOptions: _totalOptions,
-            title: _title,
-            descriptionHash: _descriptionHash,
+            totalOptions: totalOptions,
+            title: title,
+            descriptionHash: descriptionHash,
             submittedTime: block.timestamp
         });
         // slither-disable-next-line all
@@ -178,16 +176,16 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
     }
 
     /**
-     * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
-     * @param _proposalId the ID of the voting in the voting machine
-     * @param _winningOption The winning option in the voting machine
-     * @return bool success
+     * @dev Execution of proposals, can only be called by the voting machine in which the vote is held.
+     * @param proposalId The ID of the voting in the voting machine
+     * @param winningOption The winning option in the voting machine
+     * @return success Success of the execution
      */
-    function executeProposal(bytes32 _proposalId, uint256 _winningOption)
+    function executeProposal(bytes32 proposalId, uint256 winningOption)
         public
         virtual
         onlyVotingMachine
-        returns (bool)
+        returns (bool success)
     {
         // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
         if (executingProposal) {
@@ -195,18 +193,18 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
         }
         executingProposal = true;
 
-        Proposal memory proposal = proposals[_proposalId];
+        Proposal memory proposal = proposals[proposalId];
 
         if (proposal.state != ProposalState.Submitted) {
             revert Scheme__ProposalMustBeSubmitted();
         }
 
-        if (_winningOption > 1) {
+        if (winningOption > 1) {
             uint256 oldRepSupply = getNativeReputationTotalSupply();
 
             permissionRegistry.setERC20Balances();
 
-            uint256 callIndex = (proposal.to.length / (proposal.totalOptions - 1)) * (_winningOption - 2);
+            uint256 callIndex = (proposal.to.length / (proposal.totalOptions - 1)) * (winningOption - 2);
             uint256 lastCallIndex = callIndex + (proposal.to.length / (proposal.totalOptions - 1));
             bool callsSucessResult = false;
             bytes memory returnData;
@@ -256,53 +254,55 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
 
     /**
      * @dev Finish a proposal and set the final state in storage
-     * @param _proposalId the ID of the voting in the voting machine
-     * @param _winningOption The winning option in the voting machine
-     * @return bool success
+     * @param proposalId The ID of the voting in the voting machine
+     * @param winningOption The winning option in the voting machine
+     * @return success Proposal finish successfully
      */
-    function finishProposal(bytes32 _proposalId, uint256 _winningOption)
+    function finishProposal(bytes32 proposalId, uint256 winningOption)
         public
         virtual
         onlyVotingMachine
-        returns (bool)
+        returns (bool success)
     {
-        Proposal storage proposal = proposals[_proposalId];
+        Proposal storage proposal = proposals[proposalId];
         if (proposal.state != ProposalState.Submitted) {
             revert Scheme__ProposalMustBeSubmitted();
         }
 
-        if (_winningOption == 1) {
+        if (winningOption == 1) {
             proposal.state = ProposalState.Rejected;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.Rejected));
+            emit ProposalStateChange(proposalId, uint256(ProposalState.Rejected));
         } else {
             proposal.state = ProposalState.Passed;
-            emit ProposalStateChange(_proposalId, uint256(ProposalState.Passed));
+            emit ProposalStateChange(proposalId, uint256(ProposalState.Passed));
         }
-        controller.endProposal(_proposalId);
         return true;
     }
 
     /**
      * @dev Get the information of a proposal by id
-     * @param proposalId the ID of the proposal
+     * @param proposalId The ID of the proposal
+     * @return proposal The proposal for given `proposalId`
      */
-    function getProposal(bytes32 proposalId) external view returns (Proposal memory) {
+    function getProposal(bytes32 proposalId) external view returns (Proposal memory proposal) {
         return proposals[proposalId];
     }
 
     /**
      * @dev Get the information of a proposal by index
-     * @param proposalIndex the index of the proposal in the proposals list
+     * @param proposalIndex The index of the proposal in the proposals list
+     * @return proposal The proposal located at given `proposalIndex`
      */
-    function getProposalByIndex(uint256 proposalIndex) external view returns (Proposal memory) {
+    function getProposalByIndex(uint256 proposalIndex) external view returns (Proposal memory proposal) {
         return proposals[proposalsList[proposalIndex]];
     }
 
     /**
      * @dev Get call data signature
      * @param data The bytes data of the data to get the signature
+     * @return functionSignature The signature for given data hash
      */
-    function getFuncSignature(bytes calldata data) public pure returns (bytes4) {
+    function getFuncSignature(bytes calldata data) public pure returns (bytes4 functionSignature) {
         if (data.length >= 4) {
             return bytes4(data[:4]);
         } else {
@@ -312,15 +312,17 @@ abstract contract Scheme is DXDVotingMachineCallbacks {
 
     /**
      * @dev Get the proposals length
+     * @return proposalsLength The amount of proposals
      */
-    function getOrganizationProposalsLength() external view returns (uint256) {
+    function getOrganizationProposalsLength() external view returns (uint256 proposalsLength) {
         return proposalsList.length;
     }
 
     /**
      * @dev Get the proposals ids
+     * @return proposalsIds List containing all proposals ids
      */
-    function getOrganizationProposals() external view returns (bytes32[] memory) {
+    function getOrganizationProposals() external view returns (bytes32[] memory proposalsIds) {
         return proposalsList;
     }
 

@@ -30,7 +30,17 @@ contract("DAOReputation", async accounts => {
   it("should not be able to transfer tokens", async () => {
     await expectRevert(
       daoReputation.transfer(accounts[1], 100),
-      "DAOReputation__NoTransfer()"
+      "ERC20SnapshotRep__NoTransfer()"
+    );
+  });
+
+  it("should not be able to transferFrom tokens", async () => {
+    await daoReputation.approve(accounts[1], 100, { from: accounts[0] });
+    await expectRevert(
+      daoReputation.transferFrom(accounts[0], accounts[2], 1, {
+        from: accounts[1],
+      }),
+      "ERC20SnapshotRep__NoTransfer()"
     );
   });
 
@@ -42,8 +52,8 @@ contract("DAOReputation", async accounts => {
     const reputationBalance = await daoReputation.balanceOf(repHolder);
     expect(mint, true);
     await expectEvent(mint.receipt, "Mint", {
-      _to: repHolder,
-      _amount: amount.toString(),
+      to: repHolder,
+      amount: amount.toString(),
     });
     expect(reputationBalance.toNumber(), amount);
   });
@@ -60,8 +70,8 @@ contract("DAOReputation", async accounts => {
 
     expect(burn, true);
     await expectEvent(burn.receipt, "Burn", {
-      _from: repHolder,
-      _amount: amount.toString(),
+      from: repHolder,
+      amount: amount.toString(),
     });
     expect(reputationBalance.toNumber(), 0);
   });
@@ -110,7 +120,7 @@ contract("DAOReputation", async accounts => {
       ownableAccessError
     );
     await expectRevert(
-      daoReputation.burnMultiple(addresses, 100, { from: notTheOwner }),
+      daoReputation.burnMultiple(addresses, [1, 2, 3], { from: notTheOwner }),
       ownableAccessError
     );
   });

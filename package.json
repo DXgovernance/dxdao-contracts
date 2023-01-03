@@ -16,7 +16,7 @@
     "coverage": "OVERRIDE_GAS_LIMIT=0xfffffffffff OVERRIDE_GAS_PRICE=1 yarn hardhat coverage",
     "compile": "rm -rf artifacts cache contracts/hardhat-dependency-compiler && npx hardhat compile",
     "deploy": "node scripts/deploy.js",
-    "docify": "npx hardhat docgen && node ./scripts/build-docs-summary.js",
+    "docify": "rm -rf ./docs/contracts && npx hardhat docgen && node ./scripts/build-docs-summary.js",
     "solidity-linter": "./scripts/solhint.sh",
     "solidity-contract-size": "yarn hardhat size-contracts",
     "lint": "eslint .",

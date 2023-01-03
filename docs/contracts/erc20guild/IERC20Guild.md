@@ -36,7 +36,7 @@ enum ProposalState {
 
 ```solidity
 struct Vote {
-  uint256 action;
+  uint256 option;
   uint256 votingPower;
 }
 ```
@@ -73,13 +73,13 @@ receive() external payable
 ### initialize
 
 ```solidity
-function initialize(address _token, uint256 _proposalTime, uint256 _timeForExecution, uint256 _votingPowerForProposalExecution, uint256 _votingPowerForProposalCreation, string _name, uint256 _voteGas, uint256 _maxGasPrice, uint256 _maxActiveProposals, uint256 _lockTime, address _permissionRegistry) external
+function initialize(address _token, uint256 _proposalTime, uint256 _timeForExecution, uint256 _votingPowerPercentageForProposalExecution, uint256 _votingPowerPercentageForProposalCreation, string _name, uint256 _voteGas, uint256 _maxGasPrice, uint256 _maxActiveProposals, uint256 _lockTime, address _permissionRegistry) external
 ```
 
 ### setConfig
 
 ```solidity
-function setConfig(uint256 _proposalTime, uint256 _timeForExecution, uint256 _votingPowerForProposalExecution, uint256 _votingPowerForProposalCreation, uint256 _voteGas, uint256 _maxGasPrice, uint256 _maxActiveProposals, uint256 _lockTime, address _permissionRegistry) external
+function setConfig(uint256 _proposalTime, uint256 _timeForExecution, uint256 _votingPowerPercentageForProposalExecution, uint256 _votingPowerPercentageForProposalCreation, uint256 _voteGas, uint256 _maxGasPrice, uint256 _maxActiveProposals, uint256 _lockTime, address _permissionRegistry) external
 ```
 
 ### setPermission
@@ -97,7 +97,7 @@ function setPermissionDelay(uint256 permissionDelay) external
 ### createProposal
 
 ```solidity
-function createProposal(address[] to, bytes[] data, uint256[] value, uint256 totalActions, string title, string contentHash) external returns (bytes32)
+function createProposal(address[] to, bytes[] data, uint256[] value, uint256 totalOptions, string title, string contentHash) external returns (bytes32)
 ```
 
 ### endProposal
@@ -109,25 +109,25 @@ function endProposal(bytes32 proposalId) external
 ### setVote
 
 ```solidity
-function setVote(bytes32 proposalId, uint256 action, uint256 votingPower) external
+function setVote(bytes32 proposalId, uint256 option, uint256 votingPower) external
 ```
 
 ### setVotes
 
 ```solidity
-function setVotes(bytes32[] proposalIds, uint256[] actions, uint256[] votingPowers) external
+function setVotes(bytes32[] proposalIds, uint256[] options, uint256[] votingPowers) external
 ```
 
 ### setSignedVote
 
 ```solidity
-function setSignedVote(bytes32 proposalId, uint256 action, uint256 votingPower, address voter, bytes signature) external
+function setSignedVote(bytes32 proposalId, uint256 option, uint256 votingPower, address voter, bytes signature) external
 ```
 
 ### setSignedVotes
 
 ```solidity
-function setSignedVotes(bytes32[] proposalIds, uint256[] actions, uint256[] votingPowers, address[] voters, bytes[] signatures) external
+function setSignedVotes(bytes32[] proposalIds, uint256[] options, uint256[] votingPowers, address[] voters, bytes[] signatures) external
 ```
 
 ### lockTokens
@@ -277,7 +277,7 @@ function getProposal(bytes32 proposalId) external view returns (struct IERC20Gui
 ### getProposalVotesOfVoter
 
 ```solidity
-function getProposalVotesOfVoter(bytes32 proposalId, address voter) external view returns (uint256 action, uint256 votingPower)
+function getProposalVotesOfVoter(bytes32 proposalId, address voter) external view returns (uint256 option, uint256 votingPower)
 ```
 
 ### getVotingPowerForProposalCreation
@@ -319,6 +319,6 @@ function isValidSignature(bytes32 hash, bytes signature) external view returns (
 ### hashVote
 
 ```solidity
-function hashVote(address voter, bytes32 proposalId, uint256 action, uint256 votingPower) external pure returns (bytes32)
+function hashVote(address voter, bytes32 proposalId, uint256 option, uint256 votingPower) external pure returns (bytes32)
 ```
 

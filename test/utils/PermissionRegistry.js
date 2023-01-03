@@ -131,7 +131,7 @@ contract("PermissionRegistry", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId1 = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId1 = await helpers.getValueFromLogs(tx, "proposalId");
 
     assert.equal(
       (
@@ -177,7 +177,7 @@ contract("PermissionRegistry", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
+    const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
 
     // The call to execute is not allowed YET, because we change the delay time to 45 seconds
     await expectEvent(
@@ -199,7 +199,7 @@ contract("PermissionRegistry", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId3 = await helpers.getValueFromLogs(tx4, "_proposalId");
+    const proposalId3 = await helpers.getValueFromLogs(tx4, "proposalId");
 
     // The call to execute is not allowed YET, because we change the delay time to 45 seconds
     await dao.votingMachine.vote(proposalId3, constants.YES_OPTION, 0, {
@@ -257,7 +257,7 @@ contract("PermissionRegistry", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     assert.notEqual(
       (

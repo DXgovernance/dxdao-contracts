@@ -65,7 +65,7 @@ Emitted if the number of totalOptions is not 2
 ### proposeCalls
 
 ```solidity
-function proposeCalls(address[] _to, bytes[] _callData, uint256[] _value, uint256 _totalOptions, string _title, string _descriptionHash) public returns (bytes32 proposalId)
+function proposeCalls(address[] to, bytes[] callData, uint256[] value, uint256 totalOptions, string title, string descriptionHash) public returns (bytes32 proposalId)
 ```
 
 _Propose calls to be executed, the calls have to be allowed by the permission registry_
@@ -74,12 +74,12 @@ _Propose calls to be executed, the calls have to be allowed by the permission re
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _to | address[] | - The addresses to call |
-| _callData | bytes[] | - The abi encode data for the calls |
-| _value | uint256[] | value(ETH) to transfer with the calls |
-| _totalOptions | uint256 | The amount of options to be voted on |
-| _title | string | title of proposal |
-| _descriptionHash | string | proposal description hash |
+| to | address[] | - The addresses to call |
+| callData | bytes[] | - The abi encode data for the calls |
+| value | uint256[] | value(ETH) to transfer with the calls |
+| totalOptions | uint256 | The amount of options to be voted on |
+| title | string | title of proposal |
+| descriptionHash | string | proposal description hash |
 
 #### Return Values
 
@@ -90,7 +90,7 @@ _Propose calls to be executed, the calls have to be allowed by the permission re
 ### executeProposal
 
 ```solidity
-function executeProposal(bytes32 _proposalId, uint256 _winningOption) public returns (bool)
+function executeProposal(bytes32 proposalId, uint256 winningOption) public returns (bool)
 ```
 
 _execution of proposals, can only be called by the voting machine in which the vote is held._
@@ -99,8 +99,8 @@ _execution of proposals, can only be called by the voting machine in which the v
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _proposalId | bytes32 | the ID of the voting in the voting machine |
-| _winningOption | uint256 | The winning option in the voting machine |
+| proposalId | bytes32 | the ID of the voting in the voting machine |
+| winningOption | uint256 | The winning option in the voting machine |
 
 #### Return Values
 
@@ -111,7 +111,7 @@ _execution of proposals, can only be called by the voting machine in which the v
 ### getSchemeType
 
 ```solidity
-function getSchemeType() external view returns (string)
+function getSchemeType() external pure returns (string)
 ```
 
 _Get the scheme type_
