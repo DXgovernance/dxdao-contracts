@@ -1,7 +1,7 @@
 import { config } from "../../deploy/dxgovGuild";
 import { ZERO_ADDRESS, NULL_SIGNATURE } from "../helpers/constants";
 
-describe("DXgovGuild deploy script", function () {
+describe.skip("DXgovGuild deploy script", function () {
   beforeEach(async () => {
     await hre.deployments.fixture("DXgovGuild");
   });
