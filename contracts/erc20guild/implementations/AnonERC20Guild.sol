@@ -2,12 +2,12 @@
 pragma solidity >=0.8.0;
 
 import "../ERC20GuildUpgradeable.sol";
-import "../../utils/ERC721/ERC721AnonRep.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@semaphore-protocol/contracts/interfaces/ISemaphore.sol";
+import "../../utils/ERC721/ERC721AnonRep.sol";
 import "hardhat/console.sol";
 
 /*
@@ -16,7 +16,7 @@ import "hardhat/console.sol";
   1 vote equals 1 token
   1 voter owns multiple votes
   The votes are executed individually with ZK proofs shared off chain.
-  The guild needs to be created with 1
+  The guild needs to be created with already minted tokens.
 */
 contract AnonERC20Guild is ERC20GuildUpgradeable {
     using SafeMathUpgradeable for uint256;
@@ -27,15 +27,8 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
 
     ISemaphore semaphore;
 
-    /// @dev Gets a nullifier hash and returns true or false.
-    /// It is used to prevent double-voting.
-    mapping(uint256 => bool) internal nullifierHashes;
-
     /// @dev The sempahore group id of each proposal
     mapping(bytes32 => uint256) public proposalGroupIds;
-
-    /// @dev The total REP supply that should match the token total supply
-    uint256 public totalRepSupply;
 
     /// @dev Proposal id => Snapshot id
     mapping(bytes32 => uint256) public proposalsSnapshots;
@@ -59,6 +52,7 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
         address _permissionRegistry,
         ISemaphore _semaphore
     ) public initializer {
+        require(ERC721AnonRep(_token).totalSupply() > 0, "AnonERC20Guild: Token total supply must be greater than 0");
         super.initialize(
             _token,
             _proposalTime,
@@ -73,9 +67,22 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
             _permissionRegistry
         );
         permissionRegistry.setETHPermission(address(this), _token, bytes4(keccak256("mint(address,uint256)")), 0, true);
-        permissionRegistry.setETHPermission(address(this), _token, bytes4(keccak256("burn(address,uint256)")), 0, true);
+        permissionRegistry.setETHPermission(
+            address(this),
+            _token,
+            bytes4(keccak256("mintMultiple(address[],uint256[])")),
+            0,
+            true
+        );
+        permissionRegistry.setETHPermission(address(this), _token, bytes4(keccak256("burn(uint256,address)")), 0, true);
+        permissionRegistry.setETHPermission(
+            address(this),
+            _token,
+            bytes4(keccak256("burnMultiple(uint256[],address[])")),
+            0,
+            true
+        );
         semaphore = _semaphore;
-        totalRepSupply = token.totalSupply();
     }
 
     /// @dev Set the voting power to vote in a proposal
@@ -91,16 +98,13 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
         uint256 nullifierHash,
         uint256[8] calldata proof
     ) public {
-        require(
-            proposals[proposalId].endTime > block.timestamp,
-            "SnapshotRepERC20Guild: Proposal ended, cannot be voted"
-        );
+        require(proposals[proposalId].endTime > block.timestamp, "AnonERC20Guild: Proposal ended, cannot be voted");
 
         // Verify ZK proof in semaphore
         semaphore.verifyProof(
             proposalGroupIds[proposalId],
             merkleTreeRoot,
-            stringToBytes32(option.toString()),
+            uint256ToBytes32(option),
             nullifierHash,
             proposalGroupIds[proposalId],
             proof
@@ -120,14 +124,14 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
         }
     }
 
-    /// @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild
+    /// @dev Override and disable lock of tokens, not needed in AnonERC20Guild
     function lockTokens(uint256) external virtual override {
-        revert("SnapshotRepERC20Guild: token vault disabled");
+        revert("AnonERC20Guild: token vault disabled");
     }
 
-    /// @dev Override and disable withdraw of tokens, not needed in SnapshotRepERC20Guild
+    /// @dev Override and disable withdraw of tokens, not needed in AnonERC20Guild
     function withdrawTokens(uint256) external virtual override {
-        revert("SnapshotRepERC20Guild: token vault disabled");
+        revert("AnonERC20Guild: token vault disabled");
     }
 
     /// @dev Create a proposal with an static call data and extra information
@@ -234,7 +238,6 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
         activeProposalsNow = activeProposalsNow.sub(1);
-        require(totalRepSupply == token.totalSupply(), "AnonERC20Guild: totalRepSupply dont match");
     }
 
     /// @dev Get the voting power of multiple addresses at a certain snapshotId
@@ -283,44 +286,34 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
                 .div(10000);
     }
 
-    function mintRep(
-        address voter,
-        uint256 repAmount,
-        uint256[] memory voteCommitmentstoAdd
-    ) public {
-        require(msg.sender == address(this), "AnonERC20Guild: Only this contract can mint");
-
-        for (uint256 i = 0; i < repAmount; i++) {
-            ERC721AnonRep(address(token)).mint(voter, voteCommitmentstoAdd[i]);
-        }
-        totalRepSupply = totalRepSupply.add(repAmount);
+    /// @dev Get the total votes of an option in a proposal
+    /// @param proposalId The id of the proposal to get the information
+    /// @param option The selected option
+    /// @return totalVotesOfProposalOption The total votes in the proposal option
+    function getProposalTotalVotesOfOption(bytes32 proposalId, uint256 option)
+        external
+        view
+        virtual
+        returns (uint256 totalVotesOfProposalOption)
+    {
+        return (proposals[proposalId].totalVotes[option]);
     }
 
-    function burnRep(
-        address voter,
-        uint256[] memory tokensToBurn,
-        uint256[] memory voteCommitmentsToRemove
-    ) public {
-        require(msg.sender == address(this), "AnonERC20Guild: Only this contract can burn");
-
-        for (uint256 i = 0; i < tokensToBurn.length; i++) {
-            require(
-                ERC721AnonRep(address(token)).ownerOf(tokensToBurn[i]) == voter,
-                "AnonERC20Guild: voter does not own token"
-            );
-            ERC721AnonRep(address(token)).burn(tokensToBurn[i]);
+    /// @dev Get the total votes in a proposal
+    /// @param proposalId The id of the proposal to get the information
+    /// @return totalVotesOfProposal The total votes in the proposal
+    function getProposalTotalVotes(bytes32 proposalId) external view virtual returns (uint256 totalVotesOfProposal) {
+        for (uint256 i = 0; i < proposals[proposalId].totalVotes.length; i++) {
+            totalVotesOfProposal += proposals[proposalId].totalVotes[i];
         }
-        totalRepSupply = totalRepSupply.sub(tokensToBurn.length);
     }
 
-    function stringToBytes32(string memory source) public pure returns (bytes32 result) {
-        bytes memory tempEmptyStringTest = bytes(source);
-        if (tempEmptyStringTest.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 32))
+    function uint256ToBytes32(uint256 uintNumber) public pure returns (bytes32 result) {
+        bytes memory uintString = bytes(uintNumber.toString());
+        if (uintString.length > 0) {
+            assembly {
+                result := mload(add(uintString, 32))
+            }
         }
     }
 }
