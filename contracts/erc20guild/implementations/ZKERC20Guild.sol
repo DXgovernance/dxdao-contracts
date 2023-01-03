@@ -7,18 +7,18 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@semaphore-protocol/contracts/interfaces/ISemaphore.sol";
-import "../../utils/ERC721/ERC721AnonRep.sol";
+import "../../utils/ERC721/ERC721SemaphoreRep.sol";
 import "hardhat/console.sol";
 
 /*
-  @title AnonERC20Guild
+  @title ZKERC20Guild
   @author github:AugustoL
   1 vote equals 1 token
   1 voter owns multiple votes
   The votes are executed individually with ZK proofs shared off chain.
   The guild needs to be created with already minted tokens.
 */
-contract AnonERC20Guild is ERC20GuildUpgradeable {
+contract ZKERC20Guild is ERC20GuildUpgradeable {
     using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
@@ -52,7 +52,10 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
         address _permissionRegistry,
         ISemaphore _semaphore
     ) public initializer {
-        require(ERC721AnonRep(_token).totalSupply() > 0, "AnonERC20Guild: Token total supply must be greater than 0");
+        require(
+            ERC721SemaphoreRep(_token).totalSupply() > 0,
+            "ZKERC20Guild: Token total supply must be greater than 0"
+        );
         super.initialize(
             _token,
             _proposalTime,
@@ -98,7 +101,7 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
         uint256 nullifierHash,
         uint256[8] calldata proof
     ) public {
-        require(proposals[proposalId].endTime > block.timestamp, "AnonERC20Guild: Proposal ended, cannot be voted");
+        require(proposals[proposalId].endTime > block.timestamp, "ZKERC20Guild: Proposal ended, cannot be voted");
 
         // Verify ZK proof in semaphore
         semaphore.verifyProof(
@@ -124,14 +127,14 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
         }
     }
 
-    /// @dev Override and disable lock of tokens, not needed in AnonERC20Guild
+    /// @dev Override and disable lock of tokens, not needed in ZKERC20Guild
     function lockTokens(uint256) external virtual override {
-        revert("AnonERC20Guild: token vault disabled");
+        revert("ZKERC20Guild: token vault disabled");
     }
 
-    /// @dev Override and disable withdraw of tokens, not needed in AnonERC20Guild
+    /// @dev Override and disable withdraw of tokens, not needed in ZKERC20Guild
     function withdrawTokens(uint256) external virtual override {
-        revert("AnonERC20Guild: token vault disabled");
+        revert("ZKERC20Guild: token vault disabled");
     }
 
     /// @dev Create a proposal with an static call data and extra information
@@ -150,11 +153,11 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
         string memory contentHash
     ) public override returns (bytes32) {
         bytes32 proposalId = super.createProposal(to, data, value, totalOptions, title, contentHash);
-        proposalsSnapshots[proposalId] = ERC721AnonRep(address(token)).getCurrentSnapshotId();
+        proposalsSnapshots[proposalId] = ERC721SemaphoreRep(address(token)).getCurrentSnapshotId();
 
         proposalGroupIds[proposalId] = totalProposals;
         semaphore.createGroup(proposalGroupIds[proposalId], 20, 0, address(this));
-        uint256[] memory voteCommitments = ERC721AnonRep(address(token)).getVoteCommitments();
+        uint256[] memory voteCommitments = ERC721SemaphoreRep(address(token)).getVoteCommitments();
         for (uint256 i = 0; i < voteCommitments.length; i++) {
             semaphore.addMember(proposalGroupIds[proposalId], voteCommitments[i]);
         }
@@ -165,9 +168,9 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
     /// @dev Executes a proposal that is not votable anymore and can be finished
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public override {
-        require(!isExecutingProposal, "AnonERC20Guild: Proposal under execution");
-        require(proposals[proposalId].state == ProposalState.Active, "AnonERC20Guild: Proposal already executed");
-        require(proposals[proposalId].endTime < block.timestamp, "AnonERC20Guild: Proposal hasn't ended yet");
+        require(!isExecutingProposal, "ZKERC20Guild: Proposal under execution");
+        require(proposals[proposalId].state == ProposalState.Active, "ZKERC20Guild: Proposal already executed");
+        require(proposals[proposalId].endTime < block.timestamp, "ZKERC20Guild: Proposal hasn't ended yet");
 
         uint256 winningOption = 0;
         uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
@@ -228,7 +231,7 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
                     (bool success, ) = proposals[proposalId].to[i].call{value: proposals[proposalId].value[i]}(
                         proposals[proposalId].data[i]
                     );
-                    require(success, "AnonERC20Guild: Proposal call failed");
+                    require(success, "ZKERC20Guild: Proposal call failed");
                     isExecutingProposal = false;
                 }
             }
@@ -258,13 +261,13 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
     /// @param account The address of the account
     /// @param snapshotId The snapshotId to be used
     function votingPowerOfAt(address account, uint256 snapshotId) public view virtual returns (uint256) {
-        return ERC721AnonRep(address(token)).balanceOfAt(account, snapshotId);
+        return ERC721SemaphoreRep(address(token)).balanceOfAt(account, snapshotId);
     }
 
     /// @dev Get the voting power of an account
     /// @param account The address of the account
     function votingPowerOf(address account) public view virtual override returns (uint256) {
-        return ERC721AnonRep(address(token)).balanceOf(account);
+        return ERC721SemaphoreRep(address(token)).balanceOf(account);
     }
 
     /// @dev Get the proposal snapshot id
@@ -274,13 +277,13 @@ contract AnonERC20Guild is ERC20GuildUpgradeable {
 
     /// @dev Get the totalLocked
     function getTotalLocked() public view virtual override returns (uint256) {
-        return ERC721AnonRep(address(token)).totalSupply();
+        return ERC721SemaphoreRep(address(token)).totalSupply();
     }
 
     /// @dev Get minimum amount of votingPower needed for proposal execution
     function getSnapshotVotingPowerForProposalExecution(bytes32 proposalId) public view virtual returns (uint256) {
         return
-            ERC721AnonRep(address(token))
+            ERC721SemaphoreRep(address(token))
                 .totalSupplyAt(getProposalSnapshotId(proposalId))
                 .mul(votingPowerPercentageForProposalExecution)
                 .div(10000);

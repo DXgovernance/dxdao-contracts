@@ -11,7 +11,7 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeab
 import "@openzeppelin/contracts-upgradeable/utils/ArraysUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract ERC721AnonRep is OwnableUpgradeable, ERC721EnumerableUpgradeable {
+contract ERC721SemaphoreRep is OwnableUpgradeable, ERC721EnumerableUpgradeable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using ArraysUpgradeable for uint256[];
@@ -31,9 +31,9 @@ contract ERC721AnonRep is OwnableUpgradeable, ERC721EnumerableUpgradeable {
 
     CountersUpgradeable.Counter private _tokenIdTracker;
 
+    // This commitments are used to vote using semaphore
     mapping(uint256 => uint256) public tokenToPublicCommitments;
     mapping(uint256 => uint256) public publicCommitmentToToken;
-
     EnumerableSetUpgradeable.UintSet private voteCommitments;
 
     string private _baseTokenURI;
@@ -88,7 +88,7 @@ contract ERC721AnonRep is OwnableUpgradeable, ERC721EnumerableUpgradeable {
     function mintMultiple(address[] memory to, uint256[] memory publicCommitments) public virtual onlyOwner {
         require(
             to.length == publicCommitments.length,
-            "ERC721AnonRep: to and publicCommitments arrays must be the same length"
+            "ERC721SemaphoreRep: to and publicCommitments arrays must be the same length"
         );
         for (uint256 i = 0; i < to.length; i++) {
             mint(to[i], publicCommitments[i]);
@@ -103,7 +103,7 @@ contract ERC721AnonRep is OwnableUpgradeable, ERC721EnumerableUpgradeable {
      * - The caller must own `tokenId` or be an approved operator.
      */
     function burn(uint256 tokenId, address tokenOwner) public virtual onlyOwner {
-        require(ownerOf(tokenId) == tokenOwner, "ERC721AnonRep: Token  does not own token");
+        require(ownerOf(tokenId) == tokenOwner, "ERC721SemaphoreRep: Token  does not own token");
         voteCommitments.remove(tokenToPublicCommitments[tokenId]);
         publicCommitmentToToken[tokenToPublicCommitments[tokenId]] = 0;
         tokenToPublicCommitments[tokenId] = 0;

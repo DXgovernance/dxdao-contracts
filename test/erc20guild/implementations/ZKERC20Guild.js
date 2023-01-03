@@ -12,8 +12,8 @@ const {
 
 const { BN, time, expectRevert } = require("@openzeppelin/test-helpers");
 
-const AnonERC20Guild = artifacts.require("AnonERC20Guild.sol");
-const ERC721AnonRep = artifacts.require("ERC721AnonRep.sol");
+const ZKERC20Guild = artifacts.require("ZKERC20Guild.sol");
+const ERC721SemaphoreRep = artifacts.require("ERC721SemaphoreRep.sol");
 const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 
 require("chai").should();
@@ -24,7 +24,7 @@ const votingPowerPercentageForProposalCreation = 1000; // 10%
 const wasmFilePath = "test/utils/semaphore/semaphore.wasm";
 const zkeyFilePath = "test/utils/semaphore/semaphore.zkey";
 
-contract("AnonERC20Guild", function (accounts) {
+contract("ZKERC20Guild", function (accounts) {
   let guildToken, anonERC20Guild, permissionRegistry, repHolders;
 
   function generateIdentities(privateKey, amount) {
@@ -104,8 +104,8 @@ contract("AnonERC20Guild", function (accounts) {
       logs: false,
     });
 
-    guildToken = await ERC721AnonRep.new();
-    guildToken.initialize("Test ERC721AnonRep Token", "TESRT", {
+    guildToken = await ERC721SemaphoreRep.new();
+    guildToken.initialize("Test ERC721SemaphoreRep Token", "TESRT", {
       from: accounts[0],
     });
 
@@ -144,7 +144,7 @@ contract("AnonERC20Guild", function (accounts) {
       })
     );
 
-    anonERC20Guild = await AnonERC20Guild.new();
+    anonERC20Guild = await ZKERC20Guild.new();
     permissionRegistry = await PermissionRegistry.new();
     await permissionRegistry.initialize();
 
@@ -154,7 +154,7 @@ contract("AnonERC20Guild", function (accounts) {
       proposalTime / 2,
       votingPowerPercentageForProposalExecution,
       votingPowerPercentageForProposalCreation,
-      "AnonERC20 Guild",
+      "ZKERC20 Guild",
       permissionRegistry.address,
       semaphoreDeployments.semaphoreAddress
     );
