@@ -74,39 +74,39 @@ _Propose calls to be executed, the calls have to be allowed by the permission re
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| to | address[] | - The addresses to call |
-| callData | bytes[] | - The abi encode data for the calls |
-| value | uint256[] | value(ETH) to transfer with the calls |
+| to | address[] | The addresses to call |
+| callData | bytes[] | The abi encode data for the calls |
+| value | uint256[] | value (ETH) to transfer with the calls |
 | totalOptions | uint256 | The amount of options to be voted on |
-| title | string | title of proposal |
-| descriptionHash | string | proposal description hash |
+| title | string | Title of proposal |
+| descriptionHash | string | Proposal description hash |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | id which represents the proposal |
+| proposalId | bytes32 | ID which represents the proposal |
 
 ### executeProposal
 
 ```solidity
-function executeProposal(bytes32 proposalId, uint256 winningOption) public returns (bool)
+function executeProposal(bytes32 proposalId, uint256 winningOption) public returns (bool success)
 ```
 
-_execution of proposals, can only be called by the voting machine in which the vote is held._
+_Execution of proposals, can only be called by the voting machine in which the vote is held._
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | the ID of the voting in the voting machine |
+| proposalId | bytes32 | The ID of the proposal in the voting machine |
 | winningOption | uint256 | The winning option in the voting machine |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | bool | bool success |
+| success | bool | Execution success |
 
 ### getSchemeType
 

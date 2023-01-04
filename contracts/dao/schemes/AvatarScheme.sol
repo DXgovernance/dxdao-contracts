@@ -36,13 +36,13 @@ contract AvatarScheme is Scheme {
 
     /**
      * @dev Propose calls to be executed, the calls have to be allowed by the permission registry
-     * @param to - The addresses to call
-     * @param callData - The abi encode data for the calls
-     * @param value value(ETH) to transfer with the calls
+     * @param to The addresses to call
+     * @param callData The abi encode data for the calls
+     * @param value value (ETH) to transfer with the calls
      * @param totalOptions The amount of options to be voted on
-     * @param title title of proposal
-     * @param descriptionHash proposal description hash
-     * @return proposalId id which represents the proposal
+     * @param title Title of proposal
+     * @param descriptionHash Proposal description hash
+     * @return proposalId ID which represents the proposal
      */
     function proposeCalls(
         address[] calldata to,
@@ -60,17 +60,15 @@ contract AvatarScheme is Scheme {
     }
 
     /**
-     * @dev execution of proposals, can only be called by the voting machine in which the vote is held.
-     * @param proposalId the ID of the voting in the voting machine
+     * @dev Execution of proposals, can only be called by the voting machine in which the vote is held.
+     * @param proposalId The ID of the proposal in the voting machine
      * @param winningOption The winning option in the voting machine
-     * @return bool success
+     * @return success Execution success
      */
-    function executeProposal(bytes32 proposalId, uint256 winningOption)
-        public
-        override
-        onlyVotingMachine
-        returns (bool)
-    {
+    function executeProposal(
+        bytes32 proposalId,
+        uint256 winningOption
+    ) public override onlyVotingMachine returns (bool success) {
         // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
         if (executingProposal) {
             revert AvatarScheme__ProposalExecutionAlreadyRunning();
