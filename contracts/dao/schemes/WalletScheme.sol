@@ -55,10 +55,12 @@ contract WalletScheme is Scheme {
      * @param winningOption The winning option in the voting machine
      * @return success Execution success
      */
-    function executeProposal(
-        bytes32 proposalId,
-        uint256 winningOption
-    ) public override onlyVotingMachine returns (bool success) {
+    function executeProposal(bytes32 proposalId, uint256 winningOption)
+        public
+        override
+        onlyVotingMachine
+        returns (bool success)
+    {
         if (controller.getSchemeCanMakeAvatarCalls(address(this))) {
             revert WalletScheme__CannotMakeAvatarCalls();
         }

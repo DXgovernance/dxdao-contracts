@@ -599,7 +599,7 @@ _Check if a proposal should be shifted to boosted phase._
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | the ID of the proposal |
+| proposalId | bytes32 | The ID of the proposal |
 
 #### Return Values
 
@@ -663,7 +663,7 @@ _Calculate the amount needed to boost a proposal_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | the ID of the proposal |
+| proposalId | bytes32 | The ID of the proposal |
 
 #### Return Values
 
@@ -683,7 +683,7 @@ _Staking function_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | id of the proposal |
+| proposalId | bytes32 | Id of the proposal |
 | option | uint256 | NO(1) or YES(2). |
 | amount | uint256 | The betting amount |
 
@@ -762,7 +762,7 @@ _Voting function from old voting machine changing only the logic to refund vote 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | id of the proposal |
+| proposalId | bytes32 | Id of the proposal |
 | option | uint256 | NO(1) or YES(2). |
 | amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
 
@@ -804,7 +804,7 @@ _Share the vote of a proposal for a voting machine on a event log_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | id of the proposal |
+| proposalId | bytes32 | Id of the proposal |
 | voter | address | Address of voter |
 | option | uint256 | The vote option, NO(1) or YES(2). |
 | amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
@@ -859,9 +859,9 @@ _Register a new proposal with the given parameters. Every proposal has a unique 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | totalOptions | uint256 | The amount of options to be voted on |
-| paramsHash | bytes32 | parameters hash |
-| proposer | address | address |
-| avatar | address | address |
+| paramsHash | bytes32 | Parameters hash |
+| proposer | address | Proposer address |
+| avatar | address | Avatar address |
 
 #### Return Values
 
@@ -881,16 +881,16 @@ _Vote for a proposal, if the voter already voted, cancel the last vote and set a
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | id of the proposal |
-| voter | address | used in case the vote is cast for someone else |
-| option | uint256 | a value between 0 to and the proposal's number of options. |
-| repAmount | uint256 | how many reputation the voter would like to stake for this vote. if  _rep==0 the voter full reputation will be use. |
+| proposalId | bytes32 | Id of the proposal |
+| voter | address | Used in case the vote is cast for someone else |
+| option | uint256 | Value between 0 and the proposal's number of options. |
+| repAmount | uint256 | How many reputation the voter would like to stake for this vote. if  _rep==0 the voter full reputation will be use. |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalExecuted | bool | true if the proposal was executed, false otherwise. Throws if proposal is not open or if it has been executed NB: executes the proposal if a decision has been reached |
+| proposalExecuted | bool | True if the proposal was executed, false otherwise. Throws if proposal is not open or if it has been executed NB: executes the proposal if a decision has been reached |
 
 ### executeSignaledVote
 
@@ -904,7 +904,7 @@ _Execute a signaled vote on a votable proposal_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | id of the proposal to vote |
+| proposalId | bytes32 | Id of the proposal to vote |
 | voter | address | The signer of the vote |
 
 ### _execute
@@ -959,7 +959,7 @@ _staking function_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | id of the proposal |
+| proposalId | bytes32 | Id of the proposal |
 | option | uint256 | NO(1) or YES(2). |
 | amount | uint256 | The betting amount |
 | staker | address | Address of the staker |
@@ -982,8 +982,8 @@ _Register a new proposal with the given parameters. Every proposal has a unique 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| optionsAmount | uint256 | the total amount of options for the proposal |
-| paramsHash | bytes32 | parameters hash |
+| optionsAmount | uint256 | The total amount of options for the proposal |
+| paramsHash | bytes32 | Parameters hash |
 | proposer | address | Proposer address |
 | avatar | address | Avatar address |
 
@@ -1039,7 +1039,7 @@ _Hash the vote data that is used for signatures_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | id of the proposal |
+| proposalId | bytes32 | Id of the proposal |
 | signer | address | The signer of the vote |
 | option | uint256 | The vote option, NO(1) or YES(2). |
 | amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
@@ -1064,7 +1064,7 @@ _Returns the vote and the amount of reputation of the user committed to this pro
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalId | bytes32 | the ID of the proposal |
+| proposalId | bytes32 | The ID of the proposal |
 | voter | address | The address of the voter |
 
 #### Return Values
@@ -1108,8 +1108,8 @@ _Returns the allowed range of options for a voting machine._
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| min | uint256 | minimum number of options |
-| max | uint256 | maximum number of options |
+| min | uint256 | Minimum number of options |
+| max | uint256 | Maximum number of options |
 
 ### getNumberOfOptions
 
@@ -1188,15 +1188,15 @@ _Returns array of proposal ids based on index args. Both indexes are inclusive, 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| start | uint256 | index to start batching (included). |
-| end | uint256 | last index of batch (included). Zero will default to last element from the list |
-| proposalsSet | struct EnumerableSetUpgradeable.Bytes32Set | EnumerableSetUpgradeable set of proposal ids |
+| start | uint256 | The index to start batching. |
+| end | uint256 | The last index of batch (included). Zero will default to last element from the list |
+| proposalsSet | struct EnumerableSetUpgradeable.Bytes32Set | Set of proposal ids |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| proposalsArray | bytes32[] | with proposals list. |
+| proposalsArray | bytes32[] | List of proposal IDs from `proposalsSet` for given range |
 
 ### getActiveProposals
 
@@ -1210,7 +1210,7 @@ _Returns array of active proposal ids_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| start | uint256 | The index to start batching (included). |
+| start | uint256 | The index to start batching |
 | end | uint256 | The last index of batch (included). Zero will return all |
 | avatar | address | The avatar address to get active proposals from |
 
@@ -1232,7 +1232,7 @@ _Returns array of inactive proposal ids_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| start | uint256 | The index to start batching (included). |
+| start | uint256 | The index to start batching |
 | end | uint256 | The last index of batch (included). Zero will return all |
 | avatar | address | The avatar address to get active proposals from |
 

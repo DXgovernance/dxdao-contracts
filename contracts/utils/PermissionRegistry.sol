@@ -237,8 +237,7 @@ contract PermissionRegistry is OwnableUpgradeable {
             uint256 currentBalance = IERC20(erc20Limits[from][i].token).balanceOf(from);
             if (currentBalance < erc20Limits[from][i].initialValueOnBlock) {
                 require(
-                    erc20Limits[from][i].initialValueOnBlock.sub(currentBalance) <=
-                        erc20Limits[from][i].valueAllowed,
+                    erc20Limits[from][i].initialValueOnBlock.sub(currentBalance) <= erc20Limits[from][i].valueAllowed,
                     "PermissionRegistry: Value limit reached"
                 );
             }

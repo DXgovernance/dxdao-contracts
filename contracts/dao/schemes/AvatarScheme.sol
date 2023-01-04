@@ -65,10 +65,12 @@ contract AvatarScheme is Scheme {
      * @param winningOption The winning option in the voting machine
      * @return success Execution success
      */
-    function executeProposal(
-        bytes32 proposalId,
-        uint256 winningOption
-    ) public override onlyVotingMachine returns (bool success) {
+    function executeProposal(bytes32 proposalId, uint256 winningOption)
+        public
+        override
+        onlyVotingMachine
+        returns (bool success)
+    {
         // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
         if (executingProposal) {
             revert AvatarScheme__ProposalExecutionAlreadyRunning();
