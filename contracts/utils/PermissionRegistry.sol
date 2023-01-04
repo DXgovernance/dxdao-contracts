@@ -161,7 +161,7 @@ contract PermissionRegistry is OwnableUpgradeable {
      */
     function executeRemoveERC20Limit(address from, uint256 index) public {
         require(
-            block.timestamp < erc20Limits[from][index].removeTime,
+            block.timestamp > erc20Limits[from][index].removeTime,
             "PermissionRegistry: Cant execute permission removal"
         );
 
