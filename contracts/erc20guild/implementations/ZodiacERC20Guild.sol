@@ -7,19 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
 import "../ERC20GuildUpgradeable.sol";
-
-interface IPermissionRegistry {
-    function setERC20Balances() external;
-
-    function checkERC20Limits(address) external;
-
-    function setETHPermissionUsed(
-        address,
-        address,
-        bytes4,
-        uint256
-    ) external;
-}
+import "./../../utils/IPermissionRegistry.sol";
 
 /*
   @title ZodiacERC20Guild
@@ -28,13 +16,74 @@ interface IPermissionRegistry {
     never executed from this contract itself. If the owners of the Gnosis Safe are removed and
     this module is enabled, then the Safe becomes the ERC20 Guild's Safe.
 */
-contract ZodiacERC20Guild is ERC20GuildUpgradeable {
+contract ZodiacERC20Guild is BaseERC20Guild {
+    struct InitializationParams {
+        address token;
+        uint256 proposalTime;
+        uint256 timeForExecution;
+        uint256 votingPowerPercentageForProposalExecution;
+        uint256 votingPowerPercentageForProposalCreation;
+        string name;
+        uint256 voteGas;
+        uint256 maxGasPrice;
+        uint256 maxActiveProposals;
+        uint256 lockTime;
+        uint256 minimumMembersForProposalCreation;
+        uint256 minimumTokensLockedForProposalCreation;
+        address permissionRegistry;
+        address avatar;
+        address multisend;
+    }
+
     bytes private constant SET_ERC20_BALANCES_DATA =
         abi.encodeWithSelector(IPermissionRegistry.setERC20Balances.selector);
     /// @dev Address that this module will pass transactions to.
     address public avatar;
     /// @dev Address of the multisend contract that the avatar contract should use to bundle transactions.
     address public multisend;
+    /// @dev Indicates that the contract has been initialized.
+    bool public initialized;
+
+    /// @dev Emitted each time the avatar is set.
+    event AvatarSet(address indexed previousAvatar, address indexed newAvatar);
+    /// @dev Emitted each time the avatar is set.
+    event MultisendSet(address indexed previousMultisend, address indexed newMultisend);
+
+    constructor(bytes memory initializeParams) {
+        setUp(initializeParams);
+    }
+
+    /// @dev Initializer
+    /// @param initializeParams The ERC20 token that will be used as source of voting power
+    function setUp(bytes memory initializeParams) public {
+        require(!initialized, "Already initialized");
+        InitializationParams memory initParams = abi.decode(initializeParams, (InitializationParams));
+
+        require(
+            initParams.lockTime >= initParams.proposalTime,
+            "ERC20Guild: lockTime has to be higher or equal to proposalTime"
+        );
+        name = initParams.name;
+        token = IERC20Upgradeable(initParams.token);
+        tokenVault = new TokenVault(address(token), address(this));
+        permissionRegistry = PermissionRegistry(initParams.permissionRegistry);
+
+        proposalTime = initParams.proposalTime;
+        timeForExecution = initParams.timeForExecution;
+        votingPowerPercentageForProposalExecution = initParams.votingPowerPercentageForProposalExecution;
+        votingPowerPercentageForProposalCreation = initParams.votingPowerPercentageForProposalCreation;
+        voteGas = initParams.voteGas;
+        maxGasPrice = initParams.maxGasPrice;
+        maxActiveProposals = initParams.maxActiveProposals;
+        lockTime = initParams.lockTime;
+        minimumMembersForProposalCreation = initParams.minimumMembersForProposalCreation;
+        minimumTokensLockedForProposalCreation = initParams.minimumTokensLockedForProposalCreation;
+
+        avatar = initParams.avatar;
+        multisend = initParams.multisend;
+
+        initialized = true;
+    }
 
     /// @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initialized
     /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting
@@ -60,10 +109,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         uint256 _minimumMembersForProposalCreation,
         uint256 _minimumTokensLockedForProposalCreation
     ) external override {
-        require(
-            msg.sender == address(this) || (msg.sender == avatar && isExecutingProposal),
-            "ERC20Guild: Only callable by ERC20guild itself or when initialized"
-        );
+        require(msg.sender == avatar && isExecutingProposal, "ERC20Guild: Only callable from proposal");
         require(_proposalTime > 0, "ERC20Guild: proposal time has to be more than 0");
         require(_lockTime >= _proposalTime, "ERC20Guild: lockTime has to be higher or equal to proposalTime");
         require(
@@ -83,16 +129,22 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         minimumTokensLockedForProposalCreation = _minimumTokensLockedForProposalCreation;
     }
 
-    /// @dev Set the ERC20Guild module configuration, can be called only executing a proposal or when it is initialized.
+    /// @dev Set the ERC20Guild module configuration, can be called only executing a proposal.
     /// @param _avatar Address that this module will pass transactions to.
-    /// @param _multisend Address of the multisend contract that the avatar contract should use to bundle transactions.
-    function setAvatar(address _avatar, address _multisend) external virtual {
-        require(
-            msg.sender == address(this) || (msg.sender == avatar && isExecutingProposal),
-            "ERC20Guild: Only callable by ERC20guild itself or when initialized"
-        );
+    function setAvatar(address _avatar) external {
+        require(msg.sender == avatar && isExecutingProposal, "ERC20Guild: Only callable from proposal");
+        address previousAvatar = avatar;
         avatar = _avatar;
+        emit AvatarSet(previousAvatar, _avatar);
+    }
+
+    /// @dev Set the ERC20Guild module configuration, can be called only executing a proposal.
+    /// @param _multisend Address of the multisend contract that the avatar contract should use to bundle transactions.
+    function setMultisend(address _multisend) external {
+        require(msg.sender == avatar && isExecutingProposal, "ERC20Guild: Only callable from proposal");
+        address previousMultisend = multisend;
         multisend = _multisend;
+        emit MultisendSet(previousMultisend, _multisend);
     }
 
     /// @dev Executes a proposal that is not votable anymore and can be finished
@@ -244,5 +296,11 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
                 uint256(setETHPermissionUsedData.length),
                 setETHPermissionUsedData /// data as bytes.
             );
+    }
+
+    /// @dev For compatibility with 
+    /// https://github.com/gnosis/zodiac/blob/40c41372744fb1dc2f90311f1b67796ac25e57ad/contracts/core/Module.sol
+    function target() external view returns (address) {
+        return avatar;
     }
 }
