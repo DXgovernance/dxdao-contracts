@@ -97,8 +97,6 @@ const hardharNetworks = process.env.CI
         url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
         accounts: { mnemonic: MNEMONIC },
         chainId: 1,
-        gasLimit: 9000000,
-        gasPrice: 100000000000, // 100 gwei
         timeout: 60000,
       },
       goerli: {
@@ -109,7 +107,7 @@ const hardharNetworks = process.env.CI
         timeout: 600000, // 10 minutes
       },
       xdai: {
-        url: "https://rpc.xdaichain.com/",
+        url: "https://poa-xdai-archival.gateway.pokt.network/v1/lb/61d897d4a065f5003a113d9a",
         accounts: { mnemonic: MNEMONIC },
         chainId: 100,
         gasLimit: 17000000,

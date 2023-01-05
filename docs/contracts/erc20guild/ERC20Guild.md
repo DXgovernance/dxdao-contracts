@@ -2,6 +2,12 @@
 
 ## ERC20Guild
 
+### GuildInitialized
+
+```solidity
+event GuildInitialized()
+```
+
 ### constructor
 
 ```solidity
