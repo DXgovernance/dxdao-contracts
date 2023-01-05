@@ -298,7 +298,7 @@ contract ZodiacERC20Guild is BaseERC20Guild {
             );
     }
 
-    /// @dev For compatibility with 
+    /// @dev For compatibility with
     /// https://github.com/gnosis/zodiac/blob/40c41372744fb1dc2f90311f1b67796ac25e57ad/contracts/core/Module.sol
     function target() external view returns (address) {
         return avatar;
