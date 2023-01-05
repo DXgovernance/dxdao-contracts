@@ -40,22 +40,39 @@ contract PermissionRegistryModule {
     bool public initialized;
     bool public isExecutingProposal;
 
+    /// @dev Emitted each time the avatar is set.
+    event AvatarSet(address indexed previousAvatar, address indexed newAvatar);
+    /// @dev Emitted each time the avatar is set.
+    event MultisendSet(address indexed previousMultisend, address indexed newMultisend);
+
     /// @dev Initialize the Module configuration.
     /// @param _avatar Address that this module will pass transactions to.
     /// @param _multisend Address of the multisend contract that the avatar contract should use to bundle transactions.
     /// @param _admin Address that will have permission to execute transactions and update settings.
     /// @param _permissionRegistry Address of the permission registry that will regulate this module.
-    function setConfig(
+    constructor(
         address _avatar,
         address _multisend,
         address _admin,
-        IPermissionRegistry _permissionRegistry
-    ) external {
+        address _permissionRegistry
+    ) {
+        bytes memory initializeParams = abi.encode(_avatar, _multisend, _admin, _permissionRegistry);
+        setUp(initializeParams);
+    }
+
+    /// @dev Initialize the Module configuration.
+    /// @param initializeParams The ERC20 token that will be used as source of voting power
+    function setUp(bytes memory initializeParams) public {
         require(!initialized, "PRModule: Only callable when initialized");
+        (address _avatar, address _multisend, address _admin, address _permissionRegistry) = abi.decode(
+            initializeParams,
+            (address, address, address, address)
+        );
+
         avatar = _avatar;
         multisend = _multisend;
         admin = _admin;
-        permissionRegistry = _permissionRegistry;
+        permissionRegistry = IPermissionRegistry(_permissionRegistry);
         initialized = true;
     }
 
@@ -63,14 +80,18 @@ contract PermissionRegistryModule {
     /// @param _avatar Address that this module will pass transactions to.
     function setAvatar(address _avatar) external {
         require(msg.sender == admin, "PRModule: Only callable by admin");
+        address previousAvatar = avatar;
         avatar = _avatar;
+        emit AvatarSet(previousAvatar, _avatar);
     }
 
     /// @dev Set the Module multisend, can only be called by the admin.
     /// @param _multisend Address of the multisend contract that the avatar contract should use to bundle transactions.
     function setMultisend(address _multisend) external {
         require(msg.sender == admin, "PRModule: Only callable by admin");
+        address previousMultisend = multisend;
         multisend = _multisend;
+        emit MultisendSet(previousMultisend, _multisend);
     }
 
     /// @dev Set the Module admin, can only be called by the admin.
@@ -193,5 +214,11 @@ contract PermissionRegistryModule {
                 uint256(setETHPermissionUsedData.length),
                 setETHPermissionUsedData /// data as bytes.
             );
+    }
+
+    /// @dev For compatibility with
+    /// https://github.com/gnosis/zodiac/blob/40c41372744fb1dc2f90311f1b67796ac25e57ad/contracts/core/Module.sol
+    function target() external view returns (address) {
+        return avatar;
     }
 }
