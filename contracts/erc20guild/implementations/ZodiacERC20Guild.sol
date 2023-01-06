@@ -147,28 +147,28 @@ contract ZodiacERC20Guild is BaseERC20Guild {
     /// @dev Executes a proposal that is not votable anymore and can be finished
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public override {
+        Proposal storage proposal = proposals[proposalId];
         require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
-        require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
-        require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
+        require(proposal.state == ProposalState.Active, "ERC20Guild: Proposal already executed");
+        require(proposal.endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
 
         uint256 winningOption = getWinningOption(proposalId);
 
         if (winningOption == 0) {
-            proposals[proposalId].state = ProposalState.Rejected;
+            proposal.state = ProposalState.Rejected;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
-        } else if (proposals[proposalId].endTime + timeForExecution < block.timestamp) {
-            proposals[proposalId].state = ProposalState.Failed;
+        } else if (proposal.endTime + timeForExecution < block.timestamp) {
+            proposal.state = ProposalState.Failed;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
         } else {
-            proposals[proposalId].state = ProposalState.Executed;
+            proposal.state = ProposalState.Executed;
 
-            bytes memory data = getCheckERC20LimitsCalldata();
+            bytes memory data = getSetERC20BalancesCalldata();
             uint256 totalValue = 0;
             (uint256 i, uint256 endCall) = getProposalCallsRange(proposalId, winningOption);
 
             for (i; i < endCall; i++) {
-                if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
-                    Proposal storage proposal = proposals[proposalId];
+                if (proposal.to[i] != address(0) && proposal.data[i].length > 0) {
                     data = abi.encodePacked(
                         data,
                         getSetETHPermissionUsedCalldata(proposal, i),
@@ -180,7 +180,7 @@ contract ZodiacERC20Guild is BaseERC20Guild {
                             proposal.data[i] /// data as bytes.
                         )
                     );
-                    totalValue += proposals[proposalId].value[i];
+                    totalValue += proposal.value[i];
                 }
             }
 
@@ -281,7 +281,7 @@ contract ZodiacERC20Guild is BaseERC20Guild {
             IPermissionRegistry.setETHPermissionUsed.selector,
             avatar,
             to,
-            bytes4(callDataFuncSignature),
+            callDataFuncSignature,
             value
         );
 
