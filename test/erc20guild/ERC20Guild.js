@@ -1339,9 +1339,7 @@ contract("ERC20Guild", function (accounts) {
                 .setETHPermission(
                   erc20Guild.address,
                   testToken.address,
-                  web3.eth.abi.encodeFunctionSignature(
-                    "mint(address,uint256)"
-                  ),
+                  web3.eth.abi.encodeFunctionSignature("mint(address,uint256)"),
                   0,
                   true
                 )
