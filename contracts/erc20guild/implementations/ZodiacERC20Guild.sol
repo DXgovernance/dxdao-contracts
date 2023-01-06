@@ -3,10 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@gnosis.pm/zodiac/contracts/interfaces/IAvatar.sol";
 import "@gnosis.pm/safe-contracts/contracts/common/Enum.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
-import "../ERC20GuildUpgradeable.sol";
+import "../BaseERC20Guild.sol";
 import "./../../utils/IPermissionRegistry.sol";
 
 /*
