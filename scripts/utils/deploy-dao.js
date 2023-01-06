@@ -15,7 +15,7 @@ const deployDao = async function (daoConfig, networkContracts) {
   const DAOController = await hre.artifacts.require("DAOController");
   const WalletScheme = await hre.artifacts.require("WalletScheme");
   const PermissionRegistry = await hre.artifacts.require("PermissionRegistry");
-  const DXDVotingMachine = await hre.artifacts.require("DXDVotingMachine");
+  const VotingMachine = await hre.artifacts.require("VotingMachine");
   const Multicall = await hre.artifacts.require("Multicall");
   const ERC721Factory = await hre.artifacts.require("ERC721Factory");
   const ERC20VestingFactory = await hre.artifacts.require(
@@ -85,17 +85,17 @@ const deployDao = async function (daoConfig, networkContracts) {
   networkContracts.addresses["Controller"] = controller.address;
   await waitBlocks(1);
 
-  // Deploy DXDVotingMachine
+  // Deploy VotingMachine
   let votingMachine;
-  console.log("Deploying DXDVotingMachine...");
-  votingMachine = await DXDVotingMachine.new(networkContracts.addresses["DXD"]);
-  console.log("DXDVotingMachine deployed to:", votingMachine.address);
+  console.log("Deploying VotingMachine...");
+  votingMachine = await VotingMachine.new(networkContracts.addresses["DXD"]);
+  console.log("VotingMachine deployed to:", votingMachine.address);
   networkContracts.votingMachines[votingMachine.address] = {
-    type: "DXDVotingMachine",
+    type: "VotingMachine",
     token: networkContracts.addresses["DXD"],
   };
   await waitBlocks(1);
-  networkContracts.addresses["DXDVotingMachine"] = votingMachine.address;
+  networkContracts.addresses["VotingMachine"] = votingMachine.address;
 
   // Deploy PermissionRegistry to be used by WalletSchemes
   let permissionRegistry;

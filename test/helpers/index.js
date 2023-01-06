@@ -1,3 +1,5 @@
+import { web3 } from "@openzeppelin/test-helpers/src/setup";
+
 const constants = require("./constants");
 
 const { LogDecoder } = require("@maticnetwork/eth-decoder");
@@ -5,7 +7,7 @@ const { LogDecoder } = require("@maticnetwork/eth-decoder");
 const DAOAvatar = artifacts.require("./DAOAvatar.sol");
 const DAOController = artifacts.require("./DAOController.sol");
 const DAOReputation = artifacts.require("./DAOReputation.sol");
-const DXDVotingMachine = artifacts.require("./DXDVotingMachine.sol");
+const VotingMachine = artifacts.require("./VotingMachine.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
@@ -17,7 +19,7 @@ export const logDecoder = new LogDecoder([
   DAOAvatar.abi,
   DAOController.abi,
   DAOReputation.abi,
-  DXDVotingMachine.abi,
+  VotingMachine.abi,
   WalletScheme.abi,
   PermissionRegistry.abi,
   ERC20VestingFactory.abi,
@@ -72,7 +74,7 @@ export const deployDao = async function (deployConfig) {
   }
   await reputation.transferOwnership(controller.address);
 
-  const votingMachine = await DXDVotingMachine.new(
+  const votingMachine = await VotingMachine.new(
     deployConfig.votingMachineToken
   );
 
@@ -116,11 +118,10 @@ export const defaultParameters = {
   queuedVoteRequiredPercentage: 5000,
   queuedVotePeriodLimit: 60,
   boostedVotePeriodLimit: 60,
-  preBoostedVotePeriodLimit: 10,
+  preBoostedVotePeriodLimit: 5,
   thresholdConst: 2000,
   quietEndingPeriod: 10,
-  proposingRepReward: 0,
-  minimumDaoBounty: 100,
+  daoBounty: web3.utils.toWei("0.1"),
   daoBountyConst: 10,
   boostedVoteRequiredPercentage: 100,
 };
@@ -132,9 +133,7 @@ export const defaultParametersArray = [
   defaultParameters.preBoostedVotePeriodLimit,
   defaultParameters.thresholdConst,
   defaultParameters.quietEndingPeriod,
-  defaultParameters.proposingRepReward,
-  defaultParameters.minimumDaoBounty,
-  defaultParameters.daoBountyConst,
+  defaultParameters.daoBounty,
   defaultParameters.boostedVoteRequiredPercentage,
 ];
 

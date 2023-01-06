@@ -182,9 +182,8 @@ contract PermissionRegistry is OwnableUpgradeable {
         bytes4 functionSignature,
         uint256 valueTransferred
     ) public {
-        if (msg.sender != owner()) {
-            require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
-        }
+        require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
+
         if (valueTransferred > 0) {
             _addValueTransferred(ethPermissions[from][address(0)][bytes4(0)], valueTransferred);
         }
@@ -232,14 +231,17 @@ contract PermissionRegistry is OwnableUpgradeable {
      * @dev Checks the value transferred in block for all registered ERC20 limits.
      * @param from The address from which ERC20 tokens limits will be checked
      */
-    function checkERC20Limits(address from) public returns (bool) {
+    function checkERC20Limits(address from) public view returns (bool) {
         require(erc20LimitsOnBlock[from] == block.number, "PermissionRegistry: ERC20 initialValues not set");
         for (uint256 i = 0; i < erc20Limits[from].length; i++) {
-            require(
-                erc20Limits[from][i].initialValueOnBlock.sub(IERC20(erc20Limits[from][i].token).balanceOf(from)) <=
-                    erc20Limits[from][i].valueAllowed,
-                "PermissionRegistry: Value limit reached"
-            );
+            uint256 currentBalance = IERC20(erc20Limits[from][i].token).balanceOf(from);
+            if (currentBalance < erc20Limits[from][i].initialValueOnBlock) {
+                require(
+                    erc20Limits[from][i].initialValueOnBlock.sub(currentBalance) <=
+                        erc20Limits[from][i].valueAllowed,
+                    "PermissionRegistry: Value limit reached"
+                );
+            }
         }
         return true;
     }

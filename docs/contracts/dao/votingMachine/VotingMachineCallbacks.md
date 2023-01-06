@@ -1,11 +1,11 @@
 # Solidity API
 
-## DXDVotingMachineCallbacks
+## VotingMachineCallbacks
 
 ### votingMachine
 
 ```solidity
-contract IDXDVotingMachine votingMachine
+contract IVotingMachine votingMachine
 ```
 
 ### controller

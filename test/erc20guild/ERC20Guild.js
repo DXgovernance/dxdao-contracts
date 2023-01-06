@@ -1312,6 +1312,7 @@ contract("ERC20Guild", function (accounts) {
               permissionRegistry.address,
               permissionRegistry.address,
               permissionRegistry.address,
+              permissionRegistry.address,
             ],
             data: [
               await new web3.eth.Contract(PermissionRegistry.abi).methods
@@ -1335,10 +1336,21 @@ contract("ERC20Guild", function (accounts) {
                 )
                 .encodeABI(),
               await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .setETHPermission(
+                  erc20Guild.address,
+                  testToken.address,
+                  web3.eth.abi.encodeFunctionSignature(
+                    "mint(address,uint256)"
+                  ),
+                  0,
+                  true
+                )
+                .encodeABI(),
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
                 .addERC20Limit(erc20Guild.address, testToken.address, 200, 0)
                 .encodeABI(),
             ],
-            value: [0, 0, 0],
+            value: [0, 0, 0, 0],
           },
         ],
         account: accounts[1],
@@ -1501,6 +1513,49 @@ contract("ERC20Guild", function (accounts) {
                 .encodeABI(),
             ],
             value: [0, 0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      const receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+    });
+
+    it("execute ERC20 transfers to the guild contract without limits", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [testToken.address],
+            data: [
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .mint(erc20Guild.address, 100)
+                .encodeABI(),
+            ],
+            value: [0],
           },
         ],
         account: accounts[3],

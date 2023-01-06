@@ -1,6 +1,6 @@
+import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert } from "chai";
 import * as helpers from "../../helpers";
-const { fixSignature } = require("../../helpers/sign");
 const {
   time,
   expectRevert,
@@ -76,10 +76,18 @@ contract("WalletScheme", function (accounts) {
     );
 
     await permissionRegistry.setETHPermission(
-      org.avatar.address,
+      masterWalletScheme.address,
       constants.ZERO_ADDRESS,
       constants.NULL_SIGNATURE,
       constants.MAX_UINT_256,
+      true
+    );
+
+    await permissionRegistry.setETHPermission(
+      quickWalletScheme.address,
+      constants.ZERO_ADDRESS,
+      constants.NULL_SIGNATURE,
+      constants.TEST_VALUE,
       true
     );
 
@@ -97,6 +105,22 @@ contract("WalletScheme", function (accounts) {
       registrarScheme.address,
       org.controller.address,
       web3.eth.abi.encodeFunctionSignature("unregisterScheme(address)"),
+      0,
+      true
+    );
+
+    await permissionRegistry.setETHPermission(
+      masterWalletScheme.address,
+      org.controller.address,
+      web3.eth.abi.encodeFunctionSignature("mintReputation(uint256,address)"),
+      0,
+      true
+    );
+
+    await permissionRegistry.setETHPermission(
+      masterWalletScheme.address,
+      org.controller.address,
+      web3.eth.abi.encodeFunctionSignature("burnReputation(uint256,address)"),
       0,
       true
     );
@@ -191,15 +215,15 @@ contract("WalletScheme", function (accounts) {
       defaultParamsHash,
       false,
       false,
-      true
+      false
     );
   });
 
   it("Registrar Scheme", async function () {
     await web3.eth.sendTransaction({
-      from: accounts[0],
       to: masterWalletScheme.address,
-      value: 1000,
+      value: web3.utils.toWei("1"),
+      from: accounts[0],
     });
 
     await permissionRegistry.transferOwnership(org.avatar.address);
@@ -215,10 +239,10 @@ contract("WalletScheme", function (accounts) {
     );
 
     await org.votingMachine.setParameters([
-      6000, 86400, 3600, 1800, 1050, 60, 10, 15, 10, 100,
+      6000, 86400, 3600, 1800, 1050, 60, 10, 100,
     ]);
     const newParamsHash = await org.votingMachine.getParametersHash([
-      6000, 86400, 3600, 1800, 1050, 60, 10, 15, 10, 100,
+      6000, 86400, 3600, 1800, 1050, 60, 10, 100,
     ]);
 
     const registerSchemeData = web3.eth.abi.encodeFunctionCall(
@@ -249,7 +273,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "_proposalId"
+      "proposalId"
     );
     await org.votingMachine.vote(proposalId1, constants.YES_OPTION, 0, {
       from: accounts[2],
@@ -389,13 +413,13 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     tx = await org.votingMachine.vote(proposalId, constants.NO_OPTION, 0, {
       from: accounts[2],
     });
     const stateChangeEvent = helpers.getEventFromTx(tx, "ProposalStateChange");
 
-    assert.equal(stateChangeEvent.args._state, 2);
+    assert.equal(stateChangeEvent.args.state, 2);
 
     const organizationProposal = await masterWalletScheme.getProposal(
       proposalId
@@ -422,7 +446,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
@@ -470,7 +494,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     // Check inside the raw logs that the ProposalExecuteResult event logs the signature of the error to be throw
     await assert(
@@ -486,7 +510,7 @@ contract("WalletScheme", function (accounts) {
     );
   });
 
-  it.skip("MasterWalletScheme - proposal with data - positive decision - proposal executed", async function () {
+  it("MasterWalletScheme - try execute proposal within other proposal and fail", async function () {
     const callData = helpers.testCallFrom(masterWalletScheme.address);
 
     const proposalId1 = helpers.getValueFromLogs(
@@ -498,27 +522,26 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "_proposalId"
+      "proposalId"
     );
 
     // Use signed votes to try to execute a proposal inside a proposal execution
-    const voteHash = await org.votingMachine.hashVote(
-      org.votingMachine.address,
+    const signerNonce = await org.votingMachine.signerNonce(accounts[3]);
+    const voteHash = await org.votingMachine.hashAction(
       proposalId1,
       accounts[2],
-      1,
-      0
+      constants.YES_OPTION,
+      0,
+      signerNonce,
+      1
     );
-    const voteSignature = fixSignature(
-      await web3.eth.sign(voteHash, accounts[2])
-    );
+    const voteSignature = await web3.eth.sign(voteHash, accounts[2]);
 
     const executeSignedVoteData = await org.votingMachine.contract.methods
       .executeSignedVote(
-        org.votingMachine.address,
         proposalId1,
         accounts[2],
-        1,
+        constants.YES_OPTION,
         0,
         voteSignature
       )
@@ -537,20 +560,6 @@ contract("WalletScheme", function (accounts) {
       .executeCall(masterWalletScheme.address, executeSignedVoteData, 0)
       .encodeABI();
 
-    // It wont allow submitting a proposal to call the wallet scheme itself, the scheme itself is only callable to call
-    // setMaxSecondsForExecution function.
-    await expectRevert(
-      masterWalletScheme.proposeCalls(
-        [masterWalletScheme.address],
-        [executeSignedVoteData],
-        [0],
-        2,
-        constants.TEST_TITLE,
-        constants.SOME_HASH
-      ),
-      "invalid proposal caller"
-    );
-
     // If we execute the proposal and we check that it succeeded it will fail because it does not allow the re execution
     // of a proposal when another is on the way, the revert will happen in the voting action when the proposal is
     // executed
@@ -563,24 +572,37 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "_proposalId"
+      "proposalId"
     );
 
-    await expectRevert(
-      org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
-        from: accounts[2],
-      }),
-      "call execution failed"
-    );
+    await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
+      from: accounts[2],
+    });
 
     assert.equal(
       (await masterWalletScheme.getProposal(proposalId1)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
+    assert.equal(
+      (await org.votingMachine.proposals(proposalId1)).state,
+      constants.VOTING_MACHINE_PROPOSAL_STATES.Queued
+    );
+    assert.equal(
+      (await org.votingMachine.proposals(proposalId1)).executionState,
+      constants.VOTING_MACHINE_EXECUTION_STATES.None
+    );
 
     assert.equal(
       (await masterWalletScheme.getProposal(proposalId2)).state,
-      constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
+      constants.WALLET_SCHEME_PROPOSAL_STATES.passed
+    );
+    assert.equal(
+      (await org.votingMachine.proposals(proposalId2)).state,
+      constants.VOTING_MACHINE_PROPOSAL_STATES.ExecutedInQueue
+    );
+    assert.equal(
+      (await org.votingMachine.proposals(proposalId2)).executionState,
+      constants.VOTING_MACHINE_EXECUTION_STATES.Failed
     );
 
     // If we execute a proposal but we dont check the returned value it will still wont execute.
@@ -591,10 +613,11 @@ contract("WalletScheme", function (accounts) {
         [actionMock.address],
         [actionMockExecuteCallData],
         [0],
+        2,
         constants.TEST_TITLE,
         constants.SOME_HASH
       ),
-      "_proposalId"
+      "proposalId"
     );
     await org.votingMachine.vote(proposalId3, constants.YES_OPTION, 0, {
       from: accounts[2],
@@ -604,10 +627,26 @@ contract("WalletScheme", function (accounts) {
       (await masterWalletScheme.getProposal(proposalId1)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.submitted
     );
+    assert.equal(
+      (await org.votingMachine.proposals(proposalId1)).state,
+      constants.VOTING_MACHINE_PROPOSAL_STATES.Queued
+    );
+    assert.equal(
+      (await org.votingMachine.proposals(proposalId1)).executionState,
+      constants.VOTING_MACHINE_EXECUTION_STATES.None
+    );
 
     assert.equal(
       (await masterWalletScheme.getProposal(proposalId3)).state,
       constants.WALLET_SCHEME_PROPOSAL_STATES.passed
+    );
+    assert.equal(
+      (await org.votingMachine.proposals(proposalId3)).state,
+      constants.VOTING_MACHINE_PROPOSAL_STATES.ExecutedInQueue
+    );
+    assert.equal(
+      (await org.votingMachine.proposals(proposalId3)).executionState,
+      constants.VOTING_MACHINE_EXECUTION_STATES.QueueBarCrossed
     );
   });
 
@@ -630,7 +669,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await expectEvent(
       await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
         from: accounts[2],
@@ -685,7 +724,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     await expectEvent(
       await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
@@ -705,32 +744,6 @@ contract("WalletScheme", function (accounts) {
     );
   });
 
-  it("Global ETH transfer value not allowed value by permission registry - zero address", async function () {
-    const callData = helpers.testCallFrom(masterWalletScheme.address);
-
-    const tx = await masterWalletScheme.proposeCalls(
-      [constants.ZERO_ADDRESS],
-      [callData],
-      [101],
-      2,
-      constants.TEST_TITLE,
-      constants.SOME_HASH
-    );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-
-    await assert(
-      (
-        await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
-          from: accounts[2],
-        })
-      ).receipt.rawLogs[2].data.includes(
-        web3.eth.abi
-          .encodeParameter("string", "PermissionRegistry: Value limit reached")
-          .substring(2)
-      )
-    );
-  });
-
   it("Global ETH transfer call not allowed value by permission registry - zero address, no value", async function () {
     const callData = helpers.testCallFrom(masterWalletScheme.address);
 
@@ -742,7 +755,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     await assert(
       (
@@ -760,9 +773,9 @@ contract("WalletScheme", function (accounts) {
   // eslint-disable-next-line max-len
   it("MasterWalletScheme - positive decision - proposal executed - not allowed value by permission registry in multiple calls", async function () {
     await web3.eth.sendTransaction({
-      from: accounts[0],
       to: masterWalletScheme.address,
       value: constants.TEST_VALUE,
+      from: accounts[0],
     });
 
     await permissionRegistry.setETHPermission(
@@ -783,7 +796,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
 
     await expectEvent(
       await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
@@ -848,7 +861,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -876,7 +889,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
+    const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
     await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -893,52 +906,22 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.value[0], 0);
   });
 
-  it.skip("MasterWalletScheme - positive decision - proposal executed with multiple calls and value", async function () {
-    var wallet = await DAOAvatar.new();
-    await wallet.initialize(masterWalletScheme.address);
-
-    await web3.eth.sendTransaction({
-      from: accounts[0],
-      to: masterWalletScheme.address,
-      value: constants.TEST_VALUE,
-    });
-
-    const payCallData = await new web3.eth.Contract(wallet.abi).methods
-      .pay(accounts[1])
+  it("MasterWalletScheme - positive decision - proposal executed with multiple calls and value", async function () {
+    const testCallData = await new web3.eth.Contract(ActionMock.abi).methods
+      .testWithNoargs()
       .encodeABI();
 
-    permissionRegistry.setETHPermission(
-      masterWalletScheme.address,
-      wallet.address,
-      constants.NULL_SIGNATURE,
-      constants.TEST_VALUE,
-      true
-    );
-
-    permissionRegistry.setETHPermission(
-      masterWalletScheme.address,
-      wallet.address,
-      payCallData.substring(0, 10),
-      constants.TEST_VALUE,
-      true
-    );
-
-    await time.increase(30);
-
     const tx = await masterWalletScheme.proposeCalls(
-      [wallet.address, wallet.address],
-      ["0x0", payCallData],
+      [accounts[1], actionMock.address],
+      ["0x0", testCallData],
       [constants.TEST_VALUE, 0],
       2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    assert.equal(
-      await web3.eth.getBalance(masterWalletScheme.address),
-      constants.TEST_VALUE
-    );
-    assert.equal(await web3.eth.getBalance(wallet.address), 0);
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+
+    assert.equal(await web3.eth.getBalance(actionMock.address), 0);
     const balanceBeforePay = await web3.eth.getBalance(accounts[1]);
 
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
@@ -946,7 +929,7 @@ contract("WalletScheme", function (accounts) {
       gas: 9000000,
     });
     assert.equal(await web3.eth.getBalance(masterWalletScheme.address), 0);
-    assert.equal(await web3.eth.getBalance(wallet.address), 0);
+    assert.equal(await web3.eth.getBalance(actionMock.address), 0);
     assert.equal(
       await web3.eth.getBalance(accounts[1]),
       Number(balanceBeforePay) + constants.TEST_VALUE
@@ -960,50 +943,11 @@ contract("WalletScheme", function (accounts) {
       constants.WALLET_SCHEME_PROPOSAL_STATES.passed
     );
     assert.equal(organizationProposal.callData[0], "0x00");
-    assert.equal(organizationProposal.to[0], wallet.address);
+    assert.equal(organizationProposal.to[0], accounts[1]);
     assert.equal(organizationProposal.value[0], constants.TEST_VALUE);
-    assert.equal(organizationProposal.callData[1], payCallData);
-    assert.equal(organizationProposal.to[1], wallet.address);
+    assert.equal(organizationProposal.callData[1], testCallData);
+    assert.equal(organizationProposal.to[1], actionMock.address);
     assert.equal(organizationProposal.value[1], 0);
-  });
-
-  it.skip("MasterWalletScheme - positive decision - proposal executed without return value", async function () {
-    const callData = helpers.testCallWithoutReturnValueFrom(
-      masterWalletScheme.address
-    );
-
-    let tx = await masterWalletScheme.proposeCalls(
-      [actionMock.address],
-      [callData],
-      [0],
-      2,
-      constants.TEST_TITLE,
-      constants.SOME_HASH
-    );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    tx = await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
-      from: accounts[2],
-    });
-
-    // ! There is no event called "ExecutionResults"
-    const executionEvent = helpers.getEventFromTx(tx, "ExecutionResults");
-    const returnValue = web3.eth.abi.decodeParameters(
-      ["bool", "bytes"],
-      executionEvent.args._callsDataResult[0]
-    );
-    assert.equal(returnValue["0"], true);
-    assert.equal(returnValue["1"], null);
-
-    const organizationProposal = await masterWalletScheme.getProposal(
-      proposalId
-    );
-    assert.equal(
-      organizationProposal.state,
-      constants.WALLET_SCHEME_PROPOSAL_STATES.passed
-    );
-    assert.equal(organizationProposal.callData[0], callData);
-    assert.equal(organizationProposal.to[0], actionMock.address);
-    assert.equal(organizationProposal.value[0], 0);
   });
 
   it("MasterWalletScheme - proposal with REP - execute mintReputation & burnReputation", async function () {
@@ -1011,14 +955,6 @@ contract("WalletScheme", function (accounts) {
     const callDataMintRep = await org.controller.contract.methods
       .mintReputation(constants.TEST_VALUE, accounts[4])
       .encodeABI();
-
-    await permissionRegistry.setETHPermission(
-      masterWalletScheme.address,
-      org.controller.address,
-      callDataMintRep.substring(0, 10),
-      0,
-      true
-    );
 
     const txMintRep = await masterWalletScheme.proposeCalls(
       [org.controller.address],
@@ -1030,7 +966,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdMintRep = await helpers.getValueFromLogs(
       txMintRep,
-      "_proposalId"
+      "proposalId"
     );
 
     await org.votingMachine.vote(proposalIdMintRep, constants.YES_OPTION, 0, {
@@ -1047,14 +983,6 @@ contract("WalletScheme", function (accounts) {
       .burnReputation(constants.TEST_VALUE, accounts[4])
       .encodeABI();
 
-    await permissionRegistry.setETHPermission(
-      masterWalletScheme.address,
-      org.controller.address,
-      callDataBurnRep.substring(0, 10),
-      0,
-      true
-    );
-
     const txBurnRep = await masterWalletScheme.proposeCalls(
       [org.controller.address],
       [callDataBurnRep],
@@ -1065,7 +993,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdBurnRep = await helpers.getValueFromLogs(
       txBurnRep,
-      "_proposalId"
+      "proposalId"
     );
 
     await org.votingMachine.vote(proposalIdBurnRep, constants.YES_OPTION, 0, {
@@ -1130,7 +1058,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdMintRepToFail = await helpers.getValueFromLogs(
       failMintTx,
-      "_proposalId"
+      "proposalId"
     );
 
     await assert(
@@ -1205,7 +1133,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdBurnRepToFail = await helpers.getValueFromLogs(
       tx,
-      "_proposalId"
+      "proposalId"
     );
 
     await assert(
@@ -1258,7 +1186,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdAddScheme = await helpers.getValueFromLogs(
       tx,
-      "_proposalId"
+      "proposalId"
     );
     tx = await masterWalletScheme.proposeCalls(
       [org.controller.address],
@@ -1270,7 +1198,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdRemoveScheme = await helpers.getValueFromLogs(
       tx,
-      "_proposalId"
+      "proposalId"
     );
 
     // Add Scheme
@@ -1319,7 +1247,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await org.votingMachine.execute(proposalId);
     const organizationProposal = await masterWalletScheme.getProposal(
       proposalId
@@ -1330,46 +1258,29 @@ contract("WalletScheme", function (accounts) {
     );
   });
 
-  it.skip("MasterWalletScheme - positive decision - proposal executed with transfer, pay and mint rep", async function () {
-    var wallet = await Wallet.new();
+  it("MasterWalletScheme - positive decision - proposal executed with transfer, pay and mint rep", async function () {
     await web3.eth.sendTransaction({
-      from: accounts[0],
       to: masterWalletScheme.address,
       value: constants.TEST_VALUE,
+      from: accounts[0],
     });
-    await wallet.transferOwnership(masterWalletScheme.address);
 
-    const payCallData = await new web3.eth.Contract(wallet.abi).methods
-      .pay(accounts[1])
-      .encodeABI();
-
+    const testCallData = helpers.testCallFrom(masterWalletScheme.address);
     const callDataMintRep = await org.controller.contract.methods
-      .mintReputation(constants.TEST_VALUE, accounts[4], org.avatar.address)
+      .mintReputation(constants.TEST_VALUE, accounts[4])
       .encodeABI();
-
-    await permissionRegistry.setETHPermission(
-      masterWalletScheme.address,
-      wallet.address,
-      payCallData.substring(0, 10),
-      constants.TEST_VALUE,
-      true
-    );
-
-    await time.increase(100);
 
     const tx = await masterWalletScheme.proposeCalls(
-      [wallet.address, wallet.address, org.controller.address],
-      ["0x0", payCallData, callDataMintRep],
+      [accounts[1], actionMock.address, org.controller.address],
+      ["0x0", testCallData, callDataMintRep],
       [constants.TEST_VALUE, 0, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    assert.equal(
-      await web3.eth.getBalance(masterWalletScheme.address),
-      constants.TEST_VALUE
-    );
-    assert.equal(await web3.eth.getBalance(wallet.address), 0);
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+
+    assert.equal(await web3.eth.getBalance(actionMock.address), 0);
     assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
 
     const balanceBeforePay = await web3.eth.getBalance(accounts[1]);
@@ -1377,7 +1288,7 @@ contract("WalletScheme", function (accounts) {
       from: accounts[2],
     });
     assert.equal(await web3.eth.getBalance(masterWalletScheme.address), 0);
-    assert.equal(await web3.eth.getBalance(wallet.address), 0);
+    assert.equal(await web3.eth.getBalance(actionMock.address), 0);
     assert.equal(
       await web3.eth.getBalance(accounts[1]),
       Number(balanceBeforePay) + constants.TEST_VALUE
@@ -1396,10 +1307,10 @@ contract("WalletScheme", function (accounts) {
     );
     assert.equal(organizationProposal.descriptionHash, constants.SOME_HASH);
     assert.equal(organizationProposal.callData[0], "0x00");
-    assert.equal(organizationProposal.to[0], wallet.address);
+    assert.equal(organizationProposal.to[0], accounts[1]);
     assert.equal(organizationProposal.value[0], constants.TEST_VALUE);
-    assert.equal(organizationProposal.callData[1], payCallData);
-    assert.equal(organizationProposal.to[1], wallet.address);
+    assert.equal(organizationProposal.callData[1], testCallData);
+    assert.equal(organizationProposal.to[1], actionMock.address);
     assert.equal(organizationProposal.value[1], 0);
     assert.equal(organizationProposal.callData[2], callDataMintRep);
     assert.equal(organizationProposal.to[2], org.controller.address);
@@ -1468,12 +1379,12 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     tx = await org.votingMachine.vote(proposalId, constants.NO_OPTION, 0, {
       from: accounts[2],
     });
     const stateChangeEvent = helpers.getEventFromTx(tx, "ProposalStateChange");
-    assert.equal(stateChangeEvent.args._state, 2);
+    assert.equal(stateChangeEvent.args.state, 2);
 
     const organizationProposal = await quickWalletScheme.getProposal(
       proposalId
@@ -1499,7 +1410,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -1517,49 +1428,30 @@ contract("WalletScheme", function (accounts) {
   });
 
   // eslint-disable-next-line max-len
-  it.skip("QuickWalletScheme - proposal with data - positive decision - proposal executed with multiple calls and value", async function () {
-    var wallet = await Wallet.new();
+  it("QuickWalletScheme - proposal with data - positive decision - proposal executed with multiple calls and value", async function () {
     await web3.eth.sendTransaction({
-      from: accounts[0],
       to: quickWalletScheme.address,
       value: constants.TEST_VALUE,
+      from: accounts[0],
     });
-    await wallet.transferOwnership(quickWalletScheme.address);
-
-    const payCallData = await new web3.eth.Contract(wallet.abi).methods
-      .pay(accounts[1])
-      .encodeABI();
-
-    await permissionRegistry.setETHPermission(
-      quickWalletScheme.address,
-      wallet.address,
-      payCallData.substring(0, 10),
-      constants.TEST_VALUE,
-      true
-    );
-    await time.increase(100);
-
+    const testCallData = helpers.testCallFrom(quickWalletScheme.address);
     const tx = await quickWalletScheme.proposeCalls(
-      [wallet.address, wallet.address],
-      ["0x0", payCallData],
-      [constants.TEST_VALUE],
+      [accounts[1], actionMock.address],
+      ["0x0", testCallData],
+      [constants.TEST_VALUE, 0],
       2,
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
-    true;
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
-    assert.equal(
-      await web3.eth.getBalance(quickWalletScheme.address),
-      constants.TEST_VALUE
-    );
-    assert.equal(await web3.eth.getBalance(wallet.address), 0);
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
+
+    assert.equal(await web3.eth.getBalance(actionMock.address), 0);
     const balanceBeforePay = await web3.eth.getBalance(accounts[1]);
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
     assert.equal(await web3.eth.getBalance(quickWalletScheme.address), 0);
-    assert.equal(await web3.eth.getBalance(wallet.address), 0);
+    assert.equal(await web3.eth.getBalance(actionMock.address), 0);
     assert.equal(
       await web3.eth.getBalance(accounts[1]),
       Number(balanceBeforePay) + constants.TEST_VALUE
@@ -1573,11 +1465,11 @@ contract("WalletScheme", function (accounts) {
       constants.WALLET_SCHEME_PROPOSAL_STATES.passed
     );
     assert.equal(organizationProposal.callData[0], "0x00");
-    assert.equal(organizationProposal.to[0], wallet.address);
+    assert.equal(organizationProposal.to[0], accounts[1]);
     assert.equal(organizationProposal.value[0], constants.TEST_VALUE);
-    assert.equal(organizationProposal.callData[1], payCallData);
-    assert.equal(organizationProposal.to[1], wallet.address);
+    assert.equal(organizationProposal.to[1], actionMock.address);
     assert.equal(organizationProposal.value[1], 0);
+    assert.equal(organizationProposal.callData[1], testCallData);
   });
 
   it("QuickWalletScheme - proposal with data - positive decision - proposal execution fail", async () => {
@@ -1591,7 +1483,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -1611,7 +1503,7 @@ contract("WalletScheme", function (accounts) {
   });
 
   // eslint-disable-next-line max-len
-  it.skip("QuickWalletScheme - proposal with data - positive decision - proposal executed without return value", async function () {
+  it("QuickWalletScheme - proposal with data - positive decision - proposal executed without return value", async function () {
     const callData = helpers.testCallWithoutReturnValueFrom(
       quickWalletScheme.address
     );
@@ -1619,20 +1511,15 @@ contract("WalletScheme", function (accounts) {
     let tx = await quickWalletScheme.proposeCalls(
       [actionMock.address],
       [callData],
-      [0, 0],
+      [0],
       2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     tx = await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
-    const executionEvent = helpers.getEventFromTx(tx, "ExecutionResults");
-
-    const returnValues = executionEvent.args._callsDataResult[0];
-    assert.equal(returnValues, "0x");
-
     const organizationProposal = await quickWalletScheme.getProposal(
       proposalId
     );
@@ -1645,12 +1532,12 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.value[0], 0);
   });
 
-  it("QuickWalletScheme - proposal with REP - execute mintReputation & burnReputation", async function () {
+  it("QuickWalletScheme - proposal with REP - execute mintReputation & burnReputation should fail", async function () {
     const callDataMintRep = await org.controller.contract.methods
       .mintReputation(constants.TEST_VALUE, accounts[4])
       .encodeABI();
     const callDataBurnRep = await org.controller.contract.methods
-      .burnReputation(constants.TEST_VALUE, accounts[4])
+      .burnReputation(constants.TEST_VALUE, accounts[1])
       .encodeABI();
 
     await permissionRegistry.setETHPermission(
@@ -1676,7 +1563,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
-    const proposalIdMintRep = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalIdMintRep = await helpers.getValueFromLogs(tx, "proposalId");
     tx = await quickWalletScheme.proposeCalls(
       [org.controller.address],
       [callDataBurnRep],
@@ -1685,22 +1572,19 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.NULL_HASH
     );
-    const proposalIdBurnRep = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalIdBurnRep = await helpers.getValueFromLogs(tx, "proposalId");
 
     // Mint Rep
     await org.votingMachine.vote(proposalIdMintRep, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
-    assert.equal(
-      await org.reputation.balanceOf(accounts[4]),
-      constants.TEST_VALUE
-    );
+    assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
 
     // Burn Rep
     await org.votingMachine.vote(proposalIdBurnRep, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
-    assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
+    assert.equal(await org.reputation.balanceOf(accounts[1]), 10000);
   });
 
   // eslint-disable-next-line max-len
@@ -1742,7 +1626,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdAddScheme = await helpers.getValueFromLogs(
       tx,
-      "_proposalId"
+      "proposalId"
     );
 
     tx = await quickWalletScheme.proposeCalls(
@@ -1755,7 +1639,7 @@ contract("WalletScheme", function (accounts) {
     );
     const proposalIdRemoveScheme = await helpers.getValueFromLogs(
       tx,
-      "_proposalId"
+      "proposalId"
     );
 
     const votingTx1 = await org.votingMachine.vote(
@@ -1881,7 +1765,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -1908,7 +1792,7 @@ contract("WalletScheme", function (accounts) {
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
+    const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
     await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
@@ -1925,71 +1809,41 @@ contract("WalletScheme", function (accounts) {
     assert.equal(organizationProposal.value[0], 0);
   });
 
-  it.skip("QuickWalletScheme - positive decision - proposal executed with transfer, pay and mint rep", async function () {
-    var wallet = await WalletScheme.new();
+  it("QuickWalletScheme - positive decision - proposal executed with transfer and pay", async function () {
     await web3.eth.sendTransaction({
-      from: accounts[0],
       to: quickWalletScheme.address,
-      value: 100000000,
+      value: constants.TEST_VALUE,
+      from: accounts[0],
     });
-    // await wallet.transferOwnership(quickWalletScheme.address);
 
-    const payCallData = await new web3.eth.Contract(wallet.abi).methods
-      .pay(accounts[1])
-      .encodeABI();
-    const callDataMintRep = await org.controller.contract.methods
-      .mintReputation(constants.TEST_VALUE, accounts[4], org.avatar.address)
-      .encodeABI();
-
-    await permissionRegistry.setETHPermission(
-      quickWalletScheme.address,
-      wallet.address,
-      payCallData.substring(0, 10),
-      constants.TEST_VALUE,
-      true
-    );
+    const testCallData = helpers.testCallFrom(quickWalletScheme.address);
 
     let tx = await quickWalletScheme.proposeCalls(
-      [wallet.address, wallet.address, org.controller.address],
-      ["0x0", payCallData, callDataMintRep],
-      [constants.TEST_VALUE, 0, 0],
+      [accounts[1], actionMock.address],
+      ["0x0", testCallData],
+      [constants.TEST_VALUE, 0],
+      2,
       constants.TEST_TITLE,
       constants.SOME_HASH
     );
-    const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+    const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
     assert.equal(
       await web3.eth.getBalance(quickWalletScheme.address),
-      100000000
+      constants.TEST_VALUE
     );
-    assert.equal(await web3.eth.getBalance(wallet.address), 0);
-    assert.equal(await org.reputation.balanceOf(accounts[4]), 0);
+    assert.equal(await web3.eth.getBalance(actionMock.address), 0);
 
     const balanceBeforePay = await web3.eth.getBalance(accounts[1]);
     tx = await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
       from: accounts[2],
     });
-    const executionEvent = helpers.getEventFromTx(tx, "ExecutionResults");
-    assert.equal(executionEvent.args._callsSucessResult[0], true);
-    assert.equal(executionEvent.args._callsSucessResult[1], true);
-    assert.equal(executionEvent.args._callsSucessResult[2], true);
-    assert.equal(executionEvent.args._callsDataResult[0], "0x");
-    assert.equal(executionEvent.args._callsDataResult[1], "0x");
-    assert.equal(
-      executionEvent.args._callsDataResult[2],
-      "0x0000000000000000000000000000000000000000000000000000000000000001"
-    );
 
     assert.equal(await web3.eth.getBalance(masterWalletScheme.address), 0);
-    assert.equal(await web3.eth.getBalance(wallet.address), 0);
+    assert.equal(await web3.eth.getBalance(actionMock.address), 0);
     assert.equal(
       await web3.eth.getBalance(accounts[1]),
       Number(balanceBeforePay) + constants.TEST_VALUE
     );
-    assert.equal(
-      await org.reputation.balanceOf(accounts[4]),
-      constants.TEST_VALUE
-    );
-
     const organizationProposal = await quickWalletScheme.getProposal(
       proposalId
     );
@@ -1998,14 +1852,11 @@ contract("WalletScheme", function (accounts) {
       constants.WALLET_SCHEME_PROPOSAL_STATES.passed
     );
     assert.equal(organizationProposal.callData[0], "0x00");
-    assert.equal(organizationProposal.to[0], wallet.address);
+    assert.equal(organizationProposal.to[0], accounts[1]);
     assert.equal(organizationProposal.value[0], constants.TEST_VALUE);
-    assert.equal(organizationProposal.callData[1], payCallData);
-    assert.equal(organizationProposal.to[1], wallet.address);
+    assert.equal(organizationProposal.callData[1], testCallData);
+    assert.equal(organizationProposal.to[1], actionMock.address);
     assert.equal(organizationProposal.value[1], 0);
-    assert.equal(organizationProposal.callData[2], callDataMintRep);
-    assert.equal(organizationProposal.to[2], org.controller.address);
-    assert.equal(organizationProposal.value[2], 0);
   });
 
   describe("ERC20 Transfers", async function () {
@@ -2040,7 +1891,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
       await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
         from: accounts[2],
       });
@@ -2070,7 +1921,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
+      const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
       await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
         from: accounts[2],
         gas: constants.GAS_LIMIT,
@@ -2132,7 +1983,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
       await expectEvent(
         await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
           from: accounts[2],
@@ -2190,7 +2041,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
       await expectEvent(
         await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
           from: accounts[2],
@@ -2237,7 +2088,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const proposalId = await helpers.getValueFromLogs(tx, "_proposalId");
+      const proposalId = await helpers.getValueFromLogs(tx, "proposalId");
       await org.votingMachine.vote(proposalId, constants.YES_OPTION, 0, {
         from: accounts[2],
       });
@@ -2264,7 +2115,7 @@ contract("WalletScheme", function (accounts) {
         constants.TEST_TITLE,
         constants.SOME_HASH
       );
-      const proposalId2 = await helpers.getValueFromLogs(tx2, "_proposalId");
+      const proposalId2 = await helpers.getValueFromLogs(tx2, "proposalId");
 
       await org.votingMachine.vote(proposalId2, constants.YES_OPTION, 0, {
         from: accounts[2],
@@ -2282,5 +2133,46 @@ contract("WalletScheme", function (accounts) {
       assert.equal(organizationProposal.to[0], testToken.address);
       assert.equal(organizationProposal.value[0], 0);
     });
+  });
+
+  it("sould return the reputation", async function () {
+    const proposalId = await helpers.getValueFromLogs(
+      await quickWalletScheme.proposeCalls(
+        [actionMock.address],
+        [helpers.testCallFrom(org.avatar.address)],
+        [0],
+        2,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      ),
+      "proposalId"
+    );
+
+    const reputation = await quickWalletScheme.reputationOf(
+      accounts[1],
+      proposalId
+    );
+
+    assert.equal(10000, Number(reputation));
+  });
+
+  it("sould return the total reputation", async function () {
+    const proposalId = await helpers.getValueFromLogs(
+      await quickWalletScheme.proposeCalls(
+        [actionMock.address],
+        [helpers.testCallFrom(org.avatar.address)],
+        [0],
+        2,
+        constants.TEST_TITLE,
+        constants.SOME_HASH
+      ),
+      "proposalId"
+    );
+
+    const reputation = await quickWalletScheme.getTotalReputationSupply(
+      proposalId
+    );
+
+    assert.equal(100000, Number(reputation));
   });
 });

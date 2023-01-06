@@ -1,5 +1,6 @@
 import { assert } from "chai";
 import { artifacts, contract } from "hardhat";
+const { expectRevert } = require("@openzeppelin/test-helpers");
 
 const ERC20SnapshotRep = artifacts.require("ERC20SnapshotRep.sol");
 
@@ -12,6 +13,25 @@ contract("ERC20SnapshotRep", accounts => {
     });
     await ERC20SnapshotRepToken.initialize("DXdao", "DXD");
     await ERC20SnapshotRepToken.mint(accounts[1], 100, { from: accounts[0] });
+  });
+
+  it("should not be able to transfer tokens", async () => {
+    assert.equal(await ERC20SnapshotRepToken.balanceOf(accounts[1]), "100");
+    await expectRevert(
+      ERC20SnapshotRepToken.transfer(accounts[2], 1, { from: accounts[1] }),
+      "ERC20SnapshotRep__NoTransfer()"
+    );
+  });
+
+  it("should not be able to transferFrom tokens", async () => {
+    assert.equal(await ERC20SnapshotRepToken.balanceOf(accounts[1]), "100");
+    await ERC20SnapshotRepToken.approve(accounts[2], 100, {
+      from: accounts[1],
+    });
+    await expectRevert(
+      ERC20SnapshotRepToken.transfer(accounts[3], 1, { from: accounts[2] }),
+      "ERC20SnapshotRep__NoTransfer()"
+    );
   });
 
   describe("snapshot balances", () => {

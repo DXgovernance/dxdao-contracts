@@ -64,7 +64,7 @@ library RealMath {
     /**
      * Multiply one real by another. Truncates overflows.
      */
-    function mul(uint256 realA, uint256 realB) private pure returns (uint256) {
+    function mul(uint256 realA, uint256 realB) internal pure returns (uint256) {
         // When multiplying fixed point in x.y and z.w formats we get (x+z).(y+w) format.
         // So we just have to clip off the extra REAL_FBITS fractional bits.
         uint256 res = realA * realB;
@@ -75,7 +75,7 @@ library RealMath {
     /**
      * Divide one real by another real. Truncates overflows.
      */
-    function div(uint256 realNumerator, uint256 realDenominator) private pure returns (uint256) {
+    function div(uint256 realNumerator, uint256 realDenominator) internal pure returns (uint256) {
         // We use the reverse of the multiplication trick: convert numerator from
         // x.y to (x+z).(y+w) fixed point, then divide by denom in z.w fixed point.
         return uint256((uint256(realNumerator) * REAL_ONE) / uint256(realDenominator));
