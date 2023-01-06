@@ -116,7 +116,7 @@ contract PermissionRegistryModule {
         address[] memory _to,
         bytes[] memory _data,
         uint256[] memory _value
-    ) external payable {
+    ) external payable returns (bool success) {
         require(msg.sender == admin, "PRModule: Only callable by admin or when initialized");
         require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
 
@@ -145,13 +145,7 @@ contract PermissionRegistryModule {
 
         data = abi.encodeWithSignature("multiSend(bytes)", data);
         isExecutingProposal = true;
-        bool success = IAvatar(avatar).execTransactionFromModule(
-            multisend,
-            totalValue,
-            data,
-            Enum.Operation.DelegateCall
-        );
-        require(success, "ERC20Guild: Proposal call failed");
+        success = IAvatar(avatar).execTransactionFromModule(multisend, totalValue, data, Enum.Operation.DelegateCall);
         isExecutingProposal = false;
     }
 
