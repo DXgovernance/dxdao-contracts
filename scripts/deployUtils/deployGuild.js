@@ -1,7 +1,8 @@
-import { NULL_SIGNATURE, ZERO_ADDRESS } from "../test/helpers/constants";
+const NULL_SIGNATURE = "0x00000000";
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 // Util function to deploy snapshotRepGuild
-export const deploySnapshotRepGuild = config => async hre => {
+module.exports.deploySnapshotRepGuild = config => async hre => {
   const { getNamedAccounts, deployments } = hre;
   const { save } = deployments;
   const { deployer: deployerAddress } = await getNamedAccounts();
