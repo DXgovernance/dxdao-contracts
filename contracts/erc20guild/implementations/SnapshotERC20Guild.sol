@@ -46,7 +46,8 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
     ) public virtual override {
         require(proposals[proposalId].endTime > block.timestamp, "SnapshotERC20Guild: Proposal ended, cannot be voted");
         require(
-            votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >= votingPower,
+            votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >= votingPower &&
+                (votingPower > proposalVotes[proposalId][msg.sender].votingPower),
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
         require(
