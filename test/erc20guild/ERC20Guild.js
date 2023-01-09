@@ -794,6 +794,27 @@ contract("ERC20Guild", function (accounts) {
       await lockTokens();
     });
 
+    it("cannot vote with 0 voting power amount with an account with voting power", async function () {
+      const guildProposalId = await createProposal(genericProposal);
+
+      await expectRevert(
+        erc20Guild.setVote(guildProposalId, 1, 0, {
+          from: accounts[3],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
+    });
+
+    it("cannot vote with 0 voting power amount with an account without voting power", async function () {
+      const guildProposalId = await createProposal(genericProposal);
+      await expectRevert(
+        erc20Guild.setVote(guildProposalId, 1, 0, {
+          from: accounts[9],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
+    });
+
     it("cannot reduce votes after initial vote", async function () {
       const guildProposalId = await createProposal(genericProposal);
 
@@ -1339,9 +1360,7 @@ contract("ERC20Guild", function (accounts) {
                 .setETHPermission(
                   erc20Guild.address,
                   testToken.address,
-                  web3.eth.abi.encodeFunctionSignature(
-                    "mint(address,uint256)"
-                  ),
+                  web3.eth.abi.encodeFunctionSignature("mint(address,uint256)"),
                   0,
                   true
                 )
