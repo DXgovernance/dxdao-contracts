@@ -1,7 +1,7 @@
 module.exports = async ({ getNamedAccounts, deployments }) => {
   const { save } = deployments;
   const { deployer: deployerAddress } = await getNamedAccounts();
-  const deploySalt = process.env.DEPLOY_SALT;
+  const deploySalt = process.env.DEPLOY_SALT ?? "0x00";
 
   const Create2Deployer = await hre.artifacts.require("Create2Deployer");
   const deployerDeployed = await deployments.get("Create2Deployer");
