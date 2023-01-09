@@ -1,4 +1,4 @@
-import { config } from "../../deploy/dxgovGuild";
+import { config } from "../../deploy-guild/dxgovGuild";
 import { ZERO_ADDRESS, NULL_SIGNATURE } from "../helpers/constants";
 
 describe.skip("DXgovGuild deploy script", function () {
