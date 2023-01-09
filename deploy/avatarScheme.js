@@ -15,7 +15,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const avatarScheme = await AvatarScheme.at(avatarSchemeDeploy.address);
 
   const avatarDeployed = await deployments.get("DAOAvatar");
-  const dxdVotingMachineDeployed = await deployments.get("DXDVotingMachine");
+  const dxdVotingMachineDeployed = await deployments.get("VotingMachine");
   const controllerDeployed = await deployments.get("DAOController");
   const permissionRegistryDeployed = await deployments.get(
     "PermissionRegistry"
@@ -36,7 +36,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
   const Controller = await hre.artifacts.require("DAOController");
   const controller = await Controller.at(controllerDeployed.address);
-  const DXDVotingMachine = await hre.artifacts.require("DXDVotingMachine");
+  const DXDVotingMachine = await hre.artifacts.require("VotingMachine");
   const dxdVotingMachine = await DXDVotingMachine.at(
     dxdVotingMachineDeployed.address
   );
@@ -48,9 +48,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     preBoostedVotePeriodLimit: 10,
     thresholdConst: 2000,
     quietEndingPeriod: 10,
-    proposingRepReward: 0,
-    minimumDaoBounty: 100,
-    daoBountyConst: 10,
+    daoBounty: web3.utils.toWei("0.1"),
     boostedVoteRequiredPercentage: 100,
   };
 
@@ -61,9 +59,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     defaultParameters.preBoostedVotePeriodLimit,
     defaultParameters.thresholdConst,
     defaultParameters.quietEndingPeriod,
-    defaultParameters.proposingRepReward,
-    defaultParameters.minimumDaoBounty,
-    defaultParameters.daoBountyConst,
+    defaultParameters.daoBounty,
     defaultParameters.boostedVoteRequiredPercentage,
   ];
 
@@ -97,7 +93,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 module.exports.tags = ["AvatarScheme"];
 module.exports.dependencies = [
   "DAOAvatar",
-  "DXDVotingMachine",
+  "VotingMachine",
   "Controller",
   "PermissionRegistry",
 ];

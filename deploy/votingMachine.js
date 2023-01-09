@@ -3,25 +3,23 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const { deployer } = await getNamedAccounts();
   const deploySalt = process.env.DEPLOY_SALT;
 
-  const DXDVotingMachine = await hre.artifacts.require("DXDVotingMachine");
+  const VotingMachine = await hre.artifacts.require("VotingMachine");
 
   const dxdTokenDeployed = await deployments.get("ERC20Mock");
 
-  const dxdVotingMachineDeploy = await deploy("DXDVotingMachine", {
-    name: "DXDVotingMachine",
+  const votingMachineDeploy = await deploy("VotingMachine", {
+    name: "VotingMachine",
     from: deployer,
     args: [dxdTokenDeployed.address],
     deterministicDeployment: deploySalt,
   });
 
-  const dxdVotingMachine = await DXDVotingMachine.at(
-    dxdVotingMachineDeploy.address
-  );
+  const votingMachine = await VotingMachine.at(votingMachineDeploy.address);
 
   if (process.env.ETHERSCAN_API_KEY && hre.network.name !== "hardhat") {
     try {
       await hre.run("verify:verify", {
-        address: dxdVotingMachine.address,
+        address: votingMachine.address,
         constructorArguments: [],
       });
     } catch (error) {
@@ -29,9 +27,9 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     }
   }
 
-  console.log(`DXDVotingMachine address ${dxdVotingMachine.address}`);
+  console.log(`VotingMachine address ${votingMachine.address}`);
 };
 
-module.exports.tags = ["DXDVotingMachine"];
+module.exports.tags = ["VotingMachine"];
 module.exports.dependencies = ["DXDToken"];
 
