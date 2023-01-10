@@ -21,104 +21,52 @@ interface IPermissionRegistry {
   @title PermissionRegistryModule
   @author github:fnanni-0
   @dev This Zodiac Module allows Guild contracts to own several Gnosis Safe while keeping the Permission Registry
-    features, i.e. restricting the safe calls to allowed addresses, functions and values. One instance of this
-    module per Gnosis Safe must be used.
+    features, i.e. restricting the safe calls to allowed addresses, functions and values. Only one module given a
+    PermissionRegistry is needed. All Guilds will use the same instance of this module as intermediary to control
+    their respective Gnosis Safes.
 */
 contract PermissionRegistryModule {
     bytes private constant SET_ERC20_BALANCES_DATA =
         abi.encodeWithSelector(IPermissionRegistry.setERC20Balances.selector);
 
     /// @dev Address of the permission registry that will regulate this module.
-    IPermissionRegistry public permissionRegistry;
-    /// @dev Address that will have permission to execute transactions and update settings.
-    address public admin;
-    /// @dev Address that this module will pass transactions to.
-    address public avatar;
-    /// @dev Address of the multisend contract that the avatar contract should use to bundle transactions.
-    address public multisend;
+    IPermissionRegistry public immutable permissionRegistry;
 
-    bool public initialized;
-    bool public isExecutingProposal;
-
-    /// @dev Emitted each time the avatar is set.
-    event AvatarSet(address indexed previousAvatar, address indexed newAvatar);
-    /// @dev Emitted each time the avatar is set.
-    event MultisendSet(address indexed previousMultisend, address indexed newMultisend);
+    /// @dev moduleConfigs[avatar][admin] .
+    mapping(address => mapping(address => address)) public multisends;
 
     /// @dev Initialize the Module configuration.
-    /// @param _avatar Address that this module will pass transactions to.
-    /// @param _multisend Address of the multisend contract that the avatar contract should use to bundle transactions.
-    /// @param _admin Address that will have permission to execute transactions and update settings.
     /// @param _permissionRegistry Address of the permission registry that will regulate this module.
-    constructor(
-        address _avatar,
-        address _multisend,
-        address _admin,
-        address _permissionRegistry
-    ) {
-        bytes memory initializeParams = abi.encode(_avatar, _multisend, _admin, _permissionRegistry);
-        setUp(initializeParams);
-    }
-
-    /// @dev Initialize the Module configuration.
-    /// @param initializeParams The ERC20 token that will be used as source of voting power
-    function setUp(bytes memory initializeParams) public {
-        require(!initialized, "PRModule: Only callable when initialized");
-        (address _avatar, address _multisend, address _admin, address _permissionRegistry) = abi.decode(
-            initializeParams,
-            (address, address, address, address)
-        );
-
-        avatar = _avatar;
-        multisend = _multisend;
-        admin = _admin;
+    constructor(address _permissionRegistry) {
         permissionRegistry = IPermissionRegistry(_permissionRegistry);
-        initialized = true;
     }
 
     /// @dev Set the Module avatar, can only be called by the admin.
-    /// @param _avatar Address that this module will pass transactions to.
-    function setAvatar(address _avatar) external {
-        require(msg.sender == admin, "PRModule: Only callable by admin");
-        address previousAvatar = avatar;
-        avatar = _avatar;
-        emit AvatarSet(previousAvatar, _avatar);
-    }
-
-    /// @dev Set the Module multisend, can only be called by the admin.
+    /// @param _admin Address of the controller of the module.
     /// @param _multisend Address of the multisend contract that the avatar contract should use to bundle transactions.
-    function setMultisend(address _multisend) external {
-        require(msg.sender == admin, "PRModule: Only callable by admin");
-        address previousMultisend = multisend;
-        multisend = _multisend;
-        emit MultisendSet(previousMultisend, _multisend);
+    function activateModule(address _admin, address _multisend) external {
+        multisends[msg.sender][_admin] = _multisend;
     }
 
-    /// @dev Set the Module admin, can only be called by the admin.
-    /// @param _admin Address that will have permission to execute transactions and update settings.
-    function setAdmin(address _admin) external {
-        require(msg.sender == admin, "PRModule: Only callable by admin");
-        admin = _admin;
-    }
-
-    /// @dev Set the Module permission registry, can only be called by the admin.
-    /// @param _permissionRegistry Address of the permission registry that will regulate this module.
-    function setPermissionRegistry(IPermissionRegistry _permissionRegistry) external {
-        require(msg.sender == admin, "PRModule: Only callable by admin");
-        permissionRegistry = _permissionRegistry;
+    /// @dev Set the Module avatar, can only be called by the admin.
+    /// @param _admin Address of the controller of the module.
+    function deactivateModule(address _admin) external {
+        multisends[msg.sender][_admin] = address(0x0);
     }
 
     /// @dev Relays transactions from admin (guild contract) to avatar (gnosis safe contract)
+    /// @param _avatar Address that this module will pass transactions to.
     /// @param _to The receiver addresses of each call to be executed
     /// @param _data The data to be executed on each call to be executed
     /// @param _value The ETH value to be sent on each call to be executed
     function relayTransactions(
+        address _avatar,
         address[] memory _to,
         bytes[] memory _data,
         uint256[] memory _value
     ) external payable returns (bool success) {
-        require(msg.sender == admin, "PRModule: Only callable by admin or when initialized");
-        require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
+        address multisend = multisends[_avatar][msg.sender];
+        require(multisend != address(0x0), "PRModule: Only callable by admin");
 
         // All calls are batched and sent together to the avatar.
         // The avatar will execute all calls through the multisend contract.
@@ -129,7 +77,7 @@ contract PermissionRegistryModule {
             require(_to[i] != address(0) && _data[i].length > 0, "");
             data = abi.encodePacked(
                 data,
-                getSetETHPermissionUsedCalldata(_to[i], _value[i], _data[i]),
+                getSetETHPermissionUsedCalldata(_avatar, _to[i], _value[i], _data[i]),
                 abi.encodePacked(
                     uint8(Enum.Operation.Call),
                     _to[i], /// to as an address.
@@ -141,19 +89,18 @@ contract PermissionRegistryModule {
             totalValue += _value[i];
         }
 
-        data = abi.encodePacked(data, getCheckERC20LimitsCalldata());
+        data = abi.encodePacked(data, getCheckERC20LimitsCalldata(_avatar));
 
         data = abi.encodeWithSignature("multiSend(bytes)", data);
-        isExecutingProposal = true;
-        success = IAvatar(avatar).execTransactionFromModule(multisend, totalValue, data, Enum.Operation.DelegateCall);
-        isExecutingProposal = false;
+        success = IAvatar(_avatar).execTransactionFromModule(multisend, totalValue, data, Enum.Operation.DelegateCall);
     }
 
     /// @dev Encodes permissionRegistry.checkERC20Limits(avatar)
-    function getCheckERC20LimitsCalldata() internal view returns (bytes memory) {
+    /// @param _avatar Address that this module will pass transactions to.
+    function getCheckERC20LimitsCalldata(address _avatar) internal view returns (bytes memory) {
         bytes memory checkERC20LimitsData = abi.encodeWithSelector(
             IPermissionRegistry.checkERC20Limits.selector,
-            avatar
+            _avatar
         );
         return
             abi.encodePacked(
@@ -178,10 +125,12 @@ contract PermissionRegistryModule {
     }
 
     /// @dev Encodes permissionRegistry.setETHPermissionUsed(avatar, to, funcSignature, value)
+    /// @param _avatar Address that this module will pass transactions to.
     /// @param _to The receiver address of the call to be executed
     /// @param _data The data to be executed on the call
     /// @param _value The ETH value to be sent on the call to be executed
     function getSetETHPermissionUsedCalldata(
+        address _avatar,
         address _to,
         uint256 _value,
         bytes memory _data
@@ -194,7 +143,7 @@ contract PermissionRegistryModule {
         // The permission registry keeps track of all value transferred and checks call permission
         bytes memory setETHPermissionUsedData = abi.encodeWithSelector(
             IPermissionRegistry.setETHPermissionUsed.selector,
-            avatar,
+            _avatar,
             _to,
             callDataFuncSignature,
             _value
@@ -211,8 +160,9 @@ contract PermissionRegistryModule {
     }
 
     /// @dev For compatibility with
-    /// https://github.com/gnosis/zodiac/blob/40c41372744fb1dc2f90311f1b67796ac25e57ad/contracts/core/Module.sol
-    function target() external view returns (address) {
-        return avatar;
+    /// @param _avatar Address that the module will pass transactions to.
+    /// @param _admin Address of the controller of the module.
+    function isModuleActivated(address _avatar, address _admin) external view returns (bool) {
+        return multisends[_avatar][_admin] != address(0x0);
     }
 }
