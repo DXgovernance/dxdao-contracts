@@ -53,7 +53,7 @@ contract ZodiacERC20Guild is BaseERC20Guild {
     /// @dev Initializer
     /// @param initializeParams The ERC20 token that will be used as source of voting power
     function setUp(bytes memory initializeParams) public {
-        require(!initialized, "Already initialized");
+        require(!initialized, "ERC20Guild: Already initialized");
         InitializationParams memory initParams = abi.decode(initializeParams, (InitializationParams));
 
         require(
@@ -144,6 +144,17 @@ contract ZodiacERC20Guild is BaseERC20Guild {
         emit MultisendSet(previousMultisend, _multisend);
     }
 
+    /// @dev Guilds can refund gas expenses to voters, which means that this contract is expected to hold ETH.
+    /// This contract cannot execute transactions from itself, so a function has to be provided
+    /// so that the ETH balance can be recovered.
+    /// @param _to Address that will receive that ETH.
+    /// @param _amount ETH amount that will be sent.
+    function transferETH(address _to, uint256 _amount) external {
+        require(msg.sender == avatar && isExecutingProposal, "ERC20Guild: Only callable from proposal");
+        (bool success, ) = payable(_to).call{value: _amount}("");
+        require(success, "Failed to transfer ETH");
+    }
+
     /// @dev Executes a proposal that is not votable anymore and can be finished
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public override {
@@ -152,7 +163,7 @@ contract ZodiacERC20Guild is BaseERC20Guild {
         require(proposal.state == ProposalState.Active, "ERC20Guild: Proposal already executed");
         require(proposal.endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
 
-        uint256 winningOption = getWinningOption(proposalId);
+        uint256 winningOption = getWinningOption(proposal);
 
         if (winningOption == 0) {
             proposal.state = ProposalState.Rejected;
@@ -165,9 +176,9 @@ contract ZodiacERC20Guild is BaseERC20Guild {
 
             bytes memory data = getSetERC20BalancesCalldata();
             uint256 totalValue = 0;
-            (uint256 i, uint256 endCall) = getProposalCallsRange(proposalId, winningOption);
+            (uint256 i, uint256 endCall) = getProposalCallsRange(proposal, winningOption);
 
-            for (i; i < endCall; i++) {
+            for (; i < endCall; i++) {
                 if (proposal.to[i] != address(0) && proposal.data[i].length > 0) {
                     data = abi.encodePacked(
                         data,
@@ -202,12 +213,12 @@ contract ZodiacERC20Guild is BaseERC20Guild {
         activeProposalsNow = activeProposalsNow - 1;
     }
 
-    function getWinningOption(bytes32 proposalId) internal view returns (uint256 winningOption) {
-        uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
+    function getWinningOption(Proposal storage _proposal) internal view returns (uint256 winningOption) {
+        uint256 highestVoteAmount = _proposal.totalVotes[0];
         uint256 votingPowerForProposalExecution = getVotingPowerForProposalExecution();
-        uint256 totalOptions = proposals[proposalId].totalVotes.length;
+        uint256 totalOptions = _proposal.totalVotes.length;
         for (uint256 i = 1; i < totalOptions; i++) {
-            uint256 totalVotesOptionI = proposals[proposalId].totalVotes[i];
+            uint256 totalVotesOptionI = _proposal.totalVotes[i];
             if (totalVotesOptionI >= votingPowerForProposalExecution && totalVotesOptionI >= highestVoteAmount) {
                 if (totalVotesOptionI == highestVoteAmount) {
                     winningOption = 0;
@@ -219,20 +230,31 @@ contract ZodiacERC20Guild is BaseERC20Guild {
         }
     }
 
-    function getProposalCallsRange(bytes32 proposalId, uint256 winningOption)
+    function getProposalCallsRange(Proposal storage _proposal, uint256 _winningOption)
         internal
         view
         returns (uint256 startCall, uint256 endCall)
     {
-        uint256 callsPerOption = proposals[proposalId].to.length / (proposals[proposalId].totalVotes.length - 1);
-        startCall = callsPerOption * (winningOption - 1);
+        uint256 callsPerOption = _proposal.to.length / (_proposal.totalVotes.length - 1);
+        startCall = callsPerOption * (_winningOption - 1);
         endCall = startCall + callsPerOption;
     }
 
     function getFunctionSignature(bytes storage _data) internal view returns (bytes4 callDataFuncSignature) {
+        uint8 lengthBit;
         assembly {
-            mstore(0, _data.slot)
-            callDataFuncSignature := sload(keccak256(0, 32))
+            lengthBit := sload(_data.slot)
+            lengthBit := and(lengthBit, 0x01)
+            switch lengthBit
+            case 0 {
+                // Short bytes array. Data is stored together with length at slot.
+                callDataFuncSignature := sload(_data.slot)
+            }
+            case 1 {
+                //  Long bytes array. Data is stored at keccak256(slot).
+                mstore(0, _data.slot)
+                callDataFuncSignature := sload(keccak256(0, 32))
+            }
         }
     }
 
