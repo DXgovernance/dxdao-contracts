@@ -196,7 +196,7 @@ contract PermissionRegistryModule {
             IPermissionRegistry.setETHPermissionUsed.selector,
             avatar,
             _to,
-            bytes4(callDataFuncSignature),
+            callDataFuncSignature,
             _value
         );
 
