@@ -19,7 +19,7 @@ contract TestAvatar {
         _permissionRegistry.setETHPermission(address(this), module, ZodiacERC20Guild.setAvatar.selector, 0, true);
         _permissionRegistry.setETHPermission(address(this), module, ZodiacERC20Guild.setMultisend.selector, 0, true);
         _permissionRegistry.setETHPermission(address(this), module, ZodiacERC20Guild.setConfig.selector, 0, true);
-		_permissionRegistry.setETHPermission(address(this), module, ZodiacERC20Guild.transferETH.selector, 0, true);
+        _permissionRegistry.setETHPermission(address(this), module, ZodiacERC20Guild.transferETH.selector, 0, true);
     }
 
     function exec(

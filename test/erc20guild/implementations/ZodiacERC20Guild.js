@@ -371,19 +371,13 @@ contract("ZodiacERC20Guild", function (accounts) {
       );
       assert.equal(
         (await erc20Guild.getVotingPowerForProposalCreation()).toString(),
-        guildTokenTotalSupply
-          .mul(new BN("100"))
-          .div(new BN("10000"))
-          .toString()
+        guildTokenTotalSupply.mul(new BN("100")).div(new BN("10000")).toString()
       );
       assert.equal(await erc20Guild.getVoteGas(), 0);
       assert.equal(await erc20Guild.getMaxGasPrice(), 0);
       assert.equal(await erc20Guild.getMaxActiveProposals(), 10);
       assert.equal(await erc20Guild.getLockTime(), 60);
-      assert.equal(
-        await erc20Guild.getMinimumMembersForProposalCreation(),
-        0
-      );
+      assert.equal(await erc20Guild.getMinimumMembersForProposalCreation(), 0);
       assert.equal(
         await erc20Guild.getMinimumTokensLockedForProposalCreation(),
         0
@@ -456,10 +450,7 @@ contract("ZodiacERC20Guild", function (accounts) {
       assert.equal(await erc20Guild.getMaxGasPrice(), 10);
       assert.equal(await erc20Guild.getMaxActiveProposals(), 4);
       assert.equal(await erc20Guild.getLockTime(), 61);
-      assert.equal(
-        await erc20Guild.getMinimumMembersForProposalCreation(),
-        5
-      );
+      assert.equal(await erc20Guild.getMinimumMembersForProposalCreation(), 5);
       assert.equal(
         await erc20Guild.getMinimumTokensLockedForProposalCreation(),
         50000
@@ -2328,10 +2319,7 @@ contract("ZodiacERC20Guild", function (accounts) {
             to: [erc20Guild.address],
             data: [
               await new web3.eth.Contract(ZodiacERC20Guild.abi).methods
-                .transferETH(
-                  testAvatar.address,
-                  100
-                )
+                .transferETH(testAvatar.address, 100)
                 .encodeABI(),
             ],
             value: [0],
