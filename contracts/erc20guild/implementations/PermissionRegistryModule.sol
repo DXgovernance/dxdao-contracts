@@ -3,19 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@gnosis.pm/zodiac/contracts/interfaces/IAvatar.sol";
 import "@gnosis.pm/safe-contracts/contracts/common/Enum.sol";
-
-interface IPermissionRegistry {
-    function setERC20Balances() external;
-
-    function checkERC20Limits(address) external;
-
-    function setETHPermissionUsed(
-        address,
-        address,
-        bytes4,
-        uint256
-    ) external;
-}
+import "./../../utils/IPermissionRegistry.sol";
 
 /*
   @title PermissionRegistryModule
