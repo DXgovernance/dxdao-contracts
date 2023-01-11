@@ -9,7 +9,9 @@ const AvatarScheme = artifacts.require("./AvatarScheme.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ERC721Factory = artifacts.require("./ERC721Factory.sol");
 const ERC20VestingFactory = artifacts.require("./ERC20VestingFactory.sol");
-const TokenVesting = artifacts.require("./TokenVesting.sol");
+const TokenVesting = artifacts.require(
+  "contracts/utils/TokenVesting.sol:TokenVesting"
+);
 
 contract("DXdao", function (accounts) {
   const constants = helpers.constants;
