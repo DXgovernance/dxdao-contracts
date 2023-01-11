@@ -16,6 +16,14 @@
       * [VotingMachineCallbacks](/docs/contracts/dao/votingMachine/VotingMachineCallbacks.md)
   * /deploy
     * [NanoUniversalDeployer](/docs/contracts/deploy/NanoUniversalDeployer.md)
+  * /dxd
+    * [DecentralizedAutonomousTrust](/docs/contracts/dxd/DecentralizedAutonomousTrust.md)
+    * [Dependencies](/docs/contracts/dxd/Dependencies.md)
+    * /interfaces
+      * [IWhitelist](/docs/contracts/dxd/interfaces/IWhitelist.md)
+    * /math
+      * [BigDiv](/docs/contracts/dxd/math/BigDiv.md)
+      * [Sqrt](/docs/contracts/dxd/math/Sqrt.md)
   * /erc20guild
     * [BaseERC20Guild](/docs/contracts/erc20guild/BaseERC20Guild.md)
     * [ERC20Guild](/docs/contracts/erc20guild/ERC20Guild.md)
