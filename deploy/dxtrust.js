@@ -1,5 +1,10 @@
+/*****************************************
+ |                                       |
+ |       Mainnet deployment script       |
+ |                                       |
+ */
+
 const moment = require("moment");
-import { ethers } from "hardhat";
 
 // *** Constants
 const pricePerETHUSD = 200;
@@ -117,13 +122,16 @@ async function _displayDatInfo(contracts) {
 }
 
 // *** Deployer
-module.exports = async ({ getNamedAccounts, deployments, web3 }) => {
+module.exports = async hre => {
+  const { getNamedAccounts, deployments, web3 } = hre;
   console.log(
     " \n",
     "*** Init DecentralizedAutonomousTrust deployment ***",
     " \n"
   );
   const { deployer: deployerAddress } = await getNamedAccounts();
+  // console.log("hre", await hre.getUnnamedAccounts());
+  // process.exit(0);
   const { deploy } = deployments;
   const momentNow = moment.utc(new Date().toUTCString());
   const network = hre.network.name;
@@ -186,7 +194,7 @@ module.exports = async ({ getNamedAccounts, deployments, web3 }) => {
 
   // ********************************************      Deploys   *************************************************
   // Deploy ProxyAdmin
-  const ProxyAdminFactory = await ethers.getContractFactory(
+  const ProxyAdminFactory = await hre.ethers.getContractFactory(
     "@openzeppelin/upgrades/contracts/upgradeability/ProxyAdmin.sol:ProxyAdmin"
   );
   const proxyAdmin = await ProxyAdminFactory.deploy();
@@ -262,7 +270,7 @@ module.exports = async ({ getNamedAccounts, deployments, web3 }) => {
 
   if (Number(deployOptions.initReserve) > 0) {
     // Deploy TokenVesting
-    const TokenVestingFactory = await ethers.getContractFactory(
+    const TokenVestingFactory = await hre.ethers.getContractFactory(
       "@openzeppelin/contracts-ethereum-package/contracts/drafts/TokenVesting.sol:TokenVesting"
     );
     const tokenVesting = await TokenVestingFactory.deploy();

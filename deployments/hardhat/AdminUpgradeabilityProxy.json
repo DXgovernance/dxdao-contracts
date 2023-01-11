@@ -1,0 +1,217 @@
+{
+  "address": "0x3Ad8949808223158107db71C832511A19527eb52",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_logic",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_admin",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_data",
+          "type": "bytes"
+        }
+      ],
+      "payable": true,
+      "stateMutability": "payable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "previousAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "newAdmin",
+          "type": "address"
+        }
+      ],
+      "name": "AdminChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "implementation",
+          "type": "address"
+        }
+      ],
+      "name": "Upgraded",
+      "type": "event"
+    },
+    {
+      "payable": true,
+      "stateMutability": "payable",
+      "type": "fallback"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "admin",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newAdmin",
+          "type": "address"
+        }
+      ],
+      "name": "changeAdmin",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "implementation",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        }
+      ],
+      "name": "upgradeTo",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "upgradeToAndCall",
+      "outputs": [],
+      "payable": true,
+      "stateMutability": "payable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xaea9598608b340ca587e3530fa82359b30dc89391ad0522820ad9d56d374b00b",
+  "receipt": {
+    "to": null,
+    "from": "0x84EEb305dA0A4309a696d43DE9f79f04e66EB4f8",
+    "contractAddress": "0x3Ad8949808223158107db71C832511A19527eb52",
+    "transactionIndex": 0,
+    "gasUsed": "452459",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xaa9b76b51e72d57977a35e1c611e9f753735f4e011893ded446294aff7249a10",
+    "transactionHash": "0xaea9598608b340ca587e3530fa82359b30dc89391ad0522820ad9d56d374b00b",
+    "logs": [],
+    "blockNumber": 3,
+    "cumulativeGasUsed": "452459",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x915C7C9c7A336c3aA96185B53D0B447188f3397E",
+    "0xfFb1cd0F95368DDd06D556161c5D3d9f0f4Fe6d2",
+    []
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "fbc9bb57ae8f74e5c2f9692a013a8378",
+  "metadata": "{\"compiler\":{\"version\":\"0.5.17+commit.d19bba13\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_logic\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_admin\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"previousAdmin\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"newAdmin\",\"type\":\"address\"}],\"name\":\"AdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"implementation\",\"type\":\"address\"}],\"name\":\"Upgraded\",\"type\":\"event\"},{\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"fallback\"},{\"constant\":false,\"inputs\":[],\"name\":\"admin\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"newAdmin\",\"type\":\"address\"}],\"name\":\"changeAdmin\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"implementation\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"newImplementation\",\"type\":\"address\"}],\"name\":\"upgradeTo\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"newImplementation\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"upgradeToAndCall\",\"outputs\":[],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"Extends from BaseAdminUpgradeabilityProxy with a constructor for  initializing the implementation, admin, and init data.\",\"methods\":{\"admin()\":{\"return\":\"The address of the proxy admin.\"},\"changeAdmin(address)\":{\"details\":\"Changes the admin of the proxy. Only the current admin can call this function.\",\"params\":{\"newAdmin\":\"Address to transfer proxy administration to.\"}},\"constructor\":{\"params\":{\"_admin\":\"Address of the proxy administrator.\",\"_data\":\"Data to send as msg.data to the implementation to initialize the proxied contract. It should include the signature and the parameters of the function to be called, as described in https://solidity.readthedocs.io/en/v0.4.24/abi-spec.html#function-selector-and-argument-encoding. This parameter is optional, if no data is given the initialization call to proxied contract will be skipped.\",\"_logic\":\"address of the initial implementation.\"}},\"implementation()\":{\"return\":\"The address of the implementation.\"},\"upgradeTo(address)\":{\"details\":\"Upgrade the backing implementation of the proxy. Only the admin can call this function.\",\"params\":{\"newImplementation\":\"Address of the new implementation.\"}},\"upgradeToAndCall(address,bytes)\":{\"details\":\"Upgrade the backing implementation of the proxy and call a function on the new implementation. This is useful to initialize the proxied contract.\",\"params\":{\"data\":\"Data to send as msg.data in the low level call. It should include the signature and the parameters of the function to be called, as described in https://solidity.readthedocs.io/en/v0.4.24/abi-spec.html#function-selector-and-argument-encoding.\",\"newImplementation\":\"Address of the new implementation.\"}}},\"title\":\"AdminUpgradeabilityProxy\"},\"userdoc\":{\"methods\":{\"constructor\":\"Contract constructor.\"}}},\"settings\":{\"compilationTarget\":{\"@openzeppelin/upgrades/contracts/upgradeability/AdminUpgradeabilityProxy.sol\":\"AdminUpgradeabilityProxy\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"@openzeppelin/upgrades/contracts/upgradeability/AdminUpgradeabilityProxy.sol\":{\"content\":\"pragma solidity ^0.5.0;\\n\\nimport './BaseAdminUpgradeabilityProxy.sol';\\n\\n/**\\n * @title AdminUpgradeabilityProxy\\n * @dev Extends from BaseAdminUpgradeabilityProxy with a constructor for \\n * initializing the implementation, admin, and init data.\\n */\\ncontract AdminUpgradeabilityProxy is BaseAdminUpgradeabilityProxy, UpgradeabilityProxy {\\n  /**\\n   * Contract constructor.\\n   * @param _logic address of the initial implementation.\\n   * @param _admin Address of the proxy administrator.\\n   * @param _data Data to send as msg.data to the implementation to initialize the proxied contract.\\n   * It should include the signature and the parameters of the function to be called, as described in\\n   * https://solidity.readthedocs.io/en/v0.4.24/abi-spec.html#function-selector-and-argument-encoding.\\n   * This parameter is optional, if no data is given the initialization call to proxied contract will be skipped.\\n   */\\n  constructor(address _logic, address _admin, bytes memory _data) UpgradeabilityProxy(_logic, _data) public payable {\\n    assert(ADMIN_SLOT == bytes32(uint256(keccak256('eip1967.proxy.admin')) - 1));\\n    _setAdmin(_admin);\\n  }\\n}\\n\",\"keccak256\":\"0x10ce81d835a4776c23f72c9abe8f65cd806352034d2fa9ebe7a42868a1ad7b22\"},\"@openzeppelin/upgrades/contracts/upgradeability/BaseAdminUpgradeabilityProxy.sol\":{\"content\":\"pragma solidity ^0.5.0;\\n\\nimport './UpgradeabilityProxy.sol';\\n\\n/**\\n * @title BaseAdminUpgradeabilityProxy\\n * @dev This contract combines an upgradeability proxy with an authorization\\n * mechanism for administrative tasks.\\n * All external functions in this contract must be guarded by the\\n * `ifAdmin` modifier. See ethereum/solidity#3864 for a Solidity\\n * feature proposal that would enable this to be done automatically.\\n */\\ncontract BaseAdminUpgradeabilityProxy is BaseUpgradeabilityProxy {\\n  /**\\n   * @dev Emitted when the administration has been transferred.\\n   * @param previousAdmin Address of the previous admin.\\n   * @param newAdmin Address of the new admin.\\n   */\\n  event AdminChanged(address previousAdmin, address newAdmin);\\n\\n  /**\\n   * @dev Storage slot with the admin of the contract.\\n   * This is the keccak-256 hash of \\\"eip1967.proxy.admin\\\" subtracted by 1, and is\\n   * validated in the constructor.\\n   */\\n\\n  bytes32 internal constant ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;\\n\\n  /**\\n   * @dev Modifier to check whether the `msg.sender` is the admin.\\n   * If it is, it will run the function. Otherwise, it will delegate the call\\n   * to the implementation.\\n   */\\n  modifier ifAdmin() {\\n    if (msg.sender == _admin()) {\\n      _;\\n    } else {\\n      _fallback();\\n    }\\n  }\\n\\n  /**\\n   * @return The address of the proxy admin.\\n   */\\n  function admin() external ifAdmin returns (address) {\\n    return _admin();\\n  }\\n\\n  /**\\n   * @return The address of the implementation.\\n   */\\n  function implementation() external ifAdmin returns (address) {\\n    return _implementation();\\n  }\\n\\n  /**\\n   * @dev Changes the admin of the proxy.\\n   * Only the current admin can call this function.\\n   * @param newAdmin Address to transfer proxy administration to.\\n   */\\n  function changeAdmin(address newAdmin) external ifAdmin {\\n    require(newAdmin != address(0), \\\"Cannot change the admin of a proxy to the zero address\\\");\\n    emit AdminChanged(_admin(), newAdmin);\\n    _setAdmin(newAdmin);\\n  }\\n\\n  /**\\n   * @dev Upgrade the backing implementation of the proxy.\\n   * Only the admin can call this function.\\n   * @param newImplementation Address of the new implementation.\\n   */\\n  function upgradeTo(address newImplementation) external ifAdmin {\\n    _upgradeTo(newImplementation);\\n  }\\n\\n  /**\\n   * @dev Upgrade the backing implementation of the proxy and call a function\\n   * on the new implementation.\\n   * This is useful to initialize the proxied contract.\\n   * @param newImplementation Address of the new implementation.\\n   * @param data Data to send as msg.data in the low level call.\\n   * It should include the signature and the parameters of the function to be called, as described in\\n   * https://solidity.readthedocs.io/en/v0.4.24/abi-spec.html#function-selector-and-argument-encoding.\\n   */\\n  function upgradeToAndCall(address newImplementation, bytes calldata data) payable external ifAdmin {\\n    _upgradeTo(newImplementation);\\n    (bool success,) = newImplementation.delegatecall(data);\\n    require(success);\\n  }\\n\\n  /**\\n   * @return The admin slot.\\n   */\\n  function _admin() internal view returns (address adm) {\\n    bytes32 slot = ADMIN_SLOT;\\n    assembly {\\n      adm := sload(slot)\\n    }\\n  }\\n\\n  /**\\n   * @dev Sets the address of the proxy admin.\\n   * @param newAdmin Address of the new proxy admin.\\n   */\\n  function _setAdmin(address newAdmin) internal {\\n    bytes32 slot = ADMIN_SLOT;\\n\\n    assembly {\\n      sstore(slot, newAdmin)\\n    }\\n  }\\n\\n  /**\\n   * @dev Only fall back when the sender is not the admin.\\n   */\\n  function _willFallback() internal {\\n    require(msg.sender != _admin(), \\\"Cannot call fallback function from the proxy admin\\\");\\n    super._willFallback();\\n  }\\n}\\n\",\"keccak256\":\"0xbf8ee1cf63a430a3eb8b39a9145d0d133400b8db06fa9fd33056597f7d8ceb25\"},\"@openzeppelin/upgrades/contracts/upgradeability/BaseUpgradeabilityProxy.sol\":{\"content\":\"pragma solidity ^0.5.0;\\n\\nimport './Proxy.sol';\\nimport '../utils/Address.sol';\\n\\n/**\\n * @title BaseUpgradeabilityProxy\\n * @dev This contract implements a proxy that allows to change the\\n * implementation address to which it will delegate.\\n * Such a change is called an implementation upgrade.\\n */\\ncontract BaseUpgradeabilityProxy is Proxy {\\n  /**\\n   * @dev Emitted when the implementation is upgraded.\\n   * @param implementation Address of the new implementation.\\n   */\\n  event Upgraded(address indexed implementation);\\n\\n  /**\\n   * @dev Storage slot with the address of the current implementation.\\n   * This is the keccak-256 hash of \\\"eip1967.proxy.implementation\\\" subtracted by 1, and is\\n   * validated in the constructor.\\n   */\\n  bytes32 internal constant IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;\\n\\n  /**\\n   * @dev Returns the current implementation.\\n   * @return Address of the current implementation\\n   */\\n  function _implementation() internal view returns (address impl) {\\n    bytes32 slot = IMPLEMENTATION_SLOT;\\n    assembly {\\n      impl := sload(slot)\\n    }\\n  }\\n\\n  /**\\n   * @dev Upgrades the proxy to a new implementation.\\n   * @param newImplementation Address of the new implementation.\\n   */\\n  function _upgradeTo(address newImplementation) internal {\\n    _setImplementation(newImplementation);\\n    emit Upgraded(newImplementation);\\n  }\\n\\n  /**\\n   * @dev Sets the implementation address of the proxy.\\n   * @param newImplementation Address of the new implementation.\\n   */\\n  function _setImplementation(address newImplementation) internal {\\n    require(OpenZeppelinUpgradesAddress.isContract(newImplementation), \\\"Cannot set a proxy implementation to a non-contract address\\\");\\n\\n    bytes32 slot = IMPLEMENTATION_SLOT;\\n\\n    assembly {\\n      sstore(slot, newImplementation)\\n    }\\n  }\\n}\\n\",\"keccak256\":\"0x1b37f808dc0a45976ad23aa53908c485a74a4d9fbd03066a5ab399c46436e570\"},\"@openzeppelin/upgrades/contracts/upgradeability/Proxy.sol\":{\"content\":\"pragma solidity ^0.5.0;\\n\\n/**\\n * @title Proxy\\n * @dev Implements delegation of calls to other contracts, with proper\\n * forwarding of return values and bubbling of failures.\\n * It defines a fallback function that delegates all calls to the address\\n * returned by the abstract _implementation() internal function.\\n */\\ncontract Proxy {\\n  /**\\n   * @dev Fallback function.\\n   * Implemented entirely in `_fallback`.\\n   */\\n  function () payable external {\\n    _fallback();\\n  }\\n\\n  /**\\n   * @return The Address of the implementation.\\n   */\\n  function _implementation() internal view returns (address);\\n\\n  /**\\n   * @dev Delegates execution to an implementation contract.\\n   * This is a low level function that doesn't return to its internal call site.\\n   * It will return to the external caller whatever the implementation returns.\\n   * @param implementation Address to delegate.\\n   */\\n  function _delegate(address implementation) internal {\\n    assembly {\\n      // Copy msg.data. We take full control of memory in this inline assembly\\n      // block because it will not return to Solidity code. We overwrite the\\n      // Solidity scratch pad at memory position 0.\\n      calldatacopy(0, 0, calldatasize)\\n\\n      // Call the implementation.\\n      // out and outsize are 0 because we don't know the size yet.\\n      let result := delegatecall(gas, implementation, 0, calldatasize, 0, 0)\\n\\n      // Copy the returned data.\\n      returndatacopy(0, 0, returndatasize)\\n\\n      switch result\\n      // delegatecall returns 0 on error.\\n      case 0 { revert(0, returndatasize) }\\n      default { return(0, returndatasize) }\\n    }\\n  }\\n\\n  /**\\n   * @dev Function that is run as the first thing in the fallback function.\\n   * Can be redefined in derived contracts to add functionality.\\n   * Redefinitions must call super._willFallback().\\n   */\\n  function _willFallback() internal {\\n  }\\n\\n  /**\\n   * @dev fallback implementation.\\n   * Extracted to enable manual triggering.\\n   */\\n  function _fallback() internal {\\n    _willFallback();\\n    _delegate(_implementation());\\n  }\\n}\\n\",\"keccak256\":\"0xd8074ae5fa7ee6384ca8196a896612fb044bbf4ff4b7336d03cd97845000ac21\"},\"@openzeppelin/upgrades/contracts/upgradeability/UpgradeabilityProxy.sol\":{\"content\":\"pragma solidity ^0.5.0;\\n\\nimport './BaseUpgradeabilityProxy.sol';\\n\\n/**\\n * @title UpgradeabilityProxy\\n * @dev Extends BaseUpgradeabilityProxy with a constructor for initializing\\n * implementation and init data.\\n */\\ncontract UpgradeabilityProxy is BaseUpgradeabilityProxy {\\n  /**\\n   * @dev Contract constructor.\\n   * @param _logic Address of the initial implementation.\\n   * @param _data Data to send as msg.data to the implementation to initialize the proxied contract.\\n   * It should include the signature and the parameters of the function to be called, as described in\\n   * https://solidity.readthedocs.io/en/v0.4.24/abi-spec.html#function-selector-and-argument-encoding.\\n   * This parameter is optional, if no data is given the initialization call to proxied contract will be skipped.\\n   */\\n  constructor(address _logic, bytes memory _data) public payable {\\n    assert(IMPLEMENTATION_SLOT == bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1));\\n    _setImplementation(_logic);\\n    if(_data.length > 0) {\\n      (bool success,) = _logic.delegatecall(_data);\\n      require(success);\\n    }\\n  }  \\n}\\n\",\"keccak256\":\"0xb02c6349ba01df9902857b6058f92b37f13187775cce9da74f6f28410205445b\"},\"@openzeppelin/upgrades/contracts/utils/Address.sol\":{\"content\":\"pragma solidity ^0.5.0;\\n\\n/**\\n * Utility library of inline functions on addresses\\n *\\n * Source https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-solidity/v2.1.3/contracts/utils/Address.sol\\n * This contract is copied here and renamed from the original to avoid clashes in the compiled artifacts\\n * when the user imports a zos-lib contract (that transitively causes this contract to be compiled and added to the\\n * build/artifacts folder) as well as the vanilla Address implementation from an openzeppelin version.\\n */\\nlibrary OpenZeppelinUpgradesAddress {\\n    /**\\n     * Returns whether the target address is a contract\\n     * @dev This function will return false if invoked during the constructor of a contract,\\n     * as the code is not actually created until after the constructor finishes.\\n     * @param account address of the account to check\\n     * @return whether the target address is a contract\\n     */\\n    function isContract(address account) internal view returns (bool) {\\n        uint256 size;\\n        // XXX Currently there is no better way to check if there is a contract in an address\\n        // than to check the size of the code at that address.\\n        // See https://ethereum.stackexchange.com/a/14016/36603\\n        // for more details about how this works.\\n        // TODO Check this again before the Serenity release, because all addresses will be\\n        // contracts then.\\n        // solhint-disable-next-line no-inline-assembly\\n        assembly { size := extcodesize(account) }\\n        return size > 0;\\n    }\\n}\\n\",\"keccak256\":\"0x7be7f8e4c08bc70ff9815e3f11c569f42aa3c447b5bc61fd75fb5cec97f63a9f\"}},\"version\":1}",
+  "bytecode": "0x60806040526040516109823803806109828339818101604052606081101561002657600080fd5b8151602083015160408085018051915193959294830192918464010000000082111561005157600080fd5b90830190602082018581111561006657600080fd5b825164010000000081118282018810171561008057600080fd5b82525081516020918201929091019080838360005b838110156100ad578181015183820152602001610095565b50505050905090810190601f1680156100da5780820380516001836020036101000a031916815260200191505b5060408181527f656970313936372e70726f78792e696d706c656d656e746174696f6e0000000082525190819003601c01902086935084925060008051602061092783398151915260001990910114905061013157fe5b610143826001600160e01b0361026516565b8051156101fb576000826001600160a01b0316826040518082805190602001908083835b602083106101865780518252601f199092019160209182019101610167565b6001836020036101000a038019825116818451168082178552505050505050905001915050600060405180830381855af49150503d80600081146101e6576040519150601f19603f3d011682016040523d82523d6000602084013e6101eb565b606091505b50509050806101f957600080fd5b505b5050604080517f656970313936372e70726f78792e61646d696e00000000000000000000000000815290519081900360130190206000805160206109078339815191526000199091011461024b57fe5b61025d826001600160e01b036102c516565b5050506102dd565b610278816102d760201b61053d1760201c565b6102b35760405162461bcd60e51b815260040180806020018281038252603b815260200180610947603b913960400191505060405180910390fd5b60008051602061092783398151915255565b60008051602061090783398151915255565b3b151590565b61061b806102ec6000396000f3fe60806040526004361061004a5760003560e01c80633659cfe6146100545780634f1ef286146100875780635c60da1b146101075780638f28397014610138578063f851a4401461016b575b610052610180565b005b34801561006057600080fd5b506100526004803603602081101561007757600080fd5b50356001600160a01b031661019a565b6100526004803603604081101561009d57600080fd5b6001600160a01b0382351691908101906040810160208201356401000000008111156100c857600080fd5b8201836020820111156100da57600080fd5b803590602001918460018302840111640100000000831117156100fc57600080fd5b5090925090506101d4565b34801561011357600080fd5b5061011c610281565b604080516001600160a01b039092168252519081900360200190f35b34801561014457600080fd5b506100526004803603602081101561015b57600080fd5b50356001600160a01b03166102be565b34801561017757600080fd5b5061011c610378565b6101886103a3565b610198610193610403565b610428565b565b6101a261044c565b6001600160a01b0316336001600160a01b031614156101c9576101c481610471565b6101d1565b6101d1610180565b50565b6101dc61044c565b6001600160a01b0316336001600160a01b03161415610274576101fe83610471565b6000836001600160a01b031683836040518083838082843760405192019450600093509091505080830381855af49150503d806000811461025b576040519150601f19603f3d011682016040523d82523d6000602084013e610260565b606091505b505090508061026e57600080fd5b5061027c565b61027c610180565b505050565b600061028b61044c565b6001600160a01b0316336001600160a01b031614156102b3576102ac610403565b90506102bb565b6102bb610180565b90565b6102c661044c565b6001600160a01b0316336001600160a01b031614156101c9576001600160a01b0381166103245760405162461bcd60e51b81526004018080602001828103825260368152602001806105766036913960400191505060405180910390fd5b7f7e644d79422f17c01e4894b5f4f588d331ebfa28653d42ae832dc59e38c9798f61034d61044c565b604080516001600160a01b03928316815291841660208301528051918290030190a16101c4816104b1565b600061038261044c565b6001600160a01b0316336001600160a01b031614156102b3576102ac61044c565b6103ab61044c565b6001600160a01b0316336001600160a01b031614156103fb5760405162461bcd60e51b81526004018080602001828103825260328152602001806105446032913960400191505060405180910390fd5b610198610198565b7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc5490565b3660008037600080366000845af43d6000803e808015610447573d6000f35b3d6000fd5b7fb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d61035490565b61047a816104d5565b6040516001600160a01b038216907fbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b90600090a250565b7fb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d610355565b6104de8161053d565b6105195760405162461bcd60e51b815260040180806020018281038252603b8152602001806105ac603b913960400191505060405180910390fd5b7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc55565b3b15159056fe43616e6e6f742063616c6c2066616c6c6261636b2066756e6374696f6e2066726f6d207468652070726f78792061646d696e43616e6e6f74206368616e6765207468652061646d696e206f6620612070726f787920746f20746865207a65726f206164647265737343616e6e6f742073657420612070726f787920696d706c656d656e746174696f6e20746f2061206e6f6e2d636f6e74726163742061646472657373a265627a7a72315820929c0896e322c78d8c37c3fd0e777327097e27890faf0eb9d05ae0604457f4a464736f6c63430005110032b53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc43616e6e6f742073657420612070726f787920696d706c656d656e746174696f6e20746f2061206e6f6e2d636f6e74726163742061646472657373",
+  "deployedBytecode": "0x60806040526004361061004a5760003560e01c80633659cfe6146100545780634f1ef286146100875780635c60da1b146101075780638f28397014610138578063f851a4401461016b575b610052610180565b005b34801561006057600080fd5b506100526004803603602081101561007757600080fd5b50356001600160a01b031661019a565b6100526004803603604081101561009d57600080fd5b6001600160a01b0382351691908101906040810160208201356401000000008111156100c857600080fd5b8201836020820111156100da57600080fd5b803590602001918460018302840111640100000000831117156100fc57600080fd5b5090925090506101d4565b34801561011357600080fd5b5061011c610281565b604080516001600160a01b039092168252519081900360200190f35b34801561014457600080fd5b506100526004803603602081101561015b57600080fd5b50356001600160a01b03166102be565b34801561017757600080fd5b5061011c610378565b6101886103a3565b610198610193610403565b610428565b565b6101a261044c565b6001600160a01b0316336001600160a01b031614156101c9576101c481610471565b6101d1565b6101d1610180565b50565b6101dc61044c565b6001600160a01b0316336001600160a01b03161415610274576101fe83610471565b6000836001600160a01b031683836040518083838082843760405192019450600093509091505080830381855af49150503d806000811461025b576040519150601f19603f3d011682016040523d82523d6000602084013e610260565b606091505b505090508061026e57600080fd5b5061027c565b61027c610180565b505050565b600061028b61044c565b6001600160a01b0316336001600160a01b031614156102b3576102ac610403565b90506102bb565b6102bb610180565b90565b6102c661044c565b6001600160a01b0316336001600160a01b031614156101c9576001600160a01b0381166103245760405162461bcd60e51b81526004018080602001828103825260368152602001806105766036913960400191505060405180910390fd5b7f7e644d79422f17c01e4894b5f4f588d331ebfa28653d42ae832dc59e38c9798f61034d61044c565b604080516001600160a01b03928316815291841660208301528051918290030190a16101c4816104b1565b600061038261044c565b6001600160a01b0316336001600160a01b031614156102b3576102ac61044c565b6103ab61044c565b6001600160a01b0316336001600160a01b031614156103fb5760405162461bcd60e51b81526004018080602001828103825260328152602001806105446032913960400191505060405180910390fd5b610198610198565b7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc5490565b3660008037600080366000845af43d6000803e808015610447573d6000f35b3d6000fd5b7fb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d61035490565b61047a816104d5565b6040516001600160a01b038216907fbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b90600090a250565b7fb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d610355565b6104de8161053d565b6105195760405162461bcd60e51b815260040180806020018281038252603b8152602001806105ac603b913960400191505060405180910390fd5b7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc55565b3b15159056fe43616e6e6f742063616c6c2066616c6c6261636b2066756e6374696f6e2066726f6d207468652070726f78792061646d696e43616e6e6f74206368616e6765207468652061646d696e206f6620612070726f787920746f20746865207a65726f206164647265737343616e6e6f742073657420612070726f787920696d706c656d656e746174696f6e20746f2061206e6f6e2d636f6e74726163742061646472657373a265627a7a72315820929c0896e322c78d8c37c3fd0e777327097e27890faf0eb9d05ae0604457f4a464736f6c63430005110032",
+  "devdoc": {
+    "details": "Extends from BaseAdminUpgradeabilityProxy with a constructor for  initializing the implementation, admin, and init data.",
+    "methods": {
+      "admin()": {
+        "return": "The address of the proxy admin."
+      },
+      "changeAdmin(address)": {
+        "details": "Changes the admin of the proxy. Only the current admin can call this function.",
+        "params": {
+          "newAdmin": "Address to transfer proxy administration to."
+        }
+      },
+      "constructor": {
+        "params": {
+          "_admin": "Address of the proxy administrator.",
+          "_data": "Data to send as msg.data to the implementation to initialize the proxied contract. It should include the signature and the parameters of the function to be called, as described in https://solidity.readthedocs.io/en/v0.4.24/abi-spec.html#function-selector-and-argument-encoding. This parameter is optional, if no data is given the initialization call to proxied contract will be skipped.",
+          "_logic": "address of the initial implementation."
+        }
+      },
+      "implementation()": {
+        "return": "The address of the implementation."
+      },
+      "upgradeTo(address)": {
+        "details": "Upgrade the backing implementation of the proxy. Only the admin can call this function.",
+        "params": {
+          "newImplementation": "Address of the new implementation."
+        }
+      },
+      "upgradeToAndCall(address,bytes)": {
+        "details": "Upgrade the backing implementation of the proxy and call a function on the new implementation. This is useful to initialize the proxied contract.",
+        "params": {
+          "data": "Data to send as msg.data in the low level call. It should include the signature and the parameters of the function to be called, as described in https://solidity.readthedocs.io/en/v0.4.24/abi-spec.html#function-selector-and-argument-encoding.",
+          "newImplementation": "Address of the new implementation."
+        }
+      }
+    },
+    "title": "AdminUpgradeabilityProxy"
+  },
+  "userdoc": {
+    "methods": {
+      "constructor": "Contract constructor."
+    }
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}

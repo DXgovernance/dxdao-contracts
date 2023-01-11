@@ -1,6 +1,8 @@
 export const GAS_LIMIT = process.env.OVERRIDE_GAS_LIMIT || 9000000;
 export const GAS_PRICE = process.env.OVERRIDE_GAS_PRICE || 10000000000;
 
+export const MAX_UINT =
+  "115792089237316195423570985008687907853269984665640564039457584007913129639935";
 export const MAX_UINT_256 =
   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 export const NULL_HASH =
@@ -55,4 +57,11 @@ export const VOTING_MACHINE_EXECUTION_STATES = {
   PreBoostedBarCrossed: "4",
   BoostedTimeOut: "5",
   BoostedBarCrossed: "6",
+};
+
+export const DAT_STATES = {
+  INIT: 0,
+  RUN: 1,
+  CLOSE: 2,
+  CANCEL: 3,
 };
