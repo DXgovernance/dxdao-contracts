@@ -1,260 +1,163 @@
-// const { deployDAT } = require("../../scripts/DAT");
+const { deployDAT, updateDAT } = require("../../scripts/DAT");
 
-// const { constants } = require("../helpers");
-// const { expectRevert } = require("@openzeppelin/test-helpers");
+const { ZERO_ADDRESS, MAX_UINT } = require("../helpers/constants");
+const { expectRevert, expectEvent } = require("@openzeppelin/test-helpers");
+const { assert } = require("chai");
 
-// contract("dat / updateConfig", accounts => {
-//   let contracts;
+const DATContract = artifacts.require("DecentralizedAutonomousTrust");
 
-//   it("shouldFail with CONTROL_ONLY", async () => {
-//     contracts = await deployDAT(hre);
-//     await expectRevert(
-//       contracts.dat.updateConfig(
-//         await contracts.dat.whitelist(),
-//         await contracts.dat.beneficiary(),
-//         await contracts.dat.control(),
-//         await contracts.dat.feeCollector(),
-//         await contracts.dat.feeBasisPoints(),
-//         await contracts.dat.autoBurn(),
-//         await contracts.dat.revenueCommitmentBasisPoints(),
-//         await contracts.dat.minInvestment(),
-//         await contracts.dat.openUntilAtLeast(),
-//         { from: accounts[6] }
-//       ),
-//       "CONTROL_ONLY"
-//     );
-//   });
+contract("dat / updateConfig", accounts => {
+  let contracts;
 
-//   it("can remove the whitelist", async () => {
-//     contracts = await deployDAT(hre);
-//     await contracts.dat.updateConfig(
-//       constants.ZERO_ADDRESS,
-//       await contracts.dat.beneficiary(),
-//       await contracts.dat.control(),
-//       await contracts.dat.feeCollector(),
-//       await contracts.dat.feeBasisPoints(),
-//       await contracts.dat.autoBurn(),
-//       await contracts.dat.revenueCommitmentBasisPoints(),
-//       await contracts.dat.minInvestment(),
-//       await contracts.dat.openUntilAtLeast(),
-//       { from: await contracts.dat.control() }
-//     );
-//   });
+  it("shouldFail with CONTROL_ONLY", async () => {
+    contracts = await deployDAT(hre);
+    await expectRevert(
+      updateDAT(contracts, hre.web3, { from: accounts[6] }),
+      "CONTROL_ONLY"
+    );
+  });
 
-//   it("can update the minInvestment to MAX_UINT", async () => {
-//     contracts = await deployDAT(hre);
-//     await contracts.dat.buy(accounts[4], web3.utils.toWei("10"), "1", {
-//       value: web3.utils.toWei("10"),
-//       from: accounts[4],
-//       gas: 9000000,
-//     });
+  it("can remove the whitelist", async () => {
+    contracts = await deployDAT(hre);
 
-//     await contracts.dat.updateConfig(
-//       await contracts.dat.whitelist(),
-//       await contracts.dat.beneficiary(),
-//       await contracts.dat.control(),
-//       await contracts.dat.feeCollector(),
-//       await contracts.dat.feeBasisPoints(),
-//       await contracts.dat.autoBurn(),
-//       await contracts.dat.revenueCommitmentBasisPoints(),
-//       constants.MAX_UINT,
-//       await contracts.dat.openUntilAtLeast(),
-//       { from: await contracts.dat.control() }
-//     );
+    const controller = await contracts.dat.control();
+    await updateDAT(contracts, hre.web3, {
+      whitelist: ZERO_ADDRESS,
+      from: controller,
+    });
+    assert.equal(await contracts.dat.whitelist(), ZERO_ADDRESS);
+  });
 
-//     // reverts when trying to buy more than 10 or 10000 ETH worth of tokens
-//     await expectRevert(
-//       contracts.dat.buy(accounts[4], web3.utils.toWei("10"), "1", {
-//         value: web3.utils.toWei("10"),
-//         from: accounts[4],
-//         gas: 9000000,
-//       })
-//     );
-//     await expectRevert(
-//       contracts.dat.buy(accounts[4], web3.utils.toWei("10000"), "1", {
-//         value: web3.utils.toWei("10000"),
-//         from: accounts[4],
-//         gas: 9000000,
-//       })
-//     );
-//   });
+  it.skip("can update the minInvestment to MAX_UINT", async () => {
+    contracts = await deployDAT(hre);
 
-//   it("shouldFail with INVALID_ADDRESS if control is missing", async () => {
-//     contracts = await deployDAT(hre);
-//     await expectRevert(
-//       contracts.dat.updateConfig(
-//         await contracts.dat.whitelist(),
-//         await contracts.dat.beneficiary(),
-//         constants.ZERO_ADDRESS,
-//         await contracts.dat.feeCollector(),
-//         await contracts.dat.feeBasisPoints(),
-//         await contracts.dat.autoBurn(),
-//         await contracts.dat.revenueCommitmentBasisPoints(),
-//         await contracts.dat.minInvestment(),
-//         await contracts.dat.openUntilAtLeast(),
-//         { from: await contracts.dat.control() }
-//       ),
-//       "INVALID_ADDRESS"
-//     );
-//   });
+    await contracts.dat.buy(accounts[4], web3.utils.toWei("10"), "1"),
+      {
+        value: web3.utils.toWei("10"),
+        from: accounts[4],
+        gas: 9000000,
+      };
 
-//   it("shouldFail with INVALID_ADDRESS if feeCollector is missing", async () => {
-//     contracts = await deployDAT(hre);
-//     await expectRevert(
-//       contracts.dat.updateConfig(
-//         await contracts.dat.whitelist(),
-//         await contracts.dat.beneficiary(),
-//         await contracts.dat.control(),
-//         constants.ZERO_ADDRESS,
-//         await contracts.dat.feeBasisPoints(),
-//         await contracts.dat.autoBurn(),
-//         await contracts.dat.revenueCommitmentBasisPoints(),
-//         await contracts.dat.minInvestment(),
-//         await contracts.dat.openUntilAtLeast(),
-//         { from: await contracts.dat.control() }
-//       ),
-//       "INVALID_ADDRESS"
-//     );
-//   });
+    const updateCall = new web3.eth.Contract(DATContract.abi)
+      .updateConfig(
+        await contracts.dat.whitelist(),
+        await contracts.dat.beneficiary(),
+        await contracts.dat.control(),
+        await contracts.dat.feeCollector(),
+        await contracts.dat.feeBasisPoints(),
+        await contracts.dat.autoBurn(),
+        await contracts.dat.revenueCommitmentBasisPoints(),
+        constants.MAX_UINT,
+        await contracts.dat.openUntilAtLeast()
+      )
+      .encodeABI();
 
-//   it("shouldFail with INVALID_COMMITMENT", async () => {
-//     contracts = await deployDAT(web3, {
-//       revenueCommitmentBasisPoints: 0,
-//     });
-//     contracts.dat.updateConfig(
-//       await contracts.dat.whitelist(),
-//       await contracts.dat.beneficiary(),
-//       await contracts.dat.control(),
-//       await contracts.dat.feeCollector(),
-//       await contracts.dat.feeBasisPoints(),
-//       await contracts.dat.autoBurn(),
-//       "11",
-//       await contracts.dat.minInvestment(),
-//       await contracts.dat.openUntilAtLeast(),
-//       { from: await contracts.dat.control() }
-//     );
-//     await expectRevert(
-//       contracts.dat.updateConfig(
-//         await contracts.dat.whitelist(),
-//         await contracts.dat.beneficiary(),
-//         await contracts.dat.control(),
-//         await contracts.dat.feeCollector(),
-//         await contracts.dat.feeBasisPoints(),
-//         await contracts.dat.autoBurn(),
-//         "10",
-//         await contracts.dat.minInvestment(),
-//         await contracts.dat.openUntilAtLeast(),
-//         { from: await contracts.dat.control() }
-//       ),
-//       "COMMITMENT_MAY_NOT_BE_REDUCED"
-//     );
-//   });
+    const controller = await contracts.dat.control();
+    await web3.eth.sendTransaction({
+      to: contracts.dat.address,
+      data: updateCall,
+      from: controller,
+    });
 
-//   it("shouldFail with INVALID_COMMITMENT", async () => {
-//     contracts = await deployDAT(hre);
-//     await expectRevert(
-//       contracts.dat.updateConfig(
-//         await contracts.dat.whitelist(),
-//         await contracts.dat.beneficiary(),
-//         await contracts.dat.control(),
-//         await contracts.dat.feeCollector(),
-//         await contracts.dat.feeBasisPoints(),
-//         await contracts.dat.autoBurn(),
-//         "100000",
-//         await contracts.dat.minInvestment(),
-//         await contracts.dat.openUntilAtLeast(),
-//         { from: await contracts.dat.control() }
-//       ),
-//       "INVALID_COMMITMENT"
-//     );
-//   });
+    // reverts when trying to buy more than 10 or 10000 ETH worth of tokens
+    await expectRevert(
+      contracts.dat.buy(accounts[4], web3.utils.toWei("10"), "1", {
+        value: web3.utils.toWei("10"),
+        from: accounts[4],
+        gas: 9000000,
+      }),
+      "INCORRECT_MSG_VALUE"
+    );
+    await expectRevert(
+      contracts.dat.buy(accounts[4], web3.utils.toWei("10000"), "1", {
+        value: web3.utils.toWei("10000"),
+        from: accounts[4],
+        gas: 9000000,
+      }),
+      "INCORRECT_MSG_VALUE"
+    );
+  });
 
-//   it("shouldFail with INVALID_FEE", async () => {
-//     contracts = await deployDAT(hre);
-//     await expectRevert(
-//       contracts.dat.updateConfig(
-//         await contracts.dat.whitelist(),
-//         await contracts.dat.beneficiary(),
-//         await contracts.dat.control(),
-//         await contracts.dat.feeCollector(),
-//         "100000",
-//         await contracts.dat.autoBurn(),
-//         await contracts.dat.revenueCommitmentBasisPoints(),
-//         await contracts.dat.minInvestment(),
-//         await contracts.dat.openUntilAtLeast(),
-//         { from: await contracts.dat.control() }
-//       ),
-//       "INVALID_FEE"
-//     );
-//   });
+  it("shouldFail with INVALID_ADDRESS if control is missing", async () => {
+    contracts = await deployDAT(hre);
+    const controller = await contracts.dat.control();
+    await expectRevert(
+      updateDAT(contracts, hre.web3, {
+        control: ZERO_ADDRESS,
+        from: controller,
+      }),
+      "INVALID_ADDRESS"
+    );
+  });
 
-//   it("shouldFail with INVALID_MIN_INVESTMENT", async () => {
-//     contracts = await deployDAT(hre);
-//     await expectRevert(
-//       contracts.dat.updateConfig(
-//         await contracts.dat.whitelist(),
-//         await contracts.dat.beneficiary(),
-//         await contracts.dat.control(),
-//         await contracts.dat.feeCollector(),
-//         await contracts.dat.feeBasisPoints(),
-//         await contracts.dat.autoBurn(),
-//         await contracts.dat.revenueCommitmentBasisPoints(),
-//         "0",
-//         await contracts.dat.openUntilAtLeast(),
-//         { from: await contracts.dat.control() }
-//       ),
-//       "INVALID_MIN_INVESTMENT"
-//     );
-//   });
+  it("shouldFail with INVALID_ADDRESS if feeCollector is missing", async () => {
+    contracts = await deployDAT(hre);
+    const controller = await contracts.dat.control();
+    await expectRevert(
+      updateDAT(contracts, hre.web3, {
+        feeCollector: ZERO_ADDRESS,
+        from: controller,
+      }),
+      "INVALID_ADDRESS"
+    );
+  });
 
-//   it("shouldFail with INVALID_ADDRESS when missing the beneficiary", async () => {
-//     contracts = await deployDAT(hre);
-//     await expectRevert(
-//       contracts.dat.updateConfig(
-//         await contracts.dat.whitelist(),
-//         constants.ZERO_ADDRESS,
-//         await contracts.dat.control(),
-//         await contracts.dat.feeCollector(),
-//         await contracts.dat.feeBasisPoints(),
-//         await contracts.dat.autoBurn(),
-//         await contracts.dat.revenueCommitmentBasisPoints(),
-//         await contracts.dat.minInvestment(),
-//         await contracts.dat.openUntilAtLeast(),
-//         { from: await contracts.dat.control() }
-//       ),
-//       "INVALID_ADDRESS"
-//     );
-//   });
+  it("shouldFail with INVALID_COMMITMENT", async () => {
+    contracts = await deployDAT(hre, {
+      revenueCommitmentBasisPoints: 0,
+    });
 
-//   it("shouldFail with OPEN_UNTIL_MAY_NOT_BE_REDUCED", async () => {
-//     contracts = await deployDAT(hre);
-//     await contracts.dat.updateConfig(
-//       await contracts.dat.whitelist(),
-//       await contracts.dat.beneficiary(),
-//       await contracts.dat.control(),
-//       await contracts.dat.feeCollector(),
-//       await contracts.dat.feeBasisPoints(),
-//       await contracts.dat.autoBurn(),
-//       await contracts.dat.revenueCommitmentBasisPoints(),
-//       await contracts.dat.minInvestment(),
-//       "100",
-//       { from: await contracts.dat.control() }
-//     );
-//     await expectRevert(
-//       contracts.dat.updateConfig(
-//         await contracts.dat.whitelist(),
-//         await contracts.dat.beneficiary(),
-//         await contracts.dat.control(),
-//         await contracts.dat.feeCollector(),
-//         await contracts.dat.feeBasisPoints(),
-//         await contracts.dat.autoBurn(),
-//         await contracts.dat.revenueCommitmentBasisPoints(),
-//         await contracts.dat.minInvestment(),
-//         "99",
-//         { from: await contracts.dat.control() }
-//       ),
-//       "OPEN_UNTIL_MAY_NOT_BE_REDUCED"
-//     );
-//   });
-// });
+    await updateDAT(contracts, hre.web3, {
+      revenueCommitmentBasisPoints: "11",
+    });
 
+    await expectRevert(
+      updateDAT(contracts, hre.web3, { revenueCommitmentBasisPoints: "10" }),
+      "COMMITMENT_MAY_NOT_BE_REDUCED"
+    );
+  });
+
+  it("shouldFail with INVALID_COMMITMENT", async () => {
+    contracts = await deployDAT(hre);
+    await expectRevert(
+      updateDAT(contracts, hre.web3, {
+        revenueCommitmentBasisPoints: "100000",
+      }),
+      "INVALID_COMMITMENT"
+    );
+  });
+
+  it("shouldFail with INVALID_FEE", async () => {
+    contracts = await deployDAT(hre);
+    await expectRevert(
+      updateDAT(contracts, hre.web3, { feeBasisPoints: "100000" }),
+      "INVALID_FEE"
+    );
+  });
+
+  it("shouldFail with INVALID_MIN_INVESTMENT", async () => {
+    contracts = await deployDAT(hre);
+    await expectRevert(
+      updateDAT(contracts, hre.web3, { minInvestment: "0" }),
+      "INVALID_MIN_INVESTMENT"
+    );
+  });
+
+  it("shouldFail with INVALID_ADDRESS when missing the beneficiary", async () => {
+    contracts = await deployDAT(hre);
+    await expectRevert(
+      updateDAT(contracts, hre.web3, { beneficiary: ZERO_ADDRESS }),
+      "INVALID_ADDRESS"
+    );
+  });
+
+  it("shouldFail with OPEN_UNTIL_MAY_NOT_BE_REDUCED", async () => {
+    contracts = await deployDAT(hre);
+
+    await updateDAT(contracts, hre.web3, { openUntilAtLeast: "100" });
+    await expectRevert(
+      updateDAT(contracts, hre.web3, { openUntilAtLeast: "99" }),
+      "OPEN_UNTIL_MAY_NOT_BE_REDUCED"
+    );
+  });
+});

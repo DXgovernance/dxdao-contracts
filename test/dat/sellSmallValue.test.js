@@ -52,4 +52,3 @@ contract("dat / sellSmallValue", accounts => {
     assert.equal(actual.toString(), "0");
   });
 });
-

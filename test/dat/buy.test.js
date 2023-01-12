@@ -13,7 +13,6 @@ contract("dat / buy", accounts => {
   });
 
   it("balanceOf should be 0 by default", async () => {
-    console.log("contracts", contracts);
     const balance = await contracts.dat.balanceOf(buyer);
     assert.equal(balance, 0);
   });
@@ -43,4 +42,3 @@ contract("dat / buy", accounts => {
     });
   });
 });
-

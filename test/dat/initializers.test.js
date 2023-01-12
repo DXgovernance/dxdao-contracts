@@ -1,6 +1,6 @@
 const { deployDAT } = require("../../scripts/DAT");
 const { expectRevert } = require("@openzeppelin/test-helpers");
-const { constants } = require("../helpers");
+const { ZERO_ADDRESS } = require("../helpers/constants");
 
 contract("initializers", () => {
   let contracts;
@@ -18,16 +18,7 @@ contract("initializers", () => {
 
   it("initialize may not be called again", async () => {
     await expectRevert(
-      contracts.dat.initialize(
-        1,
-        constants.ZERO_ADDRESS,
-        1,
-        1,
-        1,
-        1,
-        "test",
-        "test"
-      ),
+      contracts.dat.initialize(1, ZERO_ADDRESS, 1, 1, 1, 1, "test", "test"),
       "ALREADY_INITIALIZED"
     );
   });
@@ -39,4 +30,3 @@ contract("initializers", () => {
     );
   });
 });
-

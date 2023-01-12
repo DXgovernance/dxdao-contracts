@@ -1,16 +1,16 @@
-// const { deployDAT } = require("../../scripts/deployDAT");
-// 
-// const { reverts } = require("truffle-assertions");
+// const { deployDAT } = require("../../scripts/DAT");
+// const { expectRevert } = require("@openzeppelin/test-helpers");
+
 // const noFallbackProxyArtifact = artifacts.require("NoFallbackProxy");
-// 
+
 // contract("dat / closeRefund", (accounts) => {
 //   let contracts;
 //   let proxy;
-// 
+
 //   beforeEach(async () => {
-//     contracts = await deployDAT(accounts);
+//     contracts = await deployDAT(hre);
 //     proxy = await noFallbackProxyArtifact.new();
-// 
+
 //     // Buy tokens for various accounts
 //     for (let i = 0; i < 9; i++) {
 //       await contracts.dat.buy(accounts[i], "100000000000000000000", 1, {
@@ -19,14 +19,14 @@
 //       });
 //     }
 //   });
-// 
+
 //   it("sanity check", async () => {
 //     await contracts.dat.close({
 //       value: "1000000000000000000000000000",
 //       from: await contracts.dat.beneficiary(),
 //     });
 //   });
-// 
+
 //   it("shouldFail if the refund is rejected", async () => {
 //     // change beneficiary to the proxy
 //     await contracts.dat.updateConfig(
@@ -40,12 +40,12 @@
 //       await contracts.dat.minDuration(),
 //       { from: await contracts.dat.control() }
 //     );
-// 
+
 //     const callData = web3.eth.abi.encodeFunctionCall(
 //       contracts.dat.abi.find((e) => e.name === "close"),
 //       []
 //     );
-//     await reverts(
+//     await expectRevert(
 //       proxy.proxyCall(contracts.dat.address, callData, {
 //         value: "1000000000000000000000000000",
 //         from: await contracts.dat.control(),

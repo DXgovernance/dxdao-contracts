@@ -36,4 +36,3 @@ contract("dat / sellPremint", accounts => {
     assert.equal(actual.toString(), expected.toFixed());
   });
 });
-

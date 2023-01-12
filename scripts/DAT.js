@@ -121,6 +121,7 @@ async function updateDAT(contracts, web3, options) {
 
   const callOptions = Object.assign(
     {
+      whitelist: "0x0000000000000000000000000000000000000000",
       beneficiary: await datContract.beneficiary(),
       control: await datContract.control(),
       feeCollector: await datContract.feeCollector(),
@@ -137,7 +138,7 @@ async function updateDAT(contracts, web3, options) {
   const controller = await contracts.dat.control();
   const updateCall = new web3.eth.Contract(DATContract.abi).methods
     .updateConfig(
-      "0x0000000000000000000000000000000000000000",
+      callOptions.whitelist,
       callOptions.beneficiary,
       callOptions.control,
       callOptions.feeCollector,
@@ -149,10 +150,10 @@ async function updateDAT(contracts, web3, options) {
     )
     .encodeABI();
 
-  return await web3.eth.sendTransaction({
+  return web3.eth.sendTransaction({
     to: contracts.dat.address,
     data: updateCall,
-    from: controller,
+    from: options.from || controller,
   });
 }
 
