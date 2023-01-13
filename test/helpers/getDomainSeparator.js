@@ -2,11 +2,7 @@ const Web3 = require("web3");
 const { utils } = require("ethers");
 const { keccak256, defaultAbiCoder, toUtf8Bytes } = utils;
 
-module.exports = async function getDomainSeparator(
-  name,
-  version,
-  contractAddress
-) {
+export async function getDomainSeparator(name, version, contractAddress) {
   // the old web3 version does not have this function
   let chainId = await new Web3(web3).eth.getChainId();
   if (chainId === 1337) {
@@ -29,4 +25,4 @@ module.exports = async function getDomainSeparator(
       ]
     )
   );
-};
+}

@@ -1,5 +1,5 @@
-const BigNumber = require("bignumber.js");
-const { deployDAT } = require("../../scripts/DAT");
+import BigNumber from "bignumber.js";
+import { deployDAT } from "../../scripts/DAT";
 
 contract("dat / sellPremint", accounts => {
   const [beneficiary, buyer, other] = accounts;

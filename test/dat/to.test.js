@@ -1,7 +1,6 @@
-const BigNumber = require("bignumber.js");
-const { deployDAT } = require("../../scripts/DAT");
-
-const getGasCost = require("../helpers/getGasCost");
+import BigNumber from "bignumber.js";
+import { deployDAT } from "../../scripts/DAT";
+import { getGasCost } from "../helpers/getGasCost";
 
 contract("dat / to", accounts => {
   let contracts;

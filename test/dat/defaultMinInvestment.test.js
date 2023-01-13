@@ -1,7 +1,4 @@
-const { deployDAT } = require("../../scripts/DAT");
-
-const { tokens } = require("hardlydifficult-eth");
-const BigNumber = require("bignumber.js");
+import { deployDAT } from "../../scripts/DAT";
 
 contract("dat / defaultMinInvestment", accounts => {
   let contracts;

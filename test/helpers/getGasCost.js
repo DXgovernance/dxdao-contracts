@@ -23,8 +23,8 @@ async function getReceipt(tx, web3) {
   }
 }
 
-module.exports = async function getGasCost(tx, web3) {
+export async function getGasCost(tx, web3) {
   await getRequest(tx, web3);
   await getReceipt(tx, web3);
   return new BigNumber(tx.request.gasPrice).times(tx.receipt.gasUsed);
-};
+}

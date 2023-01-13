@@ -1,9 +1,6 @@
-const { deployDAT, updateDAT } = require("../../scripts/DAT");
-
-const { ZERO_ADDRESS, MAX_UINT } = require("../helpers/constants");
-const { expectRevert, expectEvent } = require("@openzeppelin/test-helpers");
-const { assert } = require("chai");
-
+import { deployDAT, updateDAT } from "../../scripts/DAT";
+import { expectRevert } from "@openzeppelin/test-helpers";
+import { ZERO_ADDRESS, MAX_UINT } from "../helpers/constants";
 const DATContract = artifacts.require("DecentralizedAutonomousTrust");
 
 contract("dat / updateConfig", accounts => {
@@ -31,32 +28,14 @@ contract("dat / updateConfig", accounts => {
   it.skip("can update the minInvestment to MAX_UINT", async () => {
     contracts = await deployDAT(hre);
 
-    await contracts.dat.buy(accounts[4], web3.utils.toWei("10"), "1"),
-      {
-        value: web3.utils.toWei("10"),
-        from: accounts[4],
-        gas: 9000000,
-      };
+    await contracts.dat.buy(accounts[4], web3.utils.toWei("10"), "1", {
+      value: web3.utils.toWei("10"),
+      from: accounts[4],
+      gas: 9000000,
+    });
 
-    const updateCall = new web3.eth.Contract(DATContract.abi)
-      .updateConfig(
-        await contracts.dat.whitelist(),
-        await contracts.dat.beneficiary(),
-        await contracts.dat.control(),
-        await contracts.dat.feeCollector(),
-        await contracts.dat.feeBasisPoints(),
-        await contracts.dat.autoBurn(),
-        await contracts.dat.revenueCommitmentBasisPoints(),
-        constants.MAX_UINT,
-        await contracts.dat.openUntilAtLeast()
-      )
-      .encodeABI();
-
-    const controller = await contracts.dat.control();
-    await web3.eth.sendTransaction({
-      to: contracts.dat.address,
-      data: updateCall,
-      from: controller,
+    await updateDAT(contracts, hre.web3, {
+      minInvestment: MAX_UINT,
     });
 
     // reverts when trying to buy more than 10 or 10000 ETH worth of tokens

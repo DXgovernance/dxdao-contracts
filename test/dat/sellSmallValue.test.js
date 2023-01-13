@@ -1,4 +1,4 @@
-const { deployDAT } = require("../../scripts/DAT");
+import { deployDAT } from "../../scripts/DAT";
 
 /*
 Testing the following scenario, which was a bug in version <= 2:

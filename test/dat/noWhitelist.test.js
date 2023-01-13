@@ -1,6 +1,5 @@
-const { deployDAT } = require("../../scripts/DAT");
-
-const { ZERO_ADDRESS } = require("../helpers/constants");
+import { deployDAT } from "../../scripts/DAT";
+import { ZERO_ADDRESS } from "../helpers/constants";
 
 // TODO: this test seems to be refactored ok but is not passing at all. Verify
 

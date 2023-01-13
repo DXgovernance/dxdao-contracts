@@ -1,7 +1,6 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 
 const constants = require("./constants");
-const getGasCost = require("./getGasCost");
 
 const { LogDecoder } = require("@maticnetwork/eth-decoder");
 
@@ -254,4 +253,4 @@ export function customErrorMessageExistInRawLogs(
   );
 }
 
-export { constants, getGasCost };
+export { constants };

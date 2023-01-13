@@ -1,6 +1,5 @@
-const { deployDAT } = require("../../scripts/DAT");
-
-const getDomainSeparator = require("../helpers/getDomainSeparator");
+import { deployDAT } from "../../scripts/DAT";
+import { getDomainSeparator } from "../helpers/getDomainSeparator";
 
 contract("dat / domainSeparator", () => {
   let contracts;

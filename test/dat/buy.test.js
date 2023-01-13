@@ -1,8 +1,8 @@
 /**
  * Tests the ability to buy dat tokens
  */
-const { deployDAT } = require("../../scripts/DAT");
-const { expectRevert } = require("@openzeppelin/test-helpers");
+import { deployDAT } from "../../scripts/DAT";
+import { expectRevert } from "@openzeppelin/test-helpers";
 
 contract("dat / buy", accounts => {
   let contracts;

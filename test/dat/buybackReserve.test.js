@@ -1,7 +1,6 @@
-const { deployDAT } = require("../../scripts/DAT");
-
-const { tokens } = require("hardlydifficult-eth");
-const { MAX_UINT } = require("../helpers/constants");
+import { tokens } from "hardlydifficult-eth";
+import { deployDAT } from "../../scripts/DAT";
+import { MAX_UINT } from "../helpers/constants";
 
 contract("dat / buybackReserve", accounts => {
   let contracts;

@@ -1,10 +1,8 @@
-const { tokens } = require("hardlydifficult-eth");
-const { expectRevert } = require("@openzeppelin/test-helpers");
-
-const BigNumber = require("bignumber.js");
-const { deployDAT } = require("../../scripts/DAT");
-
-const { DAT_STATES, ZERO_ADDRESS, MAX_UINT } = require("../helpers/constants");
+import BigNumber from "bignumber.js";
+import { tokens } from "hardlydifficult-eth";
+import { deployDAT } from "../../scripts/DAT";
+import { expectRevert } from "@openzeppelin/test-helpers";
+import { DAT_STATES, ZERO_ADDRESS, MAX_UINT } from "../helpers/constants";
 
 contract("dat / pay", accounts => {
   let contracts;

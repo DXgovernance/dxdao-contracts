@@ -1,8 +1,7 @@
-const { deployDAT } = require("../../scripts/DAT");
-
-const { tokens } = require("hardlydifficult-eth");
-const { MAX_UINT } = require("../helpers/constants");
-const { expectRevert } = require("@openzeppelin/test-helpers");
+import { tokens } from "hardlydifficult-eth";
+import { deployDAT } from "../../scripts/DAT";
+import { MAX_UINT } from "../helpers/constants";
+import { expectRevert } from "@openzeppelin/test-helpers";
 
 contract("dat / collectInvestment", accounts => {
   it("shouldFail with DO_NOT_SEND_ETH", async () => {

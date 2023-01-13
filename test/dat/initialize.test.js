@@ -1,7 +1,6 @@
-const { deployDAT } = require("../../scripts/DAT");
-
-const { MAX_UINT } = require("../helpers/constants");
-const { expectRevert } = require("@openzeppelin/test-helpers");
+import { deployDAT } from "../../scripts/DAT";
+import { MAX_UINT } from "../helpers/constants";
+import { expectRevert } from "@openzeppelin/test-helpers";
 
 const DATContract = artifacts.require("DecentralizedAutonomousTrust");
 

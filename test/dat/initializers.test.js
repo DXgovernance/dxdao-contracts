@@ -1,6 +1,6 @@
-const { deployDAT } = require("../../scripts/DAT");
-const { expectRevert } = require("@openzeppelin/test-helpers");
-const { ZERO_ADDRESS } = require("../helpers/constants");
+import { deployDAT } from "../../scripts/DAT";
+import { expectRevert } from "@openzeppelin/test-helpers";
+import { MAX_UINT, ZERO_ADDRESS } from "../helpers/constants";
 
 contract("initializers", () => {
   let contracts;
