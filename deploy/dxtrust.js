@@ -1,9 +1,3 @@
-/*****************************************
- |                                       |
- |       Mainnet deployment script       |
- |                                       |
- */
-
 const moment = require("moment");
 
 // *** Constants
@@ -130,8 +124,6 @@ module.exports = async hre => {
     " \n"
   );
   const { deployer: deployerAddress } = await getNamedAccounts();
-  // console.log("hre", await hre.getUnnamedAccounts());
-  // process.exit(0);
   const { deploy } = deployments;
   const momentNow = moment.utc(new Date().toUTCString());
   const network = hre.network.name;
