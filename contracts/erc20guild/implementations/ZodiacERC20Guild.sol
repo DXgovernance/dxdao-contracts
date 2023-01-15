@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@gnosis.pm/zodiac/contracts/interfaces/IAvatar.sol";
 import "@gnosis.pm/safe-contracts/contracts/common/Enum.sol";
-import "../BaseERC20Guild.sol";
+import "./../ERC20GuildUpgradeable.sol";
 import "./../../utils/IPermissionRegistry.sol";
 
 /*
@@ -13,25 +13,7 @@ import "./../../utils/IPermissionRegistry.sol";
     never executed from this contract itself. If the owners of the Gnosis Safe are removed and
     this module is enabled, then the Safe becomes the ERC20 Guild's Safe.
 */
-contract ZodiacERC20Guild is BaseERC20Guild {
-    struct InitializationParams {
-        address token;
-        uint256 proposalTime;
-        uint256 timeForExecution;
-        uint256 votingPowerPercentageForProposalExecution;
-        uint256 votingPowerPercentageForProposalCreation;
-        string name;
-        uint256 voteGas;
-        uint256 maxGasPrice;
-        uint256 maxActiveProposals;
-        uint256 lockTime;
-        uint256 minimumMembersForProposalCreation;
-        uint256 minimumTokensLockedForProposalCreation;
-        address permissionRegistry;
-        address avatar;
-        address multisend;
-    }
-
+contract ZodiacERC20Guild is ERC20GuildUpgradeable {
     bytes private constant SET_ERC20_BALANCES_DATA =
         abi.encodeWithSelector(IPermissionRegistry.setERC20Balances.selector);
     /// @dev Address that this module will pass transactions to.
@@ -46,40 +28,54 @@ contract ZodiacERC20Guild is BaseERC20Guild {
     /// @dev Emitted each time the avatar is set.
     event MultisendSet(address indexed previousMultisend, address indexed newMultisend);
 
-    constructor(bytes memory initializeParams) {
-        setUp(initializeParams);
-    }
+    constructor() {}
 
     /// @dev Initializer
-    /// @param initializeParams The ERC20 token that will be used as source of voting power
-    function setUp(bytes memory initializeParams) public {
-        require(!initialized, "ERC20Guild: Already initialized");
-        InitializationParams memory initParams = abi.decode(initializeParams, (InitializationParams));
-
-        require(
-            initParams.lockTime >= initParams.proposalTime,
-            "ERC20Guild: lockTime has to be higher or equal to proposalTime"
+    /// @param _token The ERC20 token that will be used as source of voting power
+    /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting
+    /// @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
+    // solhint-disable-next-line max-line-length
+    /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal action
+    // solhint-disable-next-line max-line-length
+    /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    /// @param _name The name of the ERC20Guild
+    /// @param _voteGas The amount of gas in wei unit used for vote refunds
+    /// @param _maxGasPrice The maximum gas price used for vote refunds
+    /// @param _maxActiveProposals The maximum amount of proposals to be active at the same time
+    /// @param _lockTime The minimum amount of seconds that the tokens would be locked
+    /// @param _permissionRegistry The address of the permission registry contract to be used
+    /// @param _avatar Address that this module will pass transactions to.
+    /// @param _multisend Address of the multisend contract that the avatar contract should use to bundle transactions.
+    function initialize(
+        address _token,
+        uint256 _proposalTime,
+        uint256 _timeForExecution,
+        uint256 _votingPowerPercentageForProposalExecution,
+        uint256 _votingPowerPercentageForProposalCreation,
+        string memory _name,
+        uint256 _voteGas,
+        uint256 _maxGasPrice,
+        uint256 _maxActiveProposals,
+        uint256 _lockTime,
+        address _permissionRegistry,
+        address _avatar,
+        address _multisend
+    ) public virtual {
+        initialize(
+            _token,
+            _proposalTime,
+            _timeForExecution,
+            _votingPowerPercentageForProposalExecution,
+            _votingPowerPercentageForProposalCreation,
+            _name,
+            _voteGas,
+            _maxGasPrice,
+            _maxActiveProposals,
+            _lockTime,
+            _permissionRegistry
         );
-        name = initParams.name;
-        token = IERC20Upgradeable(initParams.token);
-        tokenVault = new TokenVault(address(token), address(this));
-        permissionRegistry = PermissionRegistry(initParams.permissionRegistry);
-
-        proposalTime = initParams.proposalTime;
-        timeForExecution = initParams.timeForExecution;
-        votingPowerPercentageForProposalExecution = initParams.votingPowerPercentageForProposalExecution;
-        votingPowerPercentageForProposalCreation = initParams.votingPowerPercentageForProposalCreation;
-        voteGas = initParams.voteGas;
-        maxGasPrice = initParams.maxGasPrice;
-        maxActiveProposals = initParams.maxActiveProposals;
-        lockTime = initParams.lockTime;
-        minimumMembersForProposalCreation = initParams.minimumMembersForProposalCreation;
-        minimumTokensLockedForProposalCreation = initParams.minimumTokensLockedForProposalCreation;
-
-        avatar = initParams.avatar;
-        multisend = initParams.multisend;
-
-        initialized = true;
+        avatar = _avatar;
+        multisend = _multisend;
     }
 
     /// @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initialized

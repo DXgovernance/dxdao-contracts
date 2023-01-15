@@ -18,11 +18,6 @@ const {
   time,
 } = require("@openzeppelin/test-helpers");
 
-const ProxyAdmin = artifacts.require("ProxyAdmin.sol");
-const TransparentUpgradeableProxy = artifacts.require(
-  "TransparentUpgradeableProxy.sol"
-);
-const Create2Deployer = artifacts.require("Create2Deployer.sol");
 const ZodiacERC20Guild = artifacts.require("ZodiacERC20Guild.sol");
 const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
@@ -31,26 +26,6 @@ const Multicall = artifacts.require("Multicall.sol");
 const ModuleProxyFactory = artifacts.require("ModuleProxyFactory.sol");
 const MultiSend = artifacts.require("MultiSend.sol");
 const TestAvatar = artifacts.require("TestAvatar.sol");
-
-const initParamTypes = {
-  InitializationParams: {
-    token: "address",
-    proposalTime: "uint256",
-    timeForExecution: "uint256",
-    votingPowerPercentageForProposalExecution: "uint256",
-    votingPowerPercentageForProposalCreation: "uint256",
-    name: "string",
-    voteGas: "uint256",
-    maxGasPrice: "uint256",
-    maxActiveProposals: "uint256",
-    lockTime: "uint256",
-    minimumMembersForProposalCreation: "uint256",
-    minimumTokensLockedForProposalCreation: "uint256",
-    permissionRegistry: "address",
-    avatar: "address",
-    multisend: "address",
-  },
-};
 
 require("chai").should();
 
@@ -64,9 +39,9 @@ contract("ZodiacERC20Guild", function (accounts) {
   let guildToken,
     actionMockA,
     actionMockB,
+    moduleProxyFactory,
     erc20Guild,
     zodiacERC20GuildMasterCopy,
-    initData,
     multiSend,
     testAvatar,
     permissionRegistry,
@@ -74,8 +49,6 @@ contract("ZodiacERC20Guild", function (accounts) {
     multicall;
 
   beforeEach(async function () {
-    const proxyAdmin = await ProxyAdmin.new({ from: accounts[0] });
-
     multicall = await Multicall.new();
 
     guildToken = await createAndSetupGuildToken(
@@ -86,33 +59,30 @@ contract("ZodiacERC20Guild", function (accounts) {
     await permissionRegistry.initialize();
 
     multiSend = await MultiSend.new();
-    const moduleProxyFactory = await ModuleProxyFactory.new();
+    moduleProxyFactory = await ModuleProxyFactory.new();
     testAvatar = await TestAvatar.new();
-
-    initData = await web3.eth.abi.encodeParameter(initParamTypes, {
-      token: guildToken.address,
-      proposalTime: 30,
-      timeForExecution: 30,
-      votingPowerPercentageForProposalExecution: 5000,
-      votingPowerPercentageForProposalCreation: 100,
-      name: "TestGuild",
-      voteGas: 0,
-      maxGasPrice: 0,
-      maxActiveProposals: 10,
-      lockTime: 60,
-      minimumMembersForProposalCreation: 0,
-      minimumTokensLockedForProposalCreation: 0,
-      permissionRegistry: permissionRegistry.address,
-      avatar: testAvatar.address,
-      multisend: multiSend.address,
-    });
-    zodiacERC20GuildMasterCopy = await ZodiacERC20Guild.new(initData);
 
     const initializer = await new web3.eth.Contract(
       ZodiacERC20Guild.abi
     ).methods
-      .setUp(initData)
+      .initialize(
+        guildToken.address,
+        30,
+        30,
+        5000,
+        100,
+        "TestGuild",
+        0,
+        0,
+        10,
+        60,
+        permissionRegistry.address,
+        testAvatar.address,
+        multiSend.address
+      )
       .encodeABI();
+
+    zodiacERC20GuildMasterCopy = await ZodiacERC20Guild.new();
     const tx = await moduleProxyFactory.deployModule(
       zodiacERC20GuildMasterCopy.address,
       initializer,
@@ -274,78 +244,95 @@ contract("ZodiacERC20Guild", function (accounts) {
       assert.equal(await erc20Guild.lockTime(), 60);
       assert.equal(await erc20Guild.maxActiveProposals(), 10);
       await expectRevert(
-        erc20Guild.setUp(initData),
-        "ERC20Guild: Already initialized"
+        erc20Guild.initialize(
+          guildToken.address,
+          30,
+          30,
+          5000,
+          100,
+          "TestGuild",
+          0,
+          0,
+          10,
+          60,
+          permissionRegistry.address,
+          testAvatar.address,
+          multiSend.address
+        ),
+        "Initializable: contract is already initialized"
       );
     });
 
     it("Master copy initial values are correct", async function () {
+      assert.equal(await erc20Guild.getToken(), guildToken.address);
       assert.equal(
-        await zodiacERC20GuildMasterCopy.getToken(),
-        guildToken.address
-      );
-      assert.equal(
-        await zodiacERC20GuildMasterCopy.getPermissionRegistry(),
+        await erc20Guild.getPermissionRegistry(),
         permissionRegistry.address
       );
-      assert.equal(await zodiacERC20GuildMasterCopy.getName(), "TestGuild");
-      assert.equal(await zodiacERC20GuildMasterCopy.getTotalProposals(), 0);
-      assert.equal(await zodiacERC20GuildMasterCopy.getActiveProposalsNow(), 0);
-      assert.equal(await zodiacERC20GuildMasterCopy.getProposalsIdsLength(), 0);
-      assert.equal(await zodiacERC20GuildMasterCopy.getTotalMembers(), 0);
-      assert.deepEqual(await zodiacERC20GuildMasterCopy.getProposalsIds(), []);
+      assert.equal(await erc20Guild.getName(), "TestGuild");
+      assert.equal(await erc20Guild.getTotalProposals(), 0);
+      assert.equal(await erc20Guild.getActiveProposalsNow(), 0);
+      assert.equal(await erc20Guild.getProposalsIdsLength(), 0);
+      assert.equal(await erc20Guild.getTotalMembers(), 0);
+      assert.deepEqual(await erc20Guild.getProposalsIds(), []);
+      assert.equal(await erc20Guild.getMinimumMembersForProposalCreation(), 0);
       assert.equal(
-        await zodiacERC20GuildMasterCopy.getMinimumMembersForProposalCreation(),
+        await erc20Guild.getMinimumTokensLockedForProposalCreation(),
         0
       );
-      assert.equal(
-        await zodiacERC20GuildMasterCopy.getMinimumTokensLockedForProposalCreation(),
-        0
-      );
-      assert.equal(
-        await zodiacERC20GuildMasterCopy.avatar(),
-        testAvatar.address
-      );
-      assert.equal(
-        await zodiacERC20GuildMasterCopy.target(),
-        testAvatar.address
-      );
-      assert.equal(
-        await zodiacERC20GuildMasterCopy.multisend(),
-        multiSend.address
-      );
-      assert.equal(await zodiacERC20GuildMasterCopy.lockTime(), 60);
-      assert.equal(await zodiacERC20GuildMasterCopy.maxActiveProposals(), 10);
+      assert.equal(await erc20Guild.avatar(), testAvatar.address);
+      assert.equal(await erc20Guild.target(), testAvatar.address);
+      assert.equal(await erc20Guild.multisend(), multiSend.address);
+      assert.equal(await erc20Guild.lockTime(), 60);
+      assert.equal(await erc20Guild.maxActiveProposals(), 10);
       await expectRevert(
-        zodiacERC20GuildMasterCopy.setUp(initData),
-        "ERC20Guild: Already initialized"
+        erc20Guild.initialize(
+          guildToken.address,
+          30,
+          30,
+          5000,
+          100,
+          "TestGuild",
+          0,
+          0,
+          10,
+          60,
+          permissionRegistry.address,
+          testAvatar.address,
+          multiSend.address
+        ),
+        "Initializable: contract is already initialized"
       );
     });
 
     it("cannot initialize with lockTime lower than proposalTime", async function () {
-      const incorrectInitData = await web3.eth.abi.encodeParameter(
-        initParamTypes,
-        {
-          token: guildToken.address,
-          proposalTime: 100,
-          timeForExecution: 30,
-          votingPowerPercentageForProposalExecution: 5000,
-          votingPowerPercentageForProposalCreation: 100,
-          name: "TestGuild",
-          voteGas: 0,
-          maxGasPrice: 0,
-          maxActiveProposals: 10,
-          lockTime: 60,
-          minimumMembersForProposalCreation: 0,
-          minimumTokensLockedForProposalCreation: 0,
-          permissionRegistry: permissionRegistry.address,
-          avatar: testAvatar.address,
-          multisend: multiSend.address,
-        }
-      );
+      const incorrectInitializer = await new web3.eth.Contract(
+        ZodiacERC20Guild.abi
+      ).methods
+        .initialize(
+          guildToken.address,
+          100,
+          30,
+          5000,
+          100,
+          "TestGuild",
+          0,
+          0,
+          10,
+          60,
+          permissionRegistry.address,
+          testAvatar.address,
+          multiSend.address
+        )
+        .encodeABI();
+
       await expectRevert(
-        ZodiacERC20Guild.new(incorrectInitData),
-        "ERC20Guild: lockTime has to be higher or equal to proposalTime"
+        moduleProxyFactory.deployModule(
+          zodiacERC20GuildMasterCopy.address,
+          incorrectInitializer,
+          constants.SOME_HASH
+        ),
+        "FailedInitialization"
       );
     });
   });
