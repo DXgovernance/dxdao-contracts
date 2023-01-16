@@ -6,7 +6,7 @@ pragma solidity ^0.5.0;
  */
 library Sqrt {
     /// @notice The max possible value
-    uint256 private constant MAX_UINT = 2**256 - 1;
+    uint256 private constant MAX_UINT = 2 ** 256 - 1;
 
     // Source: https://github.com/ethereum/dapp-bin/pull/50
     function sqrt(uint256 x) internal pure returns (uint256 y) {
@@ -16,7 +16,7 @@ library Sqrt {
             return 1;
         } else if (x == MAX_UINT) {
             // Without this we fail on x + 1 below
-            return 2**128 - 1;
+            return 2 ** 128 - 1;
         }
 
         uint256 z = (x + 1) / 2;

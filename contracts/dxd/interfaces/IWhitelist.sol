@@ -14,11 +14,7 @@ interface IWhitelist {
      * @return Code by which to reference message for rejection reasoning
      * @dev Overwrite with your custom transfer restriction logic
      */
-    function detectTransferRestriction(
-        address from,
-        address to,
-        uint256 value
-    ) external view returns (uint8);
+    function detectTransferRestriction(address from, address to, uint256 value) external view returns (uint8);
 
     /**
      * @notice Returns a human-readable message for a given restriction code
@@ -34,10 +30,5 @@ interface IWhitelist {
      * This is a mutable call to allow additional data to be recorded,
      * such as when the user aquired their tokens.
      */
-    function authorizeTransfer(
-        address _from,
-        address _to,
-        uint256 _value,
-        bool _isSell
-    ) external;
+    function authorizeTransfer(address _from, address _to, uint256 _value, bool _isSell) external;
 }

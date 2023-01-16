@@ -65,14 +65,14 @@ contract DecentralizedAutonomousTrust is ERC20, ERC20Detailed {
     uint256 private constant STATE_CANCEL = 3;
 
     /// @notice When multiplying 2 terms, the max value is 2^128-1
-    uint256 private constant MAX_BEFORE_SQUARE = 2**128 - 1;
+    uint256 private constant MAX_BEFORE_SQUARE = 2 ** 128 - 1;
 
     /// @notice The denominator component for values specified in basis points.
     uint256 private constant BASIS_POINTS_DEN = 10000;
 
     /// @notice The max `totalSupply() + burnedSupply`
     /// @dev This limit ensures that the DAT's formulas do not overflow (<MAX_BEFORE_SQUARE/2)
-    uint256 private constant MAX_SUPPLY = 10**38;
+    uint256 private constant MAX_SUPPLY = 10 ** 38;
 
     /**
      * Data specific to our token business logic
@@ -200,11 +200,7 @@ contract DecentralizedAutonomousTrust is ERC20, ERC20Detailed {
      * Functions required for the whitelist
      */
 
-    function _detectTransferRestriction(
-        address _from,
-        address _to,
-        uint256 _value
-    ) private view returns (uint256) {
+    function _detectTransferRestriction(address _from, address _to, uint256 _value) private view returns (uint256) {
         if (address(whitelist) != address(0)) {
             // This is not set for the minting of initialReserve
             return whitelist.detectTransferRestriction(_from, _to, _value);
@@ -257,11 +253,7 @@ contract DecentralizedAutonomousTrust is ERC20, ERC20Detailed {
      */
 
     /// @notice Confirms the transfer of `_quantityToInvest` currency to the contract.
-    function _collectInvestment(
-        uint256 _quantityToInvest,
-        uint256 _msgValue,
-        bool _refundRemainder
-    ) private {
+    function _collectInvestment(uint256 _quantityToInvest, uint256 _msgValue, bool _refundRemainder) private {
         if (address(currency) == address(0)) {
             // currency is ETH
             if (_refundRemainder) {
@@ -553,11 +545,7 @@ contract DecentralizedAutonomousTrust is ERC20, ERC20Detailed {
     /// @param _minTokensBought Buy at least this many COT tokens or the transaction reverts.
     /// @dev _minTokensBought is necessary as the price will change if some elses transaction mines after
     /// yours was submitted.
-    function buy(
-        address _to,
-        uint256 _currencyValue,
-        uint256 _minTokensBought
-    ) public payable {
+    function buy(address _to, uint256 _currencyValue, uint256 _minTokensBought) public payable {
         require(_to != address(0), "INVALID_ADDRESS");
         require(_minTokensBought > 0, "MUST_BUY_AT_LEAST_1");
 
@@ -669,11 +657,7 @@ contract DecentralizedAutonomousTrust is ERC20, ERC20Detailed {
     /// @param _minCurrencyReturned Get at least this many currency tokens or the transaction reverts.
     /// @dev _minCurrencyReturned is necessary as the price will change if some elses transaction mines after
     /// yours was submitted.
-    function sell(
-        address payable _to,
-        uint256 _quantityToSell,
-        uint256 _minCurrencyReturned
-    ) public {
+    function sell(address payable _to, uint256 _quantityToSell, uint256 _minCurrencyReturned) public {
         require(msg.sender != beneficiary || state >= STATE_CLOSE, "BENEFICIARY_ONLY_SELL_IN_CLOSE_OR_CANCEL");
         require(_minCurrencyReturned > 0, "MUST_SELL_AT_LEAST_1");
 

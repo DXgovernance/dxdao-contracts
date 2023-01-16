@@ -14,10 +14,10 @@ library BigDiv {
     using SafeMath for uint256;
 
     /// @notice The max possible value
-    uint256 private constant MAX_UINT = 2**256 - 1;
+    uint256 private constant MAX_UINT = 2 ** 256 - 1;
 
     /// @notice When multiplying 2 terms <= this value the result won't overflow
-    uint256 private constant MAX_BEFORE_SQUARE = 2**128 - 1;
+    uint256 private constant MAX_BEFORE_SQUARE = 2 ** 128 - 1;
 
     /// @notice The max error target is off by 1 plus up to 0.000001% error
     /// for bigDiv2x1 and that `* 2` for bigDiv2x2
@@ -33,11 +33,7 @@ library BigDiv {
      * @param _den the denominator
      * @return the approx result with up to off by 1 + MAX_ERROR, rounding down if needed
      */
-    function bigDiv2x1(
-        uint256 _numA,
-        uint256 _numB,
-        uint256 _den
-    ) internal pure returns (uint256) {
+    function bigDiv2x1(uint256 _numA, uint256 _numB, uint256 _den) internal pure returns (uint256) {
         if (_numA == 0 || _numB == 0) {
             // would div by 0 or underflow if we don't special case 0
             return 0;
@@ -110,11 +106,7 @@ library BigDiv {
      * @return the approx result with up to off by 1 + MAX_ERROR, rounding down if needed
      * @dev roundUp is implemented by first rounding down and then adding the max error to the result
      */
-    function bigDiv2x1RoundUp(
-        uint256 _numA,
-        uint256 _numB,
-        uint256 _den
-    ) internal pure returns (uint256) {
+    function bigDiv2x1RoundUp(uint256 _numA, uint256 _numB, uint256 _den) internal pure returns (uint256) {
         // first get the rounded down result
         uint256 value = bigDiv2x1(_numA, _numB, _den);
 
@@ -148,12 +140,7 @@ library BigDiv {
      * @dev this uses bigDiv2x1 and adds additional rounding error so the max error of this
      * formula is larger
      */
-    function bigDiv2x2(
-        uint256 _numA,
-        uint256 _numB,
-        uint256 _denA,
-        uint256 _denB
-    ) internal pure returns (uint256) {
+    function bigDiv2x2(uint256 _numA, uint256 _numB, uint256 _denA, uint256 _denB) internal pure returns (uint256) {
         if (MAX_UINT / _denA >= _denB) {
             // denA*denB does not overflow, use bigDiv2x1 instead
             return bigDiv2x1(_numA, _numB, _denA * _denB);
