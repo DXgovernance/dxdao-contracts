@@ -139,7 +139,7 @@ contract("DAOController", function (accounts) {
     );
   });
 
-  it("registerScheme() should reject with: \"DAOController__SenderNotRegistered\"", async function () {
+  it("registerScheme() should reject with: DAOController__SenderNotRegistered", async function () {
     const newSchemeAddress = accounts[10];
     await expectRevert(
       controller.registerScheme(
@@ -154,7 +154,7 @@ contract("DAOController", function (accounts) {
     );
   });
 
-  it("registerScheme() should reject with: \"DAOController__SenderCannotManageSchemes\"", async function () {
+  it("registerScheme() should reject with: DAOController__SenderCannotManageSchemes", async function () {
     const schemeThatCanNotManageSchemes = accounts[10];
     await controller.registerScheme(
       schemeThatCanNotManageSchemes,
@@ -179,7 +179,7 @@ contract("DAOController", function (accounts) {
     );
   });
 
-  it("avatarCall() should reject with: \"DAOController__SenderCannotPerformAvatarCalls\"", async function () {
+  it("avatarCall() should reject with: DAOController__SenderCannotPerformAvatarCalls", async function () {
     const schemeThatCanNotMakeAvatarCalls = accounts[10];
     await controller.registerScheme(
       schemeThatCanNotMakeAvatarCalls,
