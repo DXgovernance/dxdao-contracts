@@ -219,7 +219,7 @@ contract("ERC20Guild", function (accounts) {
     await time.increase(30);
     await erc20Guild.endProposal(setETHPermissionToActionMockA);
   };
-if (false) {
+
   describe("initialization", function () {
     it("initial values are correct", async function () {
       assert.equal(await erc20Guild.getToken(), guildToken.address);
@@ -1293,7 +1293,7 @@ if (false) {
       assert.equal(state, constants.WALLET_SCHEME_PROPOSAL_STATES.passed);
     });
   });
-}
+
   describe("permission registry checks", function () {
     let testToken;
 
@@ -1339,9 +1339,7 @@ if (false) {
                 .setETHPermission(
                   erc20Guild.address,
                   testToken.address,
-                  web3.eth.abi.encodeFunctionSignature(
-                    "mint(address,uint256)"
-                  ),
+                  web3.eth.abi.encodeFunctionSignature("mint(address,uint256)"),
                   0,
                   true
                 )
@@ -1549,7 +1547,11 @@ if (false) {
         guild: erc20Guild,
         options: [
           {
-            to: [permissionRegistry.address, testToken.address, testToken.address],
+            to: [
+              permissionRegistry.address,
+              testToken.address,
+              testToken.address,
+            ],
             data: [
               await new web3.eth.Contract(PermissionRegistry.abi).methods
                 .removeERC20Limit(erc20Guild.address, 0)
@@ -1749,7 +1751,7 @@ if (false) {
         proposalId: guildProposalId,
         newState: "3",
       });
-      
+
       // ERC20 transfer limits are no longer checked after removal execution
       guildProposalId = await createProposal({
         guild: erc20Guild,
@@ -1985,7 +1987,7 @@ if (false) {
       );
     });
   });
-if (false) {
+
   describe("complete proposal process", function () {
     beforeEach(async function () {
       await lockTokens();
@@ -2773,5 +2775,4 @@ if (false) {
       );
     });
   });
-}
 });
