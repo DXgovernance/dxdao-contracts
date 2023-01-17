@@ -71,9 +71,9 @@ contract ERC20SnapshotRep is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         for (uint256 i = 0; i < accounts.length; i++) {
             _addHolder(accounts[i]);
             _mint(accounts[i], amount[i]);
-            _snapshot();
             emit Mint(accounts[i], amount[i]);
         }
+        _snapshot();
         return true;
     }
 
@@ -105,9 +105,9 @@ contract ERC20SnapshotRep is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         for (uint256 i = 0; i < accounts.length; i++) {
             _burn(accounts[i], amount[i]);
             _removeHolder(accounts[i]);
-            _snapshot();
             emit Burn(accounts[i], amount[i]);
         }
+        _snapshot();
         return true;
     }
 
