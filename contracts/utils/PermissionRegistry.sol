@@ -161,10 +161,7 @@ contract PermissionRegistry is OwnableUpgradeable {
      */
     function executeRemoveERC20Limit(address from, uint256 index) public {
         uint256 removeTime = erc20Limits[from][index].removeTime;
-        require(
-            removeTime != 0 && block.timestamp > removeTime,
-            "PermissionRegistry: Cant execute permission removal"
-        );
+        require(removeTime != 0 && block.timestamp > removeTime, "PermissionRegistry: Cant execute permission removal");
 
         erc20Limits[from][index] = ERC20Limit(address(0), 0, 0, 0);
     }
@@ -240,8 +237,7 @@ contract PermissionRegistry is OwnableUpgradeable {
             uint256 currentBalance = IERC20(erc20Limits[from][i].token).balanceOf(from);
             if (currentBalance < erc20Limits[from][i].initialValueOnBlock) {
                 require(
-                    erc20Limits[from][i].initialValueOnBlock.sub(currentBalance) <=
-                        erc20Limits[from][i].valueAllowed,
+                    erc20Limits[from][i].initialValueOnBlock.sub(currentBalance) <= erc20Limits[from][i].valueAllowed,
                     "PermissionRegistry: Value limit reached"
                 );
             }
