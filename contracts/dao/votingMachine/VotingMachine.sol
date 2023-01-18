@@ -830,12 +830,13 @@ contract VotingMachine {
                             // change proposal mode to Boosted mode.
                             proposal.state = ProposalState.Boosted;
                             proposal.times[1] = proposal.times[2] + params.preBoostedVotePeriodLimit;
+                            schemes[proposal.schemeId].preBoostedProposalsCounter--;
                             schemes[proposal.schemeId].boostedProposalsCounter++;
                         }
                     } else {
                         proposal.state = ProposalState.Queued;
+                        schemes[proposal.schemeId].preBoostedProposalsCounter--;
                     }
-                    schemes[proposal.schemeId].preBoostedProposalsCounter--;
                 } else {
                     // check the Confidence level is stable
                     if (score(proposalId) <= getSchemeThreshold(proposal.paramsHash, proposal.schemeId)) {
