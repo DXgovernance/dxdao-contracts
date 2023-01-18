@@ -60,6 +60,7 @@
     "hardhat-gas-reporter": "^1.0.4",
     "husky": "^7.0.4",
     "lint-staged": "^12.3.4",
+    "merkletreejs": "^0.3.9",
     "pm2": "^2.9.3",
     "promisify": "^0.0.3",
     "pug": "^2.0.0-rc.4",

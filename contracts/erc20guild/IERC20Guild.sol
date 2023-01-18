@@ -182,4 +182,38 @@ interface IERC20Guild {
         uint256 option,
         uint256 votingPower
     ) external pure returns (bytes32);
+
+    function validateMerkleTreeLeaf(
+        bytes32 root,
+        bytes32 voteHash,
+        bytes32[] memory proof
+    ) external returns (bool);
+
+    function executeSignedVote(
+        bytes32 rootHash,
+        address voter,
+        bytes32 voteHash,
+        bytes32[] memory proof,
+        bytes32 proposalId,
+        uint256 option,
+        uint256 votingPower,
+        bytes memory signature
+    ) external;
+
+    function executeSignedVotesBatches(
+        bytes32[] memory roots,
+        address[] memory voters,
+        bytes32[] memory votesHashes,
+        bytes32[][] memory proofs,
+        bytes32[] memory proposalIds,
+        uint256[] memory options,
+        uint256[] memory votingPowers,
+        bytes[] memory signatures
+    ) external;
+
+    function setMultipleVotes(
+        bytes32[] memory proposalIds,
+        uint256[] memory options,
+        uint256[] memory votingPowers
+    ) external returns (bool[] memory);
 }

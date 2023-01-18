@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "../utils/PermissionRegistry.sol";
 import "../utils/TokenVault.sol";
 
@@ -114,6 +115,11 @@ contract BaseERC20Guild {
     struct TokenLock {
         uint256 amount;
         uint256 timestamp;
+    }
+
+    struct VoteResult {
+        bool success;
+        string error;
     }
 
     mapping(address => TokenLock) public tokensLocked;
@@ -608,5 +614,133 @@ contract BaseERC20Guild {
         uint256 votingPower
     ) public pure virtual returns (bytes32) {
         return keccak256(abi.encodePacked(voter, proposalId, option, votingPower));
+    }
+
+    function validateMerkleTreeLeaf(
+        bytes32 root,
+        bytes32 voteHash,
+        bytes32[] memory proof
+    ) public virtual returns (bool) {
+        return MerkleProof.verify(proof, root, voteHash);
+    }
+
+    /// @dev Execute signed vote
+    /// @param rootHash Hash of the merkle tree root
+    /// @param voter Address of voter
+    /// @param voteHash Hash of the vote
+    /// @param proof MerkleTree proof
+    /// @param proposalId ID of the proposal
+    /// @param option Option to vote on {proposalId}
+    /// @param votingPower Votingpower used to vote
+    /// @param signature Signed rootHash
+    function executeSignedVote(
+        bytes32 rootHash,
+        address voter,
+        bytes32 voteHash,
+        bytes32[] memory proof,
+        bytes32 proposalId,
+        uint256 option,
+        uint256 votingPower,
+        bytes memory signature
+    ) public {
+        bytes32 hashedVote = hashVote(voter, proposalId, option, votingPower);
+        require(hashedVote == voteHash, "ERC20Guild: Invalid vote hash");
+        require(!signedVotes[hashedVote], "ERC20Guild: Already voted");
+        require(voter == rootHash.toEthSignedMessageHash().recover(signature), "ERC20Guild: Wrong signer");
+
+        // verify leaf
+        bool valid = validateMerkleTreeLeaf(rootHash, voteHash, proof);
+        require(valid, "ERC20Guild: Invalid merkle tree leaf");
+
+        // validate voting power and proposal
+        require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
+        require(
+            (votingPowerOf(voter) >= votingPower) && (votingPower > proposalVotes[proposalId][voter].votingPower),
+            "ERC20Guild: Invalid votingPower amount"
+        );
+        require(
+            (proposalVotes[proposalId][voter].option == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
+                (proposalVotes[proposalId][voter].option == option &&
+                    proposalVotes[proposalId][voter].votingPower < votingPower),
+            "ERC20Guild: Cannot change option voted, only increase votingPower"
+        );
+
+        signedVotes[hashedVote] = true;
+        _setVote(voter, proposalId, option, votingPower);
+    }
+
+    /// @dev Execute multiple signed votes
+    /// @param roots Array of merkle tree root hashes
+    /// @param voters Addresses of voters
+    /// @param votesHashes Hashes of the votes
+    /// @param proofs MerkleTree proofs array
+    /// @param proposalIds Proposal IDs to vote
+    /// @param options Array containing options to vote on
+    /// @param votingPowers VotingPower used on each vote
+    /// @param signatures Signed rootHashes
+    function executeSignedVotesBatches(
+        bytes32[] memory roots,
+        address[] memory voters,
+        bytes32[] memory votesHashes,
+        bytes32[][] memory proofs,
+        bytes32[] memory proposalIds,
+        uint256[] memory options,
+        uint256[] memory votingPowers,
+        bytes[] memory signatures
+    ) public {
+        uint256 i = 0;
+        for (i = 0; i < roots.length; i++) {
+            executeSignedVote(
+                roots[i],
+                voters[i],
+                votesHashes[i],
+                proofs[i],
+                proposalIds[i],
+                options[i],
+                votingPowers[i],
+                signatures[i]
+            );
+        }
+    }
+
+    /// @dev Vote multiple proposals
+    /// @param proposalIds array of proposal ids to vote on
+    /// @param options array of options containing option to vote on
+    /// @param votingPowers array of votingPower per vote
+    function setMultipleVotes(
+        bytes32[] memory proposalIds,
+        uint256[] memory options,
+        uint256[] memory votingPowers
+    ) public returns (VoteResult[] memory) {
+        require(
+            proposalIds.length == options.length && options.length == votingPowers.length,
+            "ERC20Guild: Invalid proposalIds, options or votingPowers length"
+        );
+        VoteResult[] memory result = new VoteResult[](proposalIds.length);
+
+        for (uint256 i = 0; i < proposalIds.length; i++) {
+            result[i] = _validateVote(proposalIds[i], options[i], votingPowers[i]);
+            require(result[i].success, result[i].error);
+            _setVote(msg.sender, proposalIds[i], options[i], votingPowers[i]);
+        }
+
+        return result;
+    }
+
+    function _validateVote(bytes32 proposalId, uint256 option, uint256 votingPower) private view returns (VoteResult memory) {
+        VoteResult memory result;
+        result.success = true;
+
+        if (proposals[proposalId].endTime < block.timestamp) {
+            result.success = false;
+            result.error = "ERC20Guild: Proposal ended, cannot be voted";
+        } else if (votingPowerOf(msg.sender) < votingPower || votingPower < proposalVotes[proposalId][msg.sender].votingPower) {
+            result.success = false;
+            result.error = "ERC20Guild: Invalid votingPower amount";
+        } else if (proposalVotes[proposalId][msg.sender].votingPower > votingPower && (proposalVotes[proposalId][msg.sender].option != option && proposalVotes[proposalId][msg.sender].votingPower > votingPower) ) {
+            result.success = false;
+            result.error = "ERC20Guild: Cannot change option voted, only increase votingPower";
+        }
+        return result;
     }
 }
