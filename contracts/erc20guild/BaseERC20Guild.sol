@@ -727,17 +727,27 @@ contract BaseERC20Guild {
         return result;
     }
 
-    function _validateVote(bytes32 proposalId, uint256 option, uint256 votingPower) private view returns (VoteResult memory) {
+    function _validateVote(
+        bytes32 proposalId,
+        uint256 option,
+        uint256 votingPower
+    ) private view returns (VoteResult memory) {
         VoteResult memory result;
         result.success = true;
 
         if (proposals[proposalId].endTime < block.timestamp) {
             result.success = false;
             result.error = "ERC20Guild: Proposal ended, cannot be voted";
-        } else if (votingPowerOf(msg.sender) < votingPower || votingPower < proposalVotes[proposalId][msg.sender].votingPower) {
+        } else if (
+            votingPowerOf(msg.sender) < votingPower || votingPower < proposalVotes[proposalId][msg.sender].votingPower
+        ) {
             result.success = false;
             result.error = "ERC20Guild: Invalid votingPower amount";
-        } else if (proposalVotes[proposalId][msg.sender].votingPower > votingPower && (proposalVotes[proposalId][msg.sender].option != option && proposalVotes[proposalId][msg.sender].votingPower > votingPower) ) {
+        } else if (
+            proposalVotes[proposalId][msg.sender].votingPower > votingPower &&
+            (proposalVotes[proposalId][msg.sender].option != option &&
+                proposalVotes[proposalId][msg.sender].votingPower > votingPower)
+        ) {
             result.success = false;
             result.error = "ERC20Guild: Cannot change option voted, only increase votingPower";
         }

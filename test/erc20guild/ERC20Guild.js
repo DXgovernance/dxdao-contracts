@@ -2882,7 +2882,7 @@ contract("ERC20Guild", function (accounts) {
       );
     });
   });
-  describe.only("Multivote", function () {
+  describe("Multivote", function () {
     let proposalId1, proposalId2, proposalId3, votes, voter;
     beforeEach(async function () {
       proposalId1 = await createProposal(genericProposal);
