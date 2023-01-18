@@ -552,21 +552,20 @@ contract VotingMachine {
 
     /**
      * @dev Withdraw scheme refund balance
+     * @param avatar The avatar address of the dao that controls the scheme
      * @param scheme Scheme contract address to withdraw refund balance from
      */
-    function withdrawRefundBalance(address scheme) external {
-        bytes32 schemeId = keccak256(abi.encodePacked(msg.sender, scheme));
-
-        if (schemes[schemeId].voteGas <= 0) {
-            revert VotingMachine__AddressNotRegisteredInSchemeRefounds();
+    function withdrawRefundBalance(address avatar, address scheme) external {
+        bytes32 schemeId;
+        if (msg.sender == scheme) {
+            schemeId = keccak256(abi.encodePacked(msg.sender, avatar));
+        } else if (msg.sender == avatar) {
+            schemeId = keccak256(abi.encodePacked(scheme, msg.sender));
         }
 
-        if (schemes[schemeId].voteGasBalance <= 0) {
-            revert VotingMachine__SchemeRefundBalanceIsZero();
-        }
         uint256 voteGasBalance = schemes[schemeId].voteGasBalance;
         schemes[schemeId].voteGasBalance = 0;
-        payable(msg.sender).transfer(voteGasBalance);
+        payable(avatar).transfer(voteGasBalance);
     }
 
     /**

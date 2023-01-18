@@ -251,6 +251,15 @@ contract("VotingMachine", function (accounts) {
         );
         await permissionRegistry.setETHPermission(
           org.avatar.address,
+          dxdVotingMachine.address,
+          web3.eth.abi.encodeFunctionSignature(
+            "withdrawRefundBalance(address,address)"
+          ),
+          0,
+          true
+        );
+        await permissionRegistry.setETHPermission(
+          org.avatar.address,
           constants.ZERO_ADDRESS,
           constants.NULL_SIGNATURE,
           web3.utils.toWei("1"),
@@ -398,6 +407,95 @@ contract("VotingMachine", function (accounts) {
         );
         assert.equal(schemeProposal.to[0], actionMock.address);
         assert.equal(schemeProposal.value[0], 0);
+      });
+
+      it("pay for gasRefund from votingMachine and withdrawBalance after that", async function () {
+        const setRefundConfData = web3.eth.abi.encodeFunctionCall(
+          VotingMachine.abi.find(x => x.name === "setSchemeRefund"),
+          [
+            org.avatar.address,
+            masterAvatarScheme.address,
+            VOTE_GAS,
+            constants.GAS_PRICE,
+          ]
+        );
+
+        const setRefundConfProposalId = await helpers.getValueFromLogs(
+          await masterAvatarScheme.proposeCalls(
+            [dxdVotingMachine.address],
+            [setRefundConfData],
+            [TOTAL_GAS_REFUND_PER_VOTE.mul(new BN(6))],
+            2,
+            constants.TEST_TITLE,
+            constants.SOME_HASH
+          ),
+          "proposalId"
+        );
+        const schemeId = (
+          await dxdVotingMachine.proposals(setRefundConfProposalId)
+        ).schemeId;
+
+        await dxdVotingMachine.vote(
+          setRefundConfProposalId,
+          constants.YES_OPTION,
+          0,
+          { from: accounts[3], gasPrice: constants.GAS_PRICE }
+        );
+
+        assert.equal(
+          TOTAL_GAS_REFUND_PER_VOTE * 5,
+          Number((await dxdVotingMachine.schemes(schemeId)).voteGasBalance)
+        );
+
+        const withdrawRefundBalanceData = web3.eth.abi.encodeFunctionCall(
+          VotingMachine.abi.find(x => x.name === "withdrawRefundBalance"),
+          [org.avatar.address, masterAvatarScheme.address]
+        );
+
+        let withdrawRefundBalanceProposalId = await helpers.getValueFromLogs(
+          await masterAvatarScheme.proposeCalls(
+            [dxdVotingMachine.address],
+            [withdrawRefundBalanceData],
+            [0],
+            2,
+            constants.TEST_TITLE,
+            constants.SOME_HASH
+          ),
+          "proposalId"
+        );
+        assert.equal(
+          TOTAL_GAS_REFUND_PER_VOTE * 5,
+          Number((await dxdVotingMachine.schemes(schemeId)).voteGasBalance)
+        );
+
+        await dxdVotingMachine.vote(
+          withdrawRefundBalanceProposalId,
+          constants.YES_OPTION,
+          0,
+          {
+            from: accounts[3],
+            gasPrice: constants.GAS_PRICE,
+            gasLimit: constants.GAS_LIMIT,
+          }
+        );
+
+        const schemeProposal = await masterAvatarScheme.getProposal(
+          withdrawRefundBalanceProposalId
+        );
+        assert.equal(
+          schemeProposal.state,
+          constants.WALLET_SCHEME_PROPOSAL_STATES.passed
+        );
+        assert.equal(
+          (await dxdVotingMachine.proposals(withdrawRefundBalanceProposalId))
+            .executionState,
+          constants.VOTING_MACHINE_EXECUTION_STATES.QueueBarCrossed
+        );
+
+        assert.equal(
+          0,
+          Number((await dxdVotingMachine.schemes(schemeId)).voteGasBalance)
+        );
       });
 
       it("Can view rep of votes and amount staked on proposal", async function () {
