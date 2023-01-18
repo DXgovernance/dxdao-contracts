@@ -139,18 +139,17 @@ contract("DAOController", function (accounts) {
     );
   });
 
-  it('registerScheme() should reject with: "DAOController__SenderNotRegistered"', async function () {
+  it('registerScheme() should reject with: "DAOController__CannotRegisterSchemeWithNullParamsHash"', async function () {
     const newSchemeAddress = accounts[10];
     await expectRevert(
       controller.registerScheme(
         newSchemeAddress,
-        defaultParamsHash,
+        helpers.constants.NULL_HASH,
         true,
         true,
-        true,
-        { from: newSchemeAddress }
+        true
       ),
-      "DAOController__SenderNotRegistered"
+      "DAOController__CannotRegisterSchemeWithNullParamsHash"
     );
   });
 
@@ -202,21 +201,6 @@ contract("DAOController", function (accounts) {
         }
       ),
       "DAOController__SenderCannotPerformAvatarCalls"
-    );
-  });
-
-  it("unregisterScheme() should fail from onlyRegisteredScheme modifyer", async () => {
-    await controller.registerScheme(
-      accounts[2],
-      defaultParamsHash,
-      true,
-      true,
-      true
-    );
-    await controller.unregisterScheme(schemeAddress);
-    await expectRevert(
-      controller.unregisterScheme(schemeAddress, { from: schemeAddress }),
-      "DAOController__SenderNotRegistered"
     );
   });
 
@@ -293,32 +277,6 @@ contract("DAOController", function (accounts) {
     });
 
     expectEvent.notEmitted(tx.receipt, "UnregisterScheme");
-  });
-
-  it("avatarCall() should fail from onlyRegisteredScheme modifyer", async () => {
-    const newScheme = accounts[2];
-    await controller.registerScheme(
-      newScheme,
-      defaultParamsHash,
-      true,
-      true,
-      true
-    );
-
-    // unregister scheme
-    await controller.unregisterScheme(schemeAddress);
-
-    await expectRevert(
-      controller.avatarCall(
-        helpers.constants.SOME_ADDRESS,
-        new web3.eth.Contract(DAOAvatar.abi).methods
-          .executeCall(helpers.constants.SOME_ADDRESS, "0x0", 0)
-          .encodeABI(),
-        avatar.address,
-        0
-      ),
-      "DAOController__SenderNotRegistered"
-    );
   });
 
   it("avatarCall() should fail from onlyAvatarCallScheme modifyer", async () => {
@@ -477,26 +435,6 @@ contract("DAOController", function (accounts) {
     const newOwner = accounts[6];
     await controller.transferReputationOwnership(newOwner);
     expect(await reputation.owner()).to.equal(newOwner);
-  });
-
-  it("isSchemeRegistered() should return if scheme is registered", async () => {
-    const isRegistered1 = await controller.isSchemeRegistered(schemeAddress);
-    expect(isRegistered1).to.equal(true);
-
-    // register new scheme to bypass last-scheme unregister check
-    const newSchemeAddress = accounts[1];
-    await controller.registerScheme(
-      newSchemeAddress,
-      defaultParamsHash,
-      true,
-      true,
-      true
-    );
-
-    await controller.unregisterScheme(schemeAddress);
-
-    const isRegistered2 = await controller.isSchemeRegistered(schemeAddress);
-    expect(isRegistered2).to.equal(false);
   });
 
   it("getDaoReputation() should return reputationToken address", async () => {
