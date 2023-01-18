@@ -891,7 +891,7 @@ contract VotingMachine {
         if (tmpProposal.state != proposal.state) {
             emit StateChange(proposalId, proposal.state);
         }
-        return (proposal.executionState != ExecutionState.None && proposal.executionState != ExecutionState.Failed);
+        return (proposal.executionState != ExecutionState.None);
     }
 
     /**
