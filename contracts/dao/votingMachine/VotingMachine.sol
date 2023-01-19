@@ -688,7 +688,7 @@ contract VotingMachine {
         address proposer,
         address avatar
     ) external returns (bytes32 proposalId) {
-        return _propose(NUM_OF_OPTIONS, paramsHash, proposer, avatar);
+        return _propose(totalOptions, paramsHash, proposer, avatar);
     }
 
     /**
@@ -987,7 +987,7 @@ contract VotingMachine {
         address proposer,
         address avatar
     ) internal returns (bytes32 proposalId) {
-        if (optionsAmount < NUM_OF_OPTIONS) {
+        if (optionsAmount != NUM_OF_OPTIONS) {
             revert VotingMachine__InvalidOptionsAmount();
         }
         // Check parameters existence.
