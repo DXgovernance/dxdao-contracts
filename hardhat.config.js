@@ -76,7 +76,6 @@ const hardharNetworks = process.env.CI
         gasLimit: 9000000,
         gasPrice: 10000000000, // 10 gwei
         timeout: 60000,
-        blockGasLimit: 3000000000
       },
     }
   : {
