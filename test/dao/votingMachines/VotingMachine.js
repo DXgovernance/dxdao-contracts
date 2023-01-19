@@ -1814,7 +1814,6 @@ contract("VotingMachine", function (accounts) {
         testProposalId,
         accounts[2]
       );
-      console.log("redeemStakeWithNoTx", redeemStakeWithNoTx);
 
       await expectEvent.inTransaction(
         redeemStakeWithNoTx.tx,

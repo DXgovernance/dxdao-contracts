@@ -473,7 +473,7 @@ contract VotingMachine {
      * @param proposalId the ID of the proposal
      * @return toBoost Stake amount needed to boost proposal and move it to preBoost
      */
-    function calculateBoostChange(bytes32 proposalId) public view returns (uint256 toBoost) {
+    function calculateBoostChange(bytes32 proposalId) external view returns (uint256 toBoost) {
         Proposal memory proposal = proposals[proposalId];
         uint256 thresholdWithPreBoosted = calculateThreshold(
             parameters[proposal.paramsHash].thresholdConst,
