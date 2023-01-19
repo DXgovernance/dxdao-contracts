@@ -376,22 +376,29 @@ contract VotingMachine {
 
         // If there is staked unclaimed
         if (staker.amount > 0) {
-            // If proposal ended and the stake was in the winning option
-            if ((proposal.state != ProposalState.Expired) && (staker.option == proposal.winningVote)) {
-                // The reward would be a % (of the staked on the winning option) of all the stakes
-                reward =
-                    (staker.amount * totalStakesWithoutDaoBounty) /
-                    proposalStakes[proposalId][proposal.winningVote];
-
-                // If the winning option was yes the reward also include a % (of the staked on the winning option)
-                // of the minimum dao bounty
-                if (staker.option == YES) {
-                    uint256 daoBountyReward = (staker.amount * params.daoBounty) /
+            // If the proposal didnt expired return the staked tokens
+            if (proposal.state != ProposalState.Expired) {
+                // If the stake was in the winning option the beneficiary gets the reward
+                if (staker.option == proposal.winningVote) {
+                    // The reward would be a % (of the staked on the winning option) of all the stakes
+                    reward =
+                        (staker.amount * totalStakesWithoutDaoBounty) /
                         proposalStakes[proposalId][proposal.winningVote];
 
-                    if (daoBountyReward < stakingToken.allowance(getProposalAvatar(proposalId), address(this)))
-                        stakingToken.transferFrom(getProposalAvatar(proposalId), beneficiary, daoBountyReward);
-                    else emit UnclaimedDaoBounty(getProposalAvatar(proposalId), beneficiary, daoBountyReward);
+                    // If the winning option was yes the reward also include a % (of the staked on the winning option)
+                    // of the minimum dao bounty
+                    if (staker.option == YES) {
+                        uint256 daoBountyReward = (staker.amount * params.daoBounty) /
+                            proposalStakes[proposalId][proposal.winningVote];
+
+                        if (daoBountyReward < stakingToken.allowance(getProposalAvatar(proposalId), address(this)))
+                            stakingToken.transferFrom(getProposalAvatar(proposalId), beneficiary, daoBountyReward);
+                        else emit UnclaimedDaoBounty(getProposalAvatar(proposalId), beneficiary, daoBountyReward);
+                    }
+
+                    // If the stake was done on the wrong option and the proposal didnt expired the beneficiary of the reward is the dao avatar and not the staker
+                } else {
+                    beneficiary = schemes[proposal.schemeId].avatar;
                 }
             }
             staker.amount = 0;
