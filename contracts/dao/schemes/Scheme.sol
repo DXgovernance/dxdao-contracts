@@ -176,7 +176,8 @@ abstract contract Scheme is VotingMachineCallbacks {
     }
 
     /**
-     * @dev Execution of proposals, can only be called by the voting machine in which the vote is held.
+     * @dev Execute the proposal calls for the winning option,
+     * can only be called by the voting machine in which the vote is held.
      * @param proposalId The ID of the voting in the voting machine
      * @param winningOption The winning option in the voting machine
      * @return success Success of the execution
@@ -193,13 +194,18 @@ abstract contract Scheme is VotingMachineCallbacks {
         }
         executingProposal = true;
 
-        Proposal memory proposal = proposals[proposalId];
+        Proposal storage proposal = proposals[proposalId];
 
         if (proposal.state != ProposalState.Submitted) {
             revert Scheme__ProposalMustBeSubmitted();
         }
 
-        if (winningOption > 1) {
+        if (winningOption == 1) {
+            proposal.state = ProposalState.Rejected;
+            emit ProposalStateChange(proposalId, uint256(ProposalState.Rejected));
+        } else {
+            proposal.state = ProposalState.Passed;
+            emit ProposalStateChange(proposalId, uint256(ProposalState.Passed));
             uint256 oldRepSupply = getNativeReputationTotalSupply();
 
             permissionRegistry.setERC20Balances();
@@ -253,7 +259,8 @@ abstract contract Scheme is VotingMachineCallbacks {
     }
 
     /**
-     * @dev Finish a proposal and set the final state in storage
+     * @dev Finish a proposal and set the final state in storage without any execution.
+     * The only thing done here is a change in the proposal state in case the proposal was not executed.
      * @param proposalId The ID of the voting in the voting machine
      * @param winningOption The winning option in the voting machine
      * @return success Proposal finish successfully
@@ -265,18 +272,18 @@ abstract contract Scheme is VotingMachineCallbacks {
         returns (bool success)
     {
         Proposal storage proposal = proposals[proposalId];
-        if (proposal.state != ProposalState.Submitted) {
-            revert Scheme__ProposalMustBeSubmitted();
-        }
-
-        if (winningOption == 1) {
-            proposal.state = ProposalState.Rejected;
-            emit ProposalStateChange(proposalId, uint256(ProposalState.Rejected));
+        if (proposal.state == ProposalState.Submitted) {
+            if (winningOption == 1) {
+                proposal.state = ProposalState.Rejected;
+                emit ProposalStateChange(proposalId, uint256(ProposalState.Rejected));
+            } else {
+                proposal.state = ProposalState.Passed;
+                emit ProposalStateChange(proposalId, uint256(ProposalState.Passed));
+            }
+            return true;
         } else {
-            proposal.state = ProposalState.Passed;
-            emit ProposalStateChange(proposalId, uint256(ProposalState.Passed));
+            return false;
         }
-        return true;
     }
 
     /**

@@ -881,6 +881,7 @@ contract VotingMachine {
             inactiveProposals[getProposalAvatar(proposalId)].add(proposalId);
             emit ExecuteProposal(proposalId, schemes[proposal.schemeId].avatar, proposal.winningVote, totalReputation);
 
+            // Try to execute the proposal for the winning option and catch error if any
             try ProposalExecuteInterface(proposal.callbacks).executeProposal(proposalId, proposal.winningVote) {
                 emit ProposalExecuteResult("");
             } catch Error(string memory errorMessage) {
@@ -893,6 +894,9 @@ contract VotingMachine {
                 proposal.executionState = ExecutionState.Failed;
                 emit ProposalExecuteResult(string(errorMessage));
             }
+
+            // Set the proposal as executed without executing it, this is done in case the proposal state
+            // didnt change in the storage on the previous execution
             ProposalExecuteInterface(proposal.callbacks).finishProposal(proposalId, proposal.winningVote);
         }
         if (tmpProposal.state != proposal.state) {
