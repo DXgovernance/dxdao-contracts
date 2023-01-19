@@ -52,7 +52,7 @@ contract PermissionRegistryModule {
         address[] memory _to,
         bytes[] memory _data,
         uint256[] memory _value
-    ) external payable returns (bool success) {
+    ) external {
         address multisend = multisends[_avatar][msg.sender];
         require(multisend != address(0x0), "PRModule: Only callable by admin");
 
@@ -62,7 +62,7 @@ contract PermissionRegistryModule {
         uint256 totalValue = 0;
 
         for (uint256 i = 0; i < _to.length; i++) {
-            require(_to[i] != address(0) && _data[i].length > 0, "");
+            require(_to[i] != address(0) && _data[i].length > 0, "PRModule: Invalid transaction");
             data = abi.encodePacked(
                 data,
                 getSetETHPermissionUsedCalldata(_avatar, _to[i], _value[i], _data[i]),
@@ -80,7 +80,13 @@ contract PermissionRegistryModule {
         data = abi.encodePacked(data, getCheckERC20LimitsCalldata(_avatar));
 
         data = abi.encodeWithSignature("multiSend(bytes)", data);
-        success = IAvatar(_avatar).execTransactionFromModule(multisend, totalValue, data, Enum.Operation.DelegateCall);
+        bool success = IAvatar(_avatar).execTransactionFromModule(
+            multisend,
+            totalValue,
+            data,
+            Enum.Operation.DelegateCall
+        );
+        require(success, "PRModule: Proposal call failed");
     }
 
     /// @dev Encodes permissionRegistry.checkERC20Limits(avatar)
