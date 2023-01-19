@@ -96,7 +96,6 @@ contract VotingMachine {
         bytes32 paramsHash;
         uint256 daoBounty;
         uint256 totalStakes; // Total number of tokens staked which can be redeemable by stakers.
-        uint256 secondsFromTimeOutTillExecuteBoosted;
         uint256[3] times;
         // times[0] - submittedTime
         // times[1] - boostedPhaseTime
