@@ -62,7 +62,7 @@ contract PermissionRegistryModule {
         uint256 totalValue = 0;
 
         for (uint256 i = 0; i < _to.length; i++) {
-            require(_to[i] != address(0) && _data[i].length > 0, "PRModule: Invalid transaction");
+            if (_to[i] == address(0) || _data[i].length == 0) continue;
             data = abi.encodePacked(
                 data,
                 getSetETHPermissionUsedCalldata(_avatar, _to[i], _value[i], _data[i]),
