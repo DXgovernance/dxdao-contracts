@@ -787,4 +787,200 @@ contract("PermissionRegistryModule", function (accounts) {
       );
     });
   });
+
+  describe("complete proposal process", function () {
+    beforeEach(async function () {
+      const activateModuleData = await new web3.eth.Contract(
+        PermissionRegistryModule.abi
+      ).methods
+        .activateModule(erc20Guild.address, multiSend.address)
+        .encodeABI();
+      await testAvatar.exec(
+        permissionRegistryModule.address,
+        0,
+        activateModuleData
+      );
+      await testAvatar.enableModule(permissionRegistryModule.address);
+      await lockTokens();
+      await allowPRModule();
+      await allowActionMockA();
+    });
+
+    it("execute a proposal to a contract from the avatar", async function () {
+      await web3.eth.sendTransaction({
+        to: testAvatar.address,
+        value: 10,
+        from: accounts[0],
+      });
+
+      const calldataArray = [
+        await new web3.eth.Contract(PermissionRegistry.abi).methods
+          .setETHPermission(
+            testAvatar.address,
+            actionMockB.address,
+            helpers.testCallFrom(testAvatar.address).substring(0, 10),
+            10,
+            true
+          )
+          .encodeABI(),
+      ];
+      const allowActionMock = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [permissionRegistryModule.address],
+            data: [
+              await new web3.eth.Contract(PermissionRegistryModule.abi).methods
+                .relayTransactions(
+                  testAvatar.address,
+                  [permissionRegistry.address],
+                  calldataArray,
+                  [0]
+                )
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: allowActionMock,
+        option: 1,
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: allowActionMock,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(allowActionMock);
+
+      const guildProposalId = await createProposal(genericProposal);
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 3,
+        account: accounts[3],
+      });
+
+      const txVote = await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 3,
+        account: accounts[5],
+      });
+
+      if (constants.GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(VOTE_GAS.toNumber());
+
+      await time.increase(time.duration.seconds(31));
+      const receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+      expectEvent.inTransaction(receipt.tx, actionMockB, "ReceivedEther", {
+        _sender: erc20Guild.address,
+        _value: "10",
+      });
+      expectEvent.inTransaction(receipt.tx, actionMockB, "LogNumber", {
+        number: "666",
+      });
+    });
+
+    it("cannot execute a proposal if module was deactivated", async function () {
+      await web3.eth.sendTransaction({
+        to: testAvatar.address,
+        value: 10,
+        from: accounts[0],
+      });
+
+      const calldataArray = [
+        await new web3.eth.Contract(PermissionRegistry.abi).methods
+          .setETHPermission(
+            testAvatar.address,
+            actionMockB.address,
+            helpers.testCallFrom(testAvatar.address).substring(0, 10),
+            10,
+            true
+          )
+          .encodeABI(),
+      ];
+      const allowActionMock = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [permissionRegistryModule.address],
+            data: [
+              await new web3.eth.Contract(PermissionRegistryModule.abi).methods
+                .relayTransactions(
+                  testAvatar.address,
+                  [permissionRegistry.address],
+                  calldataArray,
+                  [0]
+                )
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: allowActionMock,
+        option: 1,
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: allowActionMock,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(allowActionMock);
+
+      const guildProposalId = await createProposal(genericProposal);
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 3,
+        account: accounts[3],
+      });
+
+      const txVote = await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 3,
+        account: accounts[5],
+      });
+
+      if (constants.GAS_PRICE > 1)
+        expect(txVote.receipt.gasUsed).to.be.below(VOTE_GAS.toNumber());
+
+      await time.increase(time.duration.seconds(31));
+      // Deactivate module
+      const deactivateModuleData = await new web3.eth.Contract(
+        PermissionRegistryModule.abi
+      ).methods
+        .deactivateModule(erc20Guild.address)
+        .encodeABI();
+      await testAvatar.exec(
+        permissionRegistryModule.address,
+        0,
+        deactivateModuleData
+      );
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "ERC20Guild: Proposal call failed"
+      );
+    });
+  });
 });
