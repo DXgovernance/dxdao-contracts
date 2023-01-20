@@ -1554,7 +1554,7 @@ contract("ERC20Guild", function (accounts) {
             ],
             data: [
               await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .removeERC20Limit(erc20Guild.address, 0)
+                .updateERC20Limit(erc20Guild.address, 0, 0)
                 .encodeABI(),
               await new web3.eth.Contract(ERC20Mock.abi).methods
                 .transfer(accounts[2], 100)
@@ -1603,10 +1603,10 @@ contract("ERC20Guild", function (accounts) {
             to: [permissionRegistry.address, permissionRegistry.address],
             data: [
               await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .removeERC20Limit(erc20Guild.address, 0)
+                .updateERC20Limit(erc20Guild.address, 0, 0)
                 .encodeABI(),
               await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .executeRemoveERC20Limit(erc20Guild.address, 0)
+                .executeUpdateERC20Limit(erc20Guild.address, 0)
                 .encodeABI(),
             ],
             value: [0, 0],
@@ -1652,7 +1652,7 @@ contract("ERC20Guild", function (accounts) {
                 .setETHPermissionDelay(erc20Guild.address, 60 * 10)
                 .encodeABI(),
               await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .removeERC20Limit(erc20Guild.address, 0)
+                .updateERC20Limit(erc20Guild.address, 0, 0)
                 .encodeABI(),
             ],
             value: [0, 0],
@@ -1722,7 +1722,7 @@ contract("ERC20Guild", function (accounts) {
             to: [permissionRegistry.address, testToken.address],
             data: [
               await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .executeRemoveERC20Limit(erc20Guild.address, 0)
+                .executeUpdateERC20Limit(erc20Guild.address, 0)
                 .encodeABI(),
               await new web3.eth.Contract(ERC20Mock.abi).methods
                 .transfer(accounts[3], 250)

@@ -33,9 +33,10 @@ contract PermissionRegistry is OwnableUpgradeable {
 
     struct ERC20Limit {
         address token;
+        uint96 updateTime;
         uint256 initialValueOnBlock;
         uint256 valueAllowed;
-        uint256 removeTime;
+        uint256 pendingValueAllowed;
     }
 
     // from address => to address => function call signature allowed => Permission
@@ -116,27 +117,21 @@ contract PermissionRegistry is OwnableUpgradeable {
         if (msg.sender != owner()) {
             require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
         }
-        require(index <= erc20Limits[from].length, "PermissionRegistry: Index out of bounds");
+        uint256 totalLimits = erc20Limits[from].length;
+        require(index <= totalLimits, "PermissionRegistry: Index out of bounds");
         require(token != address(0), "PermissionRegistry: Token address cannot be 0x0");
-
-        uint256 balanceNow = IERC20(token).balanceOf(msg.sender);
-
-        // set 0 as initialvalue to not allow any balance change for this token on this block
-        if (index == erc20Limits[from].length) {
-            for (uint256 i = 0; i < erc20Limits[from].length; i++) {
-                require(erc20Limits[from][i].token != token, "PermissionRegistry: Limit on token already added");
-            }
-            erc20Limits[from].push(ERC20Limit(token, balanceNow, valueAllowed, 0));
-        } else {
-            require(
-                erc20Limits[from][index].token == address(0),
-                "PermissionRegistry: Cant override existent ERC20 limit"
-            );
-            erc20Limits[from][index].token = token;
-            erc20Limits[from][index].initialValueOnBlock = balanceNow;
-            erc20Limits[from][index].valueAllowed = valueAllowed;
-            erc20Limits[from][index].removeTime = 0;
+        for (uint256 i = 0; i < totalLimits; i++) {
+            require(erc20Limits[from][i].token != token, "PermissionRegistry: Limit on token already added");
         }
+        if (index == totalLimits) erc20Limits[from].push();
+        require(
+            erc20Limits[from][index].token == address(0),
+            "PermissionRegistry: Cant override existent ERC20 limit"
+        );
+        
+        erc20Limits[from][index].token = token;
+        erc20Limits[from][index].valueAllowed = valueAllowed;
+        erc20Limits[from][index].initialValueOnBlock = IERC20(token).balanceOf(from);
     }
 
     /**
@@ -144,14 +139,17 @@ contract PermissionRegistry is OwnableUpgradeable {
      * (take in count that the limit execution has to be called after the remove time)
      * @param from The address that will execute the call
      * @param index The index of the token permission in the erco limits
+     * @param newValueAllowed The index of the token permission in the erco limits
      */
-    function removeERC20Limit(address from, uint256 index) public {
+    function updateERC20Limit(address from, uint256 index, uint256 newValueAllowed) public {
         if (msg.sender != owner()) {
             require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
         }
         require(index < erc20Limits[from].length, "PermissionRegistry: Index out of bounds");
 
-        erc20Limits[from][index].removeTime = block.timestamp.add(permissionDelay[from]);
+        uint96 delay = permissionDelay[from] > type(uint96).max ? type(uint96).max : uint96(permissionDelay[from]);
+        erc20Limits[from][index].updateTime = uint96(block.timestamp.add(delay));
+        erc20Limits[from][index].pendingValueAllowed = newValueAllowed;
     }
 
     /**
@@ -159,11 +157,24 @@ contract PermissionRegistry is OwnableUpgradeable {
      * @param from The address that will execute the call
      * @param index The index of the token permission in the erco limits
      */
-    function executeRemoveERC20Limit(address from, uint256 index) public {
-        uint256 removeTime = erc20Limits[from][index].removeTime;
-        require(removeTime != 0 && block.timestamp > removeTime, "PermissionRegistry: Cant execute permission removal");
+    function executeUpdateERC20Limit(address from, uint256 index) public {
+        uint256 updateTime = erc20Limits[from][index].updateTime;
+        require(updateTime != 0 && block.timestamp > updateTime, "PermissionRegistry: Cant execute permission removal");
 
-        erc20Limits[from][index] = ERC20Limit(address(0), 0, 0, 0);
+        uint256 newValueAllowed = erc20Limits[from][index].pendingValueAllowed;
+        if (newValueAllowed == 0) {
+            erc20Limits[from][index] = ERC20Limit(address(0), 0, 0, 0, 0);
+        } else {
+            erc20Limits[from][index].updateTime = 0;
+            erc20Limits[from][index].valueAllowed = newValueAllowed;
+            erc20Limits[from][index].pendingValueAllowed = 0;
+            // From this moment on during this block, negative balance changes for this token are not allowed.
+            uint256 currentBalance = IERC20(erc20Limits[from][index].token).balanceOf(from);
+            unchecked {
+                uint256 x = currentBalance + newValueAllowed;
+                erc20Limits[from][index].initialValueOnBlock = x >= currentBalance ? x : type(uint256).max;
+            }
+        }
     }
 
     /**
