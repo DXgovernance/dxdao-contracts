@@ -123,11 +123,14 @@ contract PermissionRegistry is OwnableUpgradeable {
         for (uint256 i = 0; i < totalLimits; i++) {
             require(erc20Limits[from][i].token != token, "PermissionRegistry: Limit on token already added");
         }
-        if (index == totalLimits) erc20Limits[from].push();
-        require(
-            erc20Limits[from][index].token == address(0),
-            "PermissionRegistry: Cant override existent ERC20 limit"
-        );
+        if (index == totalLimits) {
+            erc20Limits[from].push();
+        } else {
+            require(
+                erc20Limits[from][index].token == address(0),
+                "PermissionRegistry: Cant override existent ERC20 limit"
+            );
+        }
         
         erc20Limits[from][index].token = token;
         erc20Limits[from][index].valueAllowed = valueAllowed;
@@ -153,8 +156,8 @@ contract PermissionRegistry is OwnableUpgradeable {
     }
 
     /**
-     * @dev Executes the final removal of an ERC20 limit of an address by its index in the ERC20Lmits array.
-     * @param from The address that will execute the call
+     * @dev Executes the final update of an ERC20 limit of an address by its index in the ERC20Lmits array.
+     * @param from The address from which ERC20 tokens limits will be updated
      * @param index The index of the token permission in the erco limits
      */
     function executeUpdateERC20Limit(address from, uint256 index) public {
@@ -168,12 +171,6 @@ contract PermissionRegistry is OwnableUpgradeable {
             erc20Limits[from][index].updateTime = 0;
             erc20Limits[from][index].valueAllowed = newValueAllowed;
             erc20Limits[from][index].pendingValueAllowed = 0;
-            // From this moment on during this block, negative balance changes for this token are not allowed.
-            uint256 currentBalance = IERC20(erc20Limits[from][index].token).balanceOf(from);
-            unchecked {
-                uint256 x = currentBalance + newValueAllowed;
-                erc20Limits[from][index].initialValueOnBlock = x >= currentBalance ? x : type(uint256).max;
-            }
         }
     }
 
