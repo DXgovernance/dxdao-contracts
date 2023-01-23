@@ -57,6 +57,32 @@ export function getValueFromLogs(tx, arg, eventName, index = 0) {
   return result;
 }
 
+export const deployContractWithCreate2 = async function (
+  create2Contract,
+  contractToDeploy,
+  salt = constants.SOME_HASH,
+  initilizerArgs = []
+) {
+  const newContractAddress = create2Address(
+    create2Contract.address,
+    contractToDeploy.bytecode,
+    salt
+  );
+  if (initilizerArgs.length > 0) {
+    await create2Contract.deployAndInitialize(
+      contractToDeploy.bytecode,
+      salt,
+      web3.eth.abi.encodeFunctionCall(
+        contractToDeploy.abi.find(x => x.name === "initialize"),
+        initilizerArgs
+      )
+    );
+  } else {
+    await create2Contract.deploy(contractToDeploy.bytecode, salt);
+  }
+  return await contractToDeploy.at(newContractAddress);
+};
+
 export const deployDao = async function (deployConfig) {
   const reputation = await DAOReputation.new();
   await reputation.initialize("DXDaoReputation", "DXRep");

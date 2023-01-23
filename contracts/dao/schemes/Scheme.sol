@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "../../utils/PermissionRegistry.sol";
 import "../DAOReputation.sol";
 import "../DAOAvatar.sol";
@@ -25,7 +26,7 @@ import "../votingMachine/VotingMachineCallbacks.sol";
  * Once the governance process ends on the voting machine the voting machine can execute the proposal winning option.
  * If the wining option cant be executed successfully, it can be finished without execution once the maxTimesForExecution time passes.
  */
-abstract contract Scheme is VotingMachineCallbacks {
+abstract contract Scheme is Initializable, VotingMachineCallbacks {
     using Address for address;
 
     enum ProposalState {
@@ -58,9 +59,6 @@ abstract contract Scheme is VotingMachineCallbacks {
     bool internal executingProposal;
 
     event ProposalStateChange(bytes32 indexed proposalId, uint256 indexed state);
-
-    /// @notice Emitted when its initialized twice
-    error Scheme__CannotInitTwice();
 
     /// @notice Emitted if avatar address is zero
     error Scheme__AvatarAddressCannotBeZero();
@@ -105,11 +103,7 @@ abstract contract Scheme is VotingMachineCallbacks {
         address permissionRegistryAddress,
         string calldata _schemeName,
         uint256 _maxRepPercentageChange
-    ) external {
-        if (address(avatar) != address(0)) {
-            revert Scheme__CannotInitTwice();
-        }
-
+    ) external initializer {
         if (avatarAddress == address(0)) {
             revert Scheme__AvatarAddressCannotBeZero();
         }
