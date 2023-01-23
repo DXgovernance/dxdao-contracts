@@ -117,13 +117,13 @@ contract PermissionRegistry is OwnableUpgradeable {
         if (msg.sender != owner()) {
             require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
         }
-        uint256 totalLimits = erc20Limits[from].length;
-        require(index <= totalLimits, "PermissionRegistry: Index out of bounds");
+        uint256 erc20LimitLength = erc20Limits[from].length;
+        require(index <= erc20LimitLength, "PermissionRegistry: Index out of bounds");
         require(token != address(0), "PermissionRegistry: Token address cannot be 0x0");
-        for (uint256 i = 0; i < totalLimits; i++) {
+        for (uint256 i = 0; i < erc20LimitLength; i++) {
             require(erc20Limits[from][i].token != token, "PermissionRegistry: Limit on token already added");
         }
-        if (index == totalLimits) {
+        if (index == erc20LimitLength) {
             erc20Limits[from].push();
         } else {
             require(
