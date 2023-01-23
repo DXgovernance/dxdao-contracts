@@ -1275,11 +1275,4 @@ contract VotingMachine {
     function getInactiveProposalsCount(address avatar) public view returns (uint256 inactiveProposalsCount) {
         return inactiveProposals[avatar].length();
     }
-
-    /**
-     * @dev Helper function used in test to execute a real math lib multiplication
-     */
-    function multiplyRealMath(uint256 a, uint256 b) public pure returns (uint256) {
-        return a.mul(b);
-    }
 }

@@ -279,4 +279,13 @@ export function customErrorMessageExistInRawLogs(
   );
 }
 
+export function multiplyRealMath(realA, realB) {
+  const BN = web3.utils.BN;
+  let res = new BN(realA).mul(new BN(realB));
+  if (!res.div(new BN(realA)).eq(new BN(realB))) {
+    throw new Error("RealMath mul overflow");
+  }
+  return res.ushrn(40);
+}
+
 export { constants };

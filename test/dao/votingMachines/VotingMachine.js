@@ -1880,11 +1880,11 @@ contract("VotingMachine", function (accounts) {
       const schemeParameters = await dxdVotingMachine.parameters(paramsHash);
       const threshold0BoostedProposal =
         await dxdVotingMachine.getSchemeThreshold(paramsHash, schemeId);
-      const stakesToBoostFirstProposal =
-        await dxdVotingMachine.multiplyRealMath(
-          threshold0BoostedProposal,
-          schemeParameters.daoBounty
-        );
+
+      const stakesToBoostFirstProposal = helpers.multiplyRealMath(
+        threshold0BoostedProposal,
+        schemeParameters.daoBounty
+      );
 
       // Stakes just what it needs to get to the boost threshold
       await dxdVotingMachine.stake(
