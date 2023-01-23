@@ -33,10 +33,10 @@ contract PermissionRegistry is OwnableUpgradeable {
 
     struct ERC20Limit {
         address token;
-        uint96 updateTime;
         uint256 initialValueOnBlock;
         uint256 valueAllowed;
         uint256 pendingValueAllowed;
+        uint256 updateTime;
     }
 
     // from address => to address => function call signature allowed => Permission
@@ -150,8 +150,7 @@ contract PermissionRegistry is OwnableUpgradeable {
         }
         require(index < erc20Limits[from].length, "PermissionRegistry: Index out of bounds");
 
-        uint96 delay = permissionDelay[from] > type(uint96).max ? type(uint96).max : uint96(permissionDelay[from]);
-        erc20Limits[from][index].updateTime = uint96(block.timestamp.add(delay));
+        erc20Limits[from][index].updateTime = block.timestamp.add(permissionDelay[from]);
         erc20Limits[from][index].pendingValueAllowed = newValueAllowed;
     }
 
