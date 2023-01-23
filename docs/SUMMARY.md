@@ -9,10 +9,6 @@
       * [Scheme](/docs/contracts/dao/schemes/Scheme.md)
       * [WalletScheme](/docs/contracts/dao/schemes/WalletScheme.md)
     * /votingMachine
-      * [DXDVotingMachine](/docs/contracts/dao/votingMachine/DXDVotingMachine.md)
-      * [DXDVotingMachineCallbacks](/docs/contracts/dao/votingMachine/DXDVotingMachineCallbacks.md)
-      * [DXDVotingMachineCallbacksInterface](/docs/contracts/dao/votingMachine/DXDVotingMachineCallbacksInterface.md)
-      * [IDXDVotingMachine](/docs/contracts/dao/votingMachine/IDXDVotingMachine.md)
       * [IVotingMachine](/docs/contracts/dao/votingMachine/IVotingMachine.md)
       * [IVotingMachineCallbacks](/docs/contracts/dao/votingMachine/IVotingMachineCallbacks.md)
       * [ProposalExecuteInterface](/docs/contracts/dao/votingMachine/ProposalExecuteInterface.md)

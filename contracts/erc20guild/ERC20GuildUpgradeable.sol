@@ -33,6 +33,8 @@ import "./BaseERC20Guild.sol";
   Multiple votes and signed votes can be executed in one transaction.
 */
 contract ERC20GuildUpgradeable is BaseERC20Guild, Initializable {
+    event GuildInitialized();
+
     /// @dev Initializer
     /// @param _token The ERC20 token that will be used as source of voting power
     /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting
@@ -79,5 +81,6 @@ contract ERC20GuildUpgradeable is BaseERC20Guild, Initializable {
         maxActiveProposals = _maxActiveProposals;
         lockTime = _lockTime;
         permissionRegistry = PermissionRegistry(_permissionRegistry);
+        emit GuildInitialized();
     }
 }

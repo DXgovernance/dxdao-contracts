@@ -2,6 +2,12 @@
 
 ## ERC20GuildUpgradeable
 
+### GuildInitialized
+
+```solidity
+event GuildInitialized()
+```
+
 ### initialize
 
 ```solidity

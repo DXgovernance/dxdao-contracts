@@ -14,7 +14,6 @@ contract Create2Deployer {
                 revert(0, 0)
             }
         }
-
         emit Deployed(addr, keccak256(abi.encodePacked(code)), salt);
     }
 
@@ -36,7 +35,6 @@ contract Create2Deployer {
         if (!initializeSuccess) {
             revert Create2Deployer__InitializedFailed();
         }
-
         emit Deployed(addr, keccak256(abi.encodePacked(code)), salt);
     }
 }

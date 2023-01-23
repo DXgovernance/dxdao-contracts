@@ -9,6 +9,8 @@ import "./BaseERC20Guild.sol";
   @dev Non upgradeable ERC20Guild
 */
 contract ERC20Guild is BaseERC20Guild {
+    event GuildInitialized();
+
     /// @dev Constructor
     /// @param _token The ERC20 token that will be used as source of voting power
     /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting
@@ -50,5 +52,6 @@ contract ERC20Guild is BaseERC20Guild {
         voteGas = 0;
         maxGasPrice = 0;
         maxActiveProposals = 5;
+        emit GuildInitialized();
     }
 }
