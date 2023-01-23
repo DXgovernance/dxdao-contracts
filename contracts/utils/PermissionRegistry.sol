@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * permissions sent by that address.
  * The PermissionRegistry owner (if there is an owner and owner address is not 0x0) can overwrite/set any permission.
  * The registry allows setting ERC20 limits, the limit needs to be set at the beggining of the block and then it can be
- * checked at any time. To remove or replace ERC20 limits first it needs to be removed and then it can be set again.
+ * checked at any time.
  * The smart contracts permissions are compound by the `from` address, `to` address, `value` uint256 and `fromTime` uint256,
  * if `fromTime` is zero it means the function is not allowed.
  */
@@ -138,8 +138,8 @@ contract PermissionRegistry is OwnableUpgradeable {
     }
 
     /**
-     * @dev Removes an ERC20 limit of an address by its index in the ERC20Lmits array.
-     * (take in count that the limit execution has to be called after the remove time)
+     * @dev Updates an ERC20 limit of an address by its index in the ERC20Lmits array.
+     * (take in count that the limit execution has to be called after the update time)
      * @param from The address that will execute the call
      * @param index The index of the token permission in the erco limits
      * @param newValueAllowed The index of the token permission in the erco limits
