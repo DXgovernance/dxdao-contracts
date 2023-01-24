@@ -21,7 +21,7 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     //      token address     Internal snapshot  => token snapshot
     mapping(address => mapping(uint256 => uint256)) snapshots;
 
-    uint256 public constant presition = 10_000_000;
+    uint256 public constant precision = 10_000_000;
 
     function initialize(
         address _repToken,
@@ -113,12 +113,12 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     }
 
     function getPercentageOfFrom(uint256 balance, uint256 totalSupply) public pure returns (uint256) {
-        return ((balance * presition) * 100) / totalSupply;
+        return ((balance * precision) * 100) / totalSupply;
     }
 
     function getValueFromPercentage(uint256 percentage, uint256 value) public pure returns (uint256) {
-        uint256 v = (percentage * presition) / 100;
-        return (v * value) / presition;
+        uint256 v = (percentage * precision) / 100;
+        return (v * value) / precision;
     }
 
     /// @dev Get the current VPToken snapshotId
