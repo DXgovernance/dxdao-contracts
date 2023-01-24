@@ -3,6 +3,8 @@ import { assert, expect } from "chai";
 const { expectEvent, expectRevert } = require("@openzeppelin/test-helpers");
 
 const DAOReputation = artifacts.require("./DAOReputation.sol");
+const ERC20SnapshotRep = artifacts.require("./ERC20SnapshotRep.sol");
+const VotingPowerToken = artifacts.require("./VotingPowerToken.sol");
 
 contract("DAOReputation", async accounts => {
   let tokenName, tokenSymbol, daoReputation, addresses, amounts, owner;
@@ -15,9 +17,22 @@ contract("DAOReputation", async accounts => {
     amounts = [100, 200, 300];
 
     daoReputation = await DAOReputation.new();
-    await daoReputation.initialize(tokenName, tokenSymbol, {
+
+    const vpToken = await VotingPowerToken.new();
+    const dxdStakingToken = await ERC20SnapshotRep.new();
+    await dxdStakingToken.initialize("DXdao", "DXD");
+
+    await daoReputation.initialize(tokenName, tokenSymbol, vpToken.address, {
       from: owner,
     });
+
+    await vpToken.initialize(
+      daoReputation.address,
+      dxdStakingToken.address,
+      50,
+      50,
+      100
+    );
   });
 
   it("Should fail if is already initialized", async () => {

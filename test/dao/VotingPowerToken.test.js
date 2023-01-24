@@ -66,4 +66,3 @@ contract("VotingPowerToken", function (accounts) {
     ).equal(repSnapshotId);
   });
 });
-

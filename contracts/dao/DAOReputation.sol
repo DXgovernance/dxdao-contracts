@@ -18,7 +18,11 @@ contract DAOReputation is ERC20SnapshotRep {
     /// @notice Emitted if controller address is zero
     error DAOReputation__VPTokenAddresCannotBeZero();
 
-    function initialize(string memory name, string memory symbol, address _votingPowerToken) external initializer {
+    function initialize(
+        string memory name,
+        string memory symbol,
+        address _votingPowerToken
+    ) external initializer {
         __ERC20_init(name, symbol);
         __Ownable_init();
         votingPowerToken = _votingPowerToken;
@@ -30,10 +34,12 @@ contract DAOReputation is ERC20SnapshotRep {
      * @param amount The quantity of reputation generated
      * @return success True if the reputation are generated correctly
      */
-    function mint(
-        address account,
-        uint256 amount
-    ) external override(ERC20SnapshotRep) onlyOwner returns (bool success) {
+    function mint(address account, uint256 amount)
+        external
+        override(ERC20SnapshotRep)
+        onlyOwner
+        returns (bool success)
+    {
         _addHolder(account);
         _mint(account, amount);
         _snapshot();
@@ -48,16 +54,18 @@ contract DAOReputation is ERC20SnapshotRep {
      * @param amount The quantity of reputation generated for each account
      * @return success True if the reputation are generated correctly
      */
-    function mintMultiple(
-        address[] memory accounts,
-        uint256[] memory amount
-    ) external override(ERC20SnapshotRep) onlyOwner returns (bool success) {
+    function mintMultiple(address[] memory accounts, uint256[] memory amount)
+        external
+        override(ERC20SnapshotRep)
+        onlyOwner
+        returns (bool success)
+    {
         for (uint256 i = 0; i < accounts.length; i++) {
             _addHolder(accounts[i]);
             _mint(accounts[i], amount[i]);
             _snapshot();
             emit Mint(accounts[i], amount[i]);
-            VotingPowerToken(votingPowerToken).callback(account);
+            VotingPowerToken(votingPowerToken).callback(accounts[i]);
         }
         return true;
     }
@@ -68,10 +76,12 @@ contract DAOReputation is ERC20SnapshotRep {
      * @param  amount The quantity of reputation to burn
      * @return success True if the reputation are burned correctly
      */
-    function burn(
-        address account,
-        uint256 amount
-    ) external override(ERC20SnapshotRep) onlyOwner returns (bool success) {
+    function burn(address account, uint256 amount)
+        external
+        override(ERC20SnapshotRep)
+        onlyOwner
+        returns (bool success)
+    {
         _burn(account, amount);
         _removeHolder(account);
         _snapshot();
@@ -86,16 +96,18 @@ contract DAOReputation is ERC20SnapshotRep {
      * @param  amount The quantity of reputation to burn for each account
      * @return success True if the reputation are generated correctly
      */
-    function burnMultiple(
-        address[] memory accounts,
-        uint256[] memory amount
-    ) external override(ERC20SnapshotRep) onlyOwner returns (bool success) {
+    function burnMultiple(address[] memory accounts, uint256[] memory amount)
+        external
+        override(ERC20SnapshotRep)
+        onlyOwner
+        returns (bool success)
+    {
         for (uint256 i = 0; i < accounts.length; i++) {
             _burn(accounts[i], amount[i]);
             _removeHolder(accounts[i]);
             _snapshot();
             emit Burn(accounts[i], amount[i]);
-            VotingPowerToken(votingPowerToken).callback(account);
+            VotingPowerToken(votingPowerToken).callback(accounts[i]);
         }
         return true;
     }

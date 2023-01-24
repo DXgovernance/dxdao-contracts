@@ -59,7 +59,11 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     /// @param _repWeight New DAOReputation token weight
     /// @param _stakingWeight New DXDStaking token weight
     /// @param _minStakingTokensLocked Minimum staking tokens locked to apply weight
-    function setConfig(uint256 _repWeight, uint256 _stakingWeight, uint256 _minStakingTokensLocked) public onlyOwner {
+    function setConfig(
+        uint256 _repWeight,
+        uint256 _stakingWeight,
+        uint256 _minStakingTokensLocked
+    ) public onlyOwner {
         minStakingTokensLocked = _minStakingTokensLocked;
         updateComposition(_repWeight, _stakingWeight);
     }
@@ -81,10 +85,11 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     /// @param _holder Account we want to get voting power from
     /// @param _snapshotId VPToken SnapshotId we want get votingPower from
     /// @return votingPower The votingPower of `_holder`
-    function getVotingPowerPercentageOfAt(
-        address _holder,
-        uint256 _snapshotId
-    ) public view returns (uint256 votingPower) {
+    function getVotingPowerPercentageOfAt(address _holder, uint256 _snapshotId)
+        public
+        view
+        returns (uint256 votingPower)
+    {
         // Token Snapshot
         uint256 repSnapshotId = snapshots[address(repToken)][_snapshotId];
         uint256 stakingSnapshotId = snapshots[address(stakingToken)][_snapshotId];
@@ -112,7 +117,7 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         return repPercentWeighted + stakingPercentWeighted;
     }
 
-    function getPercentageOfFrom(uint256 balance, uint256 totalSupply, uint256 p) public pure returns (uint256) {
+    function getPercentageOfFrom(uint256 balance, uint256 totalSupply) public pure returns (uint256) {
         return ((balance * presition) * 100) / totalSupply;
     }
 
@@ -131,10 +136,11 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     /// @param tokenAddress Address of the external token (rep/dxd) we want to get snapshotId from
     /// @param tokenSnapshotId SnapshotId from VPToken
     /// @return snapshotId SnapshotId from `tokenAddress` stored at VPToken `tokenSnapshotId`
-    function getTokenSnapshotIdFromVPSnapshot(
-        address tokenAddress,
-        uint256 tokenSnapshotId
-    ) public view returns (uint256 snapshotId) {
+    function getTokenSnapshotIdFromVPSnapshot(address tokenAddress, uint256 tokenSnapshotId)
+        public
+        view
+        returns (uint256 snapshotId)
+    {
         // TODO: validate token address
         // TODO: tokenSnapshotId is valid?
         return snapshots[tokenAddress][tokenSnapshotId];
