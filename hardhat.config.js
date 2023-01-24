@@ -11,6 +11,7 @@ require("@openzeppelin/hardhat-upgrades");
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
+require("@semaphore-protocol/hardhat");
 require("solidity-docgen");
 require("hardhat-deploy");
 
@@ -19,6 +20,7 @@ require("./scripts/keylessDeploy");
 require("./scripts/create2");
 require("./scripts/actions-dxdao-contracts");
 require("./scripts/deploy-dxdao-contracts");
+require("./scripts/deploy-semaphore");
 require("./scripts/deploymentTemplates/dxvote-develop");
 require("./scripts/deploymentTemplates/guilds-goerli");
 
@@ -141,6 +143,15 @@ module.exports = {
           },
         },
       },
+      {
+        version: "0.8.4",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
     ],
   },
   gasReporter: {
@@ -188,5 +199,9 @@ module.exports = {
     outputDir: "docs/contracts",
     runOnCompile: false,
     exclude: ["test", "utils", "hardhat-dependency-compiler"],
+  },
+
+  mocha: {
+    timeout: 180000,
   },
 };

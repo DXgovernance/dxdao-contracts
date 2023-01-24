@@ -4,37 +4,44 @@ pragma solidity >=0.8.0;
 import "../ERC20GuildUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-import "../../utils/ERC20/ERC20SnapshotRep.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import "@semaphore-protocol/contracts/interfaces/ISemaphore.sol";
+import "../../utils/ERC721/ERC721SemaphoreRep.sol";
+import "hardhat/console.sol";
 
 /*
-  @title SnapshotRepERC20Guild
+  @title ZKERC20Guild
   @author github:AugustoL
-  @dev An ERC20Guild designed to work with a snapshotted voting token, no locking needed.
-  When a proposal is created it saves the snapshot if at the moment of creation,
-  the voters can vote only with the voting power they had at that time.
+  1 vote equals 1 token
+  1 voter owns multiple votes
+  The votes are executed individually with ZK proofs shared off chain.
+  The guild needs to be created with already minted tokens.
 */
-contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
+contract ZKERC20Guild is ERC20GuildUpgradeable {
     using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
+    using AddressUpgradeable for address;
+    using StringsUpgradeable for uint256;
 
-    // Proposal id => Snapshot id
+    ISemaphore semaphore;
+
+    /// @dev The sempahore group id of each proposal
+    mapping(bytes32 => uint256) public proposalGroupIds;
+
+    /// @dev Proposal id => Snapshot id
     mapping(bytes32 => uint256) public proposalsSnapshots;
 
     /// @dev Initializer
     /// @param _token The ERC20 token that will be used as source of voting power
     /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     /// @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
-    // solhint-disable-next-line max-line-length
     /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal action
-    // solhint-disable-next-line max-line-length
     /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
     /// @param _name The name of the ERC20Guild
-    /// @param _voteGas The amount of gas in wei unit used for vote refunds
-    /// @param _maxGasPrice The maximum gas price used for vote refunds
-    /// @param _maxActiveProposals The maximum amount of proposals to be active at the same time
-    /// @param _lockTime The minimum amount of seconds that the tokens would be locked
     /// @param _permissionRegistry The address of the permission registry contract to be used
+    /// @param _semaphore The address of the Semaphore contract to be used
     function initialize(
         address _token,
         uint256 _proposalTime,
@@ -42,12 +49,13 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
         uint256 _votingPowerPercentageForProposalExecution,
         uint256 _votingPowerPercentageForProposalCreation,
         string memory _name,
-        uint256 _voteGas,
-        uint256 _maxGasPrice,
-        uint256 _maxActiveProposals,
-        uint256 _lockTime,
-        address _permissionRegistry
-    ) public override initializer {
+        address _permissionRegistry,
+        ISemaphore _semaphore
+    ) public initializer {
+        require(
+            ERC721SemaphoreRep(_token).totalSupply() > 0,
+            "ZKERC20Guild: Token total supply must be greater than 0"
+        );
         super.initialize(
             _token,
             _proposalTime,
@@ -55,86 +63,78 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
             _votingPowerPercentageForProposalExecution,
             _votingPowerPercentageForProposalCreation,
             _name,
-            _voteGas,
-            _maxGasPrice,
-            _maxActiveProposals,
-            _lockTime,
+            0,
+            0,
+            10,
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
             _permissionRegistry
         );
         permissionRegistry.setETHPermission(address(this), _token, bytes4(keccak256("mint(address,uint256)")), 0, true);
-        permissionRegistry.setETHPermission(address(this), _token, bytes4(keccak256("burn(address,uint256)")), 0, true);
+        permissionRegistry.setETHPermission(
+            address(this),
+            _token,
+            bytes4(keccak256("mintMultiple(address[],uint256[])")),
+            0,
+            true
+        );
+        permissionRegistry.setETHPermission(address(this), _token, bytes4(keccak256("burn(uint256,address)")), 0, true);
+        permissionRegistry.setETHPermission(
+            address(this),
+            _token,
+            bytes4(keccak256("burnMultiple(uint256[],address[])")),
+            0,
+            true
+        );
+        semaphore = _semaphore;
     }
 
     /// @dev Set the voting power to vote in a proposal
     /// @param proposalId The id of the proposal to set the vote
     /// @param option The proposal option to be voted
-    /// @param votingPower The votingPower to use in the proposal
+    /// @param merkleTreeRoot The merkle tree root of the semaphore group
+    /// @param nullifierHash The nullifier hash root of the semaphore group
+    /// @param proof The ZK proof of the vote
     function setVote(
         bytes32 proposalId,
         uint256 option,
-        uint256 votingPower
-    ) public virtual override {
-        require(
-            proposals[proposalId].endTime > block.timestamp,
-            "SnapshotRepERC20Guild: Proposal ended, cannot be voted"
+        uint256 merkleTreeRoot,
+        uint256 nullifierHash,
+        uint256[8] calldata proof
+    ) public {
+        require(proposals[proposalId].endTime > block.timestamp, "ZKERC20Guild: Proposal ended, cannot be voted");
+
+        // Verify ZK proof in semaphore
+        semaphore.verifyProof(
+            proposalGroupIds[proposalId],
+            merkleTreeRoot,
+            uint256ToBytes32(option),
+            nullifierHash,
+            proposalGroupIds[proposalId],
+            proof
         );
-        require(
-            votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >= votingPower,
-            "SnapshotRepERC20Guild: Invalid votingPower amount"
-        );
-        require(
-            (proposalVotes[proposalId][msg.sender].option == 0 &&
-                proposalVotes[proposalId][msg.sender].votingPower == 0) ||
-                (proposalVotes[proposalId][msg.sender].option == option &&
-                    proposalVotes[proposalId][msg.sender].votingPower < votingPower),
-            "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
-        );
-        _setVote(msg.sender, proposalId, option, votingPower);
+
+        proposals[proposalId].totalVotes[option] = proposals[proposalId].totalVotes[option].add(1);
+
+        emit VoteAdded(proposalId, option, address(0), 1);
+
+        if (voteGas > 0) {
+            uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
+
+            if (address(this).balance >= gasRefund && !address(msg.sender).isContract()) {
+                (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
+                require(success, "Failed to refund gas");
+            }
+        }
     }
 
-    /// @dev Set the voting power to vote in a proposal using a signed vote
-    /// @param proposalId The id of the proposal to set the vote
-    /// @param option The proposal option to be voted
-    /// @param votingPower The votingPower to use in the proposal
-    /// @param voter The address of the voter
-    /// @param signature The signature of the hashed vote
-    function setSignedVote(
-        bytes32 proposalId,
-        uint256 option,
-        uint256 votingPower,
-        address voter,
-        bytes memory signature
-    ) public virtual override {
-        require(
-            proposals[proposalId].endTime > block.timestamp,
-            "SnapshotRepERC20Guild: Proposal ended, cannot be voted"
-        );
-        bytes32 hashedVote = hashVote(voter, proposalId, option, votingPower);
-        require(!signedVotes[hashedVote], "SnapshotRepERC20Guild: Already voted");
-        require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "SnapshotRepERC20Guild: Wrong signer");
-        signedVotes[hashedVote] = true;
-        require(
-            (votingPowerOfAt(voter, proposalsSnapshots[proposalId]) >= votingPower) &&
-                (votingPower > proposalVotes[proposalId][voter].votingPower),
-            "SnapshotRepERC20Guild: Invalid votingPower amount"
-        );
-        require(
-            (proposalVotes[proposalId][voter].option == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
-                (proposalVotes[proposalId][voter].option == option &&
-                    proposalVotes[proposalId][voter].votingPower < votingPower),
-            "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
-        );
-        _setVote(voter, proposalId, option, votingPower);
-    }
-
-    /// @dev Override and disable lock of tokens, not needed in SnapshotRepERC20Guild
+    /// @dev Override and disable lock of tokens, not needed in ZKERC20Guild
     function lockTokens(uint256) external virtual override {
-        revert("SnapshotRepERC20Guild: token vault disabled");
+        revert("ZKERC20Guild: token vault disabled");
     }
 
-    /// @dev Override and disable withdraw of tokens, not needed in SnapshotRepERC20Guild
+    /// @dev Override and disable withdraw of tokens, not needed in ZKERC20Guild
     function withdrawTokens(uint256) external virtual override {
-        revert("SnapshotRepERC20Guild: token vault disabled");
+        revert("ZKERC20Guild: token vault disabled");
     }
 
     /// @dev Create a proposal with an static call data and extra information
@@ -151,18 +151,26 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
         uint256 totalOptions,
         string memory title,
         string memory contentHash
-    ) public virtual override returns (bytes32) {
+    ) public override returns (bytes32) {
         bytes32 proposalId = super.createProposal(to, data, value, totalOptions, title, contentHash);
-        proposalsSnapshots[proposalId] = ERC20SnapshotRep(address(token)).getCurrentSnapshotId();
+        proposalsSnapshots[proposalId] = ERC721SemaphoreRep(address(token)).getCurrentSnapshotId();
+
+        proposalGroupIds[proposalId] = totalProposals;
+        semaphore.createGroup(proposalGroupIds[proposalId], 20, 0, address(this));
+        uint256[] memory voteCommitments = ERC721SemaphoreRep(address(token)).getVoteCommitments();
+        for (uint256 i = 0; i < voteCommitments.length; i++) {
+            semaphore.addMember(proposalGroupIds[proposalId], voteCommitments[i]);
+        }
+
         return proposalId;
     }
 
     /// @dev Executes a proposal that is not votable anymore and can be finished
     /// @param proposalId The id of the proposal to be executed
-    function endProposal(bytes32 proposalId) public virtual override {
-        require(!isExecutingProposal, "ERC20SnapshotRep: Proposal under execution");
-        require(proposals[proposalId].state == ProposalState.Active, "ERC20SnapshotRep: Proposal already executed");
-        require(proposals[proposalId].endTime < block.timestamp, "ERC20SnapshotRep: Proposal hasn't ended yet");
+    function endProposal(bytes32 proposalId) public override {
+        require(!isExecutingProposal, "ZKERC20Guild: Proposal under execution");
+        require(proposals[proposalId].state == ProposalState.Active, "ZKERC20Guild: Proposal already executed");
+        require(proposals[proposalId].endTime < block.timestamp, "ZKERC20Guild: Proposal hasn't ended yet");
 
         uint256 winningOption = 0;
         uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
@@ -223,7 +231,7 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
                     (bool success, ) = proposals[proposalId].to[i].call{value: proposals[proposalId].value[i]}(
                         proposals[proposalId].data[i]
                     );
-                    require(success, "ERC20SnapshotRep: Proposal call failed");
+                    require(success, "ZKERC20Guild: Proposal call failed");
                     isExecutingProposal = false;
                 }
             }
@@ -253,13 +261,13 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
     /// @param account The address of the account
     /// @param snapshotId The snapshotId to be used
     function votingPowerOfAt(address account, uint256 snapshotId) public view virtual returns (uint256) {
-        return ERC20SnapshotRep(address(token)).balanceOfAt(account, snapshotId);
+        return ERC721SemaphoreRep(address(token)).balanceOfAt(account, snapshotId);
     }
 
     /// @dev Get the voting power of an account
     /// @param account The address of the account
     function votingPowerOf(address account) public view virtual override returns (uint256) {
-        return ERC20SnapshotRep(address(token)).balanceOf(account);
+        return ERC721SemaphoreRep(address(token)).balanceOf(account);
     }
 
     /// @dev Get the proposal snapshot id
@@ -269,15 +277,46 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
 
     /// @dev Get the totalLocked
     function getTotalLocked() public view virtual override returns (uint256) {
-        return ERC20SnapshotRep(address(token)).totalSupply();
+        return ERC721SemaphoreRep(address(token)).totalSupply();
     }
 
     /// @dev Get minimum amount of votingPower needed for proposal execution
     function getSnapshotVotingPowerForProposalExecution(bytes32 proposalId) public view virtual returns (uint256) {
         return
-            ERC20SnapshotRep(address(token))
+            ERC721SemaphoreRep(address(token))
                 .totalSupplyAt(getProposalSnapshotId(proposalId))
                 .mul(votingPowerPercentageForProposalExecution)
                 .div(10000);
+    }
+
+    /// @dev Get the total votes of an option in a proposal
+    /// @param proposalId The id of the proposal to get the information
+    /// @param option The selected option
+    /// @return totalVotesOfProposalOption The total votes in the proposal option
+    function getProposalTotalVotesOfOption(bytes32 proposalId, uint256 option)
+        external
+        view
+        virtual
+        returns (uint256 totalVotesOfProposalOption)
+    {
+        return (proposals[proposalId].totalVotes[option]);
+    }
+
+    /// @dev Get the total votes in a proposal
+    /// @param proposalId The id of the proposal to get the information
+    /// @return totalVotesOfProposal The total votes in the proposal
+    function getProposalTotalVotes(bytes32 proposalId) external view virtual returns (uint256 totalVotesOfProposal) {
+        for (uint256 i = 0; i < proposals[proposalId].totalVotes.length; i++) {
+            totalVotesOfProposal += proposals[proposalId].totalVotes[i];
+        }
+    }
+
+    function uint256ToBytes32(uint256 uintNumber) public pure returns (bytes32 result) {
+        bytes memory uintString = bytes(uintNumber.toString());
+        if (uintString.length > 0) {
+            assembly {
+                result := mload(add(uintString, 32))
+            }
+        }
     }
 }
