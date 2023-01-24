@@ -4,6 +4,10 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
+interface VotingPower {
+    function callback(address _account) external;
+}
+
 /**
  * @title DXDInfluence
  * @dev Keeps track of the time commitment of accounts that have staked. The more DXD is staked and
@@ -13,6 +17,7 @@ contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     using ArraysUpgradeable for uint256[];
 
     ERC20SnapshotUpgradeable public dxdStake;
+    VotingPower public votingPower;
     mapping(address => uint256[]) public stakeTimes; // stakeTimes[account]
     mapping(uint256 => uint256) public snapshotTimes; // snapshotTimes[snapshotId]
 
@@ -55,6 +60,9 @@ contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         _snapshot();
         stakeTimes[account].push(block.timestamp);
         snapshotTimes[_getCurrentSnapshotId()] = block.timestamp;
+
+        // Notify Voting Power contract.
+        votingPower.callback(msg.sender);
     }
 
     function totalSupply() public view virtual override returns (uint256) {

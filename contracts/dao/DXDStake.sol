@@ -6,10 +6,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20Snapshot
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./DXDInfluence.sol";
 
-interface VotingPower {
-    function callback(address _account) external;
-}
-
 /**
  * @title DXDStake
  * @dev DXD wrapper contract. DXD tokens converted into DXDStake tokens get locked and are not transferable.
@@ -19,7 +15,6 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     IERC20Upgradeable public dxd;
-    VotingPower public votingPower;
     DXDInfluence public dxdInfluence;
 
     /// @notice Error when trying to transfer reputation
@@ -63,9 +58,6 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
         // Mint influence tokens.
         dxdInfluence.mint(msg.sender, _amount);
-
-        // Notify Voting Power contract.
-        votingPower.callback(msg.sender);
     }
 
     /// @dev Withdraw the tokens to the user.
@@ -78,8 +70,5 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
         // Mint influence tokens.
         dxdInfluence.mint(msg.sender, _amount);
-
-        // Notify Voting Power contract.
-        votingPower.callback(msg.sender);
     }
 }
