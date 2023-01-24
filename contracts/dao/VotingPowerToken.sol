@@ -17,12 +17,6 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     //tokenAddress    weight
     mapping(address => uint256) public weights;
 
-    // //      token              snapshot           holder     balance
-    // mapping(address => mapping(uint256 => mapping(address => uint256))) balances;
-
-    // //      token              snapshot   totalSupply
-    // mapping(address => mapping(uint256 => uint256)) totalSupplies;
-
     //      token address     Internal snapshot  => token snapshot
     mapping(address => mapping(uint256 => uint256)) snapshots;
 
@@ -72,15 +66,12 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     function callback(address _tokenHolder) external {
         require(
             msg.sender == address(repToken) || msg.sender == address(stakingToken),
-            "Solo puede ser llamado por alguno de los tokens"
+            "Callback can be called only from DAOReputation and DXDStaking tokens"
         );
 
         _snapshot();
         ERC20SnapshotRep token = ERC20SnapshotRep(msg.sender);
         snapshots[msg.sender][_getCurrentSnapshotId()] = token.getCurrentSnapshotId();
-
-        // balances[msg.sender][_getCurrentSnapshotId()][_tokenHolder] = token.balanceOf(_tokenHolder);
-        // totalSupplies[msg.sender][_getCurrentSnapshotId()] = token.totalSupply();
     }
 
     function getVotingPowerPercentageOfAt(address _holder, uint256 _snapshotId) public view returns (uint256) {
@@ -89,8 +80,6 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         uint256 stakingSnapshotId = snapshots[address(stakingToken)][_snapshotId];
 
         // Token balances
-        // uint256 repBalance = balances[address(repToken)][_snapshotId][_holder];
-        // uint256 stakingBalance = balances[address(stakingToken)][_snapshotId][_holder];
         uint256 repBalance = repToken.balanceOfAt(_holder, repSnapshotId);
         uint256 stakingBalance = stakingToken.balanceOfAt(_holder, stakingSnapshotId);
 
@@ -99,8 +88,6 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         uint256 stakingWeight = weights[address(stakingToken)];
 
         // Token supplies
-        // uint256 repSupply = totalSupplies[address(repToken)][_snapshotId];
-        // uint256 stakingSupply = totalSupplies[address(stakingToken)][_snapshotId];
         uint256 repSupply = repToken.totalSupplyAt(repSnapshotId);
         uint256 stakingSupply = stakingToken.totalSupplyAt(stakingSnapshotId);
 
