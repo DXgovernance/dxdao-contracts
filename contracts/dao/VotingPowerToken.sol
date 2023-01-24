@@ -12,6 +12,7 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     // staking token
     ERC20SnapshotRep public stakingToken;
 
+    /// @notice Minimum staking tokens locked to apply weight
     uint256 minStakingTokensLocked;
 
     //tokenAddress    weight
@@ -39,7 +40,9 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         _snapshot();
     }
 
-    /// @dev Update tokens weight
+    /// @dev Update trepWeightokens weight
+    /// @param  repWeight Weight of DAOReputation token
+    /// @param stakingWeight Weight of DXDStaking token
     function updateComposition(uint256 repWeight, uint256 stakingWeight) public onlyOwner {
         require(repWeight > 0 && stakingWeight > 0, "Weights must be greater than zero.");
         require(repWeight + stakingWeight == 100, "Weights sum must be equal to 100");
@@ -52,17 +55,17 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         }
     }
 
-    /// @dev Set config
-    function setConfig(
-        uint256 _repWeight,
-        uint256 _stakingWeight,
-        uint256 _minStakingTokensLocked
-    ) public onlyOwner {
+    /// @dev Set VPToken config
+    /// @param _repWeight New DAOReputation token weight
+    /// @param _stakingWeight New DXDStaking token weight
+    /// @param _minStakingTokensLocked Minimum staking tokens locked to apply weight
+    function setConfig(uint256 _repWeight, uint256 _stakingWeight, uint256 _minStakingTokensLocked) public onlyOwner {
         minStakingTokensLocked = _minStakingTokensLocked;
         updateComposition(_repWeight, _stakingWeight);
     }
 
-    /// @dev
+    /// @dev callback to be executed from rep and dxdStake tokens after balance change
+    /// @param _tokenHolder The address of the holder that just minted or burned tokens
     function callback(address _tokenHolder) external {
         require(
             msg.sender == address(repToken) || msg.sender == address(stakingToken),
@@ -74,7 +77,14 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         snapshots[msg.sender][_getCurrentSnapshotId()] = token.getCurrentSnapshotId();
     }
 
-    function getVotingPowerPercentageOfAt(address _holder, uint256 _snapshotId) public view returns (uint256) {
+    /// @dev Get the voting power percentage of `_holder` at certain `_snapshotId`
+    /// @param _holder Account we want to get voting power from
+    /// @param _snapshotId VPToken SnapshotId we want get votingPower from
+    /// @return votingPower The votingPower of `_holder`
+    function getVotingPowerPercentageOfAt(
+        address _holder,
+        uint256 _snapshotId
+    ) public view returns (uint256 votingPower) {
         // Token Snapshot
         uint256 repSnapshotId = snapshots[address(repToken)][_snapshotId];
         uint256 stakingSnapshotId = snapshots[address(stakingToken)][_snapshotId];
@@ -92,8 +102,8 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         uint256 stakingSupply = stakingToken.totalSupplyAt(stakingSnapshotId);
 
         // Token percentages
-        uint256 repPercent = getPercentageOfFrom(repBalance, repSupply, presition);
-        uint256 stakingPercent = getPercentageOfFrom(stakingBalance, stakingSupply, presition);
+        uint256 repPercent = getPercentageOfFrom(repBalance, repSupply);
+        uint256 stakingPercent = getPercentageOfFrom(stakingBalance, stakingSupply);
 
         // Tokens weighted
         uint256 repPercentWeighted = getValueFromPercentage(repWeight, repPercent);
@@ -102,12 +112,8 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         return repPercentWeighted + stakingPercentWeighted;
     }
 
-    function getPercentageOfFrom(
-        uint256 balance,
-        uint256 totalSupply,
-        uint256 p
-    ) public pure returns (uint256) {
-        return ((balance * p) * 100) / totalSupply;
+    function getPercentageOfFrom(uint256 balance, uint256 totalSupply, uint256 p) public pure returns (uint256) {
+        return ((balance * presition) * 100) / totalSupply;
     }
 
     function getValueFromPercentage(uint256 percentage, uint256 value) public pure returns (uint256) {
@@ -115,19 +121,22 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         return (v * value) / presition;
     }
 
-    /// @dev Get the current snapshotId
-    function getCurrentSnapshotId() public view returns (uint256) {
+    /// @dev Get the current VPToken snapshotId
+    /// @return snapshotId Current VPToken snapshotId
+    function getCurrentSnapshotId() public view returns (uint256 snapshotId) {
         return _getCurrentSnapshotId();
     }
 
-    function getTokenSnapshotIdFromVPSnapshot(address tokenAddress, uint256 tokenSnapshotId)
-        public
-        view
-        returns (uint256)
-    {
+    /// @dev Get the external token snapshotId for given VPToken snapshotId
+    /// @param tokenAddress Address of the external token (rep/dxd) we want to get snapshotId from
+    /// @param tokenSnapshotId SnapshotId from VPToken
+    /// @return snapshotId SnapshotId from `tokenAddress` stored at VPToken `tokenSnapshotId`
+    function getTokenSnapshotIdFromVPSnapshot(
+        address tokenAddress,
+        uint256 tokenSnapshotId
+    ) public view returns (uint256 snapshotId) {
         // TODO: validate token address
         // TODO: tokenSnapshotId is valid?
         return snapshots[tokenAddress][tokenSnapshotId];
     }
 }
-
