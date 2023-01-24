@@ -219,7 +219,7 @@ contract("ERC20Guild", function (accounts) {
     await time.increase(30);
     await erc20Guild.endProposal(setETHPermissionToActionMockA);
   };
-if (false) {
+
   describe("initialization", function () {
     it("initial values are correct", async function () {
       assert.equal(await erc20Guild.getToken(), guildToken.address);
@@ -2062,7 +2062,7 @@ if (false) {
       assert.equal(withdrawEvent.args[1], 50000);
     });
   });
-}
+
   describe("refund votes", function () {
     beforeEach(async function () {
       await lockTokens();
@@ -2375,7 +2375,7 @@ if (false) {
       }
     });
   });
-if (false) {
+
   describe("Signed votes", function () {
     beforeEach(async function () {
       const tokenVault = await erc20Guild.getTokenVault();
@@ -2571,5 +2571,4 @@ if (false) {
       );
     });
   });
-}
 });
