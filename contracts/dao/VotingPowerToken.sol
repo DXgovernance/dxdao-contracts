@@ -64,9 +64,9 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         updateComposition(_repWeight, _stakingWeight);
     }
 
-    /// @dev callback to be executed from rep and dxdStake tokens after balance change
-    /// @param _tokenHolder The address of the holder that just minted or burned tokens
-    function callback(address _tokenHolder) external {
+    /// @dev callback to be executed from rep and dxdStake tokens after mint/burn
+    /// It stores a reference to the rep/stake token snapshotId from internal snapshotId
+    function callback() external {
         require(
             msg.sender == address(repToken) || msg.sender == address(stakingToken),
             "Callback can be called only from DAOReputation and DXDStaking tokens"

@@ -21,6 +21,12 @@ contract DAOReputation is ERC20SnapshotRep {
         votingPowerToken = _votingPowerToken;
     }
 
+    /// @dev Create a new snapshot and call VPToken callback
+    function snapshot() internal {
+        _snapshot();
+        VotingPowerToken(votingPowerToken).callback();
+    }
+
     /**
      * @dev Generates `amount` reputation that are assigned to `account`
      * @param account The address that will be assigned the new reputation
@@ -33,9 +39,8 @@ contract DAOReputation is ERC20SnapshotRep {
     ) external override(ERC20SnapshotRep) onlyOwner returns (bool success) {
         _addHolder(account);
         _mint(account, amount);
-        _snapshot();
         emit Mint(account, amount);
-        VotingPowerToken(votingPowerToken).callback(account);
+        snapshot();
         return true;
     }
 
@@ -52,10 +57,9 @@ contract DAOReputation is ERC20SnapshotRep {
         for (uint256 i = 0; i < accounts.length; i++) {
             _addHolder(accounts[i]);
             _mint(accounts[i], amount[i]);
-            _snapshot();
             emit Mint(accounts[i], amount[i]);
-            VotingPowerToken(votingPowerToken).callback(accounts[i]);
         }
+        snapshot();
         return true;
     }
 
@@ -71,9 +75,8 @@ contract DAOReputation is ERC20SnapshotRep {
     ) external override(ERC20SnapshotRep) onlyOwner returns (bool success) {
         _burn(account, amount);
         _removeHolder(account);
-        _snapshot();
         emit Burn(account, amount);
-        VotingPowerToken(votingPowerToken).callback(account);
+        snapshot();
         return true;
     }
 
@@ -90,10 +93,9 @@ contract DAOReputation is ERC20SnapshotRep {
         for (uint256 i = 0; i < accounts.length; i++) {
             _burn(accounts[i], amount[i]);
             _removeHolder(accounts[i]);
-            _snapshot();
             emit Burn(accounts[i], amount[i]);
-            VotingPowerToken(votingPowerToken).callback(accounts[i]);
         }
+        snapshot();
         return true;
     }
 
