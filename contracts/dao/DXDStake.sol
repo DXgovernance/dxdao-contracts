@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "./DXDInfluence.sol";
 
 interface VotingPower {
     function callback(address _account) external;
@@ -12,20 +13,26 @@ interface VotingPower {
 /**
  * @title DXDStake
  * @dev DXD wrapper contract. DXD tokens converted into DXDStake tokens get locked and are not transferable.
- * DXDStake notifies the Voting Power contract of any stake changes. 
+ * DXDStake notifies the Voting Power contract of any stake changes.
  */
 contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     IERC20Upgradeable public dxd;
     VotingPower public votingPower;
+    DXDInfluence public dxdInfluence;
 
     /// @notice Error when trying to transfer reputation
     error DXDStake__NoTransfer();
 
     constructor() {}
 
-    function initialize(address _dxd, address _owner, string memory name, string memory symbol) external initializer {
+    function initialize(
+        address _dxd,
+        address _owner,
+        string memory name,
+        string memory symbol
+    ) external initializer {
         __ERC20_init(name, symbol);
         __Ownable_init();
 
@@ -45,23 +52,34 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     ) internal virtual override {
         revert DXDStake__NoTransfer();
     }
-    
 
     /// @dev Stakes tokens from the user.
     /// @param _amount Amount of tokens to stake.
     function stake(uint256 _amount) external {
+        // Stake DXD tokens
         dxd.safeTransferFrom(msg.sender, address(this), _amount);
         _mint(msg.sender, _amount);
         _snapshot();
+
+        // Mint influence tokens.
+        dxdInfluence.mint(msg.sender, _amount);
+
+        // Notify Voting Power contract.
         votingPower.callback(msg.sender);
     }
 
     /// @dev Withdraw the tokens to the user.
     /// @param _amount Amount of tokens to withdraw.
     function withdraw(uint256 _amount) external {
+        // Unstake DXD tokens
         dxd.safeTransfer(msg.sender, _amount);
         _burn(msg.sender, _amount);
         _snapshot();
+
+        // Mint influence tokens.
+        dxdInfluence.mint(msg.sender, _amount);
+
+        // Notify Voting Power contract.
         votingPower.callback(msg.sender);
     }
 }
