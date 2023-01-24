@@ -30,6 +30,7 @@ contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
     function initialize(
         address _dxdStake,
+        address _votingPower,
         string memory name,
         string memory symbol
     ) external initializer {
@@ -38,6 +39,7 @@ contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
         _transferOwnership(_dxdStake);
         dxdStake = ERC20SnapshotUpgradeable(_dxdStake);
+        votingPower = VotingPower(_votingPower);
     }
 
     /// @dev Not allow the transfer of tokens
@@ -47,10 +49,6 @@ contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         uint256 amount
     ) internal virtual override {
         revert Influence__NoTransfer();
-    }
-
-    function changeVotingPowerContract(VotingPower _newVotingPower) external onlyOwner {
-        votingPower = _newVotingPower;
     }
 
     /// @dev Stakes tokens from the user.
