@@ -71,4 +71,9 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         // Mint influence tokens.
         dxdInfluence.mint(msg.sender, _amount);
     }
+
+    /// @dev Get the current snapshotId
+    function getCurrentSnapshotId() external view returns (uint256) {
+        return _getCurrentSnapshotId();
+    }
 }

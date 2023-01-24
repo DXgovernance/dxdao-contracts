@@ -92,4 +92,9 @@ contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
         return registeredBalance + nonRegisteredBalance;
     }
+
+    /// @dev Get the current snapshotId
+    function getCurrentSnapshotId() external view returns (uint256) {
+        return _getCurrentSnapshotId();
+    }
 }
