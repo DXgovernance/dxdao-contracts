@@ -6,25 +6,27 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20Snapshot
 import "../utils/ERC20/ERC20SnapshotRep.sol";
 
 contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
-
     // The ERC20 rep token that will be used as source of voting power
-    IERC20Upgradeable public repToken;
+    ERC20SnapshotRep public repToken;
 
     // staking token
-    IERC20Upgradeable public stakingToken;
+    ERC20SnapshotRep public stakingToken;
 
     uint256 minStakingTokensLocked;
 
-        //tokenAddress    weight
+    //tokenAddress    weight
     mapping(address => uint256) public weights;
 
-            // token           //snapshot          // holder     // balance
-   mapping(address => mapping(uint256 => mapping( address => uint256 ))) balances;
+    // //      token              snapshot           holder     balance
+    // mapping(address => mapping(uint256 => mapping(address => uint256))) balances;
 
-            // token            // snapshot    // totalSupply
-   mapping(address => mapping(uint256 => uint256)) totalSupplies;
+    // //      token              snapshot   totalSupply
+    // mapping(address => mapping(uint256 => uint256)) totalSupplies;
 
+    //      token address     Internal snapshot  => token snapshot
+    mapping(address => mapping(uint256 => uint256)) snapshots;
 
+    uint256 public constant presition = 10_000_000;
 
     function initialize(
         address _repToken,
@@ -33,76 +35,112 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         uint256 stakingWeight,
         uint256 _minStakingTokensLocked
     ) public virtual initializer {
-       require(repToken != stakingToken, "Rep token and staking token cannot be the same.");
-       require(_minStakingTokensLocked > 0, "Minimum staking tokens locked must be greater than zero.");
+        __Ownable_init();
+        require(_repToken != _stakingToken, "Rep token and staking token cannot be the same.");
+        require(_minStakingTokensLocked > 0, "Minimum staking tokens locked must be greater than zero.");
 
-        repToken = ERC20SnapshotRep(_repToken);
-        stakingToken = ERC20SnapshotRep(_stakingToken);
+        repToken = ERC20SnapshotRep(address(_repToken));
+        stakingToken = ERC20SnapshotRep(address(_stakingToken));
         setConfig(repWeight, stakingWeight, minStakingTokensLocked);
-        updateComposition(repWeight, stakingWeight);
         _snapshot();
     }
 
-
     /// @dev Update tokens weight
-    function updateComposition(  
-        uint256 repWeight,
-        uint256 stakingWeight
-    ) {
+    function updateComposition(uint256 repWeight, uint256 stakingWeight) public onlyOwner {
         require(repWeight > 0 && stakingWeight > 0, "Weights must be greater than zero.");
         require(repWeight + stakingWeight == 100, "Weights sum must be equal to 100");
 
-        if (stakingToken.totalSupplyAt(stakingToken._getCurrentSnapshotId()) < minStakingTokensLocked){
+        if (stakingToken.totalSupply() < minStakingTokensLocked) {
             weights[address(repToken)] = 100;
         } else {
             weights[address(repToken)] = repWeight;
             weights[address(stakingToken)] = stakingWeight;
         }
-      
     }
 
-   /// @dev Set config
+    /// @dev Set config
     function setConfig(
         uint256 _repWeight,
         uint256 _stakingWeight,
         uint256 _minStakingTokensLocked
-    ){
+    ) public onlyOwner {
         minStakingTokensLocked = _minStakingTokensLocked;
         updateComposition(_repWeight, _stakingWeight);
     }
 
-    /// @dev 
-    function callback(address _tokenHolder){
-        ERC20SnapshotRep token = ERC20SnapshotRep(msg.sender);
+    /// @dev
+    function callback(address _tokenHolder) external {
+        require(
+            msg.sender == address(repToken) || msg.sender == address(stakingToken),
+            "Solo puede ser llamado por alguno de los tokens"
+        );
+
         _snapshot();
-        votingPower[_token][_getCurrentSnapshotId()][_tokenHolder] = token.totalSupply();
-        totalSupplies[_token][_getCurrentSnapshotId()] = token.totalSupply();
+        ERC20SnapshotRep token = ERC20SnapshotRep(msg.sender);
+        snapshots[msg.sender][_getCurrentSnapshotId()] = token.getCurrentSnapshotId();
+
+        // balances[msg.sender][_getCurrentSnapshotId()][_tokenHolder] = token.balanceOf(_tokenHolder);
+        // totalSupplies[msg.sender][_getCurrentSnapshotId()] = token.totalSupply();
     }
 
-    function votingPowerOfAt(address _holder, uint256 _snapshotId) public view returns (uint256) {
-        uint256 repBalance = balances[address(repToken)][_snapshotId][_holder];
-        uint256 stakingBalance = balances[address(stakingToken)][_snapshotId][_holder];
+    function getVotingPowerPercentageOfAt(address _holder, uint256 _snapshotId) public view returns (uint256) {
+        // Token Snapshot
+        uint256 repSnapshotId = snapshots[address(repToken)][_snapshotId];
+        uint256 stakingSnapshotId = snapshots[address(stakingToken)][_snapshotId];
+
+        // Token balances
+        // uint256 repBalance = balances[address(repToken)][_snapshotId][_holder];
+        // uint256 stakingBalance = balances[address(stakingToken)][_snapshotId][_holder];
+        uint256 repBalance = repToken.balanceOfAt(_holder, repSnapshotId);
+        uint256 stakingBalance = stakingToken.balanceOfAt(_holder, stakingSnapshotId);
+
+        // Token weights
         uint256 repWeight = weights[address(repToken)];
         uint256 stakingWeight = weights[address(stakingToken)];
 
-        uint256 repSupply = totalSupplies[address(repToken)][_snapshotId];
-        uint256 stakingSupply = totalSupplies[address(stakingToken)][_snapshotId];
+        // Token supplies
+        // uint256 repSupply = totalSupplies[address(repToken)][_snapshotId];
+        // uint256 stakingSupply = totalSupplies[address(stakingToken)][_snapshotId];
+        uint256 repSupply = repToken.totalSupplyAt(repSnapshotId);
+        uint256 stakingSupply = stakingToken.totalSupplyAt(stakingSnapshotId);
 
+        // Token percentages
+        uint256 repPercent = getPercentageOfFrom(repBalance, repSupply, presition);
+        uint256 stakingPercent = getPercentageOfFrom(stakingBalance, stakingSupply, presition);
 
+        // Tokens weighted
+        uint256 repPercentWeighted = getValueFromPercentage(repWeight, repPercent);
+        uint256 stakingPercentWeighted = getValueFromPercentage(stakingWeight, stakingPercent);
 
-
-        uint256 repPercent =  (repSupply * 100) / totalAmount;
-        uint256 stakingPercent =  (repSupply * 100) / totalAmount;
-
-
-
-        uint256 totalWeight = repWeight + stakingWeight;
-        return (repBalance * repWeight + stakingBalance * stakingWeight) / totalWeight;
-    }
-    
-
-    function calculatePercentage(uint256 balance, uint256 totalSupply){
-        return (balance * 100) / totalSupply;
+        return repPercentWeighted + stakingPercentWeighted;
     }
 
+    function getPercentageOfFrom(
+        uint256 balance,
+        uint256 totalSupply,
+        uint256 p
+    ) public pure returns (uint256) {
+        return ((balance * p) * 100) / totalSupply;
+    }
+
+    function getValueFromPercentage(uint256 percentage, uint256 value) public pure returns (uint256) {
+        uint256 v = (percentage * presition) / 100;
+        return (v * value) / presition;
+    }
+
+    /// @dev Get the current snapshotId
+    function getCurrentSnapshotId() public view returns (uint256) {
+        return _getCurrentSnapshotId();
+    }
+
+    function getTokenSnapshotIdFromVPSnapshot(address tokenAddress, uint256 tokenSnapshotId)
+        public
+        view
+        returns (uint256)
+    {
+        // TODO: validate token address
+        // TODO: tokenSnapshotId is valid?
+        return snapshots[tokenAddress][tokenSnapshotId];
+    }
 }
+
