@@ -20,6 +20,7 @@ contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     VotingPower public votingPower;
     mapping(address => uint256[]) public stakeTimes; // stakeTimes[account]
     mapping(uint256 => uint256) public snapshotTimes; // snapshotTimes[snapshotId]
+    mapping(uint256 => uint256) public totalSupplies; // nonRegisteredTotalSupplies[snapshotId]
 
     /// @notice Error when trying to transfer influence
     error Influence__NoTransfer();
@@ -59,26 +60,29 @@ contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         _mint(account, influenceUpdate);
         _snapshot();
         stakeTimes[account].push(block.timestamp);
-        snapshotTimes[_getCurrentSnapshotId()] = block.timestamp;
+
+        uint256 currentSnapshotId = _getCurrentSnapshotId();
+        snapshotTimes[currentSnapshotId] = block.timestamp;
+        if (snapshotTimes[currentSnapshotId - 1] > 0) {
+            uint256 previousSupply = totalSupplies[currentSnapshotId - 1];
+            uint256 supplyUpdate = dxdStake.totalSupply() * (block.timestamp - snapshotTimes[currentSnapshotId - 1]);
+            totalSupplies[currentSnapshotId] = previousSupply + supplyUpdate;
+        }
 
         // Notify Voting Power contract.
         votingPower.callback(msg.sender);
     }
 
     function totalSupply() public view virtual override returns (uint256) {
-        uint256 registeredTotalSupply = super.totalSupply();
-        uint256 lastMint = snapshotTimes[_getCurrentSnapshotId()];
-        uint256 totalSupplyUpdate = dxdStake.totalSupply() * (block.timestamp - lastMint);
+        return totalSupplies[_getCurrentSnapshotId()];
+    }
 
-        return registeredTotalSupply + totalSupplyUpdate;
+    function totalSupplyAt(uint256 snapshotId) public view virtual override returns (uint256) {
+        return totalSupplies[snapshotId];
     }
 
     function balanceOf(address account) public view virtual override returns (uint256) {
-        uint256 registeredBalance = balanceOf(account);
-        uint256 lastStakeTime = stakeTimes[account][stakeTimes[account].length - 1];
-        uint256 nonRegisteredBalance = dxdStake.balanceOf(account) * (block.timestamp - lastStakeTime);
-
-        return registeredBalance + nonRegisteredBalance;
+        return balanceOfAt(account, _getCurrentSnapshotId());
     }
 
     function balanceOfAt(address account, uint256 snapshotId) public view virtual override returns (uint256) {

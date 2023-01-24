@@ -51,25 +51,25 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     /// @dev Stakes tokens from the user.
     /// @param _amount Amount of tokens to stake.
     function stake(uint256 _amount) external {
+        // Mint influence tokens.
+        dxdInfluence.mint(msg.sender, _amount);
+
         // Stake DXD tokens
         dxd.safeTransferFrom(msg.sender, address(this), _amount);
         _mint(msg.sender, _amount);
         _snapshot();
-
-        // Mint influence tokens.
-        dxdInfluence.mint(msg.sender, _amount);
     }
 
     /// @dev Withdraw the tokens to the user.
     /// @param _amount Amount of tokens to withdraw.
     function withdraw(uint256 _amount) external {
+        // Mint influence tokens.
+        dxdInfluence.mint(msg.sender, _amount);
+
         // Unstake DXD tokens
         dxd.safeTransfer(msg.sender, _amount);
         _burn(msg.sender, _amount);
         _snapshot();
-
-        // Mint influence tokens.
-        dxdInfluence.mint(msg.sender, _amount);
     }
 
     /// @dev Get the current snapshotId
