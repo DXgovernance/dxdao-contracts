@@ -5,10 +5,9 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20Snapshot
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
- * @title TokenVault
- * @dev A smart contract to lock an ERC20 token in behalf of user trough an intermediary admin contract.
- * User -> Admin Contract -> Token Vault Contract -> Admin Contract -> User.
- * Tokens can be deposited and withdrawal only with authorization of the locker account from the admin address.
+ * @title DXDInfluence
+ * @dev Keeps track of the time commitment of accounts that have staked. The more DXD is staked and
+ * the more time the DXD tokens are staked, the more influence the user will have on the DAO. 
  */
 contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     using ArraysUpgradeable for uint256[];
