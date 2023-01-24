@@ -49,7 +49,7 @@ contract ERC20SnapshotRep is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      * @param amount The quantity of reputation generated
      * @return success True if the reputation are generated correctly
      */
-    function mint(address account, uint256 amount) external onlyOwner returns (bool success) {
+    function mint(address account, uint256 amount) external virtual onlyOwner returns (bool success) {
         _addHolder(account);
         _mint(account, amount);
         _snapshot();
@@ -65,6 +65,7 @@ contract ERC20SnapshotRep is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      */
     function mintMultiple(address[] memory accounts, uint256[] memory amount)
         external
+        virtual
         onlyOwner
         returns (bool success)
     {
@@ -83,7 +84,7 @@ contract ERC20SnapshotRep is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      * @param  amount The quantity of reputation to burn
      * @return success True if the reputation are burned correctly
      */
-    function burn(address account, uint256 amount) external onlyOwner returns (bool success) {
+    function burn(address account, uint256 amount) external virtual onlyOwner returns (bool success) {
         _burn(account, amount);
         _removeHolder(account);
         _snapshot();
@@ -99,6 +100,7 @@ contract ERC20SnapshotRep is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      */
     function burnMultiple(address[] memory accounts, uint256[] memory amount)
         external
+        virtual
         onlyOwner
         returns (bool success)
     {
