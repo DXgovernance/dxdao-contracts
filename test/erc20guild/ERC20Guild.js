@@ -18,7 +18,9 @@ const {
   time,
 } = require("@openzeppelin/test-helpers");
 
-const ProxyAdmin = artifacts.require("ProxyAdmin.sol");
+const ProxyAdmin = artifacts.require(
+  "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin"
+);
 const TransparentUpgradeableProxy = artifacts.require(
   "TransparentUpgradeableProxy.sol"
 );

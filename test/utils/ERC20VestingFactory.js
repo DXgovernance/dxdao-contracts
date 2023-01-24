@@ -4,7 +4,9 @@ import { expect } from "chai";
 const { expectRevert, time } = require("@openzeppelin/test-helpers");
 
 const ERC20VestingFactory = artifacts.require("ERC20VestingFactory.sol");
-const TokenVesting = artifacts.require("TokenVesting.sol");
+const TokenVesting = artifacts.require(
+  "contracts/utils/TokenVesting.sol:TokenVesting"
+);
 const ERC20Mock = artifacts.require("ERC20Mock.sol");
 
 require("chai").should();
