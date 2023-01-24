@@ -11,7 +11,8 @@ interface VotingPower {
 /**
  * @title DXDInfluence
  * @dev Keeps track of the time commitment of accounts that have staked. The more DXD is staked and
- * the more time the DXD tokens are staked, the more influence the user will have on the DAO. 
+ * the more time the DXD tokens are staked, the more influence the user will have on the DAO.
+ * DXDInfluence notifies the Voting Power contract of any stake changes.
  */
 contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     using ArraysUpgradeable for uint256[];
@@ -46,6 +47,10 @@ contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         uint256 amount
     ) internal virtual override {
         revert Influence__NoTransfer();
+    }
+
+    function changeVotingPowerContract(VotingPower _newVotingPower) external onlyOwner {
+        votingPower = _newVotingPower;
     }
 
     /// @dev Stakes tokens from the user.

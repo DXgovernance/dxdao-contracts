@@ -9,7 +9,6 @@ import "./DXDInfluence.sol";
 /**
  * @title DXDStake
  * @dev DXD wrapper contract. DXD tokens converted into DXDStake tokens get locked and are not transferable.
- * DXDStake notifies the Voting Power contract of any stake changes.
  */
 contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
@@ -33,10 +32,6 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
         _transferOwnership(_owner);
         dxd = IERC20Upgradeable(_dxd);
-    }
-
-    function changeVotingPowerContract(VotingPower _newVotingPower) external onlyOwner {
-        votingPower = _newVotingPower;
     }
 
     /// @dev Not allow the transfer of tokens
