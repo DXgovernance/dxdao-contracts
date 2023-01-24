@@ -23,6 +23,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
     function initialize(
         address _dxd,
+        address _dxdInfluence,
         address _owner,
         string memory name,
         string memory symbol
@@ -32,6 +33,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
         _transferOwnership(_owner);
         dxd = IERC20Upgradeable(_dxd);
+        dxdInfluence = DXDInfluence(_dxdInfluence);
     }
 
     /// @dev Not allow the transfer of tokens
