@@ -22,7 +22,7 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     //      tokenAddress     Internal snapshot  => token snapshot
     mapping(address => mapping(uint256 => uint256)) snapshots;
 
-    uint256 public constant precision = 1_000_000;
+    uint256 public constant precision = 100_000_000;
 
     /// @dev Verify if address is one of rep or staking tokens
     modifier onlyInternalTokens(address _add) {
@@ -39,55 +39,34 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     ) public virtual initializer {
         __Ownable_init();
         require(_repToken != _stakingToken, "Rep token and staking token cannot be the same.");
-        require(_minStakingTokensLocked > 0, "Minimum staking tokens locked must be greater than zero.");
-
+        // Validate weights before setting internal tokens
+        validateComposition(repWeight, stakingWeight);
         repToken = ERC20SnapshotRep(address(_repToken));
         stakingToken = ERC20SnapshotRep(address(_stakingToken));
-
         setConfig(repWeight, stakingWeight, _minStakingTokensLocked);
         _snapshot();
-    }
-
-    /// @dev Update tokens weight
-    /// @param repWeight Weight of DAOReputation token
-    /// @param stakingWeight Weight of DXDStaking token
-    function updateComposition(uint256 repWeight, uint256 stakingWeight) public onlyOwner {
-        require(repWeight > 0 && stakingWeight > 0, "Weights must be greater than zero.");
-        require(repWeight <= 100 && stakingWeight <= 100, "Invalid weight");
-        require(repWeight + stakingWeight == 100, "Weights sum must be equal to 100");
-
-        weights[address(repToken)] = repWeight;
-        weights[address(stakingToken)] = stakingWeight;
-    }
-
-    /// @dev Get token weight from weights config mapping.
-    /// @param token Address of the token we want to get weight from
-    /// @param weight Weight percentage value (0 to 100)
-    function getConfigTokenWeight(address token) public view returns (uint256 weight) {
-        return weights[token];
-    }
-
-    /// @dev Get token weight from weights config mapping.
-    /// If stakingToken supply > minStakingTokensLocked at the time of execution repWeight will default to 100%.
-    /// If not it will retun internal weights config for given `token`
-    /// @param token Address of the token we want to get weight from
-    /// @param weight Weight percentage value (0 to 100)
-    function getTokenWeight(address token) public view onlyInternalTokens(token) returns (uint256 weight) {
-        if (stakingToken.totalSupply() < minStakingTokensLocked) {
-            if (token == address(repToken)) return 100;
-            else return 0;
-        } else {
-            return getConfigTokenWeight(token);
-        }
     }
 
     /// @dev Set VPToken config
     /// @param _repWeight New DAOReputation token weight
     /// @param _stakingWeight New DXDStaking token weight
     /// @param _minStakingTokensLocked Minimum staking tokens locked to apply weight
-    function setConfig(uint256 _repWeight, uint256 _stakingWeight, uint256 _minStakingTokensLocked) public onlyOwner {
+    function setConfig(
+        uint256 _repWeight,
+        uint256 _stakingWeight,
+        uint256 _minStakingTokensLocked
+    ) public onlyOwner {
         minStakingTokensLocked = _minStakingTokensLocked;
-        updateComposition(_repWeight, _stakingWeight);
+        setComposition(_repWeight, _stakingWeight);
+    }
+
+    /// @dev Update tokens weights
+    /// @param repWeight Weight of DAOReputation token
+    /// @param stakingWeight Weight of DXDStaking token
+    function setComposition(uint256 repWeight, uint256 stakingWeight) public onlyOwner {
+        validateComposition(repWeight, stakingWeight);
+        weights[address(repToken)] = repWeight;
+        weights[address(stakingToken)] = stakingWeight;
     }
 
     /// @dev function to be executed from rep and dxdStake tokens after mint/burn
@@ -100,7 +79,7 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
             .getCurrentSnapshotId();
     }
 
-    /// @dev Get the voting power percentage of `_holder`
+    /// @dev Get the voting power percentage of `_holder` at current snapshotId
     /// @param _holder Account we want to get voting power from
     /// @return votingPowerPercentage The votingPower of `_holder` (0 to 100*precision)
     function getVotingPowerPercentageOf(address _holder) public view returns (uint256 votingPowerPercentage) {
@@ -126,17 +105,18 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     /// @param _holder Account we want to get voting power from
     /// @param _snapshotId VPToken SnapshotId we want get votingPower from
     /// @return votingPowerPercentage The votingPower of `_holder` (0 to 100*precision)
-    function getVotingPowerPercentageOfAt(
-        address _holder,
-        uint256 _snapshotId
-    ) public view returns (uint256 votingPowerPercentage) {
+    function getVotingPowerPercentageOfAt(address _holder, uint256 _snapshotId)
+        public
+        view
+        returns (uint256 votingPowerPercentage)
+    {
         require(_snapshotId <= _getCurrentSnapshotId(), "Invalid snapshot ID");
         address[2] memory tokens = [address(repToken), address(stakingToken)];
         uint256 totalVotingPower = 0;
 
         for (uint256 i = 0; i < tokens.length; i++) {
             address tokenAddress = tokens[i];
-            uint256 tokenSnapshotId = snapshots[tokenAddress][_snapshotId];
+            uint256 tokenSnapshotId = getTokenSnapshotIdFromVPSnapshot(tokenAddress, _snapshotId);
             // Skipping calculation if snapshotId is 0. No minting was done
             if (tokenSnapshotId == 0) continue;
             uint256 tokenWeight = getTokenWeight(tokenAddress);
@@ -156,10 +136,11 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     /// @param balance Acccount token balance
     /// @param totalSupply Token total supply
     /// @return votingPowerPercentagePowered Voting power percentage * precision
-    function _getVotingPower(
-        uint256 balance,
-        uint256 totalSupply
-    ) public pure returns (uint256 votingPowerPercentagePowered) {
+    function _getVotingPower(uint256 balance, uint256 totalSupply)
+        public
+        pure
+        returns (uint256 votingPowerPercentagePowered)
+    {
         require(balance <= totalSupply, "Invalid balance or totalSupply");
         return (balance * precision * 100) / totalSupply;
     }
@@ -168,10 +149,11 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     /// @param weightPercent Weight percent of the token (0 to 100)
     /// @param votingPowerPercentPoweredByPrecision Voting power percentage (o to 100*precision)
     /// @return weightedVotingPowerPercentage weighted percentage of votingPowerPercentagePowered (0 to 100*precision)
-    function _getWeightedPercentage(
-        uint256 weightPercent,
-        uint256 votingPowerPercentPoweredByPrecision
-    ) public pure returns (uint256 weightedVotingPowerPercentage) {
+    function _getWeightedPercentage(uint256 weightPercent, uint256 votingPowerPercentPoweredByPrecision)
+        public
+        pure
+        returns (uint256 weightedVotingPowerPercentage)
+    {
         require(weightPercent <= 100, "Invalid weightPercent");
         require(votingPowerPercentPoweredByPrecision <= 100 * precision, "Invalid weightPercent");
         return (votingPowerPercentPoweredByPrecision * weightPercent) / 100;
@@ -187,11 +169,41 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     /// @param tokenAddress Address of the external token (rep/dxd) we want to get snapshotId from
     /// @param tokenSnapshotId SnapshotId from VPToken
     /// @return snapshotId SnapshotId from `tokenAddress` stored at VPToken `tokenSnapshotId`
-    function getTokenSnapshotIdFromVPSnapshot(
-        address tokenAddress,
-        uint256 tokenSnapshotId
-    ) public view onlyInternalTokens(tokenAddress) returns (uint256 snapshotId) {
+    function getTokenSnapshotIdFromVPSnapshot(address tokenAddress, uint256 tokenSnapshotId)
+        public
+        view
+        onlyInternalTokens(tokenAddress)
+        returns (uint256 snapshotId)
+    {
         require(snapshotId <= _getCurrentSnapshotId(), "Invalid snapshot ID");
         return snapshots[tokenAddress][tokenSnapshotId];
+    }
+
+    /// @dev Get token weight from weights config mapping.
+    /// @param token Address of the token we want to get weight from
+    /// @param weight Weight percentage value (0 to 100)
+    function getConfigTokenWeight(address token) public view returns (uint256 weight) {
+        return weights[token];
+    }
+
+    /// @dev Get token weight from weights config mapping.
+    /// If stakingToken supply > minStakingTokensLocked at the time of execution repWeight will default to 100%.
+    /// If not it will retun internal weights config for given `token`
+    /// @param token Address of the token we want to get weight from
+    /// @param weight Weight percentage value (0 to 100)
+    function getTokenWeight(address token) public view onlyInternalTokens(token) returns (uint256 weight) {
+        if (stakingToken.totalSupply() < minStakingTokensLocked) {
+            if (token == address(repToken)) return 100;
+            else return 0;
+        } else {
+            return getConfigTokenWeight(token);
+        }
+    }
+
+    /// @dev Perform a validation of token weights
+    function validateComposition(uint256 repWeight, uint256 stakingWeight) internal {
+        require(repWeight > 0 || stakingWeight > 0, "At least one token weight must be greater than zero");
+        require(repWeight <= 100 && stakingWeight <= 100, "Weights cannot be bigger than 100");
+        require(repWeight + stakingWeight == 100, "Weights sum must be equal to 100");
     }
 }
