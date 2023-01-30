@@ -201,7 +201,7 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     }
 
     /// @dev Perform a validation of token weights
-    function validateComposition(uint256 repWeight, uint256 stakingWeight) internal {
+    function validateComposition(uint256 repWeight, uint256 stakingWeight) internal pure {
         require(repWeight > 0 || stakingWeight > 0, "At least one token weight must be greater than zero");
         require(repWeight <= 100 && stakingWeight <= 100, "Weights cannot be bigger than 100");
         require(repWeight + stakingWeight == 100, "Weights sum must be equal to 100");
