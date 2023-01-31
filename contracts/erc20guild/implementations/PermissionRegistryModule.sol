@@ -153,7 +153,7 @@ contract PermissionRegistryModule {
             );
     }
 
-    /// @dev For compatibility with
+    /// @dev True if module is activate for the given avatar-admin pair.
     /// @param _avatar Address that the module will pass transactions to.
     /// @param _admin Address of the controller of the module.
     function isModuleActivated(address _avatar, address _admin) external view returns (bool) {
