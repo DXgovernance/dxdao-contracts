@@ -1,5 +1,4 @@
 const { expectRevert } = require("@openzeppelin/test-helpers");
-const { expect } = require("chai");
 const VotingPowerToken = artifacts.require("./VotingPowerToken.sol");
 const DAOReputation = artifacts.require("DAOReputation.sol");
 const DXDStakeMock = artifacts.require("DXDStakeMock.sol");
@@ -67,6 +66,7 @@ contract("VotingPowerToken", function (accounts) {
 
     precision = (await vpToken.precision()).toNumber();
   };
+
   const mintAll = async () => {
     await Promise.all(
       stakeHolders.map(({ account, amount }) =>
@@ -80,6 +80,7 @@ contract("VotingPowerToken", function (accounts) {
       repHolders.map(({ account, amount }) => repToken.mint(account, amount))
     );
   };
+
   const burnAll = async () => {
     await Promise.all(
       stakeHolders.map(({ account, amount }) =>
@@ -93,9 +94,6 @@ contract("VotingPowerToken", function (accounts) {
       repHolders.map(({ account, amount }) => repToken.burn(account, amount))
     );
   };
-  // beforeEach(async () => {
-  //   await deployVpToken();
-  // });
 
   describe("initialize", () => {
     it("Should not initialize 2 times", async () => {
@@ -120,7 +118,7 @@ contract("VotingPowerToken", function (accounts) {
           stakeTokenWeight,
           minStakingTokensLocked
         ),
-        "Rep token and staking token cannot be the same."
+        "VotingPowerToken_ReptokenAndStakingTokenCannotBeEqual()"
       );
     });
 
@@ -157,38 +155,19 @@ contract("VotingPowerToken", function (accounts) {
       const stakingWeight = await vpToken.getTokenWeight(stakingToken.address);
       expect(stakingWeight.toNumber()).equal(0);
     });
-    it("Should not allow to update composition if one or both weights are 0 or less", async () => {
-      await expectRevert(
-        vpToken.setComposition(0, 0),
-        "At least one token weight must be greater than zero"
-      );
-    });
-    it("Should not allow to update composition one or both weights are > 100", async () => {
-      await expectRevert(
-        vpToken.setComposition(101, 50),
-        "Weights cannot be bigger than 100"
-      );
-      await expectRevert(
-        vpToken.setComposition(20, 200),
-        "Weights cannot be bigger than 100"
-      );
-      await expectRevert(
-        vpToken.setComposition(101, 130),
-        "Weights cannot be bigger than 100"
-      );
-    });
+
     it("Should fail if the sum of both weigths is not 100", async () => {
       await expectRevert(
         vpToken.setComposition(50, 51),
-        "Weights sum must be equal to 100"
+        "VotingPowerToken_InvalidTokenWeights()"
       );
       await expectRevert(
         vpToken.setComposition(51, 50),
-        "Weights sum must be equal to 100"
+        "VotingPowerToken_InvalidTokenWeights()"
       );
       await expectRevert(
         vpToken.setComposition(80, 30),
-        "Weights sum must be equal to 100"
+        "VotingPowerToken_InvalidTokenWeights()"
       );
     });
     it("Should be called only by the owner", async () => {
@@ -199,20 +178,20 @@ contract("VotingPowerToken", function (accounts) {
     });
   });
 
-  describe("_getVotingPower", () => {
+  describe("getPercent", () => {
     beforeEach(async () => await deployVpToken());
     it("Should return 10%", async () => {
-      const votingPower = await vpToken._getVotingPower(10, 100);
+      const votingPower = await vpToken.getPercent(10, 100);
       expect(votingPower.toNumber()).equal(10 * precision);
     });
 
     it("Should return 100%", async () => {
-      const votingPower = await vpToken._getVotingPower(100, 100);
+      const votingPower = await vpToken.getPercent(100, 100);
       expect(votingPower.toNumber()).equal(100 * precision);
     });
 
     it("Should return 1%", async () => {
-      const votingPower = await vpToken._getVotingPower(1, 100);
+      const votingPower = await vpToken.getPercent(1, 100);
       expect(votingPower.toNumber()).equal(1 * precision);
     });
 
@@ -221,29 +200,32 @@ contract("VotingPowerToken", function (accounts) {
       const supply = 100000;
       const balance = Math.round((expectedVotingPowerPercent / 100) * supply);
 
-      const votingPower = await vpToken._getVotingPower(balance, supply);
+      const votingPower = await vpToken.getPercent(balance, supply);
+
       expect(votingPower.toNumber() / precision).equal(
         expectedVotingPowerPercent
       );
     });
 
     it("Should return 0%", async () => {
-      const votingPower = await vpToken._getVotingPower(0, 100);
-      expect(votingPower.toNumber()).equal(0 * precision);
+      const votingPower = await vpToken.getPercent(0, 100);
+      expect(votingPower.toNumber()).equal(0);
     });
 
-    it("Should return revert if balance > total", async () => {
-      await expectRevert(
-        vpToken._getVotingPower(101, 100),
-        "Invalid balance or totalSupply"
-      );
+    it("Should return 0.0000000001%", async () => {
+      const votingPower = await vpToken.getPercent(1, precision * 100);
+      expect(votingPower.toNumber()).equal(1);
+      expect(votingPower.toNumber() / precision).equal(1 / precision);
     });
   });
 
-  describe("_getWeightedPercentage", () => {
+  describe("getWeightedVotingPowerPercentage", () => {
     beforeEach(async () => await deployVpToken());
     it("Should return 0%", async () => {
-      const weightedPercentage = await vpToken._getWeightedPercentage(0, 100);
+      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
+        0,
+        100
+      );
       expect(weightedPercentage.toNumber()).equal(0);
     });
 
@@ -255,7 +237,7 @@ contract("VotingPowerToken", function (accounts) {
       const expectedResult =
         votingPowerPercent * (weightPercent / 100) * precision; // 1.5
 
-      const weightedPercentage = await vpToken._getWeightedPercentage(
+      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
         weightPercent,
         votingPowerPercentPoweredByPrecision
       );
@@ -269,7 +251,7 @@ contract("VotingPowerToken", function (accounts) {
       const expectedResult =
         votingPowerPercent * (weightPercent / 100) * precision; // 1.5
 
-      const weightedPercentage = await vpToken._getWeightedPercentage(
+      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
         weightPercent,
         votingPowerPercentPoweredByPrecision
       );
@@ -453,6 +435,7 @@ contract("VotingPowerToken", function (accounts) {
         expectedVotingPowerPercent
       );
     });
+
     it("Should return 0.000001% voting power", async () => {
       const holder1 = repHolders[0].account;
       const holder2 = repHolders[1].account;
@@ -483,7 +466,7 @@ contract("VotingPowerToken", function (accounts) {
       const anyAddress = accounts[9];
       await expectRevert(
         vpToken.getTokenWeight(anyAddress),
-        "VotingPowerToken: Invalid token address"
+        "VotingPowerToken_InvalidTokenAddress"
       );
     });
     it("Should return 0 for stakingToken if staking token totalSupply is less than minStakingTokensLocked", async () => {
