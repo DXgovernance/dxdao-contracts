@@ -2698,6 +2698,52 @@ contract("ERC20Guild", function (accounts) {
         }
       });
 
+      it("can set a vote from contract and refund gas", async function () {
+        const guildProposalId = await createProposal(genericProposal);
+
+        const guildTracker = await balance.tracker(erc20Guild.address);
+
+        // send ether to cover gas
+        await send.ether(accounts[0], erc20Guild.address, ether("10"), {
+          from: accounts[0],
+        });
+        // send tokens to voter contract
+        const tokenVault = await erc20Guild.getTokenVault();
+        await guildToken.mint(actionMockA.address, 10000);
+        const approveData = await new web3.eth.Contract(ERC20Mock.abi).methods.approve(tokenVault, 10000).encodeABI();
+        await actionMockA.executeCall(guildToken.address, approveData, 0);
+        const lockTockensData = await new web3.eth.Contract(ERC20Guild.abi).methods.lockTokens(10000).encodeABI();
+        await actionMockA.executeCall(erc20Guild.address, lockTockensData, 0);
+
+        let guildBalance = await guildTracker.delta();
+        guildBalance.should.be.bignumber.equal(ether("10"));
+        const tracker = await balance.tracker(actionMockA.address);
+        const setVoteData = await new web3.eth.Contract(ERC20Guild.abi).methods.setVote(guildProposalId, 1, 100).encodeABI();
+        const txVote = await actionMockA.executeCall(erc20Guild.address, setVoteData, 0, {
+            from: accounts[2],
+            gasPrice: REAL_GAS_PRICE,
+          }
+        );
+        const voteEvent = helpers.logDecoder.decodeLogs(
+          txVote.receipt.rawLogs
+        )[0];
+        assert.equal(voteEvent.name, "VoteAdded");
+        assert.equal(voteEvent.args[0], guildProposalId);
+        assert.equal(voteEvent.args[1], 1);
+        assert.equal(voteEvent.args[2], actionMockA.address);
+        assert.equal(voteEvent.args[3], 100);
+
+        if (constants.GAS_PRICE > 1) {
+          // Tx fees were paid by EOA but the refund belongs to the smart contract setting the vote.
+          guildBalance = await guildTracker.delta();
+          guildBalance.should.be.bignumber.equal(
+            VOTE_GAS.mul(MAX_GAS_PRICE).neg()
+          );
+          let accounts1Balance = await tracker.delta();
+          accounts1Balance.should.be.bignumber.equal(VOTE_GAS.mul(MAX_GAS_PRICE));
+        }
+      });
+
       it("can set a vote but no refund as contract has no ether", async function () {
         const guildProposalId = await createProposal(genericProposal);
 

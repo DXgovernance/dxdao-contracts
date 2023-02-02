@@ -455,7 +455,7 @@ contract BaseERC20Guild {
         if (voteGas > 0) {
             uint256 gasRefund = voteGas * tx.gasprice.min(maxGasPrice);
 
-            if (address(this).balance >= gasRefund && !address(msg.sender).isContract()) {
+            if (address(this).balance >= gasRefund) {
                 (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
                 require(success, "Failed to refund gas");
             }
