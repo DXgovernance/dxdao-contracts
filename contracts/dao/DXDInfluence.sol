@@ -3,7 +3,8 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
-import {UD60x18, uUNIT, wrap, unwrap} from "@prb/math/src/UD60x18.sol";
+import {UD60x18, toUD60x18, fromUD60x18} from "@prb/math/src/UD60x18.sol";
+import {SD59x18} from "@prb/math/src/SD59x18.sol";
 import "./DataSnapshot.sol";
 import "./DXDStake.sol";
 
@@ -29,15 +30,12 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
     VotingPower public votingPower;
     mapping(uint256 => uint256) public snapshotTimes; // snapshotTimes[snapshotId]
 
-    int256 public linearFactor;
-    int256 public exponentialFactor;
+    SD59x18 public linearFactor;
+    SD59x18 public exponentialFactor;
     UD60x18 public exponent; // Must be immutable
 
     mapping(address => mapping(uint256 => CummulativeStake)) public cummulativeStakes;
     mapping(uint256 => CummulativeStake) public totalStake;
-
-    /// @notice Error when trying to transfer influence
-    error Influence__NoTransfer();
 
     constructor() {}
 
@@ -54,14 +52,14 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         dxdStake = DXDStake(_dxdStake);
         votingPower = VotingPower(_votingPower);
 
-        linearFactor = _linearFactor;
-        exponentialFactor = _exponentialFactor;
-        exponent = wrap(_exponent);
+        linearFactor = SD59x18.wrap(_linearFactor);
+        exponentialFactor = SD59x18.wrap(_exponentialFactor);
+        exponent = UD60x18.wrap(_exponent);
     }
 
     function changeFormula(int256 _linearFactor, int256 _exponentialFactor) external onlyOwner {
-        linearFactor = _linearFactor;
-        exponentialFactor = _exponentialFactor;
+        linearFactor = SD59x18.wrap(_linearFactor);
+        exponentialFactor = SD59x18.wrap(_exponentialFactor);
     }
 
     /// @dev Stakes tokens from the user.
@@ -77,8 +75,8 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         snapshotTimes[currentSnapshotId] = block.timestamp; // Not needed now, but may be useful in future upgrades.
         CummulativeStake storage lastCummulativeStake = getLastCummulativeStake(_account);
 
-        UD60x18 tc = wrap(_timeCommitment * uUNIT);
-        uint256 exponentialElement = unwrap(wrap(_amount * uUNIT).mul(tc.pow(exponent))) / uUNIT;
+        UD60x18 tc = toUD60x18(_timeCommitment);
+        uint256 exponentialElement = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
 
         // Update account's stake data
         CummulativeStake storage cummulativeStake = cummulativeStakes[msg.sender][currentSnapshotId];
@@ -108,8 +106,8 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         snapshotTimes[currentSnapshotId] = block.timestamp; // Not needed now, but may be useful in future upgrades.
         CummulativeStake storage lastCummulativeStake = getLastCummulativeStake(_account);
 
-        UD60x18 tc = wrap(_timeCommitment * uUNIT);
-        uint256 exponentialElement = unwrap(wrap(_amount * uUNIT).mul(tc.pow(exponent))) / uUNIT;
+        UD60x18 tc = toUD60x18(_timeCommitment);
+        uint256 exponentialElement = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
 
         // Update account's stake data
         CummulativeStake storage cummulativeStake = cummulativeStakes[msg.sender][currentSnapshotId];
@@ -137,33 +135,29 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
 
     function totalSupplyAt(uint256 snapshotId) public view returns (uint256) {
         CummulativeStake storage currentTotalStake = totalStake[snapshotId];
-
-        int256 linearInfluence = linearFactor * int256(currentTotalStake.linearElement);
-        int256 exponentialInfluence = exponentialFactor * int256(currentTotalStake.exponentialElement);
-        uint256 totalInfluence = uint256(linearInfluence + exponentialInfluence);
-
-        return totalInfluence;
+        return getInfluence(currentTotalStake);
     }
 
     function balanceOf(address account) public view returns (uint256) {
         CummulativeStake storage cummulativeStake = cummulativeStakes[account][_lastSnapshotId(account)];
-
-        int256 linearInfluence = linearFactor * int256(cummulativeStake.linearElement);
-        int256 exponentialInfluence = exponentialFactor * int256(cummulativeStake.exponentialElement);
-        uint256 influence = uint256(linearInfluence + exponentialInfluence);
-
-        return influence;
+        return getInfluence(cummulativeStake);
     }
 
     function balanceOfAt(address account, uint256 snapshotId) public view returns (uint256) {
         uint256 lastSnapshotId = _lastRegisteredSnapshotIdAt(snapshotId, account);
         CummulativeStake storage cummulativeStake = cummulativeStakes[account][lastSnapshotId];
+        return getInfluence(cummulativeStake);
+    }
 
-        int256 linearInfluence = linearFactor * int256(cummulativeStake.linearElement);
-        int256 exponentialInfluence = exponentialFactor * int256(cummulativeStake.exponentialElement);
-        uint256 influence = uint256(linearInfluence + exponentialInfluence);
+    function getInfluence(CummulativeStake storage _cummulativeStake) internal view returns (uint256) {
+        SD59x18 linearElement = SD59x18.wrap(int256(_cummulativeStake.linearElement));
+        SD59x18 linearInfluence = linearFactor.mul(linearElement);
 
-        return influence;
+        SD59x18 exponentialElement = SD59x18.wrap(int256(_cummulativeStake.exponentialElement));
+        SD59x18 exponentialInfluence = exponentialFactor.mul(exponentialElement);
+
+        SD59x18 influence = linearInfluence.add(exponentialInfluence);
+        return uint256(SD59x18.unwrap(influence));
     }
 
     function decimals() external pure returns (uint8) {
