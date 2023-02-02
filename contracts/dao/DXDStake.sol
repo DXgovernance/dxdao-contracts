@@ -67,6 +67,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
     function enableEarlyWithdrawal(uint256 _penalty, address _recipient) external onlyOwner {
         require(_penalty < DIVISOR, "DXDStake: invalid penalty");
+        require(_recipient != address(0), "DXDStake: recipient can't be null");
         earlyWithdrawalsEnabled = true;
         earlyWithdrawalPenalty = _penalty;
         penaltyRecipient = _recipient;
