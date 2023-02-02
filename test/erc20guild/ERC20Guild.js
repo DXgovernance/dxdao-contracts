@@ -51,13 +51,16 @@ contract("ERC20Guild", function (accounts) {
     const proxyAdmin = await ProxyAdmin.new({ from: accounts[0] });
 
     multicall = await Multicall.new();
-    const erc20GuildDeployer = await Create2Deployer.new();
-    const erc20GuildAddress = helpers.create2Address(
-      erc20GuildDeployer.address,
+    const create2Deployer = await Create2Deployer.new();
+    const erc20GuildAddress = await create2Deployer.getPublicDeploymentAddress(
       ERC20Guild.bytecode,
       constants.SOME_HASH
     );
-    await erc20GuildDeployer.deploy(ERC20Guild.bytecode, constants.SOME_HASH);
+    await create2Deployer.deployPublic(
+      ERC20Guild.bytecode,
+      "0x0",
+      constants.SOME_HASH
+    );
 
     guildToken = await createAndSetupGuildToken(
       accounts.slice(0, 6),
@@ -1593,10 +1596,7 @@ contract("ERC20Guild", function (accounts) {
         guild: erc20Guild,
         options: [
           {
-            to: [
-              permissionRegistry.address,
-              testToken.address,
-            ],
+            to: [permissionRegistry.address, testToken.address],
             data: [
               await new web3.eth.Contract(PermissionRegistry.abi).methods
                 .executeUpdateERC20Limit(erc20Guild.address, 0)
@@ -1911,7 +1911,7 @@ contract("ERC20Guild", function (accounts) {
         newState: "3",
       });
 
-      await testToken.transfer(erc20Guild.address, 250, {from: accounts[3]});
+      await testToken.transfer(erc20Guild.address, 250, { from: accounts[3] });
       guildProposalId = await createProposal({
         guild: erc20Guild,
         options: [

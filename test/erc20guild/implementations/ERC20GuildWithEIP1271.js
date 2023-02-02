@@ -30,14 +30,14 @@ contract("ERC20GuildWithERC1271", function (accounts) {
   beforeEach(async function () {
     const proxyAdmin = await ProxyAdmin.new({ from: accounts[0] });
 
-    const erc20GuildDeployer = await Create2Deployer.new();
-    const erc20GuildAddress = helpers.create2Address(
-      erc20GuildDeployer.address,
+    const create2Deployer = await Create2Deployer.new();
+    const erc20GuildAddress = await create2Deployer.getPublicDeploymentAddress(
       ERC20GuildWithERC1271.bytecode,
       constants.SOME_HASH
     );
-    await erc20GuildDeployer.deploy(
+    await create2Deployer.deployPublic(
       ERC20GuildWithERC1271.bytecode,
+      "0x0",
       constants.SOME_HASH
     );
 
