@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
+import {UD60x18, uUNIT, wrap, unwrap} from "@prb/math/src/UD60x18.sol";
+import "./DataSnapshot.sol";
+import "./DXDStake.sol";
 
 interface VotingPower {
-    function callback(address _account) external;
+    function callback() external;
 }
 
 /**
@@ -14,14 +17,26 @@ interface VotingPower {
  * the more time the DXD tokens are staked, the more influence the user will have on the DAO.
  * DXDInfluence notifies the Voting Power contract of any stake changes.
  */
-contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
+contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
     using ArraysUpgradeable for uint256[];
 
-    ERC20SnapshotUpgradeable public dxdStake;
+    uint256 public constant DIVISOR = 10_000;
+
+    struct CummulativeStake {
+        uint256 linearElement;
+        uint256 exponentialElement;
+    }
+
+    DXDStake public dxdStake;
     VotingPower public votingPower;
-    mapping(address => uint256[]) public stakeTimes; // stakeTimes[account]
     mapping(uint256 => uint256) public snapshotTimes; // snapshotTimes[snapshotId]
-    mapping(uint256 => uint256) public totalSupplies; // nonRegisteredTotalSupplies[snapshotId]
+
+    int256 public linearFactor;
+    int256 public exponentialFactor;
+    UD60x18 public exponent; // Must be immutable
+
+    mapping(address => mapping(uint256 => CummulativeStake)) public cummulativeStakes;
+    mapping(uint256 => CummulativeStake) public totalStake;
 
     /// @notice Error when trying to transfer influence
     error Influence__NoTransfer();
@@ -31,77 +46,129 @@ contract DXDInfluence is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     function initialize(
         address _dxdStake,
         address _votingPower,
-        string memory name,
-        string memory symbol
+        int256 _linearFactor,
+        int256 _exponentialFactor,
+        uint256 _exponent
     ) external initializer {
-        __ERC20_init(name, symbol);
         __Ownable_init();
 
         _transferOwnership(_dxdStake);
-        dxdStake = ERC20SnapshotUpgradeable(_dxdStake);
+        dxdStake = DXDStake(_dxdStake);
         votingPower = VotingPower(_votingPower);
+
+        linearFactor = _linearFactor;
+        exponentialFactor = _exponentialFactor;
+        exponent = wrap(_exponent);
     }
 
-    /// @dev Not allow the transfer of tokens
-    function _transfer(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) internal virtual override {
-        revert Influence__NoTransfer();
+    function changeFormula(int256 _linearFactor, int256 _exponentialFactor) external onlyOwner {
+        linearFactor = _linearFactor;
+        exponentialFactor = _exponentialFactor;
     }
 
     /// @dev Stakes tokens from the user.
-    /// @param account Account that has staked the tokens.
-    /// @param amount Amount of tokens to have been staked.
-    function mint(address account, uint256 amount) external onlyOwner {
-        uint256 influenceUpdate;
-        if (stakeTimes[account].length > 0) {
-            uint256 lastStakeTime = stakeTimes[account][stakeTimes[account].length - 1];
-            influenceUpdate = dxdStake.balanceOf(account) * (block.timestamp - lastStakeTime);
-        }
-        _mint(account, influenceUpdate);
-        _snapshot();
-        stakeTimes[account].push(block.timestamp);
+    /// @param _account Account that has staked the tokens.
+    /// @param _amount Amount of tokens to have been staked.
+    /// @param _timeCommitment Amount of tokens to have been staked.
+    function mint(
+        address _account,
+        uint256 _amount,
+        uint256 _timeCommitment
+    ) external onlyOwner {
+        uint256 currentSnapshotId = _snapshot();
+        CummulativeStake storage lastCummulativeStake = getLastCummulativeStake(_account);
 
-        uint256 currentSnapshotId = _getCurrentSnapshotId();
-        snapshotTimes[currentSnapshotId] = block.timestamp;
-        if (snapshotTimes[currentSnapshotId - 1] > 0) {
-            uint256 previousSupply = totalSupplies[currentSnapshotId - 1];
-            uint256 supplyUpdate = dxdStake.totalSupply() * (block.timestamp - snapshotTimes[currentSnapshotId - 1]);
-            totalSupplies[currentSnapshotId] = previousSupply + supplyUpdate;
-        }
+        UD60x18 tc = wrap(_timeCommitment * uUNIT);
+        uint256 exponentialElement = unwrap(wrap(_amount * uUNIT).mul(tc.pow(exponent))) / uUNIT;
+
+        // Update account's stake data
+        CummulativeStake storage cummulativeStake = cummulativeStakes[msg.sender][currentSnapshotId];
+        cummulativeStake.linearElement = lastCummulativeStake.linearElement + _amount * _timeCommitment;
+        cummulativeStake.exponentialElement = lastCummulativeStake.exponentialElement + exponentialElement;
+
+        // Update global stake data
+        CummulativeStake storage newTotalStake = totalStake[currentSnapshotId];
+        CummulativeStake storage previousTotalStake = totalStake[currentSnapshotId - 1];
+        newTotalStake.linearElement = previousTotalStake.linearElement + _amount * _timeCommitment;
+        newTotalStake.exponentialElement = previousTotalStake.exponentialElement + exponentialElement;
+
+        _updateSnapshot(_account);
+        snapshotTimes[currentSnapshotId] = block.timestamp; // Not needed now, but may be useful in future upgrades.
 
         // Notify Voting Power contract.
-        votingPower.callback(msg.sender);
+        votingPower.callback();
     }
 
-    function totalSupply() public view virtual override returns (uint256) {
-        return totalSupplies[_getCurrentSnapshotId()];
+    /// @dev Stakes tokens from the user.
+    /// @param _account Account that has staked the tokens.
+    /// @param _amount Amount of tokens to have been staked.
+    /// @param _timeCommitment Amount of tokens to have been staked.
+    function burn(
+        address _account,
+        uint256 _amount,
+        uint256 _timeCommitment
+    ) external onlyOwner {
+        uint256 currentSnapshotId = _snapshot();
+        CummulativeStake storage lastCummulativeStake = getLastCummulativeStake(_account);
+
+        UD60x18 tc = wrap(_timeCommitment * uUNIT);
+        uint256 exponentialElement = unwrap(wrap(_amount * uUNIT).mul(tc.pow(exponent))) / uUNIT;
+
+        // Update account's stake data
+        CummulativeStake storage cummulativeStake = cummulativeStakes[msg.sender][currentSnapshotId];
+        cummulativeStake.linearElement = lastCummulativeStake.linearElement - _amount * _timeCommitment;
+        cummulativeStake.exponentialElement = lastCummulativeStake.exponentialElement - exponentialElement;
+
+        // Update global stake data
+        CummulativeStake storage newTotalStake = totalStake[currentSnapshotId];
+        CummulativeStake storage previousTotalStake = totalStake[currentSnapshotId - 1];
+        newTotalStake.linearElement = previousTotalStake.linearElement - _amount * _timeCommitment;
+        newTotalStake.exponentialElement = previousTotalStake.exponentialElement - exponentialElement;
+
+        _updateSnapshot(_account);
+        snapshotTimes[currentSnapshotId] = block.timestamp; // Not needed now, but may be useful in future upgrades.
+
+        // Notify Voting Power contract.
+        votingPower.callback();
     }
 
-    function totalSupplyAt(uint256 snapshotId) public view virtual override returns (uint256) {
-        return totalSupplies[snapshotId];
+    function getLastCummulativeStake(address _account) internal view returns (CummulativeStake storage) {
+        uint256 lastRegisteredSnapshotId = _lastRegisteredSnapshotIdAt(getCurrentSnapshotId(), _account);
+        return cummulativeStakes[_account][lastRegisteredSnapshotId];
     }
 
-    function balanceOf(address account) public view virtual override returns (uint256) {
-        return balanceOfAt(account, _getCurrentSnapshotId());
+    function totalSupply() public view returns (uint256) {
+        return totalSupplyAt(getCurrentSnapshotId());
     }
 
-    function balanceOfAt(address account, uint256 snapshotId) public view virtual override returns (uint256) {
-        uint256 registeredBalance = super.balanceOfAt(account, snapshotId);
+    function totalSupplyAt(uint256 snapshotId) public view returns (uint256) {
+        CummulativeStake storage currentTotalStake = totalStake[snapshotId];
 
-        uint256 snapshotTime = snapshotTimes[snapshotId];
-        uint256 index = stakeTimes[account].findUpperBound(snapshotTime);
+        int256 linearInfluence = linearFactor * int256(currentTotalStake.linearElement);
+        int256 exponentialInfluence = exponentialFactor * int256(currentTotalStake.exponentialElement);
+        uint256 totalInfluence = uint256(linearInfluence + exponentialInfluence);
 
-        uint256 nonRegisteredTime = snapshotTimes[snapshotId] - stakeTimes[account][index];
-        uint256 nonRegisteredBalance = dxdStake.balanceOfAt(account, snapshotId) * nonRegisteredTime;
-
-        return registeredBalance + nonRegisteredBalance;
+        return totalInfluence;
     }
 
-    /// @dev Get the current snapshotId
-    function getCurrentSnapshotId() external view returns (uint256) {
-        return _getCurrentSnapshotId();
+    function balanceOf(address account) public view returns (uint256) {
+        CummulativeStake storage cummulativeStake = cummulativeStakes[account][_lastSnapshotId(account)];
+
+        int256 linearInfluence = linearFactor * int256(cummulativeStake.linearElement);
+        int256 exponentialInfluence = exponentialFactor * int256(cummulativeStake.exponentialElement);
+        uint256 influence = uint256(linearInfluence + exponentialInfluence);
+
+        return influence;
+    }
+
+    function balanceOfAt(address account, uint256 snapshotId) public view returns (uint256) {
+        uint256 lastSnapshotId = _lastRegisteredSnapshotIdAt(snapshotId, account);
+        CummulativeStake storage cummulativeStake = cummulativeStakes[account][lastSnapshotId];
+
+        int256 linearInfluence = linearFactor * int256(cummulativeStake.linearElement);
+        int256 exponentialInfluence = exponentialFactor * int256(cummulativeStake.exponentialElement);
+        uint256 influence = uint256(linearInfluence + exponentialInfluence);
+
+        return influence;
     }
 }

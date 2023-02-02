@@ -13,8 +13,20 @@ import "./DXDInfluence.sol";
 contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
+    struct StakeCommitment {
+        uint256 commitmentEnd;
+        uint256 timeCommitment;
+        uint256 stake;
+    }
+
     IERC20Upgradeable public dxd;
     DXDInfluence public dxdInfluence;
+    uint256 public maxTimeCommitment;
+
+    mapping(address => StakeCommitment[]) public stakeCommitments;
+    mapping(address => uint256) public userTotalStakes;
+    uint256 public totalStakes;
+    uint256 public totalActiveStakes;
 
     /// @notice Error when trying to transfer reputation
     error DXDStake__NoTransfer();
@@ -25,6 +37,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         address _dxd,
         address _dxdInfluence,
         address _owner,
+        uint256 _maxTimeCommitment,
         string memory name,
         string memory symbol
     ) external initializer {
@@ -34,6 +47,16 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         _transferOwnership(_owner);
         dxd = IERC20Upgradeable(_dxd);
         dxdInfluence = DXDInfluence(_dxdInfluence);
+
+        maxTimeCommitment = _maxTimeCommitment;
+    }
+
+    function changeMaxTimeCommitment(uint256 _maxTimeCommitment) external onlyOwner {
+        maxTimeCommitment = _maxTimeCommitment;
+    }
+
+    function changeInfluenceFormula(int256 _linearFactor, int256 _exponentialFactor) external onlyOwner {
+        dxdInfluence.changeFormula(_linearFactor, _exponentialFactor);
     }
 
     /// @dev Not allow the transfer of tokens
@@ -47,9 +70,19 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
     /// @dev Stakes tokens from the user.
     /// @param _amount Amount of tokens to stake.
-    function stake(uint256 _amount) external {
+    function stake(uint256 _amount, uint256 _timeCommitment) external {
+        require(_timeCommitment <= maxTimeCommitment, "DXDStake: timeCommitment too big");
+
+        StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender].push();
+        stakeCommitment.stake = _amount;
+        stakeCommitment.timeCommitment = _timeCommitment;
+        stakeCommitment.commitmentEnd = block.timestamp + _timeCommitment;
+        userTotalStakes[msg.sender] += 1;
+        totalActiveStakes += 1;
+        totalStakes += 1;
+
         // Mint influence tokens.
-        dxdInfluence.mint(msg.sender, _amount);
+        dxdInfluence.mint(msg.sender, _amount, _timeCommitment);
 
         // Stake DXD tokens
         dxd.safeTransferFrom(msg.sender, address(this), _amount);
@@ -58,15 +91,39 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     }
 
     /// @dev Withdraw the tokens to the user.
-    /// @param _amount Amount of tokens to withdraw.
-    function withdraw(uint256 _amount) external {
-        // Mint influence tokens.
-        dxdInfluence.mint(msg.sender, _amount);
+    /// @param _commitmentId Amount of tokens to withdraw.
+    function withdraw(address _account, uint256 _commitmentId) external {
+        StakeCommitment storage stakeCommitment = stakeCommitments[_account][_commitmentId];
+        require(block.timestamp > stakeCommitment.commitmentEnd, "DXDStake: withdrawal not allowed");
+
+        // Burn influence tokens.
+        dxdInfluence.burn(_account, stakeCommitment.stake, stakeCommitment.timeCommitment);
 
         // Unstake DXD tokens
-        dxd.safeTransfer(msg.sender, _amount);
-        _burn(msg.sender, _amount);
+        dxd.safeTransfer(_account, stakeCommitment.stake);
+        _burn(_account, stakeCommitment.stake);
         _snapshot();
+
+        stakeCommitment.stake = 0;
+        stakeCommitment.timeCommitment = 0;
+        stakeCommitment.commitmentEnd = 0;
+        userTotalStakes[_account] -= 1;
+        totalActiveStakes -= 1;
+    }
+
+    function increaseCommitment(uint256 _commitmentId, uint256 _newTimeCommitment) external {
+        // TODO increase the time of an existing commitment before it has completed.
+    }
+
+    /// @dev Withdraw the tokens to the user.
+    /// @param _commitmentId Amount of tokens to withdraw.
+    function earlyWithdraw(uint256 _commitmentId) external {
+        // TODO Withdraw a commitment before it has completed if allowed by governance.
+        // Apply a penalty.
+    }
+
+    function getAccountLastCommitmentId(address _account) external view returns (uint256) {
+        return stakeCommitments[_account].length - 1;
     }
 
     /// @dev Get the current snapshotId
