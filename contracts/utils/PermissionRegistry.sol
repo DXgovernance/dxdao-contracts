@@ -131,7 +131,7 @@ contract PermissionRegistry is OwnableUpgradeable {
                 "PermissionRegistry: Cant override existent ERC20 limit"
             );
         }
-        
+
         erc20Limits[from][index].token = token;
         erc20Limits[from][index].valueAllowed = valueAllowed;
         erc20Limits[from][index].initialValueOnBlock = IERC20(token).balanceOf(from);
@@ -144,7 +144,11 @@ contract PermissionRegistry is OwnableUpgradeable {
      * @param index The index of the token permission in the erco limits
      * @param newValueAllowed The index of the token permission in the erco limits
      */
-    function updateERC20Limit(address from, uint256 index, uint256 newValueAllowed) public {
+    function updateERC20Limit(
+        address from,
+        uint256 index,
+        uint256 newValueAllowed
+    ) public {
         if (msg.sender != owner()) {
             require(from == msg.sender, "PermissionRegistry: Only owner can specify from value");
         }

@@ -106,4 +106,3 @@ describe.skip("DXgovGuild deploy script", function () {
     expect(permis.valueAllowed.toString()).equal(hre.web3.utils.toWei("10000"));
   });
 });
-
