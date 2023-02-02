@@ -32,7 +32,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
     bool public earlyWithdrawalsEnabled;
     uint256 public earlyWithdrawalPenalty; // In basis points.
-    address public penaltyRecipient; // In basis points.
+    address public penaltyRecipient;
 
     /// @notice Error when trying to transfer reputation
     error DXDStake__NoTransfer();
@@ -108,7 +108,19 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     }
 
     function increaseCommitment(uint256 _commitmentId, uint256 _newTimeCommitment) external {
-        // TODO increase the time of an existing commitment before it has completed.
+        require(_newTimeCommitment <= maxTimeCommitment, "DXDStake: timeCommitment too big");
+        StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender][_commitmentId];
+        require(
+            stakeCommitment.commitmentEnd <= block.timestamp + _newTimeCommitment,
+            "DXDStake: timeCommitment too small"
+        );
+
+        // Update influence. Burning and minting is inefficient, because an extra snapshot is taken.
+        dxdInfluence.burn(msg.sender, stakeCommitment.stake, stakeCommitment.timeCommitment);
+        dxdInfluence.mint(msg.sender, stakeCommitment.stake, _newTimeCommitment);
+
+        stakeCommitment.timeCommitment = _newTimeCommitment;
+        stakeCommitment.commitmentEnd = block.timestamp + _newTimeCommitment;
     }
 
     /// @dev Withdraw the tokens to the user.
@@ -137,7 +149,6 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     function earlyWithdraw(uint256 _commitmentId) external {
         StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender][_commitmentId];
         require(earlyWithdrawalsEnabled, "DXDStake: early withdrawals not allowed");
-        require(stakeCommitment.commitmentEnd != 0, "DXDStake: invalid commitment Id");
         require(block.timestamp < stakeCommitment.commitmentEnd, "DXDStake: normal withdrawal allowed");
 
         // Burn influence tokens.
