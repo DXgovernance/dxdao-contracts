@@ -22,10 +22,11 @@ contract DataSnapshot {
      */
     event Snapshot(uint256 id);
 
-    function _snapshot() internal virtual returns (uint256 currentId) {
+    function _snapshot(address _account) internal returns (uint256 currentId) {
         unchecked {
             currentId = ++_currentSnapshotId;
         }
+        _snapshotIds[_account].push(_currentSnapshotId);
         emit Snapshot(currentId);
         return currentId;
     }
@@ -55,10 +56,6 @@ contract DataSnapshot {
         } else {
             return _snapshotIds[_account][index];
         }
-    }
-
-    function _updateSnapshot(address _account) internal {
-        _snapshotIds[_account].push(_currentSnapshotId);
     }
 
     function _lastSnapshotId(address _account) internal view returns (uint256) {

@@ -73,7 +73,8 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         uint256 _amount,
         uint256 _timeCommitment
     ) external onlyOwner {
-        uint256 currentSnapshotId = _snapshot();
+        uint256 currentSnapshotId = _snapshot(_account);
+        snapshotTimes[currentSnapshotId] = block.timestamp; // Not needed now, but may be useful in future upgrades.
         CummulativeStake storage lastCummulativeStake = getLastCummulativeStake(_account);
 
         UD60x18 tc = wrap(_timeCommitment * uUNIT);
@@ -90,9 +91,6 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         newTotalStake.linearElement = previousTotalStake.linearElement + _amount * _timeCommitment;
         newTotalStake.exponentialElement = previousTotalStake.exponentialElement + exponentialElement;
 
-        _updateSnapshot(_account);
-        snapshotTimes[currentSnapshotId] = block.timestamp; // Not needed now, but may be useful in future upgrades.
-
         // Notify Voting Power contract.
         votingPower.callback();
     }
@@ -106,7 +104,8 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         uint256 _amount,
         uint256 _timeCommitment
     ) external onlyOwner {
-        uint256 currentSnapshotId = _snapshot();
+        uint256 currentSnapshotId = _snapshot(_account);
+        snapshotTimes[currentSnapshotId] = block.timestamp; // Not needed now, but may be useful in future upgrades.
         CummulativeStake storage lastCummulativeStake = getLastCummulativeStake(_account);
 
         UD60x18 tc = wrap(_timeCommitment * uUNIT);
@@ -122,9 +121,6 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         CummulativeStake storage previousTotalStake = totalStake[currentSnapshotId - 1];
         newTotalStake.linearElement = previousTotalStake.linearElement - _amount * _timeCommitment;
         newTotalStake.exponentialElement = previousTotalStake.exponentialElement - exponentialElement;
-
-        _updateSnapshot(_account);
-        snapshotTimes[currentSnapshotId] = block.timestamp; // Not needed now, but may be useful in future upgrades.
 
         // Notify Voting Power contract.
         votingPower.callback();
