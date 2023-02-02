@@ -57,14 +57,27 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         maxTimeCommitment = _maxTimeCommitment;
     }
 
+    /**
+     * @dev Changes the maximum time a stake can be committed. If time commitments are not capped, the
+     * influence formula would be vulnerable to small stakes with nonsensically huge time commitments.
+     * @param _maxTimeCommitment new maximum value for time commitments in seconds.
+     */
     function changeMaxTimeCommitment(uint256 _maxTimeCommitment) external onlyOwner {
         maxTimeCommitment = _maxTimeCommitment;
     }
 
+    /**
+     * @dev Disables early withdrawals of stake commitments that have not finalized yet.
+     */
     function disableEarlyWithdrawal() external onlyOwner {
         earlyWithdrawalsEnabled = false;
     }
 
+    /**
+     * @dev Enables early withdrawals of stake commitments that have not finalized yet.
+     * @param _penalty Percentage, expressed in basis points, that will be taken from the stake as penalty.
+     * @param _recipient Recipient of the penalty.
+     */
     function enableEarlyWithdrawal(uint256 _penalty, address _recipient) external onlyOwner {
         require(_penalty < DIVISOR, "DXDStake: invalid penalty");
         require(_recipient != address(0), "DXDStake: recipient can't be null");
@@ -73,11 +86,16 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         penaltyRecipient = _recipient;
     }
 
+    /**
+     * @dev Changes the influence formula factors.
+     * @param _linearFactor Factor that will multiply the linear element of the DXD influence. 18 decimals.
+     * @param _exponentialFactor Factor that will multiply the exponential element of the DXD influence. 18 decimals.
+     */
     function changeInfluenceFormula(int256 _linearFactor, int256 _exponentialFactor) external onlyOwner {
         dxdInfluence.changeFormula(_linearFactor, _exponentialFactor);
     }
 
-    /// @dev Not allow the transfer of tokens
+    /// @dev Do not allow the transfer of tokens.
     function _transfer(
         address sender,
         address recipient,
@@ -86,8 +104,11 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         revert DXDStake__NoTransfer();
     }
 
-    /// @dev Stakes tokens from the user.
-    /// @param _amount Amount of tokens to stake.
+    /**
+     * @dev Stakes tokens from the user.
+     * @param _amount Amount of tokens to stake.
+     * @param _timeCommitment Time that the user commits to lock the tokens in this staking contract.
+     */
     function stake(uint256 _amount, uint256 _timeCommitment) external {
         require(_timeCommitment <= maxTimeCommitment, "DXDStake: timeCommitment too big");
 
@@ -108,6 +129,12 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         _snapshot();
     }
 
+    /**
+     * @dev Updates an existing commitment. The stake remains the same, but the time period is updated.
+     * The influence is calculated according to the new time commited, not the original one.
+     * @param _commitmentId Amount of tokens to stake.
+     * @param _newTimeCommitment Time that the user commits to lock the token in this staking contract.
+     */
     function increaseCommitment(uint256 _commitmentId, uint256 _newTimeCommitment) external {
         require(_newTimeCommitment <= maxTimeCommitment, "DXDStake: timeCommitment too big");
         StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender][_commitmentId];
@@ -124,8 +151,11 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         stakeCommitment.commitmentEnd = block.timestamp + _newTimeCommitment;
     }
 
-    /// @dev Withdraw the tokens to the user.
-    /// @param _commitmentId Amount of tokens to withdraw.
+    /**
+     * @dev Withdraws the tokens to the user.
+     * @param _account Account that has staked.
+     * @param _commitmentId Id of the commitment. The Id is an incremental variable for each account.
+     */
     function withdraw(address _account, uint256 _commitmentId) external {
         StakeCommitment storage stakeCommitment = stakeCommitments[_account][_commitmentId];
         require(block.timestamp > stakeCommitment.commitmentEnd, "DXDStake: withdrawal not allowed");
@@ -145,8 +175,11 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         totalActiveStakes -= 1;
     }
 
-    /// @dev Withdraw the tokens to the user.
-    /// @param _commitmentId Amount of tokens to withdraw.
+    /**
+     * @dev Withdraws the tokens to the user before the commitment is finalized,
+     * if early withdrawals was previously enabled by governance. A penalty might apply if set.
+     * @param _commitmentId Id of the commitment. The Id is an incremental variable for each account.
+     */
     function earlyWithdraw(uint256 _commitmentId) external {
         StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender][_commitmentId];
         require(earlyWithdrawalsEnabled, "DXDStake: early withdrawals not allowed");
@@ -169,11 +202,17 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         totalActiveStakes -= 1;
     }
 
-    function getAccountLastCommitmentId(address _account) external view returns (uint256) {
-        return stakeCommitments[_account].length - 1;
+    /**
+     * @dev Total stakes for the given address counting both active and withdrawn commitments.
+     * @param _account Account that has staked.
+     */
+    function getAccountTotalStakes(address _account) external view returns (uint256) {
+        return stakeCommitments[_account].length;
     }
 
-    /// @dev Get the current snapshotId
+    /**
+     * @dev Get the current snapshotId
+     */
     function getCurrentSnapshotId() external view returns (uint256) {
         return _getCurrentSnapshotId();
     }
