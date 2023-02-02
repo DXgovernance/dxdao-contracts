@@ -20,8 +20,6 @@ interface VotingPower {
 contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
     using ArraysUpgradeable for uint256[];
 
-    uint256 public constant DIVISOR = 10_000;
-
     struct CummulativeStake {
         uint256 linearElement;
         uint256 exponentialElement;
@@ -170,5 +168,9 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         uint256 influence = uint256(linearInfluence + exponentialInfluence);
 
         return influence;
+    }
+
+    function decimals() external pure returns (uint8) {
+        return 18;
     }
 }

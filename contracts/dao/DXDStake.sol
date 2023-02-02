@@ -144,7 +144,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         dxdInfluence.burn(msg.sender, stakeCommitment.stake, stakeCommitment.timeCommitment);
 
         // Unstake DXD tokens
-        uint256 dxdPenalty = stakeCommitment.stake * earlyWithdrawalPenalty / DIVISOR;
+        uint256 dxdPenalty = (stakeCommitment.stake * earlyWithdrawalPenalty) / DIVISOR;
         dxd.safeTransfer(msg.sender, stakeCommitment.stake - dxdPenalty);
         dxd.safeTransfer(penaltyRecipient, dxdPenalty);
         _burn(msg.sender, stakeCommitment.stake);
