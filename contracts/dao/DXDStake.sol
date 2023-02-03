@@ -26,7 +26,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     uint256 public maxTimeCommitment;
 
     mapping(address => StakeCommitment[]) public stakeCommitments;
-    mapping(address => uint256) public userTotalStakes;
+    mapping(address => uint256) public userActiveStakes;
     uint256 public totalStakes;
     uint256 public totalActiveStakes;
 
@@ -116,7 +116,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         stakeCommitment.stake = _amount;
         stakeCommitment.timeCommitment = _timeCommitment;
         stakeCommitment.commitmentEnd = block.timestamp + _timeCommitment;
-        userTotalStakes[msg.sender] += 1;
+        userActiveStakes[msg.sender] += 1;
         totalActiveStakes += 1;
         totalStakes += 1;
 
@@ -171,7 +171,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         stakeCommitment.stake = 0;
         stakeCommitment.timeCommitment = 0;
         stakeCommitment.commitmentEnd = 0;
-        userTotalStakes[_account] -= 1;
+        userActiveStakes[_account] -= 1;
         totalActiveStakes -= 1;
     }
 
@@ -198,7 +198,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         stakeCommitment.stake = 0;
         stakeCommitment.timeCommitment = 0;
         stakeCommitment.commitmentEnd = 0;
-        userTotalStakes[msg.sender] -= 1;
+        userActiveStakes[msg.sender] -= 1;
         totalActiveStakes -= 1;
     }
 
