@@ -5,5 +5,5 @@ pragma solidity 0.8.17;
 contract VotingPowerMock {
     constructor() {}
 
-    function callback(address account) external {}
+    function callback() external {}
 }
