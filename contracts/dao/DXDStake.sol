@@ -132,7 +132,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     /**
      * @dev Updates an existing commitment. The stake remains the same, but the time period is updated.
      * The influence is calculated according to the new time commited, not the original one.
-     * @param _commitmentId Amount of tokens to stake.
+     * @param _commitmentId Id of the commitment. The Id is an incremental variable for each account.
      * @param _newTimeCommitment Time that the user commits to lock the token in this staking contract.
      */
     function increaseCommitment(uint256 _commitmentId, uint256 _newTimeCommitment) external {
