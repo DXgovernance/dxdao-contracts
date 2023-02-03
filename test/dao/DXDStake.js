@@ -163,6 +163,38 @@ contract("DXDStake", async accounts => {
     assert.equal(stDXDBalance2.toString(), new BN(0).toString());
   });
 
+  it.only("should withdraw only once", async () => {
+    const dxdHolder = accounts[0];
+    const amount = 100;
+    const timeCommitment = 50;
+
+    const stDXDBalance0 = await dxdStake.balanceOf(dxdHolder);
+    const DXDBalance0 = await dxd.balanceOf(dxdHolder);
+    assert.equal(stDXDBalance0.toString(), new BN(0).toString());
+
+    await dxd.approve(dxdStake.address, amount, { from: dxdHolder });
+    await dxdStake.stake(amount, timeCommitment, { from: dxdHolder });
+
+    await dxd.approve(dxdStake.address, amount * 2, { from: dxdHolder });
+    await dxdStake.stake(amount * 2, timeCommitment * 2, { from: dxdHolder });
+
+    const stDXDBalance1 = await dxdStake.balanceOf(dxdHolder);
+    assert.equal(stDXDBalance1.toString(), new BN(amount * 3).toString());
+
+    await expectRevert(
+      dxdStake.withdraw(dxdHolder, 1, { from: notTheOwner }),
+      "DXDStake: withdrawal not allowed"
+    );
+
+    await time.increase(time.duration.seconds(timeCommitment));
+    await dxdStake.withdraw(dxdHolder, 0, { from: notTheOwner });
+    
+    await expectRevert(
+      dxdStake.withdraw(dxdHolder, 0, { from: notTheOwner }),
+      "DXDStake: commitment id does not exist"
+    );
+  });
+
   it("should increase commitment if valid time is provided", async () => {
     const dxdHolder = accounts[0];
     const amount = 100;
