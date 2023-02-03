@@ -75,7 +75,6 @@ contract DAOReputation is ERC20SnapshotRep {
         returns (bool success)
     {
         for (uint256 i = 0; i < accounts.length; i++) {
-            if (amounts[i] == 0) revert DAOReputation__InvalidMintRepAmount();
             _addHolder(accounts[i]);
             _mint(accounts[i], amounts[i]);
             emit Mint(accounts[i], amounts[i]);
@@ -118,7 +117,6 @@ contract DAOReputation is ERC20SnapshotRep {
         returns (bool success)
     {
         for (uint256 i = 0; i < accounts.length; i++) {
-            if (amounts[i] == 0) revert DAOReputation__InvalidMintRepAmount();
             _burn(accounts[i], amounts[i]);
             _removeHolder(accounts[i]);
             emit Burn(accounts[i], amounts[i]);

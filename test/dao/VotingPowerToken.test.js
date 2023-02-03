@@ -103,10 +103,12 @@ contract("VotingPowerToken", function (accounts) {
         "Initializable: contract is already initialized"
       );
     });
+
     it("Should do _snapshot()", async () => {
       await deployVpToken();
       expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(1);
     });
+
     it("Should fail if repToken and StakingToken addresses are the same", async () => {
       vpToken = await VotingPowerToken.new({ from: owner });
 
@@ -131,6 +133,13 @@ contract("VotingPowerToken", function (accounts) {
         (await vpToken.getConfigTokenWeight(repToken.address)).toNumber()
       ).equal(repTokenWeight);
     });
+
+    it("Should update token weights", async () => {
+      await expectRevert(
+        deployVpToken({ repWeight: 101 }),
+        "VotingPowerToken_InvalidTokenWeights()"
+      );
+    });
   });
 
   describe("Composition", () => {
@@ -143,7 +152,6 @@ contract("VotingPowerToken", function (accounts) {
       expect(repWeight.toNumber()).equal(50);
     });
     it("Should use 100% weight of rep if staking token supply < _minStakingTokensLocked", async () => {
-      // await burnAll();
       expect((await stakingToken.totalSupply()).toNumber()).equal(0);
 
       // update config to be 50% 50%
@@ -495,6 +503,23 @@ contract("VotingPowerToken", function (accounts) {
       expect(
         (await vpToken.getTokenWeight(stakingToken.address)).toNumber()
       ).equal(stakeTokenWeight);
+    });
+  });
+
+  describe("setMinStakingTokensLocked", () => {
+    beforeEach(async () => await deployVpToken());
+    it("Should set new minStakingTokensLocked", async () => {
+      const minTokensLocked = await vpToken.minStakingTokensLocked();
+      expect(minTokensLocked.toNumber()).equal(minStakingTokensLocked); // default minTokens during initialization
+      await vpToken.setMinStakingTokensLocked(400);
+      const minTokensLocked2 = await vpToken.minStakingTokensLocked();
+      expect(minTokensLocked2.toNumber()).equal(400);
+    });
+    it("Should fail if caller is not the owner", async () => {
+      await expectRevert(
+        vpToken.setMinStakingTokensLocked(400, { from: accounts[2] }),
+        "Ownable: caller is not the owner"
+      );
     });
   });
 });

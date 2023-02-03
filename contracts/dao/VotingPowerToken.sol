@@ -13,7 +13,7 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     ERC20SnapshotRep public stakingToken;
 
     /// @notice Minimum staking tokens locked to apply weight
-    uint256 minStakingTokensLocked;
+    uint256 public minStakingTokensLocked;
 
     //tokenAddress    weight
     mapping(address => uint256) public weights;
@@ -56,7 +56,6 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         __Ownable_init();
         if (_repToken == _stakingToken) revert VotingPowerToken_ReptokenAndStakingTokenCannotBeEqual();
         if (!validateComposition(repWeight, stakingWeight)) revert VotingPowerToken_InvalidTokenWeights();
-
         repToken = ERC20SnapshotRep(address(_repToken));
         stakingToken = ERC20SnapshotRep(address(_stakingToken));
         setMinStakingTokensLocked(_minStakingTokensLocked);
