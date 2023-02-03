@@ -16,7 +16,7 @@
     "clean": "rm -rf artifacts cache contracts/hardhat-dependency-compiler bytecodes",
     "test": "hardhat test",
     "coverage": "OVERRIDE_GAS_LIMIT=0xfffffffffff OVERRIDE_GAS_PRICE=1 yarn hardhat coverage",
-    "compile": "hardhat compile && node scripts/updateBytecodes.js",
+    "compile": "hardhat compile",
     "setup": "hardhat typechain",
     "deploy": "node scripts/deploy.js",
     "docify": "yarn run clean && hardhat docgen && node ./scripts/build-docs-summary.js",
