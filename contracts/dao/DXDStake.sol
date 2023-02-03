@@ -158,6 +158,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      */
     function withdraw(address _account, uint256 _commitmentId) external {
         StakeCommitment storage stakeCommitment = stakeCommitments[_account][_commitmentId];
+        require(stakeCommitment.commitmentEnd != 0, "DXDStake: commitment id does not exist");
         require(block.timestamp > stakeCommitment.commitmentEnd, "DXDStake: withdrawal not allowed");
 
         // Burn influence tokens.
