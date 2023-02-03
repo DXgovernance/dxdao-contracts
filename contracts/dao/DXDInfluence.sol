@@ -80,15 +80,15 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         uint256 _amount,
         uint256 _timeCommitment
     ) external onlyOwner {
+        CumulativeStake storage lastCumulativeStake = getLastCumulativeStake(_account);
         uint256 currentSnapshotId = _snapshot(_account);
         snapshotTimes[currentSnapshotId] = block.timestamp; // Not needed now, but may be useful in future upgrades.
-        CumulativeStake storage lastCumulativeStake = getLastCumulativeStake(_account);
 
         UD60x18 tc = toUD60x18(_timeCommitment);
         uint256 exponentialElement = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
 
         // Update account's stake data
-        CumulativeStake storage cumulativeStake = cumulativeStakes[msg.sender][currentSnapshotId];
+        CumulativeStake storage cumulativeStake = cumulativeStakes[_account][currentSnapshotId];
         cumulativeStake.linearElement = lastCumulativeStake.linearElement + _amount * _timeCommitment;
         cumulativeStake.exponentialElement = lastCumulativeStake.exponentialElement + exponentialElement;
 
@@ -115,15 +115,15 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         uint256 _amount,
         uint256 _timeCommitment
     ) external onlyOwner {
+        CumulativeStake storage lastCumulativeStake = getLastCumulativeStake(_account);
         uint256 currentSnapshotId = _snapshot(_account);
         snapshotTimes[currentSnapshotId] = block.timestamp; // Not needed now, but may be useful in future upgrades.
-        CumulativeStake storage lastCumulativeStake = getLastCumulativeStake(_account);
 
         UD60x18 tc = toUD60x18(_timeCommitment);
         uint256 exponentialElement = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
 
         // Update account's stake data
-        CumulativeStake storage cumulativeStake = cumulativeStakes[msg.sender][currentSnapshotId];
+        CumulativeStake storage cumulativeStake = cumulativeStakes[_account][currentSnapshotId];
         cumulativeStake.linearElement = lastCumulativeStake.linearElement - _amount * _timeCommitment;
         cumulativeStake.exponentialElement = lastCumulativeStake.exponentialElement - exponentialElement;
 
@@ -142,8 +142,13 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
      * @param _account Account that has staked.
      */
     function getLastCumulativeStake(address _account) internal view returns (CumulativeStake storage) {
-        uint256 lastRegisteredSnapshotId = _lastRegisteredSnapshotIdAt(getCurrentSnapshotId(), _account);
-        return cumulativeStakes[_account][lastRegisteredSnapshotId];
+        uint256 currentSnapshotId = getCurrentSnapshotId();
+        if (currentSnapshotId != 0) {
+            uint256 lastRegisteredSnapshotId = _lastRegisteredSnapshotIdAt(currentSnapshotId, _account);
+            return cumulativeStakes[_account][lastRegisteredSnapshotId];
+        } else {
+            return cumulativeStakes[_account][0];
+        }
     }
 
     /**
