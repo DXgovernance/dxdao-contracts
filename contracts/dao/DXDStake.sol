@@ -211,6 +211,15 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     }
 
     /**
+     * @dev Total stakes for the given address counting both active and withdrawn commitments.
+     * @param _account Account that has staked.
+     * @param _commitmentId Id of the commitment. The Id is an incremental variable for each account.
+     */
+    function getStakeCommitment(address _account, uint256 _commitmentId) external view returns (StakeCommitment memory) {
+        return stakeCommitments[_account][_commitmentId];
+    }
+
+    /**
      * @dev Get the current snapshotId
      */
     function getCurrentSnapshotId() external view returns (uint256) {
