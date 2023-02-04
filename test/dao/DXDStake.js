@@ -114,7 +114,7 @@ contract("DXDStake", async accounts => {
     assert.equal(userTotalStakes.toString(), new BN(1).toString());
     const totalActiveStakes = await dxdStake.totalActiveStakes();
     assert.equal(totalActiveStakes.toString(), new BN(1).toString());
-    const totalStakes = await dxdStake.totalStakes();
+    const totalStakes = await dxdStake.getTotalStakes();
     assert.equal(totalStakes.toString(), new BN(1).toString());
 
     const blockdata = await web3.eth.getBlock(stake.receipt.blockNumber);
@@ -163,7 +163,7 @@ contract("DXDStake", async accounts => {
     assert.equal(stDXDBalance2.toString(), new BN(0).toString());
   });
 
-  it.only("should withdraw only once", async () => {
+  it("should withdraw only once", async () => {
     const dxdHolder = accounts[0];
     const amount = 100;
     const timeCommitment = 50;

@@ -27,7 +27,6 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
     mapping(address => StakeCommitment[]) public stakeCommitments;
     mapping(address => uint256) public userActiveStakes;
-    uint256 public totalStakes;
     uint256 public totalActiveStakes;
 
     bool public earlyWithdrawalsEnabled;
@@ -118,7 +117,6 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         stakeCommitment.commitmentEnd = block.timestamp + _timeCommitment;
         userActiveStakes[msg.sender] += 1;
         totalActiveStakes += 1;
-        totalStakes += 1;
 
         // Mint influence tokens.
         dxdInfluence.mint(msg.sender, _amount, _timeCommitment);
@@ -212,7 +210,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     }
 
     /**
-     * @dev Total stakes for the given address counting both active and withdrawn commitments.
+     * @dev Get a stake commitment data.
      * @param _account Account that has staked.
      * @param _commitmentId Id of the commitment. The Id is an incremental variable for each account.
      */
@@ -222,6 +220,13 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         returns (StakeCommitment memory)
     {
         return stakeCommitments[_account][_commitmentId];
+    }
+
+    /**
+     * @dev Get the amount of stakes ever, counting both active and inactive ones.
+     */
+    function getTotalStakes() external view returns (uint256) {
+        return (_getCurrentSnapshotId() + totalActiveStakes) / 2;
     }
 
     /**
