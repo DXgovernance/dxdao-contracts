@@ -28,7 +28,6 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
 
     DXDStake public dxdStake;
     VotingPower public votingPower;
-    mapping(uint256 => uint256) public snapshotTimes; // snapshotTimes[snapshotId]
 
     SD59x18 public linearFactor;
     SD59x18 public exponentialFactor;
@@ -86,7 +85,6 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
     ) external onlyOwner {
         CumulativeStake storage lastCumulativeStake = getLastCumulativeStake(_account);
         uint256 currentSnapshotId = _snapshot(_account);
-        snapshotTimes[currentSnapshotId] = block.timestamp; // Not needed now, but may be useful in future upgrades.
 
         UD60x18 tc = toUD60x18(_timeCommitment);
         uint256 exponentialElement = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
@@ -121,7 +119,6 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
     ) external onlyOwner {
         CumulativeStake storage lastCumulativeStake = getLastCumulativeStake(_account);
         uint256 currentSnapshotId = _snapshot(_account);
-        snapshotTimes[currentSnapshotId] = block.timestamp; // Not needed now, but may be useful in future upgrades.
 
         UD60x18 tc = toUD60x18(_timeCommitment);
         uint256 exponentialElement = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
