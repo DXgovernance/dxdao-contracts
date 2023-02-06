@@ -58,7 +58,11 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
     }
 
     /**
-     * @dev Changes the influence formula factors.
+     * @dev Changes the influence formula parameters. The owner modifying the formula parameters must make sure
+     * that the parameters are safe, i.e. that the dxd influence space is bounded to positive values. Negative
+     * influence values will make balanceOf(), balanceOfAt(), totalSupply() and totalSupplyAt() revert.
+     * Influence should also be a monotonically non-decreasing function with respect to time. The longer a user
+     * commits to stake, the greater the influence.
      * @param _linearFactor Factor that will multiply the linear element of the influence. 18 decimals.
      * @param _exponentialFactor Factor that will multiply the exponential element of the influence. 18 decimals.
      */
