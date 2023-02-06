@@ -194,8 +194,9 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         SD59x18 exponentialElement = SD59x18.wrap(int256(_cumulativeStake.exponentialElement));
         SD59x18 exponentialInfluence = exponentialFactor.mul(exponentialElement);
 
-        SD59x18 influence = linearInfluence.add(exponentialInfluence);
-        return uint256(SD59x18.unwrap(influence));
+        int256 influence = SD59x18.unwrap(linearInfluence.add(exponentialInfluence));
+        require(influence >= 0, "DXDInfluence: negative influence, update formula");
+        return uint256(influence);
     }
 
     /**
