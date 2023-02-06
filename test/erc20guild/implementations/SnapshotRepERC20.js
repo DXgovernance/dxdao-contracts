@@ -235,6 +235,24 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       );
     });
 
+    it("cannot vote with 0 voting power amount with an account with voting power", async function () {
+      await expectRevert(
+        snapshotRepErc20Guild.setVote(proposalId, 1, 0, {
+          from: accounts[3],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
+    });
+
+    it("cannot vote with 0 voting power amount with an account without voting power", async function () {
+      await expectRevert(
+        snapshotRepErc20Guild.setVote(proposalId, 1, 0, {
+          from: accounts[9],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
+    });
+
     it("Should emmit VoteAdded Event", async () => {
       const account = accounts[2];
       const option = new BN(0);
@@ -305,7 +323,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
+        "SnapshotRepERC20Guild: Invalid votingPower amount"
       );
     });
 
@@ -329,7 +347,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
+        "SnapshotRepERC20Guild: Cannot change option voted"
       );
     });
   });
