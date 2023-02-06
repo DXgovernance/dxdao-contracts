@@ -86,9 +86,8 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
         require(
             (proposalVotes[proposalId][msg.sender].option == 0 &&
                 proposalVotes[proposalId][msg.sender].votingPower == 0) ||
-                (proposalVotes[proposalId][msg.sender].option == option &&
-                    proposalVotes[proposalId][msg.sender].votingPower < votingPower),
-            "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
+                (proposalVotes[proposalId][msg.sender].option == option),
+            "SnapshotRepERC20Guild: Cannot change option voted"
         );
         _setVote(msg.sender, proposalId, option, votingPower);
     }
@@ -121,8 +120,7 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
         );
         require(
             (proposalVotes[proposalId][voter].option == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
-                (proposalVotes[proposalId][voter].option == option &&
-                    proposalVotes[proposalId][voter].votingPower < votingPower),
+                (proposalVotes[proposalId][voter].option == option),
             "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
         );
         _setVote(voter, proposalId, option, votingPower);

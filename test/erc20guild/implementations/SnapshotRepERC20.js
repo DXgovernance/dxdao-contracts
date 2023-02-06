@@ -323,7 +323,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
+        "SnapshotRepERC20Guild: Invalid votingPower amount"
       );
     });
 
@@ -347,7 +347,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
+        "SnapshotRepERC20Guild: Cannot change option voted"
       );
     });
   });
