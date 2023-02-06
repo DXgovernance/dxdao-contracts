@@ -4,6 +4,9 @@
     * [DAOAvatar](/docs/contracts/dao/DAOAvatar.md)
     * [DAOController](/docs/contracts/dao/DAOController.md)
     * [DAOReputation](/docs/contracts/dao/DAOReputation.md)
+    * [DXDInfluence](/docs/contracts/dao/DXDInfluence.md)
+    * [DXDStake](/docs/contracts/dao/DXDStake.md)
+    * [VotingPowerToken](/docs/contracts/dao/VotingPowerToken.md)
     * /schemes
       * [AvatarScheme](/docs/contracts/dao/schemes/AvatarScheme.md)
       * [Scheme](/docs/contracts/dao/schemes/Scheme.md)

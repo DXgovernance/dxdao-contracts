@@ -5,6 +5,14 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import "../utils/ERC20/ERC20SnapshotRep.sol";
 
+/**
+ * @title VotingPowerToken
+ * @dev The VotingPowerToken contract provides a function to determine the voting power of a specific holder based
+ *      on the relative "weights" of two different ERC20SnapshotRep tokens: a Reputation token and a Staking token.
+ *      The contract also includes the capability to manage the weights of the underlying tokens, determining the
+ *      percentage of total voting power each token should have. Additionally, the contract sets a minimum requirement
+ *      for the amount of Staking tokens that must be locked in order to apply weight to the Staking token.
+ */
 contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     // The ERC20 rep token that will be used as source of voting power
     ERC20SnapshotRep public repToken;
@@ -83,26 +91,24 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     /// It stores a reference to the rep/stake token snapshotId from internal snapshotId
     function callback() external onlyInternalTokens(msg.sender) {
         _snapshot();
-        snapshots[address(repToken)][_getCurrentSnapshotId()] = ERC20SnapshotRep(address(repToken))
-            .getCurrentSnapshotId();
-        snapshots[address(stakingToken)][_getCurrentSnapshotId()] = ERC20SnapshotRep(address(stakingToken))
-            .getCurrentSnapshotId();
+        snapshots[address(repToken)][_getCurrentSnapshotId()] = repToken.getCurrentSnapshotId();
+        snapshots[address(stakingToken)][_getCurrentSnapshotId()] = stakingToken.getCurrentSnapshotId();
     }
 
     /// @dev Get the voting power percentage of `_holder` at current snapshotId
     /// @param _holder Account we want to get voting power from
     /// @return votingPowerPercentage The votingPower of `_holder` (0 to 100*precision)
     function getVotingPowerPercentageOf(address _holder) public view returns (uint256 votingPowerPercentage) {
-        address[2] memory tokens = [address(repToken), address(stakingToken)];
+        ERC20SnapshotRep[2] memory tokens = [repToken, stakingToken];
         uint256 totalVotingPower = 0;
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            address tokenAddress = tokens[i];
-            uint256 tokenWeight = getTokenWeight(tokenAddress);
+            ERC20SnapshotRep token = tokens[i];
+            uint256 tokenWeight = getTokenWeight(address(token));
             // Skipping calculation if weight is 0
             if (tokenWeight == 0) continue;
-            uint256 balance = ERC20SnapshotRep(tokenAddress).balanceOf(_holder);
-            uint256 supply = ERC20SnapshotRep(tokenAddress).totalSupply();
+            uint256 balance = token.balanceOf(_holder);
+            uint256 supply = token.totalSupply();
             uint256 tokenVotingPowerPercent = getPercent(balance, supply);
             uint256 tokenVotingPowerPercentWeighted = getWeightedVotingPowerPercentage(
                 tokenWeight,
@@ -124,19 +130,19 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         returns (uint256 votingPowerPercentage)
     {
         if (_snapshotId > _getCurrentSnapshotId()) revert VotingPowerToken_InvalidSnapshotId();
-        address[2] memory tokens = [address(repToken), address(stakingToken)];
+        ERC20SnapshotRep[2] memory tokens = [repToken, stakingToken];
         uint256 totalVotingPower = 0;
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            address tokenAddress = tokens[i];
-            uint256 tokenSnapshotId = getTokenSnapshotIdFromVPSnapshot(tokenAddress, _snapshotId);
+            ERC20SnapshotRep token = tokens[i];
+            uint256 tokenSnapshotId = getTokenSnapshotIdFromVPSnapshot(address(token), _snapshotId);
             // Skipping calculation if snapshotId is 0. No minting was done
             if (tokenSnapshotId == 0) continue;
-            uint256 tokenWeight = getTokenWeight(tokenAddress);
+            uint256 tokenWeight = getTokenWeight(address(token));
             // Skipping calculation if weight is 0
             if (tokenWeight == 0) continue;
-            uint256 balance = ERC20SnapshotRep(tokenAddress).balanceOfAt(_holder, tokenSnapshotId);
-            uint256 supply = ERC20SnapshotRep(tokenAddress).totalSupplyAt(tokenSnapshotId);
+            uint256 balance = token.balanceOfAt(_holder, tokenSnapshotId);
+            uint256 supply = token.totalSupplyAt(tokenSnapshotId);
             uint256 tokenVotingPowerPercent = getPercent(balance, supply);
             uint256 tokenVotingPowerPercentWeighted = getWeightedVotingPowerPercentage(
                 tokenWeight,
@@ -178,7 +184,7 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     /// If stakingToken supply > minStakingTokensLocked at the time of execution repWeight will default to 100%.
     /// If not it will retun internal weights config for given `token`
     /// @param token Address of the token we want to get weight from
-    /// @param weight Weight percentage value (0 to 100)
+    /// @return weight Weight percentage value (0 to 100)
     function getTokenWeight(address token) public view onlyInternalTokens(token) returns (uint256 weight) {
         if (stakingToken.totalSupply() < minStakingTokensLocked) {
             if (token == address(repToken)) return 100;
@@ -210,9 +216,9 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
 
     /// @dev Calculates the weighted voting power percentage by multiplying the voting power
     ///      percentage by the weight percent of the token
-    /// @param weightPercent {uint256} Weight percent of the token (0 to 100)
-    /// @param votingPowerPercent {uint256} Voting power percentage (0 to 100 * precision)
-    /// @return weightedVotingPowerPercentage {uint256} Weighted voting power percentage (0 to 100 * precision)
+    /// @param weightPercent Weight percent of the token (0 to 100)
+    /// @param votingPowerPercent Voting power percentage (0 to 100 * precision)
+    /// @return weightedVotingPowerPercentage Weighted voting power percentage (0 to 100 * precision)
     function getWeightedVotingPowerPercentage(uint256 weightPercent, uint256 votingPowerPercent)
         public
         pure

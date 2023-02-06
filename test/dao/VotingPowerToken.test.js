@@ -134,9 +134,13 @@ contract("VotingPowerToken", function (accounts) {
       ).equal(repTokenWeight);
     });
 
-    it("Should update token weights", async () => {
+    it("Should fail if weights are invalid", async () => {
       await expectRevert(
         deployVpToken({ repWeight: 101 }),
+        "VotingPowerToken_InvalidTokenWeights()"
+      );
+      await expectRevert(
+        deployVpToken({ repWeight: 50, stakingWeight: 51 }),
         "VotingPowerToken_InvalidTokenWeights()"
       );
     });
@@ -151,6 +155,7 @@ contract("VotingPowerToken", function (accounts) {
       const repWeight = await vpToken.getTokenWeight(repToken.address);
       expect(repWeight.toNumber()).equal(50);
     });
+
     it("Should use 100% weight of rep if staking token supply < _minStakingTokensLocked", async () => {
       expect((await stakingToken.totalSupply()).toNumber()).equal(0);
 
@@ -178,6 +183,7 @@ contract("VotingPowerToken", function (accounts) {
         "VotingPowerToken_InvalidTokenWeights()"
       );
     });
+
     it("Should be called only by the owner", async () => {
       await expectRevert(
         vpToken.setComposition(50, 50, { from: accounts[3] }),
