@@ -7,7 +7,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const dxdTokenDeploy = await deploy("ERC20Mock", {
       name: "DXDToken",
       from: deployer,
-      args: [tokenHolder, hre.web3.utils.toWei("1000"), "DXD", "DXD Token", 18],
+      args: ["DXD token", "DXD", hre.web3.utils.toWei("1000"), tokenHolder],
       deterministicDeployment: deploySalt,
     });
 

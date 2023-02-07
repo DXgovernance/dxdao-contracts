@@ -176,7 +176,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       option: 1,
       account: accounts[5],
     });
-
+    // eslint-disable-next-line max-len
     // It preserves the voting power needed for proposal execution using the totalSupply at the moment of the proposal creation
     assert.equal(
       await snapshotRepErc20Guild.getSnapshotVotingPowerForProposalExecution(

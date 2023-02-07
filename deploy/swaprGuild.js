@@ -1,5 +1,7 @@
 const moment = require("moment");
-import { deploySnapshotRepGuild } from "./deployGuild";
+const {
+  deploySnapshotRepGuild,
+} = require("../scripts/deployUtils/deployGuild");
 
 const config = {
   GUILD_ID: "SwaprGuild",

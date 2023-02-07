@@ -1,7 +1,8 @@
-import { NULL_SIGNATURE, ZERO_ADDRESS } from "../test/helpers/constants";
+const NULL_SIGNATURE = "0x00000000";
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 // Util function to deploy snapshotRepGuild
-export const deploySnapshotRepGuild = config => async hre => {
+module.exports.deploySnapshotRepGuild = config => async hre => {
   const { getNamedAccounts, deployments } = hre;
   const { save } = deployments;
   const { deployer: deployerAddress } = await getNamedAccounts();
@@ -49,10 +50,6 @@ export const deploySnapshotRepGuild = config => async hre => {
 
   const repToken = await ERC20SnapshotRep.at(repTokenAddress);
   await repToken.initialize(config.TOKEN_NAME, config.TOKEN_SYMBOL);
-  // mint rep
-  for (let { address, amount } of config.initialRepHolders) {
-    await repToken.mint(address, hre.web3.utils.toWei(amount));
-  }
 
   const guildTx = await deployer.deploy(
     SnapshotRepERC20Guild.bytecode,
@@ -86,6 +83,11 @@ export const deploySnapshotRepGuild = config => async hre => {
     config.guildConfig.lockTime,
     permissionRegistry.address
   );
+
+    // mint rep
+  for (let { address, amount } of config.initialRepHolders) {
+    await repToken.mint(address, hre.web3.utils.toWei(amount));
+  }
 
   await permissionRegistry.setETHPermissionDelay(guild.address, 1);
   console.log("Setting permissions for native transfer");

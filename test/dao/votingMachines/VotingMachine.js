@@ -1553,7 +1553,6 @@ contract("VotingMachine", function (accounts) {
         constants.SOME_HASH
       );
       const testProposalId = await helpers.getValueFromLogs(tx, "proposalId");
-      const testProposal = await dxdVotingMachine.proposals(testProposalId);
 
       const signerNonce = await dxdVotingMachine.signerNonce(accounts[1]);
       const stakeHash = await dxdVotingMachine.hashAction(
@@ -1683,17 +1682,6 @@ contract("VotingMachine", function (accounts) {
         "proposalId"
       );
       const testProposalId4 = await helpers.getValueFromLogs(
-        await masterAvatarScheme.proposeCalls(
-          [actionMock.address],
-          [helpers.testCallFrom(org.avatar.address)],
-          [0],
-          2,
-          constants.TEST_TITLE,
-          constants.SOME_HASH
-        ),
-        "proposalId"
-      );
-      const testProposalId5 = await helpers.getValueFromLogs(
         await masterAvatarScheme.proposeCalls(
           [actionMock.address],
           [helpers.testCallFrom(org.avatar.address)],
