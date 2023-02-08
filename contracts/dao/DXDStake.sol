@@ -9,6 +9,12 @@ import "./DXDInfluence.sol";
 /**
  * @title DXDStake
  * @dev DXD wrapper contract. DXD tokens converted into DXDStake tokens get locked and are not transferable.
+ * Users staking DXD in this contract decide for how much time their tokens will be locked. This stake commitment
+ * cannot be undone unless early withdrawals are enabled by governance, in which case a penalty might apply.
+ * How long users commit to stake is important, given that the more time tokens are staked, the more voting power
+ * that user gets. The DXDStake influence on governance as a function of time is handled by the DXDInfluence contract.
+ * How long tokens can be staked, is capped by `maxTimeCommitment`. This prevents users from abusing the governance
+ * influence formula by staking small amounts of tokens for an infinite time.
  */
 contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;

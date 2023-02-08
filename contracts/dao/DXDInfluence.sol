@@ -15,7 +15,22 @@ interface VotingPower {
 /**
  * @title DXDInfluence
  * @dev Keeps track of the time commitment of accounts that have staked. The more DXD is staked and
- * the more time the DXD tokens are staked, the more influence the user will have on the DAO.
+ * the more time the DXD tokens are staked, the more influence the user will have on the DAO. The influence
+ * formula is:
+ *      influence = sum(stake.a.tc + stake.b.tc^k) over all stakes for a given account
+ *                = a * sum(stake.tc) + b * sum(stake.tc^k)
+ *      where:
+ *          a: linearFactor      --> configurable by governance (signed 59.18-decimal fixed-point number).
+ *          b: exponentialFactor --> configurable by governance (signed 59.18-decimal fixed-point number).
+ *          k: exponent          --> constant set at initialization (unsigned 59.18-decimal fixed-point number).
+ *          tc: time commitment  --> defined by the user at each stake.
+ *          stake: tokens locked --> defined by the user at each stake.
+ *
+ * In order to allow the governor to change the parameters of the formula, sum(stake.tc) and sum(stake.tc^k)
+ * is stored for each snapshot and the influence balance is calculated on the fly when queried. Notice that
+ * changes in the formula are retroactive in the sense that all snapshots balances will be updated when queried
+ * if `a` and `b` change.
+ *
  * DXDInfluence notifies the Voting Power contract of any stake changes.
  */
 contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
@@ -29,11 +44,17 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
     DXDStake public dxdStake;
     VotingPower public votingPower;
 
+    /// @dev influence formula parameters.
     SD59x18 public linearFactor;
     SD59x18 public exponentialFactor;
     UD60x18 public exponent; // Must be immutable
 
+    /// @dev cumulativeStakesSnapshots[account][snapshotId]
+    /// @dev keeps track of the influence parameters of each account at the snapshot the account's stake was modified.
     mapping(address => mapping(uint256 => CumulativeStake)) public cumulativeStakesSnapshots;
+
+    /// @dev totalStakeSnapshots[snapshotId]
+    /// @dev keeps track of the influence parameters of the total stake at each snapshot.
     mapping(uint256 => CumulativeStake) public totalStakeSnapshots;
 
     constructor() {}
@@ -142,7 +163,7 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
      * @dev Returns the last snapshot Id registered for a given account.
      * @param _account Account that has staked.
      */
-    function getLastCumulativeStake(address _account) internal view returns (CumulativeStake storage) {        
+    function getLastCumulativeStake(address _account) internal view returns (CumulativeStake storage) {
         if (_snapshotIds[_account].length > 0) {
             uint256 lastRegisteredSnapshotId = _snapshotIds[_account][_snapshotIds[_account].length - 1];
             return cumulativeStakesSnapshots[_account][lastRegisteredSnapshotId];
