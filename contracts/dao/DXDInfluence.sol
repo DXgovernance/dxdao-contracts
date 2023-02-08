@@ -2,7 +2,6 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import {UD60x18, toUD60x18, fromUD60x18} from "@prb/math/src/UD60x18.sol";
 import {SD59x18} from "@prb/math/src/SD59x18.sol";
 import "./AccountSnapshot.sol";
@@ -27,7 +26,7 @@ interface VotingPower {
  *          stake: tokens locked --> defined by the user at each stake.
  *
  * In order to allow the governor to change the parameters of the formula, sum(stake.tc) and sum(stake.tc^k)
- * is stored for each snapshot and the influence balance is calculated on the fly when queried. Notice that
+ * are stored for each snapshot and the influence balance is calculated on the fly when queried. Notice that
  * changes in the formula are retroactive in the sense that all snapshots balances will be updated when queried
  * if `a` and `b` change.
  *
