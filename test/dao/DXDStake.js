@@ -210,14 +210,14 @@ contract("DXD staking and DXD influence", async accounts => {
       const influenceBalance0 = await dxdInfluence.balanceOf(dxdHolder);
 
       await expectRevert(
-        dxdStake.increaseCommitment(0, 1, { from: dxdHolder }),
+        dxdStake.increaseCommitmentTime(0, 1, { from: dxdHolder }),
         "DXDStake: timeCommitment too small"
       );
 
       await time.increase(time.duration.seconds(20));
-      await dxdStake.increaseCommitment(0, 30, { from: dxdHolder });
+      await dxdStake.increaseCommitmentTime(0, 30, { from: dxdHolder });
       const influenceBalance1 = await dxdInfluence.balanceOf(dxdHolder);
-      await dxdStake.increaseCommitment(0, timeCommitment * 2, {
+      await dxdStake.increaseCommitmentTime(0, timeCommitment * 2, {
         from: dxdHolder,
       });
       const influenceBalance2 = await dxdInfluence.balanceOf(dxdHolder);
@@ -232,7 +232,7 @@ contract("DXD staking and DXD influence", async accounts => {
         "DXDStake: timeCommitment too big"
       );
       await expectRevert(
-        dxdStake.increaseCommitment(0, maxTimeCommitment + 1, {
+        dxdStake.increaseCommitmentTime(0, maxTimeCommitment + 1, {
           from: notTheOwner,
         }),
         "DXDStake: timeCommitment too big"
@@ -303,13 +303,13 @@ contract("DXD staking and DXD influence", async accounts => {
       await dxdStake.stake(amount, timeCommitment, { from: dxdHolder });
 
       await expectRevert(
-        dxdStake.increaseCommitment(0, 1, { from: dxdHolder }),
+        dxdStake.increaseCommitmentTime(0, 1, { from: dxdHolder }),
         "DXDStake: timeCommitment too small"
       );
 
       await time.increase(time.duration.seconds(20));
-      await dxdStake.increaseCommitment(0, 30, { from: dxdHolder });
-      await dxdStake.increaseCommitment(0, timeCommitment * 2, {
+      await dxdStake.increaseCommitmentTime(0, 30, { from: dxdHolder });
+      await dxdStake.increaseCommitmentTime(0, timeCommitment * 2, {
         from: dxdHolder,
       });
 
@@ -329,7 +329,7 @@ contract("DXD staking and DXD influence", async accounts => {
       await dxdStake.stake(amount, 49, { from: dxdHolder });
 
       await expectRevert(
-        dxdStake.increaseCommitment(0, 50, { from: dxdHolder }),
+        dxdStake.increaseCommitmentTime(0, 50, { from: dxdHolder }),
         "DXDStake: timeCommitment too big"
       );
     });

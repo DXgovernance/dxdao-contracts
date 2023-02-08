@@ -19,7 +19,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         uint256 stake;
     }
 
-    uint256 public constant DIVISOR = 10_000;
+    uint256 private constant BASIS_POINT_DIVISOR = 10_000;
 
     IERC20Upgradeable public dxd;
     DXDInfluence public dxdInfluence;
@@ -78,7 +78,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      * @param _recipient Recipient of the penalty.
      */
     function enableEarlyWithdrawal(uint256 _penalty, address _recipient) external onlyOwner {
-        require(_penalty < DIVISOR, "DXDStake: invalid penalty");
+        require(_penalty < BASIS_POINT_DIVISOR, "DXDStake: invalid penalty");
         require(_recipient != address(0), "DXDStake: recipient can't be null");
         earlyWithdrawalsEnabled = true;
         earlyWithdrawalPenalty = _penalty;
@@ -133,7 +133,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      * @param _commitmentId Id of the commitment. The Id is an incremental variable for each account.
      * @param _newTimeCommitment Time that the user commits to lock the token in this staking contract.
      */
-    function increaseCommitment(uint256 _commitmentId, uint256 _newTimeCommitment) external {
+    function increaseCommitmentTime(uint256 _commitmentId, uint256 _newTimeCommitment) external {
         require(_newTimeCommitment <= maxTimeCommitment, "DXDStake: timeCommitment too big");
         StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender][_commitmentId];
         require(
@@ -188,7 +188,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         dxdInfluence.burn(msg.sender, stakeCommitment.stake, stakeCommitment.timeCommitment);
 
         // Unstake DXD tokens
-        uint256 dxdPenalty = (stakeCommitment.stake * earlyWithdrawalPenalty) / DIVISOR;
+        uint256 dxdPenalty = (stakeCommitment.stake * earlyWithdrawalPenalty) / BASIS_POINT_DIVISOR;
         dxd.safeTransfer(msg.sender, stakeCommitment.stake - dxdPenalty);
         dxd.safeTransfer(penaltyRecipient, dxdPenalty);
         _burn(msg.sender, stakeCommitment.stake);

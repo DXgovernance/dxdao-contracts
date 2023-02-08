@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import {UD60x18, toUD60x18, fromUD60x18} from "@prb/math/src/UD60x18.sol";
 import {SD59x18} from "@prb/math/src/SD59x18.sol";
-import "./DataSnapshot.sol";
+import "./AccountSnapshot.sol";
 import "./DXDStake.sol";
 
 interface VotingPower {
@@ -18,7 +18,7 @@ interface VotingPower {
  * the more time the DXD tokens are staked, the more influence the user will have on the DAO.
  * DXDInfluence notifies the Voting Power contract of any stake changes.
  */
-contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
+contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
     using ArraysUpgradeable for uint256[];
 
     struct CumulativeStake {
@@ -33,8 +33,8 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
     SD59x18 public exponentialFactor;
     UD60x18 public exponent; // Must be immutable
 
-    mapping(address => mapping(uint256 => CumulativeStake)) public cumulativeStakes;
-    mapping(uint256 => CumulativeStake) public totalStake;
+    mapping(address => mapping(uint256 => CumulativeStake)) public cumulativeStakesSnapshots;
+    mapping(uint256 => CumulativeStake) public totalStakeSnapshots;
 
     constructor() {}
 
@@ -90,13 +90,13 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         uint256 exponentialElement = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
 
         // Update account's stake data
-        CumulativeStake storage cumulativeStake = cumulativeStakes[_account][currentSnapshotId];
+        CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[_account][currentSnapshotId];
         cumulativeStake.linearElement = lastCumulativeStake.linearElement + _amount * _timeCommitment;
         cumulativeStake.exponentialElement = lastCumulativeStake.exponentialElement + exponentialElement;
 
         // Update global stake data
-        CumulativeStake storage newTotalStake = totalStake[currentSnapshotId];
-        CumulativeStake storage previousTotalStake = totalStake[currentSnapshotId - 1];
+        CumulativeStake storage newTotalStake = totalStakeSnapshots[currentSnapshotId];
+        CumulativeStake storage previousTotalStake = totalStakeSnapshots[currentSnapshotId - 1];
         newTotalStake.linearElement = previousTotalStake.linearElement + _amount * _timeCommitment;
         newTotalStake.exponentialElement = previousTotalStake.exponentialElement + exponentialElement;
 
@@ -124,13 +124,13 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         uint256 exponentialElement = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
 
         // Update account's stake data
-        CumulativeStake storage cumulativeStake = cumulativeStakes[_account][currentSnapshotId];
+        CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[_account][currentSnapshotId];
         cumulativeStake.linearElement = lastCumulativeStake.linearElement - _amount * _timeCommitment;
         cumulativeStake.exponentialElement = lastCumulativeStake.exponentialElement - exponentialElement;
 
         // Update global stake data
-        CumulativeStake storage newTotalStake = totalStake[currentSnapshotId];
-        CumulativeStake storage previousTotalStake = totalStake[currentSnapshotId - 1];
+        CumulativeStake storage newTotalStake = totalStakeSnapshots[currentSnapshotId];
+        CumulativeStake storage previousTotalStake = totalStakeSnapshots[currentSnapshotId - 1];
         newTotalStake.linearElement = previousTotalStake.linearElement - _amount * _timeCommitment;
         newTotalStake.exponentialElement = previousTotalStake.exponentialElement - exponentialElement;
 
@@ -146,9 +146,9 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
         uint256 currentSnapshotId = getCurrentSnapshotId();
         if (currentSnapshotId != 0) {
             uint256 lastRegisteredSnapshotId = _lastRegisteredSnapshotIdAt(currentSnapshotId, _account);
-            return cumulativeStakes[_account][lastRegisteredSnapshotId];
+            return cumulativeStakesSnapshots[_account][lastRegisteredSnapshotId];
         } else {
-            return cumulativeStakes[_account][0];
+            return cumulativeStakesSnapshots[_account][0];
         }
     }
 
@@ -163,16 +163,16 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
      * @dev Retrieves the influence total supply at the time `snapshotId` was created.
      */
     function totalSupplyAt(uint256 snapshotId) public view returns (uint256) {
-        CumulativeStake storage currentTotalStake = totalStake[snapshotId];
-        return getInfluence(currentTotalStake);
+        CumulativeStake storage currentTotalStake = totalStakeSnapshots[snapshotId];
+        return calculateInfluence(currentTotalStake);
     }
 
     /**
      * @dev Returns the amount of influence owned by `account`.
      */
     function balanceOf(address account) public view returns (uint256) {
-        CumulativeStake storage cumulativeStake = cumulativeStakes[account][_lastSnapshotId(account)];
-        return getInfluence(cumulativeStake);
+        CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[account][_lastSnapshotId(account)];
+        return calculateInfluence(cumulativeStake);
     }
 
     /**
@@ -180,15 +180,15 @@ contract DXDInfluence is OwnableUpgradeable, DataSnapshot {
      */
     function balanceOfAt(address account, uint256 snapshotId) public view returns (uint256) {
         uint256 lastSnapshotId = _lastRegisteredSnapshotIdAt(snapshotId, account);
-        CumulativeStake storage cumulativeStake = cumulativeStakes[account][lastSnapshotId];
-        return getInfluence(cumulativeStake);
+        CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[account][lastSnapshotId];
+        return calculateInfluence(cumulativeStake);
     }
 
     /**
      * @dev Calculates influence for the given cumulative stake data point.
      * @param _cumulativeStake Accumulated stake information on a specific snapshot.
      */
-    function getInfluence(CumulativeStake storage _cumulativeStake) internal view returns (uint256) {
+    function calculateInfluence(CumulativeStake storage _cumulativeStake) internal view returns (uint256) {
         SD59x18 linearElement = SD59x18.wrap(int256(_cumulativeStake.linearElement));
         SD59x18 linearInfluence = linearFactor.mul(linearElement);
 

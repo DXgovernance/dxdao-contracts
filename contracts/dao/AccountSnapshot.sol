@@ -4,10 +4,10 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts-upgradeable/utils/ArraysUpgradeable.sol";
 
 /**
- * @dev Inspired in ERC20Snapshot from openzeppelin
+ * @dev Inspired in ERC20Snapshot from openzeppelin. Keeps track of which account has been updated at which snapshot.
  **/
 
-contract DataSnapshot {
+contract AccountSnapshot {
     using ArraysUpgradeable for uint256[];
 
     mapping(address => uint256[]) internal _snapshotIds;
