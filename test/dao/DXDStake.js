@@ -26,7 +26,7 @@ function estimateInfluence(stake, time) {
   const linearElement = lf * stake * time;
   const exponentialElement = ef * stake * Math.pow(time, exp);
   return linearElement + exponentialElement;
-};
+}
 
 contract("DXD staking and DXD influence", async accounts => {
   let dxdStake, dxdInfluence, addresses, amounts, owner, notTheOwner, dxd;
@@ -38,7 +38,12 @@ contract("DXD staking and DXD influence", async accounts => {
     addresses = [accounts[0], accounts[1], accounts[2]];
     amounts = [100, 200, 300];
 
-    dxd = await ERC20Mock.new("DXD Token", "DXD", web3.utils.toWei("10000", "ether"), owner);
+    dxd = await ERC20Mock.new(
+      "DXD Token",
+      "DXD",
+      web3.utils.toWei("10000", "ether"),
+      owner
+    );
     const votingPowerContract = await VotingPowerMock.new();
 
     dxdStake = await DXDStake.new();
@@ -71,7 +76,14 @@ contract("DXD staking and DXD influence", async accounts => {
   describe("DXDStake", async () => {
     it("Should fail if is already initialized", async () => {
       await expectRevert(
-        dxdStake.initialize(dxd.address, dxdInfluence.address, owner, 0, "", ""),
+        dxdStake.initialize(
+          dxd.address,
+          dxdInfluence.address,
+          owner,
+          0,
+          "",
+          ""
+        ),
         "Initializable: contract is already initialized"
       );
     });
@@ -193,7 +205,7 @@ contract("DXD staking and DXD influence", async accounts => {
 
       await time.increase(time.duration.seconds(timeCommitment));
       await dxdStake.withdraw(dxdHolder, 0, { from: notTheOwner });
-      
+
       await expectRevert(
         dxdStake.withdraw(dxdHolder, 0, { from: notTheOwner }),
         "DXDStake: commitment id does not exist"
@@ -319,13 +331,13 @@ contract("DXD staking and DXD influence", async accounts => {
         "Ownable: caller is not the owner"
       );
       await dxdStake.changeMaxTimeCommitment(49, { from: accounts[0] });
-      
+
       await dxd.approve(dxdStake.address, amount, { from: dxdHolder });
       await expectRevert(
-        dxdStake.stake( amount, timeCommitment, { from: dxdHolder }),
+        dxdStake.stake(amount, timeCommitment, { from: dxdHolder }),
         "DXDStake: timeCommitment too big"
       );
-      
+
       await dxdStake.stake(amount, 49, { from: dxdHolder });
 
       await expectRevert(
@@ -357,56 +369,98 @@ contract("DXD staking and DXD influence", async accounts => {
       let influence = await dxdInfluence.balanceOf(dxdHolder);
       let influenceAt = await dxdInfluence.balanceOfAt(dxdHolder, 1);
       expect(influence).to.be.bignumber.equal(influenceAt);
-      
+
       let totalInfluence = await dxdInfluence.totalSupply();
       let totalInfluenceAt = await dxdInfluence.totalSupplyAt(1);
       expect(totalInfluence).to.be.bignumber.equal(totalInfluenceAt);
 
-      let estimatedInfluence = estimateInfluence(Number(intAmount), timeCommitment);
-      let estimatedInfluenceBN = web3.utils.toWei(estimatedInfluence.toString(), "ether");
+      let estimatedInfluence = estimateInfluence(
+        Number(intAmount),
+        timeCommitment
+      );
+      let estimatedInfluenceBN = web3.utils.toWei(
+        estimatedInfluence.toString(),
+        "ether"
+      );
       estimatedInfluenceBN = new BN(estimatedInfluenceBN);
-      expect(estimatedInfluenceBN).to.be.bignumber.closeTo(totalInfluence, delta);
+      expect(estimatedInfluenceBN).to.be.bignumber.closeTo(
+        totalInfluence,
+        delta
+      );
 
       // Null stake
       await dxdStake.stake(0, timeCommitment, { from: dxdHolder });
-      expect(await dxdInfluence.balanceOf(dxdHolder)).to.be.bignumber.equal(influence);
-      expect(await dxdInfluence.balanceOfAt(dxdHolder, 1)).to.be.bignumber.equal(influence);
-      expect(await dxdInfluence.balanceOfAt(dxdHolder, 2)).to.be.bignumber.equal(influence);
-      
-      expect(await dxdInfluence.totalSupply()).to.be.bignumber.equal(totalInfluence);
-      expect(await dxdInfluence.totalSupplyAt(1)).to.be.bignumber.equal(totalInfluence);
-      expect(await dxdInfluence.totalSupplyAt(2)).to.be.bignumber.equal(totalInfluence);
+      expect(await dxdInfluence.balanceOf(dxdHolder)).to.be.bignumber.equal(
+        influence
+      );
+      expect(
+        await dxdInfluence.balanceOfAt(dxdHolder, 1)
+      ).to.be.bignumber.equal(influence);
+      expect(
+        await dxdInfluence.balanceOfAt(dxdHolder, 2)
+      ).to.be.bignumber.equal(influence);
+
+      expect(await dxdInfluence.totalSupply()).to.be.bignumber.equal(
+        totalInfluence
+      );
+      expect(await dxdInfluence.totalSupplyAt(1)).to.be.bignumber.equal(
+        totalInfluence
+      );
+      expect(await dxdInfluence.totalSupplyAt(2)).to.be.bignumber.equal(
+        totalInfluence
+      );
 
       // Null time commitment
       await dxd.approve(dxdStake.address, amount, { from: dxdHolder });
       await dxdStake.stake(amount, 0, { from: dxdHolder });
-      expect(await dxdInfluence.balanceOf(dxdHolder)).to.be.bignumber.equal(influence);
-      expect(await dxdInfluence.balanceOfAt(dxdHolder, 1)).to.be.bignumber.equal(influence);
-      expect(await dxdInfluence.balanceOfAt(dxdHolder, 2)).to.be.bignumber.equal(influence);
-      expect(await dxdInfluence.balanceOfAt(dxdHolder, 3)).to.be.bignumber.equal(influence);
-      
-      expect(await dxdInfluence.totalSupply()).to.be.bignumber.equal(totalInfluence);
-      expect(await dxdInfluence.totalSupplyAt(1)).to.be.bignumber.equal(totalInfluence);
-      expect(await dxdInfluence.totalSupplyAt(2)).to.be.bignumber.equal(totalInfluence);
-      expect(await dxdInfluence.totalSupplyAt(3)).to.be.bignumber.equal(totalInfluence);
+      expect(await dxdInfluence.balanceOf(dxdHolder)).to.be.bignumber.equal(
+        influence
+      );
+      expect(
+        await dxdInfluence.balanceOfAt(dxdHolder, 1)
+      ).to.be.bignumber.equal(influence);
+      expect(
+        await dxdInfluence.balanceOfAt(dxdHolder, 2)
+      ).to.be.bignumber.equal(influence);
+      expect(
+        await dxdInfluence.balanceOfAt(dxdHolder, 3)
+      ).to.be.bignumber.equal(influence);
+
+      expect(await dxdInfluence.totalSupply()).to.be.bignumber.equal(
+        totalInfluence
+      );
+      expect(await dxdInfluence.totalSupplyAt(1)).to.be.bignumber.equal(
+        totalInfluence
+      );
+      expect(await dxdInfluence.totalSupplyAt(2)).to.be.bignumber.equal(
+        totalInfluence
+      );
+      expect(await dxdInfluence.totalSupplyAt(3)).to.be.bignumber.equal(
+        totalInfluence
+      );
 
       // Small stake
       amount = web3.utils.toWei(intAmount, "gwei");
       await dxd.approve(dxdStake.address, amount, { from: dxdHolder });
       await dxdStake.stake(amount, timeCommitment, { from: dxdHolder });
 
-      influence = (await dxdInfluence.balanceOf(dxdHolder));
-      influenceAt = (await dxdInfluence.balanceOfAt(dxdHolder, 4));
+      influence = await dxdInfluence.balanceOf(dxdHolder);
+      influenceAt = await dxdInfluence.balanceOfAt(dxdHolder, 4);
       expect(influence).to.be.bignumber.equal(influenceAt);
-      
-      totalInfluence = (await dxdInfluence.totalSupply());
-      totalInfluenceAt = (await dxdInfluence.totalSupplyAt(4));
+
+      totalInfluence = await dxdInfluence.totalSupply();
+      totalInfluenceAt = await dxdInfluence.totalSupplyAt(4);
       expect(totalInfluence).to.be.bignumber.equal(totalInfluenceAt);
 
       estimatedInfluence = estimateInfluence(Number(intAmount), timeCommitment);
-      const aux = new BN(web3.utils.toWei(estimatedInfluence.toString(), "gwei"));
+      const aux = new BN(
+        web3.utils.toWei(estimatedInfluence.toString(), "gwei")
+      );
       estimatedInfluenceBN = estimatedInfluenceBN.add(aux);
-      expect(totalInfluence).to.be.bignumber.closeTo(estimatedInfluenceBN, delta);
+      expect(totalInfluence).to.be.bignumber.closeTo(
+        estimatedInfluenceBN,
+        delta
+      );
     });
 
     it("should withdraw DXD and update influence values correctly", async () => {
@@ -439,7 +493,11 @@ contract("DXD staking and DXD influence", async accounts => {
 
       const newLF = -0.1;
       const newLinearFactor = web3.utils.toWei(newLF.toString(), "ether");
-      await dxdStake.changeInfluenceFormula(newLinearFactor, exponentialFactor, { from: accounts[0] });
+      await dxdStake.changeInfluenceFormula(
+        newLinearFactor,
+        exponentialFactor,
+        { from: accounts[0] }
+      );
 
       await expectRevert(
         dxdInfluence.balanceOf(dxdHolder),
@@ -448,7 +506,11 @@ contract("DXD staking and DXD influence", async accounts => {
 
       const newEF = 1.5;
       const newExponentialFactor = web3.utils.toWei(newEF.toString(), "ether");
-      await dxdStake.changeInfluenceFormula(newLinearFactor, newExponentialFactor, { from: accounts[0] });
+      await dxdStake.changeInfluenceFormula(
+        newLinearFactor,
+        newExponentialFactor,
+        { from: accounts[0] }
+      );
       const influenceBalance1 = await dxdInfluence.balanceOf(dxdHolder);
     });
   });
