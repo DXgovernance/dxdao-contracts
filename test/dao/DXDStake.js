@@ -254,10 +254,9 @@ contract("DXD staking and DXD influence", async accounts => {
     it("should handle early withdrawals when enabled", async () => {
       const dxdHolder = accounts[0];
       const amount = 100;
-      const timeCommitment = 50;
+      const timeCommitment = 100;
 
       const stDXDBalance0 = await dxdStake.balanceOf(dxdHolder);
-      const DXDBalance0 = await dxd.balanceOf(dxdHolder);
       assert.equal(stDXDBalance0.toString(), new BN(0).toString());
 
       await dxd.approve(dxdStake.address, amount, { from: dxdHolder });
@@ -280,10 +279,17 @@ contract("DXD staking and DXD influence", async accounts => {
 
       // Enable early withdrawals
       const penalty = 2500; // 25%
+      const minTime = 2500; // 25%
       const penaltyRecipient = notTheOwner;
-      await dxdStake.enableEarlyWithdrawal(penalty, penaltyRecipient, {
+      await dxdStake.enableEarlyWithdrawal(minTime, penalty, penaltyRecipient, {
         from: owner,
       });
+      await expectRevert(
+        dxdStake.earlyWithdraw(1, { from: dxdHolder }),
+        "DXDStake: early withdrawal attempted too soon"
+      );
+
+      await time.increase(time.duration.seconds(timeCommitment / 2));
       const earlyWithdrawal = await dxdStake.earlyWithdraw(1, {
         from: dxdHolder,
       });

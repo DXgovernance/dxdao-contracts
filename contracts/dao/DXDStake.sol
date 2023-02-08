@@ -31,13 +31,17 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     DXDInfluence public dxdInfluence;
     uint256 public maxTimeCommitment;
 
-    mapping(address => StakeCommitment[]) public stakeCommitments;
+    mapping(address => StakeCommitment[]) public stakeCommitments; // stakeCommitments[account]
     mapping(address => uint256) public userActiveStakes;
     uint256 public totalActiveStakes;
 
     bool public earlyWithdrawalsEnabled;
-    uint256 public earlyWithdrawalPenalty; // In basis points.
+    /// @dev a penalty might apply when withdrawing a stake early. The penalty will be sent to the  `penaltyRecipient`.
     address public penaltyRecipient;
+    /// @dev basis points. If enabled, early withdrawals are allowed after a % of the commitment time has passed.
+    uint256 public earlyWithdrawalMinTime;
+    /// @dev basis points. A % of the tokens staked will be taken away for withdrawing early.
+    uint256 public earlyWithdrawalPenalty;
 
     /// @notice Error when trying to transfer reputation
     error DXDStake__NoTransfer();
@@ -80,15 +84,22 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
 
     /**
      * @dev Enables early withdrawals of stake commitments that have not finalized yet.
+     * @param _minTime Percentage, expressed in basis points, after which a stake commitment can be withdrawn.
      * @param _penalty Percentage, expressed in basis points, that will be taken from the stake as penalty.
      * @param _recipient Recipient of the penalty.
      */
-    function enableEarlyWithdrawal(uint256 _penalty, address _recipient) external onlyOwner {
-        require(_penalty < BASIS_POINT_DIVISOR, "DXDStake: invalid penalty");
+    function enableEarlyWithdrawal(
+        uint256 _minTime,
+        uint256 _penalty,
+        address _recipient
+    ) external onlyOwner {
+        require(_penalty <= BASIS_POINT_DIVISOR, "DXDStake: invalid penalty");
+        require(_minTime <= BASIS_POINT_DIVISOR, "DXDStake: invalid earlyWithdrawalMinTime");
         require(_recipient != address(0), "DXDStake: recipient can't be null");
         earlyWithdrawalsEnabled = true;
         earlyWithdrawalPenalty = _penalty;
         penaltyRecipient = _recipient;
+        earlyWithdrawalMinTime = _minTime;
     }
 
     /**
@@ -189,6 +200,13 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender][_commitmentId];
         require(earlyWithdrawalsEnabled, "DXDStake: early withdrawals not allowed");
         require(block.timestamp < stakeCommitment.commitmentEnd, "DXDStake: normal withdrawal allowed");
+
+        uint256 maxTimeLeft = (stakeCommitment.timeCommitment * (BASIS_POINT_DIVISOR - earlyWithdrawalMinTime)) /
+            BASIS_POINT_DIVISOR;
+        require(
+            block.timestamp > stakeCommitment.commitmentEnd - maxTimeLeft,
+            "DXDStake: early withdrawal attempted too soon"
+        );
 
         // Burn influence tokens.
         dxdInfluence.burn(msg.sender, stakeCommitment.stake, stakeCommitment.timeCommitment);
