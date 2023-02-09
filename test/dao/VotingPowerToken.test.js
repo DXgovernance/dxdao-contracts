@@ -3,6 +3,11 @@ const VotingPowerToken = artifacts.require("./VotingPowerToken.sol");
 const DAOReputation = artifacts.require("DAOReputation.sol");
 const DXDStakeMock = artifacts.require("DXDStakeMock.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
+const BigNumber = require("bignumber.js");
+
+BigNumber.config({ decimalPlaces: 18 });
+
+const bn = n => new BigNumber(n);
 
 contract("VotingPowerToken", function (accounts) {
   let repToken;
@@ -11,17 +16,20 @@ contract("VotingPowerToken", function (accounts) {
   let owner = accounts[0];
   let precision;
   let dxd;
+  let decimals;
   const repTokenWeight = 50;
   const stakeTokenWeight = 50;
   const minStakingTokensLocked = 100;
 
   const repHolders = [
-    { account: accounts[1], amount: 160 },
-    { account: accounts[2], amount: 320 },
+    { account: accounts[1], amount: bn(40) },
+    { account: accounts[2], amount: bn(30) },
+    { account: accounts[3], amount: bn(30) },
   ];
   const stakeHolders = [
-    { account: accounts[1], amount: 340 },
-    { account: accounts[2], amount: 110 },
+    { account: accounts[1], amount: bn(30) },
+    { account: accounts[2], amount: bn(40) },
+    { account: accounts[3], amount: bn(30) },
   ];
 
   const restore = () => {
@@ -60,11 +68,13 @@ contract("VotingPowerToken", function (accounts) {
       config.repTokenAddress || repToken.address,
       config.stakingTokenAddress || stakingToken.address,
       config.repWeight || repTokenWeight,
-      config.stakeWeight || stakeTokenWeight,
+      config.stakingWeight || stakeTokenWeight,
       config.minStakingTokensLocked || minStakingTokensLocked
     );
 
-    precision = (await vpToken.precision()).toNumber();
+    // precision = Number((await vpToken.precision()).toString());
+    precision = bn(await vpToken.precision());
+    decimals = bn(await vpToken.decimals());
   };
 
   const mintAll = async () => {
@@ -75,23 +85,9 @@ contract("VotingPowerToken", function (accounts) {
         })
       )
     );
-
-    await Promise.all(
-      repHolders.map(({ account, amount }) => repToken.mint(account, amount))
-    );
-  };
-
-  const burnAll = async () => {
-    await Promise.all(
-      stakeHolders.map(({ account, amount }) =>
-        stakingToken.withdraw(amount, {
-          from: account,
-        })
-      )
-    );
-
-    await Promise.all(
-      repHolders.map(({ account, amount }) => repToken.burn(account, amount))
+    await repToken.mintMultiple(
+      repHolders.map(v => v.account),
+      repHolders.map(v => v.amount)
     );
   };
 
@@ -195,41 +191,65 @@ contract("VotingPowerToken", function (accounts) {
   describe("getPercent", () => {
     beforeEach(async () => await deployVpToken());
     it("Should return 10%", async () => {
-      const votingPower = await vpToken.getPercent(10, 100);
-      expect(votingPower.toNumber()).equal(10 * precision);
+      const balance = 20;
+      const supply = 200;
+      const percent = 10;
+      const expectedPercent = bn(percent).mul(precision);
+      const votingPower = bn(await vpToken.getPercent(balance, supply));
+      expect(votingPower.eq(expectedPercent)).to.be.true;
     });
 
     it("Should return 100%", async () => {
-      const votingPower = await vpToken.getPercent(100, 100);
-      expect(votingPower.toNumber()).equal(100 * precision);
+      const balance = 100;
+      const supply = 100;
+      const percent = 100;
+      const expectedPercent = bn(percent).mul(precision);
+      const votingPower = bn(await vpToken.getPercent(balance, supply));
+      expect(votingPower.eq(expectedPercent)).to.be.true;
     });
 
     it("Should return 1%", async () => {
-      const votingPower = await vpToken.getPercent(1, 100);
-      expect(votingPower.toNumber()).equal(1 * precision);
+      const balance = 10;
+      const supply = 1000;
+      const percent = 1;
+      const expectedPercent = bn(percent).mul(precision);
+      const votingPower = bn(await vpToken.getPercent(balance, supply));
+      expect(votingPower.eq(expectedPercent)).to.be.true;
     });
 
     it("Should return 0.03%", async () => {
-      const expectedVotingPowerPercent = 0.03;
       const supply = 100000;
-      const balance = Math.round((expectedVotingPowerPercent / 100) * supply);
-
-      const votingPower = await vpToken.getPercent(balance, supply);
-
-      expect(votingPower.toNumber() / precision).equal(
-        expectedVotingPowerPercent
-      );
+      const balance = 30;
+      const percent = 0.03;
+      const expectedPercent = bn(percent).mul(precision);
+      const votingPower = bn(await vpToken.getPercent(balance, supply));
+      expect(votingPower.eq(expectedPercent)).to.be.true;
     });
 
     it("Should return 0%", async () => {
-      const votingPower = await vpToken.getPercent(0, 100);
+      const supply = 1000;
+      const balance = 0; //
+      const percent = 0;
+      const expectedPercent = bn(`${percent}`);
+      const votingPower = bn(await vpToken.getPercent(balance, supply));
+      expect(votingPower.eq(expectedPercent)).to.be.true;
       expect(votingPower.toNumber()).equal(0);
     });
 
-    it("Should return 0.0000000001%", async () => {
-      const votingPower = await vpToken.getPercent(1, precision * 100);
-      expect(votingPower.toNumber()).equal(1);
-      expect(votingPower.toNumber() / precision).equal(1 / precision);
+    it("Should return 0.0000000000000001%", async () => {
+      const supply = precision;
+      const balance = 1;
+      const percent = (balance * 100) / supply; //1e-16
+      const expectedPercent = bn(percent).mul(precision);
+      const votingPower = bn(await vpToken.getPercent(balance, supply));
+      expect(votingPower.eq(expectedPercent)).to.be.true;
+    });
+
+    it("Should return 0 if denominator=0 and not revert with panic code 0x12", async () => {
+      const supply = 0;
+      const balance = 0;
+      const votingPower = bn(await vpToken.getPercent(balance, supply));
+      expect(votingPower.toNumber()).equal(0);
     });
   });
 
@@ -244,32 +264,82 @@ contract("VotingPowerToken", function (accounts) {
     });
 
     it("Should return 100%", async () => {
-      const votingPowerPercent = 100; // 100%
-      const votingPowerPercentPoweredByPrecision =
-        votingPowerPercent * precision; //10_000_000_000
-      const weightPercent = 100; // 50%
-      const expectedResult =
-        votingPowerPercent * (weightPercent / 100) * precision; // 1.5
+      const votingPowerPercent = bn(100);
+      const weight = 100;
+      const expectedBalance = bn(100).mul(precision);
 
       const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
-        weightPercent,
-        votingPowerPercentPoweredByPrecision
+        weight,
+        votingPowerPercent.mul(precision)
       );
-      expect(weightedPercentage.toNumber()).equal(expectedResult);
+      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
     });
-    it("Should return 1.5% ", async () => {
-      const votingPowerPercent = 3; // 3%
-      const votingPowerPercentPoweredByPrecision =
-        votingPowerPercent * precision; //30_000_000
-      const weightPercent = 50; // 50%
-      const expectedResult =
-        votingPowerPercent * (weightPercent / 100) * precision; // 1.5
+    it("Should return 50%", async () => {
+      const votingPowerPercent = bn(100); // 100% voting power
+      const weight = 50; // 50% weight
+      const expectedBalance = bn(50).mul(precision);
 
       const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
-        weightPercent,
-        votingPowerPercentPoweredByPrecision
+        weight,
+        votingPowerPercent.mul(precision)
       );
-      expect(weightedPercentage.toNumber()).equal(expectedResult);
+      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
+    });
+    it("Should return 25%", async () => {
+      const votingPowerPercent = bn(50); // 50% voting power
+      const weight = 50; // 50% weight
+      const expectedBalance = bn(25).mul(precision);
+
+      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
+        weight,
+        votingPowerPercent.mul(precision)
+      );
+      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
+    });
+    it("Should return 9%", async () => {
+      const votingPowerPercent = bn(90); // 1% voting power
+      const weight = 10; // 30% weight
+      const expectedBalance = bn(9).mul(precision);
+
+      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
+        weight,
+        votingPowerPercent.mul(precision)
+      );
+      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
+    });
+
+    it("Should return 1.5% ", async () => {
+      const votingPowerPercent = bn(3); // 1% voting power
+      const weight = 50; // 30% weight
+      const expectedBalance = bn(1.5).mul(precision);
+
+      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
+        weight,
+        votingPowerPercent.mul(precision)
+      );
+      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
+    });
+    it("Should return 0.3%", async () => {
+      const votingPowerPercent = bn(1); // 1% voting power
+      const weight = 30; // 30% weight
+      const expectedBalance = bn(0.3).mul(precision);
+
+      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
+        weight,
+        votingPowerPercent.mul(precision)
+      );
+      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
+    });
+    it("Should return 0.01% ", async () => {
+      const votingPowerPercent = bn(0.1); // 0.1% voting power
+      const weight = 10; // 10% weight
+      const expectedBalance = bn(0.01).mul(precision);
+
+      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
+        weight,
+        votingPowerPercent.mul(precision)
+      );
+      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
     });
   });
 
@@ -279,10 +349,7 @@ contract("VotingPowerToken", function (accounts) {
     });
     it("Should return correct voting power", async () => {
       await mintAll();
-      const holder = repHolders[0].account;
-      const balance = repHolders[0].amount;
-
-      expect((await repToken.balanceOf(holder)).toNumber()).equal(balance);
+      const holder = accounts[1];
 
       const repSnapshotId = await repToken.getCurrentSnapshotId();
       const vpTokenSnapshotId = await vpToken.getCurrentSnapshotId();
@@ -300,107 +367,139 @@ contract("VotingPowerToken", function (accounts) {
 
       const repBalance = await repToken.balanceOf(holder);
       const repSupply = await repToken.totalSupply();
-      const repVotingPowerPercent =
-        (repBalance.toNumber() * 100) / repSupply.toNumber();
 
-      const repTokenWeight = (
-        await vpToken.getTokenWeight(repToken.address)
-      ).toNumber();
+      const repVotingPowerPercent = bn(
+        await vpToken.getPercent(repBalance, repSupply)
+      );
 
-      const repVotingPowerPercentWeighted =
-        repVotingPowerPercent * (repTokenWeight / 100) * precision;
+      const repTokenWeight = bn(await vpToken.getTokenWeight(repToken.address));
+
+      const repVotingPowerPercentWeighted = bn(
+        await vpToken.getWeightedVotingPowerPercentage(
+          repTokenWeight,
+          repVotingPowerPercent
+        )
+      );
 
       const stakingBalance = await stakingToken.balanceOf(holder);
       const stakingSupply = await stakingToken.totalSupply();
-      const stakingVotingPowerPercent =
-        (stakingBalance.toNumber() * 100) / stakingSupply.toNumber();
-
-      const stakingTokenWeight = (
+      const stakingVotingPowerPercent = bn(
+        await vpToken.getPercent(stakingBalance, stakingSupply)
+      );
+      const stakingTokenWeight = bn(
         await vpToken.getTokenWeight(stakingToken.address)
-      ).toNumber();
-
-      const stakeVotingPowerPercentWeighted =
-        stakingVotingPowerPercent * (stakingTokenWeight / 100) * precision;
-
-      const expectedTotalVotingPowerPercentPowered =
-        Math.floor(repVotingPowerPercentWeighted) +
-        Math.floor(stakeVotingPowerPercentWeighted);
-      const votingPower = await vpToken.getVotingPowerPercentageOfAt(
-        holder,
-        vpTokenSnapshotId
       );
 
-      expect(votingPower.toNumber()).equal(
+      const stakeVotingPowerPercentWeighted = bn(
+        await vpToken.getWeightedVotingPowerPercentage(
+          stakingTokenWeight,
+          stakingVotingPowerPercent
+        )
+      );
+
+      const expectedTotalVotingPowerPercentPowered =
+        repVotingPowerPercentWeighted
+          .add(stakeVotingPowerPercentWeighted)
+          .toString();
+      const votingPower = await vpToken.balanceOfAt(holder, vpTokenSnapshotId);
+
+      expect(votingPower.toString()).equal(
         expectedTotalVotingPowerPercentPowered
       );
     });
+
     it("Should return 100% voting power when has 100% rep supply & staking has 0 supply", async () => {
       const holder = repHolders[1].account;
       const balance = repHolders[1].amount;
       const expectedVotingPowerPercent = 100;
 
       await repToken.mint(holder, balance);
-      expect((await repToken.balanceOf(holder)).toNumber()).equal(balance);
+      expect(bn(await repToken.balanceOf(holder)).eq(bn(balance))).to.be.true;
 
-      const repTokenWeight = (
-        await vpToken.getTokenWeight(repToken.address)
-      ).toNumber();
+      const repTokenWeight = bn(await vpToken.getTokenWeight(repToken.address));
 
-      expect(repTokenWeight).equal(100);
+      expect(repTokenWeight.toString()).equal("100");
 
-      const votingPower = await vpToken.getVotingPowerPercentageOf(holder);
+      const votingPower = bn(await vpToken.balanceOf(holder));
 
-      expect(votingPower.toNumber() / precision).equal(
+      expect(votingPower.div(precision).toNumber()).equal(
         expectedVotingPowerPercent
       );
     });
+
     it("Should return 50% voting power", async () => {
       const holder1 = repHolders[0].account;
       const holder2 = repHolders[1].account;
       const balance1 = 250;
       const balance2 = 250;
-      const expectedVotingPowerPercent = 50; // 50%:  (balance1/(balance1 + balance2))*100
+      const expectedVotingPowerPercent = 50; // 50%
 
       await repToken.mint(holder1, balance1);
       await repToken.mint(holder2, balance2);
 
-      expect((await repToken.balanceOf(holder1)).toNumber()).equal(balance1);
-      expect((await repToken.totalSupply()).toNumber()).equal(
+      expect(bn(await repToken.balanceOf(holder1)).toNumber()).equal(balance1);
+      expect(bn(await repToken.totalSupply()).toNumber()).equal(
         balance1 + balance2
       );
 
-      const repTokenWeight = (
+      const repTokenWeight = bn(
         await vpToken.getTokenWeight(repToken.address)
       ).toNumber();
 
       // No staking tokens locked - 100% weight to rep token
       expect(repTokenWeight).equal(100);
 
-      const votingPower = await vpToken.getVotingPowerPercentageOf(holder1);
+      const votingPower = bn(await vpToken.balanceOf(holder1));
 
-      expect(votingPower.toNumber() / precision).equal(
+      expect(votingPower.div(precision).toNumber()).equal(
         expectedVotingPowerPercent
       );
     });
-    it("Should return 0% if snapshot=0", async () => {
-      await mintAll();
-      expect((await vpToken.getCurrentSnapshotId()).toNumber()).not.equal(0);
-      const votingPower = await vpToken.getVotingPowerPercentageOfAt(
-        repHolders[0].account,
-        0
-      );
-      expect(votingPower.toNumber()).equal(0);
-    });
-    it("Should return 0% voting power if user has no rep balance nor staking token balance", async () => {
-      const user = accounts[9]; // has no balance
-      await mintAll();
-      expect((await vpToken.getCurrentSnapshotId()).toNumber()).gt(0);
 
-      const votingPower = await vpToken.getVotingPowerPercentageOf(user);
-      expect(votingPower.toNumber()).equal(0);
+    it("Should return 1.8% voting power with 2%rep, 1.6% stake & 50% 50% weigths", async () => {
+      const holder1 = repHolders[0].account;
+      const holder2 = repHolders[1].account;
+      const repDistribution = [8, 392]; // 2% | 98%
+      const stakeDistribution = [16, 984]; // 1.6% | 98.4%
+      const expectedHolder1VP = 1800000000000000000; // 1.8%;
+
+      await repToken.mintMultiple([holder1, holder2], repDistribution);
+
+      await stakingToken.stake(bn(stakeDistribution[0]), {
+        from: holder1,
+      });
+
+      await stakingToken.stake(bn(stakeDistribution[1]), {
+        from: holder2,
+      });
+
+      const votingPower = bn(await vpToken.balanceOf(holder1));
+      expect(votingPower.toNumber()).equal(expectedHolder1VP);
     });
+
+    it("Should return 1% voting power", async () => {
+      const holder1 = repHolders[0].account;
+      const holder2 = repHolders[1].account;
+      const balance1 = 1; // 0 %
+      const balance2 = 99; // 99 %
+      const expectedVotingPowerPercent = bn(1);
+
+      await repToken.mint(holder1, balance1);
+      await repToken.mint(holder2, balance2);
+
+      // Staking tokens locked < minimum so 100% weight to rep token
+      expect((await vpToken.getTokenWeight(repToken.address)).toNumber()).equal(
+        100
+      );
+
+      const votingPower = bn(await vpToken.balanceOf(holder1));
+
+      expect(votingPower.toString()).equal(
+        bn(expectedVotingPowerPercent.mul(precision)).toString()
+      );
+    });
+
     it("Should return 0.5% voting power if repVotingPower=1%, stakingVotingpower=0% and staking supply > minStakingTokensLocked", async () => {
-      await vpToken.setComposition(50, 50);
       const holder1 = repHolders[0].account;
       const holder2 = repHolders[1].account;
       const balance1 = 1;
@@ -409,58 +508,55 @@ contract("VotingPowerToken", function (accounts) {
 
       await repToken.mint(holder1, balance1); // 1% rep
       await repToken.mint(holder2, balance2); // 99% rep
+
+      // holder2 stake 100% of stakingToken supply
       await stakingToken.stake(300, {
-        // 100% rep to holder2
         from: holder2,
       });
 
-      const repTokenWeight = (
-        await vpToken.getTokenWeight(repToken.address)
-      ).toNumber();
-      // Staking tokens locked > minimum so 50% weight to rep token
-      expect(repTokenWeight).equal(50);
+      expect(
+        bn(await vpToken.getTokenWeight(repToken.address)).toNumber()
+      ).equal(50);
 
-      const votingPower = await vpToken.getVotingPowerPercentageOf(holder1);
+      const votingPower = bn(await vpToken.balanceOf(holder1));
 
-      expect(votingPower.toNumber() / precision).equal(
+      expect(votingPower.div(precision).toNumber()).equal(
         expectedVotingPowerPercent
       );
     });
+
     it("Should return 0.001% voting power", async () => {
       const holder1 = repHolders[0].account;
       const holder2 = repHolders[1].account;
       const balance1 = 200; // 0.001 %
       const balance2 = 19999800; // 99,999 %
-      const expectedVotingPowerPercent = 0.001; // 0.001%
+      const expectedVotingPowerPercent = bn(0.001); // 0.001%
 
       await repToken.mint(holder1, balance1);
       await repToken.mint(holder2, balance2);
 
-      const repTokenWeight = (
-        await vpToken.getTokenWeight(repToken.address)
-      ).toNumber();
-
       // Staking tokens locked < minimum so 100% weight to rep token
-      expect(repTokenWeight).equal(100);
+      expect((await vpToken.getTokenWeight(repToken.address)).toNumber()).equal(
+        100
+      );
 
-      const votingPower = await vpToken.getVotingPowerPercentageOf(holder1);
+      const votingPower = bn(await vpToken.balanceOf(holder1));
 
-      expect(votingPower.toNumber() / precision).equal(
-        expectedVotingPowerPercent
+      expect(votingPower.toString()).equal(
+        bn(expectedVotingPowerPercent.mul(precision)).toString()
       );
     });
 
-    it("Should return 0.000001% voting power", async () => {
+    it("Should return 100 : 0.0000000000000001% voting power", async () => {
       const holder1 = repHolders[0].account;
       const holder2 = repHolders[1].account;
-      const balance1 = 1;
-      const balance2 = precision - 1;
-      const expectedVotingPowerPercent = (1 * 100) / precision; // 0.000001%
-      const expectedVotingPowerPercentPowered =
-        expectedVotingPowerPercent * precision; // 100
+      const balance1 = bn(1);
+      const balance2 = precision.sub(balance1);
+      const percent1 = 0.0000000000000001;
+      const expectedVotingPowerPercent = bn(percent1).mul(precision);
 
-      await repToken.mint(holder2, balance2);
       await repToken.mint(holder1, balance1);
+      await repToken.mint(holder2, balance2);
 
       const repTokenWeight = (
         await vpToken.getTokenWeight(repToken.address)
@@ -469,9 +565,104 @@ contract("VotingPowerToken", function (accounts) {
       // Staking tokens locked < minimum so 100% weight to rep token
       expect(repTokenWeight).equal(100);
 
-      const votingPower = await vpToken.getVotingPowerPercentageOf(holder1);
-      expect(votingPower.toNumber()).equal(expectedVotingPowerPercentPowered);
+      const votingPower = bn(await vpToken.balanceOf(holder1));
+
+      expect(votingPower.toNumber()).equal(
+        expectedVotingPowerPercent.toNumber()
+      );
     });
+
+    it("Should return min unit 1 VP : 0.000000000000000001% voting power", async () => {
+      const holder1 = repHolders[0].account;
+      const holder2 = repHolders[1].account;
+      const balance1 = bn(1);
+      const balance2 = precision.mul(100).sub(balance1);
+      const percent1 = 0.000000000000000001;
+      const expectedVotingPowerPercent = bn(percent1).mul(precision);
+
+      await repToken.mint(holder1, balance1);
+      await repToken.mint(holder2, balance2);
+
+      const repTokenWeight = (
+        await vpToken.getTokenWeight(repToken.address)
+      ).toNumber();
+
+      // Staking tokens locked < minimum so 100% weight to rep token
+      expect(repTokenWeight).equal(100);
+
+      const votingPower = bn(await vpToken.balanceOf(holder1));
+
+      expect(votingPower.toNumber()).equal(
+        expectedVotingPowerPercent.toNumber()
+      );
+    });
+
+    it("Should return 0% if snapshot=0", async () => {
+      const snapshotId = (await vpToken.getCurrentSnapshotId()).toNumber();
+      expect(snapshotId).equal(1);
+      await mintAll();
+      expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(
+        snapshotId + stakeHolders.length + 1 // Stake fn snapshot per each stake() call. Rep mintmultiple 1 single snapshot
+      );
+      const votingPower = await vpToken.balanceOfAt(
+        repHolders[0].account,
+        snapshotId
+      );
+      expect(votingPower.toNumber()).equal(0);
+    });
+
+    it("Should return 0% voting power if user has no rep balance nor staking token balance", async () => {
+      const user = accounts[9]; // has no balance
+      await mintAll();
+      expect((await vpToken.getCurrentSnapshotId()).toNumber()).gt(0);
+
+      const votingPower = await vpToken.balanceOf(user);
+      expect(votingPower.toNumber()).equal(0);
+    });
+
+    it("Should return 0 if votingPower < minUnit (1e-18). 0.000000000000000001% voting power", async () => {
+      const holder1 = repHolders[0].account;
+      const holder2 = repHolders[1].account;
+      const balance1 = bn(1);
+      const balance2 = precision.mul(1000).sub(balance1);
+      const percent1 = 0.0000000000000000001;
+
+      await repToken.mint(holder1, balance1);
+      await repToken.mint(holder2, balance2);
+
+      const repTokenWeight = (
+        await vpToken.getTokenWeight(repToken.address)
+      ).toNumber();
+
+      // Staking tokens locked < minimum so 100% weight to rep token
+      expect(repTokenWeight).equal(100);
+
+      const votingPower = bn(await vpToken.balanceOf(holder1));
+
+      expect(bn(percent1).mul(precision).toNumber()).equal(0.1);
+      expect(votingPower.toNumber()).equal(0);
+    });
+
+    // it.skip("Should not break ", async () => {
+    //   const holder1 = repHolders[0].account;
+    //   const holder2 = repHolders[1].account;
+    //   const repDistribution = [8, 392]; // 2% | 98%
+    //   const stakeDistribution = [16, 984]; // 1.6% | 98.4%
+    //   const expectedHolder1VP = 1800000000000000000; // 1.8%;
+
+    //   // await repToken.mintMultiple([holder1, holder2], repDistribution);
+
+    //   await stakingToken.stake(bn(stakeDistribution[0]), {
+    //     from: holder1,
+    //   });
+
+    //   await stakingToken.stake(bn(stakeDistribution[1]), {
+    //     from: holder2,
+    //   });
+
+    //   const votingPower = bn(await vpToken.balanceOf(holder1));
+    //   expect(votingPower.toNumber()).equal(expectedHolder1VP);
+    // });
   });
 
   describe("getTokenWeight", () => {
@@ -527,5 +718,55 @@ contract("VotingPowerToken", function (accounts) {
         "Ownable: caller is not the owner"
       );
     });
+  });
+
+  describe("Snapshot", () => {
+    beforeEach(async () => await deployVpToken());
+    it("Callback function should increment snapshot", async () => {
+      const calls = Array.from(Array(100))
+        .fill()
+        .map((_, i) => i + 1);
+      for (let call of calls) {
+        expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(call);
+        await repToken.mint(accounts[1], 100);
+      }
+    });
+  });
+
+  describe("Total Supply", () => {
+    it("Should return 100%", async () => {
+      await deployVpToken();
+      const totalSupply = bn(await vpToken.totalSupply());
+      expect(totalSupply.div(precision).toNumber()).equal(100);
+    });
+  });
+
+  it("Should revert transfer function", async () => {
+    await deployVpToken();
+    await expectRevert(
+      vpToken.transfer(accounts[1], 200),
+      "VotingPowerToken: Cannot call transfer function"
+    );
+  });
+  it("Should revert allowance function", async () => {
+    await deployVpToken();
+    await expectRevert(
+      vpToken.allowance(accounts[1], accounts[2]),
+      "VotingPowerToken: Cannot call allowance function"
+    );
+  });
+  it("Should revert approve function", async () => {
+    await deployVpToken();
+    await expectRevert(
+      vpToken.approve(accounts[1], 200),
+      "VotingPowerToken: Cannot call approve function"
+    );
+  });
+  it("Should revert transferFrom function", async () => {
+    await deployVpToken();
+    await expectRevert(
+      vpToken.transferFrom(accounts[1], accounts[2], 200),
+      "VotingPowerToken: Cannot call transferFrom function"
+    );
   });
 });

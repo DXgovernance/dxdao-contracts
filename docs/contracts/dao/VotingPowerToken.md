@@ -2,11 +2,12 @@
 
 ## VotingPowerToken
 
-_The VotingPowerToken contract provides a function to determine the voting power of a specific holder based
+_This contract provides a function to determine the balance (or voting power) of a specific holder based
      on the relative "weights" of two different ERC20SnapshotRep tokens: a Reputation token and a Staking token.
      The contract also includes the capability to manage the weights of the underlying tokens, determining the
-     percentage of total voting power each token should have. Additionally, the contract sets a minimum requirement
-     for the amount of Staking tokens that must be locked in order to apply weight to the Staking token._
+     percentage that each token should represent of the total balance amount at the moment of getting user balance.
+     Additionally, the contract sets a minimum requirement for the amount of Staking tokens that must be locked
+     in order to apply weight to the Staking token._
 
 ### repToken
 
@@ -28,6 +29,12 @@ uint256 minStakingTokensLocked
 
 Minimum staking tokens locked to apply weight
 
+### currentSnapshotId
+
+```solidity
+uint256 currentSnapshotId
+```
+
 ### weights
 
 ```solidity
@@ -40,10 +47,10 @@ mapping(address => uint256) weights
 mapping(address => mapping(uint256 => uint256)) snapshots
 ```
 
-### decimalPlaces
+### decimals
 
 ```solidity
-uint256 decimalPlaces
+uint256 decimals
 ```
 
 ### precision
@@ -142,60 +149,50 @@ function callback() external
 _function to be executed from rep and dxdStake tokens after mint/burn
 It stores a reference to the rep/stake token snapshotId from internal snapshotId_
 
-### getVotingPowerPercentageOf
+### balanceOf
 
 ```solidity
-function getVotingPowerPercentageOf(address _holder) public view returns (uint256 votingPowerPercentage)
+function balanceOf(address account) public view returns (uint256 votingPowerPercentage)
 ```
 
-_Get the voting power percentage of `_holder` at current snapshotId_
+_Get the balance (voting power percentage) of `account` at current snapshotId
+     Balance is expressed as percentage in base 1e+18
+     1% == 1000000000000000000 | 500000000000000000_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _holder | address | Account we want to get voting power from |
+| account | address | Account we want to get voting power from |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| votingPowerPercentage | uint256 | The votingPower of `_holder` (0 to 100*precision) |
+| votingPowerPercentage | uint256 | The votingPower of `account` (0 to 100*precision) |
 
-### getVotingPowerPercentageOfAt
+### balanceOfAt
 
 ```solidity
-function getVotingPowerPercentageOfAt(address _holder, uint256 _snapshotId) public view returns (uint256 votingPowerPercentage)
+function balanceOfAt(address account, uint256 _snapshotId) public view returns (uint256 votingPowerPercentage)
 ```
 
-_Get the voting power percentage of `_holder` at certain `_snapshotId`_
+_Get the balance (voting power percentage) of `account` at certain `_snapshotId`.
+     Balance is expressed as percentage in base 1e+18
+     1% == 1000000000000000000 | 500000000000000000_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _holder | address | Account we want to get voting power from |
+| account | address | Account we want to get voting power from |
 | _snapshotId | uint256 | VPToken SnapshotId we want get votingPower from |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| votingPowerPercentage | uint256 | The votingPower of `_holder` (0 to 100*precision) |
-
-### getCurrentSnapshotId
-
-```solidity
-function getCurrentSnapshotId() public view returns (uint256 snapshotId)
-```
-
-_Get the current VPToken snapshotId_
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| snapshotId | uint256 | Current VPToken snapshotId |
+| votingPowerPercentage | uint256 | The votingPower of `account` (0 to 100*precision) |
 
 ### getTokenSnapshotIdFromVPSnapshot
 
@@ -239,8 +236,8 @@ function getTokenWeight(address token) public view returns (uint256 weight)
 ```
 
 _Get token weight from weights config mapping.
-If stakingToken supply > minStakingTokensLocked at the time of execution repWeight will default to 100%.
-If not it will retun internal weights config for given `token`_
+     If stakingToken supply > minStakingTokensLocked at the time of execution repWeight will default to 100%.
+     If not it will retun internal weights config for given `token`_
 
 #### Parameters
 
@@ -254,35 +251,13 @@ If not it will retun internal weights config for given `token`_
 | ---- | ---- | ----------- |
 | weight | uint256 | Weight percentage value (0 to 100) |
 
-### validateComposition
-
-```solidity
-function validateComposition(uint256 repWeight, uint256 stakingWeight) internal pure returns (bool valid)
-```
-
-_Perform a validation of token weights_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| repWeight | uint256 | Weight of repToken |
-| stakingWeight | uint256 | Weight of stakingWeight |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| valid | bool | Weather composition is valid or not |
-
 ### getPercent
 
 ```solidity
 function getPercent(uint256 numerator, uint256 denominator) public pure returns (uint256 percent)
 ```
 
-_Calculates the percentage of a `numerator` over a `denominator` multiplyed by precision
-i.e getPercent(10, 100) // 10000000 - 10%. (10* p, where p=1_000_000)_
+_Calculates the percentage of a `numerator` over a `denominator` multiplyed by precision_
 
 #### Parameters
 
@@ -318,4 +293,64 @@ _Calculates the weighted voting power percentage by multiplying the voting power
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | weightedVotingPowerPercentage | uint256 | Weighted voting power percentage (0 to 100 * precision) |
+
+### getCurrentSnapshotId
+
+```solidity
+function getCurrentSnapshotId() public view returns (uint256 snapshotId)
+```
+
+_Get the current VPToken snapshotId_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| snapshotId | uint256 | Current VPToken snapshotId |
+
+### totalSupply
+
+```solidity
+function totalSupply() external view returns (uint256 totalSupply)
+```
+
+_Returns the total supply_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| totalSupply | uint256 | 100% expressed in base 1e+18. |
+
+### transfer
+
+```solidity
+function transfer(address to, uint256 amount) external returns (bool)
+```
+
+_Disabled transfer tokens, not needed in VotingPowerToken_
+
+### allowance
+
+```solidity
+function allowance(address owner, address spender) external returns (uint256)
+```
+
+_Disabled allowance function, not needed in VotingPowerToken_
+
+### approve
+
+```solidity
+function approve(address spender, uint256 amount) external returns (bool)
+```
+
+_Disabled approve function, not needed in VotingPowerToken_
+
+### transferFrom
+
+```solidity
+function transferFrom(address from, address to, uint256 amount) external returns (bool)
+```
+
+_Disabled transferFrom function, not needed in VotingPowerToken_
 
