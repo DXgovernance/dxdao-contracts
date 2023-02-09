@@ -176,19 +176,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         require(stakeCommitment.commitmentEnd != 0, "DXDStake: commitment id does not exist");
         require(block.timestamp > stakeCommitment.commitmentEnd, "DXDStake: withdrawal not allowed");
 
-        // Burn influence tokens.
-        dxdInfluence.burn(_account, stakeCommitment.stake, stakeCommitment.timeCommitment);
-
-        // Unstake DXD tokens
-        dxd.safeTransfer(_account, stakeCommitment.stake);
-        _burn(_account, stakeCommitment.stake);
-        _snapshot();
-
-        stakeCommitment.stake = 0;
-        stakeCommitment.timeCommitment = 0;
-        stakeCommitment.commitmentEnd = 0;
-        userActiveStakes[_account] -= 1;
-        totalActiveStakes -= 1;
+        _withdraw(stakeCommitment, _account);
     }
 
     /**
@@ -208,20 +196,27 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
             "DXDStake: early withdrawal attempted too soon"
         );
 
-        // Burn influence tokens.
-        dxdInfluence.burn(msg.sender, stakeCommitment.stake, stakeCommitment.timeCommitment);
-
         // Unstake DXD tokens
         uint256 dxdPenalty = (stakeCommitment.stake * earlyWithdrawalPenalty) / BASIS_POINT_DIVISOR;
-        dxd.safeTransfer(msg.sender, stakeCommitment.stake - dxdPenalty);
         dxd.safeTransfer(penaltyRecipient, dxdPenalty);
-        _burn(msg.sender, stakeCommitment.stake);
+
+        stakeCommitment.stake -= dxdPenalty;
+        _withdraw(stakeCommitment, msg.sender);
+    }
+
+    function _withdraw(StakeCommitment storage _stakeCommitment, address _account) internal {
+        // Burn influence tokens.
+        dxdInfluence.burn(_account, _stakeCommitment.stake, _stakeCommitment.timeCommitment);
+
+        // Unstake DXD tokens
+        dxd.safeTransfer(_account, _stakeCommitment.stake);
+        _burn(_account, _stakeCommitment.stake);
         _snapshot();
 
-        stakeCommitment.stake = 0;
-        stakeCommitment.timeCommitment = 0;
-        stakeCommitment.commitmentEnd = 0;
-        userActiveStakes[msg.sender] -= 1;
+        _stakeCommitment.stake = 0;
+        _stakeCommitment.timeCommitment = 0;
+        _stakeCommitment.commitmentEnd = 0;
+        userActiveStakes[_account] -= 1;
         totalActiveStakes -= 1;
     }
 
