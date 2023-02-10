@@ -147,9 +147,6 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
     /// @dev Executes a proposal that is not votable anymore and can be finished
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public virtual override {
-        require(!isExecutingProposal, "SnapshotERC20Guild: Proposal under execution");
-        require(proposals[proposalId].state == ProposalState.Active, "SnapshotERC20Guild: Proposal already executed");
-        require(proposals[proposalId].endTime < block.timestamp, "SnapshotERC20Guild: Proposal hasn't ended yet");
         uint256 winningOption = 0;
         uint256 i = 0;
         for (i = 0; i < proposals[proposalId].totalVotes.length; i++) {
@@ -159,6 +156,7 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
                 proposals[proposalId].totalVotes[i] > proposals[proposalId].totalVotes[winningOption]
             ) winningOption = i;
         }
+        checkProposalExecutionState(proposalId, proposals[proposalId].totalVotes[winningOption]);
 
         if (winningOption == 0) {
             proposals[proposalId].state = ProposalState.Rejected;
@@ -212,6 +210,20 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
         activeProposalsNow = activeProposalsNow.sub(1);
+    }
+
+    /// @dev Reverts if proposal cannot be executed
+    /// @param proposalId The id of the proposal to evaluate
+    /// @param highestVoteAmount The amounts of votes received by the currently winning proposal option.
+    function checkProposalExecutionState(bytes32 proposalId, uint256 highestVoteAmount) internal view override {
+        require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
+        require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
+
+        uint256 totalSupply = totalLockedAt(proposalsSnapshots[proposalId]);
+        uint256 approvalRate = (highestVoteAmount * BASIS_POINT_MULTIPLIER) / totalSupply;
+        if (minVotePercentageForExecution == 0 || approvalRate < minVotePercentageForExecution) {
+            require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
+        }
     }
 
     /// @dev Get the voting power of an address at a certain snapshotId

@@ -62,6 +62,10 @@ interface IERC20Guild {
         address _permissionRegistry
     ) external;
 
+    function setMinVotePercentageForExecution(uint256 _minVotePercentageForExecution) external;
+    
+    function minVotePercentageForExecution() external view returns(uint256);
+
     function setPermission(
         address[] memory asset,
         address[] memory to,
@@ -158,6 +162,8 @@ interface IERC20Guild {
     function getVoterLockTimestamp(address voter) external view returns (uint256);
 
     function getProposal(bytes32 proposalId) external view returns (Proposal memory);
+
+    function getProposalOptionTotalVotes(bytes32 proposalId, uint256 option) external view returns (uint256);
 
     function getProposalVotesOfVoter(bytes32 proposalId, address voter)
         external
