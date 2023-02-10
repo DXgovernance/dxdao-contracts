@@ -15,10 +15,30 @@ contract DAOReputation is ERC20SnapshotRep {
     /// @notice Voting Power Token address
     address public votingPowerToken;
 
-    function initialize(string memory name, string memory symbol, address _votingPowerToken) external initializer {
+    /// @notice Mint or Burn shouldn’t be called if the amount is 0
+    error DAOReputation__InvalidMintRepAmount();
+
+    modifier nonZeroAmounts(uint256[] memory amounts) {
+        for (uint256 i = 0; i < amounts.length; i++) {
+            if (amounts[i] == 0) revert DAOReputation__InvalidMintRepAmount();
+        }
+        _;
+    }
+
+    function initialize(
+        string memory name,
+        string memory symbol,
+        address _votingPowerToken
+    ) external initializer {
         __ERC20_init(name, symbol);
         __Ownable_init();
         votingPowerToken = _votingPowerToken;
+    }
+
+    /// @dev Create a new snapshot and call VPToken callback
+    function snapshot() internal {
+        _snapshot();
+        VotingPowerToken(votingPowerToken).callback();
     }
 
     /**
@@ -27,35 +47,39 @@ contract DAOReputation is ERC20SnapshotRep {
      * @param amount The quantity of reputation generated
      * @return success True if the reputation are generated correctly
      */
-    function mint(
-        address account,
-        uint256 amount
-    ) external override(ERC20SnapshotRep) onlyOwner returns (bool success) {
+    function mint(address account, uint256 amount)
+        external
+        override(ERC20SnapshotRep)
+        onlyOwner
+        returns (bool success)
+    {
+        if (amount == 0) revert DAOReputation__InvalidMintRepAmount();
         _addHolder(account);
         _mint(account, amount);
-        _snapshot();
         emit Mint(account, amount);
-        VotingPowerToken(votingPowerToken).callback(account);
+        snapshot();
         return true;
     }
 
     /**
      * @dev Mint reputation for multiple accounts
      * @param accounts The accounts that will be assigned the new reputation
-     * @param amount The quantity of reputation generated for each account
+     * @param amounts The quantity of reputation generated for each account
      * @return success True if the reputation are generated correctly
      */
-    function mintMultiple(
-        address[] memory accounts,
-        uint256[] memory amount
-    ) external override(ERC20SnapshotRep) onlyOwner returns (bool success) {
+    function mintMultiple(address[] memory accounts, uint256[] memory amounts)
+        external
+        override(ERC20SnapshotRep)
+        onlyOwner
+        nonZeroAmounts(amounts)
+        returns (bool success)
+    {
         for (uint256 i = 0; i < accounts.length; i++) {
             _addHolder(accounts[i]);
-            _mint(accounts[i], amount[i]);
-            _snapshot();
-            emit Mint(accounts[i], amount[i]);
-            VotingPowerToken(votingPowerToken).callback(accounts[i]);
+            _mint(accounts[i], amounts[i]);
+            emit Mint(accounts[i], amounts[i]);
         }
+        snapshot();
         return true;
     }
 
@@ -65,35 +89,39 @@ contract DAOReputation is ERC20SnapshotRep {
      * @param  amount The quantity of reputation to burn
      * @return success True if the reputation are burned correctly
      */
-    function burn(
-        address account,
-        uint256 amount
-    ) external override(ERC20SnapshotRep) onlyOwner returns (bool success) {
+    function burn(address account, uint256 amount)
+        external
+        override(ERC20SnapshotRep)
+        onlyOwner
+        returns (bool success)
+    {
+        if (amount == 0) revert DAOReputation__InvalidMintRepAmount();
         _burn(account, amount);
         _removeHolder(account);
-        _snapshot();
         emit Burn(account, amount);
-        VotingPowerToken(votingPowerToken).callback(account);
+        snapshot();
         return true;
     }
 
     /**
      * @dev Burn reputation from multiple accounts
      * @param  accounts The accounts that will lose the reputation
-     * @param  amount The quantity of reputation to burn for each account
+     * @param  amounts The quantity of reputation to burn for each account
      * @return success True if the reputation are generated correctly
      */
-    function burnMultiple(
-        address[] memory accounts,
-        uint256[] memory amount
-    ) external override(ERC20SnapshotRep) onlyOwner returns (bool success) {
+    function burnMultiple(address[] memory accounts, uint256[] memory amounts)
+        external
+        override(ERC20SnapshotRep)
+        onlyOwner
+        nonZeroAmounts(amounts)
+        returns (bool success)
+    {
         for (uint256 i = 0; i < accounts.length; i++) {
-            _burn(accounts[i], amount[i]);
+            _burn(accounts[i], amounts[i]);
             _removeHolder(accounts[i]);
-            _snapshot();
-            emit Burn(accounts[i], amount[i]);
-            VotingPowerToken(votingPowerToken).callback(accounts[i]);
+            emit Burn(accounts[i], amounts[i]);
         }
+        snapshot();
         return true;
     }
 

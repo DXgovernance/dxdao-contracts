@@ -5,7 +5,16 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import "../utils/ERC20/ERC20SnapshotRep.sol";
 
-contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
+/**
+ * @title VotingPowerToken
+ * @dev This contract provides a function to determine the balance (or voting power) of a specific holder based
+ *      on the relative "weights" of two different ERC20SnapshotRep tokens: a Reputation token and a Staking token.
+ *      The contract also includes the capability to manage the weights of the underlying tokens, determining the
+ *      percentage that each token should represent of the total balance amount at the moment of getting user balance.
+ *      Additionally, the contract sets a minimum requirement for the amount of Staking tokens that must be locked
+ *      in order to apply weight to the Staking token.
+ */
+contract VotingPowerToken is OwnableUpgradeable {
     // The ERC20 rep token that will be used as source of voting power
     ERC20SnapshotRep public repToken;
 
@@ -13,15 +22,40 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
     ERC20SnapshotRep public stakingToken;
 
     /// @notice Minimum staking tokens locked to apply weight
-    uint256 minStakingTokensLocked;
+    uint256 public minStakingTokensLocked;
+
+    uint256 public currentSnapshotId;
 
     //tokenAddress    weight
     mapping(address => uint256) public weights;
 
-    //      token address     Internal snapshot  => token snapshot
+    //      tokenAddress     Internal snapshot  => token snapshot
     mapping(address => mapping(uint256 => uint256)) snapshots;
 
-    uint256 public constant presition = 10_000_000;
+    uint256 public constant decimals = 18;
+    uint256 public constant precision = 10**decimals;
+
+    /// @notice Revert when using other address than stakingToken or repToken
+    error VotingPowerToken_InvalidTokenAddress();
+
+    /// @notice Revert both repToken and stakingToken address are the same
+    error VotingPowerToken_ReptokenAndStakingTokenCannotBeEqual();
+
+    /// @notice SnapshotId provided is bigger than current snapshotId
+    error VotingPowerToken_InvalidSnapshotId();
+
+    /// @notice Revert when weights composition is wrong
+    error VotingPowerToken_InvalidTokenWeights();
+
+    error VotingPowerToken_PercentCannotExeedMaxPercent();
+
+    /// @dev Verify if address is one of rep or staking tokens
+    modifier onlyInternalTokens(address tokenAddress) {
+        if (tokenAddress != address(repToken) && tokenAddress != address(stakingToken)) {
+            revert VotingPowerToken_InvalidTokenAddress();
+        }
+        _;
+    }
 
     function initialize(
         address _repToken,
@@ -31,112 +65,193 @@ contract VotingPowerToken is ERC20SnapshotUpgradeable, OwnableUpgradeable {
         uint256 _minStakingTokensLocked
     ) public virtual initializer {
         __Ownable_init();
-        require(_repToken != _stakingToken, "Rep token and staking token cannot be the same.");
-        require(_minStakingTokensLocked > 0, "Minimum staking tokens locked must be greater than zero.");
-
+        if (_repToken == _stakingToken) revert VotingPowerToken_ReptokenAndStakingTokenCannotBeEqual();
+        if (repWeight + stakingWeight != 100) {
+            revert VotingPowerToken_InvalidTokenWeights();
+        }
         repToken = ERC20SnapshotRep(address(_repToken));
         stakingToken = ERC20SnapshotRep(address(_stakingToken));
-        setConfig(repWeight, stakingWeight, minStakingTokensLocked);
-        _snapshot();
+        setMinStakingTokensLocked(_minStakingTokensLocked);
+        setComposition(repWeight, stakingWeight);
+        currentSnapshotId = 1;
     }
 
-    /// @dev Update trepWeightokens weight
-    /// @param  repWeight Weight of DAOReputation token
-    /// @param stakingWeight Weight of DXDStaking token
-    function updateComposition(uint256 repWeight, uint256 stakingWeight) public onlyOwner {
-        require(repWeight > 0 && stakingWeight > 0, "Weights must be greater than zero.");
-        require(repWeight + stakingWeight == 100, "Weights sum must be equal to 100");
-
-        if (stakingToken.totalSupply() < minStakingTokensLocked) {
-            weights[address(repToken)] = 100;
-        } else {
-            weights[address(repToken)] = repWeight;
-            weights[address(stakingToken)] = stakingWeight;
-        }
-    }
-
-    /// @dev Set VPToken config
-    /// @param _repWeight New DAOReputation token weight
-    /// @param _stakingWeight New DXDStaking token weight
+    /// @dev Set Minimum staking tokens locked to apply staking token weight
     /// @param _minStakingTokensLocked Minimum staking tokens locked to apply weight
-    function setConfig(uint256 _repWeight, uint256 _stakingWeight, uint256 _minStakingTokensLocked) public onlyOwner {
+    function setMinStakingTokensLocked(uint256 _minStakingTokensLocked) public onlyOwner {
         minStakingTokensLocked = _minStakingTokensLocked;
-        updateComposition(_repWeight, _stakingWeight);
     }
 
-    /// @dev callback to be executed from rep and dxdStake tokens after balance change
-    /// @param _tokenHolder The address of the holder that just minted or burned tokens
-    function callback(address _tokenHolder) external {
-        require(
-            msg.sender == address(repToken) || msg.sender == address(stakingToken),
-            "Callback can be called only from DAOReputation and DXDStaking tokens"
-        );
-
-        _snapshot();
-        ERC20SnapshotRep token = ERC20SnapshotRep(msg.sender);
-        snapshots[msg.sender][_getCurrentSnapshotId()] = token.getCurrentSnapshotId();
+    /// @dev Update tokens weights
+    /// @param repWeight Weight of DAOReputation token
+    /// @param stakingWeight Weight of DXDStaking token
+    function setComposition(uint256 repWeight, uint256 stakingWeight) public onlyOwner {
+        if (repWeight + stakingWeight != 100) {
+            revert VotingPowerToken_InvalidTokenWeights();
+        }
+        weights[address(repToken)] = repWeight;
+        weights[address(stakingToken)] = stakingWeight;
     }
 
-    /// @dev Get the voting power percentage of `_holder` at certain `_snapshotId`
-    /// @param _holder Account we want to get voting power from
+    /// @dev function to be executed from rep and dxdStake tokens after mint/burn
+    /// It stores a reference to the rep/stake token snapshotId from internal snapshotId
+    function callback() external onlyInternalTokens(msg.sender) {
+        currentSnapshotId++;
+        snapshots[address(repToken)][currentSnapshotId] = repToken.getCurrentSnapshotId();
+        snapshots[address(stakingToken)][currentSnapshotId] = stakingToken.getCurrentSnapshotId();
+    }
+
+    /// @dev Get the balance (voting power percentage) of `account` at current snapshotId
+    ///      Balance is expressed as percentage in base 1e+18
+    ///      1% == 1000000000000000000 | 500000000000000000
+    /// @param account Account we want to get voting power from
+    /// @return votingPowerPercentage The votingPower of `account` (0 to 100*precision)
+    function balanceOf(address account) public view returns (uint256 votingPowerPercentage) {
+        ERC20SnapshotRep[2] memory tokens = [repToken, stakingToken];
+        uint256 totalVotingPower = 0;
+
+        for (uint256 i = 0; i < tokens.length; i++) {
+            ERC20SnapshotRep token = tokens[i];
+            uint256 tokenWeight = getTokenWeight(address(token));
+            // Skipping calculation if weight is 0
+            if (tokenWeight == 0) continue;
+            uint256 balance = token.balanceOf(account);
+            uint256 supply = token.totalSupply();
+            if (supply == 0) continue;
+            uint256 tokenVotingPowerPercent = getPercent(balance, supply);
+            uint256 tokenVotingPowerPercentWeighted = getWeightedVotingPowerPercentage(
+                tokenWeight,
+                tokenVotingPowerPercent
+            );
+            totalVotingPower += tokenVotingPowerPercentWeighted;
+        }
+
+        return totalVotingPower;
+    }
+
+    /// @dev Get the balance (voting power percentage) of `account` at certain `_snapshotId`.
+    ///      Balance is expressed as percentage in base 1e+18
+    ///      1% == 1000000000000000000 | 500000000000000000
+    /// @param account Account we want to get voting power from
     /// @param _snapshotId VPToken SnapshotId we want get votingPower from
-    /// @return votingPower The votingPower of `_holder`
-    function getVotingPowerPercentageOfAt(
-        address _holder,
-        uint256 _snapshotId
-    ) public view returns (uint256 votingPower) {
-        // Token Snapshot
-        uint256 repSnapshotId = snapshots[address(repToken)][_snapshotId];
-        uint256 stakingSnapshotId = snapshots[address(stakingToken)][_snapshotId];
+    /// @return votingPowerPercentage The votingPower of `account` (0 to 100*precision)
+    function balanceOfAt(address account, uint256 _snapshotId) public view returns (uint256 votingPowerPercentage) {
+        if (_snapshotId > currentSnapshotId) revert VotingPowerToken_InvalidSnapshotId();
+        ERC20SnapshotRep[2] memory tokens = [repToken, stakingToken];
+        uint256 totalVotingPower = 0;
 
-        // Token balances
-        uint256 repBalance = repToken.balanceOfAt(_holder, repSnapshotId);
-        uint256 stakingBalance = stakingToken.balanceOfAt(_holder, stakingSnapshotId);
-
-        // Token weights
-        uint256 repWeight = weights[address(repToken)];
-        uint256 stakingWeight = weights[address(stakingToken)];
-
-        // Token supplies
-        uint256 repSupply = repToken.totalSupplyAt(repSnapshotId);
-        uint256 stakingSupply = stakingToken.totalSupplyAt(stakingSnapshotId);
-
-        // Token percentages
-        uint256 repPercent = getPercentageOfFrom(repBalance, repSupply);
-        uint256 stakingPercent = getPercentageOfFrom(stakingBalance, stakingSupply);
-
-        // Tokens weighted
-        uint256 repPercentWeighted = getValueFromPercentage(repWeight, repPercent);
-        uint256 stakingPercentWeighted = getValueFromPercentage(stakingWeight, stakingPercent);
-
-        return repPercentWeighted + stakingPercentWeighted;
-    }
-
-    function getPercentageOfFrom(uint256 balance, uint256 totalSupply) public pure returns (uint256) {
-        return ((balance * presition) * 100) / totalSupply;
-    }
-
-    function getValueFromPercentage(uint256 percentage, uint256 value) public pure returns (uint256) {
-        uint256 v = (percentage * presition) / 100;
-        return (v * value) / presition;
-    }
-
-    /// @dev Get the current VPToken snapshotId
-    /// @return snapshotId Current VPToken snapshotId
-    function getCurrentSnapshotId() public view returns (uint256 snapshotId) {
-        return _getCurrentSnapshotId();
+        for (uint256 i = 0; i < tokens.length; i++) {
+            ERC20SnapshotRep token = tokens[i];
+            uint256 tokenSnapshotId = snapshots[address(token)][_snapshotId];
+            // Skipping calculation if snapshotId is 0. No minting was done
+            if (tokenSnapshotId == 0) continue;
+            uint256 tokenWeight = getTokenWeight(address(token));
+            // Skipping calculation if weight is 0
+            if (tokenWeight == 0) continue;
+            uint256 balance = token.balanceOfAt(account, tokenSnapshotId);
+            uint256 supply = token.totalSupplyAt(tokenSnapshotId);
+            uint256 tokenVotingPowerPercent = getPercent(balance, supply);
+            uint256 tokenVotingPowerPercentWeighted = getWeightedVotingPowerPercentage(
+                tokenWeight,
+                tokenVotingPowerPercent
+            );
+            totalVotingPower += tokenVotingPowerPercentWeighted;
+        }
+        return totalVotingPower;
     }
 
     /// @dev Get the external token snapshotId for given VPToken snapshotId
     /// @param tokenAddress Address of the external token (rep/dxd) we want to get snapshotId from
     /// @param tokenSnapshotId SnapshotId from VPToken
     /// @return snapshotId SnapshotId from `tokenAddress` stored at VPToken `tokenSnapshotId`
-    function getTokenSnapshotIdFromVPSnapshot(
-        address tokenAddress,
-        uint256 tokenSnapshotId
-    ) public view returns (uint256 snapshotId) {
-        // TODO: validate token address
-        // TODO: tokenSnapshotId is valid?
+    function getTokenSnapshotIdFromVPSnapshot(address tokenAddress, uint256 tokenSnapshotId)
+        public
+        view
+        onlyInternalTokens(tokenAddress)
+        returns (uint256 snapshotId)
+    {
+        if (snapshotId > currentSnapshotId) revert VotingPowerToken_InvalidSnapshotId();
         return snapshots[tokenAddress][tokenSnapshotId];
+    }
+
+    /// @dev Get token weight from weights config mapping.
+    /// @param token Address of the token we want to get weight from
+    /// @param weight Weight percentage value (0 to 100)
+    function getConfigTokenWeight(address token) public view returns (uint256 weight) {
+        return weights[token];
+    }
+
+    /// @dev Get token weight from weights config mapping.
+    ///      If stakingToken supply > minStakingTokensLocked at the time of execution repWeight will default to 100%.
+    ///      If not it will retun internal weights config for given `token`
+    /// @param token Address of the token we want to get weight from
+    /// @return weight Weight percentage value (0 to 100)
+    function getTokenWeight(address token) public view onlyInternalTokens(token) returns (uint256 weight) {
+        if (stakingToken.totalSupply() < minStakingTokensLocked) {
+            if (token == address(repToken)) return 100;
+            else return 0;
+        } else {
+            return getConfigTokenWeight(token);
+        }
+    }
+
+    /// @dev Calculates the percentage of a `numerator` over a `denominator` multiplyed by precision
+    /// @param numerator The part being considered
+    /// @param denominator The total amount
+    /// @return percent The percentage of the numerator over the denominator * precision
+    function getPercent(uint256 numerator, uint256 denominator) public pure returns (uint256 percent) {
+        if (denominator == 0) return 0;
+        return (numerator * precision * 100) / denominator;
+    }
+
+    /// @dev Calculates the weighted voting power percentage by multiplying the voting power
+    ///      percentage by the weight percent of the token
+    /// @param weightPercent Weight percent of the token (0 to 100)
+    /// @param votingPowerPercent Voting power percentage (0 to 100 * precision)
+    /// @return weightedVotingPowerPercentage Weighted voting power percentage (0 to 100 * precision)
+    function getWeightedVotingPowerPercentage(uint256 weightPercent, uint256 votingPowerPercent)
+        public
+        pure
+        returns (uint256 weightedVotingPowerPercentage)
+    {
+        uint256 maxPercent = 100 * precision;
+        if (votingPowerPercent > maxPercent) revert VotingPowerToken_PercentCannotExeedMaxPercent();
+        return (votingPowerPercent * weightPercent) / 100;
+    }
+
+    /// @dev Get the current VPToken snapshotId
+    /// @return snapshotId Current VPToken snapshotId
+    function getCurrentSnapshotId() public view returns (uint256 snapshotId) {
+        return currentSnapshotId;
+    }
+
+    /// @dev Returns the total supply
+    /// @return totalSupply 100% expressed in base 1e+18.
+    function totalSupply() external view returns (uint256 totalSupply) {
+        return 100 * precision;
+    }
+
+    /// @dev Disabled transfer tokens, not needed in VotingPowerToken
+    function transfer(address to, uint256 amount) external returns (bool) {
+        revert("VotingPowerToken: Cannot call transfer function");
+    }
+
+    /// @dev Disabled allowance function, not needed in VotingPowerToken
+    function allowance(address owner, address spender) external returns (uint256) {
+        revert("VotingPowerToken: Cannot call allowance function");
+    }
+
+    /// @dev Disabled approve function, not needed in VotingPowerToken
+    function approve(address spender, uint256 amount) external returns (bool) {
+        revert("VotingPowerToken: Cannot call approve function");
+    }
+
+    /// @dev Disabled transferFrom function, not needed in VotingPowerToken
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external returns (bool) {
+        revert("VotingPowerToken: Cannot call transferFrom function");
     }
 }
