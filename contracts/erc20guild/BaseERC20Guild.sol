@@ -472,6 +472,13 @@ contract BaseERC20Guild {
         return (proposals[proposalId]);
     }
 
+    /// @dev Get the current amount of total votes received for an option of a proposal
+    /// @param proposalId The id of the proposal to get the information
+    /// @param option The option of the proposal to get the information
+    function getProposalOptionTotalVotes(bytes32 proposalId, uint256 option) external view virtual returns (uint256) {
+        return proposals[proposalId].totalVotes[option];
+    }
+
     /// @dev Get the voting power of an account
     /// @param account The address of the account
     function votingPowerOf(address account) public view virtual returns (uint256) {
