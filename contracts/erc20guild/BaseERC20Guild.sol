@@ -149,6 +149,10 @@ contract BaseERC20Guild {
     // Array to keep track of the proposals ids in contract storage
     bytes32[] public proposalsIds;
 
+
+    // BaseERC20Guild is upgrade compatible. If new variables are added in an upgrade, make sure to update __gap.
+    uint256[50] private __gap;
+
     event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
     event VoteAdded(bytes32 indexed proposalId, uint256 indexed option, address voter, uint256 votingPower);
     event TokensLocked(address voter, uint256 value);
