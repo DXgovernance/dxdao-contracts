@@ -1109,7 +1109,7 @@ contract("ERC20Guild", function (accounts) {
         erc20Guild.endProposal(guildProposalId),
         "ERC20Guild: Proposal call failed"
       );
-      
+
       // Correct value
       guildProposalId = await createProposal({
         guild: erc20Guild,
@@ -1142,8 +1142,11 @@ contract("ERC20Guild", function (accounts) {
 
       await time.increase(time.duration.seconds(31));
       await erc20Guild.endProposal(guildProposalId);
-      const minVotePercentageForExecution = await erc20Guild.minVotePercentageForExecution();
-      expect(minVotePercentageForExecution).to.be.bignumber.equal(new BN("7500"));
+      const minVotePercentageForExecution =
+        await erc20Guild.minVotePercentageForExecution();
+      expect(minVotePercentageForExecution).to.be.bignumber.equal(
+        new BN("7500")
+      );
     });
 
     it("should not execute a proposal early if early proposal execution conditions are not met", async function () {
@@ -1177,7 +1180,7 @@ contract("ERC20Guild", function (accounts) {
       });
       await time.increase(time.duration.seconds(31));
       await erc20Guild.endProposal(guildProposalId);
-      
+
       //
       guildProposalId = await createProposal(genericProposal);
       await setVotesOnProposal({
@@ -1188,9 +1191,14 @@ contract("ERC20Guild", function (accounts) {
       });
       // await time.increase(time.duration.seconds(61));
       const totalSupply = await guildToken.totalSupply();
-      const totalVotesA = await erc20Guild.getProposalOptionTotalVotes(guildProposalId, 1);
+      const totalVotesA = await erc20Guild.getProposalOptionTotalVotes(
+        guildProposalId,
+        1
+      );
       const multiplier = new BN("10000");
-      expect(totalVotesA.mul(multiplier).div(totalSupply)).to.be.bignumber.lt(new BN("7500"));
+      expect(totalVotesA.mul(multiplier).div(totalSupply)).to.be.bignumber.lt(
+        new BN("7500")
+      );
 
       await expectRevert(
         erc20Guild.endProposal(guildProposalId),
@@ -1229,7 +1237,7 @@ contract("ERC20Guild", function (accounts) {
       });
       await time.increase(time.duration.seconds(31));
       await erc20Guild.endProposal(guildProposalId);
-      
+
       //
       guildProposalId = await createProposal({
         guild: erc20Guild,
@@ -1256,12 +1264,18 @@ contract("ERC20Guild", function (accounts) {
       }
       // await time.increase(time.duration.seconds(61));
       const totalSupply = await guildToken.totalSupply();
-      const totalVotesA = await erc20Guild.getProposalOptionTotalVotes(guildProposalId, 1);
+      const totalVotesA = await erc20Guild.getProposalOptionTotalVotes(
+        guildProposalId,
+        1
+      );
       const multiplier = new BN("10000");
-      expect(totalVotesA.mul(multiplier).div(totalSupply)).to.be.bignumber.gte(new BN("7500"));
+      expect(totalVotesA.mul(multiplier).div(totalSupply)).to.be.bignumber.gte(
+        new BN("7500")
+      );
 
       await erc20Guild.endProposal(guildProposalId);
-      const minVotePercentageForExecution = await erc20Guild.minVotePercentageForExecution();
+      const minVotePercentageForExecution =
+        await erc20Guild.minVotePercentageForExecution();
       expect(minVotePercentageForExecution).to.be.bignumber.gte(new BN("5000"));
     });
   });

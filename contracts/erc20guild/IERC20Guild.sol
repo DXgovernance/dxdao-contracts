@@ -63,8 +63,8 @@ interface IERC20Guild {
     ) external;
 
     function setMinVotePercentageForExecution(uint256 _minVotePercentageForExecution) external;
-    
-    function minVotePercentageForExecution() external view returns(uint256);
+
+    function minVotePercentageForExecution() external view returns (uint256);
 
     function setPermission(
         address[] memory asset,

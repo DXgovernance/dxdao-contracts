@@ -411,6 +411,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       );
     });
   });
+
   describe("lockTokens", () => {
     it("Should revert option", async () => {
       await expectRevert(
@@ -529,6 +530,257 @@ contract("SnapshotRepERC20Guild", function (accounts) {
         await snapshotRepErc20Guild.getVotingPowerForProposalExecution(),
         "225000"
       );
+    });
+  });
+
+  describe("Early proposal executions", function () {
+    it("should set minVotePercentageForExecution correctly", async function () {
+      await expectRevert(
+        snapshotRepErc20Guild.setMinVotePercentageForExecution(10001),
+        "ERC20Guild: Only callable by ERC20guild itself"
+      );
+
+      // Bigger than max value
+      let guildProposalId = await createProposal({
+        guild: snapshotRepErc20Guild,
+        options: [
+          {
+            to: [snapshotRepErc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotRepERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(10001)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+
+      await setVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        snapshotRepErc20Guild.endProposal(guildProposalId),
+        "ERC20SnapshotRep: Proposal call failed"
+      );
+
+      // Smaller than min value
+      guildProposalId = await createProposal({
+        guild: snapshotRepErc20Guild,
+        options: [
+          {
+            to: [snapshotRepErc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotRepERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(4999)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+
+      await setVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        snapshotRepErc20Guild.endProposal(guildProposalId),
+        "ERC20SnapshotRep: Proposal call failed"
+      );
+
+      // Correct value
+      guildProposalId = await createProposal({
+        guild: snapshotRepErc20Guild,
+        options: [
+          {
+            to: [snapshotRepErc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotRepERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(7500)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+
+      await setVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await snapshotRepErc20Guild.endProposal(guildProposalId);
+      const minVotePercentageForExecution =
+        await snapshotRepErc20Guild.minVotePercentageForExecution();
+      expect(minVotePercentageForExecution).to.be.bignumber.equal(
+        new BN("7500")
+      );
+    });
+
+    it("should not execute a proposal early if early proposal execution conditions are not met", async function () {
+      // Set minVotePercentageForExecution
+      let guildProposalId = await createProposal({
+        guild: snapshotRepErc20Guild,
+        options: [
+          {
+            to: [snapshotRepErc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotRepERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(7500)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await snapshotRepErc20Guild.endProposal(guildProposalId);
+
+      //
+      guildProposalId = await createProposal(genericProposal);
+      await setVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      // await time.increase(time.duration.seconds(61));
+      const totalSupply = await guildToken.totalSupply();
+      const totalVotesA =
+        await snapshotRepErc20Guild.getProposalOptionTotalVotes(
+          guildProposalId,
+          1
+        );
+      const multiplier = new BN("10000");
+      expect(totalVotesA.mul(multiplier).div(totalSupply)).to.be.bignumber.lt(
+        new BN("7500")
+      );
+
+      await expectRevert(
+        snapshotRepErc20Guild.endProposal(guildProposalId),
+        "ERC20Guild: Proposal hasn't ended yet"
+      );
+    });
+
+    it("should execute a proposal early if early proposal execution conditions are met", async function () {
+      // Set minVotePercentageForExecution
+      let guildProposalId = await createProposal({
+        guild: snapshotRepErc20Guild,
+        options: [
+          {
+            to: [snapshotRepErc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotRepERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(7500)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await snapshotRepErc20Guild.endProposal(guildProposalId);
+
+      //
+      guildProposalId = await createProposal({
+        guild: snapshotRepErc20Guild,
+        options: [
+          {
+            to: [snapshotRepErc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotRepERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(5000)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      for (let i = 3; i <= 5; i++) {
+        await setVotesOnProposal({
+          guild: snapshotRepErc20Guild,
+          proposalId: guildProposalId,
+          option: 1,
+          account: accounts[i],
+        });
+      }
+      // await time.increase(time.duration.seconds(61));
+      const totalSupply = await guildToken.totalSupply();
+      const totalVotesA =
+        await snapshotRepErc20Guild.getProposalOptionTotalVotes(
+          guildProposalId,
+          1
+        );
+      const multiplier = new BN("10000");
+      expect(totalVotesA.mul(multiplier).div(totalSupply)).to.be.bignumber.gte(
+        new BN("7500")
+      );
+
+      await snapshotRepErc20Guild.endProposal(guildProposalId);
+      const minVotePercentageForExecution =
+        await snapshotRepErc20Guild.minVotePercentageForExecution();
+      expect(minVotePercentageForExecution).to.be.bignumber.gte(new BN("5000"));
     });
   });
 });

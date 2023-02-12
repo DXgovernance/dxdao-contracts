@@ -8,6 +8,7 @@ const {
 } = require("../../helpers/guild");
 
 const {
+  BN,
   expectEvent,
   expectRevert,
   time,
@@ -355,6 +356,278 @@ contract("SnapshotERC20Guild", function (accounts) {
       );
       votes[0].should.be.bignumber.equal("0");
       votes[1].should.be.bignumber.equal("50000");
+    });
+  });
+
+  describe("Early proposal executions", function () {
+    beforeEach(async function () {
+      await guildToken.approve(tokenVault, 100000, { from: accounts[3] });
+      await guildToken.approve(tokenVault, 100000, { from: accounts[4] });
+      await guildToken.approve(tokenVault, 200000, { from: accounts[5] });
+      await erc20Guild.lockTokens(100000, { from: accounts[3] });
+      await erc20Guild.lockTokens(100000, { from: accounts[4] });
+      await erc20Guild.lockTokens(200000, { from: accounts[5] });
+    });
+
+    it("should set minVotePercentageForExecution correctly", async function () {
+      await expectRevert(
+        erc20Guild.setMinVotePercentageForExecution(10001),
+        "ERC20Guild: Only callable by ERC20guild itself"
+      );
+
+      // Bigger than max value
+      let guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(10001)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "ERC20Guild: Proposal call failed"
+      );
+
+      // Smaller than min value
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(4999)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "ERC20Guild: Proposal call failed"
+      );
+
+      // Correct value
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(7500)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId);
+      const minVotePercentageForExecution =
+        await erc20Guild.minVotePercentageForExecution();
+      expect(minVotePercentageForExecution).to.be.bignumber.equal(
+        new BN("7500")
+      );
+    });
+
+    it("should not execute a proposal early if early proposal execution conditions are not met", async function () {
+      // Set minVotePercentageForExecution
+      let guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(7500)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId);
+
+      //
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(0)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      // await time.increase(time.duration.seconds(61));
+      const totalSupply = await guildToken.totalSupply();
+      const totalVotesA = await erc20Guild.getProposalOptionTotalVotes(
+        guildProposalId,
+        1
+      );
+      const multiplier = new BN("10000");
+      expect(totalVotesA.mul(multiplier).div(totalSupply)).to.be.bignumber.lt(
+        new BN("7500")
+      );
+
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "ERC20Guild: Proposal hasn't ended yet"
+      );
+    });
+
+    it("should execute a proposal early if early proposal execution conditions are met", async function () {
+      // Set minVotePercentageForExecution
+      let guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(7500)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId);
+
+      //
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
+                .setMinVotePercentageForExecution(5000)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      for (let i = 3; i <= 5; i++) {
+        await setVotesOnProposal({
+          guild: erc20Guild,
+          proposalId: guildProposalId,
+          option: 1,
+          account: accounts[i],
+        });
+      }
+      // await time.increase(time.duration.seconds(61));
+      const totalSupply = await guildToken.totalSupply();
+      const totalVotesA = await erc20Guild.getProposalOptionTotalVotes(
+        guildProposalId,
+        1
+      );
+      const multiplier = new BN("10000");
+      expect(totalVotesA.mul(multiplier).div(totalSupply)).to.be.bignumber.gte(
+        new BN("7500")
+      );
+
+      await erc20Guild.endProposal(guildProposalId);
+      const minVotePercentageForExecution =
+        await erc20Guild.minVotePercentageForExecution();
+      expect(minVotePercentageForExecution).to.be.bignumber.gte(new BN("5000"));
     });
   });
 });
