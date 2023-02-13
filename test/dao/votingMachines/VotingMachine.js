@@ -1261,12 +1261,16 @@ contract("VotingMachine", function (accounts) {
         web3.utils.toWei("0.41")
       );
 
-      await dxdVotingMachine.redeem(fakeProposalId, accounts[9]);
+      // The daoBounty redeems fails cause it cames form the fakeOrg avatar and it has no tokens, so the redeem cant be done
+      await expectRevert(
+        dxdVotingMachine.redeem(fakeProposalId, accounts[9]),
+        "ERC20: transfer amount exceeds balance"
+      );
 
-      // If the attack succedded this should be 0
+      // If the attack succeeded this should be 0
       assert.equal(
         await stakingToken.balanceOf(dxdVotingMachine.address),
-        web3.utils.toWei("0.2")
+        web3.utils.toWei("0.41")
       );
 
       // attack ends
@@ -1815,7 +1819,7 @@ contract("VotingMachine", function (accounts) {
         accounts[2]
       );
 
-      await expectEvent.inTransaction(
+      await expectEvent.notEmitted.inTransaction(
         redeemStakeWithNoTx.tx,
         stakingToken.contract,
         "Transfer",

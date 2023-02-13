@@ -171,6 +171,7 @@ contract VotingMachine {
     /// @notice Emited when proposal is not in ExecutedInQueue, ExecutedInBoost or Expired status
     error VotingMachine__WrongProposalStateToRedeem();
     error VotingMachine__TransferFailed(address to, uint256 amount);
+    error VotingMachine__TransferFromFailed(address to, uint256 amount);
 
     /// @notice Emited when proposal is not in ExecutedInQueue or ExecutedInBoost status
     error VotingMachine__WrongProposalStateToRedeemDaoBounty();
@@ -364,54 +365,56 @@ contract VotingMachine {
             revert VotingMachine__WrongProposalStateToRedeem();
         }
 
-        Parameters memory params = parameters[proposal.paramsHash];
         Staker storage staker = proposalStakers[proposalId][beneficiary];
 
-        // Default reward is the stakes amount
-        reward = staker.amount;
         uint256 totalStakesWithoutDaoBounty = proposalStakes[proposalId][NO] +
             proposalStakes[proposalId][YES] -
             proposal.daoBounty;
 
-        // If there is staked unclaimed
-        if (staker.amount > 0) {
-            // If the proposal didnt expired return the staked tokens
-            if (proposal.state != ProposalState.Expired) {
-                // If the stake was in the winning option the beneficiary gets the reward
-                if (staker.option == proposal.winningVote) {
-                    // The reward would be a % (of the staked on the winning option) of all the stakes
-                    reward =
-                        (staker.amount * totalStakesWithoutDaoBounty) /
-                        proposalStakes[proposalId][proposal.winningVote];
+        // If there is stake unclaimed
+        // If the proposal didnt expired return the staked tokens
+        // If the stake was in the winning option the beneficiary gets the reward
+        if (
+            (staker.amount > 0) && (proposal.state != ProposalState.Expired) && (staker.option == proposal.winningVote)
+        ) {
+            // The reward would be a % (of the staked on the winning option) of all the stakes
+            reward = (staker.amount * totalStakesWithoutDaoBounty) / proposalStakes[proposalId][proposal.winningVote];
 
-                    // If the winning option was yes the reward also include a % (of the staked on the winning option)
-                    // of the minimum dao bounty
-                    if (staker.option == YES) {
-                        uint256 daoBountyReward = (staker.amount * params.daoBounty) /
-                            proposalStakes[proposalId][proposal.winningVote];
+            bool transferSuccess;
 
-                        if (daoBountyReward < stakingToken.allowance(getProposalAvatar(proposalId), address(this)))
-                            stakingToken.transferFrom(getProposalAvatar(proposalId), beneficiary, daoBountyReward);
-                        else emit UnclaimedDaoBounty(getProposalAvatar(proposalId), beneficiary, daoBountyReward);
-                    }
+            if (reward > 0) {
+                proposal.totalStakes = proposal.totalStakes - reward;
+                schemes[proposal.schemeId].stakingTokenBalance =
+                    schemes[proposal.schemeId].stakingTokenBalance -
+                    reward;
 
-                    // If the stake was done on the wrong option and the proposal didnt expired the beneficiary of the reward is the dao avatar and not the staker
+                transferSuccess = stakingToken.transfer(beneficiary, reward);
+                if (!transferSuccess) {
+                    revert VotingMachine__TransferFailed(beneficiary, reward);
+                }
+                emit Redeem(proposalId, schemes[proposal.schemeId].avatar, beneficiary, reward);
+            }
+
+            // If the winning option was yes the reward also include a % (of the staked on the winning option)
+            // of the minimum dao bounty
+            if (staker.option == YES) {
+                uint256 daoBountyReward = (staker.amount * parameters[proposal.paramsHash].daoBounty) /
+                    proposalStakes[proposalId][proposal.winningVote];
+
+                transferSuccess = stakingToken.transferFrom(
+                    getProposalAvatar(proposalId),
+                    beneficiary,
+                    daoBountyReward
+                );
+                if (!transferSuccess) {
+                    revert VotingMachine__TransferFromFailed(beneficiary, daoBountyReward);
                 } else {
-                    beneficiary = schemes[proposal.schemeId].avatar;
+                    emit UnclaimedDaoBounty(getProposalAvatar(proposalId), beneficiary, daoBountyReward);
                 }
             }
+
+            // The staker amount is marked as 0 to make sure the staker can't redeem twice
             staker.amount = 0;
-        }
-
-        if (reward != 0) {
-            proposal.totalStakes = proposal.totalStakes - reward;
-            schemes[proposal.schemeId].stakingTokenBalance = schemes[proposal.schemeId].stakingTokenBalance - reward;
-
-            bool transferSuccess = stakingToken.transfer(beneficiary, reward);
-            if (!transferSuccess) {
-                revert VotingMachine__TransferFailed(beneficiary, reward);
-            }
-            emit Redeem(proposalId, schemes[proposal.schemeId].avatar, beneficiary, reward);
         }
     }
 
