@@ -129,6 +129,12 @@ const hardharNetworks = process.env.CI
         chainId: 421611,
         timeout: 60000,
       },
+      sepolia: {
+        url: "https://rpc.sepolia.dev",
+        accounts: { mnemonic: MNEMONIC },
+        chainId: 11155111,
+        timeout: 60000,
+      },
     };
 
 module.exports = {
