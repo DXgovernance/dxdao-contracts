@@ -9,14 +9,17 @@
     "migrations/",
     "test/",
     "truffle.js",
-    "tsconfig.json"
+    "tsconfig.json",
+    "types/"
   ],
   "scripts": {
-    "test": "npx hardhat test",
+    "clean": "rm -rf artifacts cache contracts/hardhat-dependency-compiler bytecodes",
+    "test": "hardhat test",
     "coverage": "OVERRIDE_GAS_LIMIT=0xfffffffffff OVERRIDE_GAS_PRICE=1 yarn hardhat coverage",
-    "compile": "rm -rf artifacts cache contracts/hardhat-dependency-compiler && npx hardhat compile",
+    "compile": "hardhat compile",
+    "setup": "hardhat typechain",
     "deploy": "node scripts/deploy.js",
-    "docify": "rm -rf ./docs/contracts && npx hardhat docgen && node ./scripts/build-docs-summary.js",
+    "docify": "yarn run clean && hardhat docgen && node ./scripts/build-docs-summary.js",
     "solidity-linter": "./scripts/solhint.sh",
     "solidity-contract-size": "yarn hardhat size-contracts",
     "lint": "eslint .",
@@ -35,6 +38,8 @@
     "@openzeppelin/contract-loader": "^0.6.1",
     "@openzeppelin/hardhat-upgrades": "^1.6.0",
     "@truffle/contract": "^4.2.21",
+    "@typechain/ethers-v5": "^9.0.0",
+    "@typechain/hardhat": "^5.0.0",
     "babel-plugin-syntax-async-functions": "^6.13.0",
     "babel-polyfill": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
@@ -70,6 +75,7 @@
     "solidity-coverage": "^0.8.2",
     "truffle": "^5.1.28",
     "truffle-hdwallet-provider": "^1.0.17",
+    "typechain": "7.0.0",
     "uint32": "^0.2.1"
   },
   "repository": {

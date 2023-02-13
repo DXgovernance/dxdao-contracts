@@ -2,11 +2,7 @@ import { artifacts } from "hardhat";
 import * as helpers from "../../helpers";
 import { assert } from "chai";
 import { NULL_HASH, SOME_HASH } from "../../helpers/constants";
-const {
-  time,
-  expectRevert,
-  expectEvent,
-} = require("@openzeppelin/test-helpers");
+const { time, expectRevert } = require("@openzeppelin/test-helpers");
 
 const AvatarScheme = artifacts.require("./AvatarScheme.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");

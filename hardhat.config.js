@@ -13,6 +13,8 @@ require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
 require("solidity-docgen");
 require("hardhat-deploy");
+require("@typechain/hardhat");
+require("@nomiclabs/hardhat-ethers");
 
 require("./scripts/nanoUniversalDeployerDeploy");
 require("./scripts/keylessDeploy");
@@ -167,10 +169,16 @@ module.exports = {
       "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
     ],
   },
-
+  typechain: {
+    outDir: "types",
+    target: "ethers-v5",
+    alwaysGenerateOverloads: false,
+  },
   namedAccounts: {
     deployer: 0,
     tokenHolder: 1,
+    tokenHolder2: 2,
+    tokenHolder3: 3,
   },
   deterministicDeployment: {
     1337: {

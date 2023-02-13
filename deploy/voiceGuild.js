@@ -1,5 +1,7 @@
 const moment = require("moment");
-import { deploySnapshotRepGuild } from "./deployGuild";
+const {
+  deploySnapshotRepGuild,
+} = require("../scripts/deployUtils/deployGuild");
 
 const config = {
   GUILD_ID: "VoiceGuild",
@@ -39,4 +41,3 @@ module.exports.dependencies = [
 
 module.exports.tags = [config.GUILD_ID];
 module.exports.config = config;
-

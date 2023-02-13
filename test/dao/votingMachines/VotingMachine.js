@@ -1876,7 +1876,6 @@ contract("VotingMachine", function (accounts) {
         ),
         "proposalId"
       );
-
       const schemeId = (await dxdVotingMachine.proposals(testProposalId1))
         .schemeId;
       const paramsHash = (await dxdVotingMachine.proposals(testProposalId1))

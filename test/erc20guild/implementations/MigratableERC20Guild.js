@@ -1,6 +1,5 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert } from "chai";
-import * as helpers from "../../helpers";
 const {
   createAndSetupGuildToken,
   createProposal,

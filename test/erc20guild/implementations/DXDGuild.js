@@ -1,4 +1,3 @@
-import { ZERO_ADDRESS } from "@openzeppelin/test-helpers/src/constants";
 import * as helpers from "../../helpers";
 const {
   createAndSetupGuildToken,
