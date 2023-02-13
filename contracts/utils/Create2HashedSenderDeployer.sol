@@ -2,15 +2,15 @@
 pragma solidity ^0.8.17;
 
 /*
- * @title Create2PrivateDeployer
- * @dev This contract allows to deploy a contract using CREATE2 and a private salt.
- * By private we meant that the ONLY way to reproduce the address of the contract is to have access to teh account used for teh deployment.
+ * @title Create2HashedSenderDeployer
+ * @dev This contract allows to deploy a contract using CREATE2 hashing the sender address of the tx.
+ * The ONLY way to reproduce the address of the contract is to have access to the account used for the deployment.
  * To enforce that condition we use the tx.origin global variable.
  * The salt of the contract is the hash of the sender address.
  * The contract deployed is the bytecode passed on the code parameter.
- * The contract can also be initialized with a call to teh contract right after being deployed
+ * The contract can also be initialized with a call to the contract right after being deployed
  */
-contract Create2PrivateDeployer {
+contract Create2HashedSenderDeployer {
     address public rootDeployer;
 
     constructor() {
@@ -18,7 +18,7 @@ contract Create2PrivateDeployer {
     }
 
     function deploy(bytes memory code, bytes memory initializeCallData) public returns (address addr) {
-        require(msg.sender == rootDeployer, "Create2PrivateDeployer: Only rootDeployer owner can deploy");
+        require(msg.sender == rootDeployer, "Create2HashedSenderDeployer: Only rootDeployer owner can deploy");
 
         uint256 salt = uint256(keccak256(abi.encodePacked(tx.origin)));
         assembly {
