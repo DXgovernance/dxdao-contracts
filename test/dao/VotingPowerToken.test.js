@@ -1,7 +1,10 @@
 const { expectRevert } = require("@openzeppelin/test-helpers");
+const { web3 } = require("@openzeppelin/test-helpers/src/setup");
 const VotingPowerToken = artifacts.require("./VotingPowerToken.sol");
 const DAOReputation = artifacts.require("DAOReputation.sol");
-const DXDStakeMock = artifacts.require("DXDStakeMock.sol");
+// const DXDStakeMock = artifacts.require("DXDStakeMock.sol");
+const DXDStake = artifacts.require("DXDStake.sol");
+const DXDInfluence = artifacts.require("DXDInfluence.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const BigNumber = require("bignumber.js");
 
@@ -11,15 +14,24 @@ const bn = n => new BigNumber(n);
 
 contract("VotingPowerToken", function (accounts) {
   let repToken;
-  let stakingToken;
+  let dxdStake;
   let vpToken;
   let owner = accounts[0];
   let precision;
   let dxd;
+  let dxdInfluence;
   let decimals;
+  const timeCommitment = 100;
   const repTokenWeight = 50;
   const stakeTokenWeight = 50;
   const minStakingTokensLocked = 100;
+  const maxTimeCommitment = 1000;
+  const lf = 0.025;
+  const linearFactor = web3.utils.toWei(lf.toString(), "ether");
+  const ef = 0;
+  const exponentialFactor = web3.utils.toWei(ef.toString(), "ether");
+  const exp = 1;
+  const exponent = web3.utils.toWei(exp.toString(), "ether");
 
   const repHolders = [
     { account: accounts[1], amount: bn(40) },
@@ -34,7 +46,7 @@ contract("VotingPowerToken", function (accounts) {
 
   const restore = () => {
     repToken = null;
-    stakingToken = null;
+    dxdStake = null;
     dxd = null;
     vpToken = null;
     precision = null;
@@ -42,45 +54,69 @@ contract("VotingPowerToken", function (accounts) {
 
   const deployVpToken = async (config = {}) => {
     restore();
-    repToken = await DAOReputation.new({
-      from: owner,
-    });
+    repToken = await DAOReputation.new();
 
-    stakingToken = await DXDStakeMock.new({
-      from: owner,
-    });
+    dxdStake = await DXDStake.new();
+    dxdInfluence = await DXDInfluence.new();
 
-    dxd = await ERC20Mock.new("DXDDD", "WDXD", 50000, accounts[0]);
+    dxd = await ERC20Mock.new(
+      "DXD Token",
+      "DXD",
+      web3.utils.toWei("10000", "ether"),
+      owner
+    );
 
     vpToken = await VotingPowerToken.new({ from: owner });
 
     await repToken.initialize("Reputation", "REP", vpToken.address);
 
-    await stakingToken.initialize(
+    await dxdStake.initialize(
       dxd.address,
-      accounts[0],
-      "DXdao",
-      "DXD",
-      vpToken.address
+      dxdInfluence.address,
+      owner,
+      maxTimeCommitment,
+      "DXDStake",
+      "stDXD",
+      {
+        from: owner,
+      }
+    );
+
+    await dxdInfluence.initialize(
+      dxdStake.address,
+      vpToken.address,
+      linearFactor,
+      exponentialFactor,
+      exponent,
+      {
+        from: owner,
+      }
     );
 
     await vpToken.initialize(
       config.repTokenAddress || repToken.address,
-      config.stakingTokenAddress || stakingToken.address,
+      config.dxdInfluence || dxdInfluence.address,
       config.repWeight || repTokenWeight,
       config.stakingWeight || stakeTokenWeight,
       config.minStakingTokensLocked || minStakingTokensLocked
     );
 
-    // precision = Number((await vpToken.precision()).toString());
     precision = bn(await vpToken.precision());
     decimals = bn(await vpToken.decimals());
   };
 
   const mintAll = async () => {
     await Promise.all(
+      stakeHolders.map(({ account, amount }) => dxd.mint(account, amount))
+    );
+    await Promise.all(
       stakeHolders.map(({ account, amount }) =>
-        stakingToken.stake(amount, {
+        dxd.approve(dxdStake.address, amount, { from: account })
+      )
+    );
+    await Promise.all(
+      stakeHolders.map(({ account, amount }) =>
+        dxdStake.stake(amount, timeCommitment, {
           from: account,
         })
       )
@@ -91,11 +127,19 @@ contract("VotingPowerToken", function (accounts) {
     );
   };
 
+  const mintApproveStake = async (account, amount) => {
+    await dxd.mint(account, amount);
+    await dxd.approve(dxdStake.address, amount, { from: account });
+    await dxdStake.stake(amount, 100, {
+      from: account,
+    });
+  };
+
   describe("initialize", () => {
     it("Should not initialize 2 times", async () => {
       await deployVpToken();
       await expectRevert(
-        vpToken.initialize(repToken.address, stakingToken.address, 50, 50, 100),
+        vpToken.initialize(repToken.address, dxdStake.address, 50, 50, 100),
         "Initializable: contract is already initialized"
       );
     });
@@ -105,25 +149,27 @@ contract("VotingPowerToken", function (accounts) {
       expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(1);
     });
 
-    it("Should fail if repToken and StakingToken addresses are the same", async () => {
-      vpToken = await VotingPowerToken.new({ from: owner });
+    it("Should fail if repToken and dxdStake addresses are the same", async () => {
+      vpToken = await VotingPowerToken.new();
+      repToken = await DAOReputation.new();
+      dxdInfluence = await DXDInfluence.new();
 
       await expectRevert(
         vpToken.initialize(
-          accounts[8],
-          accounts[8],
+          dxdInfluence.address,
+          dxdInfluence.address,
           repTokenWeight,
           stakeTokenWeight,
           minStakingTokensLocked
         ),
-        "VotingPowerToken_ReptokenAndStakingTokenCannotBeEqual()"
+        "VotingPowerToken_ReputationTokenAndInfluenceTokenCannotBeEqual()"
       );
     });
 
     it("Should update token weights", async () => {
       await deployVpToken();
       expect(
-        (await vpToken.getConfigTokenWeight(stakingToken.address)).toNumber()
+        (await vpToken.getConfigTokenWeight(dxdInfluence.address)).toNumber()
       ).equal(stakeTokenWeight);
       expect(
         (await vpToken.getConfigTokenWeight(repToken.address)).toNumber()
@@ -153,7 +199,7 @@ contract("VotingPowerToken", function (accounts) {
     });
 
     it("Should use 100% weight of rep if staking token supply < _minStakingTokensLocked", async () => {
-      expect((await stakingToken.totalSupply()).toNumber()).equal(0);
+      expect((await dxdStake.totalSupply()).toNumber()).equal(0);
 
       // update config to be 50% 50%
       await vpToken.setComposition(50, 50);
@@ -161,7 +207,7 @@ contract("VotingPowerToken", function (accounts) {
       const repWeight = await vpToken.getTokenWeight(repToken.address);
       expect(repWeight.toNumber()).equal(100);
 
-      const stakingWeight = await vpToken.getTokenWeight(stakingToken.address);
+      const stakingWeight = await vpToken.getTokenWeight(dxdInfluence.address);
       expect(stakingWeight.toNumber()).equal(0);
     });
 
@@ -381,25 +427,25 @@ contract("VotingPowerToken", function (accounts) {
         )
       );
 
-      const stakingBalance = await stakingToken.balanceOf(holder);
-      const stakingSupply = await stakingToken.totalSupply();
-      const stakingVotingPowerPercent = bn(
-        await vpToken.getPercent(stakingBalance, stakingSupply)
+      const dxdInfluenceBalance = await dxdInfluence.balanceOf(holder);
+      const dxdInfluenceSupply = await dxdInfluence.totalSupply();
+      const dxdInfluenceVotingPowerPercent = bn(
+        await vpToken.getPercent(dxdInfluenceBalance, dxdInfluenceSupply)
       );
-      const stakingTokenWeight = bn(
-        await vpToken.getTokenWeight(stakingToken.address)
+      const dxdInfluenceTokenWeight = bn(
+        await vpToken.getTokenWeight(dxdInfluence.address)
       );
 
-      const stakeVotingPowerPercentWeighted = bn(
+      const dxdInfluenceVotingPowerPercentWeighted = bn(
         await vpToken.getWeightedVotingPowerPercentage(
-          stakingTokenWeight,
-          stakingVotingPowerPercent
+          dxdInfluenceTokenWeight,
+          dxdInfluenceVotingPowerPercent
         )
       );
 
       const expectedTotalVotingPowerPercentPowered =
         repVotingPowerPercentWeighted
-          .add(stakeVotingPowerPercentWeighted)
+          .add(dxdInfluenceVotingPowerPercentWeighted)
           .toString();
       const votingPower = await vpToken.balanceOfAt(holder, vpTokenSnapshotId);
 
@@ -462,19 +508,17 @@ contract("VotingPowerToken", function (accounts) {
       const repDistribution = [8, 392]; // 2% | 98%
       const stakeDistribution = [16, 984]; // 1.6% | 98.4%
       const expectedHolder1VP = 1800000000000000000; // 1.8%;
+      const expectedHolder2VP = precision.mul(98.2).toNumber();
 
       await repToken.mintMultiple([holder1, holder2], repDistribution);
 
-      await stakingToken.stake(bn(stakeDistribution[0]), {
-        from: holder1,
-      });
+      await mintApproveStake(holder1, bn(stakeDistribution[0]));
+      await mintApproveStake(holder2, bn(stakeDistribution[1]));
 
-      await stakingToken.stake(bn(stakeDistribution[1]), {
-        from: holder2,
-      });
-
-      const votingPower = bn(await vpToken.balanceOf(holder1));
-      expect(votingPower.toNumber()).equal(expectedHolder1VP);
+      const votingPower1 = bn(await vpToken.balanceOf(holder1));
+      const votingPower2 = bn(await vpToken.balanceOf(holder2));
+      expect(votingPower1.toNumber()).equal(expectedHolder1VP);
+      expect(votingPower2.toNumber()).equal(expectedHolder2VP);
     });
 
     it("Should return 1% voting power", async () => {
@@ -510,9 +554,7 @@ contract("VotingPowerToken", function (accounts) {
       await repToken.mint(holder2, balance2); // 99% rep
 
       // holder2 stake 100% of stakingToken supply
-      await stakingToken.stake(300, {
-        from: holder2,
-      });
+      await mintApproveStake(holder2, 300);
 
       expect(
         bn(await vpToken.getTokenWeight(repToken.address)).toNumber()
@@ -604,6 +646,7 @@ contract("VotingPowerToken", function (accounts) {
       expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(
         snapshotId + stakeHolders.length + 1 // Stake fn snapshot per each stake() call. Rep mintmultiple 1 single snapshot
       );
+
       const votingPower = await vpToken.balanceOfAt(
         repHolders[0].account,
         snapshotId
@@ -642,27 +685,6 @@ contract("VotingPowerToken", function (accounts) {
       expect(bn(percent1).mul(precision).toNumber()).equal(0.1);
       expect(votingPower.toNumber()).equal(0);
     });
-
-    // it.skip("Should not break ", async () => {
-    //   const holder1 = repHolders[0].account;
-    //   const holder2 = repHolders[1].account;
-    //   const repDistribution = [8, 392]; // 2% | 98%
-    //   const stakeDistribution = [16, 984]; // 1.6% | 98.4%
-    //   const expectedHolder1VP = 1800000000000000000; // 1.8%;
-
-    //   // await repToken.mintMultiple([holder1, holder2], repDistribution);
-
-    //   await stakingToken.stake(bn(stakeDistribution[0]), {
-    //     from: holder1,
-    //   });
-
-    //   await stakingToken.stake(bn(stakeDistribution[1]), {
-    //     from: holder2,
-    //   });
-
-    //   const votingPower = bn(await vpToken.balanceOf(holder1));
-    //   expect(votingPower.toNumber()).equal(expectedHolder1VP);
-    // });
   });
 
   describe("getTokenWeight", () => {
@@ -677,7 +699,7 @@ contract("VotingPowerToken", function (accounts) {
     it("Should return 0 for stakingToken if staking token totalSupply is less than minStakingTokensLocked", async () => {
       await deployVpToken();
       expect(
-        (await vpToken.getTokenWeight(stakingToken.address)).toNumber()
+        (await vpToken.getTokenWeight(dxdInfluence.address)).toNumber()
       ).equal(0);
     });
     it("Should return 100 for reptoken if staking token totalSupply is less than minStakingTokensLocked", async () => {
@@ -688,17 +710,15 @@ contract("VotingPowerToken", function (accounts) {
     });
     it("Should return config value if staking token totalSupply is >= than minStakingTokensLocked", async () => {
       await deployVpToken();
-      await stakingToken.stake(minStakingTokensLocked, {
-        from: accounts[1],
-      });
-      expect((await stakingToken.totalSupply()).toNumber()).equal(
+      await mintApproveStake(accounts[1], minStakingTokensLocked);
+      expect((await dxdStake.totalSupply()).toNumber()).equal(
         minStakingTokensLocked
       );
       expect((await vpToken.getTokenWeight(repToken.address)).toNumber()).equal(
         repTokenWeight
       );
       expect(
-        (await vpToken.getTokenWeight(stakingToken.address)).toNumber()
+        (await vpToken.getTokenWeight(dxdInfluence.address)).toNumber()
       ).equal(stakeTokenWeight);
     });
   });
@@ -748,6 +768,7 @@ contract("VotingPowerToken", function (accounts) {
       "VotingPowerToken: Cannot call transfer function"
     );
   });
+
   it("Should revert allowance function", async () => {
     await deployVpToken();
     await expectRevert(
@@ -755,6 +776,7 @@ contract("VotingPowerToken", function (accounts) {
       "VotingPowerToken: Cannot call allowance function"
     );
   });
+
   it("Should revert approve function", async () => {
     await deployVpToken();
     await expectRevert(
@@ -762,6 +784,7 @@ contract("VotingPowerToken", function (accounts) {
       "VotingPowerToken: Cannot call approve function"
     );
   });
+
   it("Should revert transferFrom function", async () => {
     await deployVpToken();
     await expectRevert(

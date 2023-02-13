@@ -8,18 +8,18 @@ import "../utils/ERC20/ERC20SnapshotRep.sol";
 /**
  * @title VotingPowerToken
  * @dev This contract provides a function to determine the balance (or voting power) of a specific holder based
- *      on the relative "weights" of two different ERC20SnapshotRep tokens: a Reputation token and a Staking token.
+ *      on the relative "weights" of two different ERC20SnapshotRep tokens: a DAOReputation token and a DXDInfluence token.
  *      The contract also includes the capability to manage the weights of the underlying tokens, determining the
  *      percentage that each token should represent of the total balance amount at the moment of getting user balance.
- *      Additionally, the contract sets a minimum requirement for the amount of Staking tokens that must be locked
- *      in order to apply weight to the Staking token.
+ *      Additionally, the contract sets a minimum requirement for the amount of DXDInfluence tokens that must be locked
+ *      in order to apply weight to the DXDInfluence token.
  */
 contract VotingPowerToken is OwnableUpgradeable {
-    // The ERC20 rep token that will be used as source of voting power
-    ERC20SnapshotRep public repToken;
+    /// @notice The ERC20 reputation token that will be used as source of voting power
+    ERC20SnapshotRep public reputation;
 
-    // staking token
-    ERC20SnapshotRep public stakingToken;
+    /// @notice The ERC20 influence token that will be used as source of voting power
+    ERC20SnapshotRep public influence;
 
     /// @notice Minimum staking tokens locked to apply weight
     uint256 public minStakingTokensLocked;
@@ -35,11 +35,11 @@ contract VotingPowerToken is OwnableUpgradeable {
     uint256 public constant decimals = 18;
     uint256 public constant precision = 10**decimals;
 
-    /// @notice Revert when using other address than stakingToken or repToken
+    /// @notice Revert when using other address than influence or reputation
     error VotingPowerToken_InvalidTokenAddress();
 
-    /// @notice Revert both repToken and stakingToken address are the same
-    error VotingPowerToken_ReptokenAndStakingTokenCannotBeEqual();
+    /// @notice Revert both reputation and influence address are the same
+    error VotingPowerToken_ReputationTokenAndInfluenceTokenCannotBeEqual();
 
     /// @notice SnapshotId provided is bigger than current snapshotId
     error VotingPowerToken_InvalidSnapshotId();
@@ -51,26 +51,26 @@ contract VotingPowerToken is OwnableUpgradeable {
 
     /// @dev Verify if address is one of rep or staking tokens
     modifier onlyInternalTokens(address tokenAddress) {
-        if (tokenAddress != address(repToken) && tokenAddress != address(stakingToken)) {
+        if (tokenAddress != address(reputation) && tokenAddress != address(influence)) {
             revert VotingPowerToken_InvalidTokenAddress();
         }
         _;
     }
 
     function initialize(
-        address _repToken,
-        address _stakingToken,
+        address _reputation,
+        address _dxdInfluence,
         uint256 repWeight,
         uint256 stakingWeight,
         uint256 _minStakingTokensLocked
     ) public virtual initializer {
         __Ownable_init();
-        if (_repToken == _stakingToken) revert VotingPowerToken_ReptokenAndStakingTokenCannotBeEqual();
+        if (_reputation == _dxdInfluence) revert VotingPowerToken_ReputationTokenAndInfluenceTokenCannotBeEqual();
         if (repWeight + stakingWeight != 100) {
             revert VotingPowerToken_InvalidTokenWeights();
         }
-        repToken = ERC20SnapshotRep(address(_repToken));
-        stakingToken = ERC20SnapshotRep(address(_stakingToken));
+        reputation = ERC20SnapshotRep(address(_reputation));
+        influence = ERC20SnapshotRep(address(_dxdInfluence));
         setMinStakingTokensLocked(_minStakingTokensLocked);
         setComposition(repWeight, stakingWeight);
         currentSnapshotId = 1;
@@ -89,25 +89,25 @@ contract VotingPowerToken is OwnableUpgradeable {
         if (repWeight + stakingWeight != 100) {
             revert VotingPowerToken_InvalidTokenWeights();
         }
-        weights[address(repToken)] = repWeight;
-        weights[address(stakingToken)] = stakingWeight;
+        weights[address(reputation)] = repWeight;
+        weights[address(influence)] = stakingWeight;
     }
 
     /// @dev function to be executed from rep and dxdStake tokens after mint/burn
     /// It stores a reference to the rep/stake token snapshotId from internal snapshotId
     function callback() external onlyInternalTokens(msg.sender) {
         currentSnapshotId++;
-        snapshots[address(repToken)][currentSnapshotId] = repToken.getCurrentSnapshotId();
-        snapshots[address(stakingToken)][currentSnapshotId] = stakingToken.getCurrentSnapshotId();
+        snapshots[address(reputation)][currentSnapshotId] = reputation.getCurrentSnapshotId();
+        snapshots[address(influence)][currentSnapshotId] = influence.getCurrentSnapshotId();
     }
 
     /// @dev Get the balance (voting power percentage) of `account` at current snapshotId
     ///      Balance is expressed as percentage in base 1e+18
-    ///      1% == 1000000000000000000 | 500000000000000000
+    ///      1% == 1000000000000000000 | 0.5% == 500000000000000000
     /// @param account Account we want to get voting power from
     /// @return votingPowerPercentage The votingPower of `account` (0 to 100*precision)
     function balanceOf(address account) public view returns (uint256 votingPowerPercentage) {
-        ERC20SnapshotRep[2] memory tokens = [repToken, stakingToken];
+        ERC20SnapshotRep[2] memory tokens = [reputation, influence];
         uint256 totalVotingPower = 0;
 
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -131,13 +131,13 @@ contract VotingPowerToken is OwnableUpgradeable {
 
     /// @dev Get the balance (voting power percentage) of `account` at certain `_snapshotId`.
     ///      Balance is expressed as percentage in base 1e+18
-    ///      1% == 1000000000000000000 | 500000000000000000
+    ///      1% == 1000000000000000000 | 0.5% == 500000000000000000
     /// @param account Account we want to get voting power from
     /// @param _snapshotId VPToken SnapshotId we want get votingPower from
     /// @return votingPowerPercentage The votingPower of `account` (0 to 100*precision)
     function balanceOfAt(address account, uint256 _snapshotId) public view returns (uint256 votingPowerPercentage) {
         if (_snapshotId > currentSnapshotId) revert VotingPowerToken_InvalidSnapshotId();
-        ERC20SnapshotRep[2] memory tokens = [repToken, stakingToken];
+        ERC20SnapshotRep[2] memory tokens = [reputation, influence];
         uint256 totalVotingPower = 0;
 
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -182,13 +182,15 @@ contract VotingPowerToken is OwnableUpgradeable {
     }
 
     /// @dev Get token weight from weights config mapping.
-    ///      If stakingToken supply > minStakingTokensLocked at the time of execution repWeight will default to 100%.
+    ///      If influence supply > minStakingTokensLocked at the time of execution repWeight will default to 100%.
     ///      If not it will retun internal weights config for given `token`
     /// @param token Address of the token we want to get weight from
     /// @return weight Weight percentage value (0 to 100)
     function getTokenWeight(address token) public view onlyInternalTokens(token) returns (uint256 weight) {
-        if (stakingToken.totalSupply() < minStakingTokensLocked) {
-            if (token == address(repToken)) return 100;
+        // TODO: Should we get supply from influence or from dxdStake?
+        // TODO: Add snapshotId param so when we do balanceOfAt(acc, snapshot) we get correct weight
+        if (influence.totalSupply() < minStakingTokensLocked) {
+            if (token == address(reputation)) return 100;
             else return 0;
         } else {
             return getConfigTokenWeight(token);
