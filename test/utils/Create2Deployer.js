@@ -21,41 +21,69 @@ contract("Create2Deployer", function (accounts) {
       [avatarOwner]
     );
 
-    const expectedPrivateDeploymentAddress =
-      await create2Deployer.getPrivateDeploymentAddress(
+    const expectedHashedSenderDeploymentAddress =
+      await create2Deployer.getHashedSenderDeployAddress(
         DAOAvatar.bytecode,
         senderDeployment
       );
-    const expectedPublicDeploymentAddress =
-      await create2Deployer.getPublicDeploymentAddress(
+    const expectedHashedSaltDeploymentAddress =
+      await create2Deployer.getHashedSaltDeployAddress(
         DAOAvatar.bytecode,
         senderHashed
       );
+    const expectedHashedInitializeCallDeploymentAddress =
+      await create2Deployer.getHashedInitializeCallDeployAddress(
+        DAOAvatar.bytecode,
+        initializeData
+      );
 
-    const privateDeploymentAddress = await create2Deployer.deployPrivate(
-      DAOAvatar.bytecode,
-      initializeData,
-      { from: accounts[1] }
-    );
-    const publicDeploymentAddress = await create2Deployer.deployPublic(
+    const hashedSenderDeploymentTx =
+      await create2Deployer.deployWithHashedSender(
+        DAOAvatar.bytecode,
+        initializeData,
+        { from: accounts[1] }
+      );
+    const hashedSaltDeploymentTx = await create2Deployer.deployWithHashedSalt(
       DAOAvatar.bytecode,
       initializeData,
       senderHashed
     );
+    const hashedInitializeCallDeploymentTx =
+      await create2Deployer.deployWithHashedInitializeCall(
+        DAOAvatar.bytecode,
+        initializeData
+      );
 
-    const daoAvatarPrivate = await DAOAvatar.at(
-      privateDeploymentAddress.logs[0].args.addr
+    const daoAvatarDeployedWithHashedSender = await DAOAvatar.at(
+      hashedSenderDeploymentTx.logs[0].args.addr
     );
-    const daoAvatarPublic = await DAOAvatar.at(
-      publicDeploymentAddress.logs[0].args.addr
+    const daoAvatarDeployedWithHashedSalt = await DAOAvatar.at(
+      hashedSaltDeploymentTx.logs[0].args.addr
+    );
+    const daoAvatarDeployedWithHashedInitializeCall = await DAOAvatar.at(
+      hashedInitializeCallDeploymentTx.logs[0].args.addr
     );
 
     // We check that the addresses are the same as the ones we expected
-    assert.equal(expectedPrivateDeploymentAddress, daoAvatarPrivate.address);
-    assert.equal(expectedPublicDeploymentAddress, daoAvatarPublic.address);
+    assert.equal(
+      expectedHashedSenderDeploymentAddress,
+      daoAvatarDeployedWithHashedSender.address
+    );
+    assert.equal(
+      expectedHashedSaltDeploymentAddress,
+      daoAvatarDeployedWithHashedSalt.address
+    );
+    assert.equal(
+      expectedHashedInitializeCallDeploymentAddress,
+      daoAvatarDeployedWithHashedInitializeCall.address
+    );
 
     // We check that the owner of the avatar is the same as the one we set in the initialization data
-    assert.equal(await daoAvatarPrivate.owner(), avatarOwner);
-    assert.equal(await daoAvatarPublic.owner(), avatarOwner);
+    assert.equal(await daoAvatarDeployedWithHashedSender.owner(), avatarOwner);
+    assert.equal(await daoAvatarDeployedWithHashedSalt.owner(), avatarOwner);
+    assert.equal(
+      await daoAvatarDeployedWithHashedInitializeCall.owner(),
+      avatarOwner
+    );
   });
 });
