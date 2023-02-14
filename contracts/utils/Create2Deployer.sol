@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.17;
 
-import "./Create2HashedSenderDeployer.sol";
 import "./Create2HashedSaltDeployer.sol";
+import "./Create2HashedSenderDeployer.sol";
+import "./Create2HashedInitializeCallDeployer.sol";
 
 /*
  * @title Create2Deployer
@@ -18,14 +19,16 @@ contract Create2Deployer {
     event Deployed(address addr, bytes32 bytecodeHash, uint256 salt, uint256 deploymentType);
 
     Create2HashedSaltDeployer public hashedSaltDeployer;
-    Create2HashedSenderDeployer public hashedSender;
+    Create2HashedSenderDeployer public hashedSenderDeployer;
+    Create2HashedInitializeCallDeployer public hashedInitializeCallDeployer;
 
     constructor() {
         hashedSaltDeployer = new Create2HashedSaltDeployer();
-        hashedSender = new Create2HashedSenderDeployer();
+        hashedSenderDeployer = new Create2HashedSenderDeployer();
+        hashedInitializeCallDeployer = new Create2HashedInitializeCallDeployer();
     }
 
-    function deployPublic(
+    function deployWithHashedSalt(
         bytes memory code,
         bytes memory initializeCallData,
         uint256 salt
@@ -34,29 +37,43 @@ contract Create2Deployer {
         emit Deployed(addr, keccak256(abi.encodePacked(code)), salt, 1);
     }
 
-    function deployPrivate(bytes memory code, bytes memory initializeCallData) public {
-        address addr = hashedSender.deploy(code, initializeCallData);
+    function deployWithHashedSender(bytes memory code, bytes memory initializeCallData) public {
+        address addr = hashedSenderDeployer.deploy(code, initializeCallData);
         emit Deployed(addr, keccak256(abi.encodePacked(code)), hashSender(tx.origin), 2);
     }
 
-    function getPublicDeployer() public view returns (address) {
-        return address(hashedSaltDeployer);
+    function deployWithHashedInitializeCall(bytes memory code, bytes memory initializeCallData) public {
+        address addr = hashedInitializeCallDeployer.deploy(code, initializeCallData);
+        emit Deployed(addr, keccak256(abi.encodePacked(code)), hashInitializeCallData(initializeCallData), 3);
     }
 
-    function getPrivateDeployer() public view returns (address) {
-        return address(hashedSender);
-    }
-
-    function getPublicDeploymentAddress(bytes memory code, uint256 salt) public view returns (address) {
+    function getHashedSaltDeployAddress(bytes memory code, uint256 salt) public view returns (address) {
         return _calculateCreate2Address(address(hashedSaltDeployer), code, salt);
     }
 
-    function getPrivateDeploymentAddress(bytes memory code, address sender) public view returns (address) {
-        return _calculateCreate2Address(address(hashedSender), code, hashSender(sender));
+    function getHashedSenderDeployAddress(bytes memory code, address sender) public view returns (address) {
+        return _calculateCreate2Address(address(hashedSenderDeployer), code, hashSender(sender));
+    }
+
+    function getHashedInitializeCallDeployAddress(bytes memory code, bytes memory initializeCallData)
+        public
+        view
+        returns (address)
+    {
+        return
+            _calculateCreate2Address(
+                address(hashedInitializeCallDeployer),
+                code,
+                hashInitializeCallData(initializeCallData)
+            );
     }
 
     function hashSender(address sender) public pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(sender)));
+    }
+
+    function hashInitializeCallData(bytes memory initializeCallData) public pure returns (uint256) {
+        return uint256(keccak256(abi.encodePacked(initializeCallData)));
     }
 
     function _calculateCreate2Address(
