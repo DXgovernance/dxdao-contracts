@@ -19,8 +19,8 @@ interface VotingPower {
  *      influence = sum(stake.a.tc + stake.b.tc^k) over all stakes for a given account
  *                = a * sum(stake.tc) + b * sum(stake.tc^k)
  *      where:
- *          a: linearFactor      --> configurable by governance (signed 59.18-decimal fixed-point number).
- *          b: exponentialFactor --> configurable by governance (signed 59.18-decimal fixed-point number).
+ *          a: linearMultiplier      --> configurable by governance (signed 59.18-decimal fixed-point number).
+ *          b: exponentialMultiplier --> configurable by governance (signed 59.18-decimal fixed-point number).
  *          k: exponent          --> constant set at initialization (unsigned 59.18-decimal fixed-point number).
  *          tc: time commitment  --> defined by the user at each stake.
  *          stake: tokens locked --> defined by the user at each stake.
@@ -35,17 +35,23 @@ interface VotingPower {
 contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
     using ArraysUpgradeable for uint256[];
 
+    address public constant FORMULA_SNAPSHOT_SLOT = address(0x1);
+
     struct CumulativeStake {
         uint256 linearElement;
         uint256 exponentialElement;
     }
 
+    struct FormulaMutableParams {
+        SD59x18 linearMultiplier;
+        SD59x18 exponentialMultiplier;
+    }
+
     DXDStake public dxdStake;
     VotingPower public votingPower;
 
-    /// @dev influence formula parameters.
-    SD59x18 public linearFactor;
-    SD59x18 public exponentialFactor;
+    /// @dev influence formula parameters. formulaMutableParams[snapshotId]
+    mapping(uint256 => FormulaMutableParams) public formulaMutableParams;
     UD60x18 public exponent; // Must be immutable
 
     /// @dev cumulativeStakesSnapshots[account][snapshotId]
@@ -61,8 +67,8 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
     function initialize(
         address _dxdStake,
         address _votingPower,
-        int256 _linearFactor,
-        int256 _exponentialFactor,
+        int256 _linearMultiplier,
+        int256 _exponentialMultiplier,
         uint256 _exponent
     ) external initializer {
         __Ownable_init();
@@ -71,8 +77,9 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
         dxdStake = DXDStake(_dxdStake);
         votingPower = VotingPower(_votingPower);
 
-        linearFactor = SD59x18.wrap(_linearFactor);
-        exponentialFactor = SD59x18.wrap(_exponentialFactor);
+        uint256 currentSnapshotId = _snapshot(FORMULA_SNAPSHOT_SLOT);
+        formulaMutableParams[currentSnapshotId].linearMultiplier = SD59x18.wrap(_linearMultiplier);
+        formulaMutableParams[currentSnapshotId].exponentialMultiplier = SD59x18.wrap(_exponentialMultiplier);
         exponent = UD60x18.wrap(_exponent);
     }
 
@@ -82,12 +89,19 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
      * influence values will make balanceOf(), balanceOfAt(), totalSupply() and totalSupplyAt() revert.
      * Influence should also be a monotonically non-decreasing function with respect to time. The longer a user
      * commits to stake, the greater the influence.
-     * @param _linearFactor Factor that will multiply the linear element of the influence. 18 decimals.
-     * @param _exponentialFactor Factor that will multiply the exponential element of the influence. 18 decimals.
+     * @param _linearMultiplier Factor that will multiply the linear element of the influence. 18 decimals.
+     * @param _exponentialMultiplier Factor that will multiply the exponential element of the influence. 18 decimals.
      */
-    function changeFormula(int256 _linearFactor, int256 _exponentialFactor) external onlyOwner {
-        linearFactor = SD59x18.wrap(_linearFactor);
-        exponentialFactor = SD59x18.wrap(_exponentialFactor);
+    function changeFormula(int256 _linearMultiplier, int256 _exponentialMultiplier) external onlyOwner {
+        uint256 currentSnapshotId = _snapshot(FORMULA_SNAPSHOT_SLOT);
+        formulaMutableParams[currentSnapshotId].linearMultiplier = SD59x18.wrap(_linearMultiplier);
+        formulaMutableParams[currentSnapshotId].exponentialMultiplier = SD59x18.wrap(_exponentialMultiplier);
+
+        // Update global stake data
+        CumulativeStake storage newTotalStake = totalStakeSnapshots[currentSnapshotId];
+        CumulativeStake storage previousTotalStake = totalStakeSnapshots[currentSnapshotId - 1];
+        newTotalStake.linearElement = previousTotalStake.linearElement;
+        newTotalStake.exponentialElement = previousTotalStake.exponentialElement;
     }
 
     /**
@@ -183,7 +197,7 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
      */
     function totalSupplyAt(uint256 snapshotId) public view returns (uint256) {
         CumulativeStake storage currentTotalStake = totalStakeSnapshots[snapshotId];
-        return calculateInfluence(currentTotalStake);
+        return calculateInfluence(currentTotalStake, snapshotId);
     }
 
     /**
@@ -191,7 +205,7 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
      */
     function balanceOf(address account) public view returns (uint256) {
         CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[account][_lastSnapshotId(account)];
-        return calculateInfluence(cumulativeStake);
+        return calculateInfluence(cumulativeStake, getCurrentSnapshotId());
     }
 
     /**
@@ -200,23 +214,42 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
     function balanceOfAt(address account, uint256 snapshotId) public view returns (uint256) {
         uint256 lastSnapshotId = _lastRegisteredSnapshotIdAt(snapshotId, account);
         CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[account][lastSnapshotId];
-        return calculateInfluence(cumulativeStake);
+        return calculateInfluence(cumulativeStake, snapshotId);
     }
 
     /**
      * @dev Calculates influence for the given cumulative stake data point.
      * @param _cumulativeStake Accumulated stake information on a specific snapshot.
+     * @param _snapshotId Id of the snapshot.
      */
-    function calculateInfluence(CumulativeStake storage _cumulativeStake) internal view returns (uint256) {
+    function calculateInfluence(CumulativeStake storage _cumulativeStake, uint256 _snapshotId)
+        internal
+        view
+        returns (uint256)
+    {
+        (SD59x18 linearMultiplier, SD59x18 exponentialMultiplier) = getFormulaMutableParamsAt(_snapshotId);
+
         SD59x18 linearElement = SD59x18.wrap(int256(_cumulativeStake.linearElement));
-        SD59x18 linearInfluence = linearFactor.mul(linearElement);
+        SD59x18 linearInfluence = linearMultiplier.mul(linearElement);
 
         SD59x18 exponentialElement = SD59x18.wrap(int256(_cumulativeStake.exponentialElement));
-        SD59x18 exponentialInfluence = exponentialFactor.mul(exponentialElement);
+        SD59x18 exponentialInfluence = exponentialMultiplier.mul(exponentialElement);
 
         int256 influence = SD59x18.unwrap(linearInfluence.add(exponentialInfluence));
         require(influence >= 0, "DXDInfluence: negative influence, update formula");
         return uint256(influence);
+    }
+
+    /**
+     * @dev Retrieves the influence formula parameters at the time `_snapshotId` was created.
+     * @param _snapshotId Id of the snapshot.
+     */
+    function getFormulaMutableParamsAt(uint256 _snapshotId) public view returns (SD59x18, SD59x18) {
+        uint256 lastSnapshotId = _lastRegisteredSnapshotIdAt(_snapshotId, FORMULA_SNAPSHOT_SLOT);
+        return (
+            formulaMutableParams[lastSnapshotId].linearMultiplier,
+            formulaMutableParams[lastSnapshotId].exponentialMultiplier
+        );
     }
 
     /**

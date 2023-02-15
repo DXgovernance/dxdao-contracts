@@ -45,7 +45,7 @@ contract AccountSnapshot {
         //  no entry for the requested id: the value that corresponds to it is that of the smallest snapshot id that is
         //  larger than the requested one.
         //
-        // In summary, we need to find an element in an array, returning the index of the smallest value that is larger if
+        // In summary, we need to find an element in an array, returning the index of the largest value that is smaller if
         // it is not found, unless said value doesn't exist (e.g. when all values are smaller). Arrays.findUpperBound does
         // exactly this.
 
@@ -54,7 +54,9 @@ contract AccountSnapshot {
         if (index == _snapshotIds[_account].length) {
             return _snapshotIds[_account][index - 1];
         } else {
-            return _snapshotIds[_account][index];
+            if (_snapshotIds[_account][index] == _snapshotId) return _snapshotId;
+            else if (index > 0) return _snapshotIds[_account][index - 1];
+            else return 0;
         }
     }
 
