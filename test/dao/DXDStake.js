@@ -373,11 +373,11 @@ contract("DXD staking and DXD influence", async accounts => {
       await dxdStake.stake(amount, timeCommitment, { from: dxdHolder });
 
       let influence = await dxdInfluence.balanceOf(dxdHolder);
-      let influenceAt = await dxdInfluence.balanceOfAt(dxdHolder, 1);
+      let influenceAt = await dxdInfluence.balanceOfAt(dxdHolder, 2);
       expect(influence).to.be.bignumber.equal(influenceAt);
 
       let totalInfluence = await dxdInfluence.totalSupply();
-      let totalInfluenceAt = await dxdInfluence.totalSupplyAt(1);
+      let totalInfluenceAt = await dxdInfluence.totalSupplyAt(2);
       expect(totalInfluence).to.be.bignumber.equal(totalInfluenceAt);
 
       let estimatedInfluence = estimateInfluence(
@@ -400,19 +400,19 @@ contract("DXD staking and DXD influence", async accounts => {
         influence
       );
       expect(
-        await dxdInfluence.balanceOfAt(dxdHolder, 1)
+        await dxdInfluence.balanceOfAt(dxdHolder, 2)
       ).to.be.bignumber.equal(influence);
       expect(
-        await dxdInfluence.balanceOfAt(dxdHolder, 2)
+        await dxdInfluence.balanceOfAt(dxdHolder, 3)
       ).to.be.bignumber.equal(influence);
 
       expect(await dxdInfluence.totalSupply()).to.be.bignumber.equal(
         totalInfluence
       );
-      expect(await dxdInfluence.totalSupplyAt(1)).to.be.bignumber.equal(
+      expect(await dxdInfluence.totalSupplyAt(2)).to.be.bignumber.equal(
         totalInfluence
       );
-      expect(await dxdInfluence.totalSupplyAt(2)).to.be.bignumber.equal(
+      expect(await dxdInfluence.totalSupplyAt(3)).to.be.bignumber.equal(
         totalInfluence
       );
 
@@ -423,25 +423,25 @@ contract("DXD staking and DXD influence", async accounts => {
         influence
       );
       expect(
-        await dxdInfluence.balanceOfAt(dxdHolder, 1)
-      ).to.be.bignumber.equal(influence);
-      expect(
         await dxdInfluence.balanceOfAt(dxdHolder, 2)
       ).to.be.bignumber.equal(influence);
       expect(
         await dxdInfluence.balanceOfAt(dxdHolder, 3)
       ).to.be.bignumber.equal(influence);
+      expect(
+        await dxdInfluence.balanceOfAt(dxdHolder, 4)
+      ).to.be.bignumber.equal(influence);
 
       expect(await dxdInfluence.totalSupply()).to.be.bignumber.equal(
-        totalInfluence
-      );
-      expect(await dxdInfluence.totalSupplyAt(1)).to.be.bignumber.equal(
         totalInfluence
       );
       expect(await dxdInfluence.totalSupplyAt(2)).to.be.bignumber.equal(
         totalInfluence
       );
       expect(await dxdInfluence.totalSupplyAt(3)).to.be.bignumber.equal(
+        totalInfluence
+      );
+      expect(await dxdInfluence.totalSupplyAt(4)).to.be.bignumber.equal(
         totalInfluence
       );
 
@@ -451,11 +451,11 @@ contract("DXD staking and DXD influence", async accounts => {
       await dxdStake.stake(amount, timeCommitment, { from: dxdHolder });
 
       influence = await dxdInfluence.balanceOf(dxdHolder);
-      influenceAt = await dxdInfluence.balanceOfAt(dxdHolder, 4);
+      influenceAt = await dxdInfluence.balanceOfAt(dxdHolder, 5);
       expect(influence).to.be.bignumber.equal(influenceAt);
 
       totalInfluence = await dxdInfluence.totalSupply();
-      totalInfluenceAt = await dxdInfluence.totalSupplyAt(4);
+      totalInfluenceAt = await dxdInfluence.totalSupplyAt(5);
       expect(totalInfluence).to.be.bignumber.equal(totalInfluenceAt);
 
       estimatedInfluence = estimateInfluence(Number(intAmount), timeCommitment);
@@ -510,6 +510,9 @@ contract("DXD staking and DXD influence", async accounts => {
         "DXDInfluence: negative influence, update formula"
       );
 
+      const influenceBalance00 = await dxdInfluence.balanceOfAt(dxdHolder, 2);
+      expect(influenceBalance0).to.be.bignumber.equal(influenceBalance00);
+
       const newEF = 1.5;
       const newExponentialFactor = web3.utils.toWei(newEF.toString(), "ether");
       await dxdStake.changeInfluenceFormula(
@@ -517,7 +520,16 @@ contract("DXD staking and DXD influence", async accounts => {
         newExponentialFactor,
         { from: accounts[0] }
       );
+      await expectRevert(
+        dxdInfluence.balanceOfAt(dxdHolder, 3),
+        "DXDInfluence: negative influence, update formula"
+      );
+      const influenceBalance000 = await dxdInfluence.balanceOfAt(dxdHolder, 2);
+      expect(influenceBalance000).to.be.bignumber.equal(influenceBalance00);
+
       const influenceBalance1 = await dxdInfluence.balanceOf(dxdHolder);
+      const influenceBalance11 = await dxdInfluence.balanceOfAt(dxdHolder, 4);
+      expect(influenceBalance1).to.be.bignumber.equal(influenceBalance11);
     });
   });
 });
