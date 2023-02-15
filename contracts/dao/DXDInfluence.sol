@@ -58,9 +58,10 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
     /// @dev keeps track of the influence parameters of each account at the snapshot the account's stake was modified.
     mapping(address => mapping(uint256 => CumulativeStake)) public cumulativeStakesSnapshots;
 
-    /// @dev totalStakeSnapshots[snapshotId]
-    /// @dev keeps track of the influence parameters of the total stake at each snapshot.
-    mapping(uint256 => CumulativeStake) public totalStakeSnapshots;
+    /// @dev keeps track of the influence parameters (linear and exponential elements) at the latest snapshot.
+    CumulativeStake public totalCumulativeStake;
+    /// @dev _totalInfluenceSnapshots[snapshotId] keeps track of the total influence at each snapshot.
+    mapping(uint256 => uint256) private _totalInfluenceSnapshots;
 
     constructor() {}
 
@@ -98,10 +99,7 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
         formulaMutableParams[currentSnapshotId].exponentialMultiplier = SD59x18.wrap(_exponentialMultiplier);
 
         // Update global stake data
-        CumulativeStake storage newTotalStake = totalStakeSnapshots[currentSnapshotId];
-        CumulativeStake storage previousTotalStake = totalStakeSnapshots[currentSnapshotId - 1];
-        newTotalStake.linearElement = previousTotalStake.linearElement;
-        newTotalStake.exponentialElement = previousTotalStake.exponentialElement;
+        _totalInfluenceSnapshots[currentSnapshotId] = _totalInfluenceSnapshots[currentSnapshotId - 1];
     }
 
     /**
@@ -122,17 +120,20 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
 
         UD60x18 tc = toUD60x18(_timeCommitment);
         uint256 exponentialElement = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
+        uint256 linearElement = _amount * _timeCommitment;
 
         // Update account's stake data
         CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[_account][currentSnapshotId];
-        cumulativeStake.linearElement = lastCumulativeStake.linearElement + _amount * _timeCommitment;
+        cumulativeStake.linearElement = lastCumulativeStake.linearElement + linearElement;
         cumulativeStake.exponentialElement = lastCumulativeStake.exponentialElement + exponentialElement;
 
         // Update global stake data
-        CumulativeStake storage newTotalStake = totalStakeSnapshots[currentSnapshotId];
-        CumulativeStake storage previousTotalStake = totalStakeSnapshots[currentSnapshotId - 1];
-        newTotalStake.linearElement = previousTotalStake.linearElement + _amount * _timeCommitment;
-        newTotalStake.exponentialElement = previousTotalStake.exponentialElement + exponentialElement;
+        totalCumulativeStake.exponentialElement += exponentialElement;
+        totalCumulativeStake.linearElement += linearElement;
+        _totalInfluenceSnapshots[currentSnapshotId] = calculateInfluence(
+            totalCumulativeStake,
+            formulaMutableParams[_lastSnapshotId(FORMULA_SNAPSHOT_SLOT)]
+        );
 
         // Notify Voting Power contract.
         votingPower.callback();
@@ -156,17 +157,20 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
 
         UD60x18 tc = toUD60x18(_timeCommitment);
         uint256 exponentialElement = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
+        uint256 linearElement = _amount * _timeCommitment;
 
         // Update account's stake data
         CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[_account][currentSnapshotId];
-        cumulativeStake.linearElement = lastCumulativeStake.linearElement - _amount * _timeCommitment;
+        cumulativeStake.linearElement = lastCumulativeStake.linearElement - linearElement;
         cumulativeStake.exponentialElement = lastCumulativeStake.exponentialElement - exponentialElement;
 
         // Update global stake data
-        CumulativeStake storage newTotalStake = totalStakeSnapshots[currentSnapshotId];
-        CumulativeStake storage previousTotalStake = totalStakeSnapshots[currentSnapshotId - 1];
-        newTotalStake.linearElement = previousTotalStake.linearElement - _amount * _timeCommitment;
-        newTotalStake.exponentialElement = previousTotalStake.exponentialElement - exponentialElement;
+        totalCumulativeStake.exponentialElement -= exponentialElement;
+        totalCumulativeStake.linearElement -= linearElement;
+        _totalInfluenceSnapshots[currentSnapshotId] = calculateInfluence(
+            totalCumulativeStake,
+            formulaMutableParams[_lastSnapshotId(FORMULA_SNAPSHOT_SLOT)]
+        );
 
         // Notify Voting Power contract.
         votingPower.callback();
@@ -196,8 +200,7 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
      * @dev Retrieves the influence total supply at the time `snapshotId` was created.
      */
     function totalSupplyAt(uint256 snapshotId) public view returns (uint256) {
-        CumulativeStake storage currentTotalStake = totalStakeSnapshots[snapshotId];
-        return calculateInfluence(currentTotalStake, snapshotId);
+        return _totalInfluenceSnapshots[snapshotId];
     }
 
     /**
@@ -205,7 +208,7 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
      */
     function balanceOf(address account) public view returns (uint256) {
         CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[account][_lastSnapshotId(account)];
-        return calculateInfluence(cumulativeStake, getCurrentSnapshotId());
+        return calculateInfluence(cumulativeStake, formulaMutableParams[_lastSnapshotId(FORMULA_SNAPSHOT_SLOT)]);
     }
 
     /**
@@ -214,26 +217,24 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
     function balanceOfAt(address account, uint256 snapshotId) public view returns (uint256) {
         uint256 lastSnapshotId = _lastRegisteredSnapshotIdAt(snapshotId, account);
         CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[account][lastSnapshotId];
-        return calculateInfluence(cumulativeStake, snapshotId);
+        return calculateInfluence(cumulativeStake, getFormulaMutableParamsAt(snapshotId));
     }
 
     /**
      * @dev Calculates influence for the given cumulative stake data point.
      * @param _cumulativeStake Accumulated stake information on a specific snapshot.
-     * @param _snapshotId Id of the snapshot.
+     * @param _params formula params to use.
      */
-    function calculateInfluence(CumulativeStake storage _cumulativeStake, uint256 _snapshotId)
+    function calculateInfluence(CumulativeStake storage _cumulativeStake, FormulaMutableParams storage _params)
         internal
         view
         returns (uint256)
     {
-        (SD59x18 linearMultiplier, SD59x18 exponentialMultiplier) = getFormulaMutableParamsAt(_snapshotId);
-
         SD59x18 linearElement = SD59x18.wrap(int256(_cumulativeStake.linearElement));
-        SD59x18 linearInfluence = linearMultiplier.mul(linearElement);
+        SD59x18 linearInfluence = _params.linearMultiplier.mul(linearElement);
 
         SD59x18 exponentialElement = SD59x18.wrap(int256(_cumulativeStake.exponentialElement));
-        SD59x18 exponentialInfluence = exponentialMultiplier.mul(exponentialElement);
+        SD59x18 exponentialInfluence = _params.exponentialMultiplier.mul(exponentialElement);
 
         int256 influence = SD59x18.unwrap(linearInfluence.add(exponentialInfluence));
         require(influence >= 0, "DXDInfluence: negative influence, update formula");
@@ -244,12 +245,9 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
      * @dev Retrieves the influence formula parameters at the time `_snapshotId` was created.
      * @param _snapshotId Id of the snapshot.
      */
-    function getFormulaMutableParamsAt(uint256 _snapshotId) public view returns (SD59x18, SD59x18) {
+    function getFormulaMutableParamsAt(uint256 _snapshotId) internal view returns (FormulaMutableParams storage) {
         uint256 lastSnapshotId = _lastRegisteredSnapshotIdAt(_snapshotId, FORMULA_SNAPSHOT_SLOT);
-        return (
-            formulaMutableParams[lastSnapshotId].linearMultiplier,
-            formulaMutableParams[lastSnapshotId].exponentialMultiplier
-        );
+        return formulaMutableParams[lastSnapshotId];
     }
 
     /**

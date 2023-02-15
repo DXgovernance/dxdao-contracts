@@ -26,7 +26,7 @@ contract AccountSnapshot {
         unchecked {
             currentId = ++_currentSnapshotId;
         }
-        _snapshotIds[_account].push(_currentSnapshotId);
+        _snapshotIds[_account].push(currentId);
         emit Snapshot(currentId);
         return currentId;
     }
