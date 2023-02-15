@@ -32,8 +32,8 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
     uint256 public maxTimeCommitment;
 
     mapping(address => StakeCommitment[]) public stakeCommitments; // stakeCommitments[account]
-    mapping(address => uint256) public userActiveStakes;
-    uint256 public totalActiveStakes;
+    mapping(address => uint256) public userWithdrawals;
+    uint256 public totalWithdrawals;
 
     bool public earlyWithdrawalsEnabled;
     /// @dev a penalty might apply when withdrawing a stake early. The penalty will be sent to the  `penaltyRecipient`.
@@ -132,8 +132,6 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
         stakeCommitment.stake = uint176(_amount);
         stakeCommitment.timeCommitment = _timeCommitment;
         stakeCommitment.commitmentEnd = uint40(block.timestamp) + _timeCommitment;
-        userActiveStakes[msg.sender] += 1;
-        totalActiveStakes += 1;
 
         // Mint influence tokens.
         dxdInfluence.mint(msg.sender, _amount, _timeCommitment);
@@ -216,8 +214,8 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
         _stakeCommitment.stake = 0;
         _stakeCommitment.timeCommitment = 0;
         _stakeCommitment.commitmentEnd = 0;
-        userActiveStakes[_account] -= 1;
-        totalActiveStakes -= 1;
+        userWithdrawals[_account] += 1;
+        totalWithdrawals += 1;
     }
 
     /**
@@ -226,6 +224,14 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
      */
     function getAccountTotalStakes(address _account) external view returns (uint256) {
         return stakeCommitments[_account].length;
+    }
+
+    /**
+     * @dev Total active stakes for the given address, i.e. not counting withdrawn commitments.
+     * @param _account Account that has staked.
+     */
+    function getAccountActiveStakes(address _account) external view returns (uint256) {
+        return stakeCommitments[_account].length - userWithdrawals[_account];
     }
 
     /**
@@ -245,7 +251,7 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
      * @dev Get the amount of stakes ever, counting both active and inactive ones.
      */
     function getTotalStakes() external view returns (uint256) {
-        return (_getCurrentSnapshotId() + totalActiveStakes) / 2;
+        return _getCurrentSnapshotId() - 2 * totalWithdrawals;
     }
 
     /**

@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ArraysUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
@@ -54,25 +53,31 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
     // https://github.com/Giveth/minime/blob/ea04d950eea153a04c51fa510b068b9dded390cb/contracts/MiniMeToken.sol
 
     using ArraysUpgradeable for uint256[];
-    using CountersUpgradeable for CountersUpgradeable.Counter;
 
     // Snapshotted values have arrays of ids and the value corresponding to that id. These could be an array of a
     // Snapshot struct, but that would impede usage of functions that work on an array.
     struct Snapshots {
         uint256[] ids;
-        uint256[] values;
+        mapping(uint256 => uint256) values;
     }
 
     mapping(address => Snapshots) private _accountBalanceSnapshots;
     mapping(uint256 => uint256) private _totalSupplySnapshots;
 
     // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
-    CountersUpgradeable.Counter private _currentSnapshotId;
+    uint256 private _currentSnapshotId;
 
     /**
      * @dev Emitted by {_snapshot} when a snapshot identified by `id` is created.
      */
     event Snapshot(uint256 id);
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[47] private __gap;
 
     /**
      * @dev Creates a new snapshot and returns its snapshot id.
@@ -96,7 +101,9 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
      * ====
      */
     function _snapshot() internal virtual returns (uint256) {
-        _currentSnapshotId.increment();
+        unchecked {
+            _currentSnapshotId += 1;
+        }
 
         uint256 currentId = _getCurrentSnapshotId();
         emit Snapshot(currentId);
@@ -107,7 +114,7 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
      * @dev Get the current snapshotId
      */
     function _getCurrentSnapshotId() internal view virtual returns (uint256) {
-        return _currentSnapshotId.current();
+        return _currentSnapshotId;
     }
 
     /**
@@ -135,18 +142,20 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
     ) internal virtual override {
         super._beforeTokenTransfer(from, to, amount);
 
+        uint256 currentId = _currentSnapshotId;
         if (from == address(0)) {
             // mint
-            _updateAccountSnapshot(to);
-            _updateTotalSupplySnapshot();
+            _accountBalanceSnapshots[to].ids.push(currentId);
+            _accountBalanceSnapshots[to].values[currentId] = balanceOf(to);
         } else if (to == address(0)) {
             // burn
-            _updateAccountSnapshot(from);
-            _updateTotalSupplySnapshot();
+            _accountBalanceSnapshots[from].ids.push(currentId);
+            _accountBalanceSnapshots[from].values[currentId] = balanceOf(from);
         } else {
             // transfer
             revert("ERC20Snapshot: transfer not allowed.");
         }
+        _totalSupplySnapshots[currentId] = totalSupply();
     }
 
     function _valueAt(uint256 snapshotId, Snapshots storage snapshots) private view returns (bool, uint256) {
@@ -172,23 +181,7 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
         if (index == snapshots.ids.length) {
             return (false, 0);
         } else {
-            return (true, snapshots.values[index]);
-        }
-    }
-
-    function _updateAccountSnapshot(address account) private {
-        _updateSnapshot(_accountBalanceSnapshots[account], balanceOf(account));
-    }
-
-    function _updateTotalSupplySnapshot() private {
-        _totalSupplySnapshots[_getCurrentSnapshotId() + 1] = totalSupply();
-    }
-
-    function _updateSnapshot(Snapshots storage snapshots, uint256 currentValue) private {
-        uint256 currentId = _getCurrentSnapshotId();
-        if (_lastSnapshotId(snapshots.ids) < currentId) {
-            snapshots.ids.push(currentId);
-            snapshots.values.push(currentValue);
+            return (true, snapshots.values[snapshots.ids[index]]);
         }
     }
 
@@ -199,11 +192,4 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
             return ids[ids.length - 1];
         }
     }
-
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
-    uint256[46] private __gap;
 }
