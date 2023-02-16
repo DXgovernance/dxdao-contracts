@@ -6,10 +6,7 @@ import {UD60x18, toUD60x18, fromUD60x18} from "@prb/math/src/UD60x18.sol";
 import {SD59x18} from "@prb/math/src/SD59x18.sol";
 import "./AccountSnapshot.sol";
 import "./DXDStake.sol";
-
-interface VotingPower {
-    function callback() external;
-}
+import "./VotingPower.sol";
 
 /**
  * @title DXDInfluence

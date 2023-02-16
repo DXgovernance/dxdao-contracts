@@ -4,7 +4,7 @@ const { expectEvent, expectRevert } = require("@openzeppelin/test-helpers");
 
 const DAOReputation = artifacts.require("./DAOReputation.sol");
 const ERC20SnapshotRep = artifacts.require("./ERC20SnapshotRep.sol");
-const VotingPowerToken = artifacts.require("./VotingPowerToken.sol");
+const VotingPower = artifacts.require("./VotingPower.sol");
 
 contract("DAOReputation", async accounts => {
   let tokenName, tokenSymbol, daoReputation, addresses, amounts, owner;
@@ -18,7 +18,7 @@ contract("DAOReputation", async accounts => {
 
     daoReputation = await DAOReputation.new();
 
-    const vpToken = await VotingPowerToken.new();
+    const vpToken = await VotingPower.new();
     const dxdStakingToken = await ERC20SnapshotRep.new();
     await dxdStakingToken.initialize("DXdao", "DXD");
 
