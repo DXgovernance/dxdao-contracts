@@ -6,6 +6,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
 
 /**
  * @dev This contract extends an ERC20 token with a snapshot mechanism. When a snapshot is created, the balances and
@@ -153,7 +154,7 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
         }
 
         _accountBalanceSnapshots[modifiedAccount].push(
-            SnapshotData({id: uint80(currentId), value: uint176(balanceOf(modifiedAccount))})
+            SnapshotData({id: SafeCast.toUint80(currentId), value: SafeCast.toUint176(balanceOf(modifiedAccount))})
         );
         _totalSupplySnapshots[currentId] = totalSupply();
     }
