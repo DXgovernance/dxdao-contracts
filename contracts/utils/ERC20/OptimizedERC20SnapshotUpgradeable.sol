@@ -10,7 +10,7 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
 
 /**
  * @dev This contract extends an ERC20 token with a snapshot mechanism. When a snapshot is created, the balances and
- * total supply at the time are recorded for later access. 
+ * total supply at the time are recorded for later access.
  *
  * NOTE: This is an optimized version of ERC20SnapshotUpgradeable in which it is assumed that the token is not
  * transferable and that there is a total supply value for each snapshot. In other words, a snapshot has to be taken
@@ -154,7 +154,10 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
         }
 
         _accountBalanceSnapshots[modifiedAccount].push(
-            SnapshotData({id: SafeCast.toUint80(currentId), value: SafeCast.toUint176(balanceOf(modifiedAccount))})
+            SnapshotData({
+                id: SafeCastUpgradeable.toUint80(currentId),
+                value: SafeCastUpgradeable.toUint176(balanceOf(modifiedAccount))
+            })
         );
         _totalSupplySnapshots[currentId] = totalSupply();
     }
