@@ -145,6 +145,8 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
     /**
      * @dev Updates an existing commitment. The stake remains the same, but the time period is updated.
      * The influence is calculated according to the new time commited, not the original one.
+     * What this function increases is the commitment finalization time, but not necessarily `_newTimeCommitment`
+     * has to be greater than the previous one.
      * @param _commitmentId Id of the commitment. The Id is an incremental variable for each account.
      * @param _newTimeCommitment Time that the user commits to lock the token in this staking contract.
      */
@@ -156,9 +158,13 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
             "DXDStake: timeCommitment too small"
         );
 
-        // Update influence. Burning and minting is inefficient, because an extra snapshot is taken.
-        dxdInfluence.burn(msg.sender, stakeCommitment.stake, stakeCommitment.timeCommitment);
-        dxdInfluence.mint(msg.sender, stakeCommitment.stake, _newTimeCommitment);
+        // Update influence.
+        dxdInfluence.updateTime(
+            msg.sender,
+            stakeCommitment.stake,
+            stakeCommitment.timeCommitment,
+            _newTimeCommitment
+        );
 
         stakeCommitment.timeCommitment = _newTimeCommitment;
         stakeCommitment.commitmentEnd = uint40(block.timestamp) + _newTimeCommitment;

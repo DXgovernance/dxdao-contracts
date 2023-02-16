@@ -105,7 +105,7 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
     /**
      * @dev Mints influence tokens according to the amount staked and takes a snapshot. The influence value
      * is not stored, only the linear and exponential elements of the formula are updated, which are then used
-     * to compute the influence on the fly in the balance and total supply getters.
+     * to compute the influence on the fly in the balance getter.
      * @param _account Account that has staked the tokens.
      * @param _amount Amount of tokens to have been staked.
      * @param _timeCommitment Time that the user commits to lock the tokens.
@@ -142,7 +142,7 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
     /**
      * @dev Burns influence tokens according to the amount withdrawn and takes a snapshot. The influence value
      * is not stored, only the linear and exponential elements of the formula are updated, which are then used
-     * to compute the influence on the fly in the balance and total supply getters.
+     * to compute the influence on the fly in the balance getter.
      * @param _account Account that has staked the tokens.
      * @param _amount Amount of tokens to have been staked.
      * @param _timeCommitment Time that the user commits to lock the tokens.
@@ -167,6 +167,55 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
         // Update global stake data
         totalCumulativeStake.exponentialElement -= exponentialElement;
         totalCumulativeStake.linearElement -= linearElement;
+        _totalInfluenceSnapshots[currentSnapshotId] = calculateInfluence(
+            totalCumulativeStake,
+            formulaMutableParams[_lastSnapshotId(FORMULA_SNAPSHOT_SLOT)]
+        );
+
+        // Notify Voting Power contract.
+        votingPower.callback();
+    }
+
+    /**
+     * @dev Updates the time a given amount of DXD was staked for and takes a snapshot. The influence value
+     * is not stored, only the linear and exponential elements of the formula are updated, which are then used
+     * to compute the influence on the fly in the balance getter.
+     * @param _account Account that has staked the tokens.
+     * @param _amount Amount of tokens to have been staked.
+     * @param _oldTimeCommitment Time that the user commits to lock the tokens.
+     * @param _newTimeCommitment Time that the user commits to lock the tokens.
+     */
+    function updateTime(
+        address _account,
+        uint256 _amount,
+        uint256 _oldTimeCommitment,
+        uint256 _newTimeCommitment
+    ) external onlyOwner {
+        CumulativeStake storage lastCumulativeStake = getLastCumulativeStake(_account);
+        uint256 currentSnapshotId = _snapshot(_account);
+
+        UD60x18 oldTc = toUD60x18(_oldTimeCommitment);
+        uint256 oldExponentialElement = fromUD60x18(toUD60x18(_amount).mul(oldTc.pow(exponent)));
+        uint256 oldLinearElement = _amount * _oldTimeCommitment;
+
+        UD60x18 newTc = toUD60x18(_newTimeCommitment);
+        uint256 newExponentialElement = fromUD60x18(toUD60x18(_amount).mul(newTc.pow(exponent)));
+        uint256 newLinearElement = _amount * _newTimeCommitment;
+
+        // Update account's stake data
+        CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[_account][currentSnapshotId];
+        cumulativeStake.linearElement = lastCumulativeStake.linearElement - oldLinearElement + newLinearElement;
+        cumulativeStake.exponentialElement =
+            lastCumulativeStake.exponentialElement -
+            oldExponentialElement +
+            newExponentialElement;
+
+        // Update global stake data
+        totalCumulativeStake.exponentialElement =
+            totalCumulativeStake.exponentialElement -
+            oldExponentialElement +
+            newExponentialElement;
+        totalCumulativeStake.linearElement = totalCumulativeStake.linearElement - oldLinearElement + newLinearElement;
         _totalInfluenceSnapshots[currentSnapshotId] = calculateInfluence(
             totalCumulativeStake,
             formulaMutableParams[_lastSnapshotId(FORMULA_SNAPSHOT_SLOT)]
