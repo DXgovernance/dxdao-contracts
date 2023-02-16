@@ -91,7 +91,7 @@ contract("DXD staking and DXD influence", async accounts => {
     it("should not be able to transfer tokens", async () => {
       await expectRevert(
         dxdStake.transfer(accounts[1], 100),
-        "DXDStake__NoTransfer()"
+        "ERC20Snapshot: transfer not allowed."
       );
 
       await dxdStake.approve(accounts[1], 100, { from: accounts[0] });
@@ -99,7 +99,7 @@ contract("DXD staking and DXD influence", async accounts => {
         dxdStake.transferFrom(accounts[0], accounts[2], 1, {
           from: accounts[1],
         }),
-        "DXDStake__NoTransfer()"
+        "ERC20Snapshot: transfer not allowed."
       );
     });
 

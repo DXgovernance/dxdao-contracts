@@ -8,7 +8,8 @@ import "../utils/ERC20/OptimizedERC20SnapshotUpgradeable.sol";
 
 /**
  * @title DXDStake
- * @dev DXD wrapper contract. DXD tokens converted into DXDStake tokens get locked and are not transferable.
+ * @dev DXD wrapper contract. DXD tokens converted into DXDStake tokens get locked and are not transferable. The
+ * non-transferability is enforced in OptimizedERC20SnapshotUpgradeable _beforeTokenTransfer() callback.
  * Users staking DXD in this contract decide for how much time their tokens will be locked. This stake commitment
  * cannot be undone unless early withdrawals are enabled by governance, in which case a penalty might apply.
  * How long users commit to stake is important, given that the more time tokens are staked, the more voting power
@@ -43,9 +44,6 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
     /// @dev basis points. A % of the tokens staked will be taken away for withdrawing early.
     uint256 public earlyWithdrawalPenalty;
 
-    /// @notice Error when trying to transfer reputation
-    error DXDStake__NoTransfer();
-
     constructor() {}
 
     function initialize(
@@ -57,7 +55,6 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
         string memory symbol
     ) external initializer {
         __ERC20_init(name, symbol);
-        __Ownable_init();
 
         _transferOwnership(_owner);
         dxd = IERC20Upgradeable(_dxd);
@@ -111,25 +108,16 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
         dxdInfluence.changeFormula(_linearFactor, _exponentialFactor);
     }
 
-    /// @dev Do not allow the transfer of tokens.
-    function _transfer(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) internal virtual override {
-        revert DXDStake__NoTransfer();
-    }
-
     /**
      * @dev Stakes tokens from the user.
      * @param _amount Amount of tokens to stake.
      * @param _timeCommitment Time that the user commits to lock the tokens in this staking contract.
      */
-    function stake(uint256 _amount, uint40 _timeCommitment) external {
+    function stake(uint176 _amount, uint40 _timeCommitment) external {
         require(_timeCommitment <= maxTimeCommitment, "DXDStake: timeCommitment too big");
 
         StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender].push();
-        stakeCommitment.stake = uint176(_amount);
+        stakeCommitment.stake = _amount;
         stakeCommitment.timeCommitment = _timeCommitment;
         stakeCommitment.commitmentEnd = uint40(block.timestamp) + _timeCommitment;
 

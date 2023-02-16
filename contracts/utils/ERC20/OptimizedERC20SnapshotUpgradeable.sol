@@ -4,16 +4,16 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ArraysUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 /**
  * @dev This contract extends an ERC20 token with a snapshot mechanism. When a snapshot is created, the balances and
- * total supply at the time are recorded for later access.
+ * total supply at the time are recorded for later access. 
  *
  * NOTE: This is an optimized version of ERC20SnapshotUpgradeable in which it is assumed that the token is not
  * transferable and that there is a total supply value for each snapshot. In other words, a snapshot has to be taken
- * every time after tokens are mint or burnt.
+ * every time after tokens are mint or burnt. Some inspiration is taken from {ERC20Votes}.
  *
  * This can be used to safely create mechanisms based on token balances such as trustless dividends or weighted voting.
  * In naive implementations it's possible to perform a "double spend" attack by reusing the same balance from different
@@ -51,16 +51,14 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
     // Inspired by Jordi Baylina's MiniMeToken to record historical balances:
     // https://github.com/Giveth/minime/blob/ea04d950eea153a04c51fa510b068b9dded390cb/contracts/MiniMeToken.sol
 
-    using ArraysUpgradeable for uint256[];
-
     // Snapshotted values have arrays of ids and the value corresponding to that id. These could be an array of a
     // Snapshot struct, but that would impede usage of functions that work on an array.
-    struct Snapshots {
-        uint256[] ids;
-        mapping(uint256 => uint256) values;
+    struct SnapshotData {
+        uint80 id;
+        uint176 value;
     }
 
-    mapping(address => Snapshots) private _accountBalanceSnapshots;
+    mapping(address => SnapshotData[]) private _accountBalanceSnapshots;
     mapping(uint256 => uint256) private _totalSupplySnapshots;
 
     // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
@@ -142,22 +140,25 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
         super._beforeTokenTransfer(from, to, amount);
 
         uint256 currentId = _currentSnapshotId;
+        address modifiedAccount;
         if (from == address(0)) {
             // mint
-            _accountBalanceSnapshots[to].ids.push(currentId);
-            _accountBalanceSnapshots[to].values[currentId] = balanceOf(to);
+            modifiedAccount = from;
         } else if (to == address(0)) {
             // burn
-            _accountBalanceSnapshots[from].ids.push(currentId);
-            _accountBalanceSnapshots[from].values[currentId] = balanceOf(from);
+            modifiedAccount = to;
         } else {
             // transfer
             revert("ERC20Snapshot: transfer not allowed.");
         }
+
+        _accountBalanceSnapshots[modifiedAccount].push(
+            SnapshotData({id: uint80(currentId), value: uint176(balanceOf(modifiedAccount))})
+        );
         _totalSupplySnapshots[currentId] = totalSupply();
     }
 
-    function _valueAt(uint256 snapshotId, Snapshots storage snapshots) private view returns (bool, uint256) {
+    function _valueAt(uint256 snapshotId, SnapshotData[] storage snapshots) private view returns (bool, uint256) {
         require(snapshotId > 0, "ERC20Snapshot: id is 0");
         require(snapshotId <= _getCurrentSnapshotId(), "ERC20Snapshot: nonexistent id");
 
@@ -175,12 +176,12 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
         // it is not found, unless said value doesn't exist (e.g. when all values are smaller). Arrays.findUpperBound does
         // exactly this.
 
-        uint256 index = snapshots.ids.findUpperBound(snapshotId);
+        uint256 index = findUpperBound(snapshots, snapshotId);
 
-        if (index == snapshots.ids.length) {
+        if (index == snapshots.length) {
             return (false, 0);
         } else {
-            return (true, snapshots.values[snapshots.ids[index]]);
+            return (true, snapshots[index].value);
         }
     }
 
@@ -189,6 +190,57 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
             return 0;
         } else {
             return ids[ids.length - 1];
+        }
+    }
+
+    /**
+     * @dev Searches a sorted `array` and returns the first index that contains
+     * a value greater or equal to `element`. If no such index exists (i.e. all
+     * values in the array are strictly less than `element`), the array length is
+     * returned. Time complexity O(log n).
+     *
+     * `array` is expected to be sorted in ascending order, and to contain no
+     * repeated elements.
+     */
+    function findUpperBound(SnapshotData[] storage snapshots, uint256 snapshotId) internal view returns (uint256) {
+        if (snapshots.length == 0) {
+            return 0;
+        }
+
+        uint256 low = 0;
+        uint256 high = snapshots.length;
+
+        while (low < high) {
+            uint256 mid = MathUpgradeable.average(low, high);
+
+            // Note that mid will always be strictly less than high (i.e. it will be a valid array index)
+            // because Math.average rounds down (it does integer division with truncation).
+            if (_unsafeAccess(snapshots, mid).id > snapshotId) {
+                high = mid;
+            } else {
+                low = mid + 1;
+            }
+        }
+
+        // At this point `low` is the exclusive upper bound. We will return the inclusive upper bound.
+        if (low > 0 && _unsafeAccess(snapshots, low - 1).id == snapshotId) {
+            return low - 1;
+        } else {
+            return low;
+        }
+    }
+
+    /**
+     * @dev Access an element of the array without performing bounds check. The position is assumed to be within bounds.
+     */
+    function _unsafeAccess(SnapshotData[] storage snapshot, uint256 pos)
+        private
+        pure
+        returns (SnapshotData storage result)
+    {
+        assembly {
+            mstore(0, snapshot.slot)
+            result.slot := add(keccak256(0, 0x20), pos)
         }
     }
 }
