@@ -154,17 +154,12 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
         require(_newTimeCommitment <= maxTimeCommitment, "DXDStake: timeCommitment too big");
         StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender][_commitmentId];
         require(
-            stakeCommitment.commitmentEnd <= block.timestamp + _newTimeCommitment,
+            stakeCommitment.commitmentEnd <= uint40(block.timestamp) + _newTimeCommitment,
             "DXDStake: timeCommitment too small"
         );
 
         // Update influence.
-        dxdInfluence.updateTime(
-            msg.sender,
-            stakeCommitment.stake,
-            stakeCommitment.timeCommitment,
-            _newTimeCommitment
-        );
+        dxdInfluence.updateTime(msg.sender, stakeCommitment.stake, stakeCommitment.timeCommitment, _newTimeCommitment);
 
         stakeCommitment.timeCommitment = _newTimeCommitment;
         stakeCommitment.commitmentEnd = uint40(block.timestamp) + _newTimeCommitment;
@@ -196,7 +191,7 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
         uint256 maxTimeLeft = (stakeCommitment.timeCommitment * (BASIS_POINT_DIVISOR - earlyWithdrawalMinTime)) /
             BASIS_POINT_DIVISOR;
         require(
-            block.timestamp > stakeCommitment.commitmentEnd - maxTimeLeft,
+            block.timestamp > stakeCommitment.commitmentEnd - uint40(maxTimeLeft),
             "DXDStake: early withdrawal attempted too soon"
         );
 
@@ -257,6 +252,13 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
      * @dev Get the amount of stakes ever, counting both active and inactive ones.
      */
     function getTotalStakes() external view returns (uint256) {
+        return _getCurrentSnapshotId() - totalWithdrawals;
+    }
+
+    /**
+     * @dev Get the amount of active stakes.
+     */
+    function getTotalActiveStakes() external view returns (uint256) {
         return _getCurrentSnapshotId() - 2 * totalWithdrawals;
     }
 

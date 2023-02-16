@@ -44,11 +44,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  */
 
 abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgradeable {
-    function __ERC20Snapshot_init() internal onlyInitializing {
-    }
+    function __ERC20Snapshot_init() internal onlyInitializing {}
 
-    function __ERC20Snapshot_init_unchained() internal onlyInitializing {
-    }
+    function __ERC20Snapshot_init_unchained() internal onlyInitializing {}
+
     // Inspired by Jordi Baylina's MiniMeToken to record historical balances:
     // https://github.com/Giveth/minime/blob/ea04d950eea153a04c51fa510b068b9dded390cb/contracts/MiniMeToken.sol
 
