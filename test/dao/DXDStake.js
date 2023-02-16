@@ -125,11 +125,11 @@ contract("DXD staking and DXD influence", async accounts => {
       });
       assert.equal(stDXDBalance.toString(), new BN(amount).toString());
 
-      const userActiveStakes = await dxdStake.userActiveStakes(dxdHolder);
+      const userActiveStakes = await dxdStake.getAccountActiveStakes(dxdHolder);
       assert.equal(userActiveStakes.toString(), new BN(1).toString());
       const userTotalStakes = await dxdStake.getAccountTotalStakes(dxdHolder);
       assert.equal(userTotalStakes.toString(), new BN(1).toString());
-      const totalActiveStakes = await dxdStake.totalActiveStakes();
+      const totalActiveStakes = await dxdStake.getTotalActiveStakes();
       assert.equal(totalActiveStakes.toString(), new BN(1).toString());
       const totalStakes = await dxdStake.getTotalStakes();
       assert.equal(totalStakes.toString(), new BN(1).toString());
