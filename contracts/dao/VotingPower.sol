@@ -120,11 +120,7 @@ contract VotingPower is OwnableUpgradeable {
         return calculateVotingPower(account, snapshotId);
     }
 
-    function calculateVotingPower(address account, uint256 _snapshotId)
-        internal
-        view
-        returns (uint256 votingPower)
-    {
+    function calculateVotingPower(address account, uint256 _snapshotId) internal view returns (uint256 votingPower) {
         if (_snapshotId > currentSnapshotId) revert VotingPower_InvalidSnapshotId();
         ERC20SnapshotRep[2] memory tokens = [reputation, influence];
         uint256 _votingPower = 0;
@@ -139,7 +135,7 @@ contract VotingPower is OwnableUpgradeable {
             if (tokenWeight == 0) continue;
             uint256 balance = token.balanceOfAt(account, tokenSnapshotId);
             // Skipping calculation if user has no balance
-             if (balance == 0) continue;
+            if (balance == 0) continue;
             uint256 supply = token.totalSupplyAt(tokenSnapshotId);
             uint256 tokenVotingPowerPercent = getPercent(balance, supply);
             uint256 tokenVotingPowerPercentWeighted = getWeightedVotingPowerPercentage(

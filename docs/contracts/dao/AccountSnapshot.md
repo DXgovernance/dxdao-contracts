@@ -1,0 +1,58 @@
+# Solidity API
+
+## AccountSnapshot
+
+_Inspired in ERC20Snapshot from openzeppelin. Keeps track of which account has been updated at which snapshot._
+
+### _snapshotIds
+
+```solidity
+mapping(address => uint256[]) _snapshotIds
+```
+
+### _currentSnapshotId
+
+```solidity
+uint256 _currentSnapshotId
+```
+
+### __gap
+
+```solidity
+uint256[48] __gap
+```
+
+### Snapshot
+
+```solidity
+event Snapshot(uint256 id)
+```
+
+_Emitted by {_snapshot} when a snapshot identified by `id` is created._
+
+### _snapshot
+
+```solidity
+function _snapshot(address _account) internal returns (uint256 currentId)
+```
+
+### _lastRegisteredSnapshotIdAt
+
+```solidity
+function _lastRegisteredSnapshotIdAt(uint256 _snapshotId, address _account) internal view returns (uint256)
+```
+
+### _lastSnapshotId
+
+```solidity
+function _lastSnapshotId(address _account) internal view returns (uint256)
+```
+
+### getCurrentSnapshotId
+
+```solidity
+function getCurrentSnapshotId() public view returns (uint256)
+```
+
+_Get the current snapshotId_
+

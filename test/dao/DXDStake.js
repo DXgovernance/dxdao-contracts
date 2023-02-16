@@ -493,7 +493,10 @@ contract("DXD staking and DXD influence", async accounts => {
       const amount = 100;
       const timeCommitment = 50;
 
-      let emptyInfluenceBalance = await dxdInfluence.balanceOfAt(accounts[2], 1);
+      let emptyInfluenceBalance = await dxdInfluence.balanceOfAt(
+        accounts[2],
+        1
+      );
       expect(emptyInfluenceBalance).to.be.bignumber.equal(new BN("0"));
 
       await dxd.approve(dxdStake.address, amount, { from: dxdHolder });
