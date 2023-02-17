@@ -230,12 +230,7 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
      * @param _account Account that has staked.
      */
     function getLastCumulativeStake(address _account) internal view returns (CumulativeStake storage) {
-        if (_snapshotIds[_account].length > 0) {
-            uint256 lastRegisteredSnapshotId = _snapshotIds[_account][_snapshotIds[_account].length - 1];
-            return cumulativeStakesSnapshots[_account][lastRegisteredSnapshotId];
-        } else {
-            return cumulativeStakesSnapshots[_account][0];
-        }
+        return cumulativeStakesSnapshots[_account][_lastSnapshotId(_account)];
     }
 
     /**
