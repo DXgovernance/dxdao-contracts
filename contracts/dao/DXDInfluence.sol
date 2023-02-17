@@ -5,7 +5,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UD60x18, toUD60x18, fromUD60x18} from "@prb/math/src/UD60x18.sol";
 import {SD59x18} from "@prb/math/src/SD59x18.sol";
 import "./AccountSnapshot.sol";
-import "./DXDStake.sol";
 
 interface VotingPower {
     function callback() external;
@@ -47,7 +46,7 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
         SD59x18 exponentialMultiplier;
     }
 
-    DXDStake public dxdStake;
+    address public dxdStake;
     VotingPower public votingPower;
 
     /// @dev influence formula parameters.
@@ -76,7 +75,7 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
         __Ownable_init();
 
         _transferOwnership(_dxdStake);
-        dxdStake = DXDStake(_dxdStake);
+        dxdStake = _dxdStake;
         votingPower = VotingPower(_votingPower);
 
         uint256 currentSnapshotId = _snapshot(FORMULA_SNAPSHOT_SLOT);
