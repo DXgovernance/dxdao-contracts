@@ -63,7 +63,7 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
     mapping(uint256 => uint256) private _totalSupplySnapshots;
 
     // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
-    uint256 private _currentSnapshotId;
+    uint256 internal _currentSnapshotId;
 
     /**
      * @dev Emitted by {_snapshot} when a snapshot identified by `id` is created.
@@ -102,16 +102,7 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
         unchecked {
             _currentSnapshotId += 1;
         }
-
-        uint256 currentId = _getCurrentSnapshotId();
-        emit Snapshot(currentId);
-        return currentId;
-    }
-
-    /**
-     * @dev Get the current snapshotId
-     */
-    function _getCurrentSnapshotId() internal view virtual returns (uint256) {
+        emit Snapshot(_currentSnapshotId);
         return _currentSnapshotId;
     }
 
@@ -164,7 +155,7 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
 
     function _valueAt(uint256 snapshotId, SnapshotData[] storage snapshots) private view returns (bool, uint256) {
         require(snapshotId > 0, "ERC20Snapshot: id is 0");
-        require(snapshotId <= _getCurrentSnapshotId(), "ERC20Snapshot: nonexistent id");
+        require(snapshotId <= _currentSnapshotId, "ERC20Snapshot: nonexistent id");
 
         // When a valid snapshot is queried, there are three possibilities:
         //  a) The queried value was not modified after the snapshot was taken. Therefore, a snapshot entry was never
@@ -186,14 +177,6 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
             return (false, 0);
         } else {
             return (true, snapshots[index].value);
-        }
-    }
-
-    function _lastSnapshotId(uint256[] storage ids) private view returns (uint256) {
-        if (ids.length == 0) {
-            return 0;
-        } else {
-            return ids[ids.length - 1];
         }
     }
 

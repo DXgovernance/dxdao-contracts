@@ -240,20 +240,20 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
      * @dev Get the amount of stakes ever, counting both active and inactive ones.
      */
     function getTotalStakes() external view returns (uint256) {
-        return _getCurrentSnapshotId() - totalWithdrawals;
+        return _currentSnapshotId - totalWithdrawals;
     }
 
     /**
      * @dev Get the amount of active stakes.
      */
     function getTotalActiveStakes() external view returns (uint256) {
-        return _getCurrentSnapshotId() - 2 * totalWithdrawals;
+        return _currentSnapshotId - 2 * totalWithdrawals;
     }
 
     /**
      * @dev Get the current snapshotId
      */
     function getCurrentSnapshotId() external view returns (uint256) {
-        return _getCurrentSnapshotId();
+        return _currentSnapshotId;
     }
 }
