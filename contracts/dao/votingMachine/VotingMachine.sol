@@ -371,6 +371,11 @@ contract VotingMachine {
             proposalStakes[proposalId][YES] -
             proposal.daoBounty;
 
+        uint256 staked = staker.amount;
+
+        // The staker amount is marked as 0 to make sure the staker can't redeem twice
+        staker.amount = 0;
+
         // If there is stake unclaimed
         // If the proposal didnt expired return the staked tokens
         // If the stake was in the winning option the beneficiary gets the reward
@@ -378,7 +383,7 @@ contract VotingMachine {
             (staker.amount > 0) && (proposal.state != ProposalState.Expired) && (staker.option == proposal.winningVote)
         ) {
             // The reward would be a % (of the staked on the winning option) of all the stakes
-            reward = (staker.amount * totalStakesWithoutDaoBounty) / proposalStakes[proposalId][proposal.winningVote];
+            reward = (staked * totalStakesWithoutDaoBounty) / proposalStakes[proposalId][proposal.winningVote];
 
             bool transferSuccess;
 
@@ -398,7 +403,7 @@ contract VotingMachine {
             // If the winning option was yes the reward also include a % (of the staked on the winning option)
             // of the minimum dao bounty
             if (staker.option == YES) {
-                uint256 daoBountyReward = (staker.amount * parameters[proposal.paramsHash].daoBounty) /
+                uint256 daoBountyReward = (staked * parameters[proposal.paramsHash].daoBounty) /
                     proposalStakes[proposalId][proposal.winningVote];
 
                 transferSuccess = stakingToken.transferFrom(
@@ -412,9 +417,6 @@ contract VotingMachine {
                     emit ClaimedDaoBounty(getProposalAvatar(proposalId), beneficiary, daoBountyReward);
                 }
             }
-
-            // The staker amount is marked as 0 to make sure the staker can't redeem twice
-            staker.amount = 0;
         }
     }
 
