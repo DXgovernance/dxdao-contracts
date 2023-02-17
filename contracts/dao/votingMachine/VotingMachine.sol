@@ -377,11 +377,8 @@ contract VotingMachine {
         staker.amount = 0;
 
         // If there is stake unclaimed
-        // If the proposal didnt expired return the staked tokens
         // If the stake was in the winning option the beneficiary gets the reward
-        if (
-            (staker.amount > 0) && (proposal.state != ProposalState.Expired) && (staker.option == proposal.winningVote)
-        ) {
+        if ((staked > 0) && (staker.option == proposal.winningVote)) {
             // The reward would be a % (of the staked on the winning option) of all the stakes
             reward = (staked * totalStakesWithoutDaoBounty) / proposalStakes[proposalId][proposal.winningVote];
 
