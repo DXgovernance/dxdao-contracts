@@ -2,13 +2,14 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./DXDInfluence.sol";
+import "../utils/ERC20/OptimizedERC20SnapshotUpgradeable.sol";
 
 /**
  * @title DXDStake
- * @dev DXD wrapper contract. DXD tokens converted into DXDStake tokens get locked and are not transferable.
+ * @dev DXD wrapper contract. DXD tokens converted into DXDStake tokens get locked and are not transferable. The
+ * non-transferability is enforced in OptimizedERC20SnapshotUpgradeable _beforeTokenTransfer() callback.
  * Users staking DXD in this contract decide for how much time their tokens will be locked. This stake commitment
  * cannot be undone unless early withdrawals are enabled by governance, in which case a penalty might apply.
  * How long users commit to stake is important, given that the more time tokens are staked, the more voting power
@@ -16,13 +17,13 @@ import "./DXDInfluence.sol";
  * How long tokens can be staked, is capped by `maxTimeCommitment`. This prevents users from abusing the governance
  * influence formula by staking small amounts of tokens for an infinite time.
  */
-contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
+contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     struct StakeCommitment {
-        uint256 commitmentEnd;
-        uint256 timeCommitment;
-        uint256 stake;
+        uint40 commitmentEnd;
+        uint40 timeCommitment;
+        uint176 stake; // max > 10 ** 52 >> 10 ** 18
     }
 
     uint256 private constant BASIS_POINT_DIVISOR = 10_000;
@@ -32,8 +33,8 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     uint256 public maxTimeCommitment;
 
     mapping(address => StakeCommitment[]) public stakeCommitments; // stakeCommitments[account]
-    mapping(address => uint256) public userActiveStakes;
-    uint256 public totalActiveStakes;
+    mapping(address => uint256) public userWithdrawals;
+    uint256 public totalWithdrawals;
 
     bool public earlyWithdrawalsEnabled;
     /// @dev a penalty might apply when withdrawing a stake early. The penalty will be sent to the  `penaltyRecipient`.
@@ -42,9 +43,6 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     uint256 public earlyWithdrawalMinTime;
     /// @dev basis points. A % of the tokens staked will be taken away for withdrawing early.
     uint256 public earlyWithdrawalPenalty;
-
-    /// @notice Error when trying to transfer reputation
-    error DXDStake__NoTransfer();
 
     constructor() {}
 
@@ -57,7 +55,6 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         string memory symbol
     ) external initializer {
         __ERC20_init(name, symbol);
-        __Ownable_init();
 
         _transferOwnership(_owner);
         dxd = IERC20Upgradeable(_dxd);
@@ -111,29 +108,18 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         dxdInfluence.changeFormula(_linearFactor, _exponentialFactor);
     }
 
-    /// @dev Do not allow the transfer of tokens.
-    function _transfer(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) internal virtual override {
-        revert DXDStake__NoTransfer();
-    }
-
     /**
      * @dev Stakes tokens from the user.
      * @param _amount Amount of tokens to stake.
      * @param _timeCommitment Time that the user commits to lock the tokens in this staking contract.
      */
-    function stake(uint256 _amount, uint256 _timeCommitment) external {
+    function stake(uint176 _amount, uint40 _timeCommitment) external {
         require(_timeCommitment <= maxTimeCommitment, "DXDStake: timeCommitment too big");
 
         StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender].push();
         stakeCommitment.stake = _amount;
         stakeCommitment.timeCommitment = _timeCommitment;
-        stakeCommitment.commitmentEnd = block.timestamp + _timeCommitment;
-        userActiveStakes[msg.sender] += 1;
-        totalActiveStakes += 1;
+        stakeCommitment.commitmentEnd = uint40(block.timestamp) + _timeCommitment;
 
         // Mint influence tokens.
         dxdInfluence.mint(msg.sender, _amount, _timeCommitment);
@@ -147,23 +133,24 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
     /**
      * @dev Updates an existing commitment. The stake remains the same, but the time period is updated.
      * The influence is calculated according to the new time commited, not the original one.
+     * What this function increases is the commitment finalization time, but not necessarily `_newTimeCommitment`
+     * has to be greater than the previous one.
      * @param _commitmentId Id of the commitment. The Id is an incremental variable for each account.
      * @param _newTimeCommitment Time that the user commits to lock the token in this staking contract.
      */
-    function increaseCommitmentTime(uint256 _commitmentId, uint256 _newTimeCommitment) external {
+    function increaseCommitmentTime(uint256 _commitmentId, uint40 _newTimeCommitment) external {
         require(_newTimeCommitment <= maxTimeCommitment, "DXDStake: timeCommitment too big");
         StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender][_commitmentId];
         require(
-            stakeCommitment.commitmentEnd <= block.timestamp + _newTimeCommitment,
+            stakeCommitment.commitmentEnd <= uint40(block.timestamp) + _newTimeCommitment,
             "DXDStake: timeCommitment too small"
         );
 
-        // Update influence. Burning and minting is inefficient, because an extra snapshot is taken.
-        dxdInfluence.burn(msg.sender, stakeCommitment.stake, stakeCommitment.timeCommitment);
-        dxdInfluence.mint(msg.sender, stakeCommitment.stake, _newTimeCommitment);
+        // Update influence.
+        dxdInfluence.updateTime(msg.sender, stakeCommitment.stake, stakeCommitment.timeCommitment, _newTimeCommitment);
 
         stakeCommitment.timeCommitment = _newTimeCommitment;
-        stakeCommitment.commitmentEnd = block.timestamp + _newTimeCommitment;
+        stakeCommitment.commitmentEnd = uint40(block.timestamp) + _newTimeCommitment;
     }
 
     /**
@@ -192,7 +179,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         uint256 maxTimeLeft = (stakeCommitment.timeCommitment * (BASIS_POINT_DIVISOR - earlyWithdrawalMinTime)) /
             BASIS_POINT_DIVISOR;
         require(
-            block.timestamp > stakeCommitment.commitmentEnd - maxTimeLeft,
+            block.timestamp > stakeCommitment.commitmentEnd - uint40(maxTimeLeft),
             "DXDStake: early withdrawal attempted too soon"
         );
 
@@ -200,7 +187,7 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         uint256 dxdPenalty = (stakeCommitment.stake * earlyWithdrawalPenalty) / BASIS_POINT_DIVISOR;
         dxd.safeTransfer(penaltyRecipient, dxdPenalty);
 
-        stakeCommitment.stake -= dxdPenalty;
+        stakeCommitment.stake -= uint176(dxdPenalty);
         _withdraw(stakeCommitment, msg.sender);
     }
 
@@ -216,8 +203,8 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
         _stakeCommitment.stake = 0;
         _stakeCommitment.timeCommitment = 0;
         _stakeCommitment.commitmentEnd = 0;
-        userActiveStakes[_account] -= 1;
-        totalActiveStakes -= 1;
+        userWithdrawals[_account] += 1;
+        totalWithdrawals += 1;
     }
 
     /**
@@ -226,6 +213,14 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      */
     function getAccountTotalStakes(address _account) external view returns (uint256) {
         return stakeCommitments[_account].length;
+    }
+
+    /**
+     * @dev Total active stakes for the given address, i.e. not counting withdrawn commitments.
+     * @param _account Account that has staked.
+     */
+    function getAccountActiveStakes(address _account) external view returns (uint256) {
+        return stakeCommitments[_account].length - userWithdrawals[_account];
     }
 
     /**
@@ -245,13 +240,20 @@ contract DXDStake is OwnableUpgradeable, ERC20SnapshotUpgradeable {
      * @dev Get the amount of stakes ever, counting both active and inactive ones.
      */
     function getTotalStakes() external view returns (uint256) {
-        return (_getCurrentSnapshotId() + totalActiveStakes) / 2;
+        return _currentSnapshotId - totalWithdrawals;
+    }
+
+    /**
+     * @dev Get the amount of active stakes.
+     */
+    function getTotalActiveStakes() external view returns (uint256) {
+        return _currentSnapshotId - 2 * totalWithdrawals;
     }
 
     /**
      * @dev Get the current snapshotId
      */
     function getCurrentSnapshotId() external view returns (uint256) {
-        return _getCurrentSnapshotId();
+        return _currentSnapshotId;
     }
 }
