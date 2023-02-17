@@ -145,7 +145,7 @@ contract VotingMachine {
 
     event Redeem(bytes32 indexed proposalId, address indexed avatar, address indexed beneficiary, uint256 amount);
 
-    event UnclaimedDaoBounty(address indexed avatar, address beneficiary, uint256 amount);
+    event ClaimedDaoBounty(address indexed avatar, address beneficiary, uint256 amount);
 
     event ActionSigned(
         bytes32 proposalId,
@@ -409,7 +409,7 @@ contract VotingMachine {
                 if (!transferSuccess) {
                     revert VotingMachine__TransferFromFailed(beneficiary, daoBountyReward);
                 } else {
-                    emit UnclaimedDaoBounty(getProposalAvatar(proposalId), beneficiary, daoBountyReward);
+                    emit ClaimedDaoBounty(getProposalAvatar(proposalId), beneficiary, daoBountyReward);
                 }
             }
 
