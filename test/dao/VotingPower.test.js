@@ -1,8 +1,7 @@
 const { expectRevert } = require("@openzeppelin/test-helpers");
 const { web3 } = require("@openzeppelin/test-helpers/src/setup");
-const VotingPowerToken = artifacts.require("./VotingPowerToken.sol");
+const VotingPower = artifacts.require("./VotingPower.sol");
 const DAOReputation = artifacts.require("DAOReputation.sol");
-// const DXDStakeMock = artifacts.require("DXDStakeMock.sol");
 const DXDStake = artifacts.require("DXDStake.sol");
 const DXDInfluence = artifacts.require("DXDInfluence.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
@@ -12,7 +11,7 @@ BigNumber.config({ decimalPlaces: 18 });
 
 const bn = n => new BigNumber(n);
 
-contract("VotingPowerToken", function (accounts) {
+contract("VotingPower", function (accounts) {
   let repToken;
   let dxdStake;
   let vpToken;
@@ -66,7 +65,7 @@ contract("VotingPowerToken", function (accounts) {
       owner
     );
 
-    vpToken = await VotingPowerToken.new({ from: owner });
+    vpToken = await VotingPower.new({ from: owner });
 
     await repToken.initialize("Reputation", "REP", vpToken.address);
 
@@ -107,18 +106,8 @@ contract("VotingPowerToken", function (accounts) {
 
   const mintAll = async () => {
     await Promise.all(
-      stakeHolders.map(({ account, amount }) => dxd.mint(account, amount))
-    );
-    await Promise.all(
       stakeHolders.map(({ account, amount }) =>
-        dxd.approve(dxdStake.address, amount, { from: account })
-      )
-    );
-    await Promise.all(
-      stakeHolders.map(({ account, amount }) =>
-        dxdStake.stake(amount, timeCommitment, {
-          from: account,
-        })
+        mintApproveStake(account, amount)
       )
     );
     await repToken.mintMultiple(
@@ -150,7 +139,7 @@ contract("VotingPowerToken", function (accounts) {
     });
 
     it("Should fail if repToken and dxdStake addresses are the same", async () => {
-      vpToken = await VotingPowerToken.new();
+      vpToken = await VotingPower.new();
       repToken = await DAOReputation.new();
       dxdInfluence = await DXDInfluence.new();
 
@@ -162,7 +151,7 @@ contract("VotingPowerToken", function (accounts) {
           stakeTokenWeight,
           minStakingTokensLocked
         ),
-        "VotingPowerToken_ReputationTokenAndInfluenceTokenCannotBeEqual()"
+        "VotingPower_ReputationTokenAndInfluenceTokenCannotBeEqual()"
       );
     });
 
@@ -179,11 +168,11 @@ contract("VotingPowerToken", function (accounts) {
     it("Should fail if weights are invalid", async () => {
       await expectRevert(
         deployVpToken({ repWeight: 101 }),
-        "VotingPowerToken_InvalidTokenWeights()"
+        "VotingPower_InvalidTokenWeights()"
       );
       await expectRevert(
         deployVpToken({ repWeight: 50, stakingWeight: 51 }),
-        "VotingPowerToken_InvalidTokenWeights()"
+        "VotingPower_InvalidTokenWeights()"
       );
     });
   });
@@ -214,15 +203,15 @@ contract("VotingPowerToken", function (accounts) {
     it("Should fail if the sum of both weigths is not 100", async () => {
       await expectRevert(
         vpToken.setComposition(50, 51),
-        "VotingPowerToken_InvalidTokenWeights()"
+        "VotingPower_InvalidTokenWeights()"
       );
       await expectRevert(
         vpToken.setComposition(51, 50),
-        "VotingPowerToken_InvalidTokenWeights()"
+        "VotingPower_InvalidTokenWeights()"
       );
       await expectRevert(
         vpToken.setComposition(80, 30),
-        "VotingPowerToken_InvalidTokenWeights()"
+        "VotingPower_InvalidTokenWeights()"
       );
     });
 
@@ -659,7 +648,7 @@ contract("VotingPowerToken", function (accounts) {
       await mintAll();
       expect((await vpToken.getCurrentSnapshotId()).toNumber()).gt(0);
 
-      const votingPower = await vpToken.balanceOf(user);
+      const votingPower = bn(await vpToken.balanceOf(user));
       expect(votingPower.toNumber()).equal(0);
     });
 
@@ -685,6 +674,34 @@ contract("VotingPowerToken", function (accounts) {
       expect(bn(percent1).mul(precision).toNumber()).equal(0.1);
       expect(votingPower.toNumber()).equal(0);
     });
+
+    it("Should return correct voting power from snapshotId", async () => {
+      const holder = repHolders[1].account;
+      const holder2 = repHolders[2].account;
+      const balance = repHolders[1].amount;
+
+      await repToken.mint(holder, balance);
+
+      // 100% weight to rep token.
+      const repTokenWeight = bn(await vpToken.getTokenWeight(repToken.address));
+      expect(repTokenWeight.toString()).equal("100");
+
+      // balanceof and balanceOfAt should return same result
+      const snapshotId1 = (await vpToken.getCurrentSnapshotId()).toNumber();
+      const votingPower = bn(await vpToken.balanceOf(holder));
+      const votingPowerAt = bn(await vpToken.balanceOfAt(holder, snapshotId1));
+      expect(votingPower.div(precision).toNumber()).equal(100);
+      expect(votingPower.eq(votingPowerAt)).to.be.true;
+
+      await repToken.mint(holder2, balance);
+
+      const votingPower2 = bn(await vpToken.balanceOf(holder));
+      const votingPowerAtSnapshot1 = bn(
+        await vpToken.balanceOfAt(holder, snapshotId1)
+      );
+      expect(votingPower2.div(precision).toNumber()).equal(50);
+      expect(votingPowerAtSnapshot1.eq(votingPower2)).to.be.false;
+    });
   });
 
   describe("getTokenWeight", () => {
@@ -693,7 +710,7 @@ contract("VotingPowerToken", function (accounts) {
       const anyAddress = accounts[9];
       await expectRevert(
         vpToken.getTokenWeight(anyAddress),
-        "VotingPowerToken_InvalidTokenAddress"
+        "VotingPower_InvalidTokenAddress"
       );
     });
     it("Should return 0 for stakingToken if staking token totalSupply is less than minStakingTokensLocked", async () => {
@@ -740,9 +757,9 @@ contract("VotingPowerToken", function (accounts) {
     });
   });
 
-  describe("Snapshot", () => {
+  describe("Callback", () => {
     beforeEach(async () => await deployVpToken());
-    it("Callback function should increment snapshot", async () => {
+    it("Should increment snapshot", async () => {
       const calls = Array.from(Array(100))
         .fill()
         .map((_, i) => i + 1);
@@ -765,7 +782,7 @@ contract("VotingPowerToken", function (accounts) {
     await deployVpToken();
     await expectRevert(
       vpToken.transfer(accounts[1], 200),
-      "VotingPowerToken: Cannot call transfer function"
+      "VotingPower: Cannot call transfer function"
     );
   });
 
@@ -773,7 +790,7 @@ contract("VotingPowerToken", function (accounts) {
     await deployVpToken();
     await expectRevert(
       vpToken.allowance(accounts[1], accounts[2]),
-      "VotingPowerToken: Cannot call allowance function"
+      "VotingPower: Cannot call allowance function"
     );
   });
 
@@ -781,7 +798,7 @@ contract("VotingPowerToken", function (accounts) {
     await deployVpToken();
     await expectRevert(
       vpToken.approve(accounts[1], 200),
-      "VotingPowerToken: Cannot call approve function"
+      "VotingPower: Cannot call approve function"
     );
   });
 
@@ -789,7 +806,7 @@ contract("VotingPowerToken", function (accounts) {
     await deployVpToken();
     await expectRevert(
       vpToken.transferFrom(accounts[1], accounts[2], 200),
-      "VotingPowerToken: Cannot call transferFrom function"
+      "VotingPower: Cannot call transferFrom function"
     );
   });
 });

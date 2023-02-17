@@ -488,6 +488,27 @@ contract("DXD staking and DXD influence", async accounts => {
       expect(totalInfluenceBalance).to.be.bignumber.equal(new BN(0));
     });
 
+    it("should get balances of virgin account without reverting", async () => {
+      const dxdHolder = accounts[0];
+      const amount = 100;
+      const timeCommitment = 50;
+
+      let emptyInfluenceBalance = await dxdInfluence.balanceOfAt(
+        accounts[2],
+        1
+      );
+      expect(emptyInfluenceBalance).to.be.bignumber.equal(new BN("0"));
+
+      await dxd.approve(dxdStake.address, amount, { from: dxdHolder });
+      await dxdStake.stake(amount, timeCommitment, { from: dxdHolder });
+
+      emptyInfluenceBalance = await dxdInfluence.balanceOfAt(accounts[2], 2);
+      expect(emptyInfluenceBalance).to.be.bignumber.equal(new BN("0"));
+
+      emptyInfluenceBalance = await dxdInfluence.balanceOfAt(accounts[2], 1);
+      expect(emptyInfluenceBalance).to.be.bignumber.equal(new BN("0"));
+    });
+
     it("should revert when getters are called using a corrupted influence formula", async () => {
       const dxdHolder = accounts[0];
       const amount = 100;

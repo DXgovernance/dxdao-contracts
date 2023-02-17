@@ -46,8 +46,9 @@ contract AccountSnapshot {
         //  larger than the requested one.
         //
         // In summary, we need to find an element in an array, returning the index of the largest value that is smaller if
-        // it is not found, unless said value doesn't exist (e.g. when all values are smaller). Arrays.findUpperBound does
-        // exactly this.
+        // it is not found, unless said value doesn't exist (e.g. when all values are smaller).
+
+        if (_snapshotIds[_account].length == 0) return 0;
 
         uint256 index = _snapshotIds[_account].findUpperBound(_snapshotId);
 

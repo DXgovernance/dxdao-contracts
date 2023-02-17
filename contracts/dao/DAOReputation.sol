@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "../utils/ERC20/ERC20SnapshotRep.sol";
-import "../dao/VotingPowerToken.sol";
+import "./VotingPower.sol";
 
 /**
  * @title DAO Reputation
@@ -38,7 +38,7 @@ contract DAOReputation is ERC20SnapshotRep {
     /// @dev Create a new snapshot and call VPToken callback
     function snapshot() internal {
         _snapshot();
-        VotingPowerToken(votingPowerToken).callback();
+        VotingPower(votingPowerToken).callback();
     }
 
     /**
