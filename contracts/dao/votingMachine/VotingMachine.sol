@@ -1272,4 +1272,13 @@ contract VotingMachine {
     function multiplyRealMath(uint256 a, uint256 b) public pure returns (uint256) {
         return a.mul(b);
     }
+
+    /**
+     * @dev Returns proposal `times` property for given `proposalId`
+     * @param proposalId Id of the proposal
+     * @return times proposal.times [submittedTime, boostedPhaseTime, preBoostedPhaseTime]
+     */
+    function getProposalTimes(bytes32 proposalId) public view returns (uint256[3] memory times) {
+        return proposals[proposalId].times;
+    }
 }
