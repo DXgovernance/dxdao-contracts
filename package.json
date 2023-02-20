@@ -13,7 +13,7 @@
     "types/"
   ],
   "scripts": {
-    "clean": "rm -rf artifacts cache contracts/hardhat-dependency-compiler bytecodes",
+    "clean": "rm -rf artifacts cache contracts/hardhat-dependency-compiler/ bytecodes types",
     "test": "hardhat test",
     "coverage": "OVERRIDE_GAS_LIMIT=0xfffffffffff OVERRIDE_GAS_PRICE=1 yarn hardhat coverage",
     "compile": "hardhat compile",
