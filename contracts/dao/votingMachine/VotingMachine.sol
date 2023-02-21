@@ -1297,4 +1297,13 @@ contract VotingMachine {
     function getInactiveProposalsCount(address avatar) public view returns (uint256 inactiveProposalsCount) {
         return inactiveProposals[avatar].length();
     }
+
+    /**
+     * @dev Returns proposal `times` property for given `proposalId`
+     * @param proposalId Id of the proposal
+     * @return times proposal.times [submittedTime, boostedPhaseTime, preBoostedPhaseTime]
+     */
+    function getProposalTimes(bytes32 proposalId) public view returns (uint256[3] memory times) {
+        return proposals[proposalId].times;
+    }
 }
