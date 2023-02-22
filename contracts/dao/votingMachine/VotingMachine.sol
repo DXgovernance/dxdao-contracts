@@ -419,7 +419,6 @@ contract VotingMachine {
             reward = (staked * totalStakesWithoutDaoBounty) / proposalStakes[proposalId][proposal.winningVote];
 
             if (reward > 0) {
-                proposal.totalStakes = proposal.totalStakes - reward;
                 schemes[proposal.schemeId].stakingTokenBalance =
                     schemes[proposal.schemeId].stakingTokenBalance -
                     reward;
@@ -990,7 +989,6 @@ contract VotingMachine {
             revert VotingMachine__TransferFromStakerFailed();
         }
         schemes[proposal.schemeId].stakingTokenBalance += amount;
-        proposal.totalStakes = proposal.totalStakes + amount; //update totalRedeemableStakes
         proposalStake.amount = proposalStake.amount + amount;
         proposalStake.option = option;
 
@@ -1000,7 +998,10 @@ contract VotingMachine {
             revert VotingMachine__StakingAmountIsTooHight();
         }
 
-        if (proposal.totalStakes > uint256(0x100000000000000000000000000000000)) {
+        if (
+            proposalStakes[proposalId][YES] + proposalStakes[proposalId][NO] >
+            uint256(0x100000000000000000000000000000000)
+        ) {
             revert VotingMachine__TotalStakesIsToHight();
         }
 
