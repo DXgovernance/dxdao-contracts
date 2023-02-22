@@ -6,7 +6,6 @@ const DXDStake = artifacts.require("DXDStake.sol");
 const DXDInfluence = artifacts.require("DXDInfluence.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const BigNumber = require("bignumber.js");
-const { expect } = require("chai");
 
 BigNumber.config({ decimalPlaces: 18 });
 
@@ -21,7 +20,6 @@ contract("VotingPower", function (accounts) {
   let dxd;
   let dxdInfluence;
   let decimals;
-  const timeCommitment = 100;
   const repTokenWeight = 50;
   const stakeTokenWeight = 50;
   const minStakingTokensLocked = 100;
