@@ -1919,6 +1919,14 @@ contract("VotingMachine", function (accounts) {
       );
       await dxdVotingMachine.stake(
         testProposalId,
+        constants.NO_OPTION,
+        web3.utils.toWei("0.2"),
+        {
+          from: accounts[3],
+        }
+      );
+      await dxdVotingMachine.stake(
+        testProposalId,
         constants.YES_OPTION,
         web3.utils.toWei("1"),
         {
@@ -1947,18 +1955,23 @@ contract("VotingMachine", function (accounts) {
 
       const daoBounty = new BN(helpers.defaultParameters.daoBounty);
       const stakedOnYes = new BN(web3.utils.toWei("1.1"));
-      const stakedOnNo = new BN(web3.utils.toWei("0.2"));
-      const totalStakesWithoutDaoBounty = stakedOnYes.add(stakedOnNo);
+      const totalStakedNo = new BN(web3.utils.toWei("0.4"));
+      const totalStakesWithoutDaoBounty = stakedOnYes.add(totalStakedNo);
       const daoBountyRewardToAvatar = stakedOnYes
         .mul(daoBounty)
-        .div(stakedOnNo.add(daoBounty));
-      const redeemForStakedOnNo = stakedOnNo
+        .div(totalStakedNo.add(daoBounty));
+      const redeemForStakedOnNo = new BN(web3.utils.toWei("0.2"))
         .mul(totalStakesWithoutDaoBounty)
-        .div(stakedOnNo.add(daoBounty));
+        .div(totalStakedNo.add(daoBounty));
+
+      assert.equal(
+        (await dxdVotingMachine.proposals(testProposalId)).daoRedeemedWinnings,
+        false
+      );
 
       await expectEvent.inTransaction(
         (
-          await dxdVotingMachine.redeem(testProposalId, accounts[1])
+          await dxdVotingMachine.redeem(testProposalId, org.avatar.address)
         ).tx,
         stakingToken.contract,
         "Transfer",
@@ -1967,6 +1980,19 @@ contract("VotingMachine", function (accounts) {
           to: org.avatar.address,
           value: daoBountyRewardToAvatar,
         }
+      );
+
+      assert.equal(
+        (await dxdVotingMachine.proposals(testProposalId)).daoRedeemedWinnings,
+        true
+      );
+
+      await expectEvent.notEmitted.inTransaction(
+        (
+          await dxdVotingMachine.redeem(testProposalId, org.avatar.address)
+        ).tx,
+        stakingToken.contract,
+        "Transfer"
       );
 
       await expectEvent.inTransaction(
@@ -1978,6 +2004,18 @@ contract("VotingMachine", function (accounts) {
         {
           from: dxdVotingMachine.address,
           to: accounts[2],
+          value: redeemForStakedOnNo,
+        }
+      );
+      await expectEvent.inTransaction(
+        (
+          await dxdVotingMachine.redeem(testProposalId, accounts[3])
+        ).tx,
+        stakingToken.contract,
+        "Transfer",
+        {
+          from: dxdVotingMachine.address,
+          to: accounts[3],
           value: redeemForStakedOnNo,
         }
       );
