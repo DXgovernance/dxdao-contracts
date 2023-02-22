@@ -26,14 +26,14 @@ contract VotingPower is OwnableUpgradeable {
 
     uint256 public currentSnapshotId;
 
-    //tokenAddress    weight
-    mapping(address => uint256) public weights;
+    //      tokenAddress   snapshot  weight
+    mapping(address => mapping(uint256 => uint256)) public weights;
 
     //      tokenAddress     Internal snapshot  => token snapshot
     mapping(address => mapping(uint256 => uint256)) snapshots;
 
     uint256 public constant decimals = 18;
-    uint256 public constant precision = 10**decimals;
+    uint256 public constant precision = 10 ** decimals;
 
     /// @notice Revert when using other address than influence or reputation
     error VotingPower_InvalidTokenAddress();
@@ -89,8 +89,12 @@ contract VotingPower is OwnableUpgradeable {
         if (repWeight + stakingWeight != 100) {
             revert VotingPower_InvalidTokenWeights();
         }
-        weights[address(reputation)] = repWeight;
-        weights[address(influence)] = stakingWeight;
+        currentSnapshotId++;
+        weights[address(reputation)][currentSnapshotId] = repWeight;
+        weights[address(influence)][currentSnapshotId] = stakingWeight;
+        // copy ref tokens snapshot after vp snapshot increment
+        snapshots[address(reputation)][currentSnapshotId] = snapshots[address(reputation)][currentSnapshotId - 1];
+        snapshots[address(influence)][currentSnapshotId] = snapshots[address(influence)][currentSnapshotId - 1];
     }
 
     /// @dev function to be executed from rep and dxdStake tokens after mint/burn
@@ -99,6 +103,9 @@ contract VotingPower is OwnableUpgradeable {
         currentSnapshotId++;
         snapshots[address(reputation)][currentSnapshotId] = reputation.getCurrentSnapshotId();
         snapshots[address(influence)][currentSnapshotId] = influence.getCurrentSnapshotId();
+        // copy ref weights snapshot after vp snapshot increment
+        weights[address(reputation)][currentSnapshotId] = weights[address(reputation)][currentSnapshotId - 1];
+        weights[address(influence)][currentSnapshotId] = weights[address(influence)][currentSnapshotId - 1];
     }
 
     /// @dev Get the balance (voting power percentage) of `account` at current snapshotId
@@ -151,12 +158,10 @@ contract VotingPower is OwnableUpgradeable {
     /// @param tokenAddress Address of the external token (rep/dxd) we want to get snapshotId from
     /// @param tokenSnapshotId SnapshotId from VPToken
     /// @return snapshotId SnapshotId from `tokenAddress` stored at VPToken `tokenSnapshotId`
-    function getTokenSnapshotIdFromVPSnapshot(address tokenAddress, uint256 tokenSnapshotId)
-        public
-        view
-        onlyInternalTokens(tokenAddress)
-        returns (uint256 snapshotId)
-    {
+    function getTokenSnapshotIdFromVPSnapshot(
+        address tokenAddress,
+        uint256 tokenSnapshotId
+    ) public view onlyInternalTokens(tokenAddress) returns (uint256 snapshotId) {
         if (snapshotId > currentSnapshotId) revert VotingPower_InvalidSnapshotId();
         return snapshots[tokenAddress][tokenSnapshotId];
     }
@@ -164,8 +169,8 @@ contract VotingPower is OwnableUpgradeable {
     /// @dev Get token weight from weights config mapping.
     /// @param token Address of the token we want to get weight from
     /// @param weight Weight percentage value (0 to 100)
-    function getConfigTokenWeight(address token) public view returns (uint256 weight) {
-        return weights[token];
+    function getWeightOfAt(address token, uint256 snapshotId) public view returns (uint256 weight) {
+        return weights[token][snapshotId];
     }
 
     /// @dev Get token weight from weights config mapping.
@@ -174,18 +179,16 @@ contract VotingPower is OwnableUpgradeable {
     /// @param token Address of the token we want to get weight from
     /// @param snapshotId VotingPower snapshotId
     /// @return weight Weight percentage value (0 to 100)
-    function getTokenWeightAt(address token, uint256 snapshotId)
-        public
-        view
-        onlyInternalTokens(token)
-        returns (uint256 weight)
-    {
+    function getTokenWeightAt(
+        address token,
+        uint256 snapshotId
+    ) public view onlyInternalTokens(token) returns (uint256 weight) {
         uint256 influenceSnapshotId = snapshots[address(influence)][snapshotId];
         if (influenceSnapshotId == 0 || influence.totalSupplyAt(influenceSnapshotId) < minStakingTokensLocked) {
             if (token == address(reputation)) return 100;
             else return 0;
         } else {
-            return getConfigTokenWeight(token);
+            return getWeightOfAt(token, snapshotId);
         }
     }
 
@@ -212,11 +215,10 @@ contract VotingPower is OwnableUpgradeable {
     /// @param weightPercent Weight percent of the token (0 to 100)
     /// @param votingPowerPercent Voting power percentage (0 to 100 * precision)
     /// @return weightedVotingPowerPercentage Weighted voting power percentage (0 to 100 * precision)
-    function getWeightedVotingPowerPercentage(uint256 weightPercent, uint256 votingPowerPercent)
-        public
-        pure
-        returns (uint256 weightedVotingPowerPercentage)
-    {
+    function getWeightedVotingPowerPercentage(
+        uint256 weightPercent,
+        uint256 votingPowerPercent
+    ) public pure returns (uint256 weightedVotingPowerPercentage) {
         uint256 maxPercent = 100 * precision;
         if (votingPowerPercent > maxPercent) revert VotingPower_PercentCannotExeedMaxPercent();
         return (votingPowerPercent * weightPercent) / 100;
@@ -250,11 +252,7 @@ contract VotingPower is OwnableUpgradeable {
     }
 
     /// @dev Disabled transferFrom function, not needed in VotingPower
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external pure returns (bool) {
+    function transferFrom(address from, address to, uint256 amount) external pure returns (bool) {
         revert("VotingPower: Cannot call transferFrom function");
     }
 }

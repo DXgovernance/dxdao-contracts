@@ -6,6 +6,7 @@ const DXDStake = artifacts.require("DXDStake.sol");
 const DXDInfluence = artifacts.require("DXDInfluence.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const BigNumber = require("bignumber.js");
+const { expect } = require("chai");
 
 BigNumber.config({ decimalPlaces: 18 });
 
@@ -157,11 +158,16 @@ contract("VotingPower", function (accounts) {
 
     it("Should update token weights", async () => {
       await deployVpToken();
+      const currentSnapshot = bn(await vpToken.getCurrentSnapshotId());
       expect(
-        (await vpToken.getConfigTokenWeight(dxdInfluence.address)).toNumber()
+        (
+          await vpToken.getWeightOfAt(dxdInfluence.address, currentSnapshot)
+        ).toNumber()
       ).equal(stakeTokenWeight);
       expect(
-        (await vpToken.getConfigTokenWeight(repToken.address)).toNumber()
+        (
+          await vpToken.getWeightOfAt(repToken.address, currentSnapshot)
+        ).toNumber()
       ).equal(repTokenWeight);
     });
 
@@ -220,6 +226,27 @@ contract("VotingPower", function (accounts) {
         vpToken.setComposition(50, 50, { from: accounts[3] }),
         "Ownable: caller is not the owner"
       );
+    });
+
+    it("Should not update balance after setting new weights for same snapshotId", async () => {
+      const holder = repHolders[0].account;
+      await mintAll();
+
+      const initialSnapshotId = bn(await vpToken.getCurrentSnapshotId());
+      const initialBalance = bn(
+        await vpToken.balanceOfAt(holder, initialSnapshotId)
+      );
+      await vpToken.setComposition(70, 30);
+      const snapshotId2 = bn(await vpToken.getCurrentSnapshotId());
+      // snapshot should have been updated after setComposition
+      expect(snapshotId2.toNumber()).not.equal(initialSnapshotId.toNumber());
+      // balance after setting composition at initialized snapshot
+      const balance2 = bn(await vpToken.balanceOfAt(holder, initialSnapshotId));
+      // Balance should not change using the same snapshot despite weights changed
+      expect(initialBalance.toNumber()).equal(balance2.toNumber());
+      // balance at current snapshotId
+      const balance3 = bn(await vpToken.balanceOf(holder));
+      expect(balance3.toNumber()).not.equal(balance2.toNumber());
     });
   });
 
