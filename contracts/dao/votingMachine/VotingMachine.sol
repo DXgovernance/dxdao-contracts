@@ -384,8 +384,19 @@ contract VotingMachine {
 
         bool transferSuccess;
 
-        // If NO won and there is staed tokens on YES, the dao avatar gets a % or the rewards
-        if (beneficiary == proposalAvatar && proposal.winningVote == NO && !proposal.daoRedeemedWinnings) {
+        // If the proposal expires the staked amount is sent back to the staker
+        if (proposal.state == ProposalState.Expired) {
+            schemes[proposal.schemeId].stakingTokenBalance = schemes[proposal.schemeId].stakingTokenBalance - staked;
+
+            transferSuccess = stakingToken.transfer(beneficiary, staked);
+
+            if (!transferSuccess) {
+                revert VotingMachine__TransferFailed(beneficiary, staked);
+            }
+            emit Redeem(proposalId, proposalAvatar, beneficiary, staked);
+
+            // If NO won and there is staed tokens on YES, the dao avatar gets a % or the rewards
+        } else if (beneficiary == proposalAvatar && proposal.winningVote == NO && !proposal.daoRedeemedWinnings) {
             uint256 daoBountyReward = (proposalStakes[proposalId][YES] * parameters[proposal.paramsHash].daoBounty) /
                 proposalStakes[proposalId][NO];
 
@@ -393,24 +404,14 @@ contract VotingMachine {
                 schemes[proposal.schemeId].stakingTokenBalance -
                 daoBountyReward;
 
+            proposal.daoRedeemedWinnings = true;
+
             transferSuccess = stakingToken.transfer(proposalAvatar, daoBountyReward);
             if (!transferSuccess) {
                 revert VotingMachine__TransferFromFailed(proposalAvatar, daoBountyReward);
             } else {
                 emit ClaimedDaoBounty(proposalAvatar, proposalAvatar, daoBountyReward);
             }
-            proposal.daoRedeemedWinnings = true;
-        }
-        // If the proposal expires the staked amount is sent back to the staker
-        else if (proposal.state == ProposalState.Expired) {
-            transferSuccess = stakingToken.transfer(beneficiary, staked);
-
-            schemes[proposal.schemeId].stakingTokenBalance = schemes[proposal.schemeId].stakingTokenBalance - staked;
-
-            if (!transferSuccess) {
-                revert VotingMachine__TransferFailed(beneficiary, staked);
-            }
-            emit Redeem(proposalId, schemes[proposal.schemeId].avatar, beneficiary, staked);
 
             // If the proposal was executed and the stake was in the winning option the beneficiary gets the reward
         } else if (staker.option == proposal.winningVote) {
@@ -426,7 +427,7 @@ contract VotingMachine {
                 if (!transferSuccess) {
                     revert VotingMachine__TransferFailed(beneficiary, reward);
                 }
-                emit Redeem(proposalId, schemes[proposal.schemeId].avatar, beneficiary, reward);
+                emit Redeem(proposalId, proposalAvatar, beneficiary, reward);
             }
 
             // If the winning option was yes the reward also include a % (of the staked on the winning option)
