@@ -1413,11 +1413,6 @@ contract("VotingMachine", function (accounts) {
         }
       );
 
-      const totalStaked = (await dxdVotingMachine.proposals(proposalId))
-        .totalStakes;
-
-      assert(totalStaked.eq(stakesToBoost));
-
       // check preBoosted
       expectEvent(upStake.receipt, "StateChange", {
         proposalId: proposalId,
@@ -1482,11 +1477,6 @@ contract("VotingMachine", function (accounts) {
           from: accounts[1],
         }
       );
-
-      const totalStaked = (await dxdVotingMachine.proposals(proposalId))
-        .totalStakes;
-
-      assert(totalStaked.eq(stakesToBoost));
 
       // check preBoosted
       expectEvent(upStake.receipt, "StateChange", {

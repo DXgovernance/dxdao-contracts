@@ -95,7 +95,6 @@ contract VotingMachine {
         uint256 currentBoostedVotePeriodLimit;
         bytes32 paramsHash;
         uint256 daoBounty;
-        uint256 totalStakes; // Total number of tokens staked which can be redeemable by stakers.
         bool daoRedeemedWinnings; // True if the DAO has claimed the bounty for this proposal.
         uint256[3] times;
         // times[0] - submittedTime
