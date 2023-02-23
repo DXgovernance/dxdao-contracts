@@ -113,12 +113,10 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
         uint256 _amount,
         uint256 _timeCommitment
     ) external onlyOwner {
-        CumulativeStake storage lastCumulativeStake = getLastCumulativeStake(_account);
+        CumulativeStake storage lastCumulativeStake = cumulativeStakesSnapshots[_account][_lastSnapshotId(_account)];
         uint256 currentSnapshotId = _snapshot(_account);
 
-        UD60x18 tc = toUD60x18(_timeCommitment);
-        uint256 exponentialTerm = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
-        uint256 linearTerm = _amount * _timeCommitment;
+        (uint256 linearTerm, uint256 exponentialTerm) = getFormulaTerms(_amount, _timeCommitment);
 
         // Update account's stake data
         CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[_account][currentSnapshotId];
@@ -148,12 +146,10 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
         uint256 _amount,
         uint256 _timeCommitment
     ) external onlyOwner {
-        CumulativeStake storage lastCumulativeStake = getLastCumulativeStake(_account);
+        CumulativeStake storage lastCumulativeStake = cumulativeStakesSnapshots[_account][_lastSnapshotId(_account)];
         uint256 currentSnapshotId = _snapshot(_account);
 
-        UD60x18 tc = toUD60x18(_timeCommitment);
-        uint256 exponentialTerm = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
-        uint256 linearTerm = _amount * _timeCommitment;
+        (uint256 linearTerm, uint256 exponentialTerm) = getFormulaTerms(_amount, _timeCommitment);
 
         // Update account's stake data
         CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[_account][currentSnapshotId];
@@ -185,16 +181,11 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
         uint256 _oldTimeCommitment,
         uint256 _newTimeCommitment
     ) external onlyOwner {
-        CumulativeStake storage lastCumulativeStake = getLastCumulativeStake(_account);
+        CumulativeStake storage lastCumulativeStake = cumulativeStakesSnapshots[_account][_lastSnapshotId(_account)];
         uint256 currentSnapshotId = _snapshot(_account);
 
-        UD60x18 oldTc = toUD60x18(_oldTimeCommitment);
-        uint256 oldExponentialTerm = fromUD60x18(toUD60x18(_amount).mul(oldTc.pow(exponent)));
-        uint256 oldLinearTerm = _amount * _oldTimeCommitment;
-
-        UD60x18 newTc = toUD60x18(_newTimeCommitment);
-        uint256 newExponentialTerm = fromUD60x18(toUD60x18(_amount).mul(newTc.pow(exponent)));
-        uint256 newLinearTerm = _amount * _newTimeCommitment;
+        (uint256 oldLinearTerm, uint256 oldExponentialTerm) = getFormulaTerms(_amount, _oldTimeCommitment);
+        (uint256 newLinearTerm, uint256 newExponentialTerm) = getFormulaTerms(_amount, _newTimeCommitment);
 
         // Update account's stake data
         CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[_account][currentSnapshotId];
@@ -215,11 +206,15 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
     }
 
     /**
-     * @dev Returns the last snapshot Id registered for a given account.
-     * @param _account Account that has staked.
+     * @dev Returns the linear and exponential influence term for a given amount and time commitment.
+     * @param _amount DXD amount.
+     * @param _timeCommitment Amount of time the DXD is staked.
      */
-    function getLastCumulativeStake(address _account) internal view returns (CumulativeStake storage) {
-        return cumulativeStakesSnapshots[_account][_lastSnapshotId(_account)];
+    function getFormulaTerms(uint256 _amount, uint256 _timeCommitment) internal view returns (uint256, uint256) {
+        UD60x18 tc = toUD60x18(_timeCommitment);
+        uint256 exponentialTerm = fromUD60x18(toUD60x18(_amount).mul(tc.pow(exponent)));
+        uint256 linearTerm = _amount * _timeCommitment;
+        return (linearTerm, exponentialTerm);
     }
 
     /**
@@ -240,7 +235,7 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
      * @dev Returns the amount of influence owned by `account`.
      */
     function balanceOf(address account) public view returns (uint256) {
-        CumulativeStake storage cumulativeStake = getLastCumulativeStake(account);
+        CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[account][_lastSnapshotId(account)];
         return calculateInfluence(cumulativeStake, formulaMultipliers[_lastSnapshotId(FORMULA_SNAPSHOT_SLOT)]);
     }
 
