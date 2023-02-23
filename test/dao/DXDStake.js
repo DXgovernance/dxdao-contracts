@@ -521,11 +521,9 @@ contract("DXD staking and DXD influence", async accounts => {
       const newLF = -0.1;
       const newLinearFactor = web3.utils.toWei(newLF.toString(), "ether");
       await expectRevert(
-        dxdStake.changeInfluenceFormula(
-          newLinearFactor,
-          exponentialFactor,
-          { from: accounts[0] }
-        ),
+        dxdStake.changeInfluenceFormula(newLinearFactor, exponentialFactor, {
+          from: accounts[0],
+        }),
         "DXDInfluence: negative influence, update formula"
       );
 
@@ -570,7 +568,7 @@ contract("DXD staking and DXD influence", async accounts => {
       const influenceBalance3 = await dxdInfluence.balanceOf(dxdHolder);
       expect(influenceBalance3).to.be.bignumber.equal(influenceBalanceAt3);
       expect(influenceBalance3).to.be.bignumber.gt(influenceBalance2);
-      
+
       const totalSupplyAt3 = await dxdInfluence.totalSupplyAt(3);
       const totalSupply3 = await dxdInfluence.totalSupply();
       expect(totalSupply3).to.be.bignumber.equal(totalSupplyAt3);
