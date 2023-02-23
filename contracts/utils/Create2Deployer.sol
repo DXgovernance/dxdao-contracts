@@ -3,28 +3,33 @@ pragma solidity ^0.8.17;
 
 import "./Create2HashedSaltDeployer.sol";
 import "./Create2HashedSenderDeployer.sol";
+import "./Create2HashedOriginDeployer.sol";
 import "./Create2HashedInitializeCallDeployer.sol";
 
-/*
- * @title Create2Deployer
- * @dev This contract is used to deploy contracts using CREATE2
- * It uses two other contracts to deploy the contracts:
- * - Create2HashedSalt: This contract allows to deploy a contract using CREATE2 with the salt passed as a parameter.
- * - Create2HashedSender: This contract allows to deploy a contract using CREATE2 hashing the sender address of the tx.
- *   The ONLY way to reproduce the address of the contract is to have access to the account used for the deployment.
- *   To enforce that condition we use the tx.origin global variable.
- */
+/**
+    @title Create2Deployer
+    @dev A contract for deploying contracts using CREATE2 opcode, which allows for deterministic deployment of contracts.
+    This contract uses four other contracts for deploying:
+    - Create2HashedSaltDeployer: allows to deploy a contract using CREATE2 with the salt passed as a parameter.
+    - Create2HashedSenderDeployer: allows to deploy a contract using CREATE2 hashing the sender address of the transaction.
+    - Create2HashedOriginDeployer: allows to deploy a contract using CREATE2 hashing the origin ethereum account address of the transaction.
+    - Create2HashedInitializeCallDeployer: allows to deploy a contract using CREATE2 hashing the initialization call data of the contract.
+    The contract deployed is the bytecode passed on the code parameter.
+    The contract can also be initialized with a call to the contract right after being deployed.
+*/
 
 contract Create2Deployer {
     event Deployed(address addr, bytes32 bytecodeHash, uint256 salt, uint256 deploymentType);
 
     Create2HashedSaltDeployer public hashedSaltDeployer;
     Create2HashedSenderDeployer public hashedSenderDeployer;
+    Create2HashedOriginDeployer public hashedOriginDeployer;
     Create2HashedInitializeCallDeployer public hashedInitializeCallDeployer;
 
     constructor() {
         hashedSaltDeployer = new Create2HashedSaltDeployer();
         hashedSenderDeployer = new Create2HashedSenderDeployer();
+        hashedOriginDeployer = new Create2HashedOriginDeployer();
         hashedInitializeCallDeployer = new Create2HashedInitializeCallDeployer();
     }
 
@@ -38,13 +43,18 @@ contract Create2Deployer {
     }
 
     function deployWithHashedSender(bytes memory code, bytes memory initializeCallData) public {
-        address addr = hashedSenderDeployer.deploy(code, initializeCallData);
-        emit Deployed(addr, keccak256(abi.encodePacked(code)), hashSender(tx.origin), 2);
+        address addr = hashedSenderDeployer.deploy(code, initializeCallData, msg.sender);
+        emit Deployed(addr, keccak256(abi.encodePacked(code)), hashSender(msg.sender), 2);
+    }
+
+    function deployWithHashedOrigin(bytes memory code, bytes memory initializeCallData) public {
+        address addr = hashedOriginDeployer.deploy(code, initializeCallData);
+        emit Deployed(addr, keccak256(abi.encodePacked(code)), hashSender(tx.origin), 3);
     }
 
     function deployWithHashedInitializeCall(bytes memory code, bytes memory initializeCallData) public {
         address addr = hashedInitializeCallDeployer.deploy(code, initializeCallData);
-        emit Deployed(addr, keccak256(abi.encodePacked(code)), hashInitializeCallData(initializeCallData), 3);
+        emit Deployed(addr, keccak256(abi.encodePacked(code)), hashInitializeCallData(initializeCallData), 4);
     }
 
     function getHashedSaltDeployAddress(bytes memory code, uint256 salt) public view returns (address) {
@@ -53,6 +63,10 @@ contract Create2Deployer {
 
     function getHashedSenderDeployAddress(bytes memory code, address sender) public view returns (address) {
         return _calculateCreate2Address(address(hashedSenderDeployer), code, hashSender(sender));
+    }
+
+    function getHashedOriginDeployAddress(bytes memory code, address origin) public view returns (address) {
+        return _calculateCreate2Address(address(hashedOriginDeployer), code, hashSender(origin));
     }
 
     function getHashedInitializeCallDeployAddress(bytes memory code, bytes memory initializeCallData)

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.17;
 
-/*
- * @title Create2HashedSaltDeployer
- * @dev This contract allows to deploy a contract using CREATE2 with the salt passed as a parameter.
- * The contract deployed is the bytecode passed on the code parameter.
- * The contract can also be initialized with a call to teh contract right after being deployed
- */
+/**
+    @title Create2HashedSaltDeployer
+    @dev This contract allows to deploy a contract using CREATE2 with the salt passed as a parameter.
+    The contract deployed is the bytecode passed on the code parameter.
+    The contract can also be initialized with a call to the contract right after being deployed.
+*/
 contract Create2HashedSaltDeployer {
     address public rootDeployer;
 

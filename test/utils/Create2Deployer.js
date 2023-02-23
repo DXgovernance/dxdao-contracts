@@ -1,5 +1,6 @@
 const DAOAvatar = artifacts.require("./DAOAvatar.sol");
 const Create2Deployer = artifacts.require("./Create2Deployer.sol");
+const ActionMock = artifacts.require("./ActionMock.sol");
 
 contract("Create2Deployer", function (accounts) {
   it("Test deployment", async () => {
@@ -8,6 +9,7 @@ contract("Create2Deployer", function (accounts) {
         await hre.run("create2DeployerDeploy")
       ).contractAddress
     );
+    const actionMock = await ActionMock.new();
 
     const senderDeployment = accounts[1];
     const avatarOwner = accounts[3];
@@ -24,6 +26,11 @@ contract("Create2Deployer", function (accounts) {
     const expectedHashedSenderDeploymentAddress =
       await create2Deployer.getHashedSenderDeployAddress(
         DAOAvatar.bytecode,
+        actionMock.address
+      );
+    const expectedHashedOriginDeploymentAddress =
+      await create2Deployer.getHashedOriginDeployAddress(
+        DAOAvatar.bytecode,
         senderDeployment
       );
     const expectedHashedSaltDeploymentAddress =
@@ -37,8 +44,19 @@ contract("Create2Deployer", function (accounts) {
         initializeData
       );
 
-    const hashedSenderDeploymentTx =
-      await create2Deployer.deployWithHashedSender(
+    const deployWithHashedSenderData = web3.eth.abi.encodeFunctionCall(
+      create2Deployer.abi.find(x => x.name === "deployWithHashedSender"),
+      [DAOAvatar.bytecode, initializeData]
+    );
+    const hashedSenderDeploymentTx = await actionMock.executeCall(
+      create2Deployer.address,
+      deployWithHashedSenderData,
+      0,
+      { from: accounts[1] }
+    );
+
+    const hashedOriginDeploymentTx =
+      await create2Deployer.deployWithHashedOrigin(
         DAOAvatar.bytecode,
         initializeData,
         { from: accounts[1] }
@@ -55,7 +73,13 @@ contract("Create2Deployer", function (accounts) {
       );
 
     const daoAvatarDeployedWithHashedSender = await DAOAvatar.at(
-      hashedSenderDeploymentTx.logs[0].args.addr
+      web3.eth.abi.decodeParameters(
+        ["address", "bytes32", "uint256", "uint256"],
+        hashedSenderDeploymentTx.receipt.rawLogs[2].data
+      )[0]
+    );
+    const daoAvatarDeployedWithHashedOrigin = await DAOAvatar.at(
+      hashedOriginDeploymentTx.logs[0].args.addr
     );
     const daoAvatarDeployedWithHashedSalt = await DAOAvatar.at(
       hashedSaltDeploymentTx.logs[0].args.addr
@@ -70,6 +94,10 @@ contract("Create2Deployer", function (accounts) {
       daoAvatarDeployedWithHashedSender.address
     );
     assert.equal(
+      expectedHashedOriginDeploymentAddress,
+      daoAvatarDeployedWithHashedOrigin.address
+    );
+    assert.equal(
       expectedHashedSaltDeploymentAddress,
       daoAvatarDeployedWithHashedSalt.address
     );
@@ -80,6 +108,7 @@ contract("Create2Deployer", function (accounts) {
 
     // We check that the owner of the avatar is the same as the one we set in the initialization data
     assert.equal(await daoAvatarDeployedWithHashedSender.owner(), avatarOwner);
+    assert.equal(await daoAvatarDeployedWithHashedOrigin.owner(), avatarOwner);
     assert.equal(await daoAvatarDeployedWithHashedSalt.owner(), avatarOwner);
     assert.equal(
       await daoAvatarDeployedWithHashedInitializeCall.owner(),

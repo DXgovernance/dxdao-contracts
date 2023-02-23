@@ -31,11 +31,11 @@ contract("ERC20GuildWithERC1271", function (accounts) {
     const proxyAdmin = await ProxyAdmin.new({ from: accounts[0] });
 
     const create2Deployer = await Create2Deployer.new();
-    const erc20GuildAddress = await create2Deployer.getPublicDeploymentAddress(
+    const erc20GuildAddress = await create2Deployer.getHashedSaltDeployAddress(
       ERC20GuildWithERC1271.bytecode,
       constants.SOME_HASH
     );
-    await create2Deployer.deployPublic(
+    await create2Deployer.deployWithHashedSalt(
       ERC20GuildWithERC1271.bytecode,
       "0x0",
       constants.SOME_HASH

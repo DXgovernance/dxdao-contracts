@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.17;
 
-/*
- * @title Create2HashedInitializeCallDeployer
- * @dev This contract allows to deploy a contract using CREATE2 hashing the initializeCallData.
- * The ONLY way to reproduce the address of the contract is to deploy and initialize the contract with the same
- * initializeCallData.
- * The salt of the contract is the hash of the initializeCallData.
- * The contract deployed is the bytecode passed on the code parameter.
- */
+/**
+    @title Create2HashedInitializeCallDeployer
+    @dev This contract allows to deploy a contract using CREATE2 hashing the initialization call data of the contract.
+    The ONLY way to reproduce the address of the contract is to deploy and initialize the contract with the same initialization call data.
+    The salt of the contract is the hash of the initialization call data.
+    The contract deployed is the bytecode passed on the code parameter.
+*/
 contract Create2HashedInitializeCallDeployer {
     address public rootDeployer;
 

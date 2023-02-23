@@ -52,11 +52,11 @@ contract("ERC20Guild", function (accounts) {
 
     multicall = await Multicall.new();
     const create2Deployer = await Create2Deployer.new();
-    const erc20GuildAddress = await create2Deployer.getPublicDeploymentAddress(
+    const erc20GuildAddress = await create2Deployer.getHashedSaltDeployAddress(
       ERC20Guild.bytecode,
       constants.SOME_HASH
     );
-    await create2Deployer.deployPublic(
+    await create2Deployer.deployWithHashedSalt(
       ERC20Guild.bytecode,
       "0x0",
       constants.SOME_HASH
