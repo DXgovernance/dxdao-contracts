@@ -520,14 +520,12 @@ contract("DXD staking and DXD influence", async accounts => {
 
       const newLF = -0.1;
       const newLinearFactor = web3.utils.toWei(newLF.toString(), "ether");
-      await dxdStake.changeInfluenceFormula(
-        newLinearFactor,
-        exponentialFactor,
-        { from: accounts[0] }
-      );
-
       await expectRevert(
-        dxdInfluence.balanceOf(dxdHolder),
+        dxdStake.changeInfluenceFormula(
+          newLinearFactor,
+          exponentialFactor,
+          { from: accounts[0] }
+        ),
         "DXDInfluence: negative influence, update formula"
       );
 
@@ -541,16 +539,42 @@ contract("DXD staking and DXD influence", async accounts => {
         newExponentialFactor,
         { from: accounts[0] }
       );
-      await expectRevert(
-        dxdInfluence.balanceOfAt(dxdHolder, 3),
-        "DXDInfluence: negative influence, update formula"
-      );
+
       const influenceBalance000 = await dxdInfluence.balanceOfAt(dxdHolder, 2);
       expect(influenceBalance000).to.be.bignumber.equal(influenceBalance00);
 
       const influenceBalance1 = await dxdInfluence.balanceOf(dxdHolder);
-      const influenceBalance11 = await dxdInfluence.balanceOfAt(dxdHolder, 4);
+      const influenceBalance11 = await dxdInfluence.balanceOfAt(dxdHolder, 3);
       expect(influenceBalance1).to.be.bignumber.equal(influenceBalance11);
+    });
+
+    it("should update influence formula and get the updated influence values correctly", async () => {
+      const dxdHolder = accounts[0];
+      const amount = 100;
+      const timeCommitment = 50;
+
+      await dxd.approve(dxdStake.address, amount, { from: dxdHolder });
+      await dxdStake.stake(amount, timeCommitment, { from: dxdHolder });
+      const influenceBalance2 = await dxdInfluence.balanceOf(dxdHolder);
+      const totalSupply2 = await dxdInfluence.totalSupply();
+
+      const newLF = 1;
+      const newLinearFactor = web3.utils.toWei(newLF.toString(), "ether");
+      await dxdStake.changeInfluenceFormula(
+        newLinearFactor,
+        exponentialFactor,
+        { from: accounts[0] }
+      );
+
+      const influenceBalanceAt3 = await dxdInfluence.balanceOfAt(dxdHolder, 3);
+      const influenceBalance3 = await dxdInfluence.balanceOf(dxdHolder);
+      expect(influenceBalance3).to.be.bignumber.equal(influenceBalanceAt3);
+      expect(influenceBalance3).to.be.bignumber.gt(influenceBalance2);
+      
+      const totalSupplyAt3 = await dxdInfluence.totalSupplyAt(3);
+      const totalSupply3 = await dxdInfluence.totalSupply();
+      expect(totalSupply3).to.be.bignumber.equal(totalSupplyAt3);
+      expect(totalSupply3).to.be.bignumber.gt(totalSupply2);
     });
   });
 });

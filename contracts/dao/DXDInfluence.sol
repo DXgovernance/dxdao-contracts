@@ -92,11 +92,12 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
      */
     function changeFormula(int256 _linearMultiplier, int256 _exponentialMultiplier) external onlyOwner {
         uint256 currentSnapshotId = _snapshot(FORMULA_SNAPSHOT_SLOT);
-        formulaMultipliers[currentSnapshotId].linearMultiplier = SD59x18.wrap(_linearMultiplier);
-        formulaMultipliers[currentSnapshotId].exponentialMultiplier = SD59x18.wrap(_exponentialMultiplier);
+        FormulaMultipliers storage newFormula = formulaMultipliers[currentSnapshotId];
+        newFormula.linearMultiplier = SD59x18.wrap(_linearMultiplier);
+        newFormula.exponentialMultiplier = SD59x18.wrap(_exponentialMultiplier);
 
         // Update global stake data
-        _totalInfluenceSnapshots[currentSnapshotId] = _totalInfluenceSnapshots[currentSnapshotId - 1];
+        _totalInfluenceSnapshots[currentSnapshotId] = calculateInfluence(totalCumulativeStake, newFormula);
     }
 
     /**
