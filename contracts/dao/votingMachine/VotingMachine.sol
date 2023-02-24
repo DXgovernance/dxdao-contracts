@@ -700,7 +700,7 @@ contract VotingMachine {
         bytes32 proposalId,
         address voter,
         uint256 option,
-        uint256 repAmount
+        uint256 amount
     ) internal validOption(proposalId, option) returns (bool proposalExecuted) {
         if (_execute(proposalId)) {
             return true;
@@ -710,24 +710,24 @@ contract VotingMachine {
         Proposal storage proposal = proposals[proposalId];
 
         // Check voter has enough reputation
-        uint256 voterReputation = IVotingMachineCallbacks(proposal.callbacks).reputationOf(voter, proposalId);
+        uint256 voterVotingPower = IVotingMachineCallbacks(proposal.callbacks).votingPowerOf(voter, proposalId);
 
-        if (voterReputation == 0) {
+        if (voterVotingPower == 0) {
             revert VotingMachine__VoterMustHaveReputation();
         }
 
-        if (voterReputation < repAmount) {
+        if (voterVotingPower < amount) {
             revert VotingMachine__NotEnoughtReputation();
         }
-        if (repAmount == 0) {
-            repAmount = voterReputation;
+        if (amount == 0) {
+            amount = voterVotingPower;
         }
         // If this voter has already voted, return false.
         if (proposalVoters[proposalId][voter].reputation != 0) {
             return false;
         }
         // The voting itself:
-        proposalVotes[proposalId][option] = repAmount + proposalVotes[proposalId][option];
+        proposalVotes[proposalId][option] = amount + proposalVotes[proposalId][option];
         // check if the current winningVote changed or there is a tie.
         // for the case there is a tie the current winningVote set to NO.
         if (
@@ -754,14 +754,14 @@ contract VotingMachine {
             proposal.winningVote = option;
         }
         proposalVoters[proposalId][voter] = Voter({
-            reputation: repAmount,
+            reputation: amount,
             option: option,
             preBoosted: ((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued))
         });
         if ((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued)) {
-            proposalPreBoostedVotes[proposalId][option] = repAmount + proposalPreBoostedVotes[proposalId][option];
+            proposalPreBoostedVotes[proposalId][option] = amount + proposalPreBoostedVotes[proposalId][option];
         }
-        emit VoteProposal(proposalId, schemes[proposal.schemeId].avatar, voter, option, repAmount);
+        emit VoteProposal(proposalId, schemes[proposal.schemeId].avatar, voter, option, amount);
         return _execute(proposalId);
     }
 
@@ -789,11 +789,11 @@ contract VotingMachine {
         Proposal storage proposal = proposals[proposalId];
         Parameters memory params = parameters[proposal.paramsHash];
         Proposal memory tmpProposal = proposal;
-        uint256 totalReputation = IVotingMachineCallbacks(proposal.callbacks).getTotalReputationSupply(proposalId);
+        uint256 totalVotingPower = IVotingMachineCallbacks(proposal.callbacks).getVotingPowerTotalSupplyAt(proposalId);
 
         if (
             proposalVotes[proposalId][proposal.winningVote] >
-            (totalReputation / 10000) * params.queuedVoteRequiredPercentage
+            (totalVotingPower / 10000) * params.queuedVoteRequiredPercentage
         ) {
             // someone crossed the absolute vote execution bar.
             if (proposal.state == ProposalState.Queued) {
@@ -852,7 +852,7 @@ contract VotingMachine {
             if ((block.timestamp - proposal.times[1]) >= proposal.currentBoostedVotePeriodLimit) {
                 if (
                     proposalVotes[proposalId][proposal.winningVote] >=
-                    (totalReputation / 10000) * params.boostedVoteRequiredPercentage
+                    (totalVotingPower / 10000) * params.boostedVoteRequiredPercentage
                 ) {
                     proposal.state = ProposalState.ExecutedInBoost;
                     proposal.executionState = ExecutionState.BoostedBarCrossed;
