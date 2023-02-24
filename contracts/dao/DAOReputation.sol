@@ -18,13 +18,6 @@ contract DAOReputation is ERC20SnapshotRep {
     /// @notice Mint or Burn shouldn’t be called if the amount is 0
     error DAOReputation__InvalidMintRepAmount();
 
-    modifier nonZeroAmounts(uint256[] memory amounts) {
-        for (uint256 i = 0; i < amounts.length; i++) {
-            if (amounts[i] == 0) revert DAOReputation__InvalidMintRepAmount();
-        }
-        _;
-    }
-
     function initialize(
         string memory name,
         string memory symbol,
@@ -53,7 +46,6 @@ contract DAOReputation is ERC20SnapshotRep {
         onlyOwner
         returns (bool success)
     {
-        if (amount == 0) revert DAOReputation__InvalidMintRepAmount();
         _addHolder(account);
         _mint(account, amount);
         emit Mint(account, amount);
@@ -71,7 +63,6 @@ contract DAOReputation is ERC20SnapshotRep {
         external
         override(ERC20SnapshotRep)
         onlyOwner
-        nonZeroAmounts(amounts)
         returns (bool success)
     {
         for (uint256 i = 0; i < accounts.length; i++) {
@@ -95,7 +86,6 @@ contract DAOReputation is ERC20SnapshotRep {
         onlyOwner
         returns (bool success)
     {
-        if (amount == 0) revert DAOReputation__InvalidMintRepAmount();
         _burn(account, amount);
         _removeHolder(account);
         emit Burn(account, amount);
@@ -113,7 +103,6 @@ contract DAOReputation is ERC20SnapshotRep {
         external
         override(ERC20SnapshotRep)
         onlyOwner
-        nonZeroAmounts(amounts)
         returns (bool success)
     {
         for (uint256 i = 0; i < accounts.length; i++) {
