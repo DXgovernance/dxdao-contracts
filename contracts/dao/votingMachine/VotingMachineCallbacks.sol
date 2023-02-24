@@ -12,11 +12,11 @@ contract VotingMachineCallbacks {
     IVotingMachine public votingMachine;
 
     DAOController public controller;
-    
+
     VotingPower public votingPower;
 
     mapping(bytes32 => uint256) public proposalSnapshots;
-    
+
     uint256[45] private __gap;
 
     modifier onlyVotingMachine() {

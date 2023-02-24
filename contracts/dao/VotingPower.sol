@@ -30,7 +30,7 @@ contract VotingPower is OwnableUpgradeable {
     mapping(address => uint256) public weights;
 
     //      tokenAddress     Internal snapshot  => token snapshot
-    mapping(address => mapping(uint256 => uint256)) snapshots;
+    mapping(address => mapping(uint256 => uint256)) public snapshots;
 
     uint256 public constant decimals = 18;
     uint256 public constant precision = 10**decimals;
