@@ -134,7 +134,7 @@ contract("VotingPower", function (accounts) {
 
     it("Should do _snapshot()", async () => {
       await deployVpToken();
-      expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(1);
+      expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(2);
     });
 
     it("Should fail if repToken and dxdStake addresses are the same", async () => {
@@ -193,14 +193,21 @@ contract("VotingPower", function (accounts) {
 
     it("Should use 100% weight of rep if staking token supply < _minStakingTokensLocked", async () => {
       expect((await dxdStake.totalSupply()).toNumber()).equal(0);
-
       // update config to be 50% 50%
       await vpToken.setComposition(50, 50);
 
-      const repWeight = await vpToken.getTokenWeight(repToken.address);
+      const snapshotId = await vpToken.getCurrentSnapshotId();
+
+      const repWeight = await vpToken.getTokenWeightAt(
+        repToken.address,
+        snapshotId
+      );
       expect(repWeight.toNumber()).equal(100);
 
-      const stakingWeight = await vpToken.getTokenWeight(dxdInfluence.address);
+      const stakingWeight = await vpToken.getTokenWeightAt(
+        dxdInfluence.address,
+        snapshotId
+      );
       expect(stakingWeight.toNumber()).equal(0);
     });
 
@@ -411,19 +418,7 @@ contract("VotingPower", function (accounts) {
       await mintAll();
       const holder = accounts[1];
 
-      const repSnapshotId = await repToken.getCurrentSnapshotId();
       const vpTokenSnapshotId = await vpToken.getCurrentSnapshotId();
-
-      const repSnapshotIdFromVptoken =
-        await vpToken.getTokenSnapshotIdFromVPSnapshot(
-          repToken.address,
-          vpTokenSnapshotId
-        );
-
-      // Internal snapshots mapping shoud be updated
-      expect(repSnapshotIdFromVptoken.toNumber()).equal(
-        repSnapshotId.toNumber()
-      );
 
       const repBalance = await repToken.balanceOf(holder);
       const repSupply = await repToken.totalSupply();
@@ -655,7 +650,7 @@ contract("VotingPower", function (accounts) {
 
     it("Should return 0% if snapshot=0", async () => {
       const snapshotId = (await vpToken.getCurrentSnapshotId()).toNumber();
-      expect(snapshotId).equal(1);
+
       await mintAll();
       expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(
         snapshotId + stakeHolders.length + 1 // Stake fn snapshot per each stake() call. Rep mintmultiple 1 single snapshot
@@ -768,10 +763,10 @@ contract("VotingPower", function (accounts) {
   describe("setMinStakingTokensLocked", () => {
     beforeEach(async () => await deployVpToken());
     it("Should set new minStakingTokensLocked", async () => {
-      const minTokensLocked = await vpToken.minStakingTokensLocked();
+      const minTokensLocked = await vpToken.getMinStakingTokensLocked();
       expect(minTokensLocked.toNumber()).equal(minStakingTokensLocked); // default minTokens during initialization
       await vpToken.setMinStakingTokensLocked(400);
-      const minTokensLocked2 = await vpToken.minStakingTokensLocked();
+      const minTokensLocked2 = await vpToken.getMinStakingTokensLocked();
       expect(minTokensLocked2.toNumber()).equal(400);
     });
     it("Should fail if caller is not the owner", async () => {
@@ -780,17 +775,52 @@ contract("VotingPower", function (accounts) {
         "Ownable: caller is not the owner"
       );
     });
+    it("Should not modify balance using snapshot", async () => {
+      const holder = repHolders[0].account;
+      await mintAll();
+
+      const initialSnapshotId = bn(await vpToken.getCurrentSnapshotId());
+
+      const initialBalance = bn(
+        await vpToken.balanceOfAt(holder, initialSnapshotId)
+      );
+
+      await vpToken.setMinStakingTokensLocked(1000);
+      console.log("setMinStakingTokensLocked");
+      await repToken.mintMultiple([accounts[3], accounts[5]], [200, 300]);
+      // balance after setting composition at initialized snapshot
+      const balance2 = bn(await vpToken.balanceOfAt(holder, initialSnapshotId));
+      // Balance should not change using the same snapshot despite minStakingTokensLocked changed
+      expect(initialBalance.toNumber()).equal(balance2.toNumber());
+    });
+    it("Should not modify tokens weight using snapshot", async () => {
+      await mintAll();
+
+      const initialSnapshotId = bn(await vpToken.getCurrentSnapshotId());
+      const initialWeight = bn(
+        await vpToken.getTokenWeightAt(dxdInfluence.address, initialSnapshotId)
+      );
+
+      await vpToken.setMinStakingTokensLocked(1000);
+      const influenceWeight2 = bn(
+        await vpToken.getTokenWeightAt(dxdInfluence.address, initialSnapshotId)
+      );
+      expect(initialWeight.toNumber()).equal(influenceWeight2.toNumber());
+    });
   });
 
   describe("Callback", () => {
     beforeEach(async () => await deployVpToken());
     it("Should increment snapshot", async () => {
+      const INITIALIZE_SNAPSHOTS = 2;
       const calls = Array.from(Array(100))
         .fill()
         .map((_, i) => i + 1);
-      for (let call of calls) {
-        expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(call);
+      for (let callNumber of calls) {
         await repToken.mint(accounts[1], 100);
+        expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(
+          callNumber + INITIALIZE_SNAPSHOTS
+        );
       }
     });
   });
