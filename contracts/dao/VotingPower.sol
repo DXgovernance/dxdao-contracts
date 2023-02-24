@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
 import "../utils/ERC20/ERC20SnapshotRep.sol";
+import "hardhat/console.sol";
 
 /**
  * @title VotingPower
@@ -32,6 +33,13 @@ contract VotingPower is OwnableUpgradeable {
     //      tokenAddress     Internal snapshot  => token snapshot
     mapping(address => mapping(uint256 => uint256)) snapshots;
 
+    // struct SnapshotedValue {
+    //     uint256 last;
+    //     mapping(uint256 => uint256) values;
+    // }
+    // mapping(address => mapping(uint256 => SnapshotedValue)) snapshots;
+    // mapping(address => mapping(uint256 => SnapshotedValue)) weights;
+
     uint256 public constant decimals = 18;
     uint256 public constant precision = 10**decimals;
 
@@ -48,6 +56,8 @@ contract VotingPower is OwnableUpgradeable {
     error VotingPower_InvalidTokenWeights();
 
     error VotingPower_PercentCannotExeedMaxPercent();
+
+    mapping(address => uint256[]) internal _weightSnapshots;
 
     /// @dev Verify if address is one of rep or staking tokens
     modifier onlyInternalTokens(address tokenAddress) {
@@ -73,7 +83,6 @@ contract VotingPower is OwnableUpgradeable {
         influence = ERC20SnapshotRep(address(_dxdInfluence));
         setMinStakingTokensLocked(_minStakingTokensLocked);
         setComposition(repWeight, stakingWeight);
-        currentSnapshotId = 1;
     }
 
     /// @dev Set Minimum staking tokens locked to apply staking token weight
@@ -93,8 +102,8 @@ contract VotingPower is OwnableUpgradeable {
         weights[address(reputation)][currentSnapshotId] = repWeight;
         weights[address(influence)][currentSnapshotId] = stakingWeight;
         // copy ref tokens snapshot after vp snapshot increment
-        snapshots[address(reputation)][currentSnapshotId] = snapshots[address(reputation)][currentSnapshotId - 1];
-        snapshots[address(influence)][currentSnapshotId] = snapshots[address(influence)][currentSnapshotId - 1];
+        // snapshots[address(reputation)][currentSnapshotId] = snapshots[address(reputation)][currentSnapshotId - 1];
+        // snapshots[address(influence)][currentSnapshotId] = snapshots[address(influence)][currentSnapshotId - 1];
     }
 
     /// @dev function to be executed from rep and dxdStake tokens after mint/burn
@@ -104,8 +113,8 @@ contract VotingPower is OwnableUpgradeable {
         snapshots[address(reputation)][currentSnapshotId] = reputation.getCurrentSnapshotId();
         snapshots[address(influence)][currentSnapshotId] = influence.getCurrentSnapshotId();
         // copy ref weights snapshot after vp snapshot increment
-        weights[address(reputation)][currentSnapshotId] = weights[address(reputation)][currentSnapshotId - 1];
-        weights[address(influence)][currentSnapshotId] = weights[address(influence)][currentSnapshotId - 1];
+        // weights[address(reputation)][currentSnapshotId] = weights[address(reputation)][currentSnapshotId - 1];
+        // weights[address(influence)][currentSnapshotId] = weights[address(influence)][currentSnapshotId - 1];
     }
 
     /// @dev Get the balance (voting power percentage) of `account` at current snapshotId
@@ -134,7 +143,8 @@ contract VotingPower is OwnableUpgradeable {
 
         for (uint256 i = 0; i < tokens.length; i++) {
             ERC20SnapshotRep token = tokens[i];
-            uint256 tokenSnapshotId = snapshots[address(token)][_snapshotId];
+            uint256 lastVpSnapshot = getLastSnapshotIdOfAt(snapshots[address(token)], _snapshotId);
+            uint256 tokenSnapshotId = snapshots[address(token)][lastVpSnapshot];
             // Skipping calculation if snapshotId is 0. No minting was done
             if (tokenSnapshotId == 0) continue;
             uint256 tokenWeight = getTokenWeightAt(address(token), _snapshotId);
@@ -168,11 +178,23 @@ contract VotingPower is OwnableUpgradeable {
         return snapshots[tokenAddress][tokenSnapshotId];
     }
 
+    function getLastSnapshotIdOfAt(mapping(uint256 => uint256) storage myMapping, uint256 snapshotId)
+        internal
+        view
+        returns (uint256 lastSnapshotId)
+    {
+        for (uint256 i = snapshotId; i >= 0; i--) {
+            if (myMapping[i] != 0 || i == 0) return i;
+        }
+        return 0;
+    }
+
     /// @dev Get token weight from weights config mapping.
     /// @param token Address of the token we want to get weight from
     /// @param weight Weight percentage value (0 to 100)
     function getWeightOfAt(address token, uint256 snapshotId) public view returns (uint256 weight) {
-        return weights[token][snapshotId];
+        uint256 snapshot = getLastSnapshotIdOfAt(weights[token], snapshotId);
+        return weights[token][snapshot];
     }
 
     /// @dev Get token weight from weights config mapping.
@@ -187,8 +209,9 @@ contract VotingPower is OwnableUpgradeable {
         onlyInternalTokens(token)
         returns (uint256 weight)
     {
-        uint256 influenceSnapshotId = snapshots[address(influence)][snapshotId];
-        if (influenceSnapshotId == 0 || influence.totalSupplyAt(influenceSnapshotId) < minStakingTokensLocked) {
+        uint256 lastVpSnapshot = getLastSnapshotIdOfAt(snapshots[address(influence)], snapshotId);
+        uint256 influenceSnapshotId = snapshots[address(influence)][lastVpSnapshot];
+        if (influence.totalSupplyAt(influenceSnapshotId) < minStakingTokensLocked) {
             if (token == address(reputation)) return 100;
             else return 0;
         } else {
