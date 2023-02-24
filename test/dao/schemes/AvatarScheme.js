@@ -14,6 +14,17 @@ const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 
+const repTokenWeight = 50;
+const stakeTokenWeight = 50;
+const minStakingTokensLocked = 100;
+const maxTimeCommitment = 1000;
+const lf = 0.025;
+const linearFactor = web3.utils.toWei(lf.toString(), "ether");
+const ef = 0;
+const exponentialFactor = web3.utils.toWei(ef.toString(), "ether");
+const exp = 1;
+const exponent = web3.utils.toWei(exp.toString(), "ether");
+
 contract("AvatarScheme", function (accounts) {
   let standardTokenMock,
     permissionRegistry,
@@ -28,7 +39,7 @@ contract("AvatarScheme", function (accounts) {
     actionMock = await ActionMock.new();
     standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
 
-    org = await helpers.deployDao({
+    org = await helpers.deployDaoV2({
       owner: accounts[0],
       votingMachineToken: standardTokenMock.address,
       repHolders: [
@@ -36,6 +47,13 @@ contract("AvatarScheme", function (accounts) {
         { address: accounts[1], amount: 10000 },
         { address: accounts[2], amount: 70000 },
       ],
+      maxTimeCommitment: maxTimeCommitment,
+      linearFactor: linearFactor,
+      exponentialFactor: exponentialFactor,
+      exponent: exponent,
+      repWeight: repTokenWeight,
+      stakingWeight: stakeTokenWeight,
+      minStakingTokensLocked: minStakingTokensLocked,
     });
 
     const defaultParamsHash = await helpers.setDefaultParameters(
@@ -51,6 +69,7 @@ contract("AvatarScheme", function (accounts) {
       org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "Master Wallet",
       5
     );
@@ -61,6 +80,7 @@ contract("AvatarScheme", function (accounts) {
       org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "Quick Wallet",
       1
     );
