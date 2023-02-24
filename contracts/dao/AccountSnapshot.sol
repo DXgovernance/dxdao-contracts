@@ -32,7 +32,6 @@ contract AccountSnapshot {
     }
 
     function _lastRegisteredSnapshotIdAt(uint256 _snapshotId, address _account) internal view returns (uint256) {
-        require(_snapshotId > 0, "ERC20Snapshot: id is 0");
         require(_snapshotId <= _currentSnapshotId, "ERC20Snapshot: nonexistent id");
 
         // When a valid snapshot is queried, there are three possibilities:
@@ -46,18 +45,14 @@ contract AccountSnapshot {
         //  larger than the requested one.
         //
         // In summary, we need to find an element in an array, returning the index of the largest value that is smaller if
-        // it is not found, unless said value doesn't exist (e.g. when all values are smaller).
+        // it is not found, unless said value doesn't exist (e.g. when all values are greater).
 
-        if (_snapshotIds[_account].length == 0) return 0;
+        uint256 index = findLowerBound(_snapshotIds[_account], _snapshotId);
 
-        uint256 index = _snapshotIds[_account].findUpperBound(_snapshotId);
-
-        if (index == _snapshotIds[_account].length) {
-            return _snapshotIds[_account][index - 1];
+        if (index == type(uint256).max) {
+            return 0;
         } else {
-            if (_snapshotIds[_account][index] == _snapshotId) return _snapshotId;
-            else if (index > 0) return _snapshotIds[_account][index - 1];
-            else return 0;
+            return _snapshotIds[_account][index];
         }
     }
 
@@ -72,5 +67,58 @@ contract AccountSnapshot {
     /// @dev Get the current snapshotId
     function getCurrentSnapshotId() public view returns (uint256) {
         return _currentSnapshotId;
+    }
+
+    /**
+     * @dev Searches a sorted `array` and returns the greatest index that contains
+     * a value smaller or equal to `element`. If no such index exists (i.e. all
+     * values in the array are strictly bigger than `element`), type(uint256).max is
+     * returned. Time complexity O(log n).
+     *
+     * `array` is expected to be sorted in ascending order, and to contain no
+     * repeated elements.
+     */
+    function findLowerBound(uint256[] storage array, uint256 element) internal view returns (uint256) {
+        uint256 low = 0;
+        uint256 high = array.length;
+
+        if (high == 0) {
+            return type(uint256).max;
+        }
+
+        while (low < high) {
+            uint256 mid = MathUpgradeable.average(low, high);
+
+            // Note that mid will always be strictly less than high (i.e. it will be a valid array index)
+            // because Math.average rounds down (it does integer division with truncation).
+            if (unsafeAccess(array, mid).value > element) {
+                high = mid;
+            } else {
+                unchecked {
+                    low = mid + 1;
+                }
+            }
+        }
+
+        unchecked {
+            return low - 1;
+        }
+    }
+
+    struct Uint256Slot {
+        uint256 value;
+    }
+
+    /**
+     * @dev Access an array in an "unsafe" way. Skips solidity "index-out-of-range" check.
+     *
+     * WARNING: Only use if you are certain `pos` is lower than the array length.
+     */
+    function unsafeAccess(uint256[] storage arr, uint256 pos) internal pure returns (Uint256Slot storage value) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            mstore(0, arr.slot)
+            value.slot := add(keccak256(0, 0x20), pos)
+        }
     }
 }
