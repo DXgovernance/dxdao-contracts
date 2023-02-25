@@ -146,10 +146,16 @@ export const deployDaoV2 = async function (deployConfig) {
   await avatar.initialize(controller.address);
 
   for (let i = 0; i < deployConfig.repHolders.length; i++) {
-    await reputation.mint(
-      deployConfig.repHolders[i].address,
-      deployConfig.repHolders[i].amount
-    );
+    const addressI = deployConfig.repHolders[i].address;
+    const amountI = deployConfig.repHolders[i].amount;
+    await reputation.mint(addressI, amountI);
+    await dxd.mint(addressI, amountI);
+    await dxd.approve(dxdStake.address, amountI, {
+      from: deployConfig.repHolders[i].address,
+    });
+    await dxdStake.stake(amountI, 25, {
+      from: deployConfig.repHolders[i].address,
+    });
   }
   await reputation.transferOwnership(controller.address);
 

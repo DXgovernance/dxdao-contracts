@@ -14,17 +14,6 @@ const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 
-const repTokenWeight = 50;
-const stakeTokenWeight = 50;
-const minStakingTokensLocked = 100;
-const maxTimeCommitment = 1000;
-const lf = 0.025;
-const linearFactor = web3.utils.toWei(lf.toString(), "ether");
-const ef = 0;
-const exponentialFactor = web3.utils.toWei(ef.toString(), "ether");
-const exp = 1;
-const exponent = web3.utils.toWei(exp.toString(), "ether");
-
 contract("AvatarScheme", function (accounts) {
   let standardTokenMock,
     permissionRegistry,
@@ -34,6 +23,17 @@ contract("AvatarScheme", function (accounts) {
     actionMock;
 
   const constants = helpers.constants;
+
+  const repTokenWeight = 50;
+  const stakeTokenWeight = 50;
+  const minStakingTokensLocked = 100;
+  const maxTimeCommitment = 1000;
+  const lf = 0.025;
+  const linearFactor = web3.utils.toWei(lf.toString(), "ether");
+  const ef = 0;
+  const exponentialFactor = web3.utils.toWei(ef.toString(), "ether");
+  const exp = 1;
+  const exponent = web3.utils.toWei(exp.toString(), "ether");
 
   beforeEach(async function () {
     actionMock = await ActionMock.new();
