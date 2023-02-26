@@ -80,8 +80,8 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     /// @dev Set Minimum staking tokens locked to apply staking token weight
     /// @param _minStakingTokensLocked Minimum staking tokens locked to apply weight
     function setMinStakingTokensLocked(uint256 _minStakingTokensLocked) public onlyOwner {
-        _snapshot(MIN_STAKED_SLOT);
-        minStakingTokensLocked[getCurrentSnapshotId()] = _minStakingTokensLocked;
+        uint256 snapshotId = _snapshot(MIN_STAKED_SLOT);
+        minStakingTokensLocked[snapshotId] = _minStakingTokensLocked;
     }
 
     /// @dev Update tokens weights
@@ -91,17 +91,17 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
         if (repWeight + stakingWeight != 100) {
             revert VotingPower_InvalidTokenWeights();
         }
-        _snapshot(WEIGHTS_SLOT);
-        weights[reputation][getCurrentSnapshotId()] = repWeight;
-        weights[influence][getCurrentSnapshotId()] = stakingWeight;
+        uint256 snapshotId = _snapshot(WEIGHTS_SLOT);
+        weights[reputation][snapshotId] = repWeight;
+        weights[influence][snapshotId] = stakingWeight;
     }
 
     /// @dev function to be executed from rep and dxdStake tokens after mint/burn
     /// It stores a reference to the rep/stake token snapshotId from internal snapshotId
     function callback() external onlyInternalTokens(msg.sender) {
-        _snapshot(SNAPSHOTS_SLOT);
-        snapshots[reputation][getCurrentSnapshotId()] = ERC20SnapshotRep(reputation).getCurrentSnapshotId();
-        snapshots[influence][getCurrentSnapshotId()] = ERC20SnapshotRep(influence).getCurrentSnapshotId();
+        uint256 snapshotId = _snapshot(SNAPSHOTS_SLOT);
+        snapshots[reputation][snapshotId] = ERC20SnapshotRep(reputation).getCurrentSnapshotId();
+        snapshots[influence][snapshotId] = ERC20SnapshotRep(influence).getCurrentSnapshotId();
     }
 
     /// @dev Get the balance (voting power percentage) of `account` at current snapshotId
