@@ -786,7 +786,6 @@ contract("VotingPower", function (accounts) {
       );
 
       await vpToken.setMinStakingTokensLocked(1000);
-      console.log("setMinStakingTokensLocked");
       await repToken.mintMultiple([accounts[3], accounts[5]], [200, 300]);
       // balance after setting composition at initialized snapshot
       const balance2 = bn(await vpToken.balanceOfAt(holder, initialSnapshotId));
