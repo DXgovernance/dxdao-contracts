@@ -395,7 +395,7 @@ contract VotingMachine {
             }
             emit Redeem(proposalId, proposalAvatar, beneficiary, staked);
 
-            // If NO won and there is staed tokens on YES, the dao avatar gets a % or the rewards
+            // If NO won and there is staked tokens on YES, the dao avatar gets a % or the rewards
         } else if (beneficiary == proposalAvatar && proposal.winningVote == NO && !proposal.daoRedeemedWinnings) {
             uint256 daoBountyReward = (proposalStakes[proposalId][YES] * parameters[proposal.paramsHash].daoBounty) /
                 proposalStakes[proposalId][NO];
@@ -411,6 +411,21 @@ contract VotingMachine {
                 revert VotingMachine__TransferFromFailed(proposalAvatar, daoBountyReward);
             } else {
                 emit ClaimedDaoBounty(proposalAvatar, proposalAvatar, daoBountyReward);
+            }
+
+            // If also a stake was done by the avatar, the stake redeem is done
+            if (staked > 0) {
+                reward = (staked * totalStakesWithoutDaoBounty) / proposalStakes[proposalId][NO];
+
+                schemes[proposal.schemeId].stakingTokenBalance =
+                    schemes[proposal.schemeId].stakingTokenBalance -
+                    reward;
+
+                transferSuccess = stakingToken.transfer(proposalAvatar, reward);
+                if (!transferSuccess) {
+                    revert VotingMachine__TransferFailed(proposalAvatar, reward);
+                }
+                emit Redeem(proposalId, proposalAvatar, proposalAvatar, reward);
             }
 
             // If the proposal was executed and the stake was in the winning option the beneficiary gets the reward
