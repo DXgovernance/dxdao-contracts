@@ -7,6 +7,7 @@ const {
   expectRevert,
   expectEvent,
 } = require("@openzeppelin/test-helpers");
+import { web3 } from "@openzeppelin/test-helpers/src/setup";
 
 const AvatarScheme = artifacts.require("./AvatarScheme.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
@@ -24,37 +25,20 @@ contract("AvatarScheme", function (accounts) {
 
   const constants = helpers.constants;
 
-  const repTokenWeight = 50;
-  const stakeTokenWeight = 50;
-  const minStakingTokensLocked = 100;
-  const maxTimeCommitment = 1000;
-  const lf = 0.025;
-  const linearFactor = web3.utils.toWei(lf.toString(), "ether");
-  const ef = 0;
-  const exponentialFactor = web3.utils.toWei(ef.toString(), "ether");
-  const exp = 1;
-  const exponent = web3.utils.toWei(exp.toString(), "ether");
-
   beforeEach(async function () {
     actionMock = await ActionMock.new();
     standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
 
-    org = await helpers.deployDaoV2({
+    org = await helpers.deployDaoV2(Object.assign({
       owner: accounts[0],
       votingMachineToken: standardTokenMock.address,
       repHolders: [
         { address: accounts[0], amount: 20000 },
         { address: accounts[1], amount: 10000 },
         { address: accounts[2], amount: 70000 },
-      ],
-      maxTimeCommitment: maxTimeCommitment,
-      linearFactor: linearFactor,
-      exponentialFactor: exponentialFactor,
-      exponent: exponent,
-      repWeight: repTokenWeight,
-      stakingWeight: stakeTokenWeight,
-      minStakingTokensLocked: minStakingTokensLocked,
-    });
+      ]},
+      constants.GOVERNANCE_V2_CONFIG(web3),
+    ));
 
     const defaultParamsHash = await helpers.setDefaultParameters(
       org.votingMachine

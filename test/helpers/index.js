@@ -136,8 +136,8 @@ export const deployDaoV2 = async function (deployConfig) {
   await votingPowerToken.initialize(
     reputation.address,
     dxdInfluence.address,
-    deployConfig.repWeight,
-    deployConfig.stakingWeight,
+    deployConfig.repTokenWeight,
+    deployConfig.stakeTokenWeight,
     deployConfig.minStakingTokensLocked
   );
 

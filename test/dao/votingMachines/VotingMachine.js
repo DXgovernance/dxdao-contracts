@@ -31,17 +31,6 @@ contract("VotingMachine", function (accounts) {
   const VOTE_GAS = 360000;
   const TOTAL_GAS_REFUND_PER_VOTE = new BN(VOTE_GAS * constants.GAS_PRICE);
 
-  const repTokenWeight = 50;
-  const stakeTokenWeight = 50;
-  const minStakingTokensLocked = 100;
-  const maxTimeCommitment = 1000;
-  const lf = 0.025;
-  const linearFactor = web3.utils.toWei(lf.toString(), "ether");
-  const ef = 0;
-  const exponentialFactor = web3.utils.toWei(ef.toString(), "ether");
-  const exp = 1;
-  const exponent = web3.utils.toWei(exp.toString(), "ether");
-
   const range = (n = 1) => [...Array(n).keys()];
   const createSchemeProposals = (amount = 1) =>
     Promise.all(
@@ -67,7 +56,7 @@ contract("VotingMachine", function (accounts) {
       accounts[1]
     );
 
-    org = await helpers.deployDaoV2({
+    org = await helpers.deployDaoV2(Object.assign({
       owner: accounts[0],
       votingMachineToken: stakingToken.address,
       repHolders: [
@@ -75,15 +64,9 @@ contract("VotingMachine", function (accounts) {
         { address: accounts[1], amount: 10000 },
         { address: accounts[2], amount: 10000 },
         { address: accounts[3], amount: 70000 },
-      ],
-      maxTimeCommitment: maxTimeCommitment,
-      linearFactor: linearFactor,
-      exponentialFactor: exponentialFactor,
-      exponent: exponent,
-      repWeight: repTokenWeight,
-      stakingWeight: stakeTokenWeight,
-      minStakingTokensLocked: minStakingTokensLocked,
-    });
+      ]},
+      constants.GOVERNANCE_V2_CONFIG(web3),
+    ));
 
     dxdVotingMachine = org.votingMachine;
 
@@ -130,9 +113,7 @@ contract("VotingMachine", function (accounts) {
     );
     permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
     await permissionRegistry.initialize();
-
     await time.increase(10);
-
     masterAvatarScheme = await AvatarScheme.new();
     await masterAvatarScheme.initialize(
       org.avatar.address,
@@ -1109,18 +1090,13 @@ contract("VotingMachine", function (accounts) {
         constants.MAX_UINT_256,
         { from: accounts[9] }
       );
-      const fakeOrg = await helpers.deployDaoV2({
-        owner: accounts[9],
-        votingMachineToken: stakingToken.address,
-        repHolders: [{ address: accounts[9], amount: 10000 }],
-        maxTimeCommitment: maxTimeCommitment,
-        linearFactor: linearFactor,
-        exponentialFactor: exponentialFactor,
-        exponent: exponent,
-        repWeight: repTokenWeight,
-        stakingWeight: stakeTokenWeight,
-        minStakingTokensLocked: minStakingTokensLocked,
-      });
+      const fakeOrg = await helpers.deployDaoV2(Object.assign({
+          owner: accounts[9],
+          votingMachineToken: stakingToken.address,
+          repHolders: [{ address: accounts[9], amount: 10000 }]
+        },
+        constants.GOVERNANCE_V2_CONFIG(web3),
+      ));
       const fakePermissionRegistry = await PermissionRegistry.new(
         accounts[9],
         1
