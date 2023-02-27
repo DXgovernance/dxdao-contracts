@@ -75,7 +75,7 @@ contract VotingMachine {
 
     struct Voter {
         uint256 option; // NO(1), YES(2)
-        uint256 reputation; // amount of voter's reputation
+        uint256 votingPower; // amount of voter's voting power
         bool preBoosted;
     }
 
@@ -126,14 +126,14 @@ contract VotingMachine {
         bytes32 paramsHash
     );
 
-    event ExecuteProposal(bytes32 indexed proposalId, address indexed avatar, uint256 option, uint256 totalReputation);
+    event ExecuteProposal(bytes32 indexed proposalId, address indexed avatar, uint256 option, uint256 totalVotingPower);
 
     event VoteProposal(
         bytes32 indexed proposalId,
         address indexed avatar,
         address indexed voter,
         uint256 option,
-        uint256 reputation
+        uint256 votingPower
     );
 
     event Stake(
@@ -181,8 +181,8 @@ contract VotingMachine {
     error VotingMachine__AddressNotRegisteredInSchemeRefounds();
     error VotingMachine__SchemeRefundBalanceIsZero();
     error VotingMachine__ProposalAlreadyVoted();
-    error VotingMachine__VoterMustHaveReputation();
-    error VotingMachine__NotEnoughtReputation();
+    error VotingMachine__VoterMustHaveVotingPower();
+    error VotingMachine__NotEnoughtVotingPower();
     error VotingMachine__WrongVoteShared();
     error VotingMachine__StakingAmountShouldBeBiggerThanZero();
     error VotingMachine__TransferFromStakerFailed();
@@ -203,9 +203,9 @@ contract VotingMachine {
 
     // Mappings of a proposal various properties
 
-    ///      proposalId   =>      option   =>    reputation
+    ///      proposalId   =>      option   =>    votingPower
     mapping(bytes32 => mapping(uint256 => uint256)) proposalVotes;
-    ///      proposalId   =>    option   => reputation
+    ///      proposalId   =>    option   => votingPower
     mapping(bytes32 => mapping(uint256 => uint256)) proposalPreBoostedVotes;
     ///      proposalId   =>    address => voter
     mapping(bytes32 => mapping(address => Voter)) proposalVoters;
@@ -574,7 +574,7 @@ contract VotingMachine {
      * @dev Voting function from old voting machine changing only the logic to refund vote after vote done
      * @param proposalId Id of the proposal
      * @param option NO(1) or YES(2).
-     * @param amount The reputation amount to vote with, 0 will use all available REP
+     * @param amount The voting power amount to vote with, 0 will use all available voting power.
      * @return proposalExecuted True if the proposal was executed, false otherwise.
      */
     function vote(
@@ -602,7 +602,7 @@ contract VotingMachine {
      * @param proposalId Id of the proposal
      * @param voter Address of voter
      * @param option The vote option, NO(1) or YES(2).
-     * @param amount The reputation amount to vote with, 0 will use all available REP
+     * @param amount The voting power amount to vote with, 0 will use all available voting power
      * @param nonce Nonce value ,it is part of the signature to ensure that a signature can be received only once.
      * @param actionType 1=vote, 2=stake
      * @param signature The encoded vote signature
@@ -629,7 +629,7 @@ contract VotingMachine {
      * @dev Signal the vote of a proposal in this voting machine to be executed later
      * @param proposalId Id of the proposal to vote
      * @param option The vote option, NO(1) or YES(2).
-     * @param amount The reputation amount to vote with, 0 will use all available REP
+     * @param amount The voting power amount to vote with, 0 will use all available voting power.
      */
     function signalVote(
         bytes32 proposalId,
@@ -649,7 +649,7 @@ contract VotingMachine {
      * @param proposalId Id of the proposal to execute the vote on
      * @param voter The signer of the vote
      * @param option The vote option, NO(1) or YES(2).
-     * @param amount The reputation amount to vote with, 0 will use all available REP
+     * @param amount The voting power amount to vote with, 0 will use all available voting power.
      * @param signature The signature of the hashed vote
      */
     function executeSignedVote(
@@ -711,21 +711,21 @@ contract VotingMachine {
         Parameters memory params = parameters[proposals[proposalId].paramsHash];
         Proposal storage proposal = proposals[proposalId];
 
-        // Check voter has enough reputation
+        // Check voter has enough voting power
         uint256 voterVotingPower = IVotingMachineCallbacks(proposal.callbacks).votingPowerOf(voter, proposalId);
 
         if (voterVotingPower == 0) {
-            revert VotingMachine__VoterMustHaveReputation();
+            revert VotingMachine__VoterMustHaveVotingPower();
         }
 
         if (voterVotingPower < amount) {
-            revert VotingMachine__NotEnoughtReputation();
+            revert VotingMachine__NotEnoughtVotingPower();
         }
         if (amount == 0) {
             amount = voterVotingPower;
         }
         // If this voter has already voted, return false.
-        if (proposalVoters[proposalId][voter].reputation != 0) {
+        if (proposalVoters[proposalId][voter].votingPower != 0) {
             return false;
         }
         // The voting itself:
@@ -756,7 +756,7 @@ contract VotingMachine {
             proposal.winningVote = option;
         }
         proposalVoters[proposalId][voter] = Voter({
-            reputation: amount,
+            votingPower: amount,
             option: option,
             preBoosted: ((proposal.state == ProposalState.PreBoosted) || (proposal.state == ProposalState.Queued))
         });
@@ -1053,7 +1053,7 @@ contract VotingMachine {
      * @param proposalId Id of the proposal
      * @param signer The signer of the vote
      * @param option The vote option, NO(1) or YES(2).
-     * @param amount The reputation amount to vote with, 0 will use all available REP
+     * @param amount The voting power amount to vote with, 0 will use all available voting power.
      * @param nonce Nonce value, it is part of the signature to ensure that a signature can be received only once.
      * @param actionType The governance action type to hash
      * @return actionHash Hash of the action
@@ -1103,14 +1103,14 @@ contract VotingMachine {
     }
 
     /**
-     * @dev Returns the vote and the amount of reputation of the user committed to this proposal
+     * @dev Returns the vote and the amount of voting power of the user committed to this proposal
      * @param proposalId The ID of the proposal
      * @param voter The address of the voter
      * @return option The option voted
-     * @return amount The amount of rep used in the vote
+     * @return amount The amount of voting power used in the vote
      */
     function getVoter(bytes32 proposalId, address voter) external view returns (uint256 option, uint256 amount) {
-        return (proposalVoters[proposalId][voter].option, proposalVoters[proposalId][voter].reputation);
+        return (proposalVoters[proposalId][voter].option, proposalVoters[proposalId][voter].votingPower);
     }
 
     /**

@@ -462,7 +462,7 @@ contract("VotingMachine", function (accounts) {
           avatar: org.avatar.address,
           voter: accounts[1],
           option: constants.YES_OPTION.toString(),
-          reputation: web3.utils.toWei("10", "ether").toString(), // 10%
+          votingPower: web3.utils.toWei("10", "ether").toString(), // 10%
         });
 
         const secondVote = await dxdVotingMachine.vote(
