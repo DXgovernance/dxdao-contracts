@@ -29,16 +29,20 @@ contract("AvatarScheme", function (accounts) {
     actionMock = await ActionMock.new();
     standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
 
-    org = await helpers.deployDaoV2(Object.assign({
-      owner: accounts[0],
-      votingMachineToken: standardTokenMock.address,
-      repHolders: [
-        { address: accounts[0], amount: 20000 },
-        { address: accounts[1], amount: 10000 },
-        { address: accounts[2], amount: 70000 },
-      ]},
-      constants.GOVERNANCE_V2_CONFIG(web3),
-    ));
+    org = await helpers.deployDaoV2(
+      Object.assign(
+        {
+          owner: accounts[0],
+          votingMachineToken: standardTokenMock.address,
+          repHolders: [
+            { address: accounts[0], amount: 20000 },
+            { address: accounts[1], amount: 10000 },
+            { address: accounts[2], amount: 70000 },
+          ],
+        },
+        constants.GOVERNANCE_V2_CONFIG(web3)
+      )
+    );
 
     const defaultParamsHash = await helpers.setDefaultParameters(
       org.votingMachine

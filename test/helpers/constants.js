@@ -24,7 +24,7 @@ export const NO_OPTION = "1";
 const lf = 0.025;
 const ef = 0;
 const exp = 1;
-export const GOVERNANCE_V2_CONFIG = (web3) => {
+export const GOVERNANCE_V2_CONFIG = web3 => {
   return {
     repTokenWeight: 50,
     stakeTokenWeight: 50,
@@ -33,7 +33,7 @@ export const GOVERNANCE_V2_CONFIG = (web3) => {
     linearFactor: web3.utils.toWei(lf.toString(), "ether"),
     exponentialFactor: web3.utils.toWei(ef.toString(), "ether"),
     exponent: web3.utils.toWei(exp.toString(), "ether"),
-  }
+  };
 };
 
 export const WALLET_SCHEME_PROPOSAL_STATES = {
