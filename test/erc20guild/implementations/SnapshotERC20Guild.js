@@ -369,12 +369,7 @@ contract("SnapshotERC20Guild", function (accounts) {
       await erc20Guild.lockTokens(200000, { from: accounts[5] });
     });
 
-    it("should set minVotePercentageForExecution correctly", async function () {
-      await expectRevert(
-        erc20Guild.setMinVotePercentageForExecution(10001),
-        "ERC20Guild: Only callable by ERC20guild itself"
-      );
-
+    it("should set votingPowerPercentageForInstantProposalExecution correctly", async function () {
       // Bigger than max value
       let guildProposalId = await createProposal({
         guild: erc20Guild,
@@ -383,7 +378,7 @@ contract("SnapshotERC20Guild", function (accounts) {
             to: [erc20Guild.address],
             data: [
               await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
-                .setMinVotePercentageForExecution(10001)
+                .setConfig(30, 30, 5000, 100, 10001, 0, 0, 10, 60, 0, 0)
                 .encodeABI(),
             ],
             value: [0],
@@ -419,7 +414,7 @@ contract("SnapshotERC20Guild", function (accounts) {
             to: [erc20Guild.address],
             data: [
               await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
-                .setMinVotePercentageForExecution(4999)
+                .setConfig(30, 30, 5000, 100, 4999, 0, 0, 10, 60, 0, 0)
                 .encodeABI(),
             ],
             value: [0],
@@ -455,7 +450,7 @@ contract("SnapshotERC20Guild", function (accounts) {
             to: [erc20Guild.address],
             data: [
               await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
-                .setMinVotePercentageForExecution(7500)
+                .setConfig(30, 30, 5000, 100, 7500, 0, 0, 10, 60, 0, 0)
                 .encodeABI(),
             ],
             value: [0],
@@ -479,15 +474,15 @@ contract("SnapshotERC20Guild", function (accounts) {
 
       await time.increase(time.duration.seconds(31));
       await erc20Guild.endProposal(guildProposalId);
-      const minVotePercentageForExecution =
-        await erc20Guild.minVotePercentageForExecution();
-      expect(minVotePercentageForExecution).to.be.bignumber.equal(
-        new BN("7500")
-      );
+      const votingPowerPercentageForInstantProposalExecution =
+        await erc20Guild.votingPowerPercentageForInstantProposalExecution();
+      expect(
+        votingPowerPercentageForInstantProposalExecution
+      ).to.be.bignumber.equal(new BN("7500"));
     });
 
     it("should not execute a proposal early if early proposal execution conditions are not met", async function () {
-      // Set minVotePercentageForExecution
+      // Set votingPowerPercentageForInstantProposalExecution
       let guildProposalId = await createProposal({
         guild: erc20Guild,
         options: [
@@ -495,7 +490,7 @@ contract("SnapshotERC20Guild", function (accounts) {
             to: [erc20Guild.address],
             data: [
               await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
-                .setMinVotePercentageForExecution(7500)
+                .setConfig(30, 30, 5000, 100, 7500, 0, 0, 10, 60, 0, 0)
                 .encodeABI(),
             ],
             value: [0],
@@ -526,7 +521,7 @@ contract("SnapshotERC20Guild", function (accounts) {
             to: [erc20Guild.address],
             data: [
               await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
-                .setMinVotePercentageForExecution(0)
+                .setConfig(30, 30, 5000, 100, 0, 0, 0, 10, 60, 0, 0)
                 .encodeABI(),
             ],
             value: [0],
@@ -558,7 +553,7 @@ contract("SnapshotERC20Guild", function (accounts) {
     });
 
     it("should execute a proposal early if early proposal execution conditions are met", async function () {
-      // Set minVotePercentageForExecution
+      // Set votingPowerPercentageForInstantProposalExecution
       let guildProposalId = await createProposal({
         guild: erc20Guild,
         options: [
@@ -566,7 +561,7 @@ contract("SnapshotERC20Guild", function (accounts) {
             to: [erc20Guild.address],
             data: [
               await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
-                .setMinVotePercentageForExecution(7500)
+                .setConfig(30, 30, 5000, 100, 7500, 0, 0, 10, 60, 0, 0)
                 .encodeABI(),
             ],
             value: [0],
@@ -597,7 +592,7 @@ contract("SnapshotERC20Guild", function (accounts) {
             to: [erc20Guild.address],
             data: [
               await new web3.eth.Contract(SnapshotERC20Guild.abi).methods
-                .setMinVotePercentageForExecution(5000)
+                .setConfig(30, 30, 5000, 100, 5000, 0, 0, 10, 60, 0, 0)
                 .encodeABI(),
             ],
             value: [0],
@@ -625,9 +620,11 @@ contract("SnapshotERC20Guild", function (accounts) {
       );
 
       await erc20Guild.endProposal(guildProposalId);
-      const minVotePercentageForExecution =
-        await erc20Guild.minVotePercentageForExecution();
-      expect(minVotePercentageForExecution).to.be.bignumber.gte(new BN("5000"));
+      const votingPowerPercentageForInstantProposalExecution =
+        await erc20Guild.votingPowerPercentageForInstantProposalExecution();
+      expect(
+        votingPowerPercentageForInstantProposalExecution
+      ).to.be.bignumber.gte(new BN("5000"));
     });
   });
 });

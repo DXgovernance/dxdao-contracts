@@ -241,7 +241,10 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
 
         uint256 totalSupply = ERC20SnapshotRep(address(token)).totalSupplyAt(getProposalSnapshotId(proposalId));
         uint256 approvalRate = (highestVoteAmount * BASIS_POINT_MULTIPLIER) / totalSupply;
-        if (minVotePercentageForExecution == 0 || approvalRate < minVotePercentageForExecution) {
+        if (
+            votingPowerPercentageForInstantProposalExecution == 0 ||
+            approvalRate < votingPowerPercentageForInstantProposalExecution
+        ) {
             require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
         }
     }

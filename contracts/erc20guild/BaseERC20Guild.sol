@@ -155,8 +155,8 @@ contract BaseERC20Guild {
     bool internal isExecutingProposal;
 
     // If 0, approved proposals have to wait till the proposal time has passed to be executed.
-    // If >0, proposal can be executed once they get +minVotesForExecution of votes.
-    uint256 public minVotePercentageForExecution;
+    // If >0, proposals can be executed once they get +minVotesForExecution of votes.
+    uint256 public votingPowerPercentageForInstantProposalExecution;
 
     // BaseERC20Guild is upgrade compatible. If new variables are added in an upgrade, make sure to update __gap.
     uint256[50] private __gap;
@@ -175,6 +175,8 @@ contract BaseERC20Guild {
     /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal option
     // solhint-disable-next-line max-line-length
     /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // solhint-disable-next-line max-line-length
+    /// @param _votingPowerPercentageForInstantProposalExecution The percentage of voting power in base 10000 needed to execute a proposal option without  waiting for the proposal time to end. If set to 0, the feature is disabled.
     /// @param _voteGas The amount of gas in wei unit used for vote refunds.
     // Can't be higher than the gas used by setVote (117000)
     /// @param _maxGasPrice The maximum gas price used for vote refunds
@@ -185,6 +187,7 @@ contract BaseERC20Guild {
         uint256 _timeForExecution,
         uint256 _votingPowerPercentageForProposalExecution,
         uint256 _votingPowerPercentageForProposalCreation,
+        uint256 _votingPowerPercentageForInstantProposalExecution,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
@@ -199,34 +202,27 @@ contract BaseERC20Guild {
             _votingPowerPercentageForProposalExecution > 0,
             "ERC20Guild: voting power for execution has to be more than 0"
         );
+        require(
+            _votingPowerPercentageForInstantProposalExecution <= BASIS_POINT_MULTIPLIER,
+            "ERC20Guild: invalid votingPowerPercentageForInstantProposalExecution value"
+        );
+        require(
+            _votingPowerPercentageForInstantProposalExecution == 0 ||
+                _votingPowerPercentageForInstantProposalExecution >= BASIS_POINT_MULTIPLIER / 2,
+            "ERC20Guild: invalid votingPowerPercentageForInstantProposalExecution value"
+        );
         require(_voteGas <= 117000, "ERC20Guild: vote gas has to be equal or lower than 117000");
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerPercentageForProposalExecution = _votingPowerPercentageForProposalExecution;
         votingPowerPercentageForProposalCreation = _votingPowerPercentageForProposalCreation;
+        votingPowerPercentageForInstantProposalExecution = _votingPowerPercentageForInstantProposalExecution;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
         lockTime = _lockTime;
         minimumMembersForProposalCreation = _minimumMembersForProposalCreation;
         minimumTokensLockedForProposalCreation = _minimumTokensLockedForProposalCreation;
-    }
-
-    /// @dev Sets the minimum percentage of approval required for a proposal to be executed without
-    /// waiting for the proposal time to end. If set to 0, the feature is disabled.
-    /// @param _minVotePercentageForExecution The receiver addresses of each call to be executed
-    function setMinVotePercentageForExecution(uint256 _minVotePercentageForExecution) external {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
-        require(
-            _minVotePercentageForExecution <= BASIS_POINT_MULTIPLIER,
-            "ERC20Guild: invalid minVotePercentageForExecution value"
-        );
-        require(
-            _minVotePercentageForExecution == 0 || _minVotePercentageForExecution >= BASIS_POINT_MULTIPLIER / 2,
-            "ERC20Guild: invalid minVotePercentageForExecution value"
-        );
-
-        minVotePercentageForExecution = _minVotePercentageForExecution;
     }
 
     /// @dev Create a proposal with an static call data and extra information
@@ -494,7 +490,10 @@ contract BaseERC20Guild {
         require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
 
         uint256 approvalRate = (highestVoteAmount * BASIS_POINT_MULTIPLIER) / token.totalSupply();
-        if (minVotePercentageForExecution == 0 || approvalRate < minVotePercentageForExecution) {
+        if (
+            votingPowerPercentageForInstantProposalExecution == 0 ||
+            approvalRate < votingPowerPercentageForInstantProposalExecution
+        ) {
             require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
         }
     }
