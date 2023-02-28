@@ -725,15 +725,12 @@ contract("VotingPower", function (accounts) {
   });
 
   describe("getTokenWeight", () => {
-    it("Should receive only rep or staking token", async () => {
+    it("Should not fail if other address than rep or influence is received and return 0 weight", async () => {
       await deployVpToken();
       const anyAddress = accounts[9];
-      await expectRevert(
-        vpToken.getTokenWeight(anyAddress),
-        "VotingPower_InvalidTokenAddress"
-      );
+      expect(bn(await vpToken.getTokenWeight(anyAddress)).toNumber()).equal(0);
     });
-    it("Should return 0 for stakingToken if staking token totalSupply is less than minStakingTokensLocked", async () => {
+    it("Should return 0 for influence if influence totalSupply is less than minStakingTokensLocked", async () => {
       await deployVpToken();
       expect(
         (await vpToken.getTokenWeight(dxdInfluence.address)).toNumber()

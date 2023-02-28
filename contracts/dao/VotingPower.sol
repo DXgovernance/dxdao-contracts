@@ -86,12 +86,10 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     function setMinStakingTokensLocked(uint256 _minStakingTokensLocked) public onlyOwner {
         uint256 snapshotId = _snapshot(MIN_STAKED_SLOT);
         minStakingTokensLocked[snapshotId] = _minStakingTokensLocked;
-        if (snapshotId > 0) {
-            snapshots[snapshotId] = TokensSnapshot({
-                reputation: snapshots[snapshotId - 1].reputation,
-                influence: snapshots[snapshotId - 1].influence
-            });
-        }
+        snapshots[snapshotId] = TokensSnapshot({
+            reputation: snapshots[snapshotId - 1].reputation,
+            influence: snapshots[snapshotId - 1].influence
+        });
     }
 
     /// @dev Update tokens weights
@@ -104,12 +102,10 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
         uint256 snapshotId = _snapshot(WEIGHTS_SLOT);
         weights[reputation][snapshotId] = repWeight;
         weights[influence][snapshotId] = stakingWeight;
-        if (snapshotId > 0) {
-            snapshots[snapshotId] = TokensSnapshot({
-                reputation: snapshots[snapshotId - 1].reputation,
-                influence: snapshots[snapshotId - 1].influence
-            });
-        }
+        snapshots[snapshotId] = TokensSnapshot({
+            reputation: snapshots[snapshotId - 1].reputation,
+            influence: snapshots[snapshotId - 1].influence
+        });
     }
 
     /// @dev function to be executed from rep and dxdStake tokens after mint/burn
@@ -182,12 +178,7 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     /// @param token Address of the token we want to get weight from
     /// @param snapshotId VotingPower snapshotId
     /// @return weight Weight percentage value (0 to 100)
-    function getTokenWeightAt(address token, uint256 snapshotId)
-        public
-        view
-        onlyInternalTokens(token)
-        returns (uint256 weight)
-    {
+    function getTokenWeightAt(address token, uint256 snapshotId) public view returns (uint256 weight) {
         uint256 influenceSnapshotId = snapshots[snapshotId].influence;
         if (ERC20SnapshotRep(influence).totalSupplyAt(influenceSnapshotId) < getMinStakingTokensLockedAt(snapshotId)) {
             if (token == reputation) return 100;
@@ -202,7 +193,7 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     ///      If not it will retun internal weights config for given `token`
     /// @param token Address of the token we want to get weight from
     /// @return weight Weight percentage value (0 to 100)
-    function getTokenWeight(address token) public view onlyInternalTokens(token) returns (uint256 weight) {
+    function getTokenWeight(address token) public view returns (uint256 weight) {
         return getTokenWeightAt(token, getCurrentSnapshotId());
     }
 
