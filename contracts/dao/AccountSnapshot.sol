@@ -31,6 +31,14 @@ contract AccountSnapshot {
         return currentId;
     }
 
+    function _snapshot() internal returns (uint256 currentId) {
+        unchecked {
+            currentId = ++_currentSnapshotId;
+        }
+        emit Snapshot(currentId);
+        return currentId;
+    }
+
     function _lastRegisteredSnapshotIdAt(uint256 _snapshotId, address _account) internal view returns (uint256) {
         require(_snapshotId <= _currentSnapshotId, "ERC20Snapshot: nonexistent id");
 

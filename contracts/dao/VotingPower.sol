@@ -24,8 +24,13 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     //      tokenAddress   snapshot  weight
     mapping(address => mapping(uint256 => uint256)) public weights;
 
+    struct TokensSnapshot {
+        uint128 reputation;
+        uint128 influence;
+    }
+
     //      tokenAddress     Internal snapshot  => token snapshot
-    mapping(address => mapping(uint256 => uint256)) snapshots;
+    mapping(uint256 => TokensSnapshot) snapshots;
 
     uint256 public constant decimals = 18;
     uint256 public constant precision = 10**decimals;
@@ -47,9 +52,8 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     /// @notice Minimum staking tokens locked to apply weight (snapshoted)
     mapping(uint256 => uint256) internal minStakingTokensLocked;
 
-    address public constant SNAPSHOTS_SLOT = address(0x1);
-    address public constant WEIGHTS_SLOT = address(0x2);
-    address public constant MIN_STAKED_SLOT = address(0x3);
+    address public constant WEIGHTS_SLOT = address(0x1);
+    address public constant MIN_STAKED_SLOT = address(0x2);
 
     /// @dev Verify if address is one of rep or staking tokens
     modifier onlyInternalTokens(address tokenAddress) {
@@ -82,6 +86,12 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     function setMinStakingTokensLocked(uint256 _minStakingTokensLocked) public onlyOwner {
         uint256 snapshotId = _snapshot(MIN_STAKED_SLOT);
         minStakingTokensLocked[snapshotId] = _minStakingTokensLocked;
+        if (snapshotId > 0) {
+            snapshots[snapshotId] = TokensSnapshot({
+                reputation: snapshots[snapshotId - 1].reputation,
+                influence: snapshots[snapshotId - 1].influence
+            });
+        }
     }
 
     /// @dev Update tokens weights
@@ -94,14 +104,22 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
         uint256 snapshotId = _snapshot(WEIGHTS_SLOT);
         weights[reputation][snapshotId] = repWeight;
         weights[influence][snapshotId] = stakingWeight;
+        if (snapshotId > 0) {
+            snapshots[snapshotId] = TokensSnapshot({
+                reputation: snapshots[snapshotId - 1].reputation,
+                influence: snapshots[snapshotId - 1].influence
+            });
+        }
     }
 
     /// @dev function to be executed from rep and dxdStake tokens after mint/burn
     /// It stores a reference to the rep/stake token snapshotId from internal snapshotId
     function callback() external onlyInternalTokens(msg.sender) {
-        uint256 snapshotId = _snapshot(SNAPSHOTS_SLOT);
-        snapshots[reputation][snapshotId] = ERC20SnapshotRep(reputation).getCurrentSnapshotId();
-        snapshots[influence][snapshotId] = ERC20SnapshotRep(influence).getCurrentSnapshotId();
+        uint256 snapshotId = _snapshot();
+        snapshots[snapshotId] = TokensSnapshot({
+            reputation: uint128(ERC20SnapshotRep(reputation).getCurrentSnapshotId()),
+            influence: uint128(ERC20SnapshotRep(influence).getCurrentSnapshotId())
+        });
     }
 
     /// @dev Get the balance (voting power percentage) of `account` at current snapshotId
@@ -129,7 +147,9 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
         uint256 _votingPower = 0;
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            uint256 tokenSnapshotId = snapshots[tokens[i]][snapshotAt(_snapshotId, SNAPSHOTS_SLOT)];
+            uint256 tokenSnapshotId = (tokens[i] == reputation)
+                ? snapshots[_snapshotId].reputation
+                : snapshots[_snapshotId].influence;
             // Skipping calculation if snapshotId is 0. No minting was done
             if (tokenSnapshotId == 0) continue;
             uint256 tokenWeight = getTokenWeightAt(tokens[i], _snapshotId);
@@ -168,7 +188,7 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
         onlyInternalTokens(token)
         returns (uint256 weight)
     {
-        uint256 influenceSnapshotId = snapshots[influence][snapshotAt(snapshotId, SNAPSHOTS_SLOT)];
+        uint256 influenceSnapshotId = snapshots[snapshotId].influence;
         if (ERC20SnapshotRep(influence).totalSupplyAt(influenceSnapshotId) < getMinStakingTokensLockedAt(snapshotId)) {
             if (token == reputation) return 100;
             else return 0;
@@ -212,7 +232,7 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
 
     /// @dev Returns the last snapshotId stored for given `slot` based on `_snapshotId`
     /// @param  _snapshotId VotingPower Snapshot ID
-    /// @param  slot Address used to emit snapshot. One of: SNAPSHOTS_SLOT, WEIGHTS_SLOT, MIN_STAKED_SLOT
+    /// @param  slot Address used to emit snapshot. One of: WEIGHTS_SLOT, MIN_STAKED_SLOT
     /// @return snapshotId SnapshotId
     function snapshotAt(uint256 _snapshotId, address slot) internal view returns (uint256 snapshotId) {
         return _lastRegisteredSnapshotIdAt(_snapshotId, slot);
