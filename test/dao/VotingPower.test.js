@@ -156,6 +156,7 @@ contract("VotingPower", function (accounts) {
 
     it("Should update token weights", async () => {
       await deployVpToken();
+      await mintAll();
       const currentSnapshot = bn(await vpToken.getCurrentSnapshotId());
       expect(
         (
@@ -187,7 +188,7 @@ contract("VotingPower", function (accounts) {
       // update config to be 50% 50%
       await mintAll();
       await vpToken.setComposition(50, 50);
-      const repWeight = await vpToken.getTokenWeight(repToken.address);
+      const repWeight = await vpToken.getWeightOf(repToken.address);
       expect(repWeight.toNumber()).equal(50);
     });
 
@@ -198,13 +199,13 @@ contract("VotingPower", function (accounts) {
 
       const snapshotId = await vpToken.getCurrentSnapshotId();
 
-      const repWeight = await vpToken.getTokenWeightAt(
+      const repWeight = await vpToken.getWeightOfAt(
         repToken.address,
         snapshotId
       );
       expect(repWeight.toNumber()).equal(100);
 
-      const stakingWeight = await vpToken.getTokenWeightAt(
+      const stakingWeight = await vpToken.getWeightOfAt(
         dxdInfluence.address,
         snapshotId
       );
@@ -427,7 +428,7 @@ contract("VotingPower", function (accounts) {
         await vpToken.getPercent(repBalance, repSupply)
       );
 
-      const repTokenWeight = bn(await vpToken.getTokenWeight(repToken.address));
+      const repTokenWeight = bn(await vpToken.getWeightOf(repToken.address));
 
       const repVotingPowerPercentWeighted = bn(
         await vpToken.getWeightedVotingPowerPercentage(
@@ -442,7 +443,7 @@ contract("VotingPower", function (accounts) {
         await vpToken.getPercent(dxdInfluenceBalance, dxdInfluenceSupply)
       );
       const dxdInfluenceTokenWeight = bn(
-        await vpToken.getTokenWeight(dxdInfluence.address)
+        await vpToken.getWeightOf(dxdInfluence.address)
       );
 
       const dxdInfluenceVotingPowerPercentWeighted = bn(
@@ -471,7 +472,7 @@ contract("VotingPower", function (accounts) {
       await repToken.mint(holder, balance);
       expect(bn(await repToken.balanceOf(holder)).eq(bn(balance))).to.be.true;
 
-      const repTokenWeight = bn(await vpToken.getTokenWeight(repToken.address));
+      const repTokenWeight = bn(await vpToken.getWeightOf(repToken.address));
 
       expect(repTokenWeight.toString()).equal("100");
 
@@ -498,7 +499,7 @@ contract("VotingPower", function (accounts) {
       );
 
       const repTokenWeight = bn(
-        await vpToken.getTokenWeight(repToken.address)
+        await vpToken.getWeightOf(repToken.address)
       ).toNumber();
 
       // No staking tokens locked - 100% weight to rep token
@@ -541,7 +542,7 @@ contract("VotingPower", function (accounts) {
       await repToken.mint(holder2, balance2);
 
       // Staking tokens locked < minimum so 100% weight to rep token
-      expect((await vpToken.getTokenWeight(repToken.address)).toNumber()).equal(
+      expect((await vpToken.getWeightOf(repToken.address)).toNumber()).equal(
         100
       );
 
@@ -565,9 +566,9 @@ contract("VotingPower", function (accounts) {
       // holder2 stake 100% of stakingToken supply
       await mintApproveStake(holder2, 300);
 
-      expect(
-        bn(await vpToken.getTokenWeight(repToken.address)).toNumber()
-      ).equal(50);
+      expect(bn(await vpToken.getWeightOf(repToken.address)).toNumber()).equal(
+        50
+      );
 
       const votingPower = bn(await vpToken.balanceOf(holder1));
 
@@ -587,7 +588,7 @@ contract("VotingPower", function (accounts) {
       await repToken.mint(holder2, balance2);
 
       // Staking tokens locked < minimum so 100% weight to rep token
-      expect((await vpToken.getTokenWeight(repToken.address)).toNumber()).equal(
+      expect((await vpToken.getWeightOf(repToken.address)).toNumber()).equal(
         100
       );
 
@@ -610,7 +611,7 @@ contract("VotingPower", function (accounts) {
       await repToken.mint(holder2, balance2);
 
       const repTokenWeight = (
-        await vpToken.getTokenWeight(repToken.address)
+        await vpToken.getWeightOf(repToken.address)
       ).toNumber();
 
       // Staking tokens locked < minimum so 100% weight to rep token
@@ -635,7 +636,7 @@ contract("VotingPower", function (accounts) {
       await repToken.mint(holder2, balance2);
 
       const repTokenWeight = (
-        await vpToken.getTokenWeight(repToken.address)
+        await vpToken.getWeightOf(repToken.address)
       ).toNumber();
 
       // Staking tokens locked < minimum so 100% weight to rep token
@@ -683,7 +684,7 @@ contract("VotingPower", function (accounts) {
       await repToken.mint(holder2, balance2);
 
       const repTokenWeight = (
-        await vpToken.getTokenWeight(repToken.address)
+        await vpToken.getWeightOf(repToken.address)
       ).toNumber();
 
       // Staking tokens locked < minimum so 100% weight to rep token
@@ -703,7 +704,7 @@ contract("VotingPower", function (accounts) {
       await repToken.mint(holder, balance);
 
       // 100% weight to rep token.
-      const repTokenWeight = bn(await vpToken.getTokenWeight(repToken.address));
+      const repTokenWeight = bn(await vpToken.getWeightOf(repToken.address));
       expect(repTokenWeight.toString()).equal("100");
 
       // balanceof and balanceOfAt should return same result
@@ -728,17 +729,17 @@ contract("VotingPower", function (accounts) {
     it("Should not fail if other address than rep or influence is received and return 0 weight", async () => {
       await deployVpToken();
       const anyAddress = accounts[9];
-      expect(bn(await vpToken.getTokenWeight(anyAddress)).toNumber()).equal(0);
+      expect(bn(await vpToken.getWeightOf(anyAddress)).toNumber()).equal(0);
     });
     it("Should return 0 for influence if influence totalSupply is less than minStakingTokensLocked", async () => {
       await deployVpToken();
       expect(
-        (await vpToken.getTokenWeight(dxdInfluence.address)).toNumber()
+        (await vpToken.getWeightOf(dxdInfluence.address)).toNumber()
       ).equal(0);
     });
     it("Should return 100 for reptoken if staking token totalSupply is less than minStakingTokensLocked", async () => {
       await deployVpToken();
-      expect((await vpToken.getTokenWeight(repToken.address)).toNumber()).equal(
+      expect((await vpToken.getWeightOf(repToken.address)).toNumber()).equal(
         100
       );
     });
@@ -748,11 +749,11 @@ contract("VotingPower", function (accounts) {
       expect((await dxdStake.totalSupply()).toNumber()).equal(
         minStakingTokensLocked
       );
-      expect((await vpToken.getTokenWeight(repToken.address)).toNumber()).equal(
+      expect((await vpToken.getWeightOf(repToken.address)).toNumber()).equal(
         repTokenWeight
       );
       expect(
-        (await vpToken.getTokenWeight(dxdInfluence.address)).toNumber()
+        (await vpToken.getWeightOf(dxdInfluence.address)).toNumber()
       ).equal(stakeTokenWeight);
     });
   });
@@ -794,12 +795,12 @@ contract("VotingPower", function (accounts) {
 
       const initialSnapshotId = bn(await vpToken.getCurrentSnapshotId());
       const initialWeight = bn(
-        await vpToken.getTokenWeightAt(dxdInfluence.address, initialSnapshotId)
+        await vpToken.getWeightOfAt(dxdInfluence.address, initialSnapshotId)
       );
 
       await vpToken.setMinStakingTokensLocked(1000);
       const influenceWeight2 = bn(
-        await vpToken.getTokenWeightAt(dxdInfluence.address, initialSnapshotId)
+        await vpToken.getWeightOfAt(dxdInfluence.address, initialSnapshotId)
       );
       expect(initialWeight.toNumber()).equal(influenceWeight2.toNumber());
     });

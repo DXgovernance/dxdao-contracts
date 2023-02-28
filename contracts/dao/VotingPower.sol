@@ -55,7 +55,7 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     address public constant WEIGHTS_SLOT = address(0x1);
     address public constant MIN_STAKED_SLOT = address(0x2);
 
-    /// @dev Verify if address is one of rep or staking tokens
+    /// @dev Verify if address is one of reputation or influence tokens
     modifier onlyInternalTokens(address tokenAddress) {
         if (tokenAddress != reputation && tokenAddress != influence) {
             revert VotingPower_InvalidTokenAddress();
@@ -81,7 +81,8 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
         setComposition(repWeight, stakingWeight);
     }
 
-    /// @dev Set Minimum staking tokens locked to apply staking token weight
+    /// @dev Set Minimum staking tokens locked to apply staking token weight.
+    ///      If staking token totalSupply is under _minStakingTokensLocked, influence token weight will be 0.
     /// @param _minStakingTokensLocked Minimum staking tokens locked to apply weight
     function setMinStakingTokensLocked(uint256 _minStakingTokensLocked) public onlyOwner {
         uint256 snapshotId = _snapshot(MIN_STAKED_SLOT);
@@ -124,7 +125,7 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     /// @param account Account we want to get voting power from
     /// @return votingPowerPercentage The votingPower of `account` (0 to 100*precision)
     function balanceOf(address account) public view returns (uint256 votingPowerPercentage) {
-        return calculateVotingPower(account, getCurrentSnapshotId());
+        return _calculateVotingPower(account, getCurrentSnapshotId());
     }
 
     /// @dev Get the balance (voting power percentage) of `account` at certain `_snapshotId`.
@@ -134,21 +135,25 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     /// @param snapshotId VPToken SnapshotId we want get votingPower from
     /// @return votingPowerPercentage The votingPower of `account` (0 to 100*precision)
     function balanceOfAt(address account, uint256 snapshotId) public view returns (uint256 votingPowerPercentage) {
-        return calculateVotingPower(account, snapshotId);
+        return _calculateVotingPower(account, snapshotId);
     }
 
-    function calculateVotingPower(address account, uint256 _snapshotId) internal view returns (uint256 votingPower) {
-        if (_snapshotId > getCurrentSnapshotId()) revert VotingPower_InvalidSnapshotId();
+    /// @dev Internal function to calculate voting power (balance) of `account` at certain `_snapshotId`
+    /// @param account Account we want to get voting power from
+    /// @param snapshotId VPToken SnapshotId we want get votingPower from
+    /// @return votingPower The votingPower of `account` (0 to 100*precision)
+    function _calculateVotingPower(address account, uint256 snapshotId) internal view returns (uint256 votingPower) {
+        if (snapshotId > getCurrentSnapshotId()) revert VotingPower_InvalidSnapshotId();
         address[2] memory tokens = [reputation, influence];
         uint256 _votingPower = 0;
 
         for (uint256 i = 0; i < tokens.length; i++) {
             uint256 tokenSnapshotId = (tokens[i] == reputation)
-                ? snapshots[_snapshotId].reputation
-                : snapshots[_snapshotId].influence;
+                ? snapshots[snapshotId].reputation
+                : snapshots[snapshotId].influence;
             // Skipping calculation if snapshotId is 0. No minting was done
             if (tokenSnapshotId == 0) continue;
-            uint256 tokenWeight = getTokenWeightAt(tokens[i], _snapshotId);
+            uint256 tokenWeight = getWeightOfAt(tokens[i], snapshotId);
             // Skipping calculation if weight is 0
             if (tokenWeight == 0) continue;
             uint256 balance = ERC20SnapshotRep(tokens[i]).balanceOfAt(account, tokenSnapshotId);
@@ -165,10 +170,11 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
         return _votingPower;
     }
 
-    /// @dev Get token weight from weights config mapping.
+    /// @dev Internal function to return weight of `token` at `snapshotId` from
+    ///      global config without any minimum tokens locked logic involved.
     /// @param token Address of the token we want to get weight from
     /// @param weight Weight percentage value (0 to 100)
-    function getWeightOfAt(address token, uint256 snapshotId) public view returns (uint256 weight) {
+    function _getWeightOfAt(address token, uint256 snapshotId) internal view returns (uint256 weight) {
         return weights[token][snapshotAt(snapshotId, WEIGHTS_SLOT)];
     }
 
@@ -178,13 +184,13 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     /// @param token Address of the token we want to get weight from
     /// @param snapshotId VotingPower snapshotId
     /// @return weight Weight percentage value (0 to 100)
-    function getTokenWeightAt(address token, uint256 snapshotId) public view returns (uint256 weight) {
+    function getWeightOfAt(address token, uint256 snapshotId) public view returns (uint256 weight) {
         uint256 influenceSnapshotId = snapshots[snapshotId].influence;
         if (ERC20SnapshotRep(influence).totalSupplyAt(influenceSnapshotId) < getMinStakingTokensLockedAt(snapshotId)) {
             if (token == reputation) return 100;
             else return 0;
         } else {
-            return getWeightOfAt(token, snapshotId);
+            return _getWeightOfAt(token, snapshotId);
         }
     }
 
@@ -193,8 +199,8 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     ///      If not it will retun internal weights config for given `token`
     /// @param token Address of the token we want to get weight from
     /// @return weight Weight percentage value (0 to 100)
-    function getTokenWeight(address token) public view returns (uint256 weight) {
-        return getTokenWeightAt(token, getCurrentSnapshotId());
+    function getWeightOf(address token) public view returns (uint256 weight) {
+        return getWeightOfAt(token, getCurrentSnapshotId());
     }
 
     /// @dev Calculates the percentage of a `numerator` over a `denominator` multiplyed by precision
@@ -229,11 +235,11 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
         return _lastRegisteredSnapshotIdAt(_snapshotId, slot);
     }
 
-    /// @dev Returns global minStakingTokensLocked at `_snapshotId`
-    /// @param  _snapshotId VotingPower Snapshot ID
+    /// @dev Returns global minStakingTokensLocked at `snapshotId`
+    /// @param  snapshotId VotingPower Snapshot ID
     /// @return _minStakingTokensLocked Minimum staking tokens locked to apply staking weight
-    function getMinStakingTokensLockedAt(uint256 _snapshotId) public view returns (uint256 _minStakingTokensLocked) {
-        return minStakingTokensLocked[snapshotAt(_snapshotId, MIN_STAKED_SLOT)];
+    function getMinStakingTokensLockedAt(uint256 snapshotId) public view returns (uint256 _minStakingTokensLocked) {
+        return minStakingTokensLocked[snapshotAt(snapshotId, MIN_STAKED_SLOT)];
     }
 
     /// @dev Returns global minStakingTokensLocked at currentSnapshotId
@@ -248,6 +254,9 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
         return 100 * precision;
     }
 
+    /// @dev Returns the total supply
+    /// @param snapshotId Snapshot ID to get supply at. Since VotingPower is expressed as percent this won't be used.
+    /// @return supply 100% expressed in base 1e+18.
     function totalSupplyAt(uint256 snapshotId) external pure returns (uint256 supply) {
         return 100 * precision;
     }
