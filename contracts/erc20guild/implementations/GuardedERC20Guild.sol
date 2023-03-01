@@ -13,25 +13,6 @@ contract GuardedERC20Guild is ERC20GuildUpgradeable {
     address public guildGuardian;
     uint256 public extraTimeForGuardian;
 
-    /// @dev Executes a proposal that is not votable anymore and can be finished
-    // If this function is called by the guild guardian the proposal can end after proposal endTime
-    // If this function is not called by the guild guardian the proposal can end after proposal endTime plus
-    // the extraTimeForGuardian
-    /// @param proposalId The id of the proposal to be ended
-    function endProposal(bytes32 proposalId) public virtual override {
-        if (msg.sender == guildGuardian)
-            require(
-                (proposals[proposalId].endTime < block.timestamp),
-                "GuardedERC20Guild: Proposal hasn't ended yet for guardian"
-            );
-        else
-            require(
-                proposals[proposalId].endTime + extraTimeForGuardian < block.timestamp,
-                "GuardedERC20Guild: Proposal hasn't ended yet for guild"
-            );
-        super.endProposal(proposalId);
-    }
-
     /// @dev Reverts if proposal cannot be executed
     /// @param proposalId The id of the proposal to evaluate
     /// @param highestVoteAmount The amounts of votes received by the currently winning proposal option.
@@ -39,16 +20,10 @@ contract GuardedERC20Guild is ERC20GuildUpgradeable {
         require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
         require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
 
-        uint256 approvalRate = (highestVoteAmount * BASIS_POINT_MULTIPLIER) / token.totalSupply();
-        if (
-            votingPowerPercentageForInstantProposalExecution == 0 ||
-            approvalRate < votingPowerPercentageForInstantProposalExecution
-        ) {
-            uint256 endTime = msg.sender == guildGuardian
-                ? proposals[proposalId].endTime
-                : proposals[proposalId].endTime + extraTimeForGuardian;
-            require(endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
-        }
+        uint256 endTime = msg.sender == guildGuardian
+            ? proposals[proposalId].endTime
+            : proposals[proposalId].endTime + extraTimeForGuardian;
+        require(endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
     }
 
     /// @dev Internal function to set the amount of votingPower to vote in a proposal
@@ -68,12 +43,12 @@ contract GuardedERC20Guild is ERC20GuildUpgradeable {
             // Check if the threshold for instant execution has been reached.
             uint256 votingPowerForInstantProposalExecution = (votingPowerPercentageForInstantProposalExecution *
                 token.totalSupply()) / BASIS_POINT_MULTIPLIER;
-            uint256 minVotingPower = MathUpgradeable.min(
+            uint256 minVotingPowerThreshold = MathUpgradeable.min(
                 votingPowerForInstantProposalExecution,
                 getVotingPowerForProposalExecution()
             );
             for (uint256 i = 1; i < proposals[proposalId].totalVotes.length; i++) {
-                if (proposals[proposalId].totalVotes[i] >= minVotingPower) {
+                if (proposals[proposalId].totalVotes[i] >= minVotingPowerThreshold) {
                     proposals[proposalId].endTime = block.timestamp;
                     break;
                 }
