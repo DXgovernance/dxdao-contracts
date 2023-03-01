@@ -25,7 +25,7 @@ contract("PermissionRegistry", function (accounts) {
     actionMock = await ActionMock.new();
     const votingMachineToken = await ERC20Mock.new("", "", 1000, accounts[1]);
 
-    dao = await helpers.deployDao({
+    dao = await helpers.deployDaoV2({
       owner: accounts[0],
       votingMachineToken: votingMachineToken.address,
       repHolders: [
@@ -48,6 +48,7 @@ contract("PermissionRegistry", function (accounts) {
       dao.votingMachine.address,
       dao.controller.address,
       permissionRegistry.address,
+      dao.votingPowerToken.address,
       "Master Wallet",
       5
     );
@@ -58,6 +59,7 @@ contract("PermissionRegistry", function (accounts) {
       dao.votingMachine.address,
       dao.controller.address,
       permissionRegistry.address,
+      dao.votingPowerToken.address,
       "Quick Wallet",
       0
     );

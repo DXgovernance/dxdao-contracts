@@ -30,7 +30,7 @@ contract("WalletScheme", function (accounts) {
     testToken = await ERC20Mock.new("", "", 1000, accounts[1]);
     standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
 
-    org = await helpers.deployDao({
+    org = await helpers.deployDaoV2({
       owner: accounts[0],
       votingMachineToken: standardTokenMock.address,
       repHolders: [
@@ -51,6 +51,7 @@ contract("WalletScheme", function (accounts) {
       org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "Wallet Scheme Registrar",
       0
     );
@@ -61,6 +62,7 @@ contract("WalletScheme", function (accounts) {
       org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "Master Wallet",
       5
     );
@@ -71,6 +73,7 @@ contract("WalletScheme", function (accounts) {
       org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "Quick Wallet",
       1
     );
@@ -234,6 +237,7 @@ contract("WalletScheme", function (accounts) {
       org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "New Wallet Scheme",
       0
     );
@@ -472,6 +476,7 @@ contract("WalletScheme", function (accounts) {
       org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "New Wallet",
       5
     );
@@ -1326,6 +1331,7 @@ contract("WalletScheme", function (accounts) {
         accounts[0],
         constants.ZERO_ADDRESS,
         permissionRegistry.address,
+        org.votingPowerToken.address,
         "Master Wallet",
         5
       ),
@@ -1340,6 +1346,7 @@ contract("WalletScheme", function (accounts) {
         accounts[0],
         org.controller.address,
         permissionRegistry.address,
+        org.votingPowerToken.address,
         "Master Wallet",
         5
       ),

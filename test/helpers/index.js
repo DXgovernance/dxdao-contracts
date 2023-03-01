@@ -93,7 +93,15 @@ export const deployDao = async function (deployConfig) {
   return { controller, avatar, reputation, votingMachine };
 };
 
-export const deployDaoV2 = async function (deployConfig) {
+export const deployDaoV2 = async function (config) {
+  if (!Object.keys(config).includes("owner")) {
+    throw new Error("deployDaoV2: Invalid config. Config.owner missing");
+  }
+  const deployConfig = Object.assign(
+    constants.GOVERNANCE_V2_CONFIG(web3),
+    config
+  );
+
   const reputation = await DAOReputation.new();
 
   const dxdStake = await DXDStake.new();
@@ -179,6 +187,7 @@ export const deployDaoV2 = async function (deployConfig) {
     dxdStake,
     dxdInfluence,
     votingPowerToken,
+    defaultParamsHash,
   };
 };
 
