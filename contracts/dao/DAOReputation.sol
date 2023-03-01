@@ -18,13 +18,6 @@ contract DAOReputation is ERC20SnapshotRep {
     /// @notice Mint or Burn shouldn’t be called if the amount is 0
     error DAOReputation__InvalidMintRepAmount();
 
-    modifier nonZeroAmounts(uint256[] memory amounts) {
-        for (uint256 i = 0; i < amounts.length; i++) {
-            if (amounts[i] == 0) revert DAOReputation__InvalidMintRepAmount();
-        }
-        _;
-    }
-
     function initialize(
         string memory name,
         string memory symbol,
@@ -53,7 +46,7 @@ contract DAOReputation is ERC20SnapshotRep {
         onlyOwner
         returns (bool success)
     {
-        if (amount == 0) revert DAOReputation__InvalidMintRepAmount();
+        if (amount == 0) return false;
         _addHolder(account);
         _mint(account, amount);
         emit Mint(account, amount);
@@ -71,10 +64,11 @@ contract DAOReputation is ERC20SnapshotRep {
         external
         override(ERC20SnapshotRep)
         onlyOwner
-        nonZeroAmounts(amounts)
         returns (bool success)
     {
         for (uint256 i = 0; i < accounts.length; i++) {
+            // skip mint of zero amount
+            if (amounts[i] == 0) continue;
             _addHolder(accounts[i]);
             _mint(accounts[i], amounts[i]);
             emit Mint(accounts[i], amounts[i]);
@@ -95,7 +89,7 @@ contract DAOReputation is ERC20SnapshotRep {
         onlyOwner
         returns (bool success)
     {
-        if (amount == 0) revert DAOReputation__InvalidMintRepAmount();
+        if (amount == 0) return false;
         _burn(account, amount);
         _removeHolder(account);
         emit Burn(account, amount);
@@ -113,10 +107,11 @@ contract DAOReputation is ERC20SnapshotRep {
         external
         override(ERC20SnapshotRep)
         onlyOwner
-        nonZeroAmounts(amounts)
         returns (bool success)
     {
         for (uint256 i = 0; i < accounts.length; i++) {
+            // skip burn of zero amount
+            if (amounts[i] == 0) continue;
             _burn(accounts[i], amounts[i]);
             _removeHolder(accounts[i]);
             emit Burn(accounts[i], amounts[i]);

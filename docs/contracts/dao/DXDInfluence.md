@@ -17,7 +17,7 @@ formula is:
 In order to allow the governor to change the parameters of the formula, sum(stake.tc) and sum(stake.tc^k)
 are stored for each snapshot and the influence balance is calculated on the fly when queried. Notice that
 changes in the formula are retroactive in the sense that all snapshots balances will be updated when queried
-if `a` and `b` change.
+if `a` and `b` change. We call stake.tc the `linear term` of the formula and stake.tc^k the `exponential term`.
 
 DXDInfluence notifies the Voting Power contract of any stake changes._
 
@@ -31,15 +31,15 @@ address FORMULA_SNAPSHOT_SLOT
 
 ```solidity
 struct CumulativeStake {
-  uint256 linearElement;
-  uint256 exponentialElement;
+  uint256 linearTerm;
+  uint256 exponentialTerm;
 }
 ```
 
-### FormulaMutableParams
+### FormulaMultipliers
 
 ```solidity
-struct FormulaMutableParams {
+struct FormulaMultipliers {
   SD59x18 linearMultiplier;
   SD59x18 exponentialMultiplier;
 }
@@ -48,7 +48,7 @@ struct FormulaMutableParams {
 ### dxdStake
 
 ```solidity
-contract DXDStake dxdStake
+address dxdStake
 ```
 
 ### votingPower
@@ -57,13 +57,14 @@ contract DXDStake dxdStake
 contract VotingPower votingPower
 ```
 
-### formulaMutableParams
+### formulaMultipliers
 
 ```solidity
-mapping(uint256 => struct DXDInfluence.FormulaMutableParams) formulaMutableParams
+mapping(uint256 => struct DXDInfluence.FormulaMultipliers) formulaMultipliers
 ```
 
-_influence formula parameters. formulaMutableParams[snapshotId]_
+_influence formula parameters.
+formulaMultipliers[snapshotId]_
 
 ### exponent
 
@@ -80,14 +81,21 @@ mapping(address => mapping(uint256 => struct DXDInfluence.CumulativeStake)) cumu
 _cumulativeStakesSnapshots[account][snapshotId]
 keeps track of the influence parameters of each account at the snapshot the account's stake was modified._
 
-### totalStakeSnapshots
+### totalCumulativeStake
 
 ```solidity
-mapping(uint256 => struct DXDInfluence.CumulativeStake) totalStakeSnapshots
+struct DXDInfluence.CumulativeStake totalCumulativeStake
 ```
 
-_totalStakeSnapshots[snapshotId]
-keeps track of the influence parameters of the total stake at each snapshot._
+_keeps track of the influence parameters (linear and exponential terms) at the latest snapshot._
+
+### _totalInfluenceSnapshots
+
+```solidity
+mapping(uint256 => uint256) _totalInfluenceSnapshots
+```
+
+__totalInfluenceSnapshots[snapshotId] keeps track of the total influence at each snapshot._
 
 ### constructor
 
@@ -117,8 +125,8 @@ commits to stake, the greater the influence._
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _linearMultiplier | int256 | Factor that will multiply the linear element of the influence. 18 decimals. |
-| _exponentialMultiplier | int256 | Factor that will multiply the exponential element of the influence. 18 decimals. |
+| _linearMultiplier | int256 | Factor that will multiply the linear term of the influence. 18 decimals. |
+| _exponentialMultiplier | int256 | Factor that will multiply the exponential term of the influence. 18 decimals. |
 
 ### mint
 
@@ -127,8 +135,8 @@ function mint(address _account, uint256 _amount, uint256 _timeCommitment) extern
 ```
 
 _Mints influence tokens according to the amount staked and takes a snapshot. The influence value
-is not stored, only the linear and exponential elements of the formula are updated, which are then used
-to compute the influence on the fly in the balance and total supply getters._
+is not stored, only the linear and exponential terms of the formula are updated, which are then used
+to compute the influence on the fly in the balance getter._
 
 #### Parameters
 
@@ -145,8 +153,8 @@ function burn(address _account, uint256 _amount, uint256 _timeCommitment) extern
 ```
 
 _Burns influence tokens according to the amount withdrawn and takes a snapshot. The influence value
-is not stored, only the linear and exponential elements of the formula are updated, which are then used
-to compute the influence on the fly in the balance and total supply getters._
+is not stored, only the linear and exponential terms of the formula are updated, which are then used
+to compute the influence on the fly in the balance getter._
 
 #### Parameters
 
@@ -156,19 +164,39 @@ to compute the influence on the fly in the balance and total supply getters._
 | _amount | uint256 | Amount of tokens to have been staked. |
 | _timeCommitment | uint256 | Time that the user commits to lock the tokens. |
 
-### getLastCumulativeStake
+### updateTime
 
 ```solidity
-function getLastCumulativeStake(address _account) internal view returns (struct DXDInfluence.CumulativeStake)
+function updateTime(address _account, uint256 _amount, uint256 _oldTimeCommitment, uint256 _newTimeCommitment) external
 ```
 
-_Returns the last snapshot Id registered for a given account._
+_Updates the time a given amount of DXD was staked for and takes a snapshot. The influence value
+is not stored, only the linear and exponential terms of the formula are updated, which are then used
+to compute the influence on the fly in the balance getter._
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _account | address | Account that has staked. |
+| _account | address | Account that has staked the tokens. |
+| _amount | uint256 | Amount of tokens to have been staked. |
+| _oldTimeCommitment | uint256 | Time that the user commits to lock the tokens. |
+| _newTimeCommitment | uint256 | Time that the user commits to lock the tokens. |
+
+### getFormulaTerms
+
+```solidity
+function getFormulaTerms(uint256 _amount, uint256 _timeCommitment) internal view returns (uint256, uint256)
+```
+
+_Returns the linear and exponential influence term for a given amount and time commitment._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _amount | uint256 | DXD amount. |
+| _timeCommitment | uint256 | Amount of time the DXD is staked. |
 
 ### totalSupply
 
@@ -205,7 +233,7 @@ _Retrieves the influence balance of `account` at the time `snapshotId` was creat
 ### calculateInfluence
 
 ```solidity
-function calculateInfluence(struct DXDInfluence.CumulativeStake _cumulativeStake, uint256 _snapshotId) internal view returns (uint256)
+function calculateInfluence(struct DXDInfluence.CumulativeStake _cumulativeStake, struct DXDInfluence.FormulaMultipliers _formula) internal view returns (uint256)
 ```
 
 _Calculates influence for the given cumulative stake data point._
@@ -215,12 +243,12 @@ _Calculates influence for the given cumulative stake data point._
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _cumulativeStake | struct DXDInfluence.CumulativeStake | Accumulated stake information on a specific snapshot. |
-| _snapshotId | uint256 | Id of the snapshot. |
+| _formula | struct DXDInfluence.FormulaMultipliers | formula params to use. |
 
-### getFormulaMutableParamsAt
+### getFormulaMultipliersAt
 
 ```solidity
-function getFormulaMutableParamsAt(uint256 _snapshotId) public view returns (SD59x18, SD59x18)
+function getFormulaMultipliersAt(uint256 _snapshotId) internal view returns (struct DXDInfluence.FormulaMultipliers)
 ```
 
 _Retrieves the influence formula parameters at the time `_snapshotId` was created._

@@ -139,62 +139,57 @@ contract("DAOReputation", async accounts => {
       ownableAccessError
     );
   });
-
-  it("Should revert if mint amount is 0", async () => {
+  it("Should not revert if mint amount is 0 and return without mint|snapshot", async () => {
     const repHolder = accounts[0];
     const amount = 0;
+    const currentSnapshotId = await daoReputation.getCurrentSnapshotId();
     const reputationBalance = await daoReputation.balanceOf(repHolder);
-
-    await expectRevert(
-      daoReputation.mint(repHolder, amount),
-      "DAOReputation__InvalidMintRepAmount"
-    );
+    await daoReputation.mint(repHolder, amount);
     expect(reputationBalance.toNumber(), amount);
+    expect((await daoReputation.getCurrentSnapshotId()).toNumber()).equal(
+      currentSnapshotId.toNumber()
+    );
   });
-  it("Should revert if burn amount is 0", async () => {
+  it("Should not revert if burn amount is 0 and return without burn|snapshot", async () => {
     const repHolder = accounts[0];
     const amount = 100;
     await daoReputation.mint(repHolder, amount);
 
+    const currentSnapshotId = await daoReputation.getCurrentSnapshotId();
     const reputationBalance = await daoReputation.balanceOf(repHolder);
 
-    await expectRevert(
-      daoReputation.burn(repHolder, 0),
-      "DAOReputation__InvalidMintRepAmount"
+    await daoReputation.burn(repHolder, 0),
+      expect(reputationBalance.toNumber(), amount);
+    expect((await daoReputation.getCurrentSnapshotId()).toNumber()).equal(
+      currentSnapshotId.toNumber()
     );
-    expect(reputationBalance.toNumber(), amount);
   });
 
-  it("Should revert if one of the amounts in mintMultiple is 0", async () => {
+  it("Should not revert if one of the amounts in mintMultiple is 0 and skip minting for that account", async () => {
     const balances = [100, 0, 2];
 
-    await expectRevert(
-      daoReputation.mintMultiple(addresses, balances),
-      "DAOReputation__InvalidMintRepAmount"
-    );
+    await daoReputation.mintMultiple(addresses, balances);
+
+    const reputationBalance0 = await daoReputation.balanceOf(addresses[0]);
+    const reputationBalance1 = await daoReputation.balanceOf(addresses[1]);
+    const reputationBalance2 = await daoReputation.balanceOf(addresses[2]);
+    assert.equal(reputationBalance0.toNumber(), balances[0]);
+    assert.equal(reputationBalance1.toNumber(), balances[1]);
+    assert.equal(reputationBalance2.toNumber(), balances[2]);
+  });
+
+  // eslint-disable-next-line max-len
+  it("Should not revert if one of the amounts in burnMultiple is 0 and skip burning for account with zero amount", async () => {
+    await daoReputation.mintMultiple(addresses, [100, 200, 100]);
+    const burnAmounts = [100, 200, 0];
+
+    await daoReputation.burnMultiple(addresses, burnAmounts);
 
     const reputationBalance0 = await daoReputation.balanceOf(addresses[0]);
     const reputationBalance1 = await daoReputation.balanceOf(addresses[1]);
     const reputationBalance2 = await daoReputation.balanceOf(addresses[2]);
     assert.equal(reputationBalance0.toNumber(), 0);
     assert.equal(reputationBalance1.toNumber(), 0);
-    assert.equal(reputationBalance2.toNumber(), 0);
-  });
-
-  it("Should revert if one of the amounts in burnMultiple is 0", async () => {
-    await daoReputation.mintMultiple(addresses, [100, 200, 100]);
-    const balances = [100, 200, 0];
-
-    await expectRevert(
-      daoReputation.burnMultiple(addresses, balances),
-      "DAOReputation__InvalidMintRepAmount"
-    );
-
-    const reputationBalance0 = await daoReputation.balanceOf(addresses[0]);
-    const reputationBalance1 = await daoReputation.balanceOf(addresses[1]);
-    const reputationBalance2 = await daoReputation.balanceOf(addresses[2]);
-    assert.equal(reputationBalance0.toNumber(), 100);
-    assert.equal(reputationBalance1.toNumber(), 200);
     assert.equal(reputationBalance2.toNumber(), 100);
   });
 });

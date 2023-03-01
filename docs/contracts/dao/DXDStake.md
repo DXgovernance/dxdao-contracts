@@ -2,7 +2,8 @@
 
 ## DXDStake
 
-_DXD wrapper contract. DXD tokens converted into DXDStake tokens get locked and are not transferable.
+_DXD wrapper contract. DXD tokens converted into DXDStake tokens get locked and are not transferable. The
+non-transferability is enforced in OptimizedERC20SnapshotUpgradeable _beforeTokenTransfer() callback.
 Users staking DXD in this contract decide for how much time their tokens will be locked. This stake commitment
 cannot be undone unless early withdrawals are enabled by governance, in which case a penalty might apply.
 How long users commit to stake is important, given that the more time tokens are staked, the more voting power
@@ -14,9 +15,9 @@ influence formula by staking small amounts of tokens for an infinite time._
 
 ```solidity
 struct StakeCommitment {
-  uint256 commitmentEnd;
-  uint256 timeCommitment;
-  uint256 stake;
+  uint40 commitmentEnd;
+  uint40 timeCommitment;
+  uint176 stake;
 }
 ```
 
@@ -50,16 +51,16 @@ uint256 maxTimeCommitment
 mapping(address => struct DXDStake.StakeCommitment[]) stakeCommitments
 ```
 
-### userActiveStakes
+### userWithdrawals
 
 ```solidity
-mapping(address => uint256) userActiveStakes
+mapping(address => uint256) userWithdrawals
 ```
 
-### totalActiveStakes
+### totalWithdrawals
 
 ```solidity
-uint256 totalActiveStakes
+uint256 totalWithdrawals
 ```
 
 ### earlyWithdrawalsEnabled
@@ -91,14 +92,6 @@ uint256 earlyWithdrawalPenalty
 ```
 
 _basis points. A % of the tokens staked will be taken away for withdrawing early._
-
-### DXDStake__NoTransfer
-
-```solidity
-error DXDStake__NoTransfer()
-```
-
-Error when trying to transfer reputation
 
 ### constructor
 
@@ -166,18 +159,10 @@ _Changes the influence formula factors._
 | _linearFactor | int256 | Factor that will multiply the linear element of the DXD influence. 18 decimals. |
 | _exponentialFactor | int256 | Factor that will multiply the exponential element of the DXD influence. 18 decimals. |
 
-### _transfer
-
-```solidity
-function _transfer(address sender, address recipient, uint256 amount) internal virtual
-```
-
-_Do not allow the transfer of tokens._
-
 ### stake
 
 ```solidity
-function stake(uint256 _amount, uint256 _timeCommitment) external
+function stake(uint176 _amount, uint40 _timeCommitment) external
 ```
 
 _Stakes tokens from the user._
@@ -186,24 +171,26 @@ _Stakes tokens from the user._
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _amount | uint256 | Amount of tokens to stake. |
-| _timeCommitment | uint256 | Time that the user commits to lock the tokens in this staking contract. |
+| _amount | uint176 | Amount of tokens to stake. |
+| _timeCommitment | uint40 | Time that the user commits to lock the tokens in this staking contract. |
 
 ### increaseCommitmentTime
 
 ```solidity
-function increaseCommitmentTime(uint256 _commitmentId, uint256 _newTimeCommitment) external
+function increaseCommitmentTime(uint256 _commitmentId, uint40 _newTimeCommitment) external
 ```
 
 _Updates an existing commitment. The stake remains the same, but the time period is updated.
-The influence is calculated according to the new time commited, not the original one._
+The influence is calculated according to the new time commited, not the original one.
+What this function increases is the commitment finalization time, but not necessarily `_newTimeCommitment`
+has to be greater than the previous one._
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _commitmentId | uint256 | Id of the commitment. The Id is an incremental variable for each account. |
-| _newTimeCommitment | uint256 | Time that the user commits to lock the token in this staking contract. |
+| _newTimeCommitment | uint40 | Time that the user commits to lock the token in this staking contract. |
 
 ### withdraw
 
@@ -255,6 +242,20 @@ _Total stakes for the given address counting both active and withdrawn commitmen
 | ---- | ---- | ----------- |
 | _account | address | Account that has staked. |
 
+### getAccountActiveStakes
+
+```solidity
+function getAccountActiveStakes(address _account) external view returns (uint256)
+```
+
+_Total active stakes for the given address, i.e. not counting withdrawn commitments._
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _account | address | Account that has staked. |
+
 ### getStakeCommitment
 
 ```solidity
@@ -277,6 +278,14 @@ function getTotalStakes() external view returns (uint256)
 ```
 
 _Get the amount of stakes ever, counting both active and inactive ones._
+
+### getTotalActiveStakes
+
+```solidity
+function getTotalActiveStakes() external view returns (uint256)
+```
+
+_Get the amount of active stakes._
 
 ### getCurrentSnapshotId
 
