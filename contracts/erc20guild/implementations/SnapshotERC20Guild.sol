@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import "../ERC20GuildUpgradeable.sol";
 import "../../utils/Arrays.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
 /*
@@ -14,7 +13,6 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
   with the voting power used at the moment of the proposal creation.
 */
 contract SnapshotERC20Guild is ERC20GuildUpgradeable {
-    using SafeMathUpgradeable for uint256;
     using Arrays for uint256[];
     using ECDSAUpgradeable for bytes32;
 
@@ -95,13 +93,13 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
     /// @param tokenAmount The amount of tokens to be locked
     function lockTokens(uint256 tokenAmount) external virtual override {
         require(tokenAmount > 0, "SnapshotERC20Guild: Tokens to lock should be higher than 0");
-        if (tokensLocked[msg.sender].amount == 0) totalMembers = totalMembers.add(1);
+        if (tokensLocked[msg.sender].amount == 0) totalMembers = totalMembers + 1;
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
         tokenVault.deposit(msg.sender, tokenAmount);
-        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.add(tokenAmount);
-        tokensLocked[msg.sender].timestamp = block.timestamp.add(lockTime);
-        totalLocked = totalLocked.add(tokenAmount);
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount + tokenAmount;
+        tokensLocked[msg.sender].timestamp = block.timestamp + lockTime;
+        totalLocked = totalLocked + tokenAmount;
         emit TokensLocked(msg.sender, tokenAmount);
     }
 
@@ -116,10 +114,10 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         require(tokenAmount > 0, "SnapshotERC20Guild: amount of tokens to withdraw must be greater than 0");
         _updateAccountSnapshot(msg.sender);
         _updateTotalSupplySnapshot();
-        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount.sub(tokenAmount);
-        totalLocked = totalLocked.sub(tokenAmount);
+        tokensLocked[msg.sender].amount = tokensLocked[msg.sender].amount - tokenAmount;
+        totalLocked = totalLocked - tokenAmount;
         tokenVault.withdraw(msg.sender, tokenAmount);
-        if (tokensLocked[msg.sender].amount == 0) totalMembers = totalMembers.sub(1);
+        if (tokensLocked[msg.sender].amount == 0) totalMembers = totalMembers - 1;
         emit TokensWithdrawn(msg.sender, tokenAmount);
     }
 
@@ -139,7 +137,7 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         string memory contentHash
     ) public virtual override returns (bytes32) {
         bytes32 proposalId = super.createProposal(to, data, value, totalOptions, title, contentHash);
-        _currentSnapshotId = _currentSnapshotId.add(1);
+        _currentSnapshotId = _currentSnapshotId + 1;
         proposalsSnapshots[proposalId] = _currentSnapshotId;
         return proposalId;
     }
@@ -161,17 +159,15 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         if (winningOption == 0) {
             proposals[proposalId].state = ProposalState.Rejected;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
-        } else if (proposals[proposalId].endTime.add(timeForExecution) < block.timestamp) {
+        } else if (proposals[proposalId].endTime + timeForExecution < block.timestamp) {
             proposals[proposalId].state = ProposalState.Failed;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
         } else {
             proposals[proposalId].state = ProposalState.Executed;
 
-            uint256 callsPerOption = proposals[proposalId].to.length.div(
-                proposals[proposalId].totalVotes.length.sub(1)
-            );
-            i = callsPerOption.mul(winningOption.sub(1));
-            uint256 endCall = i.add(callsPerOption);
+            uint256 callsPerOption = proposals[proposalId].to.length / (proposals[proposalId].totalVotes.length - 1);
+            i = callsPerOption * (winningOption - 1);
+            uint256 endCall = i + callsPerOption;
 
             permissionRegistry.setERC20Balances();
 
@@ -209,7 +205,7 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
 
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
-        activeProposalsNow = activeProposalsNow.sub(1);
+        activeProposalsNow = activeProposalsNow - 1;
     }
 
     /// @dev Reverts if proposal cannot be executed
@@ -266,7 +262,7 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
 
     /// @dev Get minimum amount of votingPower needed for proposal execution
     function getVotingPowerForProposalExecution(uint256 snapshotId) public view virtual returns (uint256) {
-        return totalLockedAt(snapshotId).mul(votingPowerPercentageForProposalExecution).div(10000);
+        return (totalLockedAt(snapshotId) * votingPowerPercentageForProposalExecution) / BASIS_POINT_MULTIPLIER;
     }
 
     /// @dev Get the proposal snapshot id

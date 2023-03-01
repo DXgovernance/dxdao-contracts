@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import "../ERC20GuildUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 /*
   @title GuardedERC20Guild
@@ -12,8 +11,6 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
   time for the guardian to end the proposal like it would happen normally from a base ERC20Guild or reject it directly.
 */
 contract GuardedERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
-    using SafeMathUpgradeable for uint256;
-
     address public guildGuardian;
     uint256 public extraTimeForGuardian;
 
@@ -73,7 +70,7 @@ contract GuardedERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
             );
         else
             require(
-                proposals[proposalId].endTime.add(extraTimeForGuardian) < block.timestamp,
+                proposals[proposalId].endTime + extraTimeForGuardian < block.timestamp,
                 "GuardedERC20Guild: Proposal hasn't ended yet for guild"
             );
         super.endProposal(proposalId);

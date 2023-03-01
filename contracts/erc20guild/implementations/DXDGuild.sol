@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import "../ERC20GuildUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 /*
   @title DXDGuild
@@ -11,8 +10,6 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
   @dev An ERC20GuildUpgradeable for the DXD token designed to execute votes on Genesis Protocol Voting Machine.
 */
 contract DXDGuild is ERC20GuildUpgradeable, OwnableUpgradeable {
-    using SafeMathUpgradeable for uint256;
-
     /// @dev Initilizer
     /// @param _token The ERC20 token that will be used as source of voting power
     /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting

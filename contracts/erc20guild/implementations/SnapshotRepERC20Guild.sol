@@ -2,7 +2,6 @@
 pragma solidity ^0.8.17;
 
 import "../ERC20GuildUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "../../utils/ERC20/ERC20SnapshotRep.sol";
 
@@ -14,7 +13,6 @@ import "../../utils/ERC20/ERC20SnapshotRep.sol";
   the voters can vote only with the voting power they had at that time.
 */
 contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
-    using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
 
@@ -181,17 +179,15 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
         if (winningOption == 0) {
             proposals[proposalId].state = ProposalState.Rejected;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
-        } else if (proposals[proposalId].endTime.add(timeForExecution) < block.timestamp) {
+        } else if (proposals[proposalId].endTime + timeForExecution < block.timestamp) {
             proposals[proposalId].state = ProposalState.Failed;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
         } else {
             proposals[proposalId].state = ProposalState.Executed;
 
-            uint256 callsPerOption = proposals[proposalId].to.length.div(
-                proposals[proposalId].totalVotes.length.sub(1)
-            );
-            i = callsPerOption.mul(winningOption.sub(1));
-            uint256 endCall = i.add(callsPerOption);
+            uint256 callsPerOption = proposals[proposalId].to.length / (proposals[proposalId].totalVotes.length - 1);
+            i = callsPerOption * (winningOption - 1);
+            uint256 endCall = i + callsPerOption;
 
             permissionRegistry.setERC20Balances();
 
@@ -229,7 +225,7 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
 
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
-        activeProposalsNow = activeProposalsNow.sub(1);
+        activeProposalsNow = activeProposalsNow - 1;
     }
 
     /// @dev Reverts if proposal cannot be executed
@@ -288,10 +284,7 @@ contract SnapshotRepERC20Guild is ERC20GuildUpgradeable {
 
     /// @dev Get minimum amount of votingPower needed for proposal execution
     function getSnapshotVotingPowerForProposalExecution(bytes32 proposalId) public view virtual returns (uint256) {
-        return
-            ERC20SnapshotRep(address(token))
-                .totalSupplyAt(getProposalSnapshotId(proposalId))
-                .mul(votingPowerPercentageForProposalExecution)
-                .div(BASIS_POINT_MULTIPLIER);
+        uint256 totalSupply = ERC20SnapshotRep(address(token)).totalSupplyAt(getProposalSnapshotId(proposalId));
+        return (totalSupply * votingPowerPercentageForProposalExecution) / BASIS_POINT_MULTIPLIER;
     }
 }

@@ -606,12 +606,12 @@ contract BaseERC20Guild {
 
     /// @dev Get minimum amount of votingPower needed for creation
     function getVotingPowerForProposalCreation() public view virtual returns (uint256) {
-        return (getTotalLocked() * votingPowerPercentageForProposalCreation) / 10000;
+        return (getTotalLocked() * votingPowerPercentageForProposalCreation) / BASIS_POINT_MULTIPLIER;
     }
 
     /// @dev Get minimum amount of votingPower needed for proposal execution
     function getVotingPowerForProposalExecution() public view virtual returns (uint256) {
-        return (getTotalLocked() * votingPowerPercentageForProposalExecution) / 10000;
+        return (getTotalLocked() * votingPowerPercentageForProposalExecution) / BASIS_POINT_MULTIPLIER;
     }
 
     /// @dev Get the length of the proposalIds array
