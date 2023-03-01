@@ -456,7 +456,7 @@ contract BaseERC20Guild {
         bytes32 proposalId,
         uint256 option,
         uint256 votingPower
-    ) internal {
+    ) internal virtual {
         proposals[proposalId].totalVotes[option] =
             proposals[proposalId].totalVotes[option] -
             proposalVotes[proposalId][voter].votingPower +

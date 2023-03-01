@@ -66,7 +66,6 @@ contract GuardedERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
     // the extraTimeForGuardian
     /// @param proposalId The id of the proposal to be ended
     function endProposal(bytes32 proposalId) public virtual override {
-        require(proposals[proposalId].state == ProposalState.Active, "GuardedERC20Guild: Proposal already executed");
         if (msg.sender == guildGuardian)
             require(
                 (proposals[proposalId].endTime < block.timestamp),
@@ -78,6 +77,57 @@ contract GuardedERC20Guild is ERC20GuildUpgradeable, OwnableUpgradeable {
                 "GuardedERC20Guild: Proposal hasn't ended yet for guild"
             );
         super.endProposal(proposalId);
+    }
+
+    /// @dev Reverts if proposal cannot be executed
+    /// @param proposalId The id of the proposal to evaluate
+    /// @param highestVoteAmount The amounts of votes received by the currently winning proposal option.
+    function checkProposalExecutionState(bytes32 proposalId, uint256 highestVoteAmount) internal view override {
+        require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
+        require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
+
+        uint256 approvalRate = (highestVoteAmount * BASIS_POINT_MULTIPLIER) / token.totalSupply();
+        if (
+            votingPowerPercentageForInstantProposalExecution == 0 ||
+            approvalRate < votingPowerPercentageForInstantProposalExecution
+        ) {
+            uint256 endTime = msg.sender == guildGuardian
+                ? proposals[proposalId].endTime
+                : proposals[proposalId].endTime + extraTimeForGuardian;
+            require(endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
+        } else {
+            // Check if extra time has passed after vote
+        }
+    }
+
+    /// @dev Internal function to set the amount of votingPower to vote in a proposal
+    /// @param voter The address of the voter
+    /// @param proposalId The id of the proposal to set the vote
+    /// @param option The proposal option to be voted
+    /// @param votingPower The amount of votingPower to use as voting for the proposal
+    function _setVote(
+        address voter,
+        bytes32 proposalId,
+        uint256 option,
+        uint256 votingPower
+    ) internal override {
+        super._setVote(voter, proposalId, option, votingPower);
+
+        if (votingPowerPercentageForInstantProposalExecution != 0) {
+            // Check if the threshold for instant execution has been reached.
+            uint256 votingPowerForInstantProposalExecution = (votingPowerPercentageForInstantProposalExecution *
+                token.totalSupply()) / BASIS_POINT_MULTIPLIER;
+            uint256 minVotingPower = MathUpgradeable.min(
+                votingPowerForInstantProposalExecution,
+                getVotingPowerForProposalExecution()
+            );
+            for (uint256 i = 1; i < proposals[proposalId].totalVotes.length; i++) {
+                if (proposals[proposalId].totalVotes[i] >= minVotingPower) {
+                    proposals[proposalId].endTime = block.timestamp;
+                    break;
+                }
+            }
+        }
     }
 
     /// @dev Rejects a proposal directly without execution, only callable by the guardian
