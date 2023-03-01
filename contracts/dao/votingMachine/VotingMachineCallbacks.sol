@@ -33,12 +33,12 @@ contract VotingMachineCallbacks {
     }
 
     function getTotalReputationSupply(bytes32 _proposalId) external view returns (uint256) {
-        uint256 repSnapshotId = votingPower.snapshots(address(getReputation()), proposalSnapshots[_proposalId]);
+        (uint128 repSnapshotId, ) = votingPower.snapshots(proposalSnapshots[_proposalId]);
         return getReputation().totalSupplyAt(repSnapshotId);
     }
 
     function reputationOf(address _owner, bytes32 _proposalId) external view returns (uint256) {
-        uint256 repSnapshotId = votingPower.snapshots(address(getReputation()), proposalSnapshots[_proposalId]);
+        (uint128 repSnapshotId, ) = votingPower.snapshots(proposalSnapshots[_proposalId]);
         return getReputation().balanceOfAt(_owner, repSnapshotId);
     }
 
@@ -47,7 +47,7 @@ contract VotingMachineCallbacks {
     }
 
     function getVotingPowerTotalSupplyAt(bytes32 _proposalId) external view returns (uint256) {
-        return votingPower.totalSupply();
+        return votingPower.totalSupplyAt(proposalSnapshots[_proposalId]);
     }
 
     function votingPowerOf(address _owner, bytes32 _proposalId) external view returns (uint256) {
