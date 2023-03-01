@@ -414,7 +414,7 @@ contract VotingMachine {
             }
 
             // If also a stake was done by the avatar, the stake redeem is done
-            if (staked > 0) {
+            if (staked > 0 && staker.option == NO) {
                 reward = (staked * totalStakesWithoutDaoBounty) / proposalStakes[proposalId][NO];
 
                 schemes[proposal.schemeId].stakingTokenBalance =
