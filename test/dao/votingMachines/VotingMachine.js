@@ -1,5 +1,5 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
-import { assert } from "chai";
+import { assert, expect } from "chai";
 import * as helpers from "../../helpers";
 
 const {
@@ -56,16 +56,21 @@ contract("VotingMachine", function (accounts) {
       accounts[1]
     );
 
-    org = await helpers.deployDao({
-      owner: accounts[0],
-      votingMachineToken: stakingToken.address,
-      repHolders: [
-        { address: accounts[0], amount: 10000 },
-        { address: accounts[1], amount: 10000 },
-        { address: accounts[2], amount: 10000 },
-        { address: accounts[3], amount: 70000 },
-      ],
-    });
+    org = await helpers.deployDaoV2(
+      Object.assign(
+        {
+          owner: accounts[0],
+          votingMachineToken: stakingToken.address,
+          repHolders: [
+            { address: accounts[0], amount: 10000 },
+            { address: accounts[1], amount: 10000 },
+            { address: accounts[2], amount: 10000 },
+            { address: accounts[3], amount: 70000 },
+          ],
+        },
+        constants.GOVERNANCE_V2_CONFIG(web3)
+      )
+    );
 
     dxdVotingMachine = org.votingMachine;
 
@@ -112,15 +117,14 @@ contract("VotingMachine", function (accounts) {
     );
     permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
     await permissionRegistry.initialize();
-
     await time.increase(10);
-
     masterAvatarScheme = await AvatarScheme.new();
     await masterAvatarScheme.initialize(
       org.avatar.address,
       dxdVotingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "Cheap Scheme",
       5
     );
@@ -131,6 +135,7 @@ contract("VotingMachine", function (accounts) {
       dxdVotingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "Registrar Scheme",
       5
     );
@@ -405,10 +410,11 @@ contract("VotingMachine", function (accounts) {
           setRefundConfProposalId
         );
 
+        const votingPowerAccount3 = web3.utils.toWei("70", "ether").toString(); // 70%
         expect(statusInfo["0"].toString()).to.equal("0");
-        expect(statusInfo["1"].toString()).to.equal("70000");
+        expect(statusInfo["1"].toString()).to.equal(votingPowerAccount3);
         expect(statusInfo["2"].toString()).to.equal("0");
-        expect(statusInfo["3"].toString()).to.equal("70000");
+        expect(statusInfo["3"].toString()).to.equal(votingPowerAccount3);
         expect(statusInfo["4"].toString()).to.equal(
           web3.utils.toWei("0.1").toString()
         );
@@ -436,13 +442,12 @@ contract("VotingMachine", function (accounts) {
             from: accounts[1],
           }
         );
-
         await expectEvent(vote.receipt, "VoteProposal", {
           proposalId: proposalId,
           avatar: org.avatar.address,
           voter: accounts[1],
           option: constants.YES_OPTION.toString(),
-          reputation: "10000",
+          votingPower: web3.utils.toWei("10", "ether").toString(), // 10%
         });
 
         const secondVote = await dxdVotingMachine.vote(
@@ -770,13 +775,14 @@ contract("VotingMachine", function (accounts) {
       });
 
       it("negative signed decision with less rep than the one held", async function () {
-        // The voter has 70 rep but votes with 60 rep
+        // The voter has 70% voting power but votes with 60%
+        const partialVotingPower = web3.utils.toWei("60", "ether");
         const signerNonce = await dxdVotingMachine.signerNonce(accounts[3]);
         const voteHash = await dxdVotingMachine.hashAction(
           proposalId,
           accounts[3],
           constants.NO_OPTION,
-          60000,
+          partialVotingPower,
           signerNonce,
           1
         );
@@ -790,7 +796,7 @@ contract("VotingMachine", function (accounts) {
           proposalId,
           accounts[3],
           constants.NO_OPTION,
-          60000,
+          partialVotingPower,
           votesignature,
           { from: accounts[4] }
         );
@@ -828,10 +834,11 @@ contract("VotingMachine", function (accounts) {
           }),
           "VotingMachine__WrongDecisionValue()"
         );
+        const partialVotingPower = web3.utils.toWei("60", "ether");
         const signalVoteTx = await dxdVotingMachine.signalVote(
           proposalId,
           constants.YES_OPTION,
-          60000,
+          partialVotingPower,
           { from: accounts[3] }
         );
         assert.equal(
@@ -842,7 +849,7 @@ contract("VotingMachine", function (accounts) {
         assert.equal(
           (await dxdVotingMachine.votesSignaled(proposalId, accounts[3]))
             .amount,
-          60000
+          partialVotingPower
         );
 
         const voteInfoFromLog = signalVoteTx.logs[0].args;
@@ -1087,11 +1094,16 @@ contract("VotingMachine", function (accounts) {
         constants.MAX_UINT_256,
         { from: accounts[9] }
       );
-      const fakeOrg = await helpers.deployDao({
-        owner: accounts[9],
-        votingMachineToken: stakingToken.address,
-        repHolders: [{ address: accounts[9], amount: 10000 }],
-      });
+      const fakeOrg = await helpers.deployDaoV2(
+        Object.assign(
+          {
+            owner: accounts[9],
+            votingMachineToken: stakingToken.address,
+            repHolders: [{ address: accounts[9], amount: 10000 }],
+          },
+          constants.GOVERNANCE_V2_CONFIG(web3)
+        )
+      );
       const fakePermissionRegistry = await PermissionRegistry.new(
         accounts[9],
         1
@@ -1103,6 +1115,7 @@ contract("VotingMachine", function (accounts) {
         dxdVotingMachine.address,
         fakeOrg.controller.address,
         fakePermissionRegistry.address,
+        fakeOrg.votingPowerToken.address,
         "FakeOrg Scheme",
         5
       );
@@ -1511,6 +1524,7 @@ contract("VotingMachine", function (accounts) {
 
       expectEvent.notEmitted(executeStake.receipt, "Stake");
     });
+
     it("address cannot upstake and downstake on same proposal", async function () {
       const upStake = await dxdVotingMachine.stake(
         stakeProposalId,
@@ -2021,8 +2035,10 @@ contract("VotingMachine", function (accounts) {
       });
 
       const voteInfo = await dxdVotingMachine.getVoter(proposalId, accounts[1]);
+
+      const votingPowerAcccount1 = web3.utils.toWei("10", "ether");
       assert.equal(constants.YES_OPTION, Number(voteInfo[0]));
-      assert.equal(10000, Number(voteInfo[1]));
+      expect(voteInfo[1]).to.be.bignumber.equal(votingPowerAcccount1);
     });
 
     it("should return true if the proposal is votable", async function () {

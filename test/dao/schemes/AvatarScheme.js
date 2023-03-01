@@ -7,6 +7,7 @@ const {
   expectRevert,
   expectEvent,
 } = require("@openzeppelin/test-helpers");
+import { web3 } from "@openzeppelin/test-helpers/src/setup";
 
 const AvatarScheme = artifacts.require("./AvatarScheme.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
@@ -28,15 +29,20 @@ contract("AvatarScheme", function (accounts) {
     actionMock = await ActionMock.new();
     standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
 
-    org = await helpers.deployDao({
-      owner: accounts[0],
-      votingMachineToken: standardTokenMock.address,
-      repHolders: [
-        { address: accounts[0], amount: 20000 },
-        { address: accounts[1], amount: 10000 },
-        { address: accounts[2], amount: 70000 },
-      ],
-    });
+    org = await helpers.deployDaoV2(
+      Object.assign(
+        {
+          owner: accounts[0],
+          votingMachineToken: standardTokenMock.address,
+          repHolders: [
+            { address: accounts[0], amount: 20000 },
+            { address: accounts[1], amount: 10000 },
+            { address: accounts[2], amount: 70000 },
+          ],
+        },
+        constants.GOVERNANCE_V2_CONFIG(web3)
+      )
+    );
 
     const defaultParamsHash = await helpers.setDefaultParameters(
       org.votingMachine
@@ -51,6 +57,7 @@ contract("AvatarScheme", function (accounts) {
       org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "Master Wallet",
       5
     );
@@ -61,6 +68,7 @@ contract("AvatarScheme", function (accounts) {
       org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "Quick Wallet",
       1
     );
