@@ -23,12 +23,6 @@ error DAOReputation__InvalidMintRepAmount()
 
 Mint or Burn shouldn’t be called if the amount is 0
 
-### nonZeroAmounts
-
-```solidity
-modifier nonZeroAmounts(uint256[] amounts)
-```
-
 ### initialize
 
 ```solidity

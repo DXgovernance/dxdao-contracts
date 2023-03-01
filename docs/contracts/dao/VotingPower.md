@@ -12,37 +12,23 @@ _This contract provides a function to determine the balance (or voting power) of
 ### reputation
 
 ```solidity
-contract ERC20SnapshotRep reputation
+address reputation
 ```
 
-The ERC20 reputation token that will be used as source of voting power
+The reputation token that will be used as source of voting power
 
 ### influence
 
 ```solidity
-contract ERC20SnapshotRep influence
+address influence
 ```
 
-The ERC20 influence token that will be used as source of voting power
-
-### minStakingTokensLocked
-
-```solidity
-uint256 minStakingTokensLocked
-```
-
-Minimum staking tokens locked to apply weight
-
-### currentSnapshotId
-
-```solidity
-uint256 currentSnapshotId
-```
+The influence token that will be used as source of voting power
 
 ### weights
 
 ```solidity
-mapping(address => uint256) weights
+mapping(address => mapping(uint256 => uint256)) weights
 ```
 
 ### snapshots
@@ -99,6 +85,32 @@ Revert when weights composition is wrong
 
 ```solidity
 error VotingPower_PercentCannotExeedMaxPercent()
+```
+
+### minStakingTokensLocked
+
+```solidity
+mapping(uint256 => uint256) minStakingTokensLocked
+```
+
+Minimum staking tokens locked to apply weight (snapshoted)
+
+### SNAPSHOTS_SLOT
+
+```solidity
+address SNAPSHOTS_SLOT
+```
+
+### WEIGHTS_SLOT
+
+```solidity
+address WEIGHTS_SLOT
+```
+
+### MIN_STAKED_SLOT
+
+```solidity
+address MIN_STAKED_SLOT
 ```
 
 ### onlyInternalTokens
@@ -204,31 +216,10 @@ _Get the balance (voting power percentage) of `account` at certain `_snapshotId`
 function calculateVotingPower(address account, uint256 _snapshotId) internal view returns (uint256 votingPower)
 ```
 
-### getTokenSnapshotIdFromVPSnapshot
+### getWeightOfAt
 
 ```solidity
-function getTokenSnapshotIdFromVPSnapshot(address tokenAddress, uint256 tokenSnapshotId) public view returns (uint256 snapshotId)
-```
-
-_Get the external token snapshotId for given VPToken snapshotId_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenAddress | address | Address of the external token (rep/dxd) we want to get snapshotId from |
-| tokenSnapshotId | uint256 | SnapshotId from VPToken |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| snapshotId | uint256 | SnapshotId from `tokenAddress` stored at VPToken `tokenSnapshotId` |
-
-### getConfigTokenWeight
-
-```solidity
-function getConfigTokenWeight(address token) public view returns (uint256 weight)
+function getWeightOfAt(address token, uint256 snapshotId) public view returns (uint256 weight)
 ```
 
 _Get token weight from weights config mapping._
@@ -238,6 +229,7 @@ _Get token weight from weights config mapping._
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | token | address | Address of the token we want to get weight from |
+| snapshotId | uint256 |  |
 
 ### getTokenWeightAt
 
@@ -327,19 +319,60 @@ _Calculates the weighted voting power percentage by multiplying the voting power
 | ---- | ---- | ----------- |
 | weightedVotingPowerPercentage | uint256 | Weighted voting power percentage (0 to 100 * precision) |
 
-### getCurrentSnapshotId
+### snapshotAt
 
 ```solidity
-function getCurrentSnapshotId() public view returns (uint256 snapshotId)
+function snapshotAt(uint256 _snapshotId, address slot) internal view returns (uint256 snapshotId)
 ```
 
-_Get the current VPToken snapshotId_
+_Returns the last snapshotId stored for given `slot` based on `_snapshotId`_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _snapshotId | uint256 | VotingPower Snapshot ID |
+| slot | address | Address used to emit snapshot. One of: SNAPSHOTS_SLOT, WEIGHTS_SLOT, MIN_STAKED_SLOT |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| snapshotId | uint256 | Current VPToken snapshotId |
+| snapshotId | uint256 | SnapshotId |
+
+### getMinStakingTokensLockedAt
+
+```solidity
+function getMinStakingTokensLockedAt(uint256 _snapshotId) public view returns (uint256 _minStakingTokensLocked)
+```
+
+_Returns global minStakingTokensLocked at `_snapshotId`_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _snapshotId | uint256 | VotingPower Snapshot ID |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _minStakingTokensLocked | uint256 | Minimum staking tokens locked to apply staking weight |
+
+### getMinStakingTokensLocked
+
+```solidity
+function getMinStakingTokensLocked() public view returns (uint256 _minStakingTokensLocked)
+```
+
+_Returns global minStakingTokensLocked at currentSnapshotId_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _minStakingTokensLocked | uint256 | Minimum staking tokens locked to apply staking weight |
 
 ### totalSupply
 
@@ -354,6 +387,12 @@ _Returns the total supply_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | supply | uint256 | 100% expressed in base 1e+18. |
+
+### totalSupplyAt
+
+```solidity
+function totalSupplyAt(uint256 snapshotId) external pure returns (uint256 supply)
+```
 
 ### transfer
 
