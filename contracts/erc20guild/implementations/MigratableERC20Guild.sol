@@ -67,9 +67,9 @@ contract MigratableERC20Guild is ERC20Guild {
     function lockTokens(uint256 tokenAmount) external virtual override {
         tokenVault.deposit(msg.sender, tokenAmount);
         if (tokensLockedByVault[address(tokenVault)][msg.sender].amount == 0) totalMembers = totalMembers + 1;
-        tokensLockedByVault[address(tokenVault)][msg.sender].amount = tokensLockedByVault[address(tokenVault)][
-            msg.sender
-        ].amount + tokenAmount;
+        tokensLockedByVault[address(tokenVault)][msg.sender].amount =
+            tokensLockedByVault[address(tokenVault)][msg.sender].amount +
+            tokenAmount;
         tokensLockedByVault[address(tokenVault)][msg.sender].timestamp = block.timestamp + lockTime;
         totalLockedByVault[address(tokenVault)] = totalLockedByVault[address(tokenVault)] + tokenAmount;
         emit TokensLocked(msg.sender, tokenAmount);
@@ -86,9 +86,9 @@ contract MigratableERC20Guild is ERC20Guild {
             tokensLockedByVault[address(tokenVault)][msg.sender].timestamp < block.timestamp,
             "MigratableERC2Guild: Tokens still locked"
         );
-        tokensLockedByVault[address(tokenVault)][msg.sender].amount = tokensLockedByVault[address(tokenVault)][
-            msg.sender
-        ].amount - tokenAmount;
+        tokensLockedByVault[address(tokenVault)][msg.sender].amount =
+            tokensLockedByVault[address(tokenVault)][msg.sender].amount -
+            tokenAmount;
         totalLockedByVault[address(tokenVault)] = totalLockedByVault[address(tokenVault)] - tokenAmount;
         tokenVault.withdraw(msg.sender, tokenAmount);
         if (tokensLockedByVault[address(tokenVault)][msg.sender].amount == 0) totalMembers = totalMembers - 1;
@@ -104,7 +104,9 @@ contract MigratableERC20Guild is ERC20Guild {
             "MigratableERC2Guild: Use default lockTokens(uint256) function to lock in official vault"
         );
         TokenVault(_tokenVault).deposit(msg.sender, tokenAmount);
-        tokensLockedByVault[_tokenVault][msg.sender].amount = tokensLockedByVault[_tokenVault][msg.sender].amount + tokenAmount;
+        tokensLockedByVault[_tokenVault][msg.sender].amount =
+            tokensLockedByVault[_tokenVault][msg.sender].amount +
+            tokenAmount;
         tokensLockedByVault[_tokenVault][msg.sender].timestamp = block.timestamp + lockTime;
         totalLockedByVault[_tokenVault] = totalLockedByVault[_tokenVault] + tokenAmount;
         emit TokensLocked(msg.sender, tokenAmount);
@@ -122,7 +124,9 @@ contract MigratableERC20Guild is ERC20Guild {
             tokensLockedByVault[_tokenVault][msg.sender].timestamp < block.timestamp,
             "MigratableERC2Guild: Tokens still locked"
         );
-        tokensLockedByVault[_tokenVault][msg.sender].amount = tokensLockedByVault[_tokenVault][msg.sender].amount - tokenAmount;
+        tokensLockedByVault[_tokenVault][msg.sender].amount =
+            tokensLockedByVault[_tokenVault][msg.sender].amount -
+            tokenAmount;
         totalLockedByVault[_tokenVault] = totalLockedByVault[_tokenVault] - tokenAmount;
         TokenVault(_tokenVault).withdraw(msg.sender, tokenAmount);
         emit TokensWithdrawn(msg.sender, tokenAmount);
