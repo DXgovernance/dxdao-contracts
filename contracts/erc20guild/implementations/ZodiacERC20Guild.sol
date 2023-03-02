@@ -85,6 +85,8 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
     /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal option
     // solhint-disable-next-line max-line-length
     /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // solhint-disable-next-line max-line-length
+    /// @param _votingPowerPercentageForInstantProposalExecution The percentage of voting power in base 10000 needed to execute a proposal option without  waiting for the proposal time to end. If set to 0, the feature is disabled.
     /// @param _voteGas The amount of gas in wei unit used for vote refunds.
     // Can't be higher than the gas used by setVote (117000)
     /// @param _maxGasPrice The maximum gas price used for vote refunds
@@ -95,6 +97,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         uint256 _timeForExecution,
         uint256 _votingPowerPercentageForProposalExecution,
         uint256 _votingPowerPercentageForProposalCreation,
+        uint256 _votingPowerPercentageForInstantProposalExecution,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
@@ -109,11 +112,21 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
             _votingPowerPercentageForProposalExecution > 0,
             "ERC20Guild: voting power for execution has to be more than 0"
         );
+        require(
+            _votingPowerPercentageForInstantProposalExecution <= BASIS_POINT_MULTIPLIER,
+            "ERC20Guild: invalid votingPowerPercentageForInstantProposalExecution value"
+        );
+        require(
+            _votingPowerPercentageForInstantProposalExecution == 0 ||
+                _votingPowerPercentageForInstantProposalExecution >= BASIS_POINT_MULTIPLIER / 2,
+            "ERC20Guild: invalid votingPowerPercentageForInstantProposalExecution value"
+        );
         require(_voteGas <= 117000, "ERC20Guild: vote gas has to be equal or lower than 117000");
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerPercentageForProposalExecution = _votingPowerPercentageForProposalExecution;
         votingPowerPercentageForProposalCreation = _votingPowerPercentageForProposalCreation;
+        votingPowerPercentageForInstantProposalExecution = _votingPowerPercentageForInstantProposalExecution;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
@@ -155,11 +168,8 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public override {
         Proposal storage proposal = proposals[proposalId];
-        require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
-        require(proposal.state == ProposalState.Active, "ERC20Guild: Proposal already executed");
-        require(proposal.endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
-
-        uint256 winningOption = getWinningOption(proposal);
+        (uint256 winningOption, uint256 highestVoteAmount) = getWinningOption(proposal);
+        checkProposalExecutionState(proposalId, highestVoteAmount);
 
         if (winningOption == 0) {
             proposal.state = ProposalState.Rejected;
@@ -209,8 +219,12 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         activeProposalsNow = activeProposalsNow - 1;
     }
 
-    function getWinningOption(Proposal storage _proposal) internal view returns (uint256 winningOption) {
-        uint256 highestVoteAmount = _proposal.totalVotes[0];
+    function getWinningOption(Proposal storage _proposal)
+        internal
+        view
+        returns (uint256 winningOption, uint256 highestVoteAmount)
+    {
+        highestVoteAmount = _proposal.totalVotes[0];
         uint256 votingPowerForProposalExecution = getVotingPowerForProposalExecution();
         uint256 totalOptions = _proposal.totalVotes.length;
         for (uint256 i = 1; i < totalOptions; i++) {

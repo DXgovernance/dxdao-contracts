@@ -10797,10 +10797,10 @@ hardhat-gas-reporter@^1.0.4:
     eth-gas-reporter "^0.2.20"
     sha1 "^1.1.1"
 
-hardhat@2.12.0:
-  version "2.12.0"
-  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.12.0.tgz#51e59f1ff4991bcb66d1a380ea807e6c15fcac34"
-  integrity sha512-mNJFbVG479HwOzxiaLxobyvED2M1aEAuPPYhEo1+88yicMDSTrU2JIS7vV+V0GSNQKaDoiHCmV6bcKjiljT/dQ==
+hardhat@^2.12.0:
+  version "2.12.7"
+  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.12.7.tgz#d8de2dc32e9a2956d53cf26ef4cd5857e57a3138"
+  integrity sha512-voWoN6zn5d8BOEaczSyK/1PyfdeOeI3SbGCFb36yCHTJUt6OIqLb+ZDX30VhA1UsYKzLqG7UnWl3fKJUuANc6A==
   dependencies:
     "@ethersproject/abi" "^5.1.2"
     "@metamask/eth-sig-util" "^4.0.0"
@@ -10849,7 +10849,7 @@ hardhat@2.12.0:
     source-map-support "^0.5.13"
     stacktrace-parser "^0.1.10"
     tsort "0.0.1"
-    undici "^5.4.0"
+    undici "^5.14.0"
     uuid "^8.3.2"
     ws "^7.4.6"
 
@@ -19819,6 +19819,13 @@ underscore@^1.8.3:
   version "1.13.1"
   resolved "https://registry.yarnpkg.com/underscore/-/underscore-1.13.1.tgz#0c1c6bd2df54b6b69f2314066d65b6cde6fcf9d1"
   integrity sha512-hzSoAVtJF+3ZtiFX0VgfFPHEDRm7Y/QPjGyNo4TVdnDTdft3tr8hEkD25a1jC+TjTuE7tkHGKkhwCgs9dgBB2g==
+
+undici@^5.14.0:
+  version "5.20.0"
+  resolved "https://registry.yarnpkg.com/undici/-/undici-5.20.0.tgz#6327462f5ce1d3646bcdac99da7317f455bcc263"
+  integrity sha512-J3j60dYzuo6Eevbawwp1sdg16k5Tf768bxYK4TUJRH7cBM4kFCbf3mOnM/0E3vQYXvpxITbbWmBafaDbxLDz3g==
+  dependencies:
+    busboy "^1.6.0"
 
 undici@^5.4.0:
   version "5.11.0"
