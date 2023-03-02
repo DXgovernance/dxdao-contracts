@@ -167,10 +167,10 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
     /// @dev Executes a proposal that is not votable anymore and can be finished
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public override {
-        Proposal storage proposal = proposals[proposalId];
-        (uint256 winningOption, uint256 highestVoteAmount) = getWinningOption(proposal);
+        (uint256 winningOption, uint256 highestVoteAmount) = getWinningOption(proposalId);
         checkProposalExecutionState(proposalId, highestVoteAmount);
 
+        Proposal storage proposal = proposals[proposalId];
         if (winningOption == 0) {
             proposal.state = ProposalState.Rejected;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
@@ -219,27 +219,6 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         activeProposalsNow = activeProposalsNow - 1;
     }
 
-    function getWinningOption(Proposal storage _proposal)
-        internal
-        view
-        returns (uint256 winningOption, uint256 highestVoteAmount)
-    {
-        highestVoteAmount = _proposal.totalVotes[0];
-        uint256 votingPowerForProposalExecution = getVotingPowerForProposalExecution();
-        uint256 totalOptions = _proposal.totalVotes.length;
-        for (uint256 i = 1; i < totalOptions; i++) {
-            uint256 totalVotesOptionI = _proposal.totalVotes[i];
-            if (totalVotesOptionI >= votingPowerForProposalExecution && totalVotesOptionI >= highestVoteAmount) {
-                if (totalVotesOptionI == highestVoteAmount) {
-                    winningOption = 0;
-                } else {
-                    winningOption = i;
-                    highestVoteAmount = totalVotesOptionI;
-                }
-            }
-        }
-    }
-
     function getProposalCallsRange(Proposal storage _proposal, uint256 _winningOption)
         internal
         view
@@ -248,24 +227,6 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         uint256 callsPerOption = _proposal.to.length / (_proposal.totalVotes.length - 1);
         startCall = callsPerOption * (_winningOption - 1);
         endCall = startCall + callsPerOption;
-    }
-
-    function getFunctionSignature(bytes storage _data) internal view returns (bytes4 callDataFuncSignature) {
-        uint8 lengthBit;
-        assembly {
-            lengthBit := sload(_data.slot)
-            lengthBit := and(lengthBit, 0x01)
-            switch lengthBit
-            case 0 {
-                // Short bytes array. Data is stored together with length at slot.
-                callDataFuncSignature := sload(_data.slot)
-            }
-            case 1 {
-                //  Long bytes array. Data is stored at keccak256(slot).
-                mstore(0, _data.slot)
-                callDataFuncSignature := sload(keccak256(0, 32))
-            }
-        }
     }
 
     /// @dev Encodes permissionRegistry.checkERC20Limits(avatar)

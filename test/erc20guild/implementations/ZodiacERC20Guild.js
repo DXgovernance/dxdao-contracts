@@ -1042,7 +1042,7 @@ contract("ZodiacERC20Guild", function (accounts) {
       await testAvatar.initPermissions(permissionRegistry.address);
     });
 
-    it.only("should set votingPowerPercentageForInstantProposalExecution correctly", async function () {
+    it("should set votingPowerPercentageForInstantProposalExecution correctly", async function () {
       // Bigger than max value
       let guildProposalId = await createProposal({
         guild: erc20Guild,
@@ -1154,7 +1154,7 @@ contract("ZodiacERC20Guild", function (accounts) {
       ).to.be.bignumber.equal(new BN("7500"));
     });
 
-    it.only("should not execute a proposal early if early proposal execution conditions are not met", async function () {
+    it("should not execute a proposal early if early proposal execution conditions are not met", async function () {
       // Set votingPowerPercentageForInstantProposalExecution
       let guildProposalId = await createProposal({
         guild: erc20Guild,
@@ -1211,7 +1211,7 @@ contract("ZodiacERC20Guild", function (accounts) {
       );
     });
 
-    it.only("should execute a proposal early if early proposal execution conditions are met", async function () {
+    it("should execute a proposal early if early proposal execution conditions are met", async function () {
       // Set votingPowerPercentageForInstantProposalExecution
       let guildProposalId = await createProposal({
         guild: erc20Guild,

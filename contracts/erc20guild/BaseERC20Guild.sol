@@ -289,53 +289,35 @@ contract BaseERC20Guild {
     /// @dev Executes a proposal that is not votable anymore and can be finished
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public virtual {
-        uint256 winningOption = 0;
-        uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
-        uint256 i = 1;
-        for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
-            if (
-                proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution() &&
-                proposals[proposalId].totalVotes[i] >= highestVoteAmount
-            ) {
-                if (proposals[proposalId].totalVotes[i] == highestVoteAmount) {
-                    winningOption = 0;
-                } else {
-                    winningOption = i;
-                    highestVoteAmount = proposals[proposalId].totalVotes[i];
-                }
-            }
-        }
+        (uint256 winningOption, uint256 highestVoteAmount) = getWinningOption(proposalId);
         checkProposalExecutionState(proposalId, highestVoteAmount);
 
+        Proposal storage proposal = proposals[proposalId];
         if (winningOption == 0) {
-            proposals[proposalId].state = ProposalState.Rejected;
+            proposal.state = ProposalState.Rejected;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
-        } else if (proposals[proposalId].endTime + timeForExecution < block.timestamp) {
-            proposals[proposalId].state = ProposalState.Failed;
+        } else if (proposal.endTime + timeForExecution < block.timestamp) {
+            proposal.state = ProposalState.Failed;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
         } else {
-            proposals[proposalId].state = ProposalState.Executed;
+            proposal.state = ProposalState.Executed;
 
-            uint256 callsPerOption = proposals[proposalId].to.length / (proposals[proposalId].totalVotes.length - 1);
-            i = callsPerOption * (winningOption - 1);
+            uint256 callsPerOption = proposal.to.length / (proposal.totalVotes.length - 1);
+            uint256 i = callsPerOption * (winningOption - 1);
             uint256 endCall = i + callsPerOption;
 
             permissionRegistry.setERC20Balances();
 
             for (i; i < endCall; i++) {
-                if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
-                    bytes memory _data = proposals[proposalId].data[i];
-                    bytes4 callDataFuncSignature;
-                    assembly {
-                        callDataFuncSignature := mload(add(_data, 32))
-                    }
+                if (proposal.to[i] != address(0) && proposal.data[i].length > 0) {
+                    bytes4 callDataFuncSignature = getFunctionSignature(proposal.data[i]);
                     // The permission registry keeps track of all value transferred and checks call permission
                     try
                         permissionRegistry.setETHPermissionUsed(
                             address(this),
-                            proposals[proposalId].to[i],
+                            proposal.to[i],
                             bytes4(callDataFuncSignature),
-                            proposals[proposalId].value[i]
+                            proposal.value[i]
                         )
                     {} catch Error(string memory reason) {
                         revert(reason);
@@ -344,9 +326,7 @@ contract BaseERC20Guild {
                     isExecutingProposal = true;
                     // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
                     // slither-disable-next-line all
-                    (bool success, ) = proposals[proposalId].to[i].call{value: proposals[proposalId].value[i]}(
-                        proposals[proposalId].data[i]
-                    );
+                    (bool success, ) = proposal.to[i].call{value: proposal.value[i]}(proposal.data[i]);
                     require(success, "ERC20Guild: Proposal call failed");
                     isExecutingProposal = false;
                 }
@@ -495,6 +475,47 @@ contract BaseERC20Guild {
             approvalRate < votingPowerPercentageForInstantProposalExecution
         ) {
             require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
+        }
+    }
+
+    function getWinningOption(bytes32 proposalId)
+        internal
+        view
+        virtual
+        returns (uint256 winningOption, uint256 highestVoteAmount)
+    {
+        Proposal storage proposal = proposals[proposalId];
+        highestVoteAmount = proposal.totalVotes[0];
+        uint256 votingPowerForProposalExecution = getVotingPowerForProposalExecution();
+        uint256 totalOptions = proposal.totalVotes.length;
+        for (uint256 i = 1; i < totalOptions; i++) {
+            uint256 totalVotesOptionI = proposal.totalVotes[i];
+            if (totalVotesOptionI >= votingPowerForProposalExecution && totalVotesOptionI >= highestVoteAmount) {
+                if (totalVotesOptionI == highestVoteAmount) {
+                    winningOption = 0;
+                } else {
+                    winningOption = i;
+                    highestVoteAmount = totalVotesOptionI;
+                }
+            }
+        }
+    }
+
+    function getFunctionSignature(bytes storage _data) internal view returns (bytes4 callDataFuncSignature) {
+        uint8 lengthBit;
+        assembly {
+            lengthBit := sload(_data.slot)
+            lengthBit := and(lengthBit, 0x01)
+            switch lengthBit
+            case 0 {
+                // Short bytes array. Data is stored together with length at slot.
+                callDataFuncSignature := sload(_data.slot)
+            }
+            case 1 {
+                //  Long bytes array. Data is stored at keccak256(slot).
+                mstore(0, _data.slot)
+                callDataFuncSignature := sload(keccak256(0, 32))
+            }
         }
     }
 
