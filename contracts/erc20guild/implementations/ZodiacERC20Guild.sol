@@ -38,6 +38,8 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
     /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal action
     // solhint-disable-next-line max-line-length
     /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // solhint-disable-next-line max-line-length
+    /// @param _votingPowerPercentageForInstantProposalExecution The percentage of voting power in base 10000 needed to execute a proposal option without  waiting for the proposal time to end. If set to 0, the feature is disabled.
     /// @param _name The name of the ERC20Guild
     /// @param _voteGas The amount of gas in wei unit used for vote refunds
     /// @param _maxGasPrice The maximum gas price used for vote refunds
@@ -52,6 +54,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         uint256 _timeForExecution,
         uint256 _votingPowerPercentageForProposalExecution,
         uint256 _votingPowerPercentageForProposalCreation,
+        uint256 _votingPowerPercentageForInstantProposalExecution,
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
@@ -67,6 +70,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
             _timeForExecution,
             _votingPowerPercentageForProposalExecution,
             _votingPowerPercentageForProposalCreation,
+            _votingPowerPercentageForInstantProposalExecution,
             _name,
             _voteGas,
             _maxGasPrice,

@@ -57,6 +57,7 @@ contract("ERC20GuildWithERC1271", function (accounts) {
         30,
         5000,
         100,
+        0,
         "TestGuild",
         0,
         0,

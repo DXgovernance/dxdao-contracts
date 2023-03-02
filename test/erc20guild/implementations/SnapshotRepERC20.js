@@ -48,6 +48,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       30, // _timeForExecution,
       votingPowerPercentageForProposalExecution,
       votingPowerPercentageForProposalCreation,
+      0,
       "SnapshotRep Guild",
       10, //  _voteGas,
       0, //  _maxGasPrice,
