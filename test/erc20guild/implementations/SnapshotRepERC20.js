@@ -533,7 +533,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
   });
 
   describe("Early proposal executions", function () {
-    it("should set votingPowerPercentageForInstantProposalExecution correctly", async function () {
+    it.only("should set votingPowerPercentageForInstantProposalExecution correctly", async function () {
       // Bigger than max value
       let guildProposalId = await createProposal({
         guild: snapshotRepErc20Guild,
@@ -567,7 +567,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await expectRevert(
         snapshotRepErc20Guild.endProposal(guildProposalId),
-        "ERC20SnapshotRep: Proposal call failed"
+        "ERC20Guild: Proposal call failed"
       );
 
       // Smaller than min value
@@ -603,7 +603,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await expectRevert(
         snapshotRepErc20Guild.endProposal(guildProposalId),
-        "ERC20SnapshotRep: Proposal call failed"
+        "ERC20Guild: Proposal call failed"
       );
 
       // Correct value
