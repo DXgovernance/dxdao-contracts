@@ -316,7 +316,7 @@ contract BaseERC20Guild {
                         permissionRegistry.setETHPermissionUsed(
                             address(this),
                             proposal.to[i],
-                            bytes4(callDataFuncSignature),
+                            callDataFuncSignature,
                             proposal.value[i]
                         )
                     {} catch Error(string memory reason) {
