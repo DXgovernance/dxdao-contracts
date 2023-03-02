@@ -533,7 +533,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
   });
 
   describe("Early proposal executions", function () {
-    it.only("should set votingPowerPercentageForInstantProposalExecution correctly", async function () {
+    it("should set votingPowerPercentageForInstantProposalExecution correctly", async function () {
       // Bigger than max value
       let guildProposalId = await createProposal({
         guild: snapshotRepErc20Guild,
