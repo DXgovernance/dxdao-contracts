@@ -56,21 +56,16 @@ contract("VotingMachine", function (accounts) {
       accounts[1]
     );
 
-    org = await helpers.deployDaoV2(
-      Object.assign(
-        {
-          owner: accounts[0],
-          votingMachineToken: stakingToken.address,
-          repHolders: [
-            { address: accounts[0], amount: 10000 },
-            { address: accounts[1], amount: 10000 },
-            { address: accounts[2], amount: 10000 },
-            { address: accounts[3], amount: 70000 },
-          ],
-        },
-        constants.GOVERNANCE_V2_CONFIG(web3)
-      )
-    );
+    org = await helpers.deployDaoV2({
+      owner: accounts[0],
+      votingMachineToken: stakingToken.address,
+      repHolders: [
+        { address: accounts[0], amount: 10000 },
+        { address: accounts[1], amount: 10000 },
+        { address: accounts[2], amount: 10000 },
+        { address: accounts[3], amount: 70000 },
+      ],
+    });
 
     dxdVotingMachine = org.votingMachine;
 
@@ -1094,16 +1089,11 @@ contract("VotingMachine", function (accounts) {
         constants.MAX_UINT_256,
         { from: accounts[9] }
       );
-      const fakeOrg = await helpers.deployDaoV2(
-        Object.assign(
-          {
-            owner: accounts[9],
-            votingMachineToken: stakingToken.address,
-            repHolders: [{ address: accounts[9], amount: 10000 }],
-          },
-          constants.GOVERNANCE_V2_CONFIG(web3)
-        )
-      );
+      const fakeOrg = await helpers.deployDaoV2({
+        owner: accounts[9],
+        votingMachineToken: stakingToken.address,
+        repHolders: [{ address: accounts[9], amount: 10000 }],
+      });
       const fakePermissionRegistry = await PermissionRegistry.new(
         accounts[9],
         1

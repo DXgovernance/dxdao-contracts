@@ -1,20 +1,10 @@
 const { expectRevert, expectEvent, BN } = require("@openzeppelin/test-helpers");
-const ERC20Mock = artifacts.require("./ERC20Mock.sol");
-const DAOReputation = artifacts.require("./DAOReputation.sol");
-const DAOController = artifacts.require("./DAOController.sol");
 const DAOAvatar = artifacts.require("./DAOAvatar.sol");
-const VotingMachine = artifacts.require("./VotingMachine.sol");
 const ActionMock = artifacts.require("./ActionMock.sol");
 import * as helpers from "../helpers";
 
 contract("DAOController", function (accounts) {
-  let reputation,
-    controller,
-    avatar,
-    defaultParamsHash,
-    repHolders,
-    standardTokenMock,
-    actionMock;
+  let reputation, controller, avatar, defaultParamsHash, repHolders, actionMock;
 
   const schemeAddress = accounts[0];
 
@@ -26,31 +16,14 @@ contract("DAOController", function (accounts) {
       { address: accounts[2], amount: 70000 },
     ];
 
-    reputation = await DAOReputation.new();
-    await reputation.initialize("DXDaoReputation", "DXRep");
-
-    controller = await DAOController.new();
-
-    avatar = await DAOAvatar.new();
-    await avatar.initialize(controller.address);
-
-    for (let { address, amount } of repHolders) {
-      await reputation.mint(address, amount);
-    }
-
-    await reputation.transferOwnership(controller.address);
-
-    standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
-
-    const votingMachine = await VotingMachine.new(standardTokenMock.address);
-
-    defaultParamsHash = await helpers.setDefaultParameters(votingMachine);
-
-    await controller.initialize(
-      schemeAddress,
-      reputation.address,
-      defaultParamsHash
-    );
+    const org = await helpers.deployDaoV2({
+      owner: accounts[0],
+      repHolders,
+    });
+    controller = org.controller;
+    avatar = org.avatar;
+    defaultParamsHash = org.defaultParamsHash;
+    reputation = org.reputation;
   });
   it("Should fail with 'Initializable: contract is already initialized'", async () => {
     await expectRevert(

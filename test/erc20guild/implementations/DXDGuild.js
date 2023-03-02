@@ -38,7 +38,6 @@ contract("DXDGuild", function (accounts) {
       [0, 50, 100, 100, 250]
     );
     dxdGuild = await DXDGuild.new();
-
     const votingMachineToken = await ERC20Mock.new(
       "DXDao",
       "DXD",
@@ -46,7 +45,7 @@ contract("DXDGuild", function (accounts) {
       accounts[0]
     );
 
-    dxDao = await helpers.deployDao({
+    dxDao = await helpers.deployDaoV2({
       owner: accounts[0],
       votingMachineToken: votingMachineToken.address,
       repHolders: [
@@ -55,10 +54,6 @@ contract("DXDGuild", function (accounts) {
         { address: dxdGuild.address, amount: 70 },
       ],
     });
-
-    const defaultParamsHash = await helpers.setDefaultParameters(
-      dxDao.votingMachine
-    );
 
     const permissionRegistry = await PermissionRegistry.new(accounts[0], 10);
     await permissionRegistry.initialize();
@@ -70,13 +65,14 @@ contract("DXDGuild", function (accounts) {
       dxDao.votingMachine.address,
       dxDao.controller.address,
       permissionRegistry.address,
+      dxDao.votingPowerToken.address,
       "Master Scheme",
       5
     );
 
     await dxDao.controller.registerScheme(
       masterAvatarScheme.address,
-      defaultParamsHash,
+      dxDao.defaultParamsHash,
       true,
       true,
       true
