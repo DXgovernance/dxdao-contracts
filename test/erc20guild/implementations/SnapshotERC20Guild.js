@@ -514,7 +514,6 @@ contract("SnapshotERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await erc20Guild.endProposal(guildProposalId);
 
-      //
       guildProposalId = await createProposal({
         guild: erc20Guild,
         options: [
@@ -536,7 +535,6 @@ contract("SnapshotERC20Guild", function (accounts) {
         option: 1,
         account: accounts[3],
       });
-      // await time.increase(time.duration.seconds(61));
       const totalSupply = await guildToken.totalSupply();
       const totalVotesA = await erc20Guild.getProposalOptionTotalVotes(
         guildProposalId,
@@ -585,7 +583,6 @@ contract("SnapshotERC20Guild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await erc20Guild.endProposal(guildProposalId);
 
-      //
       guildProposalId = await createProposal({
         guild: erc20Guild,
         options: [
@@ -609,7 +606,6 @@ contract("SnapshotERC20Guild", function (accounts) {
           account: accounts[i],
         });
       }
-      // await time.increase(time.duration.seconds(61));
       const totalSupply = await guildToken.totalSupply();
       const totalVotesA = await erc20Guild.getProposalOptionTotalVotes(
         guildProposalId,
