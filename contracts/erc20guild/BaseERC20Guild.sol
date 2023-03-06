@@ -497,19 +497,19 @@ contract BaseERC20Guild {
         }
     }
 
-    function getFunctionSignature(bytes storage _data) internal view returns (bytes4 callDataFuncSignature) {
+    function getFunctionSignature(bytes storage data) internal view returns (bytes4 callDataFuncSignature) {
         uint8 lengthBit;
         assembly {
-            lengthBit := sload(_data.slot)
+            lengthBit := sload(data.slot)
             lengthBit := and(lengthBit, 0x01)
             switch lengthBit
             case 0 {
                 // Short bytes array. Data is stored together with length at slot.
-                callDataFuncSignature := sload(_data.slot)
+                callDataFuncSignature := sload(data.slot)
             }
             case 1 {
-                //  Long bytes array. Data is stored at keccak256(slot).
-                mstore(0, _data.slot)
+                // Long bytes array. Data is stored at keccak256(slot).
+                mstore(0, data.slot)
                 callDataFuncSignature := sload(keccak256(0, 32))
             }
         }
