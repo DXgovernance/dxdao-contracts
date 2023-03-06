@@ -46,7 +46,7 @@ contract BaseERC20Guild {
     // changing it.
     uint8 public constant MAX_OPTIONS_PER_PROPOSAL = 10;
 
-    uint256 internal constant BASIS_POINT_MULTIPLIER = 10_000;
+    uint256 public constant BASIS_POINT_MULTIPLIER = 10_000;
 
     enum ProposalState {
         None,
