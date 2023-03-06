@@ -312,16 +312,12 @@ contract BaseERC20Guild {
                 if (proposal.to[i] != address(0) && proposal.data[i].length > 0) {
                     bytes4 callDataFuncSignature = getFunctionSignature(proposal.data[i]);
                     // The permission registry keeps track of all value transferred and checks call permission
-                    try
-                        permissionRegistry.setETHPermissionUsed(
-                            address(this),
-                            proposal.to[i],
-                            callDataFuncSignature,
-                            proposal.value[i]
-                        )
-                    {} catch Error(string memory reason) {
-                        revert(reason);
-                    }
+                    permissionRegistry.setETHPermissionUsed(
+                        address(this),
+                        proposal.to[i],
+                        callDataFuncSignature,
+                        proposal.value[i]
+                    );
 
                     isExecutingProposal = true;
                     // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
