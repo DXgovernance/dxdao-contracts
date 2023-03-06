@@ -6,7 +6,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
 
 /**
  * @dev This contract extends an ERC20 token with a snapshot mechanism. When a snapshot is created, the balances and
@@ -45,9 +44,9 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeCastUpgradeable.sol";
  */
 
 abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgradeable {
-    function __ERC20Snapshot_init() internal onlyInitializing {}
+    function __ERC20Snapshot_init() internal initializer {}
 
-    function __ERC20Snapshot_init_unchained() internal onlyInitializing {}
+    function __ERC20Snapshot_init_unchained() internal initializer {}
 
     // Inspired by Jordi Baylina's MiniMeToken to record historical balances:
     // https://github.com/Giveth/minime/blob/ea04d950eea153a04c51fa510b068b9dded390cb/contracts/MiniMeToken.sol
@@ -145,10 +144,7 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
         }
 
         _accountBalanceSnapshots[modifiedAccount].push(
-            SnapshotData({
-                id: SafeCastUpgradeable.toUint80(currentId),
-                value: SafeCastUpgradeable.toUint176(balanceOf(modifiedAccount))
-            })
+            SnapshotData({id: toUint80(currentId), value: toUint176(balanceOf(modifiedAccount))})
         );
         _totalSupplySnapshots[currentId] = totalSupply();
     }
@@ -229,5 +225,17 @@ abstract contract OptimizedERC20SnapshotUpgradeable is Initializable, ERC20Upgra
             mstore(0, snapshot.slot)
             result.slot := add(keccak256(0, 0x20), pos)
         }
+    }
+
+    /// @dev See https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/v4.8.1/contracts/utils/math/SafeCastUpgradeable.sol
+    function toUint80(uint256 value) internal pure returns (uint80) {
+        require(value <= type(uint80).max, "SafeCast: value doesn't fit in 80 bits");
+        return uint80(value);
+    }
+
+    /// @dev See https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/v4.8.1/contracts/utils/math/SafeCastUpgradeable.sol
+    function toUint176(uint256 value) internal pure returns (uint176) {
+        require(value <= type(uint176).max, "SafeCast: value doesn't fit in 176 bits");
+        return uint176(value);
     }
 }

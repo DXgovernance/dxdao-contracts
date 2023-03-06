@@ -85,7 +85,7 @@
   "dependencies": {
     "@maticnetwork/eth-decoder": "^0.0.4",
     "@openzeppelin/contracts": "4.4.0",
-    "@openzeppelin/contracts-upgradeable": "^4.8.1",
+    "@openzeppelin/contracts-upgradeable": "4.4.0",
     "@openzeppelin/test-helpers": "^0.5.15",
     "@prb/math": "^3.1.0",
     "@truffle/hdwallet-provider": "^1.4.0",
