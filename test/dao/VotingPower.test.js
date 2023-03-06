@@ -107,7 +107,7 @@ contract("VotingPower", function (accounts) {
     await Promise.all(
       stakeHolders.map(({ account, amount }) =>
         mintApproveStake(account, amount)
-      )
+      ) //eslint-disable-line
     );
     await repToken.mintMultiple(
       repHolders.map(v => v.account),
