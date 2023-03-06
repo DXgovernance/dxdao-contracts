@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./AccountSnapshot.sol";
 import "../utils/ERC20/ERC20SnapshotRep.sol";
 
+// solhint-disable max-line-length
 /**
  * @title VotingPower
  * @dev This contract provides a function to determine the balance (or voting power) of a specific holder based
@@ -14,6 +15,8 @@ import "../utils/ERC20/ERC20SnapshotRep.sol";
  *      Additionally, the contract sets a minimum requirement for the amount of DXDInfluence tokens that must be locked
  *      in order to apply weight to the DXDInfluence token.
  */
+
+// solhint-enable max-line-length
 contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     /// @notice The reputation token that will be used as source of voting power
     address public reputation;
@@ -32,6 +35,8 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     //      tokenAddress     Internal snapshot  => token snapshot
     mapping(uint256 => TokensSnapshot) public snapshots;
 
+    string public name;
+    string public symbol;
     uint256 public constant decimals = 18;
     uint256 public constant precision = 10**decimals;
 
@@ -64,6 +69,8 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     }
 
     function initialize(
+        string memory _name,
+        string memory _symbol,
         address _reputation,
         address _dxdInfluence,
         uint256 repWeight,
@@ -77,6 +84,8 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
         }
         reputation = _reputation;
         influence = _dxdInfluence;
+        name = _name;
+        symbol = _symbol;
         setMinStakingTokensLocked(_minStakingTokensLocked);
         setComposition(repWeight, stakingWeight);
     }

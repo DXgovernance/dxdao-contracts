@@ -19,7 +19,6 @@ contract("VotingPower", function (accounts) {
   let precision;
   let dxd;
   let dxdInfluence;
-  let decimals;
   const repTokenWeight = 50;
   const stakeTokenWeight = 50;
   const minStakingTokensLocked = 100;
@@ -92,6 +91,8 @@ contract("VotingPower", function (accounts) {
     );
 
     await vpToken.initialize(
+      "Voting Power Token", // name
+      "VPT", // symbol
       config.repTokenAddress || repToken.address,
       config.dxdInfluence || dxdInfluence.address,
       config.repWeight || repTokenWeight,
@@ -100,7 +101,6 @@ contract("VotingPower", function (accounts) {
     );
 
     precision = bn(await vpToken.precision());
-    decimals = bn(await vpToken.decimals());
   };
 
   const mintAll = async () => {
@@ -127,7 +127,15 @@ contract("VotingPower", function (accounts) {
     it("Should not initialize 2 times", async () => {
       await deployVpToken();
       await expectRevert(
-        vpToken.initialize(repToken.address, dxdStake.address, 50, 50, 100),
+        vpToken.initialize(
+          "Voting Power Token", // name
+          "VPT", // symbol,
+          repToken.address,
+          dxdStake.address,
+          50,
+          50,
+          100
+        ),
         "Initializable: contract is already initialized"
       );
     });
@@ -144,6 +152,8 @@ contract("VotingPower", function (accounts) {
 
       await expectRevert(
         vpToken.initialize(
+          "Voting Power Token", // name
+          "VPT", // symbol
           dxdInfluence.address,
           dxdInfluence.address,
           repTokenWeight,

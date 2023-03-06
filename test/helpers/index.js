@@ -142,6 +142,8 @@ export const deployDaoV2 = async function (config) {
   );
 
   await votingPowerToken.initialize(
+    "Voting Power Token",
+    "VPT",
     reputation.address,
     dxdInfluence.address,
     deployConfig.repTokenWeight,
