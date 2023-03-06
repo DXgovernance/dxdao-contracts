@@ -27,6 +27,7 @@ contract Create2HashedInitializeCallDeployer {
             }
         }
 
-        addr.call{value: 0}(initializeCallData);
+        (bool success, ) = addr.call{value: 0}(initializeCallData);
+        require(success, "Create2HashedInitializeCallDeployer: initializeCallData failed");
     }
 }

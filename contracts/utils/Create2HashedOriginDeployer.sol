@@ -29,7 +29,8 @@ contract Create2HashedOriginDeployer {
         }
 
         if (initializeCallData.length > 0) {
-            addr.call{value: 0}(initializeCallData);
+            (bool success, ) = addr.call{value: 0}(initializeCallData);
+            require(success, "Create2HashedOriginDeployer: initializeCallData failed");
         }
     }
 }
