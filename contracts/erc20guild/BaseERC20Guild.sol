@@ -92,7 +92,7 @@ contract BaseERC20Guild {
     uint256 public totalProposals;
 
     // The total amount of members that have voting power
-    uint256 totalMembers;
+    uint256 public totalMembers;
 
     // The amount of active proposals
     uint256 public activeProposalsNow;
