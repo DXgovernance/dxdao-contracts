@@ -21,10 +21,10 @@ import "./Create2HashedInitializeCallDeployer.sol";
 contract Create2Deployer {
     event Deployed(address addr, bytes32 bytecodeHash, uint256 salt, uint256 deploymentType);
 
-    Create2HashedSaltDeployer public hashedSaltDeployer;
-    Create2HashedSenderDeployer public hashedSenderDeployer;
-    Create2HashedOriginDeployer public hashedOriginDeployer;
-    Create2HashedInitializeCallDeployer public hashedInitializeCallDeployer;
+    Create2HashedSaltDeployer public immutable hashedSaltDeployer;
+    Create2HashedSenderDeployer public immutable hashedSenderDeployer;
+    Create2HashedOriginDeployer public immutable hashedOriginDeployer;
+    Create2HashedInitializeCallDeployer public immutable hashedInitializeCallDeployer;
 
     constructor() {
         hashedSaltDeployer = new Create2HashedSaltDeployer();

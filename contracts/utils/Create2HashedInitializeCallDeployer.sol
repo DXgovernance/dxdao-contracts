@@ -9,7 +9,7 @@ pragma solidity ^0.8.17;
     The contract deployed is the bytecode passed on the code parameter.
 */
 contract Create2HashedInitializeCallDeployer {
-    address public rootDeployer;
+    address public immutable rootDeployer;
 
     constructor() {
         rootDeployer = msg.sender;

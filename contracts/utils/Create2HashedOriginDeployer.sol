@@ -11,7 +11,7 @@ pragma solidity ^0.8.17;
     The contract can also be initialized with a call to the contract right after being deployed.
 */
 contract Create2HashedOriginDeployer {
-    address public rootDeployer;
+    address public immutable rootDeployer;
 
     constructor() {
         rootDeployer = msg.sender;
