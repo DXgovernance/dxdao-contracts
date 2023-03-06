@@ -474,6 +474,9 @@ contract BaseERC20Guild {
         }
     }
 
+    /// @dev Gets the current winning option for a given proposal. 
+    /// @param proposalId The id of the proposal to evaluate
+    /// @param highestVoteAmount The amounts of votes received by the currently winning proposal option.
     function getWinningOption(bytes32 proposalId)
         internal
         view
@@ -497,6 +500,8 @@ contract BaseERC20Guild {
         }
     }
 
+    /// @dev Gets function signature of the data bytes meant to be used in a proposal call.
+    /// @param data Bytes array containing the calldata (function signature followed by data).
     function getFunctionSignature(bytes storage data) internal view returns (bytes4 callDataFuncSignature) {
         uint8 lengthBit;
         assembly {
