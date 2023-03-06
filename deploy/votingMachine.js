@@ -32,4 +32,3 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
 module.exports.tags = ["VotingMachine"];
 module.exports.dependencies = ["DXDToken"];
-

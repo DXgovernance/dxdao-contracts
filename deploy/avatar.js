@@ -34,4 +34,3 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
 module.exports.tags = ["DAOAvatar"];
 module.exports.dependencies = ["Controller"];
-

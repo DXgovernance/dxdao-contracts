@@ -97,4 +97,3 @@ module.exports.dependencies = [
   "Controller",
   "PermissionRegistry",
 ];
-

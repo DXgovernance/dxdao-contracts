@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "../../utils/PermissionRegistry.sol";
 import "../DAOReputation.sol";
 import "../DAOAvatar.sol";
@@ -25,7 +26,7 @@ import "../votingMachine/VotingMachineCallbacks.sol";
  * Once the governance process ends on the voting machine the voting machine can execute the proposal winning option.
  * If the wining option cant be executed successfully, it can be finished without execution once the maxTimesForExecution time passes.
  */
-abstract contract Scheme is VotingMachineCallbacks {
+abstract contract Scheme is Initializable, VotingMachineCallbacks {
     using Address for address;
 
     enum ProposalState {
@@ -58,9 +59,6 @@ abstract contract Scheme is VotingMachineCallbacks {
     bool internal executingProposal;
 
     event ProposalStateChange(bytes32 indexed proposalId, uint256 indexed state);
-
-    /// @notice Emitted when its initialized twice
-    error Scheme__CannotInitTwice();
 
     /// @notice Emitted if avatar address is zero
     error Scheme__AvatarAddressCannotBeZero();
@@ -105,11 +103,7 @@ abstract contract Scheme is VotingMachineCallbacks {
         address permissionRegistryAddress,
         string calldata _schemeName,
         uint256 _maxRepPercentageChange
-    ) external {
-        if (address(avatar) != address(0)) {
-            revert Scheme__CannotInitTwice();
-        }
-
+    ) external initializer {
         if (avatarAddress == address(0)) {
             revert Scheme__AvatarAddressCannotBeZero();
         }
@@ -176,7 +170,8 @@ abstract contract Scheme is VotingMachineCallbacks {
     }
 
     /**
-     * @dev Execution of proposals, can only be called by the voting machine in which the vote is held.
+     * @dev Execute the proposal calls for the winning option,
+     * can only be called by the voting machine in which the vote is held.
      * @param proposalId The ID of the voting in the voting machine
      * @param winningOption The winning option in the voting machine
      * @return success Success of the execution
@@ -193,13 +188,18 @@ abstract contract Scheme is VotingMachineCallbacks {
         }
         executingProposal = true;
 
-        Proposal memory proposal = proposals[proposalId];
+        Proposal storage proposal = proposals[proposalId];
 
         if (proposal.state != ProposalState.Submitted) {
             revert Scheme__ProposalMustBeSubmitted();
         }
 
-        if (winningOption > 1) {
+        if (winningOption == 1) {
+            proposal.state = ProposalState.Rejected;
+            emit ProposalStateChange(proposalId, uint256(ProposalState.Rejected));
+        } else {
+            proposal.state = ProposalState.Passed;
+            emit ProposalStateChange(proposalId, uint256(ProposalState.Passed));
             uint256 oldRepSupply = getNativeReputationTotalSupply();
 
             permissionRegistry.setERC20Balances();
@@ -253,7 +253,8 @@ abstract contract Scheme is VotingMachineCallbacks {
     }
 
     /**
-     * @dev Finish a proposal and set the final state in storage
+     * @dev Finish a proposal and set the final state in storage without any execution.
+     * The only thing done here is a change in the proposal state in case the proposal was not executed.
      * @param proposalId The ID of the voting in the voting machine
      * @param winningOption The winning option in the voting machine
      * @return success Proposal finish successfully
@@ -265,18 +266,18 @@ abstract contract Scheme is VotingMachineCallbacks {
         returns (bool success)
     {
         Proposal storage proposal = proposals[proposalId];
-        if (proposal.state != ProposalState.Submitted) {
-            revert Scheme__ProposalMustBeSubmitted();
-        }
-
-        if (winningOption == 1) {
-            proposal.state = ProposalState.Rejected;
-            emit ProposalStateChange(proposalId, uint256(ProposalState.Rejected));
+        if (proposal.state == ProposalState.Submitted) {
+            if (winningOption == 1) {
+                proposal.state = ProposalState.Rejected;
+                emit ProposalStateChange(proposalId, uint256(ProposalState.Rejected));
+            } else {
+                proposal.state = ProposalState.Passed;
+                emit ProposalStateChange(proposalId, uint256(ProposalState.Passed));
+            }
+            return true;
         } else {
-            proposal.state = ProposalState.Passed;
-            emit ProposalStateChange(proposalId, uint256(ProposalState.Passed));
+            return false;
         }
-        return true;
     }
 
     /**

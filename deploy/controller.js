@@ -74,4 +74,3 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
 module.exports.tags = ["Controller"];
 module.exports.dependencies = ["DAOReputation", "VotingMachine"];
-

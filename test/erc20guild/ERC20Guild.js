@@ -1614,10 +1614,7 @@ contract("ERC20Guild", function (accounts) {
         guild: erc20Guild,
         options: [
           {
-            to: [
-              permissionRegistry.address,
-              testToken.address,
-            ],
+            to: [permissionRegistry.address, testToken.address],
             data: [
               await new web3.eth.Contract(PermissionRegistry.abi).methods
                 .executeUpdateERC20Limit(erc20Guild.address, 0)
@@ -1932,7 +1929,7 @@ contract("ERC20Guild", function (accounts) {
         newState: "3",
       });
 
-      await testToken.transfer(erc20Guild.address, 250, {from: accounts[3]});
+      await testToken.transfer(erc20Guild.address, 250, { from: accounts[3] });
       guildProposalId = await createProposal({
         guild: erc20Guild,
         options: [
@@ -2731,16 +2728,28 @@ contract("ERC20Guild", function (accounts) {
         // send tokens to voter contract
         const tokenVault = await erc20Guild.getTokenVault();
         await guildToken.mint(actionMockA.address, 10000);
-        const approveData = await new web3.eth.Contract(ERC20Mock.abi).methods.approve(tokenVault, 10000).encodeABI();
+        const approveData = await new web3.eth.Contract(ERC20Mock.abi).methods
+          .approve(tokenVault, 10000)
+          .encodeABI();
         await actionMockA.executeCall(guildToken.address, approveData, 0);
-        const lockTockensData = await new web3.eth.Contract(ERC20Guild.abi).methods.lockTokens(10000).encodeABI();
+        const lockTockensData = await new web3.eth.Contract(
+          ERC20Guild.abi
+        ).methods
+          .lockTokens(10000)
+          .encodeABI();
         await actionMockA.executeCall(erc20Guild.address, lockTockensData, 0);
 
         let guildBalance = await guildTracker.delta();
         guildBalance.should.be.bignumber.equal(ether("10"));
         const tracker = await balance.tracker(actionMockA.address);
-        const setVoteData = await new web3.eth.Contract(ERC20Guild.abi).methods.setVote(guildProposalId, 1, 100).encodeABI();
-        const txVote = await actionMockA.executeCall(erc20Guild.address, setVoteData, 0, {
+        const setVoteData = await new web3.eth.Contract(ERC20Guild.abi).methods
+          .setVote(guildProposalId, 1, 100)
+          .encodeABI();
+        const txVote = await actionMockA.executeCall(
+          erc20Guild.address,
+          setVoteData,
+          0,
+          {
             from: accounts[2],
             gasPrice: REAL_GAS_PRICE,
           }
@@ -2761,7 +2770,9 @@ contract("ERC20Guild", function (accounts) {
             VOTE_GAS.mul(MAX_GAS_PRICE).neg()
           );
           let accounts1Balance = await tracker.delta();
-          accounts1Balance.should.be.bignumber.equal(VOTE_GAS.mul(MAX_GAS_PRICE));
+          accounts1Balance.should.be.bignumber.equal(
+            VOTE_GAS.mul(MAX_GAS_PRICE)
+          );
         }
       });
 

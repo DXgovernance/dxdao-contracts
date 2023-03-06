@@ -17,7 +17,6 @@ contract DAOController is Initializable {
 
     struct Scheme {
         bytes32 paramsHash; // a hash voting parameters of the scheme
-        bool isRegistered;
         bool canManageSchemes;
         bool canMakeAvatarCalls;
         bool canChangeReputation;
@@ -61,19 +60,15 @@ contract DAOController is Initializable {
     /// @notice Cannot unregister last scheme with manage schemes permission
     error DAOController__CannotUnregisterLastSchemeWithManageSchemesPermission();
 
+    /// @notice Cannot register a scheme with paramsHash 0
+    error DAOController__CannotRegisterSchemeWithNullParamsHash();
+
     /// @notice Sender is not the scheme that originally started the proposal
     error DAOController__SenderIsNotTheProposer();
 
     /// @notice Sender is not a registered scheme or proposal is not active
     error DAOController__SenderIsNotRegisteredOrProposalIsInactive();
 
-    /// @dev Verify if scheme is registered
-    modifier onlyRegisteredScheme() {
-        if (!schemes[msg.sender].isRegistered) {
-            revert DAOController__SenderNotRegistered();
-        }
-        _;
-    }
     /// @dev Verify if scheme can manage schemes
     modifier onlyRegisteringSchemes() {
         if (!schemes[msg.sender].canManageSchemes) {
@@ -111,7 +106,6 @@ contract DAOController is Initializable {
     ) public initializer {
         schemes[scheme] = Scheme({
             paramsHash: paramsHash,
-            isRegistered: true,
             canManageSchemes: true,
             canMakeAvatarCalls: true,
             canChangeReputation: true
@@ -135,11 +129,15 @@ contract DAOController is Initializable {
         bool canManageSchemes,
         bool canMakeAvatarCalls,
         bool canChangeReputation
-    ) external onlyRegisteredScheme onlyRegisteringSchemes returns (bool success) {
+    ) external onlyRegisteringSchemes returns (bool success) {
         Scheme memory scheme = schemes[schemeAddress];
 
+        if (paramsHash == bytes32(0)) {
+            revert DAOController__CannotRegisterSchemeWithNullParamsHash();
+        }
+
         // Add or change the scheme:
-        if ((!scheme.isRegistered || !scheme.canManageSchemes) && canManageSchemes) {
+        if (!scheme.canManageSchemes && canManageSchemes) {
             schemesWithManageSchemesPermission = schemesWithManageSchemesPermission + 1;
         } else if (scheme.canManageSchemes && !canManageSchemes) {
             if (schemesWithManageSchemesPermission <= 1) {
@@ -150,7 +148,6 @@ contract DAOController is Initializable {
 
         schemes[schemeAddress] = Scheme({
             paramsHash: paramsHash,
-            isRegistered: true,
             canManageSchemes: canManageSchemes,
             canMakeAvatarCalls: canMakeAvatarCalls,
             canChangeReputation: canChangeReputation
@@ -166,16 +163,11 @@ contract DAOController is Initializable {
      * @param schemeAddress The address of the scheme to unregister/delete from `schemes` mapping
      * @return success Success of the operation
      */
-    function unregisterScheme(address schemeAddress)
-        external
-        onlyRegisteredScheme
-        onlyRegisteringSchemes
-        returns (bool success)
-    {
+    function unregisterScheme(address schemeAddress) external onlyRegisteringSchemes returns (bool success) {
         Scheme memory scheme = schemes[schemeAddress];
 
         //check if the scheme is registered
-        if (_isSchemeRegistered(schemeAddress) == false) {
+        if (scheme.paramsHash == bytes32(0)) {
             return false;
         }
 
@@ -206,7 +198,7 @@ contract DAOController is Initializable {
         bytes calldata data,
         DAOAvatar avatar,
         uint256 value
-    ) external onlyRegisteredScheme onlyAvatarCallScheme returns (bool callSuccess, bytes memory callData) {
+    ) external onlyAvatarCallScheme returns (bool callSuccess, bytes memory callData) {
         return avatar.executeCall(to, data, value);
     }
 
@@ -241,15 +233,6 @@ contract DAOController is Initializable {
         onlyChangingReputation
     {
         reputationToken.transferOwnership(newOwner);
-    }
-
-    /**
-     * @dev Returns whether a scheme is registered or not
-     * @param scheme The address of the scheme
-     * @return isRegistered Whether a scheme is registered or not
-     */
-    function isSchemeRegistered(address scheme) external view returns (bool isRegistered) {
-        return _isSchemeRegistered(scheme);
     }
 
     /**
@@ -298,10 +281,6 @@ contract DAOController is Initializable {
         returns (uint256 schemesWithManageSchemesPermissionCount)
     {
         return schemesWithManageSchemesPermission;
-    }
-
-    function _isSchemeRegistered(address scheme) private view returns (bool) {
-        return (schemes[scheme].isRegistered);
     }
 
     /**

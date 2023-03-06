@@ -9,4 +9,3 @@ module.exports = async () => {
 };
 
 module.exports.tags = ["AdvanceTime"];
-

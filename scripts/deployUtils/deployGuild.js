@@ -84,7 +84,7 @@ module.exports.deploySnapshotRepGuild = config => async hre => {
     permissionRegistry.address
   );
 
-    // mint rep
+  // mint rep
   for (let { address, amount } of config.initialRepHolders) {
     await repToken.mint(address, hre.web3.utils.toWei(amount));
   }
@@ -123,4 +123,3 @@ module.exports.deploySnapshotRepGuild = config => async hre => {
 
   console.log(`${config.GUILD_ID} address ${guild.address}`);
 };
-

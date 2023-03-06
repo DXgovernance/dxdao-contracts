@@ -39,4 +39,3 @@ module.exports.dependencies = [
 ];
 module.exports.tags = [config.GUILD_ID];
 module.exports.config = config;
-
