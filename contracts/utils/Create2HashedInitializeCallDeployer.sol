@@ -17,7 +17,7 @@ contract Create2HashedInitializeCallDeployer {
 
     function deploy(bytes memory code, bytes memory initializeCallData) public returns (address addr) {
         require(msg.sender == rootDeployer, "Create2HashedInitializeCallDeployer: Only rootDeployer owner can deploy");
-        require(initializeCallData.length > 0, "Create2HashedInitializeCallDeployer: initializeCallData cant be 0x0");
+        require(initializeCallData.length > 0, "Create2HashedInitializeCallDeployer: initializeCallData cant be 0x");
 
         uint256 salt = uint256(keccak256(abi.encodePacked(initializeCallData)));
         assembly {
