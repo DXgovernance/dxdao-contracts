@@ -167,6 +167,43 @@ contract DXDInfluence is OwnableUpgradeable, AccountSnapshot {
     }
 
     /**
+     * @dev Mints influence tokens according to the amount staked and takes a snapshot. The influence value
+     * is not stored, only the linear and exponential terms of the formula are updated, which are then used
+     * to compute the influence on the fly in the balance getter.
+     * @param _account Account that has staked the tokens.
+     * @param _to Account that has staked the tokens.
+     * @param _amount Amount of tokens to have been staked.
+     * @param _timeCommitment Time that the user commits to lock the tokens.
+     */
+    function transfer(
+        address _account,
+        address _to,
+        uint256 _amount,
+        uint256 _timeCommitment
+    ) external onlyOwner {
+        CumulativeStake storage lastCumulativeStake = cumulativeStakesSnapshots[_account][_lastSnapshotId(_account)];
+        CumulativeStake storage lastToCumulativeStake = cumulativeStakesSnapshots[_to][_lastSnapshotId(_account)];
+        uint256 currentSnapshotId = _snapshot(_account);
+
+        (uint256 linearTerm, uint256 exponentialTerm) = getFormulaTerms(_amount, _timeCommitment);
+
+        // Update account's stake data
+        CumulativeStake storage cumulativeStake = cumulativeStakesSnapshots[_account][currentSnapshotId];
+        cumulativeStake.linearTerm = lastCumulativeStake.linearTerm - linearTerm;
+        cumulativeStake.exponentialTerm = lastCumulativeStake.exponentialTerm - exponentialTerm;
+        // Update recipients stake data
+        CumulativeStake storage toCumulativeStake = cumulativeStakesSnapshots[_to][currentSnapshotId];
+        toCumulativeStake.linearTerm = lastToCumulativeStake.linearTerm + linearTerm;
+        toCumulativeStake.exponentialTerm = lastToCumulativeStake.exponentialTerm + exponentialTerm;
+
+        // Update global stake data
+        _totalInfluenceSnapshots[currentSnapshotId] = _totalInfluenceSnapshots[currentSnapshotId - 1];
+
+        // Notify Voting Power contract.
+        votingPower.callback();
+    }
+
+    /**
      * @dev Updates the time a given amount of DXD was staked for and takes a snapshot. The influence value
      * is not stored, only the linear and exponential terms of the formula are updated, which are then used
      * to compute the influence on the fly in the balance getter.
