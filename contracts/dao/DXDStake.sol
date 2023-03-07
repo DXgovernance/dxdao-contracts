@@ -155,15 +155,14 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
 
     /**
      * @dev Withdraws the tokens to the user.
-     * @param _account Account that has staked.
      * @param _commitmentId Id of the commitment. The Id is an incremental variable for each account.
      */
-    function withdraw(address _account, uint256 _commitmentId) external {
-        StakeCommitment storage stakeCommitment = stakeCommitments[_account][_commitmentId];
+    function withdraw(uint256 _commitmentId) external {
+        StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender][_commitmentId];
         require(stakeCommitment.commitmentEnd != 0, "DXDStake: commitment id does not exist");
         require(block.timestamp > stakeCommitment.commitmentEnd, "DXDStake: withdrawal not allowed");
 
-        _withdraw(stakeCommitment, _account);
+        _withdraw(stakeCommitment, msg.sender);
     }
 
     /**

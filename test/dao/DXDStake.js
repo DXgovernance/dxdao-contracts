@@ -164,15 +164,15 @@ contract("DXD staking and DXD influence", async accounts => {
       assert.equal(stDXDBalance1.toString(), new BN(amount * 3).toString());
 
       await expectRevert(
-        dxdStake.withdraw(dxdHolder, 1, { from: notTheOwner }),
+        dxdStake.withdraw(1, { from: dxdHolder }),
         "DXDStake: withdrawal not allowed"
       );
 
       await time.increase(time.duration.seconds(timeCommitment));
-      await dxdStake.withdraw(dxdHolder, 0, { from: notTheOwner });
+      await dxdStake.withdraw(0, { from: dxdHolder });
 
       await time.increase(time.duration.seconds(timeCommitment));
-      await dxdStake.withdraw(dxdHolder, 1, { from: dxdHolder });
+      await dxdStake.withdraw(1, { from: dxdHolder });
 
       const stDXDBalance2 = await dxdStake.balanceOf(dxdHolder);
       const DXDBalance2 = await dxd.balanceOf(dxdHolder);
@@ -199,15 +199,15 @@ contract("DXD staking and DXD influence", async accounts => {
       assert.equal(stDXDBalance1.toString(), new BN(amount * 3).toString());
 
       await expectRevert(
-        dxdStake.withdraw(dxdHolder, 1, { from: notTheOwner }),
+        dxdStake.withdraw(1, { from: dxdHolder }),
         "DXDStake: withdrawal not allowed"
       );
 
       await time.increase(time.duration.seconds(timeCommitment));
-      await dxdStake.withdraw(dxdHolder, 0, { from: notTheOwner });
+      await dxdStake.withdraw(0, { from: dxdHolder });
 
       await expectRevert(
-        dxdStake.withdraw(dxdHolder, 0, { from: notTheOwner }),
+        dxdStake.withdraw(0, { from: dxdHolder }),
         "DXDStake: commitment id does not exist"
       );
     });
@@ -269,7 +269,7 @@ contract("DXD staking and DXD influence", async accounts => {
       assert.equal(stDXDBalance1.toString(), new BN(amount * 3).toString());
 
       await expectRevert(
-        dxdStake.withdraw(dxdHolder, 1, { from: notTheOwner }),
+        dxdStake.withdraw(1, { from: dxdHolder }),
         "DXDStake: withdrawal not allowed"
       );
       await expectRevert(
@@ -480,7 +480,7 @@ contract("DXD staking and DXD influence", async accounts => {
       await dxdStake.stake(amount, timeCommitment, { from: dxdHolder });
 
       await time.increase(time.duration.seconds(timeCommitment));
-      await dxdStake.withdraw(dxdHolder, 0, { from: notTheOwner });
+      await dxdStake.withdraw(0, { from: dxdHolder });
 
       const influenceBalance = await dxdInfluence.balanceOf(dxdHolder);
       const totalInfluenceBalance = await dxdInfluence.totalSupply();
