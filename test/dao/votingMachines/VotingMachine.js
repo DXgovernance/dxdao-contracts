@@ -60,10 +60,10 @@ contract("VotingMachine", function (accounts) {
       owner: accounts[0],
       votingMachineToken: stakingToken.address,
       repHolders: [
-        { address: accounts[0], amount: 10000 },
-        { address: accounts[1], amount: 10000 },
-        { address: accounts[2], amount: 10000 },
-        { address: accounts[3], amount: 70000 },
+        { address: accounts[0], amount: { dxd: 10000, rep: 10000 } },
+        { address: accounts[1], amount: { dxd: 10000, rep: 10000 } },
+        { address: accounts[2], amount: { dxd: 10000, rep: 10000 } },
+        { address: accounts[3], amount: { dxd: 70000, rep: 70000 } },
       ],
     });
 

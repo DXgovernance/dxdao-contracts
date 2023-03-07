@@ -49,9 +49,9 @@ contract("DXDGuild", function (accounts) {
       owner: accounts[0],
       votingMachineToken: votingMachineToken.address,
       repHolders: [
-        { address: accounts[0], amount: 20 },
-        { address: accounts[1], amount: 10 },
-        { address: dxdGuild.address, amount: 70 },
+        { address: accounts[0], amount: { dxd: 20, rep: 20 } },
+        { address: accounts[1], amount: { dxd: 10, rep: 10 } },
+        { address: dxdGuild.address, amount: { dxd: 70, rep: 70 } },
       ],
     });
 
