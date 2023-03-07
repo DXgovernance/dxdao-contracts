@@ -28,9 +28,9 @@ contract("DXdao", function (accounts) {
       owner: accounts[0],
       votingMachineToken: votingMachineToken.address,
       repHolders: [
-        { address: accounts[0], amount: 20 },
-        { address: accounts[1], amount: 10 },
-        { address: accounts[2], amount: 70 },
+        { address: accounts[0], amount: { dxd: 20, rep: 20 } },
+        { address: accounts[1], amount: { dxd: 10, rep: 10 } },
+        { address: accounts[2], amount: { dxd: 70, rep: 70 } },
       ],
     });
 

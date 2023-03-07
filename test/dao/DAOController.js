@@ -11,9 +11,9 @@ contract("DAOController", function (accounts) {
   beforeEach(async function () {
     actionMock = await ActionMock.new();
     repHolders = [
-      { address: accounts[0], amount: 20000 },
-      { address: accounts[1], amount: 10000 },
-      { address: accounts[2], amount: 70000 },
+      { address: accounts[0], amount: { dxd: 20000, rep: 20000 } },
+      { address: accounts[1], amount: { dxd: 10000, rep: 10000 } },
+      { address: accounts[2], amount: { dxd: 70000, rep: 70000 } },
     ];
 
     const org = await helpers.deployDaoV2({

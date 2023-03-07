@@ -102,22 +102,25 @@ export const deployDaoV2 = async function (config) {
     config
   );
 
+  // contract instances
   const reputation = await DAOReputation.new();
-
   const dxdStake = await DXDStake.new();
   const dxdInfluence = await DXDInfluence.new();
-
   const dxd = await ERC20Mock.new(
     "DXD Token",
     "DXD",
     web3.utils.toWei("10000", "ether"),
     deployConfig.owner
   );
-
   const votingPowerToken = await VotingPower.new({ from: deployConfig.owner });
+  const controller = await DAOController.new();
+  const avatar = await DAOAvatar.new();
+  const votingMachine = await VotingMachine.new(
+    deployConfig.votingMachineToken
+  );
 
+  // Initialize contracts
   await reputation.initialize("Reputation", "REP", votingPowerToken.address);
-
   await dxdStake.initialize(
     dxd.address,
     dxdInfluence.address,
@@ -129,7 +132,6 @@ export const deployDaoV2 = async function (config) {
       from: deployConfig.owner,
     }
   );
-
   await dxdInfluence.initialize(
     dxdStake.address,
     votingPowerToken.address,
@@ -140,7 +142,6 @@ export const deployDaoV2 = async function (config) {
       from: deployConfig.owner,
     }
   );
-
   await votingPowerToken.initialize(
     "Voting Power Token",
     "VPT",
@@ -151,27 +152,30 @@ export const deployDaoV2 = async function (config) {
     deployConfig.minStakingTokensLocked
   );
 
-  const controller = await DAOController.new();
-  const avatar = await DAOAvatar.new();
   await avatar.initialize(controller.address);
 
+  const mintApproveStake = async (account, amount) => {
+    await dxd.mint(account, amount);
+    await dxd.approve(dxdStake.address, amount, { from: account });
+    await dxdStake.stake(amount, 100, {
+      from: account,
+    });
+  };
+
+  // Mint rep / stake dxd for initial holders
   for (let i = 0; i < deployConfig.repHolders.length; i++) {
     const addressI = deployConfig.repHolders[i].address;
-    const amountI = deployConfig.repHolders[i].amount;
-    await reputation.mint(addressI, amountI);
-    await dxd.mint(addressI, amountI);
-    await dxd.approve(dxdStake.address, amountI, {
-      from: deployConfig.repHolders[i].address,
-    });
-    await dxdStake.stake(amountI, 25, {
-      from: deployConfig.repHolders[i].address,
-    });
+    const repAmount = deployConfig.repHolders[i].amount.rep;
+    const dxdAmount = deployConfig.repHolders[i].amount.dxd;
+    await reputation.mint(addressI, repAmount);
+    if (dxdAmount) {
+      await mintApproveStake(addressI, dxdAmount);
+    }
   }
-  await reputation.transferOwnership(controller.address);
 
-  const votingMachine = await VotingMachine.new(
-    deployConfig.votingMachineToken
-  );
+  await reputation.transferOwnership(controller.address);
+  // Transfer votingPower ownership to avatar
+  await votingPowerToken.transferOwnership(avatar.address);
 
   const defaultParamsHash = await setDefaultParameters(votingMachine);
 
@@ -190,6 +194,9 @@ export const deployDaoV2 = async function (config) {
     dxdInfluence,
     votingPowerToken,
     defaultParamsHash,
+    holders: deployConfig.repHolders,
+    mintApproveStake,
+    deployConfig,
   };
 };
 
