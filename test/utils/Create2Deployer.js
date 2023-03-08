@@ -1,5 +1,6 @@
-import { constants, expectRevert } from "@openzeppelin/test-helpers";
+import { expectRevert } from "@openzeppelin/test-helpers";
 import { assert } from "chai";
+import { constants } from "../helpers";
 
 const DAOAvatar = artifacts.require("./DAOAvatar.sol");
 const Create2Deployer = artifacts.require("./Create2Deployer.sol");
@@ -8,11 +9,10 @@ const ActionMock = artifacts.require("./ActionMock.sol");
 contract("Create2Deployer", function (accounts) {
   let create2Deployer;
   before(async () => {
-    create2Deployer = await Create2Deployer.at(
-      (
-        await hre.run("create2DeployerDeploy")
-      ).contractAddress
-    );
+    if ((await web3.eth.getCode(constants.CREATE2_DEPLOYER)) === "0x") {
+      await hre.run("create2DeployerDeploy");
+    }
+    create2Deployer = await Create2Deployer.at(constants.CREATE2_DEPLOYER);
   });
 
   it("Deploy same contract with initializeCall using all deployment methods", async () => {

@@ -4,6 +4,7 @@ const constants = require("./constants");
 
 const { LogDecoder } = require("@maticnetwork/eth-decoder");
 
+const Create2Deployer = artifacts.require("./Create2Deployer.sol");
 const DAOAvatar = artifacts.require("./DAOAvatar.sol");
 const DAOController = artifacts.require("./DAOController.sol");
 const DAOReputation = artifacts.require("./DAOReputation.sol");
@@ -56,6 +57,43 @@ export function getValueFromLogs(tx, arg, eventName, index = 0) {
   }
   return result;
 }
+
+export const deployContractWithCreate2 = async function (
+  contractToDeploy,
+  salt = "0x",
+  initilizerCallData = "0x"
+) {
+  if ((await web3.eth.getCode(constants.CREATE2_DEPLOYER)) === "0x") {
+    await hre.run("create2DeployerDeploy");
+  }
+  const create2Deployer = await Create2Deployer.at(constants.CREATE2_DEPLOYER);
+  let newContractAddress;
+
+  if (salt !== "0x") {
+    newContractAddress = await create2Deployer.getHashedSaltDeployAddress(
+      contractToDeploy.bytecode,
+      salt
+    );
+
+    await create2Deployer.deployWithHashedSalt(
+      contractToDeploy.bytecode,
+      initilizerCallData,
+      salt
+    );
+  } else {
+    newContractAddress =
+      await create2Deployer.getHashedInitializeCallDeployAddress(
+        contractToDeploy.bytecode,
+        initilizerCallData
+      );
+    await create2Deployer.deployWithHashedInitializeCall(
+      contractToDeploy.bytecode,
+      initilizerCallData
+    );
+  }
+
+  return await contractToDeploy.at(newContractAddress);
+};
 
 export const deployDao = async function (deployConfig) {
   const reputation = await DAOReputation.new();
@@ -251,6 +289,15 @@ export function customErrorMessageExistInRawLogs(
       return rawLog.data.includes(encodedErrorSignature);
     })
   );
+}
+
+export function multiplyRealMath(realA, realB) {
+  const BN = web3.utils.BN;
+  let res = new BN(realA).mul(new BN(realB));
+  if (!res.div(new BN(realA)).eq(new BN(realB))) {
+    throw new Error("RealMath mul overflow");
+  }
+  return res.ushrn(40);
 }
 
 export { constants };

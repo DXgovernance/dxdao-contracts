@@ -300,10 +300,6 @@ contract("WalletScheme", function (accounts) {
     assert.deepEqual(organizationProposal1.value, ["0", "0", "0"]);
 
     assert.equal(
-      await org.controller.isSchemeRegistered(newWalletScheme.address),
-      true
-    );
-    assert.equal(
       await org.controller.getSchemeParameters(newWalletScheme.address),
       defaultParamsHash
     );
@@ -316,10 +312,6 @@ contract("WalletScheme", function (accounts) {
       false
     );
 
-    assert.equal(
-      await org.controller.isSchemeRegistered(quickWalletScheme.address),
-      false
-    );
     assert.equal(
       await org.controller.getSchemeParameters(quickWalletScheme.address),
       "0x0000000000000000000000000000000000000000000000000000000000000000"
@@ -335,10 +327,6 @@ contract("WalletScheme", function (accounts) {
       false
     );
 
-    assert.equal(
-      await org.controller.isSchemeRegistered(masterWalletScheme.address),
-      true
-    );
     assert.equal(
       await org.controller.getSchemeParameters(masterWalletScheme.address),
       newParamsHash
@@ -1343,7 +1331,7 @@ contract("WalletScheme", function (accounts) {
         "Master Wallet",
         5
       ),
-      "Scheme__CannotInitTwice()"
+      "Initializable: contract is already initialized"
     );
   });
 

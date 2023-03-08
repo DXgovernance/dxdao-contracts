@@ -13,6 +13,8 @@ require("hardhat-dependency-compiler");
 require("hardhat-contract-sizer");
 require("solidity-docgen");
 require("hardhat-deploy");
+require("@typechain/hardhat");
+require("@nomiclabs/hardhat-ethers");
 
 require("./scripts/nanoUniversalDeployerDeploy");
 require("./scripts/keylessDeploy");
@@ -27,6 +29,17 @@ const moment = require("moment");
 
 const MNEMONIC_KEY =
   "cream core pear sure dinner indoor citizen divorce sudden captain subject remember";
+
+const VIAIR_COMPILER_SETUP = {
+  version: "0.8.17",
+  settings: {
+    viaIR: true,
+    optimizer: {
+      enabled: true,
+      runs: 200,
+    },
+  },
+};
 
 // # Accounts
 // # ========
@@ -128,6 +141,12 @@ const hardharNetworks = process.env.CI
         chainId: 421611,
         timeout: 60000,
       },
+      sepolia: {
+        url: "https://rpc.sepolia.dev",
+        accounts: { mnemonic: MNEMONIC },
+        chainId: 11155111,
+        timeout: 60000,
+      },
     };
 
 module.exports = {
@@ -143,6 +162,11 @@ module.exports = {
         },
       },
     ],
+    overrides: {
+      "contracts/erc20guild/implementations/ZodiacERC20Guild.sol":
+        VIAIR_COMPILER_SETUP,
+      "contracts/test/TestAvatar.sol": VIAIR_COMPILER_SETUP,
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS ? true : false,
@@ -168,10 +192,16 @@ module.exports = {
       "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
     ],
   },
-
+  typechain: {
+    outDir: "types",
+    target: "ethers-v5",
+    alwaysGenerateOverloads: false,
+  },
   namedAccounts: {
     deployer: 0,
     tokenHolder: 1,
+    tokenHolder2: 2,
+    tokenHolder3: 3,
   },
   deterministicDeployment: {
     1337: {
