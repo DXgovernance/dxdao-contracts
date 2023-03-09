@@ -216,6 +216,7 @@ export const deployDaoV2 = async function (config) {
     dxdInfluence,
     votingPowerToken,
     defaultParamsHash,
+    dxd,
   };
 };
 

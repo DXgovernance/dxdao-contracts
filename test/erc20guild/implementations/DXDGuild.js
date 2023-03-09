@@ -1,6 +1,7 @@
 import * as helpers from "../../helpers";
 const {
   createAndSetupGuildToken,
+  createProposal,
   setVotesOnProposal,
 } = require("../../helpers/guild");
 const {
@@ -15,6 +16,7 @@ const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 const ActionMock = artifacts.require("ActionMock.sol");
 const ERC20Mock = artifacts.require("ERC20Mock.sol");
 const AvatarScheme = artifacts.require("AvatarScheme.sol");
+const DXDStake = artifacts.require("DXDStake.sol");
 
 require("chai").should();
 
@@ -50,7 +52,6 @@ contract("DXDGuild", function (accounts) {
       repHolders: [
         { address: accounts[0], amount: 20 },
         { address: accounts[1], amount: 10 },
-        { address: dxdGuild.address, amount: 70 },
       ],
     });
 
@@ -129,6 +130,37 @@ contract("DXDGuild", function (accounts) {
   });
 
   describe("DXDGuild", function () {
+    beforeEach(async function () {
+      const proposalId = await createProposal({
+        guild: dxdGuild,
+        options: [
+          {
+            to: [dxDao.dxd.address, dxDao.dxdStake.address],
+            data: [
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .approve(dxDao.dxdStake.address, 70)
+                .encodeABI(),
+              await new web3.eth.Contract(DXDStake.abi).methods
+                .stake(70, 25)
+                .encodeABI(),
+            ],
+            value: [0, 0],
+          },
+        ],
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: dxdGuild,
+        proposalId: proposalId,
+        option: 1,
+        account: accounts[1],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await dxdGuild.endProposal(proposalId);
+    });
+
     it("execute a positive vote on the voting machine from the dxd-guild", async function () {
       const positiveVoteData = web3.eth.abi.encodeFunctionCall(
         dxDao.votingMachine.abi.find(x => x.name === "vote"),
