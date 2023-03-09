@@ -38,6 +38,8 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
     /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal action
     // solhint-disable-next-line max-line-length
     /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // solhint-disable-next-line max-line-length
+    /// @param _votingPowerPercentageForInstantProposalExecution The percentage of voting power in base 10000 needed to execute a proposal option without  waiting for the proposal time to end. If set to 0, the feature is disabled.
     /// @param _name The name of the ERC20Guild
     /// @param _voteGas The amount of gas in wei unit used for vote refunds
     /// @param _maxGasPrice The maximum gas price used for vote refunds
@@ -52,6 +54,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         uint256 _timeForExecution,
         uint256 _votingPowerPercentageForProposalExecution,
         uint256 _votingPowerPercentageForProposalCreation,
+        uint256 _votingPowerPercentageForInstantProposalExecution,
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
@@ -67,6 +70,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
             _timeForExecution,
             _votingPowerPercentageForProposalExecution,
             _votingPowerPercentageForProposalCreation,
+            _votingPowerPercentageForInstantProposalExecution,
             _name,
             _voteGas,
             _maxGasPrice,
@@ -85,6 +89,8 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
     /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal option
     // solhint-disable-next-line max-line-length
     /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // solhint-disable-next-line max-line-length
+    /// @param _votingPowerPercentageForInstantProposalExecution The percentage of voting power in base 10000 needed to execute a proposal option without  waiting for the proposal time to end. If set to 0, the feature is disabled.
     /// @param _voteGas The amount of gas in wei unit used for vote refunds.
     // Can't be higher than the gas used by setVote (117000)
     /// @param _maxGasPrice The maximum gas price used for vote refunds
@@ -95,6 +101,7 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         uint256 _timeForExecution,
         uint256 _votingPowerPercentageForProposalExecution,
         uint256 _votingPowerPercentageForProposalCreation,
+        uint256 _votingPowerPercentageForInstantProposalExecution,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
@@ -109,11 +116,21 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
             _votingPowerPercentageForProposalExecution > 0,
             "ERC20Guild: voting power for execution has to be more than 0"
         );
+        require(
+            _votingPowerPercentageForInstantProposalExecution <= BASIS_POINT_MULTIPLIER,
+            "ERC20Guild: invalid votingPowerPercentageForInstantProposalExecution value"
+        );
+        require(
+            _votingPowerPercentageForInstantProposalExecution == 0 ||
+                _votingPowerPercentageForInstantProposalExecution >= BASIS_POINT_MULTIPLIER / 2,
+            "ERC20Guild: invalid votingPowerPercentageForInstantProposalExecution value"
+        );
         require(_voteGas <= 117000, "ERC20Guild: vote gas has to be equal or lower than 117000");
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerPercentageForProposalExecution = _votingPowerPercentageForProposalExecution;
         votingPowerPercentageForProposalCreation = _votingPowerPercentageForProposalCreation;
+        votingPowerPercentageForInstantProposalExecution = _votingPowerPercentageForInstantProposalExecution;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
@@ -154,13 +171,10 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
     /// @dev Executes a proposal that is not votable anymore and can be finished
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public override {
+        (uint256 winningOption, uint256 highestVoteAmount) = getWinningOption(proposalId);
+        checkProposalExecutionState(proposalId, highestVoteAmount);
+
         Proposal storage proposal = proposals[proposalId];
-        require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
-        require(proposal.state == ProposalState.Active, "ERC20Guild: Proposal already executed");
-        require(proposal.endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
-
-        uint256 winningOption = getWinningOption(proposal);
-
         if (winningOption == 0) {
             proposal.state = ProposalState.Rejected;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
@@ -209,23 +223,6 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         activeProposalsNow = activeProposalsNow - 1;
     }
 
-    function getWinningOption(Proposal storage _proposal) internal view returns (uint256 winningOption) {
-        uint256 highestVoteAmount = _proposal.totalVotes[0];
-        uint256 votingPowerForProposalExecution = getVotingPowerForProposalExecution();
-        uint256 totalOptions = _proposal.totalVotes.length;
-        for (uint256 i = 1; i < totalOptions; i++) {
-            uint256 totalVotesOptionI = _proposal.totalVotes[i];
-            if (totalVotesOptionI >= votingPowerForProposalExecution && totalVotesOptionI >= highestVoteAmount) {
-                if (totalVotesOptionI == highestVoteAmount) {
-                    winningOption = 0;
-                } else {
-                    winningOption = i;
-                    highestVoteAmount = totalVotesOptionI;
-                }
-            }
-        }
-    }
-
     function getProposalCallsRange(Proposal storage _proposal, uint256 _winningOption)
         internal
         view
@@ -234,24 +231,6 @@ contract ZodiacERC20Guild is ERC20GuildUpgradeable {
         uint256 callsPerOption = _proposal.to.length / (_proposal.totalVotes.length - 1);
         startCall = callsPerOption * (_winningOption - 1);
         endCall = startCall + callsPerOption;
-    }
-
-    function getFunctionSignature(bytes storage _data) internal view returns (bytes4 callDataFuncSignature) {
-        uint8 lengthBit;
-        assembly {
-            lengthBit := sload(_data.slot)
-            lengthBit := and(lengthBit, 0x01)
-            switch lengthBit
-            case 0 {
-                // Short bytes array. Data is stored together with length at slot.
-                callDataFuncSignature := sload(_data.slot)
-            }
-            case 1 {
-                //  Long bytes array. Data is stored at keccak256(slot).
-                mstore(0, _data.slot)
-                callDataFuncSignature := sload(keccak256(0, 32))
-            }
-        }
     }
 
     /// @dev Encodes permissionRegistry.checkERC20Limits(avatar)
