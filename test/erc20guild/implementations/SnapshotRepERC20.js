@@ -176,7 +176,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       option: 1,
       account: accounts[5],
     });
-
+    // eslint-disable-next-line max-len
     // It preserves the voting power needed for proposal execution using the totalSupply at the moment of the proposal creation
     assert.equal(
       await snapshotRepErc20Guild.getSnapshotVotingPowerForProposalExecution(
@@ -232,6 +232,24 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       const totalVotes2 = proposalData2.totalVotes;
       expect(parseInt(totalVotes2.toString())).to.be.equal(
         votingPower.toNumber()
+      );
+    });
+
+    it("cannot vote with 0 voting power amount with an account with voting power", async function () {
+      await expectRevert(
+        snapshotRepErc20Guild.setVote(proposalId, 1, 0, {
+          from: accounts[3],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
+    });
+
+    it("cannot vote with 0 voting power amount with an account without voting power", async function () {
+      await expectRevert(
+        snapshotRepErc20Guild.setVote(proposalId, 1, 0, {
+          from: accounts[9],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
       );
     });
 
@@ -305,7 +323,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
+        "SnapshotRepERC20Guild: Invalid votingPower amount"
       );
     });
 
@@ -329,7 +347,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotRepERC20Guild: Cannot change option voted, only increase votingPower"
+        "SnapshotRepERC20Guild: Cannot change option voted"
       );
     });
   });

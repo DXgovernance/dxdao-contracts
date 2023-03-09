@@ -339,6 +339,48 @@ contract("SnapshotERC20Guild", function (accounts) {
     });
   });
 
+  describe("setVote", () => {
+    it("cannot vote with 0 voting power amount with an account with voting power", async function () {
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [accounts[1]],
+            data: ["0x0"],
+            value: [1],
+          },
+        ],
+        account: accounts[2],
+      });
+      await expectRevert(
+        erc20Guild.setVote(guildProposalId, 1, 0, {
+          from: accounts[3],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
+    });
+
+    it("cannot vote with 0 voting power amount with an account without voting power", async function () {
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [accounts[1]],
+            data: ["0x0"],
+            value: [1],
+          },
+        ],
+        account: accounts[2],
+      });
+      await expectRevert(
+        erc20Guild.setVote(guildProposalId, 1, 0, {
+          from: accounts[9],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
+    });
+  });
+
   describe("votingPowerOfMultipleAt", () => {
     it("should revert if accounts and snapshotIds don't have the same length", async () => {
       await expectRevert(

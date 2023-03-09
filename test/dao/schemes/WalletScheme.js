@@ -7,6 +7,7 @@ const {
   expectEvent,
 } = require("@openzeppelin/test-helpers");
 
+const Create2Deployer = artifacts.require("./Create2Deployer.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
 const PermissionRegistry = artifacts.require("./PermissionRegistry.sol");
 const ERC20Mock = artifacts.require("./ERC20Mock.sol");
@@ -45,34 +46,48 @@ contract("WalletScheme", function (accounts) {
     permissionRegistry = await PermissionRegistry.new(accounts[0], 30);
     await permissionRegistry.initialize();
 
-    registrarScheme = await WalletScheme.new();
-    await registrarScheme.initialize(
-      org.avatar.address,
-      org.votingMachine.address,
-      org.controller.address,
-      permissionRegistry.address,
-      "Wallet Scheme Registrar",
-      0
+    const create2Deployer = await Create2Deployer.new();
+
+    registrarScheme = await helpers.deployContractWithCreate2(
+      create2Deployer,
+      WalletScheme,
+      web3.utils.keccak256("registrarScheme1"),
+      [
+        org.avatar.address,
+        org.votingMachine.address,
+        org.controller.address,
+        permissionRegistry.address,
+        "Wallet Scheme Registrar",
+        0,
+      ]
     );
 
-    masterWalletScheme = await WalletScheme.new();
-    await masterWalletScheme.initialize(
-      org.avatar.address,
-      org.votingMachine.address,
-      org.controller.address,
-      permissionRegistry.address,
-      "Master Wallet",
-      5
+    masterWalletScheme = await helpers.deployContractWithCreate2(
+      create2Deployer,
+      WalletScheme,
+      web3.utils.keccak256("masterWalletScheme1"),
+      [
+        org.avatar.address,
+        org.votingMachine.address,
+        org.controller.address,
+        permissionRegistry.address,
+        "Master Wallet",
+        5,
+      ]
     );
 
-    quickWalletScheme = await WalletScheme.new();
-    await quickWalletScheme.initialize(
-      org.avatar.address,
-      org.votingMachine.address,
-      org.controller.address,
-      permissionRegistry.address,
-      "Quick Wallet",
-      1
+    quickWalletScheme = await helpers.deployContractWithCreate2(
+      create2Deployer,
+      WalletScheme,
+      web3.utils.keccak256("quickWalletScheme1"),
+      [
+        org.avatar.address,
+        org.votingMachine.address,
+        org.controller.address,
+        permissionRegistry.address,
+        "Quick Wallet",
+        1,
+      ]
     );
 
     await permissionRegistry.setETHPermission(
@@ -300,10 +315,6 @@ contract("WalletScheme", function (accounts) {
     assert.deepEqual(organizationProposal1.value, ["0", "0", "0"]);
 
     assert.equal(
-      await org.controller.isSchemeRegistered(newWalletScheme.address),
-      true
-    );
-    assert.equal(
       await org.controller.getSchemeParameters(newWalletScheme.address),
       defaultParamsHash
     );
@@ -316,10 +327,6 @@ contract("WalletScheme", function (accounts) {
       false
     );
 
-    assert.equal(
-      await org.controller.isSchemeRegistered(quickWalletScheme.address),
-      false
-    );
     assert.equal(
       await org.controller.getSchemeParameters(quickWalletScheme.address),
       "0x0000000000000000000000000000000000000000000000000000000000000000"
@@ -335,10 +342,6 @@ contract("WalletScheme", function (accounts) {
       false
     );
 
-    assert.equal(
-      await org.controller.isSchemeRegistered(masterWalletScheme.address),
-      true
-    );
     assert.equal(
       await org.controller.getSchemeParameters(masterWalletScheme.address),
       newParamsHash
@@ -1343,7 +1346,7 @@ contract("WalletScheme", function (accounts) {
         "Master Wallet",
         5
       ),
-      "Scheme__CannotInitTwice()"
+      "Initializable: contract is already initialized"
     );
   });
 

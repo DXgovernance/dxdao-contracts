@@ -44,14 +44,14 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
     ) public virtual override {
         require(proposals[proposalId].endTime > block.timestamp, "SnapshotERC20Guild: Proposal ended, cannot be voted");
         require(
-            votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >= votingPower,
+            votingPowerOfAt(msg.sender, proposalsSnapshots[proposalId]) >= votingPower &&
+                (votingPower > proposalVotes[proposalId][msg.sender].votingPower),
             "SnapshotERC20Guild: Invalid votingPower amount"
         );
         require(
             (proposalVotes[proposalId][msg.sender].option == 0 &&
                 proposalVotes[proposalId][msg.sender].votingPower == 0) ||
-                (proposalVotes[proposalId][msg.sender].option == option &&
-                    proposalVotes[proposalId][msg.sender].votingPower < votingPower),
+                (proposalVotes[proposalId][msg.sender].option == option),
             "SnapshotERC20Guild: Cannot change option voted, only increase votingPower"
         );
         _setVote(msg.sender, proposalId, option, votingPower);
@@ -82,9 +82,8 @@ contract SnapshotERC20Guild is ERC20GuildUpgradeable {
         );
         require(
             (proposalVotes[proposalId][voter].option == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
-                (proposalVotes[proposalId][voter].option == option &&
-                    proposalVotes[proposalId][voter].votingPower < votingPower),
-            "SnapshotERC20Guild: Cannot change option voted, only increase votingPower"
+                (proposalVotes[proposalId][voter].option == option),
+            "SnapshotERC20Guild: Cannot change option voted"
         );
         _setVote(voter, proposalId, option, votingPower);
     }
