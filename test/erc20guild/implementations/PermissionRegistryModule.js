@@ -22,7 +22,7 @@ const ProxyAdmin = artifacts.require("ProxyAdmin.sol");
 const TransparentUpgradeableProxy = artifacts.require(
   "TransparentUpgradeableProxy.sol"
 );
-const Create2Deployer = artifacts.require("Create2Deployer.sol");
+
 const ERC20Guild = artifacts.require("ERC20GuildUpgradeable.sol");
 const IERC20Guild = artifacts.require("IERC20Guild.sol");
 const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
@@ -56,13 +56,8 @@ contract("PermissionRegistryModule", function (accounts) {
     const proxyAdmin = await ProxyAdmin.new({ from: accounts[0] });
 
     multicall = await Multicall.new();
-    const erc20GuildDeployer = await Create2Deployer.new();
-    const erc20GuildAddress = helpers.create2Address(
-      erc20GuildDeployer.address,
-      ERC20Guild.bytecode,
-      constants.SOME_HASH
-    );
-    await erc20GuildDeployer.deploy(ERC20Guild.bytecode, constants.SOME_HASH);
+
+    const erc20GuildImplementation = await ERC20Guild.new();
 
     guildToken = await createAndSetupGuildToken(
       accounts.slice(0, 6),
@@ -97,7 +92,7 @@ contract("PermissionRegistryModule", function (accounts) {
       .encodeABI();
 
     const erc20GuildProxy = await TransparentUpgradeableProxy.new(
-      erc20GuildAddress,
+      erc20GuildImplementation.address,
       proxyAdmin.address,
       erc20GuildInitializeData
     );

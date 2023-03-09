@@ -19,6 +19,7 @@ require("@nomiclabs/hardhat-ethers");
 require("./scripts/nanoUniversalDeployerDeploy");
 require("./scripts/keylessDeploy");
 require("./scripts/create2");
+require("./scripts/create2DeployerDeploy");
 require("./scripts/actions-dxdao-contracts");
 require("./scripts/deploy-dxdao-contracts");
 require("./scripts/deploymentTemplates/dxvote-develop");
@@ -96,7 +97,7 @@ const hardharNetworks = process.env.CI
         accounts: { mnemonic: MNEMONIC },
         throwOnTransactionFailures: true,
         throwOnCallFailures: true,
-        allowUnlimitedContractSize: true,
+        allowUnlimitedContractSize: false,
         gasLimit: 9000000,
         gasPrice: 10000000000, // 10 gwei
         timeout: 60000,
@@ -162,9 +163,10 @@ module.exports = {
       },
     ],
     overrides: {
-      "contracts/erc20guild/implementations/ZodiacERC20Guild.sol": VIAIR_COMPILER_SETUP,
+      "contracts/erc20guild/implementations/ZodiacERC20Guild.sol":
+        VIAIR_COMPILER_SETUP,
       "contracts/test/TestAvatar.sol": VIAIR_COMPILER_SETUP,
-    }
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS ? true : false,

@@ -20,6 +20,7 @@ export const SOME_TOKEN_URI =
 export const MIN_SECONDS_FOR_EXECUTION = 86400;
 export const YES_OPTION = "2";
 export const NO_OPTION = "1";
+export const CREATE2_DEPLOYER = "0x77ea3E69657D9686d0F5a984bE2Cb03424f66F80";
 
 export const WALLET_SCHEME_PROPOSAL_STATES = {
   none: "0",

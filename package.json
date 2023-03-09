@@ -97,6 +97,7 @@
     "arb-ethers-web3-bridge": "^0.7.3",
     "chai": "^4.2.0",
     "eip-712": "^1.0.0",
+    "ethereumjs-tx": "^2.1.2",
     "ipfs-core": "^0.14.1",
     "math": "0.0.3",
     "moment": "^2.27.0",

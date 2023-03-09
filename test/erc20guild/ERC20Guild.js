@@ -51,13 +51,16 @@ contract("ERC20Guild", function (accounts) {
     const proxyAdmin = await ProxyAdmin.new({ from: accounts[0] });
 
     multicall = await Multicall.new();
-    const erc20GuildDeployer = await Create2Deployer.new();
-    const erc20GuildAddress = helpers.create2Address(
-      erc20GuildDeployer.address,
+    const create2Deployer = await Create2Deployer.new();
+    const erc20GuildAddress = await create2Deployer.getHashedSaltDeployAddress(
       ERC20Guild.bytecode,
       constants.SOME_HASH
     );
-    await erc20GuildDeployer.deploy(ERC20Guild.bytecode, constants.SOME_HASH);
+    await create2Deployer.deployWithHashedSalt(
+      ERC20Guild.bytecode,
+      "0x0",
+      constants.SOME_HASH
+    );
 
     guildToken = await createAndSetupGuildToken(
       accounts.slice(0, 6),
