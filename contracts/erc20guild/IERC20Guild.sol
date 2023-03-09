@@ -55,12 +55,15 @@ interface IERC20Guild {
         uint256 _timeForExecution,
         uint256 _votingPowerPercentageForProposalExecution,
         uint256 _votingPowerPercentageForProposalCreation,
+        uint256 _votingPowerPercentageForInstantProposalExecution,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
         uint256 _lockTime,
         address _permissionRegistry
     ) external;
+
+    function votingPowerPercentageForInstantProposalExecution() external view returns (uint256);
 
     function setPermission(
         address[] memory asset,
@@ -158,6 +161,8 @@ interface IERC20Guild {
     function getVoterLockTimestamp(address voter) external view returns (uint256);
 
     function getProposal(bytes32 proposalId) external view returns (Proposal memory);
+
+    function getProposalOptionTotalVotes(bytes32 proposalId, uint256 option) external view returns (uint256);
 
     function getProposalVotesOfVoter(bytes32 proposalId, address voter)
         external

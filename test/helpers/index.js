@@ -61,6 +61,32 @@ export function getValueFromLogs(tx, arg, eventName, index = 0) {
   return result;
 }
 
+export const deployContractWithCreate2 = async function (
+  create2Contract,
+  contractToDeploy,
+  salt = constants.SOME_HASH,
+  initilizerArgs = []
+) {
+  const newContractAddress = create2Address(
+    create2Contract.address,
+    contractToDeploy.bytecode,
+    salt
+  );
+  if (initilizerArgs.length > 0) {
+    await create2Contract.deployAndInitialize(
+      contractToDeploy.bytecode,
+      salt,
+      web3.eth.abi.encodeFunctionCall(
+        contractToDeploy.abi.find(x => x.name === "initialize"),
+        initilizerArgs
+      )
+    );
+  } else {
+    await create2Contract.deploy(contractToDeploy.bytecode, salt);
+  }
+  return await contractToDeploy.at(newContractAddress);
+};
+
 export const deployDao = async function (deployConfig) {
   const reputation = await DAOReputation.new();
   await reputation.initialize("DXDaoReputation", "DXRep");
@@ -355,6 +381,15 @@ export function customErrorMessageExistInRawLogs(
       return rawLog.data.includes(encodedErrorSignature);
     })
   );
+}
+
+export function multiplyRealMath(realA, realB) {
+  const BN = web3.utils.BN;
+  let res = new BN(realA).mul(new BN(realB));
+  if (!res.div(new BN(realA)).eq(new BN(realB))) {
+    throw new Error("RealMath mul overflow");
+  }
+  return res.ushrn(40);
 }
 
 export { constants };

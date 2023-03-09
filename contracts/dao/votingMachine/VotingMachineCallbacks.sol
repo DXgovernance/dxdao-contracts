@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../DAOController.sol";
 import "../DAOReputation.sol";
-import "hardhat/console.sol";
 import "./IVotingMachine.sol";
 import "../VotingPower.sol";
 
@@ -19,8 +18,10 @@ contract VotingMachineCallbacks {
 
     uint256[45] private __gap;
 
+    error VotingMachineCallbacks__OnlyVotingMachine();
+
     modifier onlyVotingMachine() {
-        require(msg.sender == address(votingMachine), "VotingMachineCallbacks: only VotingMachine");
+        if (msg.sender != address(votingMachine)) revert VotingMachineCallbacks__OnlyVotingMachine();
         _;
     }
 

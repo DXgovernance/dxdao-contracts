@@ -75,6 +75,7 @@ contract("ERC20Guild", function (accounts) {
         30,
         5000,
         100,
+        0,
         "TestGuild",
         0,
         0,
@@ -249,6 +250,7 @@ contract("ERC20Guild", function (accounts) {
           30,
           5000,
           100,
+          0,
           "TestGuild",
           0,
           0,
@@ -269,6 +271,7 @@ contract("ERC20Guild", function (accounts) {
           30,
           5000,
           100,
+          0,
           "TestGuild",
           0,
           0,
@@ -289,6 +292,7 @@ contract("ERC20Guild", function (accounts) {
           30,
           5000,
           100,
+          0,
           "TestGuild",
           0,
           0,
@@ -309,6 +313,7 @@ contract("ERC20Guild", function (accounts) {
           30,
           0,
           100,
+          0,
           "TestGuild",
           0,
           0,
@@ -329,6 +334,7 @@ contract("ERC20Guild", function (accounts) {
           30,
           5000,
           100,
+          0,
           "TestGuild",
           0,
           0,
@@ -384,6 +390,7 @@ contract("ERC20Guild", function (accounts) {
                   "30",
                   "5001",
                   "1001",
+                  "0",
                   "1",
                   "10",
                   "4",
@@ -518,6 +525,7 @@ contract("ERC20Guild", function (accounts) {
                   "30",
                   "5001",
                   "1001",
+                  "0",
                   "1",
                   "10",
                   "4",
@@ -601,6 +609,7 @@ contract("ERC20Guild", function (accounts) {
                   "30",
                   "5001",
                   "1001",
+                  "0",
                   "1",
                   "10",
                   "4",
@@ -792,6 +801,27 @@ contract("ERC20Guild", function (accounts) {
   describe("setVote", function () {
     beforeEach(async function () {
       await lockTokens();
+    });
+
+    it("cannot vote with 0 voting power amount with an account with voting power", async function () {
+      const guildProposalId = await createProposal(genericProposal);
+
+      await expectRevert(
+        erc20Guild.setVote(guildProposalId, 1, 0, {
+          from: accounts[3],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
+    });
+
+    it("cannot vote with 0 voting power amount with an account without voting power", async function () {
+      const guildProposalId = await createProposal(genericProposal);
+      await expectRevert(
+        erc20Guild.setVote(guildProposalId, 1, 0, {
+          from: accounts[9],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
     });
 
     it("cannot reduce votes after initial vote", async function () {
@@ -1027,6 +1057,256 @@ contract("ERC20Guild", function (accounts) {
     });
   });
 
+  describe("Early proposal executions", function () {
+    beforeEach(async function () {
+      await lockTokens();
+    });
+
+    it("should set votingPowerPercentageForInstantProposalExecution correctly", async function () {
+      // Bigger than max value
+      let guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setConfig(30, 30, 5000, 100, 10001, 0, 0, 10, 60, 0, 0)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "ERC20Guild: Proposal call failed"
+      );
+
+      // Smaller than min value
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setConfig(30, 30, 5000, 100, 4999, 0, 0, 10, 60, 0, 0)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "ERC20Guild: Proposal call failed"
+      );
+
+      // Correct value
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setConfig(30, 30, 5000, 100, 7500, 0, 0, 10, 60, 0, 0)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId);
+      const votingPowerPercentageForInstantProposalExecution =
+        await erc20Guild.votingPowerPercentageForInstantProposalExecution();
+      expect(
+        votingPowerPercentageForInstantProposalExecution
+      ).to.be.bignumber.equal(new BN("7500"));
+    });
+
+    it("should not execute a proposal early if early proposal execution conditions are not met", async function () {
+      // Set votingPowerPercentageForInstantProposalExecution
+      let guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setConfig(30, 30, 5000, 100, 7500, 0, 0, 10, 60, 0, 0)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId);
+
+      //
+      guildProposalId = await createProposal(genericProposal);
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      // await time.increase(time.duration.seconds(61));
+      const totalSupply = await guildToken.totalSupply();
+      const totalVotesA = await erc20Guild.getProposalOptionTotalVotes(
+        guildProposalId,
+        1
+      );
+      const multiplier = new BN("10000");
+      expect(totalVotesA.mul(multiplier).div(totalSupply)).to.be.bignumber.lt(
+        new BN("7500")
+      );
+
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "ERC20Guild: Proposal hasn't ended yet"
+      );
+    });
+
+    it("should execute a proposal early if early proposal execution conditions are met", async function () {
+      // Set votingPowerPercentageForInstantProposalExecution
+      let guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setConfig(30, 30, 5000, 100, 7500, 0, 0, 10, 60, 0, 0)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[2],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await erc20Guild.endProposal(guildProposalId);
+
+      //
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [erc20Guild.address],
+            data: [
+              await new web3.eth.Contract(ERC20Guild.abi).methods
+                .setConfig(30, 30, 5000, 100, 5000, 0, 0, 10, 60, 0, 0)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[2],
+      });
+      for (let i = 3; i <= 5; i++) {
+        await setVotesOnProposal({
+          guild: erc20Guild,
+          proposalId: guildProposalId,
+          option: 1,
+          account: accounts[i],
+        });
+      }
+      // await time.increase(time.duration.seconds(61));
+      const totalSupply = await guildToken.totalSupply();
+      const totalVotesA = await erc20Guild.getProposalOptionTotalVotes(
+        guildProposalId,
+        1
+      );
+      const multiplier = new BN("10000");
+      expect(totalVotesA.mul(multiplier).div(totalSupply)).to.be.bignumber.gte(
+        new BN("7500")
+      );
+
+      await erc20Guild.endProposal(guildProposalId);
+      const votingPowerPercentageForInstantProposalExecution =
+        await erc20Guild.votingPowerPercentageForInstantProposalExecution();
+      expect(
+        votingPowerPercentageForInstantProposalExecution
+      ).to.be.bignumber.gte(new BN("5000"));
+    });
+  });
+
   describe("action votes tie checks", async function () {
     let proposalWithThreeOptions;
 
@@ -1047,6 +1327,7 @@ contract("ERC20Guild", function (accounts) {
                   30,
                   200,
                   100,
+                  0,
                   VOTE_GAS,
                   MAX_GAS_PRICE,
                   3,
@@ -1490,7 +1771,7 @@ contract("ERC20Guild", function (accounts) {
       );
     });
 
-    it("execute ERC20 transfers withing the transfer limit", async function () {
+    it("execute ERC20 transfers within the transfer limit", async function () {
       await web3.eth.sendTransaction({
         to: erc20Guild.address,
         value: 300,
@@ -1534,6 +1815,528 @@ contract("ERC20Guild", function (accounts) {
         proposalId: guildProposalId,
         newState: "3",
       });
+    });
+
+    it("execute ERC20 transfers within the transfer limit before removal gets executed", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
+
+      let guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [
+              permissionRegistry.address,
+              testToken.address,
+              testToken.address,
+            ],
+            data: [
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .updateERC20Limit(erc20Guild.address, 0, 0)
+                .encodeABI(),
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[2], 100)
+                .encodeABI(),
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[3], 99)
+                .encodeABI(),
+            ],
+            value: [0, 0, 0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      let receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+
+      await testToken.mint(erc20Guild.address, 1000000);
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [permissionRegistry.address, testToken.address],
+            data: [
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .executeUpdateERC20Limit(erc20Guild.address, 0)
+                .encodeABI(),
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[2], 1000000)
+                .encodeABI(),
+            ],
+            value: [0, 0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+    });
+
+    it("fail to remove and execute ERC20 transfer removals in the same block", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
+
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [permissionRegistry.address, permissionRegistry.address],
+            data: [
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .updateERC20Limit(erc20Guild.address, 0, 0)
+                .encodeABI(),
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .executeUpdateERC20Limit(erc20Guild.address, 0)
+                .encodeABI(),
+            ],
+            value: [0, 0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "ERC20Guild: Proposal call failed"
+      );
+    });
+
+    it("execute ERC20 transfer removals only after the delay has passed", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
+
+      // ERC20 Limit removal request + set delay time
+      let guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [permissionRegistry.address, permissionRegistry.address],
+            data: [
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .setETHPermissionDelay(erc20Guild.address, 60 * 10)
+                .encodeABI(),
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .updateERC20Limit(erc20Guild.address, 0, 0)
+                .encodeABI(),
+            ],
+            value: [0, 0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      let receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+
+      // Transfer limits still checked after delay has passed if the removal request wasn't executed
+      await time.increase(time.duration.seconds(60 * 10));
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [testToken.address],
+            data: [
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[3], 299)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "PermissionRegistry: Value limit reached"
+      );
+
+      // ERC20 transfer limits are no longer checked after removal execution
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [permissionRegistry.address, testToken.address],
+            data: [
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .executeUpdateERC20Limit(erc20Guild.address, 0)
+                .encodeABI(),
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[3], 250)
+                .encodeABI(),
+            ],
+            value: [0, 0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+
+      // ERC20 transfer limits are no longer checked after removal execution
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [testToken.address],
+            data: [
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[3], 1)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+    });
+
+    it("execute ERC20 limit increases correctly", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
+
+      // ERC20 Limit increase request
+      let guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [permissionRegistry.address],
+            data: [
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .updateERC20Limit(erc20Guild.address, 0, 250)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      let receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+
+      await permissionRegistry.executeUpdateERC20Limit(erc20Guild.address, 0);
+      await expectRevert(
+        permissionRegistry.executeUpdateERC20Limit(erc20Guild.address, 0),
+        "PermissionRegistry: Cant execute permission update"
+      );
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [testToken.address],
+            data: [
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[3], 250)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+
+      await testToken.transfer(erc20Guild.address, 250, { from: accounts[3] });
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [testToken.address],
+            data: [
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[3], 251)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "PermissionRegistry: Value limit reached"
+      );
+    });
+
+    it("execute ERC20 limit reduction correctly", async function () {
+      await web3.eth.sendTransaction({
+        to: erc20Guild.address,
+        value: 300,
+        from: accounts[0],
+      });
+
+      // ERC20 Limit increase request
+      let guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [permissionRegistry.address],
+            data: [
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .updateERC20Limit(erc20Guild.address, 0, 100)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      let receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+
+      await permissionRegistry.executeUpdateERC20Limit(erc20Guild.address, 0);
+      await expectRevert(
+        permissionRegistry.executeUpdateERC20Limit(erc20Guild.address, 0),
+        "PermissionRegistry: Cant execute permission update"
+      );
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [testToken.address],
+            data: [
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[3], 100)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      receipt = await erc20Guild.endProposal(guildProposalId);
+      expectEvent(receipt, "ProposalStateChanged", {
+        proposalId: guildProposalId,
+        newState: "3",
+      });
+
+      guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [testToken.address],
+            data: [
+              await new web3.eth.Contract(ERC20Mock.abi).methods
+                .transfer(accounts[3], 101)
+                .encodeABI(),
+            ],
+            value: [0],
+          },
+        ],
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[3],
+      });
+      await setVotesOnProposal({
+        guild: erc20Guild,
+        proposalId: guildProposalId,
+        option: 1,
+        account: accounts[5],
+      });
+      await time.increase(time.duration.seconds(31));
+      await expectRevert(
+        erc20Guild.endProposal(guildProposalId),
+        "PermissionRegistry: Value limit reached"
+      );
     });
 
     it("execute ERC20 transfers to the guild contract without limits", async function () {
@@ -2077,6 +2880,7 @@ contract("ERC20Guild", function (accounts) {
                   30,
                   200,
                   100,
+                  0,
                   VOTE_GAS,
                   MAX_GAS_PRICE,
                   3,
@@ -2173,6 +2977,66 @@ contract("ERC20Guild", function (accounts) {
         }
       });
 
+      it("can set a vote from contract and refund gas", async function () {
+        const guildProposalId = await createProposal(genericProposal);
+
+        const guildTracker = await balance.tracker(erc20Guild.address);
+
+        // send ether to cover gas
+        await send.ether(accounts[0], erc20Guild.address, ether("10"), {
+          from: accounts[0],
+        });
+        // send tokens to voter contract
+        const tokenVault = await erc20Guild.getTokenVault();
+        await guildToken.mint(actionMockA.address, 10000);
+        const approveData = await new web3.eth.Contract(ERC20Mock.abi).methods
+          .approve(tokenVault, 10000)
+          .encodeABI();
+        await actionMockA.executeCall(guildToken.address, approveData, 0);
+        const lockTockensData = await new web3.eth.Contract(
+          ERC20Guild.abi
+        ).methods
+          .lockTokens(10000)
+          .encodeABI();
+        await actionMockA.executeCall(erc20Guild.address, lockTockensData, 0);
+
+        let guildBalance = await guildTracker.delta();
+        guildBalance.should.be.bignumber.equal(ether("10"));
+        const tracker = await balance.tracker(actionMockA.address);
+        const setVoteData = await new web3.eth.Contract(ERC20Guild.abi).methods
+          .setVote(guildProposalId, 1, 100)
+          .encodeABI();
+        const txVote = await actionMockA.executeCall(
+          erc20Guild.address,
+          setVoteData,
+          0,
+          {
+            from: accounts[2],
+            gasPrice: REAL_GAS_PRICE,
+          }
+        );
+        const voteEvent = helpers.logDecoder.decodeLogs(
+          txVote.receipt.rawLogs
+        )[0];
+        assert.equal(voteEvent.name, "VoteAdded");
+        assert.equal(voteEvent.args[0], guildProposalId);
+        assert.equal(voteEvent.args[1], 1);
+        assert.equal(voteEvent.args[2], actionMockA.address);
+        assert.equal(voteEvent.args[3], 100);
+
+        if (constants.GAS_PRICE > 1) {
+          // Tx fees were paid by EOA but the refund belongs to the smart contract setting the vote.
+          guildBalance = await guildTracker.delta();
+          guildBalance.should.be.bignumber.equal(
+            VOTE_GAS.mul(MAX_GAS_PRICE).neg()
+          );
+          let accounts1Balance = await tracker.delta();
+          accounts1Balance.should.be.bignumber.equal(
+            VOTE_GAS.mul(MAX_GAS_PRICE)
+          );
+        }
+      });
+
       it("can set a vote but no refund as contract has no ether", async function () {
         const guildProposalId = await createProposal(genericProposal);
 
@@ -2231,6 +3095,7 @@ contract("ERC20Guild", function (accounts) {
                     30,
                     200,
                     100,
+                    0,
                     incorrectVoteGas,
                     REAL_GAS_PRICE,
                     3,

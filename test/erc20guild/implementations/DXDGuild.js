@@ -1,4 +1,3 @@
-import { ZERO_ADDRESS } from "@openzeppelin/test-helpers/src/constants";
 import * as helpers from "../../helpers";
 const {
   createAndSetupGuildToken,
@@ -80,13 +79,14 @@ contract("DXDGuild", function (accounts) {
 
     actionMock = await ActionMock.new();
     await dxdGuild.methods[
-      "initialize(address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,address,address)"
+      "initialize(address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,address,address)"
     ](
       guildToken.address,
       30,
       30,
       5000,
       1100,
+      0,
       VOTE_GAS,
       MAX_GAS_PRICE,
       10,
