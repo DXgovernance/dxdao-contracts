@@ -474,7 +474,7 @@ contract BaseERC20Guild {
         }
     }
 
-    /// @dev Gets the current winning option for a given proposal. 
+    /// @dev Gets the current winning option for a given proposal.
     /// @param proposalId The id of the proposal to evaluate
     /// @param highestVoteAmount The amounts of votes received by the currently winning proposal option.
     function getWinningOption(bytes32 proposalId)
