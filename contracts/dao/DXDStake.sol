@@ -154,6 +154,41 @@ contract DXDStake is OwnableUpgradeable, OptimizedERC20SnapshotUpgradeable {
     }
 
     /**
+     * @dev Transfers a commitment. The recipient gets the voting power rights that come from DXDInfluence
+     * and can claim the locked DXD once the stakes completes.
+     * @param _commitmentId Id of the commitment. The Id is an incremental variable for each account.
+     * @param _amount How much of the stake to transfer.
+     * @param _to Address that the stake commitment will be transferred to.
+     */
+    function transferCommitment(uint256 _commitmentId, uint176 _amount, address _to) external {
+        StakeCommitment storage stakeCommitment = stakeCommitments[msg.sender][_commitmentId];
+        require(stakeCommitment.commitmentEnd != 0, "DXDStake: commitment inactive");
+
+        // Set new commitment
+        StakeCommitment storage newStakeCommitment = stakeCommitments[_to].push();
+        newStakeCommitment.stake = _amount;
+        newStakeCommitment.timeCommitment = stakeCommitment.timeCommitment;
+        newStakeCommitment.commitmentEnd = stakeCommitment.commitmentEnd;
+
+        // Transfer influence.
+        dxdInfluence.transfer(msg.sender, _to, _amount, stakeCommitment.timeCommitment);
+
+        // Transfer staked DXD tokens.
+        _burn(msg.sender, _amount);
+        _mint(_to, _amount);
+        _snapshot();
+
+        stakeCommitment.stake -= _amount;
+        if (stakeCommitment.stake == 0) {
+            // Clean old commitment.
+            stakeCommitment.timeCommitment = 0;
+            stakeCommitment.commitmentEnd = 0;
+            userWithdrawals[msg.sender] += 1;
+            totalWithdrawals += 1;
+        }
+    }
+
+    /**
      * @dev Withdraws the tokens to the user.
      * @param _commitmentId Id of the commitment. The Id is an incremental variable for each account.
      */
