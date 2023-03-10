@@ -15,14 +15,6 @@ address votingPowerToken
 
 Voting Power Token address
 
-### DAOReputation__InvalidMintRepAmount
-
-```solidity
-error DAOReputation__InvalidMintRepAmount()
-```
-
-Mint or Burn shouldn’t be called if the amount is 0
-
 ### initialize
 
 ```solidity

@@ -195,7 +195,7 @@ has to be greater than the previous one._
 ### withdraw
 
 ```solidity
-function withdraw(address _account, uint256 _commitmentId) external
+function withdraw(uint256 _commitmentId) external
 ```
 
 _Withdraws the tokens to the user._
@@ -204,7 +204,6 @@ _Withdraws the tokens to the user._
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _account | address | Account that has staked. |
 | _commitmentId | uint256 | Id of the commitment. The Id is an incremental variable for each account. |
 
 ### earlyWithdraw

@@ -36,6 +36,12 @@ _Emitted by {_snapshot} when a snapshot identified by `id` is created._
 function _snapshot(address _account) internal returns (uint256 currentId)
 ```
 
+### _snapshot
+
+```solidity
+function _snapshot() internal returns (uint256 currentId)
+```
+
 ### _lastRegisteredSnapshotIdAt
 
 ```solidity

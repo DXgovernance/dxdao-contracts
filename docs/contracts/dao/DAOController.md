@@ -11,7 +11,6 @@ Each scheme has it own parameters and operation permissions._
 ```solidity
 struct Scheme {
   bytes32 paramsHash;
-  bool isRegistered;
   bool canManageSchemes;
   bool canMakeAvatarCalls;
   bool canChangeReputation;
@@ -121,6 +120,14 @@ error DAOController__CannotUnregisterLastSchemeWithManageSchemesPermission()
 
 Cannot unregister last scheme with manage schemes permission
 
+### DAOController__CannotRegisterSchemeWithNullParamsHash
+
+```solidity
+error DAOController__CannotRegisterSchemeWithNullParamsHash()
+```
+
+Cannot register a scheme with paramsHash 0
+
 ### DAOController__SenderIsNotTheProposer
 
 ```solidity
@@ -136,14 +143,6 @@ error DAOController__SenderIsNotRegisteredOrProposalIsInactive()
 ```
 
 Sender is not a registered scheme or proposal is not active
-
-### onlyRegisteredScheme
-
-```solidity
-modifier onlyRegisteredScheme()
-```
-
-_Verify if scheme is registered_
 
 ### onlyRegisteringSchemes
 
@@ -309,26 +308,6 @@ _Transfer ownership of dao reputation_
 | ---- | ---- | ----------- |
 | newOwner | address | The new owner of the reputation token |
 
-### isSchemeRegistered
-
-```solidity
-function isSchemeRegistered(address scheme) external view returns (bool isRegistered)
-```
-
-_Returns whether a scheme is registered or not_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| scheme | address | The address of the scheme |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isRegistered | bool | Whether a scheme is registered or not |
-
 ### getSchemeParameters
 
 ```solidity
@@ -422,12 +401,6 @@ _Returns the amount of schemes with manage schemes permission_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | schemesWithManageSchemesPermissionCount | uint256 | Schemes with manage schemes permission count |
-
-### _isSchemeRegistered
-
-```solidity
-function _isSchemeRegistered(address scheme) private view returns (bool)
-```
 
 ### getDaoReputation
 

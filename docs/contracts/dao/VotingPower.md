@@ -31,10 +31,31 @@ The influence token that will be used as source of voting power
 mapping(address => mapping(uint256 => uint256)) weights
 ```
 
+### TokensSnapshot
+
+```solidity
+struct TokensSnapshot {
+  uint128 reputation;
+  uint128 influence;
+}
+```
+
 ### snapshots
 
 ```solidity
-mapping(address => mapping(uint256 => uint256)) snapshots
+mapping(uint256 => struct VotingPower.TokensSnapshot) snapshots
+```
+
+### name
+
+```solidity
+string name
+```
+
+### symbol
+
+```solidity
+string symbol
 ```
 
 ### decimals
@@ -95,12 +116,6 @@ mapping(uint256 => uint256) minStakingTokensLocked
 
 Minimum staking tokens locked to apply weight (snapshoted)
 
-### SNAPSHOTS_SLOT
-
-```solidity
-address SNAPSHOTS_SLOT
-```
-
 ### WEIGHTS_SLOT
 
 ```solidity
@@ -119,12 +134,12 @@ address MIN_STAKED_SLOT
 modifier onlyInternalTokens(address tokenAddress)
 ```
 
-_Verify if address is one of rep or staking tokens_
+_Verify if address is one of reputation or influence tokens_
 
 ### initialize
 
 ```solidity
-function initialize(address _reputation, address _dxdInfluence, uint256 repWeight, uint256 stakingWeight, uint256 _minStakingTokensLocked) public virtual
+function initialize(string _name, string _symbol, address _reputation, address _dxdInfluence, uint256 repWeight, uint256 stakingWeight, uint256 _minStakingTokensLocked) public virtual
 ```
 
 ### setMinStakingTokensLocked
@@ -133,7 +148,8 @@ function initialize(address _reputation, address _dxdInfluence, uint256 repWeigh
 function setMinStakingTokensLocked(uint256 _minStakingTokensLocked) public
 ```
 
-_Set Minimum staking tokens locked to apply staking token weight_
+_Set Minimum staking tokens locked to apply staking token weight.
+     If staking token totalSupply is under _minStakingTokensLocked, influence token weight will be 0._
 
 #### Parameters
 
@@ -210,19 +226,35 @@ _Get the balance (voting power percentage) of `account` at certain `_snapshotId`
 | ---- | ---- | ----------- |
 | votingPowerPercentage | uint256 | The votingPower of `account` (0 to 100*precision) |
 
-### calculateVotingPower
+### _calculateVotingPower
 
 ```solidity
-function calculateVotingPower(address account, uint256 _snapshotId) internal view returns (uint256 votingPower)
+function _calculateVotingPower(address account, uint256 snapshotId) internal view returns (uint256 votingPower)
 ```
 
-### getWeightOfAt
+_Internal function to calculate voting power (balance) of `account` at certain `_snapshotId`_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| account | address | Account we want to get voting power from |
+| snapshotId | uint256 | VPToken SnapshotId we want get votingPower from |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| votingPower | uint256 | The votingPower of `account` (0 to 100*precision) |
+
+### _getWeightOfAt
 
 ```solidity
-function getWeightOfAt(address token, uint256 snapshotId) public view returns (uint256 weight)
+function _getWeightOfAt(address token, uint256 snapshotId) internal view returns (uint256 weight)
 ```
 
-_Get token weight from weights config mapping._
+_Internal function to return weight of `token` at `snapshotId` from
+     global config without any minimum tokens locked logic involved._
 
 #### Parameters
 
@@ -231,15 +263,15 @@ _Get token weight from weights config mapping._
 | token | address | Address of the token we want to get weight from |
 | snapshotId | uint256 |  |
 
-### getTokenWeightAt
+### getWeightOfAt
 
 ```solidity
-function getTokenWeightAt(address token, uint256 snapshotId) public view returns (uint256 weight)
+function getWeightOfAt(address token, uint256 snapshotId) public view returns (uint256 weight)
 ```
 
 _Get token weight from weights config mapping.
      If influence supply > minStakingTokensLocked at given snapshotId, repWeight will default to 100%.
-     If not it will retun internal weights config for given `token`_
+     If not it will return internal weights config for given `token`_
 
 #### Parameters
 
@@ -254,15 +286,15 @@ _Get token weight from weights config mapping.
 | ---- | ---- | ----------- |
 | weight | uint256 | Weight percentage value (0 to 100) |
 
-### getTokenWeight
+### getWeightOf
 
 ```solidity
-function getTokenWeight(address token) public view returns (uint256 weight)
+function getWeightOf(address token) public view returns (uint256 weight)
 ```
 
 _Get token weight from weights config mapping.
      If influence supply > minStakingTokensLocked at the time of execution repWeight will default to 100%.
-     If not it will retun internal weights config for given `token`_
+     If not it will return internal weights config for given `token`_
 
 #### Parameters
 
@@ -275,49 +307,6 @@ _Get token weight from weights config mapping.
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | weight | uint256 | Weight percentage value (0 to 100) |
-
-### getPercent
-
-```solidity
-function getPercent(uint256 numerator, uint256 denominator) public pure returns (uint256 percent)
-```
-
-_Calculates the percentage of a `numerator` over a `denominator` multiplyed by precision_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| numerator | uint256 | The part being considered |
-| denominator | uint256 | The total amount |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| percent | uint256 | The percentage of the numerator over the denominator * precision |
-
-### getWeightedVotingPowerPercentage
-
-```solidity
-function getWeightedVotingPowerPercentage(uint256 weightPercent, uint256 votingPowerPercent) public pure returns (uint256 weightedVotingPowerPercentage)
-```
-
-_Calculates the weighted voting power percentage by multiplying the voting power
-     percentage by the weight percent of the token_
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| weightPercent | uint256 | Weight percent of the token (0 to 100) |
-| votingPowerPercent | uint256 | Voting power percentage (0 to 100 * precision) |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| weightedVotingPowerPercentage | uint256 | Weighted voting power percentage (0 to 100 * precision) |
 
 ### snapshotAt
 
@@ -332,7 +321,7 @@ _Returns the last snapshotId stored for given `slot` based on `_snapshotId`_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _snapshotId | uint256 | VotingPower Snapshot ID |
-| slot | address | Address used to emit snapshot. One of: SNAPSHOTS_SLOT, WEIGHTS_SLOT, MIN_STAKED_SLOT |
+| slot | address | Address used to emit snapshot. One of: WEIGHTS_SLOT, MIN_STAKED_SLOT |
 
 #### Return Values
 
@@ -343,16 +332,16 @@ _Returns the last snapshotId stored for given `slot` based on `_snapshotId`_
 ### getMinStakingTokensLockedAt
 
 ```solidity
-function getMinStakingTokensLockedAt(uint256 _snapshotId) public view returns (uint256 _minStakingTokensLocked)
+function getMinStakingTokensLockedAt(uint256 snapshotId) public view returns (uint256 _minStakingTokensLocked)
 ```
 
-_Returns global minStakingTokensLocked at `_snapshotId`_
+_Returns global minStakingTokensLocked at `snapshotId`_
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _snapshotId | uint256 | VotingPower Snapshot ID |
+| snapshotId | uint256 | VotingPower Snapshot ID |
 
 #### Return Values
 
@@ -393,6 +382,20 @@ _Returns the total supply_
 ```solidity
 function totalSupplyAt(uint256 snapshotId) external pure returns (uint256 supply)
 ```
+
+_Returns the total supply_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| snapshotId | uint256 | Snapshot ID to get supply at. Since VotingPower is expressed as percent this won't be used. |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| supply | uint256 | 100% expressed in base 1e+18. |
 
 ### transfer
 
