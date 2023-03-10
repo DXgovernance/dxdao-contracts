@@ -5,11 +5,18 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../DAOController.sol";
 import "../DAOReputation.sol";
 import "./IVotingMachine.sol";
+import "../VotingPower.sol";
 
 contract VotingMachineCallbacks {
     IVotingMachine public votingMachine;
 
     DAOController public controller;
+
+    VotingPower public votingPower;
+
+    mapping(bytes32 => uint256) public proposalSnapshots;
+
+    uint256[45] private __gap;
 
     error VotingMachineCallbacks__OnlyVotingMachine();
 
@@ -17,8 +24,6 @@ contract VotingMachineCallbacks {
         if (msg.sender != address(votingMachine)) revert VotingMachineCallbacks__OnlyVotingMachine();
         _;
     }
-
-    mapping(bytes32 => uint256) public proposalSnapshots;
 
     function getReputation() public view returns (DAOReputation) {
         return controller.getDaoReputation();
@@ -29,10 +34,24 @@ contract VotingMachineCallbacks {
     }
 
     function getTotalReputationSupply(bytes32 _proposalId) external view returns (uint256) {
-        return getReputation().totalSupplyAt(proposalSnapshots[_proposalId]);
+        (uint128 repSnapshotId, ) = votingPower.snapshots(proposalSnapshots[_proposalId]);
+        return getReputation().totalSupplyAt(repSnapshotId);
     }
 
     function reputationOf(address _owner, bytes32 _proposalId) external view returns (uint256) {
-        return getReputation().balanceOfAt(_owner, proposalSnapshots[_proposalId]);
+        (uint128 repSnapshotId, ) = votingPower.snapshots(proposalSnapshots[_proposalId]);
+        return getReputation().balanceOfAt(_owner, repSnapshotId);
+    }
+
+    function getVotingPowerTotalSupply() public view returns (uint256) {
+        return votingPower.totalSupply();
+    }
+
+    function getVotingPowerTotalSupplyAt(bytes32 _proposalId) external view returns (uint256) {
+        return votingPower.totalSupplyAt(proposalSnapshots[_proposalId]);
+    }
+
+    function votingPowerOf(address _owner, bytes32 _proposalId) external view returns (uint256) {
+        return votingPower.balanceOfAt(_owner, proposalSnapshots[_proposalId]);
     }
 }

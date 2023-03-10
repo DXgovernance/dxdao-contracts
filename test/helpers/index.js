@@ -4,6 +4,10 @@ const constants = require("./constants");
 
 const { LogDecoder } = require("@maticnetwork/eth-decoder");
 
+const VotingPower = artifacts.require("./VotingPower.sol");
+const DXDStake = artifacts.require("DXDStake.sol");
+const DXDInfluence = artifacts.require("DXDInfluence.sol");
+const ERC20Mock = artifacts.require("./ERC20Mock.sol");
 const DAOAvatar = artifacts.require("./DAOAvatar.sol");
 const DAOController = artifacts.require("./DAOController.sol");
 const DAOReputation = artifacts.require("./DAOReputation.sol");
@@ -113,6 +117,107 @@ export const deployDao = async function (deployConfig) {
   );
 
   return { controller, avatar, reputation, votingMachine };
+};
+
+export const deployDaoV2 = async function (config) {
+  if (!Object.keys(config).includes("owner")) {
+    throw new Error("deployDaoV2: Invalid config. Config.owner missing");
+  }
+  const deployConfig = Object.assign(
+    constants.GOVERNANCE_V2_CONFIG(web3),
+    config
+  );
+
+  const reputation = await DAOReputation.new();
+
+  const dxdStake = await DXDStake.new();
+  const dxdInfluence = await DXDInfluence.new();
+
+  const dxd = await ERC20Mock.new(
+    "DXD Token",
+    "DXD",
+    web3.utils.toWei("10000", "ether"),
+    deployConfig.owner
+  );
+
+  const votingPowerToken = await VotingPower.new({ from: deployConfig.owner });
+
+  await reputation.initialize("Reputation", "REP", votingPowerToken.address);
+
+  await dxdStake.initialize(
+    dxd.address,
+    dxdInfluence.address,
+    deployConfig.owner,
+    deployConfig.maxTimeCommitment,
+    "DXDStake",
+    "stDXD",
+    {
+      from: deployConfig.owner,
+    }
+  );
+
+  await dxdInfluence.initialize(
+    dxdStake.address,
+    votingPowerToken.address,
+    deployConfig.linearFactor,
+    deployConfig.exponentialFactor,
+    deployConfig.exponent,
+    {
+      from: deployConfig.owner,
+    }
+  );
+
+  await votingPowerToken.initialize(
+    "Voting Power Token",
+    "VPT",
+    reputation.address,
+    dxdInfluence.address,
+    deployConfig.repTokenWeight,
+    deployConfig.stakeTokenWeight,
+    deployConfig.minStakingTokensLocked
+  );
+
+  const controller = await DAOController.new();
+  const avatar = await DAOAvatar.new();
+  await avatar.initialize(controller.address);
+
+  for (let i = 0; i < deployConfig.repHolders.length; i++) {
+    const addressI = deployConfig.repHolders[i].address;
+    const amountI = deployConfig.repHolders[i].amount;
+    await reputation.mint(addressI, amountI);
+    await dxd.mint(addressI, amountI);
+    await dxd.approve(dxdStake.address, amountI, {
+      from: deployConfig.repHolders[i].address,
+    });
+    await dxdStake.stake(amountI, 25, {
+      from: deployConfig.repHolders[i].address,
+    });
+  }
+  await reputation.transferOwnership(controller.address);
+
+  const votingMachine = await VotingMachine.new(
+    deployConfig.votingMachineToken
+  );
+
+  const defaultParamsHash = await setDefaultParameters(votingMachine);
+
+  await controller.initialize(
+    deployConfig.owner,
+    reputation.address,
+    defaultParamsHash
+  );
+
+  return {
+    controller,
+    avatar,
+    reputation,
+    votingMachine,
+    dxdStake,
+    dxdInfluence,
+    votingPowerToken,
+    defaultParamsHash,
+    dxd,
+  };
 };
 
 export async function getProposalId(tx, contract, eventName) {

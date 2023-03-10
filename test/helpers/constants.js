@@ -21,6 +21,22 @@ export const MIN_SECONDS_FOR_EXECUTION = 86400;
 export const YES_OPTION = "2";
 export const NO_OPTION = "1";
 
+const lf = 0.025;
+const ef = 0;
+const exp = 1;
+
+export const GOVERNANCE_V2_CONFIG = web3 => ({
+  repTokenWeight: 50,
+  stakeTokenWeight: 50,
+  minStakingTokensLocked: 100,
+  maxTimeCommitment: 1000,
+  linearFactor: web3.utils.toWei(lf.toString(), "ether"),
+  exponentialFactor: web3.utils.toWei(ef.toString(), "ether"),
+  exponent: web3.utils.toWei(exp.toString(), "ether"),
+  repHolders: [],
+  votingMachineToken: SOME_ADDRESS,
+});
+
 export const WALLET_SCHEME_PROPOSAL_STATES = {
   none: "0",
   submitted: "1",

@@ -3,15 +3,15 @@
 ## Scheme
 
 _An abstract Scheme contract to be used as reference for any scheme implementation.
-The Scheme is designed to work with a Voting Machine and allow a any amount of options and calls to be executed.
+The Scheme is designed to work with a Voting Machine and allow any amount of options and calls to be executed.
 Each proposal contains a list of options, and each option a list of calls, each call has (to, data and value).
 The options should have the same amount of calls, and all those calls are sent in arrays on the proposeCalls function.
 The option 1 is always the default negative option, to vote against a proposal the vote goes on option 1.
 A minimum of two options is required, where 1 == NO and 2 == YES.
 Any options that are not 1 can be used for positive decisions with different calls to execute.
 The calls that will be executed are the ones that located in the batch of calls of the winner option.
-If there is 10 calls and 2 options it means that the 10 calls would be executed if option 2 wins.
-if there is 10 calls and 3 options it means that if options 2 wins it will execute calls [0,4] and in case option 3 wins it will execute calls [5,9].
+If there are 10 calls and 2 options it means that the 10 calls would be executed if option 2 wins.
+If there are 10 calls and 3 options it means that if options 2 wins it will execute calls [0,4] and in case option 3 wins it will execute calls [5,9].
 When a proposal is created it is registered in the voting machine.
 Once the governance process ends on the voting machine the voting machine can execute the proposal winning option.
 If the wining option cant be executed successfully, it can be finished without execution once the maxTimesForExecution time passes._
@@ -92,14 +92,6 @@ Boolean that is true when is executing a proposal, to avoid re-entrancy attacks.
 event ProposalStateChange(bytes32 proposalId, uint256 state)
 ```
 
-### Scheme__CannotInitTwice
-
-```solidity
-error Scheme__CannotInitTwice()
-```
-
-Emitted when its initialized twice
-
 ### Scheme__AvatarAddressCannotBeZero
 
 ```solidity
@@ -175,7 +167,7 @@ Emitted if the ERC20 limits are exceeded
 ### initialize
 
 ```solidity
-function initialize(address payable avatarAddress, address votingMachineAddress, address controllerAddress, address permissionRegistryAddress, string _schemeName, uint256 _maxRepPercentageChange) external
+function initialize(address payable avatarAddress, address votingMachineAddress, address controllerAddress, address permissionRegistryAddress, address votingPowerAddress, string _schemeName, uint256 _maxRepPercentageChange) external
 ```
 
 _Initialize Scheme contract_
@@ -188,6 +180,7 @@ _Initialize Scheme contract_
 | votingMachineAddress | address | The voting machine address |
 | controllerAddress | address | The controller address |
 | permissionRegistryAddress | address | The address of the permission registry contract |
+| votingPowerAddress | address |  |
 | _schemeName | string | The name of the scheme |
 | _maxRepPercentageChange | uint256 | The maximum percentage allowed to be changed in REP total supply after proposal execution |
 
@@ -222,7 +215,8 @@ _Propose calls to be executed, the calls have to be allowed by the permission re
 function executeProposal(bytes32 proposalId, uint256 winningOption) public virtual returns (bool success)
 ```
 
-_Execution of proposals, can only be called by the voting machine in which the vote is held._
+_Execute the proposal calls for the winning option,
+can only be called by the voting machine in which the vote is held._
 
 #### Parameters
 
@@ -243,7 +237,8 @@ _Execution of proposals, can only be called by the voting machine in which the v
 function finishProposal(bytes32 proposalId, uint256 winningOption) public virtual returns (bool success)
 ```
 
-_Finish a proposal and set the final state in storage_
+_Finish a proposal and set the final state in storage without any execution.
+The only thing done here is a change in the proposal state in case the proposal was not executed._
 
 #### Parameters
 

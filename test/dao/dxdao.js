@@ -24,7 +24,7 @@ contract("DXdao", function (accounts) {
   beforeEach(async function () {
     votingMachineToken = await ERC20Mock.new("DXDao", "DXD", 1000, accounts[0]);
 
-    dxDao = await helpers.deployDao({
+    dxDao = await helpers.deployDaoV2({
       owner: accounts[0],
       votingMachineToken: votingMachineToken.address,
       repHolders: [
@@ -60,6 +60,7 @@ contract("DXdao", function (accounts) {
       dxDao.votingMachine.address,
       dxDao.controller.address,
       permissionRegistry.address,
+      dxDao.votingPowerToken.address,
       "Master Scheme",
       5
     );

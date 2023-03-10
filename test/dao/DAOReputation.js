@@ -1,8 +1,9 @@
 import { assert, expect } from "chai";
-
 const { expectEvent, expectRevert } = require("@openzeppelin/test-helpers");
+import { constants } from "../helpers";
 
 const DAOReputation = artifacts.require("./DAOReputation.sol");
+const VotingPowerMock = artifacts.require("./VotingPowerMock.sol");
 
 contract("DAOReputation", async accounts => {
   let tokenName, tokenSymbol, daoReputation, addresses, amounts, owner;
@@ -15,9 +16,17 @@ contract("DAOReputation", async accounts => {
     amounts = [100, 200, 300];
 
     daoReputation = await DAOReputation.new();
-    await daoReputation.initialize(tokenName, tokenSymbol, {
-      from: owner,
-    });
+
+    const vpTokenMock = await VotingPowerMock.new();
+
+    await daoReputation.initialize(
+      tokenName,
+      tokenSymbol,
+      vpTokenMock.address,
+      {
+        from: owner,
+      }
+    );
   });
 
   it("Should fail if is already initialized", async () => {
@@ -123,5 +132,76 @@ contract("DAOReputation", async accounts => {
       daoReputation.burnMultiple(addresses, [1, 2, 3], { from: notTheOwner }),
       ownableAccessError
     );
+  });
+  it("Should not revert if mint amount is 0 and return without mint|snapshot", async () => {
+    const repHolder = accounts[0];
+    const amount = 0;
+    const currentSnapshotId = await daoReputation.getCurrentSnapshotId();
+    const reputationBalance = await daoReputation.balanceOf(repHolder);
+    await daoReputation.mint(repHolder, amount);
+    expect(reputationBalance.toNumber(), amount);
+    expect((await daoReputation.getCurrentSnapshotId()).toNumber()).equal(
+      currentSnapshotId.toNumber()
+    );
+  });
+  it("Should not revert if burn amount is 0 and return without burn|snapshot", async () => {
+    const repHolder = accounts[0];
+    const amount = 100;
+    await daoReputation.mint(repHolder, amount);
+
+    const currentSnapshotId = await daoReputation.getCurrentSnapshotId();
+    const reputationBalance = await daoReputation.balanceOf(repHolder);
+
+    await daoReputation.burn(repHolder, 0),
+      expect(reputationBalance.toNumber(), amount);
+    expect((await daoReputation.getCurrentSnapshotId()).toNumber()).equal(
+      currentSnapshotId.toNumber()
+    );
+  });
+
+  it("Should not revert if one of the amounts in mintMultiple is 0 and skip minting for that account", async () => {
+    const balances = [100, 0, 2];
+
+    await daoReputation.mintMultiple(addresses, balances);
+
+    const reputationBalance0 = await daoReputation.balanceOf(addresses[0]);
+    const reputationBalance1 = await daoReputation.balanceOf(addresses[1]);
+    const reputationBalance2 = await daoReputation.balanceOf(addresses[2]);
+    assert.equal(reputationBalance0.toNumber(), balances[0]);
+    assert.equal(reputationBalance1.toNumber(), balances[1]);
+    assert.equal(reputationBalance2.toNumber(), balances[2]);
+  });
+
+  // eslint-disable-next-line max-len
+  it("Should not revert if one of the amounts in burnMultiple is 0 and skip burning for account with zero amount", async () => {
+    await daoReputation.mintMultiple(addresses, [100, 200, 100]);
+    const burnAmounts = [100, 200, 0];
+
+    await daoReputation.burnMultiple(addresses, burnAmounts);
+
+    const reputationBalance0 = await daoReputation.balanceOf(addresses[0]);
+    const reputationBalance1 = await daoReputation.balanceOf(addresses[1]);
+    const reputationBalance2 = await daoReputation.balanceOf(addresses[2]);
+    assert.equal(reputationBalance0.toNumber(), 0);
+    assert.equal(reputationBalance1.toNumber(), 0);
+    assert.equal(reputationBalance2.toNumber(), 100);
+  });
+
+  it("Should not revert initializing with null votingPower address", async () => {
+    const reputation = await DAOReputation.new();
+    // init with votingpower as zero address
+    await reputation.initialize(
+      tokenName,
+      tokenSymbol,
+      constants.ZERO_ADDRESS,
+      {
+        from: owner,
+      }
+    );
+    const firstSnapshot = await reputation.getCurrentSnapshotId();
+    await reputation.mintMultiple(addresses, [100, 200, 100]);
+    const secondSnapshot = await reputation.getCurrentSnapshotId();
+
+    expect(secondSnapshot.toNumber()).greaterThan(firstSnapshot.toNumber());
   });
 });

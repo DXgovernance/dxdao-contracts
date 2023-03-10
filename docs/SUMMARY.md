@@ -1,9 +1,13 @@
 # Summary
 * /contracts
   * /dao
+    * [AccountSnapshot](/docs/contracts/dao/AccountSnapshot.md)
     * [DAOAvatar](/docs/contracts/dao/DAOAvatar.md)
     * [DAOController](/docs/contracts/dao/DAOController.md)
     * [DAOReputation](/docs/contracts/dao/DAOReputation.md)
+    * [DXDInfluence](/docs/contracts/dao/DXDInfluence.md)
+    * [DXDStake](/docs/contracts/dao/DXDStake.md)
+    * [VotingPower](/docs/contracts/dao/VotingPower.md)
     * /schemes
       * [AvatarScheme](/docs/contracts/dao/schemes/AvatarScheme.md)
       * [Scheme](/docs/contracts/dao/schemes/Scheme.md)
@@ -26,7 +30,9 @@
       * [ERC20GuildWithERC1271](/docs/contracts/erc20guild/implementations/ERC20GuildWithERC1271.md)
       * [GuardedERC20Guild](/docs/contracts/erc20guild/implementations/GuardedERC20Guild.md)
       * [MigratableERC20Guild](/docs/contracts/erc20guild/implementations/MigratableERC20Guild.md)
+      * [PermissionRegistryModule](/docs/contracts/erc20guild/implementations/PermissionRegistryModule.md)
       * [SnapshotERC20Guild](/docs/contracts/erc20guild/implementations/SnapshotERC20Guild.md)
       * [SnapshotRepERC20Guild](/docs/contracts/erc20guild/implementations/SnapshotRepERC20Guild.md)
+      * [ZodiacERC20Guild](/docs/contracts/erc20guild/implementations/ZodiacERC20Guild.md)
     * /utils
       * [GuildRegistry](/docs/contracts/erc20guild/utils/GuildRegistry.md)

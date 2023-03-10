@@ -1,0 +1,715 @@
+const { expectRevert } = require("@openzeppelin/test-helpers");
+const { web3 } = require("@openzeppelin/test-helpers/src/setup");
+const VotingPower = artifacts.require("./VotingPower.sol");
+const DAOReputation = artifacts.require("DAOReputation.sol");
+const DXDStake = artifacts.require("DXDStake.sol");
+const DXDInfluence = artifacts.require("DXDInfluence.sol");
+const ERC20Mock = artifacts.require("./ERC20Mock.sol");
+const BigNumber = require("bignumber.js");
+
+BigNumber.config({ decimalPlaces: 18 });
+
+const bn = n => new BigNumber(n);
+
+contract("VotingPower", function (accounts) {
+  let repToken;
+  let dxdStake;
+  let vpToken;
+  let owner = accounts[0];
+  let precision;
+  let dxd;
+  let dxdInfluence;
+  const repTokenWeight = 50;
+  const stakeTokenWeight = 50;
+  const minStakingTokensLocked = 100;
+  const maxTimeCommitment = 1000;
+  const lf = 0.025;
+  const linearFactor = web3.utils.toWei(lf.toString(), "ether");
+  const ef = 0;
+  const exponentialFactor = web3.utils.toWei(ef.toString(), "ether");
+  const exp = 1;
+  const exponent = web3.utils.toWei(exp.toString(), "ether");
+
+  const repHolders = [
+    { account: accounts[1], amount: bn(40) },
+    { account: accounts[2], amount: bn(30) },
+    { account: accounts[3], amount: bn(30) },
+  ];
+  const stakeHolders = [
+    { account: accounts[1], amount: bn(30) },
+    { account: accounts[2], amount: bn(40) },
+    { account: accounts[3], amount: bn(30) },
+  ];
+
+  const restore = () => {
+    repToken = null;
+    dxdStake = null;
+    dxd = null;
+    vpToken = null;
+    precision = null;
+  };
+
+  const deployVpToken = async (config = {}) => {
+    restore();
+    repToken = await DAOReputation.new();
+
+    dxdStake = await DXDStake.new();
+    dxdInfluence = await DXDInfluence.new();
+
+    dxd = await ERC20Mock.new(
+      "DXD Token",
+      "DXD",
+      web3.utils.toWei("10000", "ether"),
+      owner
+    );
+
+    vpToken = await VotingPower.new({ from: owner });
+
+    await repToken.initialize("Reputation", "REP", vpToken.address);
+
+    await dxdStake.initialize(
+      dxd.address,
+      dxdInfluence.address,
+      owner,
+      maxTimeCommitment,
+      "DXDStake",
+      "stDXD",
+      {
+        from: owner,
+      }
+    );
+
+    await dxdInfluence.initialize(
+      dxdStake.address,
+      vpToken.address,
+      linearFactor,
+      exponentialFactor,
+      exponent,
+      {
+        from: owner,
+      }
+    );
+
+    await vpToken.initialize(
+      "Voting Power Token", // name
+      "VPT", // symbol
+      config.repTokenAddress || repToken.address,
+      config.dxdInfluence || dxdInfluence.address,
+      config.repWeight || repTokenWeight,
+      config.stakingWeight || stakeTokenWeight,
+      config.minStakingTokensLocked || minStakingTokensLocked
+    );
+
+    precision = bn(await vpToken.precision());
+  };
+
+  const mintAll = async () => {
+    await Promise.all(
+      stakeHolders.map(({ account, amount }) =>
+        mintApproveStake(account, amount)
+      ) //eslint-disable-line
+    );
+    await repToken.mintMultiple(
+      repHolders.map(v => v.account),
+      repHolders.map(v => v.amount)
+    );
+  };
+
+  const mintApproveStake = async (account, amount) => {
+    await dxd.mint(account, amount);
+    await dxd.approve(dxdStake.address, amount, { from: account });
+    await dxdStake.stake(amount, 100, {
+      from: account,
+    });
+  };
+
+  describe("initialize", () => {
+    it("Should not initialize 2 times", async () => {
+      await deployVpToken();
+      await expectRevert(
+        vpToken.initialize(
+          "Voting Power Token", // name
+          "VPT", // symbol,
+          repToken.address,
+          dxdStake.address,
+          50,
+          50,
+          100
+        ),
+        "Initializable: contract is already initialized"
+      );
+    });
+
+    it("Should do _snapshot()", async () => {
+      await deployVpToken();
+      expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(2);
+    });
+
+    it("Should fail if repToken and dxdStake addresses are the same", async () => {
+      vpToken = await VotingPower.new();
+      repToken = await DAOReputation.new();
+      dxdInfluence = await DXDInfluence.new();
+
+      await expectRevert(
+        vpToken.initialize(
+          "Voting Power Token", // name
+          "VPT", // symbol
+          dxdInfluence.address,
+          dxdInfluence.address,
+          repTokenWeight,
+          stakeTokenWeight,
+          minStakingTokensLocked
+        ),
+        "VotingPower_ReputationTokenAndInfluenceTokenCannotBeEqual()"
+      );
+    });
+
+    it("Should update token weights", async () => {
+      await deployVpToken();
+      await mintAll();
+      const currentSnapshot = bn(await vpToken.getCurrentSnapshotId());
+      expect(
+        (
+          await vpToken.getWeightOfAt(dxdInfluence.address, currentSnapshot)
+        ).toNumber()
+      ).equal(stakeTokenWeight);
+      expect(
+        (
+          await vpToken.getWeightOfAt(repToken.address, currentSnapshot)
+        ).toNumber()
+      ).equal(repTokenWeight);
+    });
+
+    it("Should fail if weights are invalid", async () => {
+      await expectRevert(
+        deployVpToken({ repWeight: 101 }),
+        "VotingPower_InvalidTokenWeights()"
+      );
+      await expectRevert(
+        deployVpToken({ repWeight: 50, stakingWeight: 51 }),
+        "VotingPower_InvalidTokenWeights()"
+      );
+    });
+  });
+
+  describe("Composition", () => {
+    beforeEach(async () => await deployVpToken());
+    it("Should use 50% 50% if staking token supply > _minStakingTokensLocked", async () => {
+      // update config to be 50% 50%
+      await mintAll();
+      await vpToken.setComposition(50, 50);
+      const repWeight = await vpToken.getWeightOf(repToken.address);
+      expect(repWeight.toNumber()).equal(50);
+    });
+
+    it("Should use 100% weight of rep if staking token supply < _minStakingTokensLocked", async () => {
+      expect((await dxdStake.totalSupply()).toNumber()).equal(0);
+      // update config to be 50% 50%
+      await vpToken.setComposition(50, 50);
+
+      const snapshotId = await vpToken.getCurrentSnapshotId();
+
+      const repWeight = await vpToken.getWeightOfAt(
+        repToken.address,
+        snapshotId
+      );
+      expect(repWeight.toNumber()).equal(100);
+
+      const stakingWeight = await vpToken.getWeightOfAt(
+        dxdInfluence.address,
+        snapshotId
+      );
+      expect(stakingWeight.toNumber()).equal(0);
+    });
+
+    it("Should fail if the sum of both weigths is not 100", async () => {
+      await expectRevert(
+        vpToken.setComposition(50, 51),
+        "VotingPower_InvalidTokenWeights()"
+      );
+      await expectRevert(
+        vpToken.setComposition(51, 50),
+        "VotingPower_InvalidTokenWeights()"
+      );
+      await expectRevert(
+        vpToken.setComposition(80, 30),
+        "VotingPower_InvalidTokenWeights()"
+      );
+    });
+
+    it("Should be called only by the owner", async () => {
+      await expectRevert(
+        vpToken.setComposition(50, 50, { from: accounts[3] }),
+        "Ownable: caller is not the owner"
+      );
+    });
+
+    it("Should not update balance after setting new weights for same snapshotId", async () => {
+      const holder = repHolders[0].account;
+      await mintAll();
+
+      const initialSnapshotId = bn(await vpToken.getCurrentSnapshotId());
+      const initialBalance = bn(
+        await vpToken.balanceOfAt(holder, initialSnapshotId)
+      );
+      await vpToken.setComposition(70, 30);
+      const snapshotId2 = bn(await vpToken.getCurrentSnapshotId());
+      // snapshot should have been updated after setComposition
+      expect(snapshotId2.toNumber()).not.equal(initialSnapshotId.toNumber());
+      // balance after setting composition at initialized snapshot
+      const balance2 = bn(await vpToken.balanceOfAt(holder, initialSnapshotId));
+      // Balance should not change using the same snapshot despite weights changed
+      expect(initialBalance.toNumber()).equal(balance2.toNumber());
+      // balance at current snapshotId
+      const balance3 = bn(await vpToken.balanceOf(holder));
+      expect(balance3.toNumber()).not.equal(balance2.toNumber());
+    });
+  });
+
+  describe("Voting power", () => {
+    beforeEach(async () => {
+      await deployVpToken();
+    });
+    it("Should return correct voting power", async () => {
+      await mintAll();
+      const holder = accounts[1];
+
+      const vpTokenSnapshotId = await vpToken.getCurrentSnapshotId();
+
+      const repBalance = await repToken.balanceOf(holder);
+      const repSupply = await repToken.totalSupply();
+
+      const repVotingPowerPercent = bn(repBalance)
+        .mul(precision)
+        .mul(100)
+        .div(bn(repSupply));
+
+      const repTokenWeight = bn(await vpToken.getWeightOf(repToken.address));
+
+      const repVotingPowerPercentWeighted = bn(
+        repTokenWeight.mul(repVotingPowerPercent)
+      ).div(100);
+
+      const dxdInfluenceBalance = await dxdInfluence.balanceOf(holder);
+      const dxdInfluenceSupply = await dxdInfluence.totalSupply();
+      const dxdInfluenceVotingPowerPercent = bn(dxdInfluenceBalance)
+        .mul(precision)
+        .mul(100)
+        .div(bn(dxdInfluenceSupply));
+      const dxdInfluenceTokenWeight = bn(
+        await vpToken.getWeightOf(dxdInfluence.address)
+      );
+
+      const dxdInfluenceVotingPowerPercentWeighted = bn(
+        dxdInfluenceTokenWeight.mul(dxdInfluenceVotingPowerPercent)
+      ).div(100);
+
+      const expectedTotalVotingPowerPercentPowered =
+        repVotingPowerPercentWeighted
+          .add(dxdInfluenceVotingPowerPercentWeighted)
+          .toString();
+      const votingPower = await vpToken.balanceOfAt(holder, vpTokenSnapshotId);
+
+      expect(votingPower.toString()).equal(
+        expectedTotalVotingPowerPercentPowered
+      );
+    });
+
+    it("Should return 100% voting power when has 100% rep supply & staking has 0 supply", async () => {
+      const holder = repHolders[1].account;
+      const balance = repHolders[1].amount;
+      const expectedVotingPowerPercent = 100;
+
+      await repToken.mint(holder, balance);
+      expect(bn(await repToken.balanceOf(holder)).eq(bn(balance))).to.be.true;
+
+      const repTokenWeight = bn(await vpToken.getWeightOf(repToken.address));
+
+      expect(repTokenWeight.toString()).equal("100");
+
+      const votingPower = bn(await vpToken.balanceOf(holder));
+
+      expect(votingPower.div(precision).toNumber()).equal(
+        expectedVotingPowerPercent
+      );
+    });
+
+    it("Should return 50% voting power", async () => {
+      const holder1 = repHolders[0].account;
+      const holder2 = repHolders[1].account;
+      const balance1 = 250;
+      const balance2 = 250;
+      const expectedVotingPowerPercent = 50; // 50%
+
+      await repToken.mint(holder1, balance1);
+      await repToken.mint(holder2, balance2);
+
+      expect(bn(await repToken.balanceOf(holder1)).toNumber()).equal(balance1);
+      expect(bn(await repToken.totalSupply()).toNumber()).equal(
+        balance1 + balance2
+      );
+
+      const repTokenWeight = bn(
+        await vpToken.getWeightOf(repToken.address)
+      ).toNumber();
+
+      // No staking tokens locked - 100% weight to rep token
+      expect(repTokenWeight).equal(100);
+
+      const votingPower = bn(await vpToken.balanceOf(holder1));
+
+      expect(votingPower.div(precision).toNumber()).equal(
+        expectedVotingPowerPercent
+      );
+    });
+
+    it("Should return 1.8% voting power with 2%rep, 1.6% stake & 50% 50% weigths", async () => {
+      const holder1 = repHolders[0].account;
+      const holder2 = repHolders[1].account;
+      const repDistribution = [8, 392]; // 2% | 98%
+      const stakeDistribution = [16, 984]; // 1.6% | 98.4%
+      const expectedHolder1VP = 1800000000000000000; // 1.8%;
+      const expectedHolder2VP = precision.mul(98.2).toNumber();
+
+      await repToken.mintMultiple([holder1, holder2], repDistribution);
+
+      await mintApproveStake(holder1, bn(stakeDistribution[0]));
+      await mintApproveStake(holder2, bn(stakeDistribution[1]));
+
+      const votingPower1 = bn(await vpToken.balanceOf(holder1));
+      const votingPower2 = bn(await vpToken.balanceOf(holder2));
+      expect(votingPower1.toNumber()).equal(expectedHolder1VP);
+      expect(votingPower2.toNumber()).equal(expectedHolder2VP);
+    });
+
+    it("Should return 1% voting power", async () => {
+      const holder1 = repHolders[0].account;
+      const holder2 = repHolders[1].account;
+      const balance1 = 1; // 0 %
+      const balance2 = 99; // 99 %
+      const expectedVotingPowerPercent = bn(1);
+
+      await repToken.mint(holder1, balance1);
+      await repToken.mint(holder2, balance2);
+
+      // Staking tokens locked < minimum so 100% weight to rep token
+      expect((await vpToken.getWeightOf(repToken.address)).toNumber()).equal(
+        100
+      );
+
+      const votingPower = bn(await vpToken.balanceOf(holder1));
+
+      expect(votingPower.toString()).equal(
+        bn(expectedVotingPowerPercent.mul(precision)).toString()
+      );
+    });
+
+    it("Should return 0.5% voting power if repVotingPower=1%, stakingVotingpower=0% and staking supply > minStakingTokensLocked", async () => {
+      const holder1 = repHolders[0].account;
+      const holder2 = repHolders[1].account;
+      const balance1 = 1;
+      const balance2 = 99;
+      const expectedVotingPowerPercent = 0.5; // 0.5%
+
+      await repToken.mint(holder1, balance1); // 1% rep
+      await repToken.mint(holder2, balance2); // 99% rep
+
+      // holder2 stake 100% of stakingToken supply
+      await mintApproveStake(holder2, 300);
+
+      expect(bn(await vpToken.getWeightOf(repToken.address)).toNumber()).equal(
+        50
+      );
+
+      const votingPower = bn(await vpToken.balanceOf(holder1));
+
+      expect(votingPower.div(precision).toNumber()).equal(
+        expectedVotingPowerPercent
+      );
+    });
+
+    it("Should return 0.001% voting power", async () => {
+      const holder1 = repHolders[0].account;
+      const holder2 = repHolders[1].account;
+      const balance1 = 200; // 0.001 %
+      const balance2 = 19999800; // 99,999 %
+      const expectedVotingPowerPercent = bn(0.001); // 0.001%
+
+      await repToken.mint(holder1, balance1);
+      await repToken.mint(holder2, balance2);
+
+      // Staking tokens locked < minimum so 100% weight to rep token
+      expect((await vpToken.getWeightOf(repToken.address)).toNumber()).equal(
+        100
+      );
+
+      const votingPower = bn(await vpToken.balanceOf(holder1));
+
+      expect(votingPower.toString()).equal(
+        bn(expectedVotingPowerPercent.mul(precision)).toString()
+      );
+    });
+
+    it("Should return 100 : 0.0000000000000001% voting power", async () => {
+      const holder1 = repHolders[0].account;
+      const holder2 = repHolders[1].account;
+      const balance1 = bn(1);
+      const balance2 = precision.sub(balance1);
+      const percent1 = 0.0000000000000001;
+      const expectedVotingPowerPercent = bn(percent1).mul(precision);
+
+      await repToken.mint(holder1, balance1);
+      await repToken.mint(holder2, balance2);
+
+      const repTokenWeight = (
+        await vpToken.getWeightOf(repToken.address)
+      ).toNumber();
+
+      // Staking tokens locked < minimum so 100% weight to rep token
+      expect(repTokenWeight).equal(100);
+
+      const votingPower = bn(await vpToken.balanceOf(holder1));
+
+      expect(votingPower.toNumber()).equal(
+        expectedVotingPowerPercent.toNumber()
+      );
+    });
+
+    it("Should return min unit 1 VP : 0.000000000000000001% voting power", async () => {
+      const holder1 = repHolders[0].account;
+      const holder2 = repHolders[1].account;
+      const balance1 = bn(1);
+      const balance2 = precision.mul(100).sub(balance1);
+      const percent1 = 0.000000000000000001;
+      const expectedVotingPowerPercent = bn(percent1).mul(precision);
+
+      await repToken.mint(holder1, balance1);
+      await repToken.mint(holder2, balance2);
+
+      const repTokenWeight = (
+        await vpToken.getWeightOf(repToken.address)
+      ).toNumber();
+
+      // Staking tokens locked < minimum so 100% weight to rep token
+      expect(repTokenWeight).equal(100);
+
+      const votingPower = bn(await vpToken.balanceOf(holder1));
+
+      expect(votingPower.toNumber()).equal(
+        expectedVotingPowerPercent.toNumber()
+      );
+    });
+
+    it("Should return 0% if snapshot=0", async () => {
+      const snapshotId = (await vpToken.getCurrentSnapshotId()).toNumber();
+
+      await mintAll();
+      expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(
+        snapshotId + stakeHolders.length + 1 // Stake fn snapshot per each stake() call. Rep mintmultiple 1 single snapshot
+      );
+
+      const votingPower = await vpToken.balanceOfAt(
+        repHolders[0].account,
+        snapshotId
+      );
+      expect(votingPower.toNumber()).equal(0);
+    });
+
+    it("Should return 0% voting power if user has no rep balance nor staking token balance", async () => {
+      const user = accounts[9]; // has no balance
+      await mintAll();
+      expect((await vpToken.getCurrentSnapshotId()).toNumber()).gt(0);
+
+      const votingPower = bn(await vpToken.balanceOf(user));
+      expect(votingPower.toNumber()).equal(0);
+    });
+
+    it("Should return 0 if votingPower < minUnit (1e-18). 0.000000000000000001% voting power", async () => {
+      const holder1 = repHolders[0].account;
+      const holder2 = repHolders[1].account;
+      const balance1 = bn(1);
+      const balance2 = precision.mul(1000).sub(balance1);
+      const percent1 = 0.0000000000000000001;
+
+      await repToken.mint(holder1, balance1);
+      await repToken.mint(holder2, balance2);
+
+      const repTokenWeight = (
+        await vpToken.getWeightOf(repToken.address)
+      ).toNumber();
+
+      // Staking tokens locked < minimum so 100% weight to rep token
+      expect(repTokenWeight).equal(100);
+
+      const votingPower = bn(await vpToken.balanceOf(holder1));
+
+      expect(bn(percent1).mul(precision).toNumber()).equal(0.1);
+      expect(votingPower.toNumber()).equal(0);
+    });
+
+    it("Should return correct voting power from snapshotId", async () => {
+      const holder = repHolders[1].account;
+      const holder2 = repHolders[2].account;
+      const balance = repHolders[1].amount;
+
+      await repToken.mint(holder, balance);
+
+      // 100% weight to rep token.
+      const repTokenWeight = bn(await vpToken.getWeightOf(repToken.address));
+      expect(repTokenWeight.toString()).equal("100");
+
+      // balanceof and balanceOfAt should return same result
+      const snapshotId1 = (await vpToken.getCurrentSnapshotId()).toNumber();
+      const votingPower = bn(await vpToken.balanceOf(holder));
+      const votingPowerAt = bn(await vpToken.balanceOfAt(holder, snapshotId1));
+      expect(votingPower.div(precision).toNumber()).equal(100);
+      expect(votingPower.eq(votingPowerAt)).to.be.true;
+
+      await repToken.mint(holder2, balance);
+
+      const votingPower2 = bn(await vpToken.balanceOf(holder));
+      const votingPowerAtSnapshot1 = bn(
+        await vpToken.balanceOfAt(holder, snapshotId1)
+      );
+      expect(votingPower2.div(precision).toNumber()).equal(50);
+      expect(votingPowerAtSnapshot1.eq(votingPower2)).to.be.false;
+    });
+  });
+
+  describe("getTokenWeight", () => {
+    it("Should not fail if other address than rep or influence is received and return 0 weight", async () => {
+      await deployVpToken();
+      const anyAddress = accounts[9];
+      expect(bn(await vpToken.getWeightOf(anyAddress)).toNumber()).equal(0);
+    });
+    it("Should return 0 for influence if influence totalSupply is less than minStakingTokensLocked", async () => {
+      await deployVpToken();
+      expect(
+        (await vpToken.getWeightOf(dxdInfluence.address)).toNumber()
+      ).equal(0);
+    });
+    it("Should return 100 for reptoken if staking token totalSupply is less than minStakingTokensLocked", async () => {
+      await deployVpToken();
+      expect((await vpToken.getWeightOf(repToken.address)).toNumber()).equal(
+        100
+      );
+    });
+    it("Should return config value if staking token totalSupply is >= than minStakingTokensLocked", async () => {
+      await deployVpToken();
+      await mintApproveStake(accounts[1], minStakingTokensLocked);
+      expect((await dxdStake.totalSupply()).toNumber()).equal(
+        minStakingTokensLocked
+      );
+      expect((await vpToken.getWeightOf(repToken.address)).toNumber()).equal(
+        repTokenWeight
+      );
+      expect(
+        (await vpToken.getWeightOf(dxdInfluence.address)).toNumber()
+      ).equal(stakeTokenWeight);
+    });
+  });
+
+  describe("setMinStakingTokensLocked", () => {
+    beforeEach(async () => await deployVpToken());
+    it("Should set new minStakingTokensLocked", async () => {
+      const minTokensLocked = await vpToken.getMinStakingTokensLocked();
+      expect(minTokensLocked.toNumber()).equal(minStakingTokensLocked); // default minTokens during initialization
+      await vpToken.setMinStakingTokensLocked(400);
+      const minTokensLocked2 = await vpToken.getMinStakingTokensLocked();
+      expect(minTokensLocked2.toNumber()).equal(400);
+    });
+    it("Should fail if caller is not the owner", async () => {
+      await expectRevert(
+        vpToken.setMinStakingTokensLocked(400, { from: accounts[2] }),
+        "Ownable: caller is not the owner"
+      );
+    });
+    it("Should not modify balance using snapshot", async () => {
+      const holder = repHolders[0].account;
+      await mintAll();
+
+      const initialSnapshotId = bn(await vpToken.getCurrentSnapshotId());
+
+      const initialBalance = bn(
+        await vpToken.balanceOfAt(holder, initialSnapshotId)
+      );
+
+      await vpToken.setMinStakingTokensLocked(1000);
+      await repToken.mintMultiple([accounts[3], accounts[5]], [200, 300]);
+      // balance after setting composition at initialized snapshot
+      const balance2 = bn(await vpToken.balanceOfAt(holder, initialSnapshotId));
+      // Balance should not change using the same snapshot despite minStakingTokensLocked changed
+      expect(initialBalance.toNumber()).equal(balance2.toNumber());
+    });
+    it("Should not modify tokens weight using snapshot", async () => {
+      await mintAll();
+
+      const initialSnapshotId = bn(await vpToken.getCurrentSnapshotId());
+      const initialWeight = bn(
+        await vpToken.getWeightOfAt(dxdInfluence.address, initialSnapshotId)
+      );
+
+      await vpToken.setMinStakingTokensLocked(1000);
+      const influenceWeight2 = bn(
+        await vpToken.getWeightOfAt(dxdInfluence.address, initialSnapshotId)
+      );
+      expect(initialWeight.toNumber()).equal(influenceWeight2.toNumber());
+    });
+  });
+
+  describe("Callback", () => {
+    beforeEach(async () => await deployVpToken());
+    it("Should increment snapshot", async () => {
+      const INITIALIZE_SNAPSHOTS = 2;
+      const calls = Array.from(Array(100))
+        .fill()
+        .map((_, i) => i + 1);
+      for (let callNumber of calls) {
+        await repToken.mint(accounts[1], 100);
+        expect((await vpToken.getCurrentSnapshotId()).toNumber()).equal(
+          callNumber + INITIALIZE_SNAPSHOTS
+        );
+      }
+    });
+  });
+
+  describe("Total Supply", () => {
+    it("Should return 100%", async () => {
+      await deployVpToken();
+      const totalSupply = bn(await vpToken.totalSupply());
+      expect(totalSupply.div(precision).toNumber()).equal(100);
+    });
+  });
+
+  it("Should revert transfer function", async () => {
+    await deployVpToken();
+    await expectRevert(
+      vpToken.transfer(accounts[1], 200),
+      "VotingPower: Cannot call transfer function"
+    );
+  });
+
+  it("Should revert allowance function", async () => {
+    await deployVpToken();
+    await expectRevert(
+      vpToken.allowance(accounts[1], accounts[2]),
+      "VotingPower: Cannot call allowance function"
+    );
+  });
+
+  it("Should revert approve function", async () => {
+    await deployVpToken();
+    await expectRevert(
+      vpToken.approve(accounts[1], 200),
+      "VotingPower: Cannot call approve function"
+    );
+  });
+
+  it("Should revert transferFrom function", async () => {
+    await deployVpToken();
+    await expectRevert(
+      vpToken.transferFrom(accounts[1], accounts[2], 200),
+      "VotingPower: Cannot call transferFrom function"
+    );
+  });
+});

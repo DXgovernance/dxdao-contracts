@@ -2,7 +2,12 @@ import { artifacts } from "hardhat";
 import * as helpers from "../../helpers";
 import { assert } from "chai";
 import { NULL_HASH, SOME_HASH } from "../../helpers/constants";
-const { time, expectRevert } = require("@openzeppelin/test-helpers");
+const {
+  time,
+  expectRevert,
+  expectEvent,
+} = require("@openzeppelin/test-helpers");
+import { web3 } from "@openzeppelin/test-helpers/src/setup";
 
 const AvatarScheme = artifacts.require("./AvatarScheme.sol");
 const WalletScheme = artifacts.require("./WalletScheme.sol");
@@ -24,7 +29,7 @@ contract("AvatarScheme", function (accounts) {
     actionMock = await ActionMock.new();
     standardTokenMock = await ERC20Mock.new("", "", 1000, accounts[1]);
 
-    org = await helpers.deployDao({
+    org = await helpers.deployDaoV2({
       owner: accounts[0],
       votingMachineToken: standardTokenMock.address,
       repHolders: [
@@ -47,6 +52,7 @@ contract("AvatarScheme", function (accounts) {
       org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "Master Wallet",
       5
     );
@@ -57,6 +63,7 @@ contract("AvatarScheme", function (accounts) {
       org.votingMachine.address,
       org.controller.address,
       permissionRegistry.address,
+      org.votingPowerToken.address,
       "Quick Wallet",
       1
     );

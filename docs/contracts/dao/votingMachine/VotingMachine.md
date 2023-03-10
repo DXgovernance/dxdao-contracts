@@ -67,7 +67,7 @@ struct Parameters {
 ```solidity
 struct Voter {
   uint256 option;
-  uint256 reputation;
+  uint256 votingPower;
   bool preBoosted;
 }
 ```
@@ -94,8 +94,7 @@ struct Proposal {
   uint256 currentBoostedVotePeriodLimit;
   bytes32 paramsHash;
   uint256 daoBounty;
-  uint256 totalStakes;
-  uint256 secondsFromTimeOutTillExecuteBoosted;
+  bool daoRedeemedWinnings;
   uint256[3] times;
 }
 ```
@@ -132,13 +131,13 @@ event NewProposal(bytes32 proposalId, address avatar, uint256 numOfOptions, addr
 ### ExecuteProposal
 
 ```solidity
-event ExecuteProposal(bytes32 proposalId, address avatar, uint256 option, uint256 totalReputation)
+event ExecuteProposal(bytes32 proposalId, address avatar, uint256 option, uint256 totalVotingPower)
 ```
 
 ### VoteProposal
 
 ```solidity
-event VoteProposal(bytes32 proposalId, address avatar, address voter, uint256 option, uint256 reputation)
+event VoteProposal(bytes32 proposalId, address avatar, address voter, uint256 option, uint256 votingPower)
 ```
 
 ### Stake
@@ -153,10 +152,10 @@ event Stake(bytes32 proposalId, address avatar, address staker, uint256 option, 
 event Redeem(bytes32 proposalId, address avatar, address beneficiary, uint256 amount)
 ```
 
-### UnclaimedDaoBounty
+### ClaimedDaoBounty
 
 ```solidity
-event UnclaimedDaoBounty(address avatar, address beneficiary, uint256 amount)
+event ClaimedDaoBounty(address avatar, address beneficiary, uint256 amount)
 ```
 
 ### ActionSigned
@@ -217,10 +216,22 @@ error VotingMachine__WrongProposalStateToRedeem()
 
 Emited when proposal is not in ExecutedInQueue, ExecutedInBoost or Expired status
 
+### VotingMachine__NoAmountToRedeem
+
+```solidity
+error VotingMachine__NoAmountToRedeem()
+```
+
 ### VotingMachine__TransferFailed
 
 ```solidity
 error VotingMachine__TransferFailed(address to, uint256 amount)
+```
+
+### VotingMachine__TransferFromFailed
+
+```solidity
+error VotingMachine__TransferFromFailed(address to, uint256 amount)
 ```
 
 ### VotingMachine__WrongProposalStateToRedeemDaoBounty
@@ -267,16 +278,16 @@ error VotingMachine__SchemeRefundBalanceIsZero()
 error VotingMachine__ProposalAlreadyVoted()
 ```
 
-### VotingMachine__VoterMustHaveReputation
+### VotingMachine__VoterMustHaveVotingPower
 
 ```solidity
-error VotingMachine__VoterMustHaveReputation()
+error VotingMachine__VoterMustHaveVotingPower()
 ```
 
-### VotingMachine__NotEnoughtReputation
+### VotingMachine__NotEnoughtVotingPower
 
 ```solidity
-error VotingMachine__NotEnoughtReputation()
+error VotingMachine__NotEnoughtVotingPower()
 ```
 
 ### VotingMachine__WrongVoteShared
@@ -353,7 +364,7 @@ arg start cannot be bigger than end
 mapping(bytes32 => mapping(uint256 => uint256)) proposalVotes
 ```
 
-proposalId   =>      option   =>    reputation
+proposalId   =>      option   =>    votingPower
 
 ### proposalPreBoostedVotes
 
@@ -361,7 +372,7 @@ proposalId   =>      option   =>    reputation
 mapping(bytes32 => mapping(uint256 => uint256)) proposalPreBoostedVotes
 ```
 
-proposalId   =>    option   => reputation
+proposalId   =>    option   => votingPower
 
 ### proposalVoters
 
@@ -551,7 +562,8 @@ function redeem(bytes32 proposalId, address beneficiary) external returns (uint2
 ```
 
 _Redeem a reward for a successful stake, vote or proposing.
-     The function use a beneficiary address as a parameter (and not msg.sender) to enable users to redeem on behalf of someone else._
+     The function uses a beneficiary address as a parameter (and not msg.sender)
+     to enable users to redeem on behalf of someone else._
 
 #### Parameters
 
@@ -654,7 +666,7 @@ _Returns the a score threshold which is required by a proposal to shift to boost
 ### calculateBoostChange
 
 ```solidity
-function calculateBoostChange(bytes32 proposalId) public view returns (uint256 toBoost)
+function calculateBoostChange(bytes32 proposalId) external view returns (uint256 toBoost)
 ```
 
 _Calculate the amount needed to boost a proposal_
@@ -739,7 +751,7 @@ _Config the vote refund for each scheme_
 ### withdrawRefundBalance
 
 ```solidity
-function withdrawRefundBalance(address scheme) external
+function withdrawRefundBalance(address avatar, address scheme) external
 ```
 
 _Withdraw scheme refund balance_
@@ -748,6 +760,7 @@ _Withdraw scheme refund balance_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
+| avatar | address | The avatar address of the dao that controls the scheme |
 | scheme | address | Scheme contract address to withdraw refund balance from |
 
 ### vote
@@ -764,7 +777,7 @@ _Voting function from old voting machine changing only the logic to refund vote 
 | ---- | ---- | ----------- |
 | proposalId | bytes32 | Id of the proposal |
 | option | uint256 | NO(1) or YES(2). |
-| amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
+| amount | uint256 | The voting power amount to vote with, 0 will use all available voting power. |
 
 #### Return Values
 
@@ -807,7 +820,7 @@ _Share the vote of a proposal for a voting machine on a event log_
 | proposalId | bytes32 | Id of the proposal |
 | voter | address | Address of voter |
 | option | uint256 | The vote option, NO(1) or YES(2). |
-| amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
+| amount | uint256 | The voting power amount to vote with, 0 will use all available voting power |
 | nonce | uint256 | Nonce value ,it is part of the signature to ensure that a signature can be received only once. |
 | actionType | uint256 | 1=vote, 2=stake |
 | signature | bytes | The encoded vote signature |
@@ -826,7 +839,7 @@ _Signal the vote of a proposal in this voting machine to be executed later_
 | ---- | ---- | ----------- |
 | proposalId | bytes32 | Id of the proposal to vote |
 | option | uint256 | The vote option, NO(1) or YES(2). |
-| amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
+| amount | uint256 | The voting power amount to vote with, 0 will use all available voting power. |
 
 ### executeSignedVote
 
@@ -843,7 +856,7 @@ _Execute a signed vote_
 | proposalId | bytes32 | Id of the proposal to execute the vote on |
 | voter | address | The signer of the vote |
 | option | uint256 | The vote option, NO(1) or YES(2). |
-| amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
+| amount | uint256 | The voting power amount to vote with, 0 will use all available voting power. |
 | signature | bytes | The signature of the hashed vote |
 
 ### propose
@@ -852,7 +865,8 @@ _Execute a signed vote_
 function propose(uint256 totalOptions, bytes32 paramsHash, address proposer, address avatar) external returns (bytes32 proposalId)
 ```
 
-_Register a new proposal with the given parameters. Every proposal has a unique ID which is being generated by calculating keccak256 of a incremented counter._
+_Register a new proposal with the given parameters.
+Every proposal has a unique ID which is being generated by calculating keccak256 of a incremented counter._
 
 #### Parameters
 
@@ -872,7 +886,7 @@ _Register a new proposal with the given parameters. Every proposal has a unique 
 ### _vote
 
 ```solidity
-function _vote(bytes32 proposalId, address voter, uint256 option, uint256 repAmount) internal returns (bool proposalExecuted)
+function _vote(bytes32 proposalId, address voter, uint256 option, uint256 amount) internal returns (bool proposalExecuted)
 ```
 
 _Vote for a proposal, if the voter already voted, cancel the last vote and set a new one instead_
@@ -884,7 +898,7 @@ _Vote for a proposal, if the voter already voted, cancel the last vote and set a
 | proposalId | bytes32 | Id of the proposal |
 | voter | address | Used in case the vote is cast for someone else |
 | option | uint256 | Value between 0 and the proposal's number of options. |
-| repAmount | uint256 | How many reputation the voter would like to stake for this vote. if  _rep==0 the voter full reputation will be use. |
+| amount | uint256 | How much voting power the voter stakes for this vote. if amount==0, the max voting power is used. |
 
 #### Return Values
 
@@ -976,7 +990,8 @@ _staking function_
 function _propose(uint256 optionsAmount, bytes32 paramsHash, address proposer, address avatar) internal returns (bytes32 proposalId)
 ```
 
-_Register a new proposal with the given parameters. Every proposal has a unique ID which is being generated by calculating keccak256 of a incremented counter._
+_Register a new proposal with the given parameters.
+Every proposal has a unique ID which is being generated by calculating keccak256 of a incremented counter._
 
 #### Parameters
 
@@ -1042,7 +1057,7 @@ _Hash the vote data that is used for signatures_
 | proposalId | bytes32 | Id of the proposal |
 | signer | address | The signer of the vote |
 | option | uint256 | The vote option, NO(1) or YES(2). |
-| amount | uint256 | The reputation amount to vote with, 0 will use all available REP |
+| amount | uint256 | The voting power amount to vote with, 0 will use all available voting power. |
 | nonce | uint256 | Nonce value, it is part of the signature to ensure that a signature can be received only once. |
 | actionType | uint256 | The governance action type to hash |
 
@@ -1058,7 +1073,7 @@ _Hash the vote data that is used for signatures_
 function getVoter(bytes32 proposalId, address voter) external view returns (uint256 option, uint256 amount)
 ```
 
-_Returns the vote and the amount of reputation of the user committed to this proposal_
+_Returns the vote and the amount of voting power of the user committed to this proposal_
 
 #### Parameters
 
@@ -1072,7 +1087,7 @@ _Returns the vote and the amount of reputation of the user committed to this pro
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | option | uint256 | The option voted |
-| amount | uint256 | The amount of rep used in the vote |
+| amount | uint256 | The amount of voting power used in the vote |
 
 ### getStaker
 
@@ -1282,11 +1297,23 @@ _Returns the amount of inactive proposals_
 | ---- | ---- | ----------- |
 | inactiveProposalsCount | uint256 | The total count of active proposals for given avatar address |
 
-### multiplyRealMath
+### getProposalTimes
 
 ```solidity
-function multiplyRealMath(uint256 a, uint256 b) public pure returns (uint256)
+function getProposalTimes(bytes32 proposalId) public view returns (uint256[3] times)
 ```
 
-_Helper function used in test to execute a real math lib multiplication_
+_Returns proposal `times` property for given `proposalId`_
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| proposalId | bytes32 | Id of the proposal |
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| times | uint256[3] | proposal.times [submittedTime, boostedPhaseTime, preBoostedPhaseTime] |
 
