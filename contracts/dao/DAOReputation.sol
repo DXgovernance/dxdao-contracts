@@ -15,9 +15,6 @@ contract DAOReputation is ERC20SnapshotRep {
     /// @notice Voting Power Token address
     address public votingPowerToken;
 
-    /// @notice Mint or Burn shouldn’t be called if the amount is 0
-    error DAOReputation__InvalidMintRepAmount();
-
     function initialize(
         string memory name,
         string memory symbol,
@@ -31,7 +28,7 @@ contract DAOReputation is ERC20SnapshotRep {
     /// @dev Create a new snapshot and call VPToken callback
     function snapshot() internal {
         _snapshot();
-        VotingPower(votingPowerToken).callback();
+        if (votingPowerToken != address(0)) VotingPower(votingPowerToken).callback();
     }
 
     /**

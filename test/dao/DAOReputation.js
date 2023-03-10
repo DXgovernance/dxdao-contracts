@@ -1,5 +1,6 @@
 import { assert, expect } from "chai";
 const { expectEvent, expectRevert } = require("@openzeppelin/test-helpers");
+import { constants } from "../helpers";
 
 const DAOReputation = artifacts.require("./DAOReputation.sol");
 const VotingPowerMock = artifacts.require("./VotingPowerMock.sol");
@@ -184,5 +185,23 @@ contract("DAOReputation", async accounts => {
     assert.equal(reputationBalance0.toNumber(), 0);
     assert.equal(reputationBalance1.toNumber(), 0);
     assert.equal(reputationBalance2.toNumber(), 100);
+  });
+
+  it("Should not revert initializing with null votingPower address", async () => {
+    const reputation = await DAOReputation.new();
+    // init with votingpower as zero address
+    await reputation.initialize(
+      tokenName,
+      tokenSymbol,
+      constants.ZERO_ADDRESS,
+      {
+        from: owner,
+      }
+    );
+    const firstSnapshot = await reputation.getCurrentSnapshotId();
+    await reputation.mintMultiple(addresses, [100, 200, 100]);
+    const secondSnapshot = await reputation.getCurrentSnapshotId();
+
+    expect(secondSnapshot.toNumber()).greaterThan(firstSnapshot.toNumber());
   });
 });
