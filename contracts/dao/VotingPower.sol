@@ -79,9 +79,6 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     ) public virtual initializer {
         __Ownable_init();
         if (_reputation == _dxdInfluence) revert VotingPower_ReputationTokenAndInfluenceTokenCannotBeEqual();
-        if (repWeight + stakingWeight != 100) {
-            revert VotingPower_InvalidTokenWeights();
-        }
         reputation = _reputation;
         influence = _dxdInfluence;
         name = _name;
@@ -154,7 +151,7 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
     function _calculateVotingPower(address account, uint256 snapshotId) internal view returns (uint256 votingPower) {
         if (snapshotId > getCurrentSnapshotId()) revert VotingPower_InvalidSnapshotId();
         address[2] memory tokens = [reputation, influence];
-        uint256 _votingPower = 0;
+        votingPower = 0;
 
         for (uint256 i = 0; i < tokens.length; i++) {
             uint256 tokenSnapshotId = (tokens[i] == reputation)
@@ -169,14 +166,11 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
             // Skipping calculation if user has no balance
             if (balance == 0) continue;
             uint256 supply = ERC20SnapshotRep(tokens[i]).totalSupplyAt(tokenSnapshotId);
-            uint256 tokenVotingPowerPercent = getPercent(balance, supply);
-            uint256 tokenVotingPowerPercentWeighted = getWeightedVotingPowerPercentage(
-                tokenWeight,
-                tokenVotingPowerPercent
-            );
-            _votingPower += tokenVotingPowerPercentWeighted;
+            // Get token voting power percent weighted
+            uint256 tokenVotingPowerPercentWeighted = (balance * tokenWeight * precision) / supply;
+            votingPower += tokenVotingPowerPercentWeighted;
         }
-        return _votingPower;
+        return votingPower;
     }
 
     /// @dev Internal function to return weight of `token` at `snapshotId` from
@@ -189,7 +183,7 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
 
     /// @dev Get token weight from weights config mapping.
     ///      If influence supply > minStakingTokensLocked at given snapshotId, repWeight will default to 100%.
-    ///      If not it will retun internal weights config for given `token`
+    ///      If not it will return internal weights config for given `token`
     /// @param token Address of the token we want to get weight from
     /// @param snapshotId VotingPower snapshotId
     /// @return weight Weight percentage value (0 to 100)
@@ -205,35 +199,11 @@ contract VotingPower is OwnableUpgradeable, AccountSnapshot {
 
     /// @dev Get token weight from weights config mapping.
     ///      If influence supply > minStakingTokensLocked at the time of execution repWeight will default to 100%.
-    ///      If not it will retun internal weights config for given `token`
+    ///      If not it will return internal weights config for given `token`
     /// @param token Address of the token we want to get weight from
     /// @return weight Weight percentage value (0 to 100)
     function getWeightOf(address token) public view returns (uint256 weight) {
         return getWeightOfAt(token, getCurrentSnapshotId());
-    }
-
-    /// @dev Calculates the percentage of a `numerator` over a `denominator` multiplyed by precision
-    /// @param numerator The part being considered
-    /// @param denominator The total amount
-    /// @return percent The percentage of the numerator over the denominator * precision
-    function getPercent(uint256 numerator, uint256 denominator) public pure returns (uint256 percent) {
-        if (denominator == 0) return 0;
-        return (numerator * precision * 100) / denominator;
-    }
-
-    /// @dev Calculates the weighted voting power percentage by multiplying the voting power
-    ///      percentage by the weight percent of the token
-    /// @param weightPercent Weight percent of the token (0 to 100)
-    /// @param votingPowerPercent Voting power percentage (0 to 100 * precision)
-    /// @return weightedVotingPowerPercentage Weighted voting power percentage (0 to 100 * precision)
-    function getWeightedVotingPowerPercentage(uint256 weightPercent, uint256 votingPowerPercent)
-        public
-        pure
-        returns (uint256 weightedVotingPowerPercentage)
-    {
-        uint256 maxPercent = 100 * precision;
-        if (votingPowerPercent > maxPercent) revert VotingPower_PercentCannotExeedMaxPercent();
-        return (votingPowerPercent * weightPercent) / 100;
     }
 
     /// @dev Returns the last snapshotId stored for given `slot` based on `_snapshotId`

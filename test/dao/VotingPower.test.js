@@ -266,161 +266,6 @@ contract("VotingPower", function (accounts) {
     });
   });
 
-  describe("getPercent", () => {
-    beforeEach(async () => await deployVpToken());
-    it("Should return 10%", async () => {
-      const balance = 20;
-      const supply = 200;
-      const percent = 10;
-      const expectedPercent = bn(percent).mul(precision);
-      const votingPower = bn(await vpToken.getPercent(balance, supply));
-      expect(votingPower.eq(expectedPercent)).to.be.true;
-    });
-
-    it("Should return 100%", async () => {
-      const balance = 100;
-      const supply = 100;
-      const percent = 100;
-      const expectedPercent = bn(percent).mul(precision);
-      const votingPower = bn(await vpToken.getPercent(balance, supply));
-      expect(votingPower.eq(expectedPercent)).to.be.true;
-    });
-
-    it("Should return 1%", async () => {
-      const balance = 10;
-      const supply = 1000;
-      const percent = 1;
-      const expectedPercent = bn(percent).mul(precision);
-      const votingPower = bn(await vpToken.getPercent(balance, supply));
-      expect(votingPower.eq(expectedPercent)).to.be.true;
-    });
-
-    it("Should return 0.03%", async () => {
-      const supply = 100000;
-      const balance = 30;
-      const percent = 0.03;
-      const expectedPercent = bn(percent).mul(precision);
-      const votingPower = bn(await vpToken.getPercent(balance, supply));
-      expect(votingPower.eq(expectedPercent)).to.be.true;
-    });
-
-    it("Should return 0%", async () => {
-      const supply = 1000;
-      const balance = 0; //
-      const percent = 0;
-      const expectedPercent = bn(`${percent}`);
-      const votingPower = bn(await vpToken.getPercent(balance, supply));
-      expect(votingPower.eq(expectedPercent)).to.be.true;
-      expect(votingPower.toNumber()).equal(0);
-    });
-
-    it("Should return 0.0000000000000001%", async () => {
-      const supply = precision;
-      const balance = 1;
-      const percent = (balance * 100) / supply; //1e-16
-      const expectedPercent = bn(percent).mul(precision);
-      const votingPower = bn(await vpToken.getPercent(balance, supply));
-      expect(votingPower.eq(expectedPercent)).to.be.true;
-    });
-
-    it("Should return 0 if denominator=0 and not revert with panic code 0x12", async () => {
-      const supply = 0;
-      const balance = 0;
-      const votingPower = bn(await vpToken.getPercent(balance, supply));
-      expect(votingPower.toNumber()).equal(0);
-    });
-  });
-
-  describe("getWeightedVotingPowerPercentage", () => {
-    beforeEach(async () => await deployVpToken());
-    it("Should return 0%", async () => {
-      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
-        0,
-        100
-      );
-      expect(weightedPercentage.toNumber()).equal(0);
-    });
-
-    it("Should return 100%", async () => {
-      const votingPowerPercent = bn(100);
-      const weight = 100;
-      const expectedBalance = bn(100).mul(precision);
-
-      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
-        weight,
-        votingPowerPercent.mul(precision)
-      );
-      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
-    });
-    it("Should return 50%", async () => {
-      const votingPowerPercent = bn(100); // 100% voting power
-      const weight = 50; // 50% weight
-      const expectedBalance = bn(50).mul(precision);
-
-      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
-        weight,
-        votingPowerPercent.mul(precision)
-      );
-      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
-    });
-    it("Should return 25%", async () => {
-      const votingPowerPercent = bn(50); // 50% voting power
-      const weight = 50; // 50% weight
-      const expectedBalance = bn(25).mul(precision);
-
-      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
-        weight,
-        votingPowerPercent.mul(precision)
-      );
-      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
-    });
-    it("Should return 9%", async () => {
-      const votingPowerPercent = bn(90); // 1% voting power
-      const weight = 10; // 30% weight
-      const expectedBalance = bn(9).mul(precision);
-
-      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
-        weight,
-        votingPowerPercent.mul(precision)
-      );
-      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
-    });
-
-    it("Should return 1.5% ", async () => {
-      const votingPowerPercent = bn(3); // 1% voting power
-      const weight = 50; // 30% weight
-      const expectedBalance = bn(1.5).mul(precision);
-
-      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
-        weight,
-        votingPowerPercent.mul(precision)
-      );
-      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
-    });
-    it("Should return 0.3%", async () => {
-      const votingPowerPercent = bn(1); // 1% voting power
-      const weight = 30; // 30% weight
-      const expectedBalance = bn(0.3).mul(precision);
-
-      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
-        weight,
-        votingPowerPercent.mul(precision)
-      );
-      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
-    });
-    it("Should return 0.01% ", async () => {
-      const votingPowerPercent = bn(0.1); // 0.1% voting power
-      const weight = 10; // 10% weight
-      const expectedBalance = bn(0.01).mul(precision);
-
-      const weightedPercentage = await vpToken.getWeightedVotingPowerPercentage(
-        weight,
-        votingPowerPercent.mul(precision)
-      );
-      expect(weightedPercentage.toString()).equal(expectedBalance.toString());
-    });
-  });
-
   describe("Voting power", () => {
     beforeEach(async () => {
       await deployVpToken();
@@ -434,34 +279,30 @@ contract("VotingPower", function (accounts) {
       const repBalance = await repToken.balanceOf(holder);
       const repSupply = await repToken.totalSupply();
 
-      const repVotingPowerPercent = bn(
-        await vpToken.getPercent(repBalance, repSupply)
-      );
+      const repVotingPowerPercent = bn(repBalance)
+        .mul(precision)
+        .mul(100)
+        .div(bn(repSupply));
 
       const repTokenWeight = bn(await vpToken.getWeightOf(repToken.address));
 
       const repVotingPowerPercentWeighted = bn(
-        await vpToken.getWeightedVotingPowerPercentage(
-          repTokenWeight,
-          repVotingPowerPercent
-        )
-      );
+        repTokenWeight.mul(repVotingPowerPercent)
+      ).div(100);
 
       const dxdInfluenceBalance = await dxdInfluence.balanceOf(holder);
       const dxdInfluenceSupply = await dxdInfluence.totalSupply();
-      const dxdInfluenceVotingPowerPercent = bn(
-        await vpToken.getPercent(dxdInfluenceBalance, dxdInfluenceSupply)
-      );
+      const dxdInfluenceVotingPowerPercent = bn(dxdInfluenceBalance)
+        .mul(precision)
+        .mul(100)
+        .div(bn(dxdInfluenceSupply));
       const dxdInfluenceTokenWeight = bn(
         await vpToken.getWeightOf(dxdInfluence.address)
       );
 
       const dxdInfluenceVotingPowerPercentWeighted = bn(
-        await vpToken.getWeightedVotingPowerPercentage(
-          dxdInfluenceTokenWeight,
-          dxdInfluenceVotingPowerPercent
-        )
-      );
+        dxdInfluenceTokenWeight.mul(dxdInfluenceVotingPowerPercent)
+      ).div(100);
 
       const expectedTotalVotingPowerPercentPowered =
         repVotingPowerPercentWeighted
