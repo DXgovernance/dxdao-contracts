@@ -6,20 +6,16 @@ const MAX_UINT_256 =
   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
-const { encodePermission } = require("../../test/helpers/permissions");
-
 const { waitBlocks } = require("../utils/wait");
 
 const deployDao = async function (daoConfig, networkContracts) {
   // Import contracts
-  const DxAvatar = await hre.artifacts.require("DxAvatar");
-  const DxReputation = await hre.artifacts.require("DxReputation");
-  const DxController = await hre.artifacts.require("DxController");
-  const ContributionReward = await hre.artifacts.require("ContributionReward");
-  const Redeemer = await hre.artifacts.require("Redeemer");
+  const DAOAvatar = await hre.artifacts.require("DAOAvatar");
+  const DAOReputation = await hre.artifacts.require("DAOReputation");
+  const DAOController = await hre.artifacts.require("DAOController");
   const WalletScheme = await hre.artifacts.require("WalletScheme");
   const PermissionRegistry = await hre.artifacts.require("PermissionRegistry");
-  const DXDVotingMachine = await hre.artifacts.require("DXDVotingMachine");
+  const VotingMachine = await hre.artifacts.require("VotingMachine");
   const Multicall = await hre.artifacts.require("Multicall");
   const ERC721Factory = await hre.artifacts.require("ERC721Factory");
   const ERC20VestingFactory = await hre.artifacts.require(
@@ -47,8 +43,9 @@ const deployDao = async function (daoConfig, networkContracts) {
 
   // Deploy Reputation
   let reputation;
-  console.log("Deploying DxReputation...");
-  reputation = await DxReputation.new();
+  console.log("Deploying DAOReputation...");
+  reputation = await DAOReputation.new();
+  await reputation.initialize("DxDAO Reputation", "REP");
   console.log("DX Reputation deployed to:", reputation.address);
   networkContracts.reputation = reputation.address;
   networkContracts.addresses["Reputation"] = reputation.address;
@@ -61,12 +58,12 @@ const deployDao = async function (daoConfig, networkContracts) {
   // Deploy Avatar
   let avatar;
   console.log(
-    "Deploying DxAvatar...",
+    "Deploying DAOAvatar...",
     networkContracts.addresses["DXD"],
     reputation.address
   );
-  avatar = await DxAvatar.new(
-    "DXdao",
+  avatar = await DAOAvatar.new();
+  await avatar.initialize(
     networkContracts.addresses["DXD"],
     reputation.address
   );
@@ -78,8 +75,9 @@ const deployDao = async function (daoConfig, networkContracts) {
 
   // Deploy Controller and transfer avatar to controller
   let controller;
-  console.log("Deploying DxController...");
-  controller = await DxController.new(avatar.address);
+  console.log("Deploying DAOController...");
+  controller = await DAOController.new(avatar.address);
+  await controller.initialize(avatar.address);
   console.log("DXdao Controller deployed to:", controller.address);
   await avatar.transferOwnership(controller.address);
   await reputation.transferOwnership(controller.address);
@@ -87,17 +85,17 @@ const deployDao = async function (daoConfig, networkContracts) {
   networkContracts.addresses["Controller"] = controller.address;
   await waitBlocks(1);
 
-  // Deploy DXDVotingMachine
+  // Deploy VotingMachine
   let votingMachine;
-  console.log("Deploying DXDVotingMachine...");
-  votingMachine = await DXDVotingMachine.new(networkContracts.addresses["DXD"]);
-  console.log("DXDVotingMachine deployed to:", votingMachine.address);
+  console.log("Deploying VotingMachine...");
+  votingMachine = await VotingMachine.new(networkContracts.addresses["DXD"]);
+  console.log("VotingMachine deployed to:", votingMachine.address);
   networkContracts.votingMachines[votingMachine.address] = {
-    type: "DXDVotingMachine",
+    type: "VotingMachine",
     token: networkContracts.addresses["DXD"],
   };
   await waitBlocks(1);
-  networkContracts.addresses["DXDVotingMachine"] = votingMachine.address;
+  networkContracts.addresses["VotingMachine"] = votingMachine.address;
 
   // Deploy PermissionRegistry to be used by WalletSchemes
   let permissionRegistry;
@@ -109,43 +107,29 @@ const deployDao = async function (daoConfig, networkContracts) {
   // Only allow the functions mintReputation, burnReputation, genericCall, registerScheme and unregisterScheme to be
   // called to in the controller contract from a scheme that calls the controller.
   // This permissions makes the other functions inaccessible
-  const notAllowedControllerFunctions = [
-    controller.contract._jsonInterface.find(
-      method => method.name === "mintTokens"
-    ).signature,
-    controller.contract._jsonInterface.find(
-      method => method.name === "unregisterSelf"
-    ).signature,
-    controller.contract._jsonInterface.find(
-      method => method.name === "addGlobalConstraint"
-    ).signature,
-    controller.contract._jsonInterface.find(
-      method => method.name === "removeGlobalConstraint"
-    ).signature,
-    controller.contract._jsonInterface.find(
-      method => method.name === "upgradeController"
-    ).signature,
-    controller.contract._jsonInterface.find(
-      method => method.name === "sendEther"
-    ).signature,
-    controller.contract._jsonInterface.find(
-      method => method.name === "externalTokenTransfer"
-    ).signature,
-    controller.contract._jsonInterface.find(
-      method => method.name === "externalTokenTransferFrom"
-    ).signature,
-    controller.contract._jsonInterface.find(
-      method => method.name === "externalTokenApproval"
-    ).signature,
-    controller.contract._jsonInterface.find(
-      method => method.name === "metaData"
-    ).signature,
-  ];
-  for (var i = 0; i < notAllowedControllerFunctions.length; i++) {
+
+  const notAllowedControllerFunctionSignatures = [
+    "mintTokens",
+    "unregisterSelf",
+    "addGlobalConstraint",
+    "removeGlobalConstraint",
+    "upgradeController",
+    "sendEther",
+    "externalTokenTransfer",
+    "externalTokenTransferFrom",
+    "externalTokenApproval",
+    "metaData",
+  ].map(
+    fnName =>
+      controller.contract._jsonInterface.find(method => method.name === fnName)
+        .signature
+  );
+
+  for (let notAllowedFunctionSignature of notAllowedControllerFunctionSignatures) {
     await permissionRegistry.setETHPermission(
       avatar.address,
       controller.address,
-      notAllowedControllerFunctions[i],
+      notAllowedFunctionSignature,
       MAX_UINT_256,
       false
     );
@@ -164,114 +148,6 @@ const deployDao = async function (daoConfig, networkContracts) {
   networkContracts.addresses["PermissionRegistry"] = permissionRegistry.address;
   await waitBlocks(1);
 
-  // Deploy ContributionReward Scheme
-  console.log("Deploying ContributionReward scheme");
-  const contributionReward = await ContributionReward.new();
-  const redeemer = await Redeemer.new();
-
-  /* 
-  The ContributionReward scheme was designed by DAOstack to be used as an universal scheme,
-  which means that index the voting params used in the voting machine hash by voting machine
-  So the voting parameters are set in the voting machine, and that voting parameters hash is 
-  registered in the ContributionReward and then other voting parameter hash is calculated 
-  for that voting machine and contribution reward, and that is the one used in the controller
-  */
-  const contributionRewardParamsHash = await votingMachine.getParametersHash(
-    [
-      daoConfig.contributionReward.queuedVoteRequiredPercentage.toString(),
-      daoConfig.contributionReward.queuedVotePeriodLimit.toString(),
-      daoConfig.contributionReward.boostedVotePeriodLimit.toString(),
-      daoConfig.contributionReward.preBoostedVotePeriodLimit.toString(),
-      daoConfig.contributionReward.thresholdConst.toString(),
-      daoConfig.contributionReward.quietEndingPeriod.toString(),
-      daoConfig.contributionReward.proposingRepReward.toString(),
-      daoConfig.contributionReward.votersReputationLossRatio.toString(),
-      daoConfig.contributionReward.minimumDaoBounty.toString(),
-      daoConfig.contributionReward.daoBountyConst.toString(),
-      0,
-    ],
-    NULL_ADDRESS,
-    { from: accounts[0], gasPrice: 0 }
-  );
-  await votingMachine.setParameters(
-    [
-      daoConfig.contributionReward.queuedVoteRequiredPercentage.toString(),
-      daoConfig.contributionReward.queuedVotePeriodLimit.toString(),
-      daoConfig.contributionReward.boostedVotePeriodLimit.toString(),
-      daoConfig.contributionReward.preBoostedVotePeriodLimit.toString(),
-      daoConfig.contributionReward.thresholdConst.toString(),
-      daoConfig.contributionReward.quietEndingPeriod.toString(),
-      daoConfig.contributionReward.proposingRepReward.toString(),
-      daoConfig.contributionReward.votersReputationLossRatio.toString(),
-      daoConfig.contributionReward.minimumDaoBounty.toString(),
-      daoConfig.contributionReward.daoBountyConst.toString(),
-      0,
-    ],
-    NULL_ADDRESS
-  );
-  await contributionReward.setParameters(
-    contributionRewardParamsHash,
-    votingMachine.address
-  );
-  const contributionRewardVotingmachineParamsHash =
-    await contributionReward.getParametersHash(
-      contributionRewardParamsHash,
-      votingMachine.address
-    );
-  await controller.registerScheme(
-    contributionReward.address,
-    contributionRewardVotingmachineParamsHash,
-    encodePermission({
-      canGenericCall: true,
-      canUpgrade: false,
-      canRegisterSchemes: false,
-    }),
-    avatar.address
-  );
-
-  networkContracts.daostack = {
-    [contributionReward.address]: {
-      contractToCall: controller.address,
-      creationLogEncoding: [
-        [
-          {
-            name: "_descriptionHash",
-            type: "string",
-          },
-          {
-            name: "_reputationChange",
-            type: "int256",
-          },
-          {
-            name: "_rewards",
-            type: "uint256[5]",
-          },
-          {
-            name: "_externalToken",
-            type: "address",
-          },
-          {
-            name: "_beneficiary",
-            type: "address",
-          },
-        ],
-      ],
-      name: "ContributionReward",
-      newProposalTopics: [
-        [
-          "0xcbdcbf9aaeb1e9eff0f75d74e1c1e044bc87110164baec7d18d825b0450d97df",
-          "0x000000000000000000000000519b70055af55a007110b4ff99b0ea33071c720a",
-        ],
-      ],
-      redeemer: redeemer.address,
-      supported: true,
-      type: "ContributionReward",
-      voteParams: contributionRewardVotingmachineParamsHash,
-      votingMachine: votingMachine.address,
-    },
-  };
-  networkContracts.addresses["ContributionReward"] = contributionReward.address;
-
   // Deploy Wallet Schemes
   for (var s = 0; s < daoConfig.walletSchemes.length; s++) {
     const schemeConfiguration = daoConfig.walletSchemes[s];
@@ -282,8 +158,7 @@ const deployDao = async function (daoConfig, networkContracts) {
       `${schemeConfiguration.name} deployed to: ${newScheme.address}`
     );
 
-    /* This is simpler than the ContributionReward, just register the params in the 
-    VotingMachine and use that ones for the schem registration */
+    /* Register the params in the VotingMachine and use that ones for the schem registration */
     let schemeParamsHash = await votingMachine.getParametersHash(
       [
         schemeConfiguration.queuedVoteRequiredPercentage.toString(),
@@ -324,7 +199,6 @@ const deployDao = async function (daoConfig, networkContracts) {
     await newScheme.initialize(
       avatar.address,
       votingMachine.address,
-      schemeConfiguration.doAvatarGenericCalls,
       controller.address,
       permissionRegistry.address,
       schemeConfiguration.name,
@@ -342,9 +216,7 @@ const deployDao = async function (daoConfig, networkContracts) {
 
       if (permission.asset === NULL_ADDRESS)
         await permissionRegistry.setETHPermission(
-          schemeConfiguration.doAvatarGenericCalls
-            ? avatar.address
-            : newScheme.address,
+          newScheme.address,
           networkContracts.addresses[permission.to] || permission.to,
           permission.functionSignature,
           permission.value.toString(),
@@ -394,7 +266,7 @@ const deployDao = async function (daoConfig, networkContracts) {
     await controller.registerScheme(
       newScheme.address,
       schemeParamsHash,
-      encodePermission(schemeConfiguration.controllerPermissions),
+      "0x0",
       avatar.address
     );
 

@@ -62,7 +62,7 @@ contract("SnapshotERC20Guild", function (accounts) {
             await new web3.eth.Contract(PermissionRegistry.abi).methods
               .setETHPermission(
                 erc20Guild.address,
-                constants.NULL_ADDRESS,
+                constants.ZERO_ADDRESS,
                 constants.NULL_SIGNATURE,
                 100,
                 true
@@ -334,6 +334,48 @@ contract("SnapshotERC20Guild", function (accounts) {
 
       const votes = await erc20Guild.votingPowerOf(accounts[1]);
       votes.should.be.bignumber.equal("0");
+    });
+  });
+
+  describe("setVote", () => {
+    it("cannot vote with 0 voting power amount with an account with voting power", async function () {
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [accounts[1]],
+            data: ["0x0"],
+            value: [1],
+          },
+        ],
+        account: accounts[2],
+      });
+      await expectRevert(
+        erc20Guild.setVote(guildProposalId, 1, 0, {
+          from: accounts[3],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
+    });
+
+    it("cannot vote with 0 voting power amount with an account without voting power", async function () {
+      const guildProposalId = await createProposal({
+        guild: erc20Guild,
+        options: [
+          {
+            to: [accounts[1]],
+            data: ["0x0"],
+            value: [1],
+          },
+        ],
+        account: accounts[2],
+      });
+      await expectRevert(
+        erc20Guild.setVote(guildProposalId, 1, 0, {
+          from: accounts[9],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
     });
   });
 

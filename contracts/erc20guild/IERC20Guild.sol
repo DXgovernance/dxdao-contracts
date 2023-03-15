@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity >=0.8.0;
+pragma solidity ^0.8.17;
 
 interface IERC20Guild {
     event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);

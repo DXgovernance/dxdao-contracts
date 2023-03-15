@@ -2,16 +2,12 @@ require("@nomiclabs/hardhat-web3");
 const moment = require("moment");
 const { NULL_SIGNATURE } = require("../../test/helpers/constants");
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-const ANY_ADDRESS = "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa";
-const ANY_FUNC_SIGNATURE = "0xaaaaaaaa";
 
 task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
   async () => {
     const PermissionRegistry = await hre.artifacts.require(
       "PermissionRegistry"
     );
-    const ERC20Guild = await hre.artifacts.require("ERC20Guild");
-
     const accounts = await web3.eth.getAccounts();
 
     const deployconfig = {
@@ -30,23 +26,10 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
             amount: 1000,
           },
         ],
-        contributionReward: {
-          queuedVoteRequiredPercentage: 50,
-          queuedVotePeriodLimit: moment.duration(10, "minutes").asSeconds(),
-          boostedVotePeriodLimit: moment.duration(3, "minutes").asSeconds(),
-          preBoostedVotePeriodLimit: moment.duration(1, "minutes").asSeconds(),
-          thresholdConst: 2000,
-          quietEndingPeriod: moment.duration(0.5, "minutes").asSeconds(),
-          proposingRepReward: 10,
-          votersReputationLossRatio: 100,
-          minimumDaoBounty: web3.utils.toWei("1"),
-          daoBountyConst: 100,
-        },
 
         walletSchemes: [
           {
             name: "RegistrarWalletScheme",
-            doAvatarGenericCalls: true,
             maxSecondsForExecution: moment.duration(31, "days").asSeconds(),
             maxRepPercentageChange: 0,
             controllerPermissions: {
@@ -71,7 +54,6 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           },
           {
             name: "MasterWalletScheme",
-            doAvatarGenericCalls: true,
             maxSecondsForExecution: moment.duration(31, "days").asSeconds(),
             maxRepPercentageChange: 40,
             controllerPermissions: {
@@ -83,7 +65,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
             permissions: [
               {
                 asset: "0x0000000000000000000000000000000000000000",
-                to: "DXDVotingMachine",
+                to: "VotingMachine",
                 functionSignature: "0xaaaaaaaa",
                 value:
                   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
@@ -122,7 +104,6 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           },
           {
             name: "QuickWalletScheme",
-            doAvatarGenericCalls: false,
             maxSecondsForExecution: moment.duration(31, "days").asSeconds(),
             maxRepPercentageChange: 1,
             controllerPermissions: {
@@ -336,7 +317,7 @@ task("deploy-dxvote-develop", "Deploy dxvote with develop config").setAction(
           from: "0xaF8eB8C3A5d9d900AA0B98e3Df0bcC17d3C5F698",
           data: {
             asset: "DXD",
-            address: "DXDVotingMachine",
+            address: "VotingMachine",
             amount: web3.utils.toWei("100"),
           },
         },

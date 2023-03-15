@@ -1,10 +1,14 @@
 const moment = require("moment");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
-  const { deploy } = deployments;
-  const { deployer } = await getNamedAccounts();
+  const { save } = deployments;
+  const { deployer: deployerAddress } = await getNamedAccounts();
   const deploySalt = process.env.DEPLOY_SALT;
   const deployExtraSalt = "dxdSnapshotGuild";
+
+  const Create2Deployer = await hre.artifacts.require("Create2Deployer");
+  const deployerDeployed = await deployments.get("Create2Deployer");
+  const deployer = await Create2Deployer.at(deployerDeployed.address);
 
   const dxdTokenAddress =
     hre.network.name === "mainnet"
@@ -13,9 +17,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
       ? "0xb90D6bec20993Be5d72A5ab353343f7a0281f158"
       : process.env.DXD_ADDRESS;
 
-  const SnapshotERC20Guild = await hre.artifacts.require(
-    "SnapshotERC20Guild"
-  );
+  const SnapshotERC20Guild = await hre.artifacts.require("SnapshotERC20Guild");
   const GuildRegistry = await hre.artifacts.require("GuildRegistry");
   const PermissionRegistry = await hre.artifacts.require("PermissionRegistry");
 
@@ -29,14 +31,25 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const guildRegistryDeployed = await deployments.get("GuildRegistry");
   const guildRegistry = await GuildRegistry.at(guildRegistryDeployed.address);
 
-  const dxdSnapshotGuildDeploy = await deploy("SnapshotERC20Guild", {
-    name: "DXD Guild",
-    from: deployer,
-    args: [],
-    deterministicDeployment: hre.web3.utils.sha3(deploySalt + deployExtraSalt),
+  const tx = await deployer.deploy(
+    SnapshotERC20Guild.bytecode,
+    hre.web3.utils.sha3(deploySalt + deployExtraSalt),
+    {
+      from: deployerAddress,
+    }
+  );
+  const snapshotERC20GuildAddress = tx.logs[0].args[0];
+
+  save("DXD Guild", {
+    abi: SnapshotERC20Guild.abi,
+    address: snapshotERC20GuildAddress,
+    receipt: tx.receipt,
+    bytecode: SnapshotERC20Guild.bytecode,
+    deployedBytecode: SnapshotERC20Guild.deployedBytecode,
   });
+
   const dxdSnapshotGuild = await SnapshotERC20Guild.at(
-    dxdSnapshotGuildDeploy.address
+    snapshotERC20GuildAddress
   );
 
   await dxdSnapshotGuild.initialize(
@@ -70,5 +83,5 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   console.log(`DXDSnapshotGuild address ${dxdSnapshotGuild.address}`);
 };
 
-module.exports.dependencies = ["PermissionRegistry", "GuildRegistry"];
+module.exports.dependencies = ["Create2Deployer", "PermissionRegistry", "GuildRegistry"];
 module.exports.tags = ["dxdSnapshotGuild"];
