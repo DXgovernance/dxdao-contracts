@@ -23,7 +23,7 @@ require("chai").should();
 
 contract("ERC20GuildWithERC1271", function (accounts) {
   const constants = helpers.constants;
-  const VOTE_GAS = new BN(91100); // ~90k gwei
+  const VOTE_GAS = new BN(100000); // 100k gwei
 
   let guildToken, actionMockA, erc20Guild, permissionRegistry;
 
@@ -92,53 +92,63 @@ contract("ERC20GuildWithERC1271", function (accounts) {
   };
 
   const allowActionMockA = async function () {
-    const setPermissionToActionMockA = await createProposal({
+    const setETHPermissionToActionMockA = await createProposal({
       guild: erc20Guild,
-      actions: [
+      options: [
         {
-          to: [erc20Guild.address],
+          to: [
+            permissionRegistry.address,
+            permissionRegistry.address,
+            permissionRegistry.address,
+          ],
           data: [
-            await new web3.eth.Contract(ERC20GuildWithERC1271.abi).methods
-              .setPermission(
-                [
-                  constants.NULL_ADDRESS,
-                  constants.NULL_ADDRESS,
-                  constants.NULL_ADDRESS,
-                ],
-                [
-                  constants.ANY_ADDRESS,
-                  actionMockA.address,
-                  actionMockA.address,
-                ],
-                [
-                  constants.ANY_FUNC_SIGNATURE,
-                  constants.ANY_FUNC_SIGNATURE,
-                  helpers.testCallFrom(erc20Guild.address).substring(0, 10),
-                ],
-                [200, 100, 50],
-                [true, true, true]
+            await new web3.eth.Contract(PermissionRegistry.abi).methods
+              .setETHPermission(
+                erc20Guild.address,
+                constants.ZERO_ADDRESS,
+                constants.NULL_SIGNATURE,
+                200,
+                true
+              )
+              .encodeABI(),
+            await new web3.eth.Contract(PermissionRegistry.abi).methods
+              .setETHPermission(
+                erc20Guild.address,
+                actionMockA.address,
+                constants.NULL_SIGNATURE,
+                100,
+                true
+              )
+              .encodeABI(),
+            await new web3.eth.Contract(PermissionRegistry.abi).methods
+              .setETHPermission(
+                erc20Guild.address,
+                actionMockA.address,
+                helpers.testCallFrom(erc20Guild.address).substring(0, 10),
+                50,
+                true
               )
               .encodeABI(),
           ],
-          value: [0],
+          value: [0, 0, 0],
         },
       ],
       account: accounts[1],
     });
     await setVotesOnProposal({
       guild: erc20Guild,
-      proposalId: setPermissionToActionMockA,
-      action: 1,
+      proposalId: setETHPermissionToActionMockA,
+      option: 1,
       account: accounts[4],
     });
     await setVotesOnProposal({
       guild: erc20Guild,
-      proposalId: setPermissionToActionMockA,
-      action: 1,
+      proposalId: setETHPermissionToActionMockA,
+      option: 1,
       account: accounts[5],
     });
     await time.increase(30);
-    await erc20Guild.endProposal(setPermissionToActionMockA);
+    await erc20Guild.endProposal(setETHPermissionToActionMockA);
   };
 
   describe("EIP1271", function () {
@@ -150,7 +160,7 @@ contract("ERC20GuildWithERC1271", function (accounts) {
     it("Can validate an EIP1271 Signature", async function () {
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [erc20Guild.address],
             data: [
@@ -169,14 +179,14 @@ contract("ERC20GuildWithERC1271", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       const txVote = await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 

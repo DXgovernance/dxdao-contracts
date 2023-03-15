@@ -1,6 +1,5 @@
 import { assert } from "chai";
 import { artifacts, contract } from "hardhat";
-import { SOME_ADDRESS, SOME_OTHER_ADDRESS } from "../../helpers/constants";
 import { expectRevert, expectEvent } from "@openzeppelin/test-helpers";
 
 const GuildRegistry = artifacts.require("GuildRegistry.sol");
@@ -11,6 +10,7 @@ contract("GuildRegistry", accounts => {
     guildRegistry = await GuildRegistry.new({
       from: accounts[0],
     });
+    guildRegistry.initialize();
   });
 
   describe("Retrieve Guild Registry information", () => {
@@ -20,24 +20,24 @@ contract("GuildRegistry", accounts => {
     });
 
     it("should add a new guild address to the array if you are the owner", async () => {
-      const addGuild = await guildRegistry.addGuild(SOME_ADDRESS, {
+      const addGuild = await guildRegistry.addGuild(accounts[2], {
         from: accounts[0],
       });
       const getGuildsAddresses = await guildRegistry.getGuildsAddresses();
-      assert.deepEqual(getGuildsAddresses, [SOME_ADDRESS]);
+      assert.deepEqual(getGuildsAddresses, [accounts[2]]);
       assert.equal(getGuildsAddresses.length, 1);
       await expectEvent(addGuild, "AddGuild");
     });
 
     it("should revert if not the owner for addGuild and removeGuild", async () => {
       await expectRevert(
-        guildRegistry.addGuild(SOME_ADDRESS, {
+        guildRegistry.addGuild(accounts[2], {
           from: accounts[1],
         }),
         "Ownable: caller is not the owner"
       );
       await expectRevert(
-        guildRegistry.removeGuild(SOME_ADDRESS, {
+        guildRegistry.removeGuild(accounts[2], {
           from: accounts[1],
         }),
         "Ownable: caller is not the owner"
@@ -46,7 +46,7 @@ contract("GuildRegistry", accounts => {
 
     it("should not be able to remove a guild address if there are none existing", async () => {
       await expectRevert(
-        guildRegistry.removeGuild(SOME_ADDRESS, {
+        guildRegistry.removeGuild(accounts[2], {
           from: accounts[0],
         }),
         "No guilds to delete"
@@ -54,20 +54,31 @@ contract("GuildRegistry", accounts => {
     });
 
     it("should remove the right guild address in the array", async () => {
-      guildRegistry.addGuild(SOME_ADDRESS, { from: accounts[0] });
-      guildRegistry.addGuild(SOME_OTHER_ADDRESS, { from: accounts[0] });
-
-      const removeGuild = await guildRegistry.removeGuild(SOME_OTHER_ADDRESS, {
+      guildRegistry.addGuild(accounts[2], { from: accounts[0] });
+      guildRegistry.addGuild(accounts[3], { from: accounts[0] });
+      guildRegistry.addGuild(accounts[1], { from: accounts[0] });
+      const removeGuild = await guildRegistry.removeGuild(accounts[2], {
         from: accounts[0],
       });
-      const getGuildsAddresses = await guildRegistry.getGuildsAddresses();
-      assert.deepEqual(getGuildsAddresses, [SOME_ADDRESS]);
+      const getGuildsAddresses1 = await guildRegistry.getGuildsAddresses();
+      assert.deepEqual(getGuildsAddresses1, [accounts[1], accounts[3]]);
       await expectEvent(removeGuild, "RemoveGuild");
+      await guildRegistry.removeGuild(accounts[1], {
+        from: accounts[0],
+      });
+      const getGuildsAddresses2 = await guildRegistry.getGuildsAddresses();
+      assert.deepEqual(getGuildsAddresses2, [accounts[3]]);
+
+      await guildRegistry.removeGuild(accounts[3], {
+        from: accounts[0],
+      });
+      const getGuildsAddresses3 = await guildRegistry.getGuildsAddresses();
+      assert.deepEqual(getGuildsAddresses3, []);
     });
 
     it("should return all guild addresses", async () => {
-      await guildRegistry.addGuild(SOME_ADDRESS, { from: accounts[0] });
-      await guildRegistry.addGuild(SOME_OTHER_ADDRESS, { from: accounts[0] });
+      await guildRegistry.addGuild(accounts[2], { from: accounts[0] });
+      await guildRegistry.addGuild(accounts[3], { from: accounts[0] });
       const getGuildsAddresses = await guildRegistry.getGuildsAddresses();
       assert.equal(getGuildsAddresses.length, 2);
     });

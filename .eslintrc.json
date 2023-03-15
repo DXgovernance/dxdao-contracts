@@ -15,7 +15,7 @@
     "no-undef": "off",
     "eol-last": 2,
     "eqeqeq": "error",
-    "indent": ["error", 2],
+    "indent": ["off"],
     "block-spacing": ["error", "always"],
     "comma-spacing": "error",
     "brace-style": "error",

@@ -1,5 +1,5 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import * as helpers from "../../helpers";
 const { fixSignature } = require("../../helpers/sign");
 const { createProposal, setVotesOnProposal } = require("../../helpers/guild");
@@ -18,16 +18,13 @@ const PermissionRegistry = artifacts.require("PermissionRegistry.sol");
 require("chai").should();
 
 const constants = helpers.constants;
-const balances = [50000, 50000, 50000, 100000, 100000, 200000];
+const balances = [25000, 25000, 50000, 100000, 100000, 200000];
 const proposalTime = 30;
-const votingPowerForProposalExecution = 5000;
-const votingPowerForProposalCreation = 100;
+const votingPowerPercentageForProposalExecution = 5000; // 50%
+const votingPowerPercentageForProposalCreation = 1000; // 10%
 
 contract("SnapshotRepERC20Guild", function (accounts) {
-  let guildToken,
-    snapshotRepErc20Guild,
-    permissionRegistry,
-    createGenericProposal;
+  let guildToken, snapshotRepErc20Guild, permissionRegistry, genericProposal;
 
   beforeEach(async function () {
     const repHolders = accounts.slice(0, 6);
@@ -36,10 +33,9 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       from: accounts[0],
     });
 
-    const [, ...restOfHoldersAccounts] = repHolders;
     await Promise.all(
-      restOfHoldersAccounts.map((account, idx) => {
-        guildToken.mint(account, balances[Number(idx) + 1]);
+      repHolders.map((account, i) => {
+        guildToken.mint(account, balances[i]);
       })
     );
 
@@ -51,8 +47,8 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       guildToken.address,
       proposalTime,
       30, // _timeForExecution,
-      votingPowerForProposalExecution,
-      votingPowerForProposalCreation,
+      votingPowerPercentageForProposalExecution,
+      votingPowerPercentageForProposalCreation,
       "SnapshotRep Guild",
       10, //  _voteGas,
       0, //  _maxGasPrice,
@@ -61,73 +57,175 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       permissionRegistry.address
     );
 
-    await guildToken.transferOwnership(snapshotRepErc20Guild.address);
-
-    createGenericProposal = (config = {}) =>
-      Object.assign(
-        {
-          guild: snapshotRepErc20Guild,
-          actions: [
-            {
-              to: [constants.ANY_ADDRESS, constants.ANY_ADDRESS],
-              data: ["0x00", "0x00"],
-              value: [new BN("0"), new BN("1")],
-            },
-          ],
-          account: accounts[1],
-        },
-        config
-      );
-
     const setGlobaLPermissionProposal = await createProposal({
       guild: snapshotRepErc20Guild,
-      actions: [
+      options: [
         {
-          to: [snapshotRepErc20Guild.address],
+          to: [permissionRegistry.address, permissionRegistry.address],
           data: [
-            await new web3.eth.Contract(SnapshotRepERC20Guild.abi).methods
-              .setPermission(
-                [constants.NULL_ADDRESS],
-                [constants.ANY_ADDRESS],
-                [constants.ANY_FUNC_SIGNATURE],
-                [100],
-                [true]
+            await new web3.eth.Contract(PermissionRegistry.abi).methods
+              .setETHPermission(
+                snapshotRepErc20Guild.address,
+                constants.ZERO_ADDRESS,
+                constants.NULL_SIGNATURE,
+                100,
+                true
+              )
+              .encodeABI(),
+            await new web3.eth.Contract(PermissionRegistry.abi).methods
+              .setETHPermission(
+                snapshotRepErc20Guild.address,
+                accounts[1],
+                constants.NULL_SIGNATURE,
+                100,
+                true
               )
               .encodeABI(),
           ],
-          value: [0],
+          value: [0, 0],
         },
       ],
-      account: accounts[1],
+      account: accounts[3],
     });
     await setVotesOnProposal({
       guild: snapshotRepErc20Guild,
       proposalId: setGlobaLPermissionProposal,
-      action: 1,
-      account: accounts[1],
+      option: 1,
+      account: accounts[4],
+    });
+    await setVotesOnProposal({
+      guild: snapshotRepErc20Guild,
+      proposalId: setGlobaLPermissionProposal,
+      option: 1,
+      account: accounts[5],
     });
     await time.increase(proposalTime); // wait for proposal to end
     await snapshotRepErc20Guild.endProposal(setGlobaLPermissionProposal);
+
+    genericProposal = {
+      guild: snapshotRepErc20Guild,
+      options: [
+        {
+          to: [accounts[1]],
+          data: ["0x00"],
+          value: [new BN("1")],
+        },
+      ],
+      account: accounts[3],
+    };
+  });
+
+  it("check create and execute proposal votingPower limits", async () => {
+    let proposalId;
+
+    await web3.eth.sendTransaction({
+      to: snapshotRepErc20Guild.address,
+      value: 100,
+      from: accounts[0],
+    });
+
+    assert.equal(
+      await snapshotRepErc20Guild.getVotingPowerForProposalCreation(),
+      "50000"
+    );
+    assert.equal(
+      await snapshotRepErc20Guild.getVotingPowerForProposalExecution(),
+      "250000"
+    );
+
+    await expectRevert(
+      snapshotRepErc20Guild.createProposal(
+        [accounts[1]],
+        ["0x0"],
+        ["100"],
+        1,
+        "Test",
+        constants.SOME_HASH,
+        { from: accounts[1] }
+      ),
+      "ERC20Guild: Not enough votingPower to create proposal"
+    );
+
+    proposalId = await createProposal(genericProposal);
+
+    await setVotesOnProposal({
+      guild: snapshotRepErc20Guild,
+      proposalId: proposalId,
+      option: 1,
+      account: accounts[1],
+    });
+    await time.increase(proposalTime);
+    await snapshotRepErc20Guild.endProposal(proposalId);
+
+    // Failed cause it had less than 250000 positive votes
+    assert.equal(
+      (await snapshotRepErc20Guild.getProposal(proposalId)).state,
+      "2"
+    );
+
+    proposalId = await createProposal(genericProposal);
+    await setVotesOnProposal({
+      guild: snapshotRepErc20Guild,
+      proposalId: proposalId,
+      option: 1,
+      account: accounts[4],
+    });
+    await setVotesOnProposal({
+      guild: snapshotRepErc20Guild,
+      proposalId: proposalId,
+      option: 1,
+      account: accounts[5],
+    });
+    // eslint-disable-next-line max-len
+    // It preserves the voting power needed for proposal execution using the totalSupply at the moment of the proposal creation
+    assert.equal(
+      await snapshotRepErc20Guild.getSnapshotVotingPowerForProposalExecution(
+        proposalId
+      ),
+      "250000"
+    );
+    await guildToken.mint(accounts[1], 250000);
+    assert.equal(
+      await snapshotRepErc20Guild.getSnapshotVotingPowerForProposalExecution(
+        proposalId
+      ),
+      "250000"
+    );
+    assert.equal(
+      await snapshotRepErc20Guild.getVotingPowerForProposalExecution(),
+      "375000"
+    );
+
+    await time.increase(proposalTime);
+    await snapshotRepErc20Guild.endProposal(proposalId);
+
+    // Executed cause it had more than 250000 positive votes
+    assert.equal(
+      (await snapshotRepErc20Guild.getProposal(proposalId)).state,
+      "3"
+    );
   });
 
   describe("setVote", () => {
     let proposalId, snapshotId;
+
     beforeEach(async () => {
-      proposalId = await createProposal(createGenericProposal());
+      proposalId = await createProposal(genericProposal);
       snapshotId = new BN(
         await snapshotRepErc20Guild.getProposalSnapshotId(proposalId)
       );
     });
+
     it("Should Vote", async () => {
       const account = accounts[2];
-      const action = new BN(0);
+      const option = new BN(0);
       const votingPower = new BN(500);
 
       const proposalData1 = await snapshotRepErc20Guild.getProposal(proposalId);
       const totalVotes1 = new BN(proposalData1.totalVotes);
       expect(parseInt(totalVotes1.toString())).to.be.equal(0);
 
-      await snapshotRepErc20Guild.setVote(proposalId, action, votingPower, {
+      await snapshotRepErc20Guild.setVote(proposalId, option, votingPower, {
         from: account,
       });
       const proposalData2 = await snapshotRepErc20Guild.getProposal(proposalId);
@@ -136,13 +234,32 @@ contract("SnapshotRepERC20Guild", function (accounts) {
         votingPower.toNumber()
       );
     });
+
+    it("cannot vote with 0 voting power amount with an account with voting power", async function () {
+      await expectRevert(
+        snapshotRepErc20Guild.setVote(proposalId, 1, 0, {
+          from: accounts[3],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
+    });
+
+    it("cannot vote with 0 voting power amount with an account without voting power", async function () {
+      await expectRevert(
+        snapshotRepErc20Guild.setVote(proposalId, 1, 0, {
+          from: accounts[9],
+        }),
+        "ERC20Guild: Invalid votingPower amount"
+      );
+    });
+
     it("Should emmit VoteAdded Event", async () => {
       const account = accounts[2];
-      const action = new BN(0);
+      const option = new BN(0);
       const votingPower = new BN(500);
       const tx = await snapshotRepErc20Guild.setVote(
         proposalId,
-        action,
+        option,
         votingPower,
         {
           from: account,
@@ -151,7 +268,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
       expectEvent(tx, "VoteAdded", {
         proposalId,
-        action,
+        option,
         voter: account,
         votingPower,
       });
@@ -165,13 +282,13 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       });
       await expectRevert(
         voteTrigger,
-        "SnapshotERC20Guild: Proposal ended, cant be voted"
+        "SnapshotRepERC20Guild: Proposal ended, cannot be voted"
       );
     });
 
     it("Should fail if votingPower provided is larger than real user voting power ", async () => {
       const account = accounts[2];
-      const action = 0;
+      const option = 0;
 
       const invalidVotingPower = new BN(
         await snapshotRepErc20Guild.votingPowerOfAt(account, snapshotId)
@@ -179,79 +296,76 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
       const voteTrigger = snapshotRepErc20Guild.setVote(
         proposalId,
-        action,
+        option,
         invalidVotingPower
       );
       await expectRevert(
         voteTrigger,
-        "SnapshotERC20Guild: Invalid votingPower amount"
+        "SnapshotRepERC20Guild: Invalid votingPower amount"
       );
     });
 
-    it("Should fail if user has voted before with larger amount of votingPower and try to decrease it on new vote", async () => {
+    it("Should fail if user voted before and vote again with less votingPower", async () => {
       const account = accounts[2];
-      const action = 0;
+      const option = 0;
       const votingPower = new BN(1000);
       const decreasedVotingPower = votingPower.sub(new BN(10));
-      await snapshotRepErc20Guild.setVote(proposalId, action, votingPower, {
+      await snapshotRepErc20Guild.setVote(proposalId, option, votingPower, {
         from: account,
       });
 
       await expectRevert(
         snapshotRepErc20Guild.setVote(
           proposalId,
-          action,
+          option,
           decreasedVotingPower,
           {
             from: account,
           }
         ),
-        "SnapshotERC20Guild: Cant decrease votingPower in vote"
+        "SnapshotRepERC20Guild: Invalid votingPower amount"
       );
     });
 
-    it("Should fail if user has voted and try to change voted action", async () => {
+    it("Should fail if user has voted and try to change voted option", async () => {
       const account = accounts[2];
-      const action1 = new BN("1");
-      const action2 = new BN("0");
+      const option1 = new BN("1");
+      const option2 = new BN("0");
       const votingPower = new BN("500");
       const increasedVotingPower = new BN("10000");
 
-      await snapshotRepErc20Guild.setVote(proposalId, action1, votingPower, {
+      await snapshotRepErc20Guild.setVote(proposalId, option1, votingPower, {
         from: account,
       });
 
       await expectRevert(
         snapshotRepErc20Guild.setVote(
           proposalId,
-          action2,
+          option2,
           increasedVotingPower,
           {
             from: account,
           }
         ),
-        "SnapshotERC20Guild: Cant change action voted, only increase votingPower"
+        "SnapshotRepERC20Guild: Cannot change option voted"
       );
     });
   });
 
   describe("setSignedVote", () => {
-    let proposalId, snapshotId;
+    let proposalId;
     beforeEach(async () => {
-      proposalId = await createProposal(createGenericProposal());
-      snapshotId = new BN(
-        await snapshotRepErc20Guild.getProposalSnapshotId(proposalId)
-      );
+      proposalId = await createProposal(genericProposal);
     });
 
     it("Should fail if user has voted", async () => {
       const account = accounts[2];
-      const action = new BN("0");
+      const option = new BN("0");
       const votingPower = new BN("500");
       const hashedVote = await snapshotRepErc20Guild.hashVote(
         account,
         proposalId,
-        action,
+        option,
         votingPower
       );
       const votesignature = fixSignature(
@@ -260,7 +374,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
       await snapshotRepErc20Guild.setSignedVote(
         proposalId,
-        action,
+        option,
         votingPower,
         account,
         votesignature,
@@ -272,7 +386,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       await expectRevert(
         snapshotRepErc20Guild.setSignedVote(
           proposalId,
-          action,
+          option,
           votingPower,
           account,
           votesignature,
@@ -280,20 +394,20 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotERC20Guild: Already voted"
+        "SnapshotRepERC20Guild: Already voted"
       );
     });
 
     it("Should fail with wrong signer msg", async () => {
       const account = accounts[2];
       const wrongSignerAccount = accounts[3];
-      const action = new BN("0");
+      const option = new BN("0");
       const votingPower = new BN("500");
 
       const hashedVote = await snapshotRepErc20Guild.hashVote(
         account,
         proposalId,
-        action,
+        option,
         votingPower
       );
       const votesignature = fixSignature(
@@ -303,7 +417,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       await expectRevert(
         snapshotRepErc20Guild.setSignedVote(
           proposalId,
-          action,
+          option,
           votingPower,
           account,
           votesignature,
@@ -311,24 +425,24 @@ contract("SnapshotRepERC20Guild", function (accounts) {
             from: account,
           }
         ),
-        "SnapshotERC20Guild: Wrong signer"
+        "SnapshotRepERC20Guild: Wrong signer"
       );
     });
   });
   describe("lockTokens", () => {
-    it("Should revert action", async () => {
+    it("Should revert option", async () => {
       await expectRevert(
         snapshotRepErc20Guild.lockTokens(new BN("100")),
-        "SnapshotERC20Guild: token vault disabled"
+        "SnapshotRepERC20Guild: token vault disabled"
       );
     });
   });
 
   describe("withdrawTokens", () => {
-    it("Should revert action", async () => {
+    it("Should revert option", async () => {
       await expectRevert(
         snapshotRepErc20Guild.withdrawTokens(new BN("100")),
-        "SnapshotERC20Guild: token vault disabled"
+        "SnapshotRepERC20Guild: token vault disabled"
       );
     });
   });
@@ -337,7 +451,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
     it("Should return correct voting power", async () => {
       const account2 = accounts[2];
       const account4 = accounts[4];
-      const proposalId = await createProposal(createGenericProposal());
+      const proposalId = await createProposal(genericProposal);
 
       const snapshotId1 = new BN(
         await snapshotRepErc20Guild.getProposalSnapshotId(proposalId)
@@ -358,10 +472,12 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
   describe("votingPowerOfAt", () => {
     it("Should return correct voting power for account", async () => {
+      await guildToken.transferOwnership(snapshotRepErc20Guild.address);
+
       const account = accounts[2];
       const initialVotingPowerAcc = new BN(balances[2]);
 
-      const proposalId1 = await createProposal(createGenericProposal());
+      const proposalId1 = await createProposal(genericProposal);
       const snapshotId1 = new BN(
         await snapshotRepErc20Guild.getProposalSnapshotId(proposalId1)
       );
@@ -380,21 +496,27 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       // create proposal to burn tokens
       const burnProposalId = await createProposal({
         guild: snapshotRepErc20Guild,
-        actions: [
+        options: [
           {
             to: [guildToken.address],
             data: [burnCallData],
             value: [0],
           },
         ],
-        account: accounts[1],
+        account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: snapshotRepErc20Guild,
         proposalId: burnProposalId,
-        action: 1,
-        account: accounts[1],
+        option: 1,
+        account: accounts[4],
+      });
+      await setVotesOnProposal({
+        guild: snapshotRepErc20Guild,
+        proposalId: burnProposalId,
+        option: 1,
+        account: accounts[5],
       });
 
       await time.increase(proposalTime);
@@ -402,7 +524,7 @@ contract("SnapshotRepERC20Guild", function (accounts) {
       // execute burn proposal
       await snapshotRepErc20Guild.endProposal(burnProposalId);
 
-      const proposalId2 = await createProposal(createGenericProposal());
+      const proposalId2 = await createProposal(genericProposal);
       const snapshotId2 = new BN(
         await snapshotRepErc20Guild.getProposalSnapshotId(proposalId2)
       );
@@ -415,6 +537,15 @@ contract("SnapshotRepERC20Guild", function (accounts) {
 
       expect(votingPower2).to.be.bignumber.equal(
         initialVotingPowerAcc.sub(initialVotingPowerAcc)
+      );
+
+      assert.equal(
+        await snapshotRepErc20Guild.getVotingPowerForProposalCreation(),
+        "45000"
+      );
+      assert.equal(
+        await snapshotRepErc20Guild.getVotingPowerForProposalExecution(),
+        "225000"
       );
     });
   });

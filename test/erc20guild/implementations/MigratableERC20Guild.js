@@ -1,6 +1,5 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert } from "chai";
-import * as helpers from "../../helpers";
 const {
   createAndSetupGuildToken,
   createProposal,
@@ -21,8 +20,6 @@ const TokenVaultThief = artifacts.require("TokenVaultThief.sol");
 require("chai").should();
 
 contract("MigratableERC20Guild", function (accounts) {
-  const constants = helpers.constants;
-
   let guildTokenA,
     guildTokenB,
     tokenVaultA,
@@ -65,48 +62,7 @@ contract("MigratableERC20Guild", function (accounts) {
     await erc20Guild.lockTokens(100000, { from: accounts[4] });
     await erc20Guild.lockTokens(200000, { from: accounts[5] });
 
-    tokenVaultB = await TokenVault.new();
-    await tokenVaultB.initialize(guildTokenB.address, erc20Guild.address);
-
-    const setPermissionToChangeTokenVault = await createProposal({
-      guild: erc20Guild,
-      actions: [
-        {
-          to: [erc20Guild.address],
-          data: [
-            await new web3.eth.Contract(MigratableERC20Guild.abi).methods
-              .setPermission(
-                [constants.NULL_ADDRESS],
-                [erc20Guild.address],
-                [
-                  web3.eth.abi.encodeFunctionSignature(
-                    "changeTokenVault(address)"
-                  ),
-                ],
-                [0],
-                [true]
-              )
-              .encodeABI(),
-          ],
-          value: [0],
-        },
-      ],
-      account: accounts[1],
-    });
-    await setVotesOnProposal({
-      guild: erc20Guild,
-      proposalId: setPermissionToChangeTokenVault,
-      action: 1,
-      account: accounts[4],
-    });
-    await setVotesOnProposal({
-      guild: erc20Guild,
-      proposalId: setPermissionToChangeTokenVault,
-      action: 1,
-      account: accounts[5],
-    });
-    await time.increase(30);
-    await erc20Guild.endProposal(setPermissionToChangeTokenVault);
+    tokenVaultB = await TokenVault.new(guildTokenB.address, erc20Guild.address);
   });
 
   describe("migrate", function () {
@@ -126,7 +82,7 @@ contract("MigratableERC20Guild", function (accounts) {
 
       const guildProposalId = await createProposal({
         guild: erc20Guild,
-        actions: [
+        options: [
           {
             to: [erc20Guild.address],
             data: [
@@ -142,14 +98,14 @@ contract("MigratableERC20Guild", function (accounts) {
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[3],
       });
 
       await setVotesOnProposal({
         guild: erc20Guild,
         proposalId: guildProposalId,
-        action: 1,
+        option: 1,
         account: accounts[5],
       });
 
@@ -181,8 +137,10 @@ contract("MigratableERC20Guild", function (accounts) {
   });
 
   it("Cant migrate to a invalid new vault", async function () {
-    tokenVaultB = await TokenVaultThief.new();
-    await tokenVaultB.initialize(guildTokenB.address, erc20Guild.address);
+    tokenVaultB = await TokenVaultThief.new(
+      guildTokenB.address,
+      erc20Guild.address
+    );
 
     await guildTokenB.approve(tokenVaultB.address, 500000, {
       from: accounts[1],
@@ -199,7 +157,7 @@ contract("MigratableERC20Guild", function (accounts) {
 
     const guildProposalId = await createProposal({
       guild: erc20Guild,
-      actions: [
+      options: [
         {
           to: [erc20Guild.address],
           data: [
@@ -215,14 +173,14 @@ contract("MigratableERC20Guild", function (accounts) {
     await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: guildProposalId,
-      action: 1,
+      option: 1,
       account: accounts[3],
     });
 
     await setVotesOnProposal({
       guild: erc20Guild,
       proposalId: guildProposalId,
-      action: 1,
+      option: 1,
       account: accounts[5],
     });
 
@@ -237,5 +195,17 @@ contract("MigratableERC20Guild", function (accounts) {
 
     assert.equal(await erc20Guild.getToken(), guildTokenA.address);
     assert.equal(await erc20Guild.getTokenVault(), tokenVaultA);
+  });
+
+  describe("withdrawTokens", () => {
+    it("Should revert action if withdrawn tokens are > than tokens locked", async () => {
+      const votingPower = await erc20Guild.votingPowerOf(accounts[1]);
+      await expectRevert(
+        erc20Guild.withdrawTokens(votingPower.toNumber() + 1000, {
+          from: accounts[1],
+        }),
+        "MigratableERC2Guild: Unable to withdraw more tokens than locked"
+      );
+    });
   });
 });

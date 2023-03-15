@@ -1,0 +1,35 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/utils/Create2Deployer.sol": {
+      "content": "pragma solidity ^0.5.17;\r\n\r\ncontract Create2Deployer {\r\n    event Deployed(address addr, bytes32 bytecodeHash);\r\n\r\n    function deploy(bytes memory code, uint256 salt) public {\r\n        address addr;\r\n        assembly {\r\n            addr := create2(0, add(code, 0x20), mload(code), salt)\r\n            if iszero(extcodesize(addr)) {\r\n                revert(0, 0)\r\n            }\r\n        }\r\n\r\n        emit Deployed(addr, keccak256(code));\r\n    }\r\n}\r\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}
