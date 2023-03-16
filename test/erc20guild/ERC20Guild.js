@@ -1,5 +1,7 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert, expect } from "chai";
+import MerkleTree from "merkletreejs";
+import { utils } from "ethers";
 import * as helpers from "../helpers";
 const { fixSignature } = require("../helpers/sign");
 const {
@@ -3124,6 +3126,408 @@ contract("ERC20Guild", function (accounts) {
         ),
         "ERC20Guild: Wrong signer"
       );
+    });
+  });
+  describe("Offchain voting", () => {
+    let votingData;
+    beforeEach(async () => {
+      await lockTokens();
+
+      const voter = accounts[1];
+      const votingPower = await erc20Guild.votingPowerOf(voter);
+      const option = "1";
+
+      const firstProposalId = await createProposal(genericProposal);
+      const secondProposalId = await createProposal(genericProposal);
+
+      const firstVoteHash = await erc20Guild.hashVote(
+        voter,
+        firstProposalId,
+        option,
+        votingPower.toString()
+      );
+
+      const secondVoteHash = await erc20Guild.hashVote(
+        voter,
+        secondProposalId,
+        option,
+        votingPower.toString()
+      );
+
+      const leaves = [firstVoteHash, secondVoteHash];
+
+      const tree = new MerkleTree(leaves, utils.keccak256, {
+        sort: true,
+      });
+
+      const root = tree.getHexRoot();
+
+      votingData = {
+        tree,
+        root,
+        voter,
+        voteHashes: [firstVoteHash, secondVoteHash],
+        proposalIds: [firstProposalId, secondProposalId],
+        option,
+        votingPower: votingPower,
+      };
+    });
+
+    it("Should execute one signed vote", async () => {
+      const proof = votingData.tree.getHexProof(votingData.voteHashes[1]);
+
+      const signature = fixSignature(
+        await web3.eth.sign(votingData.root, votingData.voter)
+      );
+
+      await erc20Guild.executeSignedVote(
+        votingData.root,
+        votingData.voter,
+        votingData.voteHashes[1],
+        proof,
+        votingData.proposalIds[1],
+        votingData.option,
+        votingData.votingPower,
+        signature
+      );
+
+      const proposal = await erc20Guild.getProposal(votingData.proposalIds[1]);
+
+      expect(await erc20Guild.getSignedVote(votingData.voteHashes[1])).equal(
+        true
+      );
+      expect(proposal.totalVotes[1]).to.equal(
+        votingData.votingPower.toString()
+      );
+      expect(await erc20Guild.getSignedVote(votingData.voteHashes[0])).equal(
+        false
+      );
+    });
+
+    it("Should execute multiple signed votes from same tree", async () => {
+      const firstProof = votingData.tree.getHexProof(votingData.voteHashes[0]);
+      const secondProof = votingData.tree.getHexProof(votingData.voteHashes[1]);
+
+      const signature = fixSignature(
+        await web3.eth.sign(votingData.root, votingData.voter)
+      );
+
+      await erc20Guild.executeSignedVotesBatches(
+        [votingData.root, votingData.root],
+        [votingData.voter, votingData.voter],
+        [votingData.voteHashes[0], votingData.voteHashes[1]],
+        [firstProof, secondProof],
+        [votingData.proposalIds[0], votingData.proposalIds[1]],
+        [votingData.option, votingData.option],
+        [votingData.votingPower, votingData.votingPower],
+        [signature, signature]
+      );
+
+      const firstProposal = await erc20Guild.getProposal(
+        votingData.proposalIds[0]
+      );
+      const secondProposal = await erc20Guild.getProposal(
+        votingData.proposalIds[1]
+      );
+
+      expect(firstProposal.totalVotes[votingData.option]).to.equal(
+        votingData.votingPower.toString()
+      );
+      expect(secondProposal.totalVotes[votingData.option]).to.equal(
+        votingData.votingPower.toString()
+      );
+      expect(await erc20Guild.getSignedVote(votingData.voteHashes[0])).equal(
+        true
+      );
+      expect(await erc20Guild.getSignedVote(votingData.voteHashes[1])).equal(
+        true
+      );
+    });
+
+    it("Should execute multiple signed votes from diff trees/voter", async () => {
+      const voter3 = accounts[2];
+      const votingPower2 = await erc20Guild.votingPowerOf(voter3);
+      const option = "1";
+
+      const thirdProposalId = await createProposal(genericProposal);
+
+      const voteHash3 = await erc20Guild.hashVote(
+        voter3,
+        thirdProposalId,
+        option,
+        votingPower2.toString()
+      );
+
+      const leaves = [voteHash3];
+
+      const tree = new MerkleTree(leaves, utils.keccak256, {
+        sort: true,
+      });
+
+      const root3 = tree.getHexRoot();
+
+      const firstProof = votingData.tree.getHexProof(votingData.voteHashes[0]);
+      const secondProof = votingData.tree.getHexProof(votingData.voteHashes[1]);
+      const thirdProof = votingData.tree.getHexProof(voteHash3);
+
+      const signature = fixSignature(
+        await web3.eth.sign(votingData.root, votingData.voter)
+      );
+      const signature2 = fixSignature(await web3.eth.sign(root3, voter3));
+
+      await erc20Guild.executeSignedVotesBatches(
+        [root3, votingData.root, votingData.root],
+        [voter3, votingData.voter, votingData.voter],
+        [voteHash3, votingData.voteHashes[0], votingData.voteHashes[1]],
+        [thirdProof, firstProof, secondProof],
+        [thirdProposalId, votingData.proposalIds[0], votingData.proposalIds[1]],
+        [option, votingData.option, votingData.option],
+        [votingPower2, votingData.votingPower, votingData.votingPower],
+        [signature2, signature, signature]
+      );
+
+      const firstProposal = await erc20Guild.getProposal(
+        votingData.proposalIds[0]
+      );
+      const secondProposal = await erc20Guild.getProposal(
+        votingData.proposalIds[1]
+      );
+      const thirdProposal = await erc20Guild.getProposal(thirdProposalId);
+
+      expect(firstProposal.totalVotes[votingData.option]).to.equal(
+        votingData.votingPower.toString()
+      );
+      expect(secondProposal.totalVotes[votingData.option]).to.equal(
+        votingData.votingPower.toString()
+      );
+      expect(thirdProposal.totalVotes[option]).to.equal(
+        votingPower2.toString()
+      );
+      expect(await erc20Guild.getSignedVote(votingData.voteHashes[0])).equal(
+        true
+      );
+      expect(await erc20Guild.getSignedVote(votingData.voteHashes[1])).equal(
+        true
+      );
+      expect(await erc20Guild.getSignedVote(voteHash3)).equal(true);
+    });
+
+    it("Should revert if hash is invalid", async () => {
+      const invalidHash = await erc20Guild.hashVote(
+        votingData.voter,
+        votingData.proposalIds[1],
+        "2", // invalid option
+        votingData.votingPower.toString()
+      );
+      const proof = votingData.tree.getHexProof(votingData.voteHashes[1]);
+
+      const signature = fixSignature(
+        await web3.eth.sign(votingData.root, votingData.voter)
+      );
+      await expectRevert(
+        erc20Guild.executeSignedVote(
+          votingData.root,
+          votingData.voter,
+          invalidHash,
+          proof,
+          votingData.proposalIds[1],
+          votingData.option,
+          votingData.votingPower,
+          signature
+        ),
+        "ERC20Guild: Invalid vote hash"
+      );
+    });
+
+    it("Should revert if vote was already voted", async () => {
+      const proof = votingData.tree.getHexProof(votingData.voteHashes[1]);
+
+      const signature = fixSignature(
+        await web3.eth.sign(votingData.root, votingData.voter)
+      );
+
+      await erc20Guild.executeSignedVote(
+        votingData.root,
+        votingData.voter,
+        votingData.voteHashes[1],
+        proof,
+        votingData.proposalIds[1],
+        votingData.option,
+        votingData.votingPower,
+        signature
+      );
+      await expectRevert(
+        erc20Guild.executeSignedVote(
+          votingData.root,
+          votingData.voter,
+          votingData.voteHashes[1],
+          proof,
+          votingData.proposalIds[1],
+          votingData.option,
+          votingData.votingPower,
+          signature
+        ),
+        "ERC20Guild: Already voted"
+      );
+    });
+
+    it("Should revert if signer is invalid", async () => {
+      const invalidSigner = accounts[8];
+      const proof = votingData.tree.getHexProof(votingData.voteHashes[1]);
+
+      const signature = fixSignature(
+        await web3.eth.sign(votingData.root, invalidSigner)
+      );
+
+      await expectRevert(
+        erc20Guild.executeSignedVote(
+          votingData.root,
+          votingData.voter,
+          votingData.voteHashes[1],
+          proof,
+          votingData.proposalIds[1],
+          votingData.option,
+          votingData.votingPower,
+          signature
+        ),
+        "ERC20Guild: Wrong signer"
+      );
+    });
+
+    it("Should revert if merkletree is invalid", async () => {
+      const invalidHash = await erc20Guild.hashVote(
+        votingData.voter,
+        votingData.proposalIds[1],
+        "2", // invalid option
+        votingData.votingPower.toString()
+      );
+
+      const invalidProof = votingData.tree.getHexProof(invalidHash);
+
+      const signature = fixSignature(
+        await web3.eth.sign(votingData.root, votingData.voter)
+      );
+
+      await expectRevert(
+        erc20Guild.executeSignedVote(
+          votingData.root,
+          votingData.voter,
+          votingData.voteHashes[1],
+          invalidProof, // invalid proof
+          votingData.proposalIds[1],
+          votingData.option,
+          votingData.votingPower,
+          signature
+        ),
+        "ERC20Guild: Invalid merkle tree leaf"
+      );
+    });
+
+    it("Should revert if proposal ended", async () => {
+      await time.increase(40);
+      const proof = votingData.tree.getHexProof(votingData.voteHashes[1]);
+
+      const signature = fixSignature(
+        await web3.eth.sign(votingData.root, votingData.voter)
+      );
+
+      await expectRevert(
+        erc20Guild.executeSignedVote(
+          votingData.root,
+          votingData.voter,
+          votingData.voteHashes[1],
+          proof,
+          votingData.proposalIds[1],
+          votingData.option,
+          votingData.votingPower,
+          signature
+        ),
+        "ERC20Guild: Proposal ended, cannot be voted"
+      );
+    });
+
+    it("Should revert if vote has invalid VotingPower", async () => {
+      const voter = accounts[2];
+      const votingPower =
+        (await erc20Guild.votingPowerOf(voter)).toNumber() + 5000;
+      const option = "1";
+
+      const proposalId = await createProposal(genericProposal);
+
+      const voteHash = await erc20Guild.hashVote(
+        voter,
+        proposalId,
+        option,
+        votingPower.toString()
+      );
+      const leaves = [voteHash];
+
+      const root = new MerkleTree(leaves, utils.keccak256, {
+        sort: true,
+      }).getHexRoot();
+
+      const proof = votingData.tree.getHexProof(voteHash);
+
+      const signature = fixSignature(await web3.eth.sign(root, voter));
+
+      await expectRevert(
+        erc20Guild.executeSignedVote(
+          root,
+          voter,
+          voteHash,
+          proof,
+          proposalId,
+          option,
+          votingPower,
+          signature
+        ),
+        "ERC20Guild: Invalid votingPower amount"
+      );
+    });
+  });
+  describe("Multivote", function () {
+    let proposalId1, proposalId2, proposalId3, votes, voter;
+    beforeEach(async function () {
+      proposalId1 = await createProposal(genericProposal);
+      proposalId2 = await createProposal(genericProposal);
+      proposalId3 = await createProposal(genericProposal);
+
+      voter = accounts[2];
+      const voterPower = await erc20Guild.votingPowerOf(voter);
+      votes = [
+        {
+          proposalId: proposalId1,
+          option: "1",
+          votingPower: voterPower.toString(),
+        },
+        {
+          proposalId: proposalId2,
+          option: "0",
+          votingPower: voterPower.toString(),
+        },
+        {
+          proposalId: proposalId3,
+          option: "1",
+          votingPower: voterPower.toString(),
+        },
+      ];
+    });
+
+    it("Should set multiple votes", async function () {
+      const proposalIds = votes.map(v => v.proposalId);
+      const options = votes.map(v => v.option);
+      const votingPower = votes.map(v => v.votingPower);
+
+      await erc20Guild.setMultipleVotes(proposalIds, options, votingPower, {
+        from: voter,
+      });
+
+      for (const vote of votes) {
+        const proposal = await erc20Guild.getProposal(vote.proposalId);
+        expect(proposal.totalVotes[vote.option].toString()).to.equal(
+          vote.votingPower
+        );
+      }
     });
   });
 });
