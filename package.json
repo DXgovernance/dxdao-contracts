@@ -10,7 +10,8 @@
     "test/",
     "truffle.js",
     "tsconfig.json",
-    "types/"
+    "types/",
+    "artifacts/"
   ],
   "scripts": {
     "clean": "rm -rf artifacts cache contracts/hardhat-dependency-compiler/ bytecodes types",
@@ -26,7 +27,8 @@
     "lint --fix": "eslint --fix .",
     "format": "prettier --write \"test/**/*.{js,jsx,ts,tsx,json,md}\" \"contracts/**/*.sol\"",
     "format-check": "prettier --check \"test/**/*.{js,jsx,ts,tsx,json,md}\" \"contracts/**/*.sol\"",
-    "pre-commit": "lint-staged"
+    "pre-commit": "lint-staged",
+    "prepublishOnly": "yarn compile"
   },
   "devDependencies": {
     "@babel/cli": "^7.10.1",
