@@ -1,0 +1,105 @@
+# This is a workflow that is manually triggered
+# It will complete 3 steps:
+# 1. Create a new semantic version with npm, create tag with same version, commit & push the change the update.
+# 2. Publish npm package with new version
+# 3. Create a new release with matching v tag
+
+name: Bump version
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semver type of new version (major / minor / patch)"
+        # Input has to be provided for the workflow to run
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+# Workflow run is made up to run sequentially
+jobs:
+  bump-version:
+    name: Create new package version & tag
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out the content (source branch)
+      - name: Check out source
+        uses: actions/checkout@v2
+
+      # Set git credentials
+      - name: Setup Git
+        run: |
+          git config user.name 'Dxdao Governance Team'
+          git config user.email 'dxdaoGovernanceTeam@gmail.com'
+
+      # Update package version according to the input type & set new version as output variable
+      - name: Update npm version
+        id: set-package-version
+        # run: npm version ${{ github.event.inputs.version }} | read message | echo "NEXT_PACKAGE_VERSION=$message" >> $GITHUB_OUTPUT
+        # run: echo "NEXT_PACKAGE_VERSION=`echo $(npm version ${{ github.event.inputs.version }})`" >> $GITHUB_ENV
+        run: |
+          export NEXT_PACKAGE_VERSION=`echo $(npm version ${{ github.event.inputs.version }})`
+          echo "::set-output name=package_version::${NEXT_PACKAGE_VERSION}"
+          echo "Updated to version $NEXT_PACKAGE_VERSION"
+
+      - name: Push latest version & new tag
+        run: git push origin main --follow-tags
+
+    outputs:
+      package_version: ${{ steps.set-package-version.outputs.package_version }}
+
+  publish-to-npm:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    needs: bump-version
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Pull latest changes
+        run: git pull origin main
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16.13.0"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install latest npm version
+        run: npm install -g npm@latest
+
+      - name: Install dependencies and compile contracts
+        run: yarn install && yarn compile
+
+      - name: Publish npm package to npm registry
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+
+  create-github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [bump-version, publish-to-npm]
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log tag to release from
+        run: echo "Using tag ${{ needs.bump-version.outputs.package_version}}"
+
+      - name: Create Release
+        run: gh release create ${{ needs.bump-version.outputs.package_version }} --generate-notes --latest --verify-tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
