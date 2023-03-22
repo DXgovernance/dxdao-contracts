@@ -4,7 +4,7 @@
 # 2. Publish npm package with new version
 # 3. Create a new release with matching v tag
 
-name: Bump version
+name: Release next version
 
 # Controls when the action will run. Workflow runs when manually triggered using the UI
 on:
