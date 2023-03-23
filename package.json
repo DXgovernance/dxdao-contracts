@@ -11,7 +11,8 @@
     "truffle.js",
     "tsconfig.json",
     "types/",
-    "artifacts/"
+    "artifacts/",
+    "hardhat.config.js"
   ],
   "scripts": {
     "clean": "rm -rf artifacts cache contracts/hardhat-dependency-compiler/ bytecodes types",
