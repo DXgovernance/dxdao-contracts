@@ -113,7 +113,7 @@ const hardharNetworks = process.env.CI
         },
       },
       xdai: {
-        url: "https://rpc.xdaichain.com/",
+        url: "https://gnosischain-rpc.gateway.pokt.network",
         accounts: { mnemonic: MNEMONIC },
         gasLimit: 17000000,
         gasPrice: 2000000000, // 2 gwei

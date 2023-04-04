@@ -1,5 +1,5 @@
 const Web3 = require("web3");
-require("dotenv").config();
+const XLSX = require("xlsx");
 const BN = Web3.utils.BN;
 
 // Get network to use from arguments
@@ -32,7 +32,7 @@ const blockDeployedRepGnosis = 13060714; // https://gnosisscan.io/tx/0xaae7ae6ff
 const web3Mainnet = new Web3(
   "https://mainnet.infura.io/v3/6ad6d4a4ec79442eacfa967652729d1c"
 );
-const web3Gnosis = new Web3("https://rpc.gnosischain.com/");
+const web3Gnosis = new Web3("https://gnosischain-rpc.gateway.pokt.network");
 
 /*
   This script logs the eligible addresses to receive 8000 DXD in the Gov 2.0 signal proposal with
@@ -98,7 +98,13 @@ async function main() {
   );
   const allVoteEvents = votingMachineMainnet1VoteEvents
     .concat(votingMachineMainnet2VoteEvents)
-    .concat(votingMachineGnosisEvents);
+    .concat(votingMachineGnosisEvents)
+    .map(voteEvent => {
+      voteEvent.voter = voteEvent.returnValues._voter;
+      voteEvent.proposalId = voteEvent.returnValues._proposalId;
+      voteEvent.vote = voteEvent.returnValues._vote;
+      return voteEvent;
+    });
 
   let mainnetRep = await processRepEvents(
     allVoteEvents,
@@ -215,7 +221,11 @@ async function main() {
     ) {
       eligibleRepMembers.push({
         address: address,
-        amount: mergedRep[address].amount,
+        weiAmount: mergedRep[address].amount.toString(),
+        parsedAmount: Number(
+          web3.utils.fromWei(mergedRep[address].amount)
+        ).toFixed(4),
+        REPPercentage: 0,
         totalVotes: mergedRep[address].totalVotes,
         firstMintTx: mergedRep[address].firstMintTx,
       });
@@ -223,14 +233,23 @@ async function main() {
     }
   }
 
+  eligibleRepMembers.map(a => {
+    a.REPPercentage = (
+      (web3.utils.fromWei(a.weiAmount) / web3.utils.fromWei(totalRep)) *
+      100
+    ).toFixed(4);
+  });
+
   // Sort all eligible REP holders by amount
-  eligibleRepMembers = eligibleRepMembers.sort((a, b) => b.amount - a.amount);
+  eligibleRepMembers = eligibleRepMembers.sort(
+    (a, b) => b.weiAmount - a.weiAmount
+  );
   console.log();
 
-  // Log all elegible REP holders and their % of teh 8000 DXD to be received
+  // Log all elegible REP holders and their % of the total eligible REP
   console.log("Total REP: ", web3.utils.fromWei(totalRep).toString());
   console.log(
-    "(Address, Total Votes, First mint TX, REP amount, % of eligible REP, Total DXD to be received)"
+    "(Address, Total Votes, First mint TX, REP amount, % of eligible REP)"
   );
   eligibleRepMembers.map((a, i) =>
     console.log(
@@ -238,17 +257,18 @@ async function main() {
       a.address,
       a.totalVotes,
       a.firstMintTx,
-      Number(web3.utils.fromWei(a.amount)).toFixed(4),
-      (
-        (web3.utils.fromWei(a.amount) / web3.utils.fromWei(totalRep)) *
-        100
-      ).toFixed(4),
-      (
-        (web3.utils.fromWei(a.amount) / web3.utils.fromWei(totalRep)) *
-        8000
-      ).toFixed(4)
+      Number(web3.utils.fromWei(a.weiAmount)).toFixed(4),
+      a.REPPercentage
     )
   );
+
+  // Save everything into a spreadsheet
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.json_to_sheet(eligibleRepMembers);
+  const voteEvents = XLSX.utils.json_to_sheet(allVoteEvents);
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Eligible REP");
+  XLSX.utils.book_append_sheet(workbook, voteEvents, "Vote events");
+  XLSX.writeFile(workbook, "Gov 2.0 DXD Distribution.xlsx");
 }
 
 async function processRepEvents(allVoteEvents, events, web3Provider) {
@@ -268,9 +288,7 @@ async function processRepEvents(allVoteEvents, events, web3Provider) {
       } else {
         repDistribution[toAddress] = {
           amount: mintedRep,
-          totalVotes: allVoteEvents.filter(
-            e => e.returnValues._voter === toAddress
-          ).length,
+          totalVotes: allVoteEvents.filter(e => e.voter === toAddress).length,
           firstMintTime: (
             await web3Provider.eth.getBlock(events[i].blockNumber)
           ).timestamp,
