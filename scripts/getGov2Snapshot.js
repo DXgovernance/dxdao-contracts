@@ -25,6 +25,7 @@ const proposalExecutionBlockPlus6MonthsGnosis = 17897300; // https://gnosisscan.
 
 const executionProposalTimestampPlusSixMonths = 1630643138; // (Sep-03-2021 01:25:38 AM +UTC)
 const executionProposalTimestamp = 1614745538; // (March-03-2021 01:25:38 AM +UTC)
+const newREPHoldersTimestamp = 1596250800; // (Aug 01 2020 03:00:00 GMT+0000)
 
 const blockDeployedRepMainnet = 7850172; // https://etherscan.io/tx/0x010194bde4fc1191633bc7855a5bcbef3f6cac17bf7733558b3949a158d56bac
 const blockDeployedRepGnosis = 13060714; // https://gnosisscan.io/tx/0xaae7ae6ff43cb9feb5c7640060191dd8b86a2e1248c3932b51c20540742c16e1
@@ -39,9 +40,13 @@ const web3Gnosis = new Web3("https://gnosischain-rpc.gateway.pokt.network");
   the proposal id 0xf57b8345b7bcafdff729e2441900b5340251bcc83a4a4c48c6b273eed7ecb717.
 
   The conditions to be eligible are:
-  - Have voted at least 3 times before 24 hours after the signal proposal execution.
-  OR 
-  - Have minted REP before 6 months after the signal proposal execution.
+    - REP holders that have voted at least three (3) times before the passage of the Governance 2.0 Signal Proposal;
+    The snapshot of REP holders that have voted at least three (3) times will occur within twenty-four (24) hours of the Signal Proposal’s passage on the DXdao Alchemy.io mainnet.
+
+    OR
+
+    - New REP Holder addresses that submit a passing proposal on mainnet, xDAI, or any other authorized DXdao governance base. “New REP Holder addresses” include any ETH address that receives REP for the first time from August 1, 2020 onward.
+    The Snapshot of New REP Holders will occur at least six (6) months from the Governance 2.0 Signal Proposal’s passage.
 */
 async function main() {
   const DXRepMainnet = new web3Mainnet.eth.Contract(
@@ -214,8 +219,8 @@ async function main() {
     if (
       // If the rep holder voted 3 times or more before 24 hours after the signal proposal execution it is eligible
       mergedRep[address].totalVotes >= 3 ||
-      // If the rep holder received rep during the 6 months after the signal proposal execution it is eligible
-      (mergedRep[address].firstMintTime > executionProposalTimestamp &&
+      // If the rep holder received rep between 6 months before the signal proposal execution and 6 months after the signal proposal execution it is eligible
+      (mergedRep[address].firstMintTime > newREPHoldersTimestamp &&
         mergedRep[address].firstMintTime <
           executionProposalTimestampPlusSixMonths)
     ) {
