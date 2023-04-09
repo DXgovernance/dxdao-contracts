@@ -24,6 +24,8 @@ require("./scripts/deploy-dxdao-contracts");
 require("./scripts/deploymentTemplates/dxvote-develop");
 require("./scripts/deploymentTemplates/guilds-goerli");
 
+require("./scripts/gov20REPClaimMerkleTree");
+
 const moment = require("moment");
 
 const MNEMONIC_KEY =
@@ -142,6 +144,15 @@ module.exports = {
     compilers: [
       {
         version: "0.8.17",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
+        version: "0.5.17",
         settings: {
           optimizer: {
             enabled: true,
