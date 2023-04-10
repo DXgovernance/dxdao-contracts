@@ -1,27 +1,37 @@
 import { web3 } from "hardhat";
 
-const { expectRevert, expectEvent } = require("@openzeppelin/test-helpers");
+const {
+  expectRevert,
+  expectEvent,
+  time,
+} = require("@openzeppelin/test-helpers");
 
 const MerkleClaim = artifacts.require("./MerkleClaim.sol");
 const WETH9 = artifacts.require("./WETH9.sol");
+const yearInSeconds = 365 * 24 * 60 * 60;
+const BN = web3.utils.BN;
 
 contract("MerkleClaim", function (accounts) {
-  it("Should allow almost all addresses to claim tokens and end claim", async function () {
-    const merkleTreeData = await hre.run("testMerkleTree");
+  let merkleTreeData, weth, claimDeadline, merkleClaim;
 
-    const weth = await WETH9.new();
-
-    const merkleClaim = await MerkleClaim.new(
+  beforeEach(async function () {
+    merkleTreeData = await hre.run("testMerkleTree");
+    weth = await WETH9.new();
+    claimDeadline = Number(await time.latest()) + yearInSeconds + 1;
+    merkleClaim = await MerkleClaim.new(
       accounts[9],
       weth.address,
-      merkleTreeData.merkleRoot
+      merkleTreeData.merkleRoot,
+      claimDeadline
     );
 
     await weth.deposit({ value: web3.utils.toWei("100"), from: accounts[9] });
     await weth.transfer(merkleClaim.address, web3.utils.toWei("100"), {
       from: accounts[9],
     });
+  });
 
+  it("Should allow almost all addresses to claim tokens and end claim", async function () {
     await merkleClaim.claim(
       merkleTreeData.leaves[0].address,
       merkleTreeData.leaves[0].amount,
@@ -80,38 +90,31 @@ contract("MerkleClaim", function (accounts) {
       web3.utils.toWei("10")
     );
 
+    await expectRevert(
+      merkleClaim.endClaim({ from: accounts[9] }),
+      "ClaimDeadlineNotReached"
+    );
+
+    await time.increaseTo(claimDeadline + 1);
+
     // The claim contract is finished and remaining tokens are sent to the owner
     await merkleClaim.endClaim({ from: accounts[9] });
 
     // Cant claim once its ended
-    await expectRevert.unspecified(
+    await expectRevert(
       merkleClaim.claim(
         merkleTreeData.leaves[4].address,
         merkleTreeData.leaves[3].amount,
         merkleTreeData.leaves[4].proof,
         { from: merkleTreeData.leaves[4].address }
-      )
+      ),
+      "ClaimDeadlineReached"
     );
 
     assert.equal(await weth.balanceOf(merkleClaim.address), 0);
   });
 
   it("Should allow all addresses to claim tokens and end claim", async function () {
-    const merkleTreeData = await hre.run("testMerkleTree");
-
-    const weth = await WETH9.new();
-
-    const merkleClaim = await MerkleClaim.new(
-      accounts[9],
-      weth.address,
-      merkleTreeData.merkleRoot
-    );
-
-    await weth.deposit({ value: web3.utils.toWei("100"), from: accounts[9] });
-    await weth.transfer(merkleClaim.address, web3.utils.toWei("100"), {
-      from: accounts[9],
-    });
-
     await merkleClaim.claim(
       merkleTreeData.leaves[0].address,
       merkleTreeData.leaves[0].amount,
@@ -144,7 +147,7 @@ contract("MerkleClaim", function (accounts) {
     );
 
     assert.equal(await weth.balanceOf(merkleClaim.address), 0);
-
+    await time.increaseTo(claimDeadline + 1);
     await merkleClaim.endClaim({ from: accounts[9] });
   });
 });

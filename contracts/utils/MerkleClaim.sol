@@ -8,6 +8,7 @@ import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProo
 contract MerkleClaim is Ownable {
     bytes32 public immutable merkleRoot;
     ERC20 public immutable token;
+    uint256 public immutable claimDeadline;
 
     mapping(address => bool) public hasClaimed;
 
@@ -15,6 +16,10 @@ contract MerkleClaim is Ownable {
     error AlreadyClaimed();
     /// @notice Thrown if address/amount are not part of Merkle tree
     error NotInMerkle();
+    /// @notice Thrown if not on claim period and claimDeadline reached
+    error ClaimDeadlineReached();
+    /// @notice Thrown if not on endClaim period and claimDeadline not reached
+    error ClaimDeadlineNotReached();
 
     /// @notice Creates a new MerkleClaim contract
     /// @param _token address of the token to be claimed
@@ -22,9 +27,16 @@ contract MerkleClaim is Ownable {
     constructor(
         address _owner,
         address _token,
-        bytes32 _merkleRoot
+        bytes32 _merkleRoot,
+        uint256 _claimDeadline
     ) {
+        // Claim deadline needs to be at least in one year
+        require(
+            (block.timestamp + 365 days) <= _claimDeadline,
+            "MerkleClaim: claimDeadline needs to be at least in a year"
+        );
         transferOwnership(_owner);
+        claimDeadline = _claimDeadline;
         token = ERC20(_token);
         merkleRoot = _merkleRoot;
     }
@@ -43,6 +55,9 @@ contract MerkleClaim is Ownable {
         uint256 amount,
         bytes32[] calldata proof
     ) external {
+        // Throw if not on claim period and claimDeadline reached
+        if (block.timestamp > claimDeadline) revert ClaimDeadlineReached();
+
         // Throw if address has already claimed tokens
         if (hasClaimed[to]) revert AlreadyClaimed();
 
@@ -63,6 +78,9 @@ contract MerkleClaim is Ownable {
 
     /// @notice Allows the owner to end the claim period and transfer all remaining tokens to owner
     function endClaim() external onlyOwner {
+        // Throw if not on endClaim period and claimDeadline not reached
+        if (block.timestamp <= claimDeadline) revert ClaimDeadlineNotReached();
+
         token.transfer(owner(), token.balanceOf(address(this)));
     }
 }

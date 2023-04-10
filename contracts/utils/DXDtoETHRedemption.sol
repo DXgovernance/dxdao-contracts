@@ -23,6 +23,10 @@ contract DXDToETHRedemption is Ownable {
         uint256 _ethPerDXD,
         address _dxdTokenAddress
     ) {
+        require(
+            (block.timestamp + 365 days) <= _redemptionDeadline,
+            "DXDToETHRedemption: redemptionDeadline needs to be at least in a year"
+        );
         redemptionDeadline = _redemptionDeadline;
         ethPerDXD = _ethPerDXD;
         dxdToken = IERC20(_dxdTokenAddress);

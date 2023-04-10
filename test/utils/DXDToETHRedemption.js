@@ -1,17 +1,16 @@
 import { web3 } from "hardhat";
 
-const {
-  expectRevert,
-  expectEvent,
-  time,
-} = require("@openzeppelin/test-helpers");
+const { expectRevert, time } = require("@openzeppelin/test-helpers");
 
 const DXDToETHRedemption = artifacts.require("./DXDToETHRedemption.sol");
 const ERC20Token = artifacts.require("./ERC20Token.sol");
+const yearInSeconds = 365 * 24 * 60 * 60;
 
 contract("DXDToETHRedemption", function (accounts) {
-  it("Should allow redeem all eth from DXDtoETHRedemption", async function () {
-    const dxdToken = await ERC20Token.new();
+  let dxdToken, redeemDeadline, dxdToEthRedemption;
+
+  beforeEach(async function () {
+    dxdToken = await ERC20Token.new();
     await dxdToken.initialize(
       "DXdao",
       "DXD",
@@ -19,12 +18,16 @@ contract("DXDToETHRedemption", function (accounts) {
       web3.utils.toWei("1000")
     );
 
-    const dxdToEthRedemption = await DXDToETHRedemption.new(
-      (await time.latest()) + 300,
+    redeemDeadline = Number(await time.latest()) + yearInSeconds + 1;
+
+    dxdToEthRedemption = await DXDToETHRedemption.new(
+      redeemDeadline,
       500000, // 0.5 ETH per DXD
       dxdToken.address
     );
+  });
 
+  it("Should allow redeem all eth from DXDtoETHRedemption", async function () {
     await web3.eth.sendTransaction({
       from: accounts[1],
       to: dxdToEthRedemption.address,
@@ -54,22 +57,6 @@ contract("DXDToETHRedemption", function (accounts) {
   });
 
   it("Should allow redeem a part of all eth from DXDtoETHRedemption", async function () {
-    const dxdToken = await ERC20Token.new();
-    await dxdToken.initialize(
-      "DXdao",
-      "DXD",
-      accounts[1],
-      web3.utils.toWei("1000")
-    );
-
-    const redeemDeadline = (await time.latest()) + 300;
-
-    const dxdToEthRedemption = await DXDToETHRedemption.new(
-      redeemDeadline,
-      500000, // 0.5 ETH per DXD
-      dxdToken.address
-    );
-
     await web3.eth.sendTransaction({
       from: accounts[1],
       to: dxdToEthRedemption.address,
