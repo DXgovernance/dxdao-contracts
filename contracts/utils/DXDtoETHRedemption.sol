@@ -12,6 +12,7 @@ contract DXDToETHRedemption is Ownable {
     uint256 public redemptionDeadline;
     uint256 public ethPerDXD; // 1000000 = 1, 500000 = 0.5, 150000 = 0.15
     IERC20 public dxdToken;
+    uint256 constant PRICE_PRECISION = 1000000;
 
     event Redemption(address indexed sender, uint256 amount);
 
@@ -29,9 +30,9 @@ contract DXDToETHRedemption is Ownable {
 
     function redeem(uint256 _amount) external {
         require(block.timestamp <= redemptionDeadline, "DXDToETHRedemption: Redemption period has ended");
-        require(_amount > 1000000, "DXDToETHRedemption: Amount must be greater than 0");
+        require(_amount > PRICE_PRECISION, "DXDToETHRedemption: Amount must be greater than 1000000");
 
-        uint256 ethAmount = (_amount * ethPerDXD) / 1000000;
+        uint256 ethAmount = (_amount * ethPerDXD) / PRICE_PRECISION;
 
         dxdToken.safeTransferFrom(msg.sender, address(this), _amount);
         payable(msg.sender).transfer(ethAmount);
@@ -47,9 +48,9 @@ contract DXDToETHRedemption is Ownable {
         bytes32 _s
     ) external {
         require(block.timestamp <= redemptionDeadline, "Redemption period has ended");
-        require(_amount > 1000000, "Amount must be greater than 0");
+        require(_amount > PRICE_PRECISION, "Amount must be greater than 1000000");
 
-        uint256 ethAmount = (_amount * ethPerDXD) / 1000000;
+        uint256 ethAmount = (_amount * ethPerDXD) / PRICE_PRECISION;
 
         IERC20Permit(address(dxdToken)).permit(msg.sender, address(this), _amount, _deadline, _v, _r, _s);
 
