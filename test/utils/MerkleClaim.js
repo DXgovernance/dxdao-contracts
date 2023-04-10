@@ -7,7 +7,7 @@ const WETH9 = artifacts.require("./WETH9.sol");
 
 contract("MerkleClaim", function (accounts) {
   it("Should allow almost all addresses to claim tokens and end claim", async function () {
-    const merkleTreeData = await hre.run("gov20REPClaimMerkleTree");
+    const merkleTreeData = await hre.run("testMerkleTree");
 
     const weth = await WETH9.new();
 
@@ -97,7 +97,7 @@ contract("MerkleClaim", function (accounts) {
   });
 
   it("Should allow all addresses to claim tokens and end claim", async function () {
-    const merkleTreeData = await hre.run("gov20REPClaimMerkleTree");
+    const merkleTreeData = await hre.run("testMerkleTree");
 
     const weth = await WETH9.new();
 

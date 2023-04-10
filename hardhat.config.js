@@ -25,6 +25,8 @@ require("./scripts/deploymentTemplates/dxvote-develop");
 require("./scripts/deploymentTemplates/guilds-goerli");
 
 require("./scripts/gov20REPClaimMerkleTree");
+require("./scripts/testMerkleTree");
+require("./scripts/DXDVestedClaimMerkleTree");
 
 const moment = require("moment");
 
