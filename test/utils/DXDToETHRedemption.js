@@ -15,7 +15,7 @@ contract("DXDToETHRedemption", function (accounts) {
       "DXdao",
       "DXD",
       accounts[1],
-      web3.utils.toWei("1000")
+      web3.utils.toWei("400")
     );
 
     redeemDeadline = Number(await time.latest()) + yearInSeconds + 1;
@@ -36,7 +36,7 @@ contract("DXDToETHRedemption", function (accounts) {
 
     await dxdToken.approve(
       dxdToEthRedemption.address,
-      web3.utils.toWei("1000"),
+      web3.utils.toWei("400"),
       { from: accounts[1] }
     );
 
@@ -49,9 +49,7 @@ contract("DXDToETHRedemption", function (accounts) {
       web3.utils.toWei("150")
     );
 
-    await dxdToEthRedemption.redeem(web3.utils.toWei("300"), {
-      from: accounts[1],
-    });
+    await dxdToEthRedemption.redeem(0, { from: accounts[1] });
 
     assert.equal(await web3.eth.getBalance(dxdToEthRedemption.address), 0);
   });
@@ -65,13 +63,13 @@ contract("DXDToETHRedemption", function (accounts) {
 
     await dxdToken.approve(
       dxdToEthRedemption.address,
-      web3.utils.toWei("1000"),
+      web3.utils.toWei("400"),
       { from: accounts[1] }
     );
 
     await expectRevert(
-      dxdToEthRedemption.redeem(1000000, { from: accounts[1] }),
-      "DXDToETHRedemption: Amount must be greater than 1000000"
+      dxdToEthRedemption.redeem(999999, { from: accounts[1] }),
+      "AmountTooSmall"
     );
 
     await dxdToEthRedemption.redeem(web3.utils.toWei("100"), {
@@ -94,7 +92,7 @@ contract("DXDToETHRedemption", function (accounts) {
 
     await expectRevert(
       dxdToEthRedemption.withdrawRemainingETH({ from: accounts[0] }),
-      "DXDToETHRedemption: Redemption period has not ended yet"
+      "RedemptionPeriodNotEnded"
     );
 
     assert.equal(
@@ -102,11 +100,11 @@ contract("DXDToETHRedemption", function (accounts) {
       web3.utils.toWei("25")
     );
 
-    await time.increaseTo(redeemDeadline);
+    await time.increaseTo(redeemDeadline + 1);
 
     await expectRevert(
       dxdToEthRedemption.redeem(web3.utils.toWei("50"), { from: accounts[1] }),
-      "DXDToETHRedemption: Redemption period has ended"
+      "RedemptionPeriodEnded"
     );
 
     await dxdToEthRedemption.withdrawRemainingETH({ from: accounts[0] });
