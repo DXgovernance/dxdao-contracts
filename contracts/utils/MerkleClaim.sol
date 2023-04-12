@@ -13,7 +13,7 @@ contract MerkleClaim is Ownable {
     IERC20 public immutable token;
     uint256 public immutable claimDeadline;
 
-    mapping(address => bool) public hasClaimed;
+    mapping(bytes32 => bool) public hasClaimed;
 
     /// @notice Thrown if claim deadline is lower than 365 days
     error wrongClaimDeadline();
@@ -56,16 +56,16 @@ contract MerkleClaim is Ownable {
         // Throw if not on claim period and claimDeadline reached
         if (block.timestamp > claimDeadline) revert ClaimDeadlineReached();
 
-        // Throw if address has already claimed tokens
-        if (hasClaimed[msg.sender]) revert AlreadyClaimed();
-
         // Verify merkle proof, or revert if not in tree
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender, amount));
         bool isValidLeaf = MerkleProof.verify(proof, merkleRoot, leaf);
         if (!isValidLeaf) revert NotInMerkle();
 
+        // Throw if address has already claimed tokens
+        if (hasClaimed[leaf]) revert AlreadyClaimed();
+
         // Set address to claimed
-        hasClaimed[msg.sender] = true;
+        hasClaimed[leaf] = true;
 
         // Send tokens to address
         token.safeTransfer(msg.sender, amount);
