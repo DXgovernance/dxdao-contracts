@@ -35,7 +35,7 @@ contract MerkleClaim is Ownable {
             (block.timestamp + 365 days) <= _claimDeadline,
             "MerkleClaim: claimDeadline needs to be at least in a year"
         );
-        transferOwnership(_owner);
+        _transferOwnership(_owner);
         claimDeadline = _claimDeadline;
         token = ERC20(_token);
         merkleRoot = _merkleRoot;
