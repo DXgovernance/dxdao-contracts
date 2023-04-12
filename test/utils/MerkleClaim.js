@@ -33,13 +33,11 @@ contract("MerkleClaim", function (accounts) {
 
   it("Should allow almost all addresses to claim tokens and end claim", async function () {
     await merkleClaim.claim(
-      merkleTreeData.leaves[0].address,
       merkleTreeData.leaves[0].amount,
       merkleTreeData.leaves[0].proof,
       { from: merkleTreeData.leaves[0].address }
     );
     await merkleClaim.claim(
-      merkleTreeData.leaves[1].address,
       merkleTreeData.leaves[1].amount,
       merkleTreeData.leaves[1].proof,
       { from: merkleTreeData.leaves[1].address }
@@ -48,7 +46,6 @@ contract("MerkleClaim", function (accounts) {
     //Cant claim twice
     await expectRevert(
       merkleClaim.claim(
-        merkleTreeData.leaves[1].address,
         merkleTreeData.leaves[1].amount,
         merkleTreeData.leaves[1].proof,
         { from: merkleTreeData.leaves[1].address }
@@ -58,7 +55,6 @@ contract("MerkleClaim", function (accounts) {
 
     //Should claim and emit Claim event
     const claimTx = await merkleClaim.claim(
-      merkleTreeData.leaves[2].address,
       merkleTreeData.leaves[2].amount,
       merkleTreeData.leaves[2].proof,
       { from: merkleTreeData.leaves[2].address }
@@ -68,7 +64,6 @@ contract("MerkleClaim", function (accounts) {
       amount: merkleTreeData.leaves[2].amount,
     });
     await merkleClaim.claim(
-      merkleTreeData.leaves[3].address,
       merkleTreeData.leaves[3].amount,
       merkleTreeData.leaves[3].proof,
       { from: merkleTreeData.leaves[3].address }
@@ -77,10 +72,9 @@ contract("MerkleClaim", function (accounts) {
     //Not in merkle tree
     await expectRevert(
       merkleClaim.claim(
-        accounts[5],
         merkleTreeData.leaves[4].amount,
         merkleTreeData.leaves[4].proof,
-        { from: merkleTreeData.leaves[4].address }
+        { from: accounts[5] }
       ),
       "NotInMerkle"
     );
@@ -103,7 +97,6 @@ contract("MerkleClaim", function (accounts) {
     // Cant claim once its ended
     await expectRevert(
       merkleClaim.claim(
-        merkleTreeData.leaves[4].address,
         merkleTreeData.leaves[3].amount,
         merkleTreeData.leaves[4].proof,
         { from: merkleTreeData.leaves[4].address }
@@ -116,31 +109,26 @@ contract("MerkleClaim", function (accounts) {
 
   it("Should allow all addresses to claim tokens and end claim", async function () {
     await merkleClaim.claim(
-      merkleTreeData.leaves[0].address,
       merkleTreeData.leaves[0].amount,
       merkleTreeData.leaves[0].proof,
       { from: merkleTreeData.leaves[0].address }
     );
     await merkleClaim.claim(
-      merkleTreeData.leaves[1].address,
       merkleTreeData.leaves[1].amount,
       merkleTreeData.leaves[1].proof,
       { from: merkleTreeData.leaves[1].address }
     );
     await merkleClaim.claim(
-      merkleTreeData.leaves[2].address,
       merkleTreeData.leaves[2].amount,
       merkleTreeData.leaves[2].proof,
       { from: merkleTreeData.leaves[2].address }
     );
     await merkleClaim.claim(
-      merkleTreeData.leaves[3].address,
       merkleTreeData.leaves[3].amount,
       merkleTreeData.leaves[3].proof,
       { from: merkleTreeData.leaves[3].address }
     );
     await merkleClaim.claim(
-      merkleTreeData.leaves[4].address,
       merkleTreeData.leaves[4].amount,
       merkleTreeData.leaves[4].proof,
       { from: merkleTreeData.leaves[4].address }

@@ -47,33 +47,28 @@ contract MerkleClaim is Ownable {
     event Claim(address indexed to, uint256 amount);
 
     /// @notice Allows claiming tokens if address is part of merkle tree
-    /// @param to address of claimee
     /// @param amount of tokens owed to claimee
     /// @param proof merkle proof to prove address and amount are in tree
-    function claim(
-        address to,
-        uint256 amount,
-        bytes32[] calldata proof
-    ) external {
+    function claim(uint256 amount, bytes32[] calldata proof) external {
         // Throw if not on claim period and claimDeadline reached
         if (block.timestamp > claimDeadline) revert ClaimDeadlineReached();
 
         // Throw if address has already claimed tokens
-        if (hasClaimed[to]) revert AlreadyClaimed();
+        if (hasClaimed[msg.sender]) revert AlreadyClaimed();
 
         // Verify merkle proof, or revert if not in tree
-        bytes32 leaf = keccak256(abi.encodePacked(to, amount));
+        bytes32 leaf = keccak256(abi.encodePacked(msg.sender, amount));
         bool isValidLeaf = MerkleProof.verify(proof, merkleRoot, leaf);
         if (!isValidLeaf) revert NotInMerkle();
 
         // Set address to claimed
-        hasClaimed[to] = true;
+        hasClaimed[msg.sender] = true;
 
         // Send tokens to address
-        token.transfer(to, amount);
+        token.transfer(msg.sender, amount);
 
         // Emit claim event
-        emit Claim(to, amount);
+        emit Claim(msg.sender, amount);
     }
 
     /// @notice Allows the owner to end the claim period and transfer all remaining tokens to owner
