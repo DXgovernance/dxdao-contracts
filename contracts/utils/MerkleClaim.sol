@@ -15,6 +15,8 @@ contract MerkleClaim is Ownable {
 
     mapping(address => bool) public hasClaimed;
 
+    /// @notice Thrown if claim deadline is lower than 365 days
+    error wrongClaimDeadline();
     /// @notice Thrown if address has already claimed
     error AlreadyClaimed();
     /// @notice Thrown if address/amount are not part of Merkle tree
@@ -34,10 +36,8 @@ contract MerkleClaim is Ownable {
         uint256 _claimDeadline
     ) {
         // Claim deadline needs to be at least in one year
-        require(
-            (block.timestamp + 365 days) <= _claimDeadline,
-            "MerkleClaim: claimDeadline needs to be at least in a year"
-        );
+        if ((block.timestamp + 365 days) > _claimDeadline) revert wrongClaimDeadline();
+
         _transferOwnership(_owner);
         claimDeadline = _claimDeadline;
         token = IERC20(_token);
