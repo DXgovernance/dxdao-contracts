@@ -2,12 +2,15 @@
 pragma solidity >=0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract MerkleClaim is Ownable {
+    using SafeERC20 for IERC20;
+
     bytes32 public immutable merkleRoot;
-    ERC20 public immutable token;
+    IERC20 public immutable token;
     uint256 public immutable claimDeadline;
 
     mapping(address => bool) public hasClaimed;
@@ -37,7 +40,7 @@ contract MerkleClaim is Ownable {
         );
         _transferOwnership(_owner);
         claimDeadline = _claimDeadline;
-        token = ERC20(_token);
+        token = IERC20(_token);
         merkleRoot = _merkleRoot;
     }
 
@@ -65,7 +68,7 @@ contract MerkleClaim is Ownable {
         hasClaimed[msg.sender] = true;
 
         // Send tokens to address
-        token.transfer(msg.sender, amount);
+        token.safeTransfer(msg.sender, amount);
 
         // Emit claim event
         emit Claim(msg.sender, amount);
@@ -76,6 +79,6 @@ contract MerkleClaim is Ownable {
         // Throw if not on endClaim period and claimDeadline not reached
         if (block.timestamp <= claimDeadline) revert ClaimDeadlineNotReached();
 
-        token.transfer(owner(), token.balanceOf(address(this)));
+        token.safeTransfer(owner(), token.balanceOf(address(this)));
     }
 }
