@@ -24,14 +24,37 @@ contract("MerkleClaim", function (accounts) {
       merkleTreeData.merkleRoot,
       claimDeadline
     );
-
-    await weth.deposit({ value: web3.utils.toWei("100"), from: accounts[9] });
-    await weth.transfer(merkleClaim.address, web3.utils.toWei("100"), {
-      from: accounts[9],
-    });
   });
 
   it("Should allow almost all addresses to claim tokens and end claim", async function () {
+    await weth.deposit({ value: web3.utils.toWei("100"), from: accounts[9] });
+    await weth.transfer(merkleClaim.address, web3.utils.toWei("10"), {
+      from: accounts[9],
+    });
+
+    await merkleClaim.claim(
+      merkleTreeData.leaves[3].amount,
+      merkleTreeData.leaves[3].proof,
+      { from: merkleTreeData.leaves[3].address }
+    );
+
+    assert.equal(await weth.balanceOf(merkleClaim.address), 0);
+
+    // not enough tokens to send the claim
+    await expectRevert(
+      merkleClaim.claim(
+        merkleTreeData.leaves[0].amount,
+        merkleTreeData.leaves[0].proof,
+        { from: merkleTreeData.leaves[0].address }
+      ),
+      "SafeERC20: low-level call failed"
+    );
+
+    // Transfer more tokens to the contract
+    await weth.transfer(merkleClaim.address, web3.utils.toWei("90"), {
+      from: accounts[9],
+    });
+
     await merkleClaim.claim(
       merkleTreeData.leaves[0].amount,
       merkleTreeData.leaves[0].proof,
@@ -63,11 +86,6 @@ contract("MerkleClaim", function (accounts) {
       to: merkleTreeData.leaves[2].address,
       amount: merkleTreeData.leaves[2].amount,
     });
-    await merkleClaim.claim(
-      merkleTreeData.leaves[3].amount,
-      merkleTreeData.leaves[3].proof,
-      { from: merkleTreeData.leaves[3].address }
-    );
 
     //Not in merkle tree
     await expectRevert(
@@ -97,7 +115,7 @@ contract("MerkleClaim", function (accounts) {
     // Cant claim once its ended
     await expectRevert(
       merkleClaim.claim(
-        merkleTreeData.leaves[3].amount,
+        merkleTreeData.leaves[4].amount,
         merkleTreeData.leaves[4].proof,
         { from: merkleTreeData.leaves[4].address }
       ),
@@ -108,6 +126,11 @@ contract("MerkleClaim", function (accounts) {
   });
 
   it("Should allow all addresses to claim tokens and end claim", async function () {
+    await weth.deposit({ value: web3.utils.toWei("100"), from: accounts[9] });
+    await weth.transfer(merkleClaim.address, web3.utils.toWei("100"), {
+      from: accounts[9],
+    });
+
     await merkleClaim.claim(
       merkleTreeData.leaves[0].amount,
       merkleTreeData.leaves[0].proof,
