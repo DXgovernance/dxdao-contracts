@@ -1,5 +1,6 @@
 require("@nomiclabs/hardhat-web3");
 
+const XLSX = require("xlsx");
 const { MerkleTree } = require("merkletreejs");
 const keccak256 = require("keccak256");
 const Web3 = require("web3");
@@ -9,7 +10,7 @@ task(
   "Generate the merkle tree to be used for the REP claim"
 ).setAction(async () => {
   // Set the WETH amount to be distributed
-  const tokenAmount = 10000;
+  const tokenAmount = 932.6;
 
   const receivers = [
     {
@@ -645,19 +646,20 @@ task(
   };
 
   const leaves = [];
-
   // Generate merkle tree
   const merkleTree = new MerkleTree(
     receivers.map(receiver => {
       const amountToSend = Web3.utils.toWei(
-        ((tokenAmount / sumOfAllPercentages) * receiver.percentage).toString()
+        ((tokenAmount / sumOfAllPercentages) * receiver.percentage)
+          .toFixed(18)
+          .toString()
       );
       const leaf = generateLeaf(receiver.address, amountToSend);
       leaves.push({
         address: receiver.address,
-        amount: amountToSend,
-        hex: leaf.toString("hex"),
-        proof: [],
+        weiAmount: amountToSend,
+        leafProof: [],
+        leafHash: leaf.toString("hex"),
       });
       return leaf;
     }),
@@ -669,13 +671,27 @@ task(
   const merkleRoot = merkleTree.getHexRoot();
 
   // Now that the MerkleTree is generated we calculate the proof of each leaf
-  console.log("Receiver, AmountToSend, Leaf Hex, Leaf Proof");
+  console.log("Receiver, WEI Amount, ETH Amount, Leaf Hex, Leaf Proof");
   for (let i = 0; i < leaves.length; i++) {
     const leaf = leaves[i];
-    const proof = merkleTree.getHexProof(Buffer.from(leaf.hex, "hex"));
-    leaf.proof = proof;
-    console.log(leaf.address, leaf.amount, leaf.hex, leaf.proof);
+    leaf.leafProof =
+      "[" +
+      merkleTree.getHexProof(Buffer.from(leaf.leafHash, "hex")).toString() +
+      "]";
+    console.log(
+      "#" + i,
+      leaf.address,
+      leaf.weiAmount,
+      web3.utils.fromWei(leaf.weiAmount),
+      leaf.leafHash
+    );
   }
+
+  // Save everything into a spreadsheet
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.json_to_sheet(leaves);
+  XLSX.utils.book_append_sheet(workbook, worksheet, "REP Merkle Proofs");
+  XLSX.writeFile(workbook, "docs/Gov 2.0 REP Distribution.xlsx");
 
   return {
     merkleRoot,
