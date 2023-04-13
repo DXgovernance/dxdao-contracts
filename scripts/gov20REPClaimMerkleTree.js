@@ -629,6 +629,12 @@ task(
       address: "0x6ac0A885Ed84F4A2D062c60FB7DaaF504Fc8C47f",
       percentage: 0.0001,
     },
+
+    // Extra account added with smallest percentage just to test
+    {
+      address: "0x8E900Cf9BD655e34bb610f0Ef365D8d476fD7337",
+      percentage: 0.0001,
+    },
   ];
 
   // We get the sum of all percentages that is around 100
@@ -669,6 +675,7 @@ task(
 
   // Get the Merkle Root
   const merkleRoot = merkleTree.getHexRoot();
+  console.log("Merkle Root", merkleRoot);
 
   // Now that the MerkleTree is generated we calculate the proof of each leaf
   console.log("Receiver, WEI Amount, ETH Amount, Leaf Hex, Leaf Proof");
