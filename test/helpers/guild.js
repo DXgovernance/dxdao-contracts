@@ -1,6 +1,7 @@
 import * as helpers from "./index";
 const constants = require("./constants");
 const ERC20Mock = artifacts.require("ERC20Mock.sol");
+const ERC721Token = artifacts.require("ERC721Token.sol");
 
 export async function createAndSetupGuildToken(accounts, balances) {
   const [firstAccount, ...restOfAccounts] = accounts;
@@ -16,6 +17,18 @@ export async function createAndSetupGuildToken(accounts, balances) {
   await Promise.all(
     restOfAccounts.map((account, idx) => {
       return guildToken.transfer(account, restOfBalances[idx]);
+    })
+  );
+
+  return guildToken;
+}
+
+export async function createAndSetupNFT(accounts) {
+  const nft = await ERC721Token.new("Non fungible", "NFT");
+
+  await Promise.all(
+    accounts.map((account, idx) => {
+      return nft.mint(account, idx);
     })
   );
 
@@ -60,4 +73,14 @@ export async function setVotesOnProposal({
 }) {
   if (votingPower === 0) votingPower = await guild.votingPowerOf(account);
   return guild.setVote(proposalId, option, votingPower, { from: account });
+}
+
+export async function setNFTVotesOnProposal({
+  guild,
+  proposalId,
+  option,
+  account,
+  tokenIds,
+}) {
+  return guild.setVote(proposalId, option, tokenIds, { from: account });
 }
