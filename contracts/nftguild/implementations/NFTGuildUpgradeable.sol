@@ -36,9 +36,8 @@ contract NFTGuildUpgradeable is BaseNFTGuild, Initializable {
     // @param _token The NFT token that will be used as source of voting power
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     // @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
-    // @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
+    // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // action
-    // @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
     // @param _name The name of the NFTGuild
     // @param _voteGas The amount of gas in wei unit used for vote refunds
     // @param _maxGasPrice The maximum gas price used for vote refunds
@@ -49,7 +48,7 @@ contract NFTGuildUpgradeable is BaseNFTGuild, Initializable {
         address _token,
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votingPowerPercentageForProposalExecution,
+        uint256 _votingPowerForProposalExecution,
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
@@ -61,14 +60,14 @@ contract NFTGuildUpgradeable is BaseNFTGuild, Initializable {
         require(_proposalTime > 0, "NFTGuild: proposal time has to be more than 0");
         require(_lockTime >= _proposalTime, "NFTGuild: lockTime has to be higher or equal to proposalTime");
         require(
-            _votingPowerPercentageForProposalExecution > 0,
+            _votingPowerForProposalExecution > 0,
             "NFTGuild: voting power for execution has to be more than 0"
         );
         name = _name;
         token = IERC721Upgradeable(_token);
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
-        votingPowerPercentageForProposalExecution = _votingPowerPercentageForProposalExecution;
+        votingPowerForProposalExecution = _votingPowerForProposalExecution;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;

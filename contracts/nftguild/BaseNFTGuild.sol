@@ -73,7 +73,7 @@ contract BaseNFTGuild {
 
     // The percentage of voting power in base 10000 needed to execute a proposal option
     // 100 == 1% 2500 == 25%
-    uint256 public votingPowerPercentageForProposalExecution;
+    uint256 public votingPowerForProposalExecution;
 
     // The amount of gas in wei unit used for vote refunds
     uint256 public voteGas;
@@ -120,9 +120,6 @@ contract BaseNFTGuild {
     // Array to keep track of the proposals ids in contract storage
     bytes32[] public proposalsIds;
 
-    // Set to keep track of the tokens registered
-    EnumerableSet.UintSet registeredTokens;
-
     event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
     event VoteAdded(bytes32 indexed proposalId, uint256 indexed option, address voter, uint256[] votingPower);
     event TokensLocked(address voter, uint256 value);
@@ -132,33 +129,10 @@ contract BaseNFTGuild {
 
     fallback() external payable {}
 
-    // @dev Register token for voting
-    function registerToken(uint256 tokenId) external virtual {
-        require(token.ownerOf(tokenId) == msg.sender, "You do not own that token");
-        EnumerableSet.add(registeredTokens, tokenId);
-    }
-
-    // @dev Remove burned/stale tokens
-    function removeStaleTokens() external virtual {
-        uint256 i = 0;
-        for (i = 0; i < EnumerableSet.length(registeredTokens); i++) {
-            try token.ownerOf(registeredTokens.at(i)) returns (address owner) {
-                if (
-                    keccak256(abi.encodePacked(owner)) ==
-                    keccak256(abi.encodePacked("0x0000000000000000000000000000000000000000"))
-                ) {
-                    EnumerableSet.remove(registeredTokens, i);
-                }
-            } catch {
-                EnumerableSet.remove(registeredTokens, i);
-            }
-        }
-    }
-
     // @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initialized
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     // @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
-    // @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
+    // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // option
     // @param _voteGas The amount of gas in wei unit used for vote refunds.
     // Can't be higher than the gas used by setVote (117000)
@@ -168,21 +142,17 @@ contract BaseNFTGuild {
     function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votingPowerPercentageForProposalExecution,
+        uint256 _votingPowerForProposalExecution,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals
     ) external virtual {
         require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself or when initialized");
         require(_proposalTime > 0, "ERC20Guild: proposal time has to be more than 0");
-        require(
-            _votingPowerPercentageForProposalExecution > 0,
-            "ERC20Guild: voting power for execution has to be more than 0"
-        );
         require(_voteGas <= 117000, "ERC20Guild: vote gas has to be equal or lower than 117000");
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
-        votingPowerPercentageForProposalExecution = _votingPowerPercentageForProposalExecution;
+        votingPowerForProposalExecution = _votingPowerForProposalExecution;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
@@ -233,9 +203,7 @@ contract BaseNFTGuild {
         newProposal.contentHash = contentHash;
         newProposal.state = ProposalState.Active;
         newProposal.totalOptions = totalOptions.add(1);
-        newProposal.powerForExecution = (EnumerableSet.length(registeredTokens))
-            .mul(votingPowerPercentageForProposalExecution)
-            .div(10000);
+        newProposal.powerForExecution = votingPowerForProposalExecution;
 
         activeProposalsNow = activeProposalsNow.add(1);
         emit ProposalStateChanged(proposalId, uint256(ProposalState.Active));
@@ -448,11 +416,6 @@ contract BaseNFTGuild {
         return totalProposals;
     }
 
-    // @dev Get the totalRegistered
-    function getTotalRegistered() public view virtual returns (uint256) {
-        return registeredTokens.length();
-    }
-
     // @dev Get the activeProposalsNow
     function getActiveProposalsNow() external view returns (uint256) {
         return activeProposalsNow;
@@ -465,7 +428,7 @@ contract BaseNFTGuild {
 
     // @dev Get minimum amount of votingPower needed for proposal execution
     function getVotingPowerForProposalExecution() public view virtual returns (uint256) {
-        return getTotalRegistered().mul(votingPowerPercentageForProposalExecution).div(10000);
+        return votingPowerForProposalExecution;
     }
 
     // @dev Get the votes of a voter in a proposal

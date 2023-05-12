@@ -45,7 +45,7 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         address _token,
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votingPowerPercentageForProposalExecution,
+        uint256 _votingPowerForProposalExecution,
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
@@ -56,15 +56,11 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         require(address(_token) != address(0), "NFTGuild: token cant be zero address");
         require(_proposalTime > 0, "NFTGuild: proposal time has to be more than 0");
         require(_lockTime >= _proposalTime, "NFTGuild: lockTime has to be higher or equal to proposalTime");
-        require(
-            _votingPowerPercentageForProposalExecution > 0,
-            "NFTGuild: voting power for execution has to be more than 0"
-        );
         name = _name;
         poap = IPoap(_token);
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
-        votingPowerPercentageForProposalExecution = _votingPowerPercentageForProposalExecution;
+        votingPowerForProposalExecution = _votingPowerForProposalExecution;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
@@ -73,38 +69,6 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
 
     // The ERC721 token that will be used as source of voting power
     IPoap public poap;
-
-    // Array to keep track of the events registered
-    EnumerableSet.UintSet registeredEvents;
-
-    // @dev Register token for voting
-    function registerToken(uint256 tokenId) external override {
-        require(EnumerableSet.contains(registeredEvents, poap.tokenEvent(tokenId)), "Event not registered");
-        require(poap.ownerOf(tokenId) == msg.sender, "You do not own that token");
-        EnumerableSet.add(registeredTokens, tokenId);
-    }
-
-    // @dev Remove burned/stale tokens
-    function removeStaleTokens() external override {
-        uint256 i = 0;
-        for (i = 0; i < EnumerableSet.length(registeredTokens); i++) {
-            try token.ownerOf(EnumerableSet.at(registeredTokens, i)) returns (address owner) {
-                if (
-                    keccak256(abi.encodePacked(owner)) ==
-                    keccak256(abi.encodePacked("0x0000000000000000000000000000000000000000"))
-                ) {
-                    EnumerableSet.remove(registeredTokens, i);
-                }
-            } catch {
-                EnumerableSet.remove(registeredTokens, i);
-            }
-        }
-    }
-
-    // @dev Register events to include tokens for voting
-    function registerEvent(uint256 eventId) external virtual onlyOwner {
-        EnumerableSet.add(registeredTokens, eventId);
-    }
 
     // Copied directly only replacing token with poap
     // ----------------------------------------------
@@ -154,9 +118,7 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         newProposal.contentHash = contentHash;
         newProposal.state = ProposalState.Active;
         newProposal.totalOptions = totalOptions.add(1);
-        newProposal.powerForExecution = (EnumerableSet.length(registeredTokens))
-            .mul(votingPowerPercentageForProposalExecution)
-            .div(10000);
+        newProposal.powerForExecution = votingPowerForProposalExecution;
 
         activeProposalsNow = activeProposalsNow.add(1);
         emit ProposalStateChanged(proposalId, uint256(ProposalState.Active));
