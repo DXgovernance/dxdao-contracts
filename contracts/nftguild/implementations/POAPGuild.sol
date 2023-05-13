@@ -2,11 +2,9 @@
 pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../BaseNFTGuild.sol";
 import "../../utils/PermissionRegistry.sol";
 import "../utils/ipoap.sol";
@@ -37,7 +35,6 @@ import "../utils/ipoap.sol";
   Multiple votes and signed votes can be executed in one transaction.
 */
 contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
-    using SafeMathUpgradeable for uint256;
     using MathUpgradeable for uint256;
     using AddressUpgradeable for address;
 
@@ -100,62 +97,29 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         );
         require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
         require(
-            totalOptions <= to.length && value.length.mod(totalOptions) == 0,
+            totalOptions <= to.length && value.length % totalOptions == 0,
             "ERC20Guild: Invalid totalOptions or option calls length"
         );
         require(totalOptions <= MAX_OPTIONS_PER_PROPOSAL, "ERC20Guild: Maximum amount of options per proposal reached");
 
         bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, block.timestamp, totalProposals));
-        totalProposals = totalProposals.add(1);
+        totalProposals = totalProposals + 1;
         Proposal storage newProposal = proposals[proposalId];
         newProposal.creator = msg.sender;
         newProposal.startTime = block.timestamp;
-        newProposal.endTime = block.timestamp.add(proposalTime);
+        newProposal.endTime = block.timestamp + proposalTime;
         newProposal.to = to;
         newProposal.data = data;
         newProposal.value = value;
         newProposal.title = title;
         newProposal.contentHash = contentHash;
         newProposal.state = ProposalState.Active;
-        newProposal.totalOptions = totalOptions.add(1);
+        newProposal.totalOptions = totalOptions + 1;
         newProposal.powerForExecution = votingPowerForProposalExecution;
 
-        activeProposalsNow = activeProposalsNow.add(1);
+        activeProposalsNow = activeProposalsNow + 1;
         emit ProposalStateChanged(proposalId, uint256(ProposalState.Active));
         proposalsIds.push(proposalId);
         return proposalId;
-    }
-
-    // @dev Set the voting power to vote in a proposal
-    // @param proposalId The id of the proposal to set the vote
-    // @param option The proposal option to be voted
-    // @param votingPower The votingPower to use in the proposal
-    function setVote(
-        bytes32 proposalId,
-        uint256 option,
-        uint256[] memory tokenIds
-    ) public override {
-        require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
-
-        uint256 i = 0;
-        for (i = 0; i < tokenIds.length; i++) {
-            require(poap.ownerOf(tokenIds[i]) != msg.sender, "Voting with tokens you don't own");
-
-            uint256 x = 0;
-            for (x = 0; x < proposals[proposalId].totalVotes.length; x++) {
-                require(proposals[proposalId].totalVotes[x].tokenId != tokenIds[i], "This NFT already voted");
-            }
-            proposals[proposalId].totalVotes.push(Vote({tokenId: tokenIds[i], option: option}));
-        }
-        emit VoteAdded(proposalId, option, msg.sender, tokenIds);
-
-        if (voteGas > 0) {
-            uint256 gasRefund = voteGas.mul(tx.gasprice.min(maxGasPrice));
-
-            if (address(this).balance >= gasRefund && !address(msg.sender).isContract()) {
-                (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
-                require(success, "Failed to refund gas");
-            }
-        }
     }
 }
