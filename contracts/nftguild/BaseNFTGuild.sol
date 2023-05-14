@@ -5,7 +5,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "../utils/PermissionRegistry.sol";
 
 /*
@@ -38,7 +37,6 @@ import "../utils/PermissionRegistry.sol";
 contract BaseNFTGuild {
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
-    using AddressUpgradeable for address;
 
     // This configuration value is defined as constant to be protected against a malicious proposal
     // changing it.
@@ -285,7 +283,7 @@ contract BaseNFTGuild {
         if (voteGas > 0) {
             uint256 gasRefund = voteGas * tx.gasprice.min(maxGasPrice);
 
-            if (address(this).balance >= gasRefund && !address(msg.sender).isContract()) {
+            if (address(this).balance >= gasRefund) {
                 (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
                 require(success, "Failed to refund gas");
             }
