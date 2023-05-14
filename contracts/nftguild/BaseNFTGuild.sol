@@ -91,7 +91,7 @@ contract BaseNFTGuild {
 
     // Vote and Proposal structs used in the proposals mapping
     struct Vote {
-        uint256 option;
+        uint248 option;
         bool hasVoted;
     }
 
@@ -274,7 +274,7 @@ contract BaseNFTGuild {
             require(token.ownerOf(tokenIds[i]) == msg.sender, "Voting with tokens you don't own");
             require(proposalVotes[proposalId][tokenIds[i]].hasVoted == false, "This NFT already voted");
 
-            proposalVotes[proposalId][tokenIds[i]].option = option;
+            proposalVotes[proposalId][tokenIds[i]].option = uint248(option);
             proposalVotes[proposalId][tokenIds[i]].hasVoted = true;
         }
         proposals[proposalId].totalVotes[option] += tokenIds.length;
