@@ -104,4 +104,20 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         require(isEventRegistered[eventId], "Invalid event");
         return super.createProposal(txDatas, totalOptions, title, contentHash, ownedTokenId);
     }
+
+    // @dev Set the voting power to vote in a proposal
+    // @param proposalId The id of the proposal to set the vote
+    // @param option The proposal option to be voted
+    // @param votingPower The votingPower to use in the proposal
+    function setVote(
+        bytes32 proposalId,
+        uint256 option,
+        uint256[] calldata tokenIds
+    ) public virtual override {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 eventId = poap.tokenEvent(tokenIds[i]);
+            require(isEventRegistered[eventId], "Invalid event");
+        }
+        super.setVote(proposalId, option, tokenIds);
+    }
 }
