@@ -46,13 +46,11 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
-        uint256 _maxActiveProposals,
-        uint256 _lockTime,
+        uint128 _maxActiveProposals,
         address _permissionRegistry
     ) public virtual initializer {
         require(address(_token) != address(0), "NFTGuild: token cant be zero address");
         require(_proposalTime > 0, "NFTGuild: proposal time has to be more than 0");
-        require(_lockTime >= _proposalTime, "NFTGuild: lockTime has to be higher or equal to proposalTime");
         name = _name;
         poap = IPoap(_token);
         proposalTime = _proposalTime;
@@ -78,48 +76,13 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
     // @param title The title of the proposal
     // @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
-        address[] memory to,
-        bytes[] memory data,
-        uint256[] memory value,
+        TxData[] calldata txDatas,
         uint256 totalOptions,
-        string memory title,
-        string memory contentHash,
+        string calldata title,
+        string calldata contentHash,
         uint256 ownedTokenId
     ) public override returns (bytes32) {
-        require(activeProposalsNow < getMaxActiveProposals(), "ERC20Guild: Maximum amount of active proposals reached");
-        require(
-            poap.ownerOf(ownedTokenId) != msg.sender,
-            "NFTGuild: Provide an NFT you currently own to create a proposal"
-        );
-        require(
-            (to.length == data.length) && (to.length == value.length),
-            "ERC20Guild: Wrong length of to, data or value arrays"
-        );
-        require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
-        require(
-            totalOptions <= to.length && value.length % totalOptions == 0,
-            "ERC20Guild: Invalid totalOptions or option calls length"
-        );
-        require(totalOptions <= MAX_OPTIONS_PER_PROPOSAL, "ERC20Guild: Maximum amount of options per proposal reached");
-
-        bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, block.timestamp, totalProposals));
-        totalProposals = totalProposals + 1;
-        Proposal storage newProposal = proposals[proposalId];
-        newProposal.creator = msg.sender;
-        newProposal.startTime = block.timestamp;
-        newProposal.endTime = block.timestamp + proposalTime;
-        newProposal.to = to;
-        newProposal.data = data;
-        newProposal.value = value;
-        newProposal.title = title;
-        newProposal.contentHash = contentHash;
-        newProposal.state = ProposalState.Active;
-        newProposal.totalOptions = totalOptions + 1;
-        newProposal.powerForExecution = votingPowerForProposalExecution;
-
-        activeProposalsNow = activeProposalsNow + 1;
-        emit ProposalStateChanged(proposalId, uint256(ProposalState.Active));
-        proposalsIds.push(proposalId);
-        return proposalId;
+        poap.tokenEvent(ownedTokenId);
+        super.createProposal(txDatas, totalOptions, title, contentHash, ownedTokenId);
     }
 }

@@ -78,13 +78,10 @@ contract BaseNFTGuild {
     uint256 public maxGasPrice;
 
     // The maximum amount of proposals to be active at the same time
-    uint256 public maxActiveProposals;
+    uint128 public maxActiveProposals;
 
     // The total amount of proposals created, used as nonce for proposals creation
-    uint256 public totalProposals;
-
-    // The total amount of members that have voting power
-    uint256 totalMembers;
+    uint128 public totalProposals;
 
     // The amount of active proposals
     uint256 public activeProposalsNow;
@@ -95,19 +92,18 @@ contract BaseNFTGuild {
         bool hasVoted;
     }
 
+    struct TxData {
+        address to;
+        uint256 value;
+        bytes data;
+    }
+
     struct Proposal {
-        address creator;
-        uint256 startTime;
-        uint256 endTime;
-        uint256 powerForExecution;
-        address[] to;
-        bytes[] data;
-        uint256[] value;
-        string title;
-        string contentHash;
+        mapping(uint256 => uint256) totalVotes;
+        uint40 startTime;
+        uint40 endTime;
+        uint16 totalOptions;
         ProposalState state;
-        uint256[] totalVotes;
-        uint256 totalOptions;
     }
 
     // Mapping of proposal votes
@@ -117,13 +113,20 @@ contract BaseNFTGuild {
     mapping(bytes32 => Proposal) public proposals;
 
     // Array to keep track of the proposals ids in contract storage
-    bytes32[] public proposalsIds;
+    mapping(uint256 => bytes32) public proposalsIds;
 
     bool internal isExecutingProposal;
 
     // BaseERC20Guild is upgrade compatible. If new variables are added in an upgrade, make sure to update __gap.
     uint256[50] private __gap;
 
+    event NewProposal(
+        bytes32 indexed proposalId,
+        uint256 indexed proposalIndex,
+        TxData[] txData,
+        string title,
+        string contentHash
+    );
     event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
     event VoteAdded(bytes32 indexed proposalId, uint256 indexed option, address voter, uint256[] votingPower);
 
@@ -144,7 +147,7 @@ contract BaseNFTGuild {
         uint256 _votingPowerForProposalExecution,
         uint256 _voteGas,
         uint256 _maxGasPrice,
-        uint256 _maxActiveProposals
+        uint128 _maxActiveProposals
     ) external virtual {
         require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself or when initialized");
         require(_proposalTime > 0, "ERC20Guild: proposal time has to be more than 0");
@@ -165,54 +168,47 @@ contract BaseNFTGuild {
     // @param title The title of the proposal
     // @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
     function createProposal(
-        address[] memory to,
-        bytes[] memory data,
-        uint256[] memory value,
+        TxData[] calldata txDatas,
         uint256 totalOptions,
-        string memory title,
-        string memory contentHash,
+        string calldata title,
+        string calldata contentHash,
         uint256 ownedTokenId
     ) public virtual returns (bytes32) {
-        require(activeProposalsNow < getMaxActiveProposals(), "ERC20Guild: Maximum amount of active proposals reached");
-        require(
-            token.ownerOf(ownedTokenId) != msg.sender,
-            "NFTGuild: Provide an NFT you currently own to create a proposal"
-        );
-        require(
-            (to.length == data.length) && (to.length == value.length),
-            "ERC20Guild: Wrong length of to, data or value arrays"
-        );
-        require(to.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
-        require(
-            totalOptions <= to.length && value.length % totalOptions == 0,
-            "ERC20Guild: Invalid totalOptions or option calls length"
-        );
+        require(activeProposalsNow < maxActiveProposals, "ERC20Guild: Maximum amount of active proposals reached");
+        require(token.ownerOf(ownedTokenId) == msg.sender, "NFTGuild: Provide an NFT you own to create a proposal");
+        require(txDatas.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
+        require(txDatas.length % totalOptions == 0, "ERC20Guild: Invalid totalOptions or option calls length");
         require(totalOptions <= MAX_OPTIONS_PER_PROPOSAL, "ERC20Guild: Maximum amount of options per proposal reached");
 
-        bytes32 proposalId = keccak256(abi.encodePacked(msg.sender, block.timestamp, totalProposals));
-        totalProposals = totalProposals + 1;
-        Proposal storage newProposal = proposals[proposalId];
-        newProposal.creator = msg.sender;
-        newProposal.startTime = block.timestamp;
-        newProposal.endTime = block.timestamp + proposalTime;
-        newProposal.to = to;
-        newProposal.data = data;
-        newProposal.value = value;
-        newProposal.title = title;
-        newProposal.contentHash = contentHash;
-        newProposal.state = ProposalState.Active;
-        newProposal.totalOptions = totalOptions + 1;
-        newProposal.powerForExecution = votingPowerForProposalExecution;
+        bytes32 proposalId = bytes32(uint256(totalProposals));
+        for (uint256 i = 0; i < txDatas.length; i++) {
+            proposalId = keccak256(abi.encodePacked(proposalId, txDatas[i].to, txDatas[i].value, txDatas[i].data));
+        }
 
+        Proposal storage newProposal = proposals[proposalId];
+        newProposal.startTime = uint40(block.timestamp);
+        newProposal.endTime = uint40(block.timestamp + proposalTime);
+        newProposal.state = ProposalState.Active;
+        newProposal.totalOptions = uint16(totalOptions + 1);
+
+        emit NewProposal(proposalId, totalProposals, txDatas, title, contentHash);
+
+        proposalsIds[totalProposals] = proposalId;
         activeProposalsNow = activeProposalsNow + 1;
+        totalProposals = totalProposals + 1;
+
         emit ProposalStateChanged(proposalId, uint256(ProposalState.Active));
-        proposalsIds.push(proposalId);
+
         return proposalId;
     }
 
     // @dev Executes a proposal that is not votable anymore and can be finished
     // @param proposalId The id of the proposal to be executed
-    function endProposal(bytes32 proposalId) public virtual {
+    function endProposal(uint256 proposalIndex, TxData[] calldata txDatas) public virtual {
+        bytes32 proposalId = bytes32(proposalIndex);
+        for (uint256 i = 0; i < txDatas.length; i++) {
+            proposalId = keccak256(abi.encodePacked(proposalId, txDatas[i].to, txDatas[i].value, txDatas[i].data));
+        }
         (uint256 winningOption, uint256 highestVoteAmount) = getWinningOption(proposalId);
         checkProposalExecutionState(proposalId, highestVoteAmount);
 
@@ -226,27 +222,27 @@ contract BaseNFTGuild {
         } else {
             proposal.state = ProposalState.Executed;
 
-            uint256 callsPerOption = proposal.to.length / (proposal.totalVotes.length - 1);
+            uint256 callsPerOption = txDatas.length / (proposal.totalOptions - 1);
             uint256 i = callsPerOption * (winningOption - 1);
             uint256 endCall = i + callsPerOption;
 
             permissionRegistry.setERC20Balances();
-
             for (i; i < endCall; i++) {
-                if (proposal.to[i] != address(0) && proposal.data[i].length > 0) {
-                    bytes4 callDataFuncSignature = getFunctionSignature(proposal.data[i]);
+                TxData calldata txData = txDatas[i];
+                if (txData.to != address(0) && txData.data.length > 0) {
+                    bytes4 callDataFuncSignature = bytes4(txData.data[:4]);
                     // The permission registry keeps track of all value transferred and checks call permission
                     permissionRegistry.setETHPermissionUsed(
                         address(this),
-                        proposal.to[i],
+                        txData.to,
                         callDataFuncSignature,
-                        proposal.value[i]
+                        txData.value
                     );
 
                     isExecutingProposal = true;
                     // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
                     // slither-disable-next-line all
-                    (bool success, ) = proposal.to[i].call{value: proposal.value[i]}(proposal.data[i]);
+                    (bool success, ) = txData.to.call{value: txData.value}(txData.data);
                     require(success, "ERC20Guild: Proposal call failed");
                     isExecutingProposal = false;
                 }
@@ -344,7 +340,7 @@ contract BaseNFTGuild {
     {
         Proposal storage proposal = proposals[proposalId];
         highestVoteAmount = proposal.totalVotes[0];
-        uint256 totalOptions = proposal.totalVotes.length;
+        uint256 totalOptions = proposal.totalOptions;
         for (uint256 i = 1; i < totalOptions; i++) {
             uint256 totalVotesOptionI = proposal.totalVotes[i];
             if (totalVotesOptionI >= votingPowerForProposalExecution && totalVotesOptionI >= highestVoteAmount) {
@@ -354,26 +350,6 @@ contract BaseNFTGuild {
                     winningOption = i;
                     highestVoteAmount = totalVotesOptionI;
                 }
-            }
-        }
-    }
-
-    /// @dev Gets function signature of the data bytes meant to be used in a proposal call.
-    /// @param data Bytes array containing the calldata (function signature followed by data).
-    function getFunctionSignature(bytes storage data) internal view returns (bytes4 callDataFuncSignature) {
-        uint8 lengthBit;
-        assembly {
-            lengthBit := sload(data.slot)
-            lengthBit := and(lengthBit, 0x01)
-            switch lengthBit
-            case 0 {
-                // Short bytes array. Data is stored together with length at slot.
-                callDataFuncSignature := sload(data.slot)
-            }
-            case 1 {
-                // Long bytes array. Data is stored at keccak256(slot).
-                mstore(0, data.slot)
-                callDataFuncSignature := sload(keccak256(0, 32))
             }
         }
     }
@@ -390,9 +366,9 @@ contract BaseNFTGuild {
     // @return contentHash The content hash of the content reference of the proposal
     // @return state If the proposal state
     // @return totalVotes The total votes of the proposal
-    function getProposal(bytes32 proposalId) external view virtual returns (Proposal memory) {
-        return (proposals[proposalId]);
-    }
+    // function getProposal(bytes32 proposalId) external view virtual returns (Proposal memory) {
+    //     return (proposals[proposalId]);
+    // }
 
     // @dev Get the address of the ERC20Token used for voting
     function getToken() external view returns (address) {
@@ -445,9 +421,9 @@ contract BaseNFTGuild {
     }
 
     // @dev Get the proposalsIds array
-    function getProposalsIds() external view returns (bytes32[] memory) {
-        return proposalsIds;
-    }
+    // function getProposalsIds() external view returns (bytes32[] memory) {
+    //     return proposalsIds;
+    // }
 
     // @dev Get minimum amount of votingPower needed for proposal execution
     function getVotingPowerForProposalExecution() public view virtual returns (uint256) {
@@ -469,6 +445,6 @@ contract BaseNFTGuild {
 
     // @dev Get the length of the proposalIds array
     function getProposalsIdsLength() external view virtual returns (uint256) {
-        return proposalsIds.length;
+        return totalProposals;
     }
 }

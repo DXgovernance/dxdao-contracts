@@ -52,13 +52,11 @@ contract NFTGuildUpgradeable is BaseNFTGuild, Initializable {
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
-        uint256 _maxActiveProposals,
-        uint256 _lockTime,
+        uint128 _maxActiveProposals,
         address _permissionRegistry
     ) public virtual initializer {
         require(address(_token) != address(0), "NFTGuild: token cant be zero address");
         require(_proposalTime > 0, "NFTGuild: proposal time has to be more than 0");
-        require(_lockTime >= _proposalTime, "NFTGuild: lockTime has to be higher or equal to proposalTime");
         require(_votingPowerForProposalExecution > 0, "NFTGuild: voting power for execution has to be more than 0");
         name = _name;
         token = IERC721Upgradeable(_token);
