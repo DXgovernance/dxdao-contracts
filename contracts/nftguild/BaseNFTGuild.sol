@@ -161,12 +161,11 @@ contract BaseNFTGuild {
     }
 
     // @dev Create a proposal with an static call data and extra information
-    // @param to The receiver addresses of each call to be executed
-    // @param data The data to be executed on each call to be executed
-    // @param value The ETH value to be sent on each call to be executed
+    // @param txDatas array containing the receiver addresses, the data to be executed and the ETH value for each call.
     // @param totalOptions The amount of options that would be offered to the voters
     // @param title The title of the proposal
     // @param contentHash The content hash of the content reference of the proposal for the proposal to be executed
+    // @param ownedTokenId The id of a token owned by the creator of this proposal.
     function createProposal(
         TxData[] calldata txDatas,
         uint256 totalOptions,
@@ -230,14 +229,9 @@ contract BaseNFTGuild {
             for (i; i < endCall; i++) {
                 TxData calldata txData = txDatas[i];
                 if (txData.to != address(0) && txData.data.length > 0) {
-                    bytes4 callDataFuncSignature = bytes4(txData.data[:4]);
+                    bytes4 functionSignature = bytes4(txData.data[:4]);
                     // The permission registry keeps track of all value transferred and checks call permission
-                    permissionRegistry.setETHPermissionUsed(
-                        address(this),
-                        txData.to,
-                        callDataFuncSignature,
-                        txData.value
-                    );
+                    permissionRegistry.setETHPermissionUsed(address(this), txData.to, functionSignature, txData.value);
 
                     isExecutingProposal = true;
                     // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
@@ -249,7 +243,6 @@ contract BaseNFTGuild {
             }
 
             permissionRegistry.checkERC20Limits(address(this));
-
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Executed));
         }
         activeProposalsNow = activeProposalsNow - 1;
@@ -421,9 +414,14 @@ contract BaseNFTGuild {
     }
 
     // @dev Get the proposalsIds array
-    // function getProposalsIds() external view returns (bytes32[] memory) {
-    //     return proposalsIds;
-    // }
+    function getProposalsIds(uint256 from, uint256 to) external view returns (bytes32[] memory ids) {
+        uint256 length = to - from;
+        ids = new bytes32[](length);
+        for (uint256 i = 0; i < length; i++) {
+            ids[i] = proposalsIds[from + i];
+        }
+        return ids;
+    }
 
     // @dev Get minimum amount of votingPower needed for proposal execution
     function getVotingPowerForProposalExecution() public view virtual returns (uint256) {
