@@ -36,7 +36,11 @@ import "../utils/ipoap.sol";
 */
 contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
     using MathUpgradeable for uint256;
-    using AddressUpgradeable for address;
+
+    // The ERC721 token that will be used as source of voting power
+    IPoap public poap;
+
+    mapping(uint256 => bool) public isEventRegistered;
 
     function initialize(
         address _token,
@@ -47,10 +51,11 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint128 _maxActiveProposals,
-        address _permissionRegistry
+        address _permissionRegistry,
+        uint256[] calldata eventsIds
     ) public virtual initializer {
-        require(address(_token) != address(0), "NFTGuild: token cant be zero address");
         require(_proposalTime > 0, "NFTGuild: proposal time has to be more than 0");
+        require(_votingPowerForProposalExecution > 0, "NFTGuild: voting power for execution has to be more than 0");
         name = _name;
         poap = IPoap(_token);
         proposalTime = _proposalTime;
@@ -60,10 +65,23 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
         permissionRegistry = PermissionRegistry(_permissionRegistry);
+
+        for (uint256 i = 0; i < eventsIds.length; i++) {
+            isEventRegistered[eventsIds[i]] = true;
+        }
     }
 
-    // The ERC721 token that will be used as source of voting power
-    IPoap public poap;
+    // @dev Register events to include tokens for voting
+    function registerEvent(uint256 eventId) external virtual {
+        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself or when initialized");
+        isEventRegistered[eventId] = true;
+    }
+
+    // @dev Remove events to include tokens for voting
+    function removeEvent(uint256 eventId) external virtual {
+        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself or when initialized");
+        isEventRegistered[eventId] = true;
+    }
 
     // Copied directly only replacing token with poap
     // ----------------------------------------------
@@ -82,7 +100,8 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         string calldata contentHash,
         uint256 ownedTokenId
     ) public override returns (bytes32) {
-        poap.tokenEvent(ownedTokenId);
-        super.createProposal(txDatas, totalOptions, title, contentHash, ownedTokenId);
+        uint256 eventId = poap.tokenEvent(ownedTokenId);
+        require(isEventRegistered[eventId], "Invalid event");
+        return super.createProposal(txDatas, totalOptions, title, contentHash, ownedTokenId);
     }
 }
