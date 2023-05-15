@@ -3,7 +3,6 @@ pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "../BaseNFTGuild.sol";
 import "../../utils/PermissionRegistry.sol";
@@ -37,9 +36,6 @@ import "../utils/ipoap.sol";
 contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
     using MathUpgradeable for uint256;
 
-    // The ERC721 token that will be used as source of voting power
-    IPoap public poap;
-
     mapping(uint256 => bool) public isEventRegistered;
 
     function initialize(
@@ -57,7 +53,7 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         require(_proposalTime > 0, "NFTGuild: proposal time has to be more than 0");
         require(_votingPowerForProposalExecution > 0, "NFTGuild: voting power for execution has to be more than 0");
         name = _name;
-        poap = IPoap(_token);
+        token = IERC721Upgradeable(_token);
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerForProposalExecution = _votingPowerForProposalExecution;
@@ -83,9 +79,6 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         isEventRegistered[eventId] = true;
     }
 
-    // Copied directly only replacing token with poap
-    // ----------------------------------------------
-
     // @dev Create a proposal with an static call data and extra information
     // @param to The receiver addresses of each call to be executed
     // @param data The data to be executed on each call to be executed
@@ -100,7 +93,7 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         string calldata contentHash,
         uint256 ownedTokenId
     ) public override returns (bytes32) {
-        uint256 eventId = poap.tokenEvent(ownedTokenId);
+        uint256 eventId = IPoap(address(token)).tokenEvent(ownedTokenId);
         require(isEventRegistered[eventId], "Invalid event");
         return super.createProposal(txDatas, totalOptions, title, contentHash, ownedTokenId);
     }
@@ -115,7 +108,7 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         uint256[] calldata tokenIds
     ) public virtual override {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            uint256 eventId = poap.tokenEvent(tokenIds[i]);
+            uint256 eventId = IPoap(address(token)).tokenEvent(tokenIds[i]);
             require(isEventRegistered[eventId], "Invalid event");
         }
         super.setVote(proposalId, option, tokenIds);
