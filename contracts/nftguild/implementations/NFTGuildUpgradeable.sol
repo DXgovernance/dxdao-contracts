@@ -55,7 +55,6 @@ contract NFTGuildUpgradeable is BaseNFTGuild, Initializable {
         uint128 _maxActiveProposals,
         address _permissionRegistry
     ) public virtual initializer {
-        require(address(_token) != address(0), "NFTGuild: token cant be zero address");
         require(_proposalTime > 0, "NFTGuild: proposal time has to be more than 0");
         require(_votingPowerForProposalExecution > 0, "NFTGuild: voting power for execution has to be more than 0");
         name = _name;
