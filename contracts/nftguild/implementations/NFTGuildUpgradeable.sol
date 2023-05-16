@@ -66,5 +66,7 @@ contract NFTGuildUpgradeable is BaseNFTGuild, Initializable {
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
         permissionRegistry = PermissionRegistry(_permissionRegistry);
+
+        setEIP712DomainSeparator();
     }
 }

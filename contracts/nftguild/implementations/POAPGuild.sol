@@ -65,6 +65,8 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         for (uint256 i = 0; i < eventsIds.length; i++) {
             isEventRegistered[eventsIds[i]] = true;
         }
+
+        setEIP712DomainSeparator();
     }
 
     // @dev Register events to include tokens for voting
@@ -112,5 +114,32 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
             require(isEventRegistered[eventId], "Invalid event");
         }
         super.setVote(proposalId, option, tokenIds);
+    }
+
+    // @dev Set the voting power to vote in a proposal using a signed vote
+    // @dev EIP-712:
+    //   struct setSignedVote {
+    //       bytes32 proposalId;
+    //       uint256 option;
+    //       address voter;
+    //       uint256[] tokenIds;
+    //   }
+    // @param proposalId The id of the proposal to set the vote
+    // @param option The proposal option to be voted
+    // @param votingPower The votingPower to use in the proposal
+    // @param tokenId The address of the voter
+    // @param signature The signature of the hashed vote
+    function setSignedVote(
+        bytes32 proposalId,
+        uint256 option,
+        address voter,
+        uint256[] calldata tokenIds,
+        bytes calldata signature
+    ) public virtual override {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 eventId = IPoap(address(token)).tokenEvent(tokenIds[i]);
+            require(isEventRegistered[eventId], "Invalid event");
+        }
+        super.setSignedVote(proposalId, option, voter, tokenIds, signature);
     }
 }

@@ -42,6 +42,12 @@ contract BaseNFTGuild {
     // changing it.
     uint8 public constant MAX_OPTIONS_PER_PROPOSAL = 10;
 
+    // The EIP-712 domainSeparator specific to this deployed instance. It is used to verify the IsHumanVoucher's signature.
+    bytes32 private DOMAIN_SEPARATOR;
+    // The EIP-712 typeHash of setSignedVote:
+    // keccak256("setSignedVote(bytes32 proposalId,uint256 option,address voter,uint256[] tokenIds)").
+    bytes32 private constant VOTE_TYPEHASH = 0xc74f86518c139bb658f6d370c960db1befa159b34ebf74e88444e9cdb950b8fb;
+
     enum ProposalState {
         None,
         Active,
@@ -131,6 +137,17 @@ contract BaseNFTGuild {
     event VoteAdded(bytes32 indexed proposalId, uint256 indexed option, address voter, uint256[] votingPower);
 
     fallback() external payable {}
+
+    constructor() {
+        setEIP712DomainSeparator();
+    }
+
+    function setEIP712DomainSeparator() internal {
+        // EIP-712.
+        // DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)").
+        bytes32 DOMAIN_TYPEHASH = 0x8cad95687ba82c2ce50e74f7b754645e5117c3a5bec8151c0726d5857980a866;
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("NFT Guild"), block.chainid, address(this)));
+    }
 
     // @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initialized
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
@@ -280,35 +297,43 @@ contract BaseNFTGuild {
     }
 
     // @dev Set the voting power to vote in a proposal using a signed vote
+    // @dev EIP-712:
+    //   struct setSignedVote {
+    //       bytes32 proposalId;
+    //       uint256 option;
+    //       address voter;
+    //       uint256[] tokenIds;
+    //   }
     // @param proposalId The id of the proposal to set the vote
     // @param option The proposal option to be voted
     // @param votingPower The votingPower to use in the proposal
-    // @param voter The address of the voter
+    // @param tokenId The address of the voter
     // @param signature The signature of the hashed vote
-    // function setSignedVote(
-    //     bytes32 proposalId,
-    //     uint256 option,
-    //     uint256 votingPower,
-    //     address voter,
-    //     bytes memory signature
-    // ) public virtual {
-    //     require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
-    //     bytes32 hashedVote = hashVote(voter, proposalId, option, votingPower);
-    //     require(!signedVotes[hashedVote], "ERC20Guild: Already voted");
-    //     require(voter == hashedVote.toEthSignedMessageHash().recover(signature), "ERC20Guild: Wrong signer");
-    //     signedVotes[hashedVote] = true;
-    //     require(
-    //         (votingPowerOf(voter) >= votingPower) && (votingPower > proposalVotes[proposalId][voter].votingPower),
-    //         "ERC20Guild: Invalid votingPower amount"
-    //     );
-    //     require(
-    //         (proposalVotes[proposalId][voter].option == 0 && proposalVotes[proposalId][voter].votingPower == 0) ||
-    //             (proposalVotes[proposalId][voter].option == option &&
-    //                 proposalVotes[proposalId][voter].votingPower < votingPower),
-    //         "ERC20Guild: Cannot change option voted, only increase votingPower"
-    //     );
-    //     _setVote(voter, proposalId, option, votingPower);
-    // }
+    function setSignedVote(
+        bytes32 proposalId,
+        uint256 option,
+        address voter,
+        uint256[] calldata tokenIds,
+        bytes calldata signature
+    ) public virtual {
+        require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
+
+        bytes32 structHash = keccak256(
+            abi.encodePacked(VOTE_TYPEHASH, proposalId, option, voter, keccak256(abi.encodePacked(tokenIds)))
+        );
+        bytes32 eip712Hash = ECDSAUpgradeable.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
+        require(voter == eip712Hash.recover(signature), "ERC20Guild: Wrong signer");
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            require(token.ownerOf(tokenIds[i]) == voter, "Voting with tokens you don't own");
+            require(proposalVotes[proposalId][tokenIds[i]].hasVoted == false, "This NFT already voted");
+
+            proposalVotes[proposalId][tokenIds[i]].option = uint248(option);
+            proposalVotes[proposalId][tokenIds[i]].hasVoted = true;
+        }
+        proposals[proposalId].totalVotes[option] += tokenIds.length;
+        emit VoteAdded(proposalId, option, msg.sender, tokenIds);
+    }
 
     /// @dev Reverts if proposal cannot be executed
     /// @param proposalId The id of the proposal to evaluate
