@@ -42,7 +42,7 @@ contract BaseNFTGuild {
     // changing it.
     uint8 public constant MAX_OPTIONS_PER_PROPOSAL = 10;
 
-    // The EIP-712 domainSeparator specific to this deployed instance. It is used to verify the IsHumanVoucher's signature.
+    // The EIP-712 domainSeparator specific to this deployed instance.
     bytes32 private DOMAIN_SEPARATOR;
     // The EIP-712 typeHash of setSignedVote:
     // keccak256("setSignedVote(bytes32 proposalId,uint256 option,address voter,uint256[] tokenIds)").
@@ -154,6 +154,8 @@ contract BaseNFTGuild {
     // @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
     // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
     // option
+    // @param _votingPowerForInstantProposalExecution The percentage of voting power in base 10000 needed to execute a
+    // proposal option without waiting till the votation period ends.
     // @param _voteGas The amount of gas in wei unit used for vote refunds.
     // Can't be higher than the gas used by setVote (117000)
     // @param _maxGasPrice The maximum gas price used for vote refunds
@@ -162,16 +164,18 @@ contract BaseNFTGuild {
         uint256 _proposalTime,
         uint256 _timeForExecution,
         uint256 _votingPowerForProposalExecution,
+        uint256 _votingPowerForInstantProposalExecution,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint128 _maxActiveProposals
     ) external virtual {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself or when initialized");
+        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
         require(_proposalTime > 0, "ERC20Guild: proposal time has to be more than 0");
         require(_voteGas <= 117000, "ERC20Guild: vote gas has to be equal or lower than 117000");
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerForProposalExecution = _votingPowerForProposalExecution;
+        votingPowerForInstantProposalExecution = _votingPowerForInstantProposalExecution;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
@@ -377,16 +381,32 @@ contract BaseNFTGuild {
     // @return creator The address that created the proposal
     // @return startTime The time at the proposal was created
     // @return endTime The time at the proposal will end
-    // @return to The receiver addresses of each call to be executed
-    // @return data The data to be executed on each call to be executed
-    // @return value The ETH value to be sent on each call to be executed
-    // @return title The title of the proposal
-    // @return contentHash The content hash of the content reference of the proposal
     // @return state If the proposal state
     // @return totalVotes The total votes of the proposal
-    // function getProposal(bytes32 proposalId) external view virtual returns (Proposal memory) {
-    //     return (proposals[proposalId]);
-    // }
+    function getProposal(bytes32 proposalId)
+        external
+        view
+        virtual
+        returns (
+            uint256 startTime,
+            uint256 endTime,
+            uint256 totalOptions,
+            ProposalState state,
+            uint256[] memory totalVotes
+        )
+    {
+        totalVotes = new uint256[](proposals[proposalId].totalOptions + 1);
+        for (uint256 i = 0; i < totalVotes.length; i++) {
+            totalVotes[i] = proposals[proposalId].totalVotes[i];
+        }
+        return (
+            proposals[proposalId].startTime,
+            proposals[proposalId].endTime,
+            proposals[proposalId].totalOptions,
+            proposals[proposalId].state,
+            totalVotes
+        );
+    }
 
     // @dev Get the address of the ERC20Token used for voting
     function getToken() external view returns (address) {

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "../BaseNFTGuild.sol";
 import "../../utils/PermissionRegistry.sol";
@@ -34,8 +33,6 @@ import "../utils/ipoap.sol";
   Multiple votes and signed votes can be executed in one transaction.
 */
 contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
-    using MathUpgradeable for uint256;
-
     mapping(uint256 => bool) public isEventRegistered;
 
     event PoapEventStatusChanged(uint256 indexed eventId, bool registered);
@@ -45,7 +42,7 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         uint256 _proposalTime,
         uint256 _timeForExecution,
         uint256 _votingPowerForProposalExecution,
-        string memory _name,
+        string calldata _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint128 _maxActiveProposals,
@@ -54,11 +51,11 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
     ) public virtual initializer {
         require(_proposalTime > 0, "NFTGuild: proposal time has to be more than 0");
         require(_votingPowerForProposalExecution > 0, "NFTGuild: voting power for execution has to be more than 0");
-        name = _name;
         token = IERC721Upgradeable(_token);
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerForProposalExecution = _votingPowerForProposalExecution;
+        name = _name;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
