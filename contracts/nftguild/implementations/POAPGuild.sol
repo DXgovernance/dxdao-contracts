@@ -38,6 +38,8 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
 
     mapping(uint256 => bool) public isEventRegistered;
 
+    event PoapEventStatusChanged(uint256 indexed eventId, bool registered);
+
     function initialize(
         address _token,
         uint256 _proposalTime,
@@ -64,6 +66,7 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
 
         for (uint256 i = 0; i < eventsIds.length; i++) {
             isEventRegistered[eventsIds[i]] = true;
+            emit PoapEventStatusChanged(eventsIds[i], true);
         }
 
         setEIP712DomainSeparator();
@@ -71,14 +74,16 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
 
     // @dev Register events to include tokens for voting
     function registerEvent(uint256 eventId) external virtual {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself or when initialized");
+        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
         isEventRegistered[eventId] = true;
+        emit PoapEventStatusChanged(eventId, true);
     }
 
     // @dev Remove events to include tokens for voting
     function removeEvent(uint256 eventId) external virtual {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself or when initialized");
-        isEventRegistered[eventId] = true;
+        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
+        isEventRegistered[eventId] = false;
+        emit PoapEventStatusChanged(eventId, false);
     }
 
     // @dev Create a proposal with an static call data and extra information
