@@ -80,10 +80,6 @@
     "typechain": "7.0.0",
     "uint32": "^0.2.1"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/augustol/arc.git"
-  },
   "engines": {
     "node": ">=10.16.3"
   },

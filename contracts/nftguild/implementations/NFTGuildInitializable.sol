@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
@@ -8,30 +8,10 @@ import "../BaseNFTGuild.sol";
 
 /*
   @title NFTGuildUpgradeable
-  @author github:AugustoL
-  @dev Extends an NFT functionality into a Guild, adding a simple governance system over an NFT token.
-  An NFTGuild is a simple organization that execute arbitrary calls if a minimum amount of votes is reached in a 
-  proposal option while the proposal is active.
-  The token used for voting needs to be locked for a minimum period of time in order to be used as voting power.
-  Every time tokens are locked the timestamp of the lock is updated and increased the lock time seconds.
-  Once the lock time passed the voter can withdraw his tokens.
-  Each proposal has options, the voter can vote only once per proposal and cant change the chosen option, only
-  increase the voting power of his vote.
-  A proposal ends when the minimum amount of total voting power is reached on a proposal option before the proposal
-  finish.
-  When a proposal ends successfully it executes the calls of the winning option.
-  The winning option has a certain amount of time to be executed successfully if that time passes and the option didn't
-  executed successfully, it is marked as failed.
-  The guild can execute only allowed functions, if a function is not allowed it will need to set the allowance for it.
-  The allowed functions have a timestamp that marks from what time the function can be executed.
-  A limit to a maximum amount of active proposals can be set, an active proposal is a proposal that is in Active state.
-  Gas can be refunded to the account executing the vote, for this to happen the voteGas and maxGasPrice values need to
-  be set.
-  Signed votes can be executed in behalf of other users, to sign a vote the voter needs to hash it with the function
-  hashVote, after signing the hash teh voter can share it to other account to be executed.
-  Multiple votes and signed votes can be executed in one transaction.
+  @author 
+  @dev Extends the BaseNFTGuild into a guild that can be initialized,
 */
-contract NFTGuildUpgradeable is BaseNFTGuild, Initializable {
+contract NFTGuildInitializable is BaseNFTGuild, Initializable {
     // @dev Initializer
     // @param _token The NFT token that will be used as source of voting power
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting

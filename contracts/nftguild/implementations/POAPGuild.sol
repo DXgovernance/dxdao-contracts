@@ -1,38 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
-import "../BaseNFTGuild.sol";
+import "./NFTGuildInitializable.sol";
 import "../../utils/PermissionRegistry.sol";
 import "../utils/ipoap.sol";
 
 /*
   @title POAPGuild
   @author github:rossneilson
-  @dev Extends an NFT functionality into a Guild, adding a simple governance system over an NFT token.
-  An NFTGuild is a simple organization that execute arbitrary calls if a minimum amount of votes is reached in a 
-  proposal option while the proposal is active.
-  The token used for voting needs to be locked for a minimum period of time in order to be used as voting power.
-  Every time tokens are locked the timestamp of the lock is updated and increased the lock time seconds.
-  Once the lock time passed the voter can withdraw his tokens.
-  Each proposal has options, the voter can vote only once per proposal and cant change the chosen option, only
-  increase the voting power of his vote.
-  A proposal ends when the minimum amount of total voting power is reached on a proposal option before the proposal
-  finish.
-  When a proposal ends successfully it executes the calls of the winning option.
-  The winning option has a certain amount of time to be executed successfully if that time passes and the option didn't
-  executed successfully, it is marked as failed.
-  The guild can execute only allowed functions, if a function is not allowed it will need to set the allowance for it.
-  The allowed functions have a timestamp that marks from what time the function can be executed.
-  A limit to a maximum amount of active proposals can be set, an active proposal is a proposal that is in Active state.
-  Gas can be refunded to the account executing the vote, for this to happen the voteGas and maxGasPrice values need to
-  be set.
-  Signed votes can be executed in behalf of other users, to sign a vote the voter needs to hash it with the function
-  hashVote, after signing the hash teh voter can share it to other account to be executed.
-  Multiple votes and signed votes can be executed in one transaction.
+  @dev Extends the NFTGuildInitializable functionalities into a guild that is controlled by whitelisted POAP
+  collections. Collections in the POAP contract are known as "events". More than one collection can be added
+  to the guild's governance.
 */
-contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
+contract POAPGuild is NFTGuildInitializable {
     mapping(uint256 => bool) public isEventRegistered;
 
     event PoapEventStatusChanged(uint256 indexed eventId, bool registered);
@@ -49,8 +29,8 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         address _permissionRegistry,
         uint256[] calldata eventsIds
     ) public virtual initializer {
-        require(_proposalTime > 0, "NFTGuild: proposal time has to be more than 0");
-        require(_votingPowerForProposalExecution > 0, "NFTGuild: voting power for execution has to be more than 0");
+        require(_proposalTime > 0, "POAPGuild: proposal time has to be more than 0");
+        require(_votingPowerForProposalExecution > 0, "POAPGuild: voting power for execution has to be more than 0");
         token = IERC721Upgradeable(_token);
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
@@ -71,14 +51,14 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
 
     // @dev Register events to include tokens for voting
     function registerEvent(uint256 eventId) external virtual {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
+        require(msg.sender == address(this), "POAPGuild: Only callable by the guild itself");
         isEventRegistered[eventId] = true;
         emit PoapEventStatusChanged(eventId, true);
     }
 
     // @dev Remove events to include tokens for voting
     function removeEvent(uint256 eventId) external virtual {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
+        require(msg.sender == address(this), "POAPGuild: Only callable by the guild itself");
         isEventRegistered[eventId] = false;
         emit PoapEventStatusChanged(eventId, false);
     }
@@ -98,7 +78,7 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
         uint256 ownedTokenId
     ) public override returns (bytes32) {
         uint256 eventId = IPoap(address(token)).tokenEvent(ownedTokenId);
-        require(isEventRegistered[eventId], "Invalid event");
+        require(isEventRegistered[eventId], "POAPGuild: Invalid event");
         return super.createProposal(txDatas, totalOptions, title, contentHash, ownedTokenId);
     }
 
@@ -113,7 +93,7 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
     ) public virtual override {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 eventId = IPoap(address(token)).tokenEvent(tokenIds[i]);
-            require(isEventRegistered[eventId], "Invalid event");
+            require(isEventRegistered[eventId], "POAPGuild: Invalid event");
         }
         super.setVote(proposalId, option, tokenIds);
     }
@@ -140,7 +120,7 @@ contract POAPGuild is BaseNFTGuild, Initializable, OwnableUpgradeable {
     ) public virtual override {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 eventId = IPoap(address(token)).tokenEvent(tokenIds[i]);
-            require(isEventRegistered[eventId], "Invalid event");
+            require(isEventRegistered[eventId], "POAPGuild: Invalid event");
         }
         super.setSignedVote(proposalId, option, voter, tokenIds, signature);
     }

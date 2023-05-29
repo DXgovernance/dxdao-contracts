@@ -1,23 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "../utils/PermissionRegistry.sol";
 
 /*
-  @title BaseERC20Guild
+  @title BaseERC721Guild
   @author github:rossneilson
-  @dev Extends an ERC20 functionality into a Guild, adding a simple governance system over an ERC20 token.
-  An ERC20Guild is a simple organization that execute arbitrary calls if a minimum amount of votes is reached in a 
+  @dev Extends an ERC721 functionality into a Guild, adding a simple governance system over an ERC721 token.
+  An ERC721Guild is a simple organization that executes arbitrary calls if a minimum amount of votes is reached in a 
   proposal option while the proposal is active.
-  The token used for voting needs to be locked for a minimum period of time in order to be used as voting power.
-  Every time tokens are locked the timestamp of the lock is updated and increased the lock time seconds.
-  Once the lock time passed the voter can withdraw his tokens.
-  Each proposal has options, the voter can vote only once per proposal and cannot change the chosen option, only
-  increase the voting power of his vote.
+  Token holders can submit 1 vote per token ID and each token can be used only once per proposal.
+  Each proposal has options and voters cannot change the chosen option after voting. However, a voter can vote
+  differently with different tokens if he has more than one.
   A proposal ends when the minimum amount of total voting power is reached on a proposal option before the proposal
   finish.
   When a proposal ends successfully it executes the calls of the winning option.
@@ -28,9 +25,7 @@ import "../utils/PermissionRegistry.sol";
   A limit to a maximum amount of active proposals can be set, an active proposal is a proposal that is in Active state.
   Gas can be refunded to the account executing the vote, for this to happen the voteGas and maxGasPrice values need to
   be set.
-  Signed votes can be executed in behalf of other users, to sign a vote the voter needs to hash it with the function
-  hashVote, after signing the hash teh voter can share it to other account to be executed.
-  Multiple votes and signed votes can be executed in one transaction.
+  Signed votes can be executed in behalf of other users using EIP712.
   The guild can sign EIP1271 messages, to do this the guild needs to call itself and allow the signature to be verified 
   with and extra signature of any account with voting power.
 */
@@ -62,7 +57,7 @@ contract BaseNFTGuild {
     // The address of the PermissionRegistry to be used
     PermissionRegistry permissionRegistry;
 
-    // The name of the ERC20Guild
+    // The name of the ERC721Guild
     string public name;
 
     // The amount of time in seconds that a proposal will be active for voting
@@ -123,7 +118,7 @@ contract BaseNFTGuild {
 
     bool internal isExecutingProposal;
 
-    // BaseERC20Guild is upgrade compatible. If new variables are added in an upgrade, make sure to update __gap.
+    // BaseERC721Guild is upgrade compatible. If new variables are added in an upgrade, make sure to update __gap.
     uint256[50] private __gap;
 
     event NewProposal(
@@ -149,7 +144,7 @@ contract BaseNFTGuild {
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("NFT Guild"), block.chainid, address(this)));
     }
 
-    // @dev Set the ERC20Guild configuration, can be called only executing a proposal or when it is initialized
+    // @dev Set the ERC721Guild configuration, can be called only executing a proposal
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     // @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
     // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
@@ -169,9 +164,9 @@ contract BaseNFTGuild {
         uint256 _maxGasPrice,
         uint128 _maxActiveProposals
     ) external virtual {
-        require(msg.sender == address(this), "ERC20Guild: Only callable by ERC20guild itself");
-        require(_proposalTime > 0, "ERC20Guild: proposal time has to be more than 0");
-        require(_voteGas <= 117000, "ERC20Guild: vote gas has to be equal or lower than 117000");
+        require(msg.sender == address(this), "ERC721Guild: Only callable by guild itself");
+        require(_proposalTime > 0, "ERC721Guild: proposal time has to be more than 0");
+        require(_voteGas <= 117000, "ERC721Guild: vote gas has to be equal or lower than 117000");
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerForProposalExecution = _votingPowerForProposalExecution;
@@ -194,11 +189,14 @@ contract BaseNFTGuild {
         string calldata contentHash,
         uint256 ownedTokenId
     ) public virtual returns (bytes32) {
-        require(activeProposalsNow < maxActiveProposals, "ERC20Guild: Maximum amount of active proposals reached");
-        require(token.ownerOf(ownedTokenId) == msg.sender, "NFTGuild: Provide an NFT you own to create a proposal");
-        require(txDatas.length > 0, "ERC20Guild: to, data value arrays cannot be empty");
-        require(txDatas.length % totalOptions == 0, "ERC20Guild: Invalid totalOptions or option calls length");
-        require(totalOptions <= MAX_OPTIONS_PER_PROPOSAL, "ERC20Guild: Maximum amount of options per proposal reached");
+        require(activeProposalsNow < maxActiveProposals, "ERC721Guild: Maximum amount of active proposals reached");
+        require(token.ownerOf(ownedTokenId) == msg.sender, "ERC721Guild: Provide an NFT you own to create a proposal");
+        require(txDatas.length > 0, "ERC721Guild: to, data value arrays cannot be empty");
+        require(txDatas.length % totalOptions == 0, "ERC721Guild: Invalid totalOptions or option calls length");
+        require(
+            totalOptions <= MAX_OPTIONS_PER_PROPOSAL,
+            "ERC721Guild: Maximum amount of options per proposal reached"
+        );
 
         bytes32 proposalId = bytes32(uint256(totalProposals));
         for (uint256 i = 0; i < txDatas.length; i++) {
@@ -258,7 +256,7 @@ contract BaseNFTGuild {
                     // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
                     // slither-disable-next-line all
                     (bool success, ) = txData.to.call{value: txData.value}(txData.data);
-                    require(success, "ERC20Guild: Proposal call failed");
+                    require(success, "ERC721Guild: Proposal call failed");
                     isExecutingProposal = false;
                 }
             }
@@ -278,11 +276,11 @@ contract BaseNFTGuild {
         uint256 option,
         uint256[] calldata tokenIds
     ) public virtual {
-        require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
+        require(proposals[proposalId].endTime > block.timestamp, "ERC721Guild: Proposal ended, cannot be voted");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            require(token.ownerOf(tokenIds[i]) == msg.sender, "Voting with tokens you don't own");
-            require(proposalVotes[proposalId][tokenIds[i]].hasVoted == false, "This NFT already voted");
+            require(token.ownerOf(tokenIds[i]) == msg.sender, "ERC721Guild: Voting with tokens you don't own");
+            require(proposalVotes[proposalId][tokenIds[i]].hasVoted == false, "ERC721Guild: This NFT already voted");
 
             proposalVotes[proposalId][tokenIds[i]].option = uint248(option);
             proposalVotes[proposalId][tokenIds[i]].hasVoted = true;
@@ -295,7 +293,7 @@ contract BaseNFTGuild {
 
             if (address(this).balance >= gasRefund) {
                 (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
-                require(success, "Failed to refund gas");
+                require(success, "ERC721Guild: Failed to refund gas");
             }
         }
     }
@@ -320,17 +318,17 @@ contract BaseNFTGuild {
         uint256[] calldata tokenIds,
         bytes calldata signature
     ) public virtual {
-        require(proposals[proposalId].endTime > block.timestamp, "ERC20Guild: Proposal ended, cannot be voted");
+        require(proposals[proposalId].endTime > block.timestamp, "ERC721Guild: Proposal ended, cannot be voted");
 
         bytes32 structHash = keccak256(
             abi.encodePacked(VOTE_TYPEHASH, proposalId, option, voter, keccak256(abi.encodePacked(tokenIds)))
         );
         bytes32 eip712Hash = ECDSAUpgradeable.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
-        require(voter == eip712Hash.recover(signature), "ERC20Guild: Wrong signer");
+        require(voter == eip712Hash.recover(signature), "ERC721Guild: Wrong signer");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            require(token.ownerOf(tokenIds[i]) == voter, "Voting with tokens you don't own");
-            require(proposalVotes[proposalId][tokenIds[i]].hasVoted == false, "This NFT already voted");
+            require(token.ownerOf(tokenIds[i]) == voter, "ERC721Guild: Voting with tokens you don't own");
+            require(proposalVotes[proposalId][tokenIds[i]].hasVoted == false, "ERC721Guild: This NFT already voted");
 
             proposalVotes[proposalId][tokenIds[i]].option = uint248(option);
             proposalVotes[proposalId][tokenIds[i]].hasVoted = true;
@@ -343,11 +341,11 @@ contract BaseNFTGuild {
     /// @param proposalId The id of the proposal to evaluate
     /// @param highestVoteAmount The amounts of votes received by the currently winning proposal option.
     function checkProposalExecutionState(bytes32 proposalId, uint256 highestVoteAmount) internal view virtual {
-        require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
-        require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
+        require(!isExecutingProposal, "ERC721Guild: Proposal under execution");
+        require(proposals[proposalId].state == ProposalState.Active, "ERC721Guild: Proposal already executed");
 
         if (votingPowerForInstantProposalExecution == 0 || highestVoteAmount < votingPowerForInstantProposalExecution) {
-            require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
+            require(proposals[proposalId].endTime < block.timestamp, "ERC721Guild: Proposal hasn't ended yet");
         }
     }
 
@@ -408,7 +406,7 @@ contract BaseNFTGuild {
         );
     }
 
-    // @dev Get the address of the ERC20Token used for voting
+    // @dev Get the address of the ERC721Token used for voting
     function getToken() external view returns (address) {
         return address(token);
     }
@@ -418,7 +416,7 @@ contract BaseNFTGuild {
         return address(permissionRegistry);
     }
 
-    // @dev Get the name of the ERC20Guild
+    // @dev Get the name of the ERC721Guild
     function getName() external view returns (string memory) {
         return name;
     }
