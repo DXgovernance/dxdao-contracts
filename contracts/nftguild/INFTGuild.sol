@@ -2,6 +2,13 @@
 pragma solidity ^0.8.8;
 
 interface INFTGuild {
+    event NewProposal(
+        bytes32 indexed proposalId,
+        uint256 indexed proposalIndex,
+        TxData[] txData,
+        string title,
+        string contentHash
+    );
     event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
     event VoteAdded(bytes32 indexed proposalId, address voter, uint256[] votingPower);
     event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
@@ -74,7 +81,7 @@ interface INFTGuild {
         uint256 ownedTokenId
     ) external returns (bytes32);
 
-    function endProposal(bytes32 proposalId) external;
+    function endProposal(bytes32 proposalId, TxData[] calldata txDatas) external;
 
     function setVote(
         bytes32 proposalId,
@@ -123,6 +130,8 @@ interface INFTGuild {
     function getProposalVotesOfTokenId(bytes32 proposalId, uint256 tokenId) external view returns (uint256 option);
 
     function getVotingPowerForProposalExecution() external view returns (uint256);
+
+    function votingPowerForInstantProposalExecution() external view returns (uint256);
 
     function getFuncSignature(bytes memory data) external view returns (bytes4);
 
