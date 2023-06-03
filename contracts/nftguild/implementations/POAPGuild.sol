@@ -103,18 +103,15 @@ contract POAPGuild is NFTGuildInitializable {
     //   struct setSignedVote {
     //       bytes32 proposalId;
     //       uint256 option;
-    //       address voter;
     //       uint256[] tokenIds;
     //   }
     // @param proposalId The id of the proposal to set the vote
     // @param option The proposal option to be voted
-    // @param votingPower The votingPower to use in the proposal
-    // @param tokenId The address of the voter
+    // @param tokenIds The token ids to use in the proposal
     // @param signature The signature of the hashed vote
     function setSignedVote(
         bytes32 proposalId,
         uint256 option,
-        address voter,
         uint256[] calldata tokenIds,
         bytes calldata signature
     ) public virtual override {
@@ -122,6 +119,6 @@ contract POAPGuild is NFTGuildInitializable {
             uint256 eventId = IPoap(address(token)).tokenEvent(tokenIds[i]);
             require(isEventRegistered[eventId], "POAPGuild: Invalid event");
         }
-        super.setSignedVote(proposalId, option, voter, tokenIds, signature);
+        super.setSignedVote(proposalId, option, tokenIds, signature);
     }
 }

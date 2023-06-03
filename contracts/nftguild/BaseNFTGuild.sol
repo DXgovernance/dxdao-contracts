@@ -40,8 +40,8 @@ contract BaseNFTGuild {
     // The EIP-712 domainSeparator specific to this deployed instance.
     bytes32 private DOMAIN_SEPARATOR;
     // The EIP-712 typeHash of setSignedVote:
-    // keccak256("setSignedVote(bytes32 proposalId,uint256 option,address voter,uint256[] tokenIds)").
-    bytes32 private constant VOTE_TYPEHASH = 0xc74f86518c139bb658f6d370c960db1befa159b34ebf74e88444e9cdb950b8fb;
+    // keccak256("setSignedVote(bytes32 proposalId,uint256 option,uint256[] tokenIds)").
+    bytes32 private constant VOTE_TYPEHASH = 0xe610a7d6250b3f88f030ea7de3789d69972ce1e29216937808ae0e6f283e1581;
 
     enum ProposalState {
         None,
@@ -66,8 +66,7 @@ contract BaseNFTGuild {
     // The amount of time in seconds that a proposal option will have to execute successfully
     uint256 public timeForExecution;
 
-    // The percentage of voting power in base 10000 needed to execute a proposal option
-    // 100 == 1% 2500 == 25%
+    // The minimum amount of votes that a winning proposal option needs to be executed
     uint256 public votingPowerForProposalExecution;
 
     uint256 public votingPowerForInstantProposalExecution;
@@ -147,8 +146,8 @@ contract BaseNFTGuild {
     // @dev Set the ERC721Guild configuration, can be called only executing a proposal
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     // @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
-    // @param _votingPowerForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal
-    // option
+    // @param _votingPowerForProposalExecution 
+    // Minimum amount of votes that a winning proposal option needs to be executed.
     // @param _votingPowerForInstantProposalExecution The percentage of voting power in base 10000 needed to execute a
     // proposal option without waiting till the votation period ends.
     // @param _voteGas The amount of gas in wei unit used for vote refunds.
@@ -303,28 +302,26 @@ contract BaseNFTGuild {
     //   struct setSignedVote {
     //       bytes32 proposalId;
     //       uint256 option;
-    //       address voter;
     //       uint256[] tokenIds;
     //   }
     // @param proposalId The id of the proposal to set the vote
     // @param option The proposal option to be voted
-    // @param votingPower The votingPower to use in the proposal
-    // @param tokenId The address of the voter
+    // @param tokenIds The token ids to use in the proposal
     // @param signature The signature of the hashed vote
     function setSignedVote(
         bytes32 proposalId,
         uint256 option,
-        address voter,
         uint256[] calldata tokenIds,
         bytes calldata signature
     ) public virtual {
         require(proposals[proposalId].endTime > block.timestamp, "ERC721Guild: Proposal ended, cannot be voted");
 
         bytes32 structHash = keccak256(
-            abi.encodePacked(VOTE_TYPEHASH, proposalId, option, voter, keccak256(abi.encodePacked(tokenIds)))
+            abi.encodePacked(VOTE_TYPEHASH, proposalId, option, keccak256(abi.encodePacked(tokenIds)))
         );
         bytes32 eip712Hash = ECDSAUpgradeable.toTypedDataHash(DOMAIN_SEPARATOR, structHash);
-        require(voter == eip712Hash.recover(signature), "ERC721Guild: Wrong signer");
+        address voter = eip712Hash.recover(signature);
+        require(voter != address(0), "ERC721Guild: Invalid signer");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             require(token.ownerOf(tokenIds[i]) == voter, "ERC721Guild: Voting with tokens you don't own");
