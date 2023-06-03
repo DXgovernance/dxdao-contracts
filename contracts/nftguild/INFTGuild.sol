@@ -14,6 +14,12 @@ interface INFTGuild {
         Failed
     }
 
+    struct TxData {
+        address to;
+        uint256 value;
+        bytes data;
+    }
+
     struct Vote {
         uint256 option;
         uint256 tokenId;
@@ -42,33 +48,29 @@ interface INFTGuild {
         address _token,
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votingPowerPercentageForProposalExecution,
-        string memory _name,
+        uint256 _votingPowerForProposalExecution,
+        string calldata _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
-        uint256 _maxActiveProposals,
-        uint256 _lockTime,
+        uint128 _maxActiveProposals,
         address _permissionRegistry
     ) external;
 
     function setConfig(
         uint256 _proposalTime,
         uint256 _timeForExecution,
-        uint256 _votingPowerPercentageForProposalExecution,
+        uint256 _votingPowerForProposalExecution,
+        uint256 _votingPowerForInstantProposalExecution,
         uint256 _voteGas,
         uint256 _maxGasPrice,
-        uint256 _maxActiveProposals,
-        uint256 _lockTime,
-        address _permissionRegistry
+        uint128 _maxActiveProposals
     ) external;
 
     function createProposal(
-        address[] memory to,
-        bytes[] memory data,
-        uint256[] memory value,
+        TxData[] calldata txDatas,
         uint256 totalOptions,
-        string memory title,
-        string memory contentHash,
+        string calldata title,
+        string calldata contentHash,
         uint256 ownedTokenId
     ) external returns (bytes32);
 
@@ -80,9 +82,13 @@ interface INFTGuild {
         uint256[] memory tokenIds
     ) external;
 
-    function registerToken(uint256 tokenId) external;
-
-    function removeStaleTokens() external;
+    function setSignedVote(
+        bytes32 proposalId,
+        uint256 option,
+        address voter,
+        uint256[] calldata tokenIds,
+        bytes calldata signature
+    ) external;
 
     function getToken() external view returns (address);
 
@@ -104,13 +110,15 @@ interface INFTGuild {
 
     function getActiveProposalsNow() external view returns (uint256);
 
-    function getProposalsIds() external view returns (bytes32[] memory);
+    function getProposalsIds(uint256 from, uint256 to) external view returns (bytes32[] memory);
 
-    function getTotalRegistered() external view returns (uint256);
-
-    function getVoterLockTimestamp(address voter) external view returns (uint256);
-
-    function getProposal(bytes32 proposalId) external view returns (Proposal memory);
+    function getProposal(bytes32 proposalId) external view returns (
+        uint256 startTime,
+        uint256 endTime,
+        uint256 totalOptions,
+        ProposalState state,
+        uint256[] memory totalVotes
+    );
 
     function getProposalVotesOfTokenId(bytes32 proposalId, uint256 tokenId) external view returns (uint256 option);
 
