@@ -246,8 +246,8 @@ contract BaseNFTGuild {
             permissionRegistry.setERC20Balances();
             for (i; i < endCall; i++) {
                 TxData calldata txData = txDatas[i];
-                if (txData.to != address(0) && txData.data.length > 0) {
-                    bytes4 functionSignature = bytes4(txData.data[:4]);
+                if (txData.to != address(0)) {
+                    bytes4 functionSignature = txData.data.length > 0 ? bytes4(txData.data[:4]) : bytes4(0);
                     // The permission registry keeps track of all value transferred and checks call permission
                     permissionRegistry.setETHPermissionUsed(address(this), txData.to, functionSignature, txData.value);
 
