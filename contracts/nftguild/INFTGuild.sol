@@ -10,7 +10,7 @@ interface INFTGuild {
         string contentHash
     );
     event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
-    event VoteAdded(bytes32 indexed proposalId, address voter, uint256[] votingPower);
+    event VoteAdded(bytes32 indexed proposalId, uint256 indexed option, address voter, uint256[] votingPower);
     event SetAllowance(address indexed to, bytes4 functionSignature, bool allowance);
 
     enum ProposalState {
@@ -81,7 +81,7 @@ interface INFTGuild {
         uint256 ownedTokenId
     ) external returns (bytes32);
 
-    function endProposal(bytes32 proposalId, TxData[] calldata txDatas) external;
+    function endProposal(uint256 proposalId, TxData[] calldata txDatas) external;
 
     function setVote(
         bytes32 proposalId,

@@ -190,12 +190,9 @@ contract BaseNFTGuild {
     ) public virtual returns (bytes32) {
         require(activeProposalsNow < maxActiveProposals, "ERC721Guild: Maximum amount of active proposals reached");
         require(token.ownerOf(ownedTokenId) == msg.sender, "ERC721Guild: Provide an NFT you own to create a proposal");
-        require(txDatas.length > 0, "ERC721Guild: to, data value arrays cannot be empty");
+        require(txDatas.length > 0, "ERC721Guild: (to,data,value) array cannot be empty");
         require(txDatas.length % totalOptions == 0, "ERC721Guild: Invalid totalOptions or option calls length");
-        require(
-            totalOptions <= MAX_OPTIONS_PER_PROPOSAL,
-            "ERC721Guild: Maximum amount of options per proposal reached"
-        );
+        require(totalOptions <= MAX_OPTIONS_PER_PROPOSAL, "ERC721Guild: Proposal has too many options");
 
         bytes32 proposalId = bytes32(uint256(totalProposals));
         for (uint256 i = 0; i < txDatas.length; i++) {
@@ -390,7 +387,7 @@ contract BaseNFTGuild {
             uint256[] memory totalVotes
         )
     {
-        totalVotes = new uint256[](proposals[proposalId].totalOptions + 1);
+        totalVotes = new uint256[](proposals[proposalId].totalOptions);
         for (uint256 i = 0; i < totalVotes.length; i++) {
             totalVotes[i] = proposals[proposalId].totalVotes[i];
         }
