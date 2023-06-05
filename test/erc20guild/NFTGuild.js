@@ -98,17 +98,17 @@ contract("NFTGuild", function (accounts) {
             helpers.testCallFrom(nftGuild.address),
             helpers.testCallFrom(nftGuild.address, 666),
           ],
-          value: [0,0],
+          value: [0, 0],
         },
         {
           to: [actionMockA.address, constants.ZERO_ADDRESS],
           data: [helpers.testCallFrom(nftGuild.address), "0x00"],
-          value: [101,0],
+          value: [101, 0],
         },
         {
           to: [actionMockB.address, constants.ZERO_ADDRESS],
           data: [helpers.testCallFrom(nftGuild.address, 666), "0x00"],
-          value: [10,0],
+          value: [10, 0],
         },
       ],
       account: accounts[3],
@@ -117,62 +117,64 @@ contract("NFTGuild", function (accounts) {
   });
 
   const allowActionMockA = async function () {
-    const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-      nftGuild: nftGuild,
-      options: [
-        {
-          to: [
-            permissionRegistry.address,
-            permissionRegistry.address,
-            permissionRegistry.address,
-            permissionRegistry.address,
-          ],
-          data: [
-            await new web3.eth.Contract(PermissionRegistry.abi).methods
-              .setETHPermission(
-                nftGuild.address,
-                constants.ZERO_ADDRESS,
-                constants.NULL_SIGNATURE,
-                200,
-                true
-              )
-              .encodeABI(),
-            await new web3.eth.Contract(PermissionRegistry.abi).methods
-              .setETHPermission(
-                nftGuild.address,
-                actionMockA.address,
-                constants.NULL_SIGNATURE,
-                100,
-                true
-              )
-              .encodeABI(),
-            await new web3.eth.Contract(PermissionRegistry.abi).methods
-              .setETHPermission(
-                nftGuild.address,
-                actionMockA.address,
-                helpers.testCallFrom(nftGuild.address).substring(0, 10),
-                50,
-                true
-              )
-              .encodeABI(),
-            await new web3.eth.Contract(PermissionRegistry.abi).methods
-              .setETHPermission(
-                nftGuild.address,
-                actionMockA.address,
-                web3.eth.abi.encodeFunctionSignature(
-                  "executeCall(address,bytes,uint256)"
-                ),
-                0,
-                true
-              )
-              .encodeABI(),
-          ],
-          value: [0, 0, 0, 0],
-        },
-      ],
-      ownedTokenId: 1,
-      account: accounts[1],
-    });
+    const { proposalId, proposalIndex, proposalData } = await createNFTProposal(
+      {
+        nftGuild: nftGuild,
+        options: [
+          {
+            to: [
+              permissionRegistry.address,
+              permissionRegistry.address,
+              permissionRegistry.address,
+              permissionRegistry.address,
+            ],
+            data: [
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .setETHPermission(
+                  nftGuild.address,
+                  constants.ZERO_ADDRESS,
+                  constants.NULL_SIGNATURE,
+                  200,
+                  true
+                )
+                .encodeABI(),
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .setETHPermission(
+                  nftGuild.address,
+                  actionMockA.address,
+                  constants.NULL_SIGNATURE,
+                  100,
+                  true
+                )
+                .encodeABI(),
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .setETHPermission(
+                  nftGuild.address,
+                  actionMockA.address,
+                  helpers.testCallFrom(nftGuild.address).substring(0, 10),
+                  50,
+                  true
+                )
+                .encodeABI(),
+              await new web3.eth.Contract(PermissionRegistry.abi).methods
+                .setETHPermission(
+                  nftGuild.address,
+                  actionMockA.address,
+                  web3.eth.abi.encodeFunctionSignature(
+                    "executeCall(address,bytes,uint256)"
+                  ),
+                  0,
+                  true
+                )
+                .encodeABI(),
+            ],
+            value: [0, 0, 0, 0],
+          },
+        ],
+        ownedTokenId: 1,
+        account: accounts[1],
+      }
+    );
     await setNFTVotesOnProposal({
       guild: nftGuild,
       proposalId: proposalId,
@@ -270,30 +272,23 @@ contract("NFTGuild", function (accounts) {
       assert.equal(await nftGuild.getMaxGasPrice(), 0);
       assert.equal(await nftGuild.getMaxActiveProposals(), 10);
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [nftGuild.address],
-            data: [
-              await new web3.eth.Contract(NFTGuild.abi).methods
-                .setConfig(
-                  "15",
-                  "30",
-                  "2",
-                  "4",
-                  "1",
-                  "10",
-                  "4",
-                )
-                .encodeABI(),
-            ],
-            value: [0],
-          },
-        ],
-        account: accounts[3],
-        ownedTokenId: 3,
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [nftGuild.address],
+              data: [
+                await new web3.eth.Contract(NFTGuild.abi).methods
+                  .setConfig("15", "30", "2", "4", "1", "10", "4")
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          account: accounts[3],
+          ownedTokenId: 3,
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -334,22 +329,23 @@ contract("NFTGuild", function (accounts) {
         "0"
       );
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [permissionRegistry.address],
-            data: [
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .setETHPermissionDelay(nftGuild.address, 120)
-                .encodeABI(),
-            ],
-            value: [0],
-          },
-        ],
-        account: accounts[2],
-        ownedTokenId: 2,
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [permissionRegistry.address],
+              data: [
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .setETHPermissionDelay(nftGuild.address, 120)
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          account: accounts[2],
+          ownedTokenId: 2,
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -389,7 +385,7 @@ contract("NFTGuild", function (accounts) {
               to: actionMockA.address,
               value: 1,
               data: "0x00",
-            }
+            },
           ],
           invalidtotalOptions,
           "Guild Test Proposal",
@@ -414,7 +410,7 @@ contract("NFTGuild", function (accounts) {
               to: actionMockA.address,
               value: 1,
               data: "0x00",
-            }
+            },
           ],
           2,
           "Guild Test Proposal",
@@ -441,7 +437,8 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("cannot create a proposal if the max amount of active proposals is reached", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
       assert.equal(await nftGuild.getActiveProposalsNow(), "1");
       await time.increase(10);
 
@@ -490,7 +487,8 @@ contract("NFTGuild", function (accounts) {
 
   describe("setVote", function () {
     it("cannot vote twice with same token id", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
 
       await setNFTVotesOnProposal({
         guild: nftGuild,
@@ -513,7 +511,8 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("cannot vote with token ids that you don't own", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
 
       await expectRevert(
         setNFTVotesOnProposal({
@@ -525,7 +524,7 @@ contract("NFTGuild", function (accounts) {
         }),
         "ERC721Guild: Voting with tokens you don't own"
       );
-      
+
       await expectRevert(
         setNFTVotesOnProposal({
           guild: nftGuild,
@@ -539,7 +538,8 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("cannot change voted option after initial vote", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
 
       await setNFTVotesOnProposal({
         guild: nftGuild,
@@ -564,31 +564,24 @@ contract("NFTGuild", function (accounts) {
 
   describe("endProposal", function () {
     beforeEach(async function () {
-      permissionRegistry.address
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [nftGuild.address],
-            data: [
-              await new web3.eth.Contract(NFTGuild.abi).methods
-                .setConfig(
-                  "30",
-                  "30",
-                  "2",
-                  "0",
-                  "0",
-                  "0",
-                  "10",
-                )
-                .encodeABI(),
-            ],
-            value: [0],
-          },
-        ],
-        account: accounts[3],
-        ownedTokenId: 3,
-      });
+      permissionRegistry.address;
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [nftGuild.address],
+              data: [
+                await new web3.eth.Contract(NFTGuild.abi).methods
+                  .setConfig("30", "30", "2", "0", "0", "0", "10")
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          account: accounts[3],
+          ownedTokenId: 3,
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -601,7 +594,8 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("cannot execute as proposal not ended yet", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
 
       await setNFTVotesOnProposal({
         guild: nftGuild,
@@ -625,7 +619,8 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("proposal rejected if not enough votes to execute proposal when proposal ends", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -641,7 +636,8 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("Proposals are marked as rejected if voted on action 0", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
 
       await setNFTVotesOnProposal({
         guild: nftGuild,
@@ -699,18 +695,19 @@ contract("NFTGuild", function (accounts) {
         .testWithNoargs()
         .encodeABI();
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [actionMockA.address],
-            data: [testWithNoargsEncoded],
-            value: [0],
-          },
-        ],
-        account: accounts[2],
-        ownedTokenId: 2,
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [actionMockA.address],
+              data: [testWithNoargsEncoded],
+              value: [0],
+            },
+          ],
+          account: accounts[2],
+          ownedTokenId: 2,
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -736,21 +733,22 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("proposal fail because it run out of time to execute", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [actionMockA.address, actionMockA.address],
-            data: [
-              helpers.testCallFrom(nftGuild.address),
-              helpers.testCallFrom(nftGuild.address, 666),
-            ],
-            value: [0, 0],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [actionMockA.address, actionMockA.address],
+              data: [
+                helpers.testCallFrom(nftGuild.address),
+                helpers.testCallFrom(nftGuild.address, 666),
+              ],
+              value: [0, 0],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -815,28 +813,29 @@ contract("NFTGuild", function (accounts) {
       };
 
       const allowAllActionsMock = async function () {
-        const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-          nftGuild: nftGuild,
-          options: [
-            {
-              to: [permissionRegistry.address],
-              data: [
-                await new web3.eth.Contract(PermissionRegistry.abi).methods
-                  .setETHPermission(
-                    nftGuild.address,
-                    actionMockA.address,
-                    helpers.testCallFrom(nftGuild.address).substring(0, 10),
-                    1000,
-                    true
-                  )
-                  .encodeABI(),
-              ],
-              value: [0],
-            },
-          ],
-          ownedTokenId: 1,
-          account: accounts[1],
-        });
+        const { proposalId, proposalIndex, proposalData } =
+          await createNFTProposal({
+            nftGuild: nftGuild,
+            options: [
+              {
+                to: [permissionRegistry.address],
+                data: [
+                  await new web3.eth.Contract(PermissionRegistry.abi).methods
+                    .setETHPermission(
+                      nftGuild.address,
+                      actionMockA.address,
+                      helpers.testCallFrom(nftGuild.address).substring(0, 10),
+                      1000,
+                      true
+                    )
+                    .encodeABI(),
+                ],
+                value: [0],
+              },
+            ],
+            ownedTokenId: 1,
+            account: accounts[1],
+          });
         await setNFTVotesOnProposal({
           guild: nftGuild,
           proposalId: proposalId,
@@ -859,7 +858,8 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("if there is a tie between winning actions, reject", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(proposalWithThreeOptions);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(proposalWithThreeOptions);
 
       await setNFTVotesOnProposal({
         guild: nftGuild,
@@ -884,7 +884,8 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("when there are two tied losing actions and one winning action, execute", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(proposalWithThreeOptions);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(proposalWithThreeOptions);
 
       await setNFTVotesOnProposal({
         guild: nftGuild,
@@ -919,14 +920,12 @@ contract("NFTGuild", function (accounts) {
       await nftGuild.endProposal(proposalIndex, proposalData);
 
       const { state } = await nftGuild.getProposal(proposalId);
-      assert.equal(
-        state,
-        constants.GUILD_PROPOSAL_STATES.Executed
-      );
+      assert.equal(state, constants.GUILD_PROPOSAL_STATES.Executed);
     });
 
     it("when there is a tie between an action and no action, reject", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(proposalWithThreeOptions);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(proposalWithThreeOptions);
 
       await setNFTVotesOnProposal({
         guild: nftGuild,
@@ -951,7 +950,8 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("when there is a tie between more than two actions, reject", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(proposalWithThreeOptions);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(proposalWithThreeOptions);
 
       await setNFTVotesOnProposal({
         guild: nftGuild,
@@ -990,7 +990,8 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("when there is a winning action in the middle of two tied actions, execute", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(proposalWithThreeOptions);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(proposalWithThreeOptions);
 
       await setNFTVotesOnProposal({
         guild: nftGuild,
@@ -1025,10 +1026,7 @@ contract("NFTGuild", function (accounts) {
       await nftGuild.endProposal(proposalIndex, proposalData);
 
       const { state } = await nftGuild.getProposal(proposalId);
-      assert.equal(
-        state,
-        constants.GUILD_PROPOSAL_STATES.Executed
-      );
+      assert.equal(state, constants.GUILD_PROPOSAL_STATES.Executed);
     });
   });
 
@@ -1038,64 +1036,62 @@ contract("NFTGuild", function (accounts) {
     beforeEach(async function () {
       await allowActionMockA();
 
-      testToken = await ERC20Mock.new(
-        "TestToken",
-        "TTT",
-        1000,
-        accounts[1],
-      );
+      testToken = await ERC20Mock.new("TestToken", "TTT", 1000, accounts[1]);
       await testToken.transfer(nftGuild.address, 300, { from: accounts[1] });
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [
-              permissionRegistry.address,
-              permissionRegistry.address,
-              permissionRegistry.address,
-              permissionRegistry.address,
-            ],
-            data: [
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .setETHPermission(
-                  nftGuild.address,
-                  actionMockB.address,
-                  constants.NULL_SIGNATURE,
-                  0,
-                  false
-                )
-                .encodeABI(),
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .setETHPermission(
-                  nftGuild.address,
-                  testToken.address,
-                  web3.eth.abi.encodeFunctionSignature(
-                    "transfer(address,uint256)"
-                  ),
-                  0,
-                  true
-                )
-                .encodeABI(),
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [
+                permissionRegistry.address,
+                permissionRegistry.address,
+                permissionRegistry.address,
+                permissionRegistry.address,
+              ],
+              data: [
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .setETHPermission(
+                    nftGuild.address,
+                    actionMockB.address,
+                    constants.NULL_SIGNATURE,
+                    0,
+                    false
+                  )
+                  .encodeABI(),
                 await new web3.eth.Contract(PermissionRegistry.abi).methods
                   .setETHPermission(
                     nftGuild.address,
                     testToken.address,
-                    web3.eth.abi.encodeFunctionSignature("mint(address,uint256)"),
+                    web3.eth.abi.encodeFunctionSignature(
+                      "transfer(address,uint256)"
+                    ),
                     0,
                     true
                   )
                   .encodeABI(),
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .addERC20Limit(nftGuild.address, testToken.address, 200, 0)
-                .encodeABI(),
-            ],
-            value: [0, 0, 0, 0],
-          },
-        ],
-        ownedTokenId: 1,
-        account: accounts[1],
-      });
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .setETHPermission(
+                    nftGuild.address,
+                    testToken.address,
+                    web3.eth.abi.encodeFunctionSignature(
+                      "mint(address,uint256)"
+                    ),
+                    0,
+                    true
+                  )
+                  .encodeABI(),
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .addERC20Limit(nftGuild.address, testToken.address, 200, 0)
+                  .encodeABI(),
+              ],
+              value: [0, 0, 0, 0],
+            },
+          ],
+          ownedTokenId: 1,
+          account: accounts[1],
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -1121,18 +1117,19 @@ contract("NFTGuild", function (accounts) {
         from: accounts[0],
       });
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [actionMockB.address],
-            data: [helpers.testCallFrom(nftGuild.address)],
-            value: [0],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [actionMockB.address],
+              data: [helpers.testCallFrom(nftGuild.address)],
+              value: [0],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -1162,18 +1159,23 @@ contract("NFTGuild", function (accounts) {
         from: accounts[0],
       });
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [accounts[8], accounts[7], actionMockA.address],
-            data: [constants.ZERO_DATA, constants.ZERO_DATA, helpers.testCallFrom(nftGuild.address)],
-            value: [100, 51, 50],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [accounts[8], accounts[7], actionMockA.address],
+              data: [
+                constants.ZERO_DATA,
+                constants.ZERO_DATA,
+                helpers.testCallFrom(nftGuild.address),
+              ],
+              value: [100, 51, 50],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -1203,25 +1205,26 @@ contract("NFTGuild", function (accounts) {
         from: accounts[0],
       });
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [testToken.address, testToken.address],
-            data: [
-              await new web3.eth.Contract(ERC20Mock.abi).methods
-                .transfer(accounts[2], 100)
-                .encodeABI(),
-              await new web3.eth.Contract(ERC20Mock.abi).methods
-                .transfer(accounts[3], 101)
-                .encodeABI(),
-            ],
-            value: [0, 0],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [testToken.address, testToken.address],
+              data: [
+                await new web3.eth.Contract(ERC20Mock.abi).methods
+                  .transfer(accounts[2], 100)
+                  .encodeABI(),
+                await new web3.eth.Contract(ERC20Mock.abi).methods
+                  .transfer(accounts[3], 101)
+                  .encodeABI(),
+              ],
+              value: [0, 0],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -1251,25 +1254,26 @@ contract("NFTGuild", function (accounts) {
         from: accounts[0],
       });
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [testToken.address, testToken.address],
-            data: [
-              await new web3.eth.Contract(ERC20Mock.abi).methods
-                .transfer(accounts[2], 100)
-                .encodeABI(),
-              await new web3.eth.Contract(ERC20Mock.abi).methods
-                .transfer(accounts[3], 99)
-                .encodeABI(),
-            ],
-            value: [0, 0],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [testToken.address, testToken.address],
+              data: [
+                await new web3.eth.Contract(ERC20Mock.abi).methods
+                  .transfer(accounts[2], 100)
+                  .encodeABI(),
+                await new web3.eth.Contract(ERC20Mock.abi).methods
+                  .transfer(accounts[3], 99)
+                  .encodeABI(),
+              ],
+              value: [0, 0],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -1300,32 +1304,34 @@ contract("NFTGuild", function (accounts) {
         from: accounts[0],
       });
 
-      let {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [
-              permissionRegistry.address,
-              testToken.address,
-              testToken.address,
-            ],
-            data: [
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .updateERC20Limit(nftGuild.address, 0, 0)
-                .encodeABI(),
-              await new web3.eth.Contract(ERC20Mock.abi).methods
-                .transfer(accounts[2], 100)
-                .encodeABI(),
-              await new web3.eth.Contract(ERC20Mock.abi).methods
-                .transfer(accounts[3], 99)
-                .encodeABI(),
-            ],
-            value: [0, 0, 0],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      let { proposalId, proposalIndex, proposalData } = await createNFTProposal(
+        {
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [
+                permissionRegistry.address,
+                testToken.address,
+                testToken.address,
+              ],
+              data: [
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .updateERC20Limit(nftGuild.address, 0, 0)
+                  .encodeABI(),
+                await new web3.eth.Contract(ERC20Mock.abi).methods
+                  .transfer(accounts[2], 100)
+                  .encodeABI(),
+                await new web3.eth.Contract(ERC20Mock.abi).methods
+                  .transfer(accounts[3], 99)
+                  .encodeABI(),
+              ],
+              value: [0, 0, 0],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        }
+      );
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -1349,7 +1355,7 @@ contract("NFTGuild", function (accounts) {
       });
 
       await testToken.mint(nftGuild.address, 1000000);
-      ({proposalId, proposalIndex, proposalData} = await createNFTProposal({
+      ({ proposalId, proposalIndex, proposalData } = await createNFTProposal({
         nftGuild: nftGuild,
         options: [
           {
@@ -1398,25 +1404,26 @@ contract("NFTGuild", function (accounts) {
         from: accounts[0],
       });
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [permissionRegistry.address, permissionRegistry.address],
-            data: [
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .updateERC20Limit(nftGuild.address, 0, 0)
-                .encodeABI(),
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .executeUpdateERC20Limit(nftGuild.address, 0)
-                .encodeABI(),
-            ],
-            value: [0, 0],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [permissionRegistry.address, permissionRegistry.address],
+              data: [
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .updateERC20Limit(nftGuild.address, 0, 0)
+                  .encodeABI(),
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .executeUpdateERC20Limit(nftGuild.address, 0)
+                  .encodeABI(),
+              ],
+              value: [0, 0],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -1447,25 +1454,27 @@ contract("NFTGuild", function (accounts) {
       });
 
       // ERC20 Limit removal request + set delay time
-      let {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [permissionRegistry.address, permissionRegistry.address],
-            data: [
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .setETHPermissionDelay(nftGuild.address, 60 * 10)
-                .encodeABI(),
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .updateERC20Limit(nftGuild.address, 0, 0)
-                .encodeABI(),
-            ],
-            value: [0, 0],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      let { proposalId, proposalIndex, proposalData } = await createNFTProposal(
+        {
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [permissionRegistry.address, permissionRegistry.address],
+              data: [
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .setETHPermissionDelay(nftGuild.address, 60 * 10)
+                  .encodeABI(),
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .updateERC20Limit(nftGuild.address, 0, 0)
+                  .encodeABI(),
+              ],
+              value: [0, 0],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        }
+      );
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -1489,7 +1498,7 @@ contract("NFTGuild", function (accounts) {
 
       // Transfer limits still checked after delay has passed if the removal request wasn't executed
       await time.increase(time.duration.seconds(60 * 10));
-      ({proposalId, proposalIndex, proposalData} = await createNFTProposal({
+      ({ proposalId, proposalIndex, proposalData } = await createNFTProposal({
         nftGuild: nftGuild,
         options: [
           {
@@ -1526,7 +1535,7 @@ contract("NFTGuild", function (accounts) {
       );
 
       // ERC20 transfer limits are no longer checked after removal execution
-      ({proposalId, proposalIndex, proposalData} = await createNFTProposal({
+      ({ proposalId, proposalIndex, proposalData } = await createNFTProposal({
         nftGuild: nftGuild,
         options: [
           {
@@ -1567,7 +1576,7 @@ contract("NFTGuild", function (accounts) {
       });
 
       // ERC20 transfer limits are no longer checked after removal execution
-      ({proposalId, proposalIndex, proposalData} = await createNFTProposal({
+      ({ proposalId, proposalIndex, proposalData } = await createNFTProposal({
         nftGuild: nftGuild,
         options: [
           {
@@ -1613,22 +1622,24 @@ contract("NFTGuild", function (accounts) {
       });
 
       // ERC20 Limit increase request
-      let {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [permissionRegistry.address],
-            data: [
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .updateERC20Limit(nftGuild.address, 0, 250)
-                .encodeABI(),
-            ],
-            value: [0],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      let { proposalId, proposalIndex, proposalData } = await createNFTProposal(
+        {
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [permissionRegistry.address],
+              data: [
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .updateERC20Limit(nftGuild.address, 0, 250)
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        }
+      );
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -1655,7 +1666,7 @@ contract("NFTGuild", function (accounts) {
         permissionRegistry.executeUpdateERC20Limit(nftGuild.address, 0),
         "PermissionRegistry: Cant execute permission update"
       );
-      ({proposalId, proposalIndex, proposalData} = await createNFTProposal({
+      ({ proposalId, proposalIndex, proposalData } = await createNFTProposal({
         nftGuild: nftGuild,
         options: [
           {
@@ -1693,7 +1704,7 @@ contract("NFTGuild", function (accounts) {
       });
 
       await testToken.transfer(nftGuild.address, 250, { from: accounts[3] });
-      ({proposalId, proposalIndex, proposalData} = await createNFTProposal({
+      ({ proposalId, proposalIndex, proposalData } = await createNFTProposal({
         nftGuild: nftGuild,
         options: [
           {
@@ -1738,22 +1749,24 @@ contract("NFTGuild", function (accounts) {
       });
 
       // ERC20 Limit increase request
-      let {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [permissionRegistry.address],
-            data: [
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .updateERC20Limit(nftGuild.address, 0, 100)
-                .encodeABI(),
-            ],
-            value: [0],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      let { proposalId, proposalIndex, proposalData } = await createNFTProposal(
+        {
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [permissionRegistry.address],
+              data: [
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .updateERC20Limit(nftGuild.address, 0, 100)
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        }
+      );
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -1780,7 +1793,7 @@ contract("NFTGuild", function (accounts) {
         permissionRegistry.executeUpdateERC20Limit(nftGuild.address, 0),
         "PermissionRegistry: Cant execute permission update"
       );
-      ({proposalId, proposalIndex, proposalData} = await createNFTProposal({
+      ({ proposalId, proposalIndex, proposalData } = await createNFTProposal({
         nftGuild: nftGuild,
         options: [
           {
@@ -1817,7 +1830,7 @@ contract("NFTGuild", function (accounts) {
         newState: "3",
       });
 
-      ({proposalId, proposalIndex, proposalData} = await createNFTProposal({
+      ({ proposalId, proposalIndex, proposalData } = await createNFTProposal({
         nftGuild: nftGuild,
         options: [
           {
@@ -1861,22 +1874,23 @@ contract("NFTGuild", function (accounts) {
         from: accounts[0],
       });
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [testToken.address],
-            data: [
-              await new web3.eth.Contract(ERC20Mock.abi).methods
-                .mint(nftGuild.address, 100)
-                .encodeABI(),
-            ],
-            value: [0],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [testToken.address],
+              data: [
+                await new web3.eth.Contract(ERC20Mock.abi).methods
+                  .mint(nftGuild.address, 100)
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -1907,54 +1921,55 @@ contract("NFTGuild", function (accounts) {
         from: accounts[0],
       });
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [
-              actionMockA.address,
-              actionMockA.address,
-              actionMockA.address,
-              permissionRegistry.address,
-              actionMockA.address,
-            ],
-            data: [
-              constants.ZERO_DATA,
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [
+                actionMockA.address,
+                actionMockA.address,
+                actionMockA.address,
+                permissionRegistry.address,
+                actionMockA.address,
+              ],
+              data: [
+                constants.ZERO_DATA,
 
-              // setETHPermissionUsed from the ActionMock contract by using execute call
-              await new web3.eth.Contract(ActionMock.abi).methods
-                .executeCall(
-                  permissionRegistry.address,
-                  await new web3.eth.Contract(PermissionRegistry.abi).methods
-                    .setETHPermissionUsed(
-                      nftGuild.address,
-                      actionMockA.address,
-                      constants.NULL_SIGNATURE,
-                      0
-                    )
-                    .encodeABI(),
-                  0
-                )
-                .encodeABI(),
-              constants.ZERO_DATA,
+                // setETHPermissionUsed from the ActionMock contract by using execute call
+                await new web3.eth.Contract(ActionMock.abi).methods
+                  .executeCall(
+                    permissionRegistry.address,
+                    await new web3.eth.Contract(PermissionRegistry.abi).methods
+                      .setETHPermissionUsed(
+                        nftGuild.address,
+                        actionMockA.address,
+                        constants.NULL_SIGNATURE,
+                        0
+                      )
+                      .encodeABI(),
+                    0
+                  )
+                  .encodeABI(),
+                constants.ZERO_DATA,
 
-              // setETHPermissionUsed from the guild directly
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .setETHPermissionUsed(
-                  nftGuild.address,
-                  actionMockA.address,
-                  constants.NULL_SIGNATURE,
-                  0
-                )
-                .encodeABI(),
-              constants.ZERO_DATA,
-            ],
-            value: [99, 0, 1, 0, 1],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+                // setETHPermissionUsed from the guild directly
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .setETHPermissionUsed(
+                    nftGuild.address,
+                    actionMockA.address,
+                    constants.NULL_SIGNATURE,
+                    0
+                  )
+                  .encodeABI(),
+                constants.ZERO_DATA,
+              ],
+              value: [99, 0, 1, 0, 1],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -1985,21 +2000,22 @@ contract("NFTGuild", function (accounts) {
         from: accounts[0],
       });
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [actionMockA.address, actionMockA.address],
-            data: [
-              helpers.testCallFrom(nftGuild.address),
-              helpers.testCallFrom(nftGuild.address),
-            ],
-            value: [25, 26],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [actionMockA.address, actionMockA.address],
+              data: [
+                helpers.testCallFrom(nftGuild.address),
+                helpers.testCallFrom(nftGuild.address),
+              ],
+              value: [25, 26],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -2030,18 +2046,19 @@ contract("NFTGuild", function (accounts) {
         from: accounts[0],
       });
 
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [actionMockA.address],
-            data: [constants.ZERO_DATA],
-            value: [101],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [actionMockA.address],
+              data: [constants.ZERO_DATA],
+              value: [101],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -2077,28 +2094,30 @@ contract("NFTGuild", function (accounts) {
         from: accounts[0],
       });
 
-      let {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [permissionRegistry.address],
-            data: [
-              await new web3.eth.Contract(PermissionRegistry.abi).methods
-                .setETHPermission(
-                  nftGuild.address,
-                  actionMockB.address,
-                  helpers.testCallFrom(nftGuild.address).substring(0, 10),
-                  10,
-                  true
-                )
-                .encodeABI(),
-            ],
-            value: [0],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      let { proposalId, proposalIndex, proposalData } = await createNFTProposal(
+        {
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [permissionRegistry.address],
+              data: [
+                await new web3.eth.Contract(PermissionRegistry.abi).methods
+                  .setETHPermission(
+                    nftGuild.address,
+                    actionMockB.address,
+                    helpers.testCallFrom(nftGuild.address).substring(0, 10),
+                    10,
+                    true
+                  )
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        }
+      );
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -2117,7 +2136,9 @@ contract("NFTGuild", function (accounts) {
       await time.increase(time.duration.seconds(31));
       await nftGuild.endProposal(proposalIndex, proposalData);
 
-      ({proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal));
+      ({ proposalId, proposalIndex, proposalData } = await createNFTProposal(
+        genericProposal
+      ));
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -2153,15 +2174,11 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("can read proposal details of proposal", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
 
-      const {
-        startTime,
-        endTime,
-        totalOptions,
-        state,
-        totalVotes,
-      } = await nftGuild.getProposal(proposalId);
+      const { startTime, endTime, totalOptions, state, totalVotes } =
+        await nftGuild.getProposal(proposalId);
 
       const now = await time.latest();
       assert.equal(startTime.toString(), now.toString());
@@ -2174,30 +2191,23 @@ contract("NFTGuild", function (accounts) {
 
   describe("refund votes", function () {
     beforeEach(async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-        nftGuild: nftGuild,
-        options: [
-          {
-            to: [nftGuild.address],
-            data: [
-              await new web3.eth.Contract(NFTGuild.abi).methods
-                .setConfig(
-                  30,
-                  30,
-                  1,
-                  0,
-                  VOTE_GAS,
-                  MAX_GAS_PRICE,
-                  3
-                )
-                .encodeABI(),
-            ],
-            value: [0],
-          },
-        ],
-        ownedTokenId: 3,
-        account: accounts[3],
-      });
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [nftGuild.address],
+              data: [
+                await new web3.eth.Contract(NFTGuild.abi).methods
+                  .setConfig(30, 30, 1, 0, VOTE_GAS, MAX_GAS_PRICE, 3)
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          ownedTokenId: 3,
+          account: accounts[3],
+        });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
@@ -2235,7 +2245,8 @@ contract("NFTGuild", function (accounts) {
       });
 
       it("can set a vote and refund gas", async function () {
-        const {proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal);
+        const { proposalId, proposalIndex, proposalData } =
+          await createNFTProposal(genericProposal);
 
         const guildTracker = await balance.tracker(nftGuild.address);
 
@@ -2280,7 +2291,8 @@ contract("NFTGuild", function (accounts) {
       });
 
       it("can set a vote but no refund as contract has no ether", async function () {
-        const {proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal);
+        const { proposalId, proposalIndex, proposalData } =
+          await createNFTProposal(genericProposal);
 
         const guildTracker = await balance.tracker(nftGuild.address);
 
@@ -2321,30 +2333,31 @@ contract("NFTGuild", function (accounts) {
         });
 
         let incorrectVoteGas = new BN(220000);
-        let {proposalId, proposalIndex, proposalData} = await createNFTProposal({
-          nftGuild: nftGuild,
-          options: [
-            {
-              to: [nftGuild.address],
-              data: [
-                await new web3.eth.Contract(NFTGuild.abi).methods
-                  .setConfig(
-                    30,
-                    30,
-                    1,
-                    0,
-                    incorrectVoteGas,
-                    REAL_GAS_PRICE,
-                    3,
-                  )
-                  .encodeABI(),
-              ],
-              value: [0],
-            },
-          ],
-          ownedTokenId: 3,
-          account: accounts[3],
-        });
+        let { proposalId, proposalIndex, proposalData } =
+          await createNFTProposal({
+            nftGuild: nftGuild,
+            options: [
+              {
+                to: [nftGuild.address],
+                data: [
+                  await new web3.eth.Contract(NFTGuild.abi).methods
+                    .setConfig(
+                      30,
+                      30,
+                      1,
+                      0,
+                      incorrectVoteGas,
+                      REAL_GAS_PRICE,
+                      3
+                    )
+                    .encodeABI(),
+                ],
+                value: [0],
+              },
+            ],
+            ownedTokenId: 3,
+            account: accounts[3],
+          });
         await setNFTVotesOnProposal({
           guild: nftGuild,
           proposalId: proposalId,
@@ -2365,7 +2378,9 @@ contract("NFTGuild", function (accounts) {
           "ERC721Guild: Proposal call failed"
         );
 
-        ({proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal));
+        ({ proposalId, proposalIndex, proposalData } = await createNFTProposal(
+          genericProposal
+        ));
         const accountBalanceTracker = await balance.tracker(accounts[1]);
 
         await setNFTVotesOnProposal({
@@ -2383,7 +2398,8 @@ contract("NFTGuild", function (accounts) {
     });
 
     it("only refunds up to max gas price", async function () {
-      const {proposalId, proposalIndex, proposalData} = await createNFTProposal(genericProposal);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
 
       const guildTracker = await balance.tracker(nftGuild.address);
 

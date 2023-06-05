@@ -146,7 +146,7 @@ contract BaseNFTGuild {
     // @dev Set the ERC721Guild configuration, can be called only executing a proposal
     // @param _proposalTime The amount of time in seconds that a proposal will be active for voting
     // @param _timeForExecution The amount of time in seconds that a proposal option will have to execute successfully
-    // @param _votingPowerForProposalExecution 
+    // @param _votingPowerForProposalExecution
     // Minimum amount of votes that a winning proposal option needs to be executed.
     // @param _votingPowerForInstantProposalExecution The percentage of voting power in base 10000 needed to execute a
     // proposal option without waiting till the votation period ends.

@@ -11,7 +11,7 @@ contract ERC721Token is Initializable, ERC721Upgradeable {
     function initialize(string memory name, string memory symbol) public initializer {
         __ERC721_init(name, symbol);
     }
-    
+
     function mint(address account, uint256 tokenId) external {
         _mint(account, tokenId);
     }

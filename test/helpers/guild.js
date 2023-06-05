@@ -79,9 +79,9 @@ export async function createNFTProposal({
         to: option.to[i],
         value: option.value[i],
         data: option.data[i],
-      })      
+      });
     }
-  }); 
+  });
 
   const tx = await nftGuild.createProposal(
     txDatas,
@@ -92,7 +92,11 @@ export async function createNFTProposal({
     { from: account }
   );
   return {
-    proposalId: helpers.getValueFromLogs(tx, "proposalId", "ProposalStateChanged"),
+    proposalId: helpers.getValueFromLogs(
+      tx,
+      "proposalId",
+      "ProposalStateChanged"
+    ),
     proposalIndex: helpers.getValueFromLogs(tx, "proposalIndex", "NewProposal"),
     proposalData: txDatas,
   };

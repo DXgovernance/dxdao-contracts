@@ -119,13 +119,16 @@ interface INFTGuild {
 
     function getProposalsIds(uint256 from, uint256 to) external view returns (bytes32[] memory);
 
-    function getProposal(bytes32 proposalId) external view returns (
-        uint256 startTime,
-        uint256 endTime,
-        uint256 totalOptions,
-        ProposalState state,
-        uint256[] memory totalVotes
-    );
+    function getProposal(bytes32 proposalId)
+        external
+        view
+        returns (
+            uint256 startTime,
+            uint256 endTime,
+            uint256 totalOptions,
+            ProposalState state,
+            uint256[] memory totalVotes
+        );
 
     function getProposalVotesOfTokenId(bytes32 proposalId, uint256 tokenId) external view returns (uint256 option);
 
