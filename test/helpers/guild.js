@@ -24,11 +24,11 @@ export async function createAndSetupGuildToken(accounts, balances) {
 }
 
 export async function createAndSetupNFT(accounts) {
-  const nft = await ERC721Token.new("Non fungible", "NFT");
+  const guildToken = await ERC721Token.new("Non fungible", "NFT");
 
   await Promise.all(
     accounts.map((account, idx) => {
-      return nft.mint(account, idx);
+      return guildToken.mint(account, idx);
     })
   );
 
@@ -62,6 +62,40 @@ export async function createProposal({
     { from: account }
   );
   return helpers.getValueFromLogs(tx, "proposalId", "ProposalStateChanged");
+}
+
+export async function createNFTProposal({
+  nftGuild,
+  options,
+  title = constants.TEST_TITLE,
+  contentHash = constants.SOME_HASH,
+  account,
+  ownedTokenId,
+}) {
+  const txDatas = [];
+  options.map(option => {
+    for (let i = 0; i < option.to.length; i++) {
+      txDatas.push({
+        to: option.to[i],
+        value: option.value[i],
+        data: option.data[i],
+      })      
+    }
+  }); 
+
+  const tx = await nftGuild.createProposal(
+    txDatas,
+    options.length,
+    title,
+    contentHash,
+    ownedTokenId,
+    { from: account }
+  );
+  return {
+    proposalId: helpers.getValueFromLogs(tx, "proposalId", "ProposalStateChanged"),
+    proposalIndex: helpers.getValueFromLogs(tx, "proposalIndex", "NewProposal"),
+    proposalData: txDatas,
+  };
 }
 
 export async function setVotesOnProposal({
