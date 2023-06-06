@@ -1,6 +1,11 @@
 import { web3 } from "@openzeppelin/test-helpers/src/setup";
 import { assert, expect } from "chai";
 import * as helpers from "../helpers";
+import { config } from "hardhat";
+const {
+  signTypedData,
+  SignTypedDataVersion,
+} = require("@metamask/eth-sig-util");
 const { fixSignature } = require("../helpers/sign");
 const {
   createAndSetupNFT,
@@ -191,6 +196,58 @@ contract("NFTGuild", function (accounts) {
     });
     await time.increase(30);
     await nftGuild.endProposal(proposalIndex, proposalData);
+  };
+
+  const sigEIP712 = async function (
+    accountIndex,
+    proposalId,
+    option,
+    tokenIds
+  ) {
+    const domain = [
+      { name: "name", type: "string" },
+      { name: "chainId", type: "uint256" },
+      { name: "verifyingContract", type: "address" },
+    ];
+    const typeSetSignedVote = [
+      { name: "proposalId", type: "bytes32" },
+      { name: "option", type: "uint256" },
+      { name: "tokenIds", type: "uint256[]" },
+    ];
+
+    //Create data structs
+    const domainData = {
+      name: "NFT Guild",
+      chainId: await web3.eth.getChainId(),
+      verifyingContract: nftGuild.address,
+    };
+
+    const setSignedVote = {
+      proposalId: proposalId,
+      option: option,
+      tokenIds: tokenIds,
+    };
+
+    //Put them together in one data structure
+    const data = {
+      types: {
+        EIP712Domain: domain,
+        setSignedVote: typeSetSignedVote,
+      },
+      primaryType: "setSignedVote",
+      domain: domainData,
+      message: setSignedVote,
+    };
+
+    const wallet = ethers.Wallet.fromMnemonic(
+      config.networks.hardhat.accounts.mnemonic,
+      config.networks.hardhat.accounts.path + `/${accountIndex}`
+    );
+    return signTypedData({
+      privateKey: Buffer.from(wallet.privateKey.substring(2, 66), "hex"),
+      data: data,
+      version: SignTypedDataVersion.V4,
+    });
   };
 
   describe("initialization", function () {
@@ -2445,183 +2502,69 @@ contract("NFTGuild", function (accounts) {
   });
 
   describe("Signed votes", function () {
-    beforeEach(async function () {
-      const tokenVault = await nftGuild.getTokenVault();
-      await guildToken.approve(tokenVault, 50000, { from: accounts[1] });
-      await guildToken.approve(tokenVault, 50000, { from: accounts[2] });
-      await guildToken.approve(tokenVault, 100000, { from: accounts[3] });
-      await guildToken.approve(tokenVault, 100000, { from: accounts[4] });
-      await guildToken.approve(tokenVault, 200000, { from: accounts[5] });
-      await nftGuild.lockTokens(50000, { from: accounts[1] });
-      await nftGuild.lockTokens(50000, { from: accounts[2] });
-      await nftGuild.lockTokens(100000, { from: accounts[3] });
-      await nftGuild.lockTokens(100000, { from: accounts[4] });
-      await nftGuild.lockTokens(200000, { from: accounts[5] });
-    });
-
-    it("can hash a vote", async function () {
-      const hashedVote = await nftGuild.hashVote(
-        accounts[1],
-        web3.utils.asciiToHex("abc123"),
-        1,
-        50
-      );
-      hashedVote.should.exist;
-    });
-
     it("can set a signed vote", async function () {
-      const guildProposalId = await createProposal(genericProposal);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
 
-      const hashedVote = await nftGuild.hashVote(
-        accounts[2],
-        guildProposalId,
-        1,
-        50
-      );
-      (await nftGuild.getSignedVote(hashedVote)).should.be.equal(false);
-
-      const signature = fixSignature(
-        await web3.eth.sign(hashedVote, accounts[2])
-      );
-      accounts[2].should.be.equal(
-        web3.eth.accounts.recover(hashedVote, signature)
-      );
-
+      const option = 1;
+      const tokenIds = [2];
+      const signature = await sigEIP712(2, proposalId, option, tokenIds);
       const txVote = await nftGuild.setSignedVote(
-        guildProposalId,
-        1,
-        50,
-        accounts[2],
+        proposalId,
+        option,
+        tokenIds,
         signature,
         { from: accounts[3] }
       );
 
-      const voteEvent = helpers.logDecoder.decodeLogs(
-        txVote.receipt.rawLogs
-      )[0];
-      assert.equal(voteEvent.name, "VoteAdded");
-      assert.equal(voteEvent.args[0], guildProposalId);
-      assert.equal(voteEvent.args[1], 1);
-      assert.equal(voteEvent.args[2], accounts[2]);
-      assert.equal(voteEvent.args[3], 50);
-
-      (await nftGuild.getSignedVote(hashedVote)).should.be.equal(true);
-    });
-
-    it("can set setVotes more efficient than multiple setVote", async function () {
-      // Forwarding ~10 votes is 24% less effective than 10 setVote functions
-      const getSignature = async function (proposalId, account) {
-        const hash = await nftGuild.hashVote(account, proposalId, 1, 10);
-        return fixSignature(await web3.eth.sign(hash, account));
-      };
-
-      let proposalIds = [],
-        options = [],
-        votes = [],
-        voters = [],
-        signatures = [];
-
-      for (let i = 0; i < 10; i++) {
-        const guildProposalId = await createProposal(genericProposal);
-        proposalIds.push(guildProposalId);
-        options.push(1);
-        votes.push(10);
-        voters.push(accounts[1]);
-        signatures.push(await getSignature(guildProposalId, accounts[1]));
-      }
-      const calls = await Promise.all(
-        proposalIds.map(async (proposalId, i) => {
-          return [
-            nftGuild.address,
-            await new web3.eth.Contract(NFTGuild.abi).methods
-              .setSignedVote(
-                proposalId,
-                options[i],
-                votes[i],
-                voters[i],
-                signatures[i]
-              )
-              .encodeABI(),
-          ];
-        })
+      expectEvent(txVote, "VoteAdded", {
+        proposalId: proposalId,
+        option: new BN("1"),
+        voter: accounts[3],
+      });
+      assert.equal(
+        (await nftGuild.getProposalVoteOfTokenId(proposalId, 2)).toNumber(),
+        1
       );
-
-      const txVote3 = await multicall.aggregate(calls, { from: accounts[4] });
-
-      if (constants.GAS_PRICE > 1)
-        expect(txVote3.receipt.gasUsed / (VOTE_GAS * 10)).to.be.below(1.25);
     });
 
     it("cannot set a signed vote twice", async function () {
-      const guildProposalId = await createProposal(genericProposal);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
 
-      const hashedVote = await nftGuild.hashVote(
-        accounts[2],
-        guildProposalId,
-        1,
-        50
-      );
-      (await nftGuild.getSignedVote(hashedVote)).should.be.equal(false);
-
-      const signature = fixSignature(
-        await web3.eth.sign(hashedVote, accounts[2])
-      );
-      accounts[2].should.be.equal(
-        web3.eth.accounts.recover(hashedVote, signature)
-      );
-
+      const option = 1;
+      const tokenIds = [2];
+      const signature = await sigEIP712(2, proposalId, option, tokenIds);
       const txVote = await nftGuild.setSignedVote(
-        guildProposalId,
-        1,
-        50,
-        accounts[2],
+        proposalId,
+        option,
+        tokenIds,
         signature,
         { from: accounts[3] }
       );
 
-      const voteEvent = helpers.logDecoder.decodeLogs(
-        txVote.receipt.rawLogs
-      )[0];
-      assert.equal(voteEvent.name, "VoteAdded");
-      assert.equal(voteEvent.args[0], guildProposalId);
-      assert.equal(voteEvent.args[1], 1);
-      assert.equal(voteEvent.args[2], accounts[2]);
-      assert.equal(voteEvent.args[3], 50);
-
-      (await nftGuild.getSignedVote(hashedVote)).should.be.equal(true);
-
       await expectRevert(
-        nftGuild.setSignedVote(guildProposalId, 1, 50, accounts[2], signature, {
+        nftGuild.setSignedVote(proposalId, option, tokenIds, signature, {
           from: accounts[3],
         }),
-        "NFTGuild: Already voted"
+        "ERC721Guild: This NFT already voted"
       );
     });
 
     it("cannot set a vote if wrong signer", async function () {
-      const guildProposalId = await createProposal(genericProposal);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
 
-      const hashedVote = await nftGuild.hashVote(
-        accounts[1],
-        guildProposalId,
-        1,
-        50
-      );
-      (await nftGuild.getSignedVote(hashedVote)).should.be.equal(false);
-
-      const signature = fixSignature(
-        await web3.eth.sign(hashedVote, accounts[0])
-      ); // wrong signer
-      accounts[0].should.be.equal(
-        web3.eth.accounts.recover(hashedVote, signature)
-      );
+      const option = 1;
+      const tokenIds = [1];
+      const signature = await sigEIP712(2, proposalId, option, tokenIds);
 
       // now call from different account aka accounts[1]
       await expectRevert(
-        nftGuild.setSignedVote(guildProposalId, 1, 50, accounts[1], signature, {
-          from: accounts[1],
+        nftGuild.setSignedVote(proposalId, option, tokenIds, signature, {
+          from: accounts[3],
         }),
-        "NFTGuild: Wrong signer"
+        "ERC721Guild: Voting with tokens you don't own"
       );
     });
   });

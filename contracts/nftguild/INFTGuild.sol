@@ -92,7 +92,6 @@ interface INFTGuild {
     function setSignedVote(
         bytes32 proposalId,
         uint256 option,
-        address voter,
         uint256[] calldata tokenIds,
         bytes calldata signature
     ) external;
@@ -130,7 +129,7 @@ interface INFTGuild {
             uint256[] memory totalVotes
         );
 
-    function getProposalVotesOfTokenId(bytes32 proposalId, uint256 tokenId) external view returns (uint256 option);
+    function getProposalVoteOfTokenId(bytes32 proposalId, uint256 tokenId) external view returns (uint256 option);
 
     function getVotingPowerForProposalExecution() external view returns (uint256);
 
