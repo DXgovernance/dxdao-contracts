@@ -617,6 +617,57 @@ contract("NFTGuild", function (accounts) {
         "ERC721Guild: This NFT already voted"
       );
     });
+
+    it("can vote with multiple token ids", async function () {
+      await guildToken.mint(accounts[1], 10);
+      await guildToken.mint(accounts[1], 11);
+      await guildToken.mint(accounts[1], 100);
+      await guildToken.mint(accounts[1], 101);
+      await guildToken.mint(accounts[1], 102);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
+
+      await setNFTVotesOnProposal({
+        guild: nftGuild,
+        proposalId: proposalId,
+        option: 1,
+        tokenIds: [1],
+        account: accounts[1],
+      });
+      await setNFTVotesOnProposal({
+        guild: nftGuild,
+        proposalId: proposalId,
+        option: 1,
+        tokenIds: [10, 11],
+        account: accounts[1],
+      });
+      await setNFTVotesOnProposal({
+        guild: nftGuild,
+        proposalId: proposalId,
+        option: 2,
+        tokenIds: [100, 101, 102],
+        account: accounts[1],
+      });
+
+      expect(
+        await nftGuild.getProposalVoteOfTokenId(proposalId, 1)
+      ).to.be.bignumber.equal(new BN("1"));
+      expect(
+        await nftGuild.getProposalVoteOfTokenId(proposalId, 10)
+      ).to.be.bignumber.equal(new BN("1"));
+      expect(
+        await nftGuild.getProposalVoteOfTokenId(proposalId, 11)
+      ).to.be.bignumber.equal(new BN("1"));
+      expect(
+        await nftGuild.getProposalVoteOfTokenId(proposalId, 100)
+      ).to.be.bignumber.equal(new BN("2"));
+      expect(
+        await nftGuild.getProposalVoteOfTokenId(proposalId, 101)
+      ).to.be.bignumber.equal(new BN("2"));
+      expect(
+        await nftGuild.getProposalVoteOfTokenId(proposalId, 102)
+      ).to.be.bignumber.equal(new BN("2"));
+    });
   });
 
   describe("endProposal", function () {
@@ -830,6 +881,153 @@ contract("NFTGuild", function (accounts) {
       await time.increase(time.duration.seconds(30));
       await nftGuild.endProposal(proposalIndex, proposalData);
       assert.equal((await nftGuild.getProposal(proposalId)).state, 4);
+    });
+  });
+
+  describe("Early proposal executions", function () {
+    it("should set votingPowerForInstantProposalExecution correctly", async function () {
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [nftGuild.address],
+              data: [
+                await new web3.eth.Contract(NFTGuild.abi).methods
+                  .setConfig("30", "30", "2", "2", "0", "0", "10")
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          account: accounts[3],
+          ownedTokenId: 3,
+        });
+      await setNFTVotesOnProposal({
+        guild: nftGuild,
+        proposalId: proposalId,
+        option: 1,
+        tokenIds: [3],
+        account: accounts[3],
+      });
+      await time.increase(time.duration.seconds(31));
+      await nftGuild.endProposal(proposalIndex, proposalData);
+
+      const votingPowerForInstantProposalExecution =
+        await nftGuild.votingPowerForInstantProposalExecution();
+      expect(votingPowerForInstantProposalExecution).to.be.bignumber.equal(
+        new BN("2")
+      );
+    });
+
+    it("should not execute a proposal early if early proposal execution conditions are not met", async function () {
+      // Set votingPowerForInstantProposalExecution
+      let { proposalId, proposalIndex, proposalData } = await createNFTProposal(
+        {
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [nftGuild.address],
+              data: [
+                await new web3.eth.Contract(NFTGuild.abi).methods
+                  .setConfig("30", "30", "2", "2", "0", "0", "10")
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          account: accounts[3],
+          ownedTokenId: 3,
+        }
+      );
+      await setNFTVotesOnProposal({
+        guild: nftGuild,
+        proposalId: proposalId,
+        option: 1,
+        tokenIds: [3],
+        account: accounts[3],
+      });
+      await time.increase(time.duration.seconds(31));
+      await nftGuild.endProposal(proposalIndex, proposalData);
+
+      //
+      ({ proposalId, proposalIndex, proposalData } = await createNFTProposal(
+        genericProposal
+      ));
+      await setNFTVotesOnProposal({
+        guild: nftGuild,
+        proposalId: proposalId,
+        option: 1,
+        tokenIds: [3],
+        account: accounts[3],
+      });
+      await setNFTVotesOnProposal({
+        guild: nftGuild,
+        proposalId: proposalId,
+        option: 2,
+        tokenIds: [2],
+        account: accounts[2],
+      });
+
+      await expectRevert(
+        nftGuild.endProposal(proposalIndex, proposalData),
+        "ERC721Guild: Proposal hasn't ended yet"
+      );
+    });
+
+    it("should execute a proposal early if early proposal execution conditions are met", async function () {
+      await allowActionMockA();
+
+      // Set votingPowerForInstantProposalExecution
+      let { proposalId, proposalIndex, proposalData } = await createNFTProposal(
+        {
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [nftGuild.address],
+              data: [
+                await new web3.eth.Contract(NFTGuild.abi).methods
+                  .setConfig("30", "30", "2", "2", "0", "0", "10")
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          account: accounts[3],
+          ownedTokenId: 3,
+        }
+      );
+      await setNFTVotesOnProposal({
+        guild: nftGuild,
+        proposalId: proposalId,
+        option: 1,
+        tokenIds: [3],
+        account: accounts[3],
+      });
+      await time.increase(time.duration.seconds(31));
+      await nftGuild.endProposal(proposalIndex, proposalData);
+
+      //
+      ({ proposalId, proposalIndex, proposalData } = await createNFTProposal(
+        genericProposal
+      ));
+      await setNFTVotesOnProposal({
+        guild: nftGuild,
+        proposalId: proposalId,
+        option: 1,
+        tokenIds: [3],
+        account: accounts[3],
+      });
+      await setNFTVotesOnProposal({
+        guild: nftGuild,
+        proposalId: proposalId,
+        option: 1,
+        tokenIds: [2],
+        account: accounts[2],
+      });
+      await nftGuild.endProposal(proposalIndex, proposalData);
+      const { state } = await nftGuild.getProposal(proposalId);
+      assert.equal(state, constants.GUILD_PROPOSAL_STATES.Executed);
     });
   });
 
@@ -2526,6 +2724,48 @@ contract("NFTGuild", function (accounts) {
         (await nftGuild.getProposalVoteOfTokenId(proposalId, 2)).toNumber(),
         1
       );
+    });
+
+    it("can set a signed vote with multiple token ids", async function () {
+      await guildToken.mint(accounts[1], 10);
+      await guildToken.mint(accounts[1], 11);
+      await guildToken.mint(accounts[1], 100);
+      await guildToken.mint(accounts[1], 101);
+      await guildToken.mint(accounts[1], 102);
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal(genericProposal);
+
+      let signature = await sigEIP712(1, proposalId, 1, [1]);
+      await nftGuild.setSignedVote(proposalId, 1, [1], signature, {
+        from: accounts[3],
+      });
+      signature = await sigEIP712(1, proposalId, 1, [10, 11]);
+      await nftGuild.setSignedVote(proposalId, 1, [10, 11], signature, {
+        from: accounts[3],
+      });
+      signature = await sigEIP712(1, proposalId, 2, [100, 101, 102]);
+      await nftGuild.setSignedVote(proposalId, 2, [100, 101, 102], signature, {
+        from: accounts[3],
+      });
+
+      expect(
+        await nftGuild.getProposalVoteOfTokenId(proposalId, 1)
+      ).to.be.bignumber.equal(new BN("1"));
+      expect(
+        await nftGuild.getProposalVoteOfTokenId(proposalId, 10)
+      ).to.be.bignumber.equal(new BN("1"));
+      expect(
+        await nftGuild.getProposalVoteOfTokenId(proposalId, 11)
+      ).to.be.bignumber.equal(new BN("1"));
+      expect(
+        await nftGuild.getProposalVoteOfTokenId(proposalId, 100)
+      ).to.be.bignumber.equal(new BN("2"));
+      expect(
+        await nftGuild.getProposalVoteOfTokenId(proposalId, 101)
+      ).to.be.bignumber.equal(new BN("2"));
+      expect(
+        await nftGuild.getProposalVoteOfTokenId(proposalId, 102)
+      ).to.be.bignumber.equal(new BN("2"));
     });
 
     it("cannot set a signed vote twice", async function () {
