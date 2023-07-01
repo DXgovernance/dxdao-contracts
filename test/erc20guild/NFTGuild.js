@@ -6,7 +6,6 @@ const {
   signTypedData,
   SignTypedDataVersion,
 } = require("@metamask/eth-sig-util");
-const { fixSignature } = require("../helpers/sign");
 const {
   createAndSetupNFT,
   createNFTProposal,
