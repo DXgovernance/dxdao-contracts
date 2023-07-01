@@ -2,6 +2,7 @@ import * as helpers from "./index";
 const constants = require("./constants");
 const ERC20Mock = artifacts.require("ERC20Mock.sol");
 const ERC721Token = artifacts.require("ERC721Token.sol");
+const Poap = artifacts.require("Poap.sol");
 
 export async function createAndSetupGuildToken(accounts, balances) {
   const [firstAccount, ...restOfAccounts] = accounts;
@@ -33,6 +34,14 @@ export async function createAndSetupNFT(accounts) {
   );
 
   return guildToken;
+}
+
+export async function createAndSetupPoap(eventId, accounts) {
+  const poapToken = await Poap.new();
+
+  await poapToken.mintEventToManyUsers(eventId, accounts);
+
+  return poapToken;
 }
 
 export async function createProposal({

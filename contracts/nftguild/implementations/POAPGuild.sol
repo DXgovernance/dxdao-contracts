@@ -27,10 +27,11 @@ contract POAPGuild is NFTGuildInitializable {
         uint256 _maxGasPrice,
         uint128 _maxActiveProposals,
         address _permissionRegistry,
-        uint256[] calldata eventsIds
+        uint256[] calldata _eventsIds
     ) public virtual initializer {
         require(_proposalTime > 0, "POAPGuild: proposal time has to be more than 0");
         require(_votingPowerForProposalExecution > 0, "POAPGuild: voting power for execution has to be more than 0");
+        require(_eventsIds.length > 0, "POAPGuild: at least 1 event id has to be registered");
         token = IERC721Upgradeable(_token);
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
@@ -41,9 +42,9 @@ contract POAPGuild is NFTGuildInitializable {
         maxActiveProposals = _maxActiveProposals;
         permissionRegistry = PermissionRegistry(_permissionRegistry);
 
-        for (uint256 i = 0; i < eventsIds.length; i++) {
-            isEventRegistered[eventsIds[i]] = true;
-            emit PoapEventStatusChanged(eventsIds[i], true);
+        for (uint256 i = 0; i < _eventsIds.length; i++) {
+            isEventRegistered[_eventsIds[i]] = true;
+            emit PoapEventStatusChanged(_eventsIds[i], true);
         }
 
         setEIP712DomainSeparator();

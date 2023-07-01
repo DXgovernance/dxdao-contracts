@@ -164,7 +164,7 @@ module.exports = {
     overrides: {
       "contracts/erc20guild/implementations/ZodiacERC20Guild.sol": VIAIR_COMPILER_SETUP,
       "contracts/test/TestAvatar.sol": VIAIR_COMPILER_SETUP,
-      "contracts/test/poap.sol": {version: "0.5.17"},
+      "contracts/test/Poap.sol": {version: "0.5.17"},
     }
   },
   gasReporter: {

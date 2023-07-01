@@ -887,264 +887,6 @@ library Roles {
 }
 
 /**
- * @title Roles contract
- * @dev Base contract which allows children to implement role system.
- * - Users can:
- *   # Add event minter if Event Minter or Admin
- *   # Add Admin if Admin
- *   # Check if addr is Admin
- *   # Check if addr is Event Minter for Event ID
- *   # Renounce Admin role
- *   # Renounce Event Minter role
- *   # Remove Event Minter if Admin
- * @author POAP
- * - Developers:
- *   # Agustin Lavarello
- *   # Rodrigo Manuel Navarro Lajous
- *   # Ramiro Gonzales
- **/
-contract PoapRoles is Initializable {
-    using Roles for Roles.Role;
-
-    /**
-     * @dev Emmited when an Admin is added
-     */
-    event AdminAdded(address indexed account);
-
-    /**
-     * @dev Emmited when an Admin is removed
-     */
-    event AdminRemoved(address indexed account);
-
-    /**
-     * @dev Emmited when an Event Minter is added
-     */
-    event EventMinterAdded(uint256 indexed eventId, address indexed account);
-
-    /**
-     * @dev Emmited when an Event Minter is removed
-     */
-    event EventMinterRemoved(uint256 indexed eventId, address indexed account);
-
-    Roles.Role private _admins;
-    mapping(uint256 => Roles.Role) private _minters;
-
-    function initialize(address sender) public initializer {
-        if (!isAdmin(sender)) {
-            _addAdmin(sender);
-        }
-    }
-
-    /**
-     * @dev Modifier to make a function callable only by the Admin.
-     */
-    modifier onlyAdmin() {
-        require(isAdmin(msg.sender), "Sender is not Admin");
-        _;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only by the Event Minter for especific Event Id.
-     * @param eventId ( uint256 ) The Event Id to check.
-     */
-    modifier onlyEventMinter(uint256 eventId) {
-        require(isEventMinter(eventId, msg.sender), "Sender is not Event Minter");
-        _;
-    }
-
-    /**
-     * @dev Checks if address is Admin.
-     * @param account ( address ) The address to be checked.
-     * @return bool representing if the adddress is admin.
-     */
-    function isAdmin(address account) public view returns (bool) {
-        return _admins.has(account);
-    }
-
-    /**
-     * @dev Checks if address is Event Minter for especific Event.
-     * @param eventId ( uint256 ) The Event ID to check.
-     * @param account ( address ) The address to be checked.
-     * @return bool representing if the adddress is Event Minter.
-     */
-    function isEventMinter(uint256 eventId, address account) public view returns (bool) {
-        return isAdmin(account) || _minters[eventId].has(account);
-    }
-
-    /**
-     * @dev Function to add an Event Minter for especefic Event ID
-     * Requires
-     * - The msg sender to be the admin or Event Minter for the especific Event ID
-     * @param eventId ( uint256 ) The ID of the Event.
-     * @param account ( address ) The Address that will be granted permissions on the Event.
-     */
-    function addEventMinter(uint256 eventId, address account) public onlyEventMinter(eventId) {
-        _addEventMinter(eventId, account);
-    }
-
-    /**
-     * @dev Function to add an Admin.
-     * Requires
-     * - The msg sender to be the admin.
-     * @param account ( address ) The Address that will be granted permissions as Admin.
-     */
-    function addAdmin(address account) public onlyAdmin {
-        _addAdmin(account);
-    }
-
-    /**
-     * @dev Function renounce as Event Minter for especefic Event ID
-     * Requires
-     * - The msg sender to be an Event Minter for the especific Event ID
-     * @param eventId ( uint256 ) The ID of the Event.
-     */
-    function renounceEventMinter(uint256 eventId) public {
-        _removeEventMinter(eventId, msg.sender);
-    }
-
-    /**
-     * @dev Function renounce as Admin
-     * Requires
-     * - The msg sender to be an Admin
-     */
-    function renounceAdmin() public {
-        _removeAdmin(msg.sender);
-    }
-
-    /**
-     * @dev Function remove Event Minter for especif Event ID
-     * Requires
-     * - The msg sender to be an Admin
-     * @param eventId ( uint256 ) The ID of the Event.
-     * @param account ( address ) The Address that will be removed permissions as Event Minter for especific ID.
-     */
-    function removeEventMinter(uint256 eventId, address account) public onlyAdmin {
-        _removeEventMinter(eventId, account);
-    }
-
-    /**
-     * @dev Internal function to add Event Minter
-     * @param eventId ( uint256 ) The ID of the Event.
-     * @param account ( address ) The Address that will be granted permissions on the Event.
-     */
-    function _addEventMinter(uint256 eventId, address account) internal {
-        _minters[eventId].add(account);
-        emit EventMinterAdded(eventId, account);
-    }
-
-    /**
-     * @dev Internal function to add Admin
-     * @param account ( address ) The Address that will be granted permissions as Admin.
-     */
-    function _addAdmin(address account) internal {
-        _admins.add(account);
-        emit AdminAdded(account);
-    }
-
-    /**
-     * @dev Internal function to remove Event Minter for especif Event ID
-     * @param eventId ( uint256 ) The ID of the Event.
-     * @param account ( address ) The Address that will be removed permissions as Event Minter for especific ID.
-     */
-    function _removeEventMinter(uint256 eventId, address account) internal {
-        _minters[eventId].remove(account);
-        emit EventMinterRemoved(eventId, account);
-    }
-
-    /**
-     * @dev Internal function to remove an Admin
-     * @param account ( address ) The Address that will be removed permissions as Admin.
-     */
-    function _removeAdmin(address account) internal {
-        _admins.remove(account);
-        emit AdminRemoved(account);
-    }
-
-    // For future extensions
-    uint256[50] private ______gap;
-}
-
-/**
- * @title Pausable contract
- * @dev Base contract which allows children to implement an emergency stop mechanism.
- * - Users can:
- *   # Pause contract if admin
- *   # Unpause contract if admin
- * @author POAP
- * - Developers:
- *   # Agustin Lavarello
- *   # Rodrigo Manuel Navarro Lajous
- *   # Ramiro Gonzales
- **/
-contract PoapPausable is Initializable, PoapRoles {
-    /**
-     * @dev Emmited when contract is paused
-     */
-    event Paused(address account);
-
-    /**
-     * @dev Emmited when contract is unpaused
-     */
-    event Unpaused(address account);
-
-    // Boolean to save if contract is paused
-    bool private _paused;
-
-    function initialize() public initializer {
-        _paused = false;
-    }
-
-    /**
-     * @dev Get if contract is paused
-     * @return ( bool ) If contract is paused
-     */
-    function paused() public view returns (bool) {
-        return _paused;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only when the contract is not paused.
-     */
-    modifier whenNotPaused() {
-        require(!_paused, "Contract is Paused");
-        _;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only when the contract is paused.
-     */
-    modifier whenPaused() {
-        require(_paused, "Contract is not Paused");
-        _;
-    }
-
-    /**
-     * @dev Called by the owner to pause, triggers stopped state.
-     * Requires
-     * - The msg sender to be the admin
-     * - The contract does not have to be paused
-     */
-    function pause() public onlyAdmin whenNotPaused {
-        _paused = true;
-        emit Paused(msg.sender);
-    }
-
-    /**
-     * @dev Called by the owner to pause, triggers unstopped state.
-     * Requires
-     * - The msg sender to be the admin
-     * - The contract does not have to be paused
-     */
-    function unpause() public onlyAdmin whenPaused {
-        _paused = false;
-        emit Unpaused(msg.sender);
-    }
-
-    // For future extensions
-    uint256[50] private ______gap;
-}
-
-/**
  * @title POAP contract in xDai
  * @dev Main point of interaction with POAP
  * - Users can:
@@ -1163,7 +905,7 @@ contract PoapPausable is Initializable, PoapRoles {
  *   # Rodrigo Manuel Navarro Lajous
  *   # Ramiro Gonzales
  **/
-contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausable {
+contract Poap is Initializable, ERC721, ERC721Enumerable {
     /**
      * @dev Emmited when token is created
      */
@@ -1259,7 +1001,7 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
      * - The contract does not have to be paused
      * @param baseURI ( string ) The base URI to change
      */
-    function setBaseURI(string memory baseURI) public onlyAdmin whenNotPaused {
+    function setBaseURI(string memory baseURI) public {
         _baseURI = baseURI;
     }
 
@@ -1270,7 +1012,7 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
      * - The contract does not have to be paused
      * @param newLastId ( uint256 ) The new Last Id
      */
-    function setLastId(uint256 newLastId) public onlyAdmin whenNotPaused {
+    function setLastId(uint256 newLastId) public  {
         require(lastId < newLastId, "New Id has to be higher");
         lastId = newLastId;
     }
@@ -1284,7 +1026,7 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
      * @param to ( address ) The addres to be approved for the given token ID
      * @param tokenId ( uint256 ) ID of the token to be approved
      */
-    function approve(address to, uint256 tokenId) public whenNotPaused {
+    function approve(address to, uint256 tokenId) public {
         super.approve(to, tokenId);
     }
 
@@ -1297,7 +1039,7 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
      * @param to ( address ) The address of the operator to set the approval
      * @param approved ( bool ) Represents the status of the approval to be set
      */
-    function setApprovalForAll(address to, bool approved) public whenNotPaused {
+    function setApprovalForAll(address to, bool approved) public {
         super.setApprovalForAll(to, approved);
     }
 
@@ -1316,7 +1058,7 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
         address from,
         address to,
         uint256 tokenId
-    ) public whenNotPaused whenNotFrozen(tokenId) {
+    ) public {
         super.transferFrom(from, to, tokenId);
     }
 
@@ -1335,7 +1077,7 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
         address from,
         address to,
         uint256 tokenId
-    ) public whenNotPaused whenNotFrozen(tokenId) {
+    ) public {
         super.safeTransferFrom(from, to, tokenId);
     }
 
@@ -1356,7 +1098,7 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
         address to,
         uint256 tokenId,
         bytes memory _data
-    ) public whenNotPaused whenNotFrozen(tokenId) {
+    ) public {
         super.safeTransferFrom(from, to, tokenId, _data);
     }
 
@@ -1369,7 +1111,7 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
      * @param to ( address ) The address that will receive the minted tokens.
      * @return A boolean that indicates if the operation was successful.
      */
-    function mintToken(uint256 eventId, address to) public whenNotPaused onlyEventMinter(eventId) returns (bool) {
+    function mintToken(uint256 eventId, address to) public returns (bool) {
         // Updates Last Id first to not overlap
         lastId += 1;
         return _mintToken(eventId, lastId, to);
@@ -1386,8 +1128,7 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
      */
     function mintEventToManyUsers(uint256 eventId, address[] memory to)
         public
-        whenNotPaused
-        onlyEventMinter(eventId)
+        
         returns (bool)
     {
         // First mint all tokens
@@ -1408,7 +1149,7 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
      * @param to ( address ) The address that will receive the minted tokens.
      * @return A boolean that indicates if the operation was successful.
      */
-    function mintUserToManyEvents(uint256[] memory eventIds, address to) public whenNotPaused onlyAdmin returns (bool) {
+    function mintUserToManyEvents(uint256[] memory eventIds, address to) public returns (bool) {
         // First mint all tokens
         for (uint256 i = 0; i < eventIds.length; ++i) {
             _mintToken(eventIds[i], lastId + 1 + i, to);
@@ -1425,25 +1166,17 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
      * @param tokenId ( uint256 ) Id of the ERC721 token to be burned.
      */
     function burn(uint256 tokenId) public {
-        require(_isApprovedOrOwner(msg.sender, tokenId) || isAdmin(msg.sender), "Sender doesn't have permission");
+        require(_isApprovedOrOwner(msg.sender, tokenId), "Sender doesn't have permission");
         _burn(tokenId);
     }
 
     function initialize(
         string memory __name,
         string memory __symbol,
-        string memory __baseURI,
-        address[] memory admins
+        string memory __baseURI
     ) public initializer {
         ERC721.initialize();
         ERC721Enumerable.initialize();
-        PoapRoles.initialize(msg.sender);
-        PoapPausable.initialize();
-
-        // Add the requested admins
-        for (uint256 i = 0; i < admins.length; ++i) {
-            _addAdmin(admins[i]);
-        }
 
         _name = __name;
         _symbol = __symbol;
@@ -1588,7 +1321,7 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
      * - The contract does not have to be paused
      * @param time ( uint256 ) Time that the token will be frozen.
      */
-    function setFreezeDuration(uint256 time) public onlyAdmin whenNotPaused {
+    function setFreezeDuration(uint256 time) public {
         freezeDuration = time * 1 seconds;
     }
 
@@ -1600,8 +1333,8 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
      * - The token does not have to be frozen
      * @param tokenId ( uint256 ) Id of the ERC721 token to be frozen.
      */
-    function freeze(uint256 tokenId) public whenNotPaused whenNotFrozen(tokenId) {
-        require(_isApprovedOrOwner(msg.sender, tokenId) || isAdmin(msg.sender), "Sender doesn't have permission");
+    function freeze(uint256 tokenId) public {
+        require(_isApprovedOrOwner(msg.sender, tokenId), "Sender doesn't have permission");
         _freeze(tokenId);
     }
 
@@ -1613,7 +1346,7 @@ contract XPoap is Initializable, ERC721, ERC721Enumerable, PoapRoles, PoapPausab
      * - The token must be frozen
      * @param tokenId ( uint256 ) Id of the ERC721 token to be unfrozen.
      */
-    function unfreeze(uint256 tokenId) public onlyAdmin whenNotPaused whenFrozen(tokenId) {
+    function unfreeze(uint256 tokenId) public {
         _unfreeze(tokenId);
     }
 
