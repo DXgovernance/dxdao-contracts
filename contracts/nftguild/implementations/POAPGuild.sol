@@ -50,14 +50,17 @@ contract POAPGuild is NFTGuildInitializable {
         setEIP712DomainSeparator();
     }
 
-    // @dev Register events to include tokens for voting
+    // @dev Register poap events to include tokens for voting
+    // @param eventId poap event ID
     function registerEvent(uint256 eventId) external virtual {
         require(msg.sender == address(this), "POAPGuild: Only callable by the guild itself");
         isEventRegistered[eventId] = true;
         emit PoapEventStatusChanged(eventId, true);
     }
 
-    // @dev Remove events to include tokens for voting
+    // @dev Remove poap events to exclude tokens for voting.
+    // @dev Beware that the guild gets locked forever if all events are removed, as no one would be able to vote.
+    // @param eventId poap event ID
     function removeEvent(uint256 eventId) external virtual {
         require(msg.sender == address(this), "POAPGuild: Only callable by the guild itself");
         isEventRegistered[eventId] = false;

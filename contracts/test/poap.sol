@@ -1012,7 +1012,7 @@ contract Poap is Initializable, ERC721, ERC721Enumerable {
      * - The contract does not have to be paused
      * @param newLastId ( uint256 ) The new Last Id
      */
-    function setLastId(uint256 newLastId) public  {
+    function setLastId(uint256 newLastId) public {
         require(lastId < newLastId, "New Id has to be higher");
         lastId = newLastId;
     }
@@ -1126,11 +1126,7 @@ contract Poap is Initializable, ERC721, ERC721Enumerable {
      * @param to ( array of address ) The addresses that will receive the minted tokens.
      * @return A boolean that indicates if the operation was successful.
      */
-    function mintEventToManyUsers(uint256 eventId, address[] memory to)
-        public
-        
-        returns (bool)
-    {
+    function mintEventToManyUsers(uint256 eventId, address[] memory to) public returns (bool) {
         // First mint all tokens
         for (uint256 i = 0; i < to.length; ++i) {
             _mintToken(eventId, lastId + 1 + i, to[i]);

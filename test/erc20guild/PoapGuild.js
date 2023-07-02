@@ -671,14 +671,14 @@ contract("NFTGuild", function (accounts) {
         guild: nftGuild,
         proposalId: proposalId,
         option: 1,
-        tokenIds: [lastTokenId+1, lastTokenId+2],
+        tokenIds: [lastTokenId + 1, lastTokenId + 2],
         account: accounts[1],
       });
       await setNFTVotesOnProposal({
         guild: nftGuild,
         proposalId: proposalId,
         option: 2,
-        tokenIds: [lastTokenId+3, lastTokenId+4, lastTokenId+5],
+        tokenIds: [lastTokenId + 3, lastTokenId + 4, lastTokenId + 5],
         account: accounts[1],
       });
 
@@ -686,20 +686,94 @@ contract("NFTGuild", function (accounts) {
         await nftGuild.getProposalVoteOfTokenId(proposalId, 1)
       ).to.be.bignumber.equal(new BN("1"));
       expect(
-        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId+1)
+        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId + 1)
       ).to.be.bignumber.equal(new BN("1"));
       expect(
-        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId+2)
+        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId + 2)
       ).to.be.bignumber.equal(new BN("1"));
       expect(
-        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId+3)
+        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId + 3)
       ).to.be.bignumber.equal(new BN("2"));
       expect(
-        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId+4)
+        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId + 4)
       ).to.be.bignumber.equal(new BN("2"));
       expect(
-        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId+5)
+        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId + 5)
       ).to.be.bignumber.equal(new BN("2"));
+    });
+  });
+
+  describe("Poap Events", function () {
+    it("cannot register not remove events without a proposal", async function () {
+      await expectRevert(
+        nftGuild.registerEvent(999),
+        "POAPGuild: Only callable by the guild itself"
+      );
+
+      await expectRevert(
+        nftGuild.removeEvent(123),
+        "POAPGuild: Only callable by the guild itself"
+      );
+    });
+
+    it("can register event with proposal", async function () {
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [nftGuild.address],
+              data: [
+                await new web3.eth.Contract(NFTGuild.abi).methods
+                  .registerEvent("999")
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          account: accounts[3],
+          ownedTokenId: 3,
+        });
+      await setNFTVotesOnProposal({
+        guild: nftGuild,
+        proposalId: proposalId,
+        option: 1,
+        tokenIds: [3],
+        account: accounts[3],
+      });
+      await time.increase(time.duration.seconds(31));
+      await nftGuild.endProposal(proposalIndex, proposalData);
+      assert.equal(await nftGuild.isEventRegistered(999), true);
+    });
+
+    it("can remove event with proposal", async function () {
+      const { proposalId, proposalIndex, proposalData } =
+        await createNFTProposal({
+          nftGuild: nftGuild,
+          options: [
+            {
+              to: [nftGuild.address],
+              data: [
+                await new web3.eth.Contract(NFTGuild.abi).methods
+                  .removeEvent(EVENT_ID)
+                  .encodeABI(),
+              ],
+              value: [0],
+            },
+          ],
+          account: accounts[3],
+          ownedTokenId: 3,
+        });
+      await setNFTVotesOnProposal({
+        guild: nftGuild,
+        proposalId: proposalId,
+        option: 1,
+        tokenIds: [3],
+        account: accounts[3],
+      });
+      await time.increase(time.duration.seconds(31));
+      await nftGuild.endProposal(proposalIndex, proposalData);
+      assert.equal(await nftGuild.isEventRegistered(EVENT_ID), false);
     });
   });
 
@@ -1575,32 +1649,51 @@ contract("NFTGuild", function (accounts) {
       await nftGuild.setSignedVote(proposalId, 1, [1], signature, {
         from: accounts[3],
       });
-      signature = await sigEIP712(1, proposalId, 1, [lastTokenId+1, lastTokenId+2]);
-      await nftGuild.setSignedVote(proposalId, 1, [lastTokenId+1, lastTokenId+2], signature, {
-        from: accounts[3],
-      });
-      signature = await sigEIP712(1, proposalId, 2, [lastTokenId+3, lastTokenId+4, lastTokenId+5]);
-      await nftGuild.setSignedVote(proposalId, 2, [lastTokenId+3, lastTokenId+4, lastTokenId+5], signature, {
-        from: accounts[3],
-      });
+      signature = await sigEIP712(1, proposalId, 1, [
+        lastTokenId + 1,
+        lastTokenId + 2,
+      ]);
+      await nftGuild.setSignedVote(
+        proposalId,
+        1,
+        [lastTokenId + 1, lastTokenId + 2],
+        signature,
+        {
+          from: accounts[3],
+        }
+      );
+      signature = await sigEIP712(1, proposalId, 2, [
+        lastTokenId + 3,
+        lastTokenId + 4,
+        lastTokenId + 5,
+      ]);
+      await nftGuild.setSignedVote(
+        proposalId,
+        2,
+        [lastTokenId + 3, lastTokenId + 4, lastTokenId + 5],
+        signature,
+        {
+          from: accounts[3],
+        }
+      );
 
       expect(
         await nftGuild.getProposalVoteOfTokenId(proposalId, 1)
       ).to.be.bignumber.equal(new BN("1"));
       expect(
-        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId+1)
+        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId + 1)
       ).to.be.bignumber.equal(new BN("1"));
       expect(
-        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId+2)
+        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId + 2)
       ).to.be.bignumber.equal(new BN("1"));
       expect(
-        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId+3)
+        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId + 3)
       ).to.be.bignumber.equal(new BN("2"));
       expect(
-        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId+4)
+        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId + 4)
       ).to.be.bignumber.equal(new BN("2"));
       expect(
-        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId+5)
+        await nftGuild.getProposalVoteOfTokenId(proposalId, lastTokenId + 5)
       ).to.be.bignumber.equal(new BN("2"));
     });
 
