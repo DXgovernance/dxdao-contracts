@@ -285,11 +285,13 @@ contract BaseNFTGuild {
         emit VoteAdded(proposalId, option, msg.sender, tokenIds);
 
         if (voteGas > 0) {
-            uint256 gasRefund = voteGas * tx.gasprice.min(maxGasPrice);
+            uint256 gasRefund = voteGas * tx.gasprice.min(maxGasPrice) * tokenIds.length;
 
             if (address(this).balance >= gasRefund) {
                 (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
-                require(success, "ERC721Guild: Failed to refund gas");
+                // It's the user's responsibility to accept the refund. 
+                // success is not checked in order to prioritize voting over refunding.
+                // require(success, "ERC721Guild: Failed to refund gas");
             }
         }
     }
