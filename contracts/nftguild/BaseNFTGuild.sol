@@ -289,7 +289,7 @@ contract BaseNFTGuild {
 
             if (address(this).balance >= gasRefund) {
                 (bool success, ) = payable(msg.sender).call{value: gasRefund}("");
-                // It's the user's responsibility to accept the refund. 
+                // It's the user's responsibility to accept the refund.
                 // success is not checked in order to prioritize voting over refunding.
                 // require(success, "ERC721Guild: Failed to refund gas");
             }
