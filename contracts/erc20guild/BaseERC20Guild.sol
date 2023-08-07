@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "../utils/PermissionRegistry.sol";
 import "../utils/TokenVault.sol";
 
@@ -40,7 +39,6 @@ import "../utils/TokenVault.sol";
 contract BaseERC20Guild {
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
-    using AddressUpgradeable for address;
 
     // This configuration value is defined as constant to be protected against a malicious proposal
     // changing it.
