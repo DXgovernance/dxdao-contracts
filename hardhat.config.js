@@ -29,6 +29,17 @@ const moment = require("moment");
 const MNEMONIC_KEY =
   "cream core pear sure dinner indoor citizen divorce sudden captain subject remember";
 
+const VIAIR_COMPILER_SETUP = {
+  version: "0.8.17",
+  settings: {
+    viaIR: true,
+    optimizer: {
+      enabled: true,
+      runs: 200,
+    },
+  },
+};
+
 // # Accounts
 // # ========
 // # Account #0: 0x9578e973bba0cc33bdbc93c7f77bb3fe6d47d68a (10000 ETH)
@@ -150,6 +161,11 @@ module.exports = {
         },
       },
     ],
+    overrides: {
+      "contracts/erc20guild/implementations/ZodiacERC20Guild.sol": VIAIR_COMPILER_SETUP,
+      "contracts/test/TestAvatar.sol": VIAIR_COMPILER_SETUP,
+      "contracts/test/Poap.sol": {version: "0.5.17"},
+    }
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS ? true : false,

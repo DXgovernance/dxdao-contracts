@@ -43,6 +43,8 @@ contract ERC20GuildUpgradeable is BaseERC20Guild, Initializable {
     /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal action
     // solhint-disable-next-line max-line-length
     /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // solhint-disable-next-line max-line-length
+    /// @param _votingPowerPercentageForInstantProposalExecution The percentage of voting power in base 10000 needed to execute a proposal option without  waiting for the proposal time to end. If set to 0, the feature is disabled.
     /// @param _name The name of the ERC20Guild
     /// @param _voteGas The amount of gas in wei unit used for vote refunds
     /// @param _maxGasPrice The maximum gas price used for vote refunds
@@ -55,6 +57,7 @@ contract ERC20GuildUpgradeable is BaseERC20Guild, Initializable {
         uint256 _timeForExecution,
         uint256 _votingPowerPercentageForProposalExecution,
         uint256 _votingPowerPercentageForProposalCreation,
+        uint256 _votingPowerPercentageForInstantProposalExecution,
         string memory _name,
         uint256 _voteGas,
         uint256 _maxGasPrice,
@@ -69,6 +72,15 @@ contract ERC20GuildUpgradeable is BaseERC20Guild, Initializable {
             _votingPowerPercentageForProposalExecution > 0,
             "ERC20Guild: voting power for execution has to be more than 0"
         );
+        require(
+            _votingPowerPercentageForInstantProposalExecution <= BASIS_POINT_MULTIPLIER,
+            "ERC20Guild: invalid votingPowerPercentageForInstantProposalExecution value"
+        );
+        require(
+            _votingPowerPercentageForInstantProposalExecution == 0 ||
+                _votingPowerPercentageForInstantProposalExecution >= BASIS_POINT_MULTIPLIER / 2,
+            "ERC20Guild: invalid votingPowerPercentageForInstantProposalExecution value"
+        );
         name = _name;
         token = IERC20Upgradeable(_token);
         tokenVault = new TokenVault(address(token), address(this));
@@ -76,6 +88,7 @@ contract ERC20GuildUpgradeable is BaseERC20Guild, Initializable {
         timeForExecution = _timeForExecution;
         votingPowerPercentageForProposalExecution = _votingPowerPercentageForProposalExecution;
         votingPowerPercentageForProposalCreation = _votingPowerPercentageForProposalCreation;
+        votingPowerPercentageForInstantProposalExecution = _votingPowerPercentageForInstantProposalExecution;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;

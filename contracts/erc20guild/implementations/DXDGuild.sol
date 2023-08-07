@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import "../ERC20GuildUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 /*
   @title DXDGuild
@@ -11,8 +10,6 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
   @dev An ERC20GuildUpgradeable for the DXD token designed to execute votes on Genesis Protocol Voting Machine.
 */
 contract DXDGuild is ERC20GuildUpgradeable, OwnableUpgradeable {
-    using SafeMathUpgradeable for uint256;
-
     /// @dev Initilizer
     /// @param _token The ERC20 token that will be used as source of voting power
     /// @param _proposalTime The amount of time in seconds that a proposal will be active for voting
@@ -21,6 +18,8 @@ contract DXDGuild is ERC20GuildUpgradeable, OwnableUpgradeable {
     /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal action
     // solhint-disable-next-line max-line-length
     /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // solhint-disable-next-line max-line-length
+    /// @param _votingPowerPercentageForInstantProposalExecution The percentage of voting power in base 10000 needed to execute a proposal option without  waiting for the proposal time to end. If set to 0, the feature is disabled.
     /// @param _voteGas The amount of gas in wei unit used for vote refunds
     /// @param _maxGasPrice The maximum gas price used for vote refunds
     /// @param _maxActiveProposals The maximum amount of proposals to be active at the same time
@@ -33,6 +32,7 @@ contract DXDGuild is ERC20GuildUpgradeable, OwnableUpgradeable {
         uint256 _timeForExecution,
         uint256 _votingPowerPercentageForProposalExecution,
         uint256 _votingPowerPercentageForProposalCreation,
+        uint256 _votingPowerPercentageForInstantProposalExecution,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
@@ -47,6 +47,7 @@ contract DXDGuild is ERC20GuildUpgradeable, OwnableUpgradeable {
             _timeForExecution,
             _votingPowerPercentageForProposalExecution,
             _votingPowerPercentageForProposalCreation,
+            _votingPowerPercentageForInstantProposalExecution,
             "DXDGuild",
             _voteGas,
             _maxGasPrice,

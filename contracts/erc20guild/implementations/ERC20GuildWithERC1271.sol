@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
 import "../ERC20GuildUpgradeable.sol";
@@ -13,7 +12,6 @@ import "../ERC20GuildUpgradeable.sol";
     the signature to be verified with and extra signature of any account with voting power.
 */
 contract ERC20GuildWithERC1271 is ERC20GuildUpgradeable, IERC1271Upgradeable {
-    using SafeMathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
 
     // The EIP1271 hashes that were signed by the ERC20Guild

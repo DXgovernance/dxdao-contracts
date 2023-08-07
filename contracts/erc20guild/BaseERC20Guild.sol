@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC1271Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "../utils/PermissionRegistry.sol";
 import "../utils/TokenVault.sol";
 
@@ -40,11 +39,12 @@ import "../utils/TokenVault.sol";
 contract BaseERC20Guild {
     using MathUpgradeable for uint256;
     using ECDSAUpgradeable for bytes32;
-    using AddressUpgradeable for address;
 
     // This configuration value is defined as constant to be protected against a malicious proposal
     // changing it.
     uint8 public constant MAX_OPTIONS_PER_PROPOSAL = 10;
+
+    uint256 public constant BASIS_POINT_MULTIPLIER = 10_000;
 
     enum ProposalState {
         None,
@@ -90,7 +90,7 @@ contract BaseERC20Guild {
     uint256 public totalProposals;
 
     // The total amount of members that have voting power
-    uint256 totalMembers;
+    uint256 public totalMembers;
 
     // The amount of active proposals
     uint256 public activeProposalsNow;
@@ -149,12 +149,20 @@ contract BaseERC20Guild {
     // Array to keep track of the proposals ids in contract storage
     bytes32[] public proposalsIds;
 
+    // Is set to true while a proposal is being executed and thus protects the contract from reentrancy.
+    bool internal isExecutingProposal;
+
+    // If 0, approved proposals have to wait till the proposal time has passed to be executed.
+    // If >0, proposals can be executed once they get +minVotesForExecution of votes.
+    uint256 public votingPowerPercentageForInstantProposalExecution;
+
+    // BaseERC20Guild is upgrade compatible. If new variables are added in an upgrade, make sure to update __gap.
+    uint256[50] private __gap;
+
     event ProposalStateChanged(bytes32 indexed proposalId, uint256 newState);
     event VoteAdded(bytes32 indexed proposalId, uint256 indexed option, address voter, uint256 votingPower);
     event TokensLocked(address voter, uint256 value);
     event TokensWithdrawn(address voter, uint256 value);
-
-    bool internal isExecutingProposal;
 
     fallback() external payable {}
 
@@ -165,6 +173,8 @@ contract BaseERC20Guild {
     /// @param _votingPowerPercentageForProposalExecution The percentage of voting power in base 10000 needed to execute a proposal option
     // solhint-disable-next-line max-line-length
     /// @param _votingPowerPercentageForProposalCreation The percentage of voting power in base 10000 needed to create a proposal
+    // solhint-disable-next-line max-line-length
+    /// @param _votingPowerPercentageForInstantProposalExecution The percentage of voting power in base 10000 needed to execute a proposal option without  waiting for the proposal time to end. If set to 0, the feature is disabled.
     /// @param _voteGas The amount of gas in wei unit used for vote refunds.
     // Can't be higher than the gas used by setVote (117000)
     /// @param _maxGasPrice The maximum gas price used for vote refunds
@@ -175,6 +185,7 @@ contract BaseERC20Guild {
         uint256 _timeForExecution,
         uint256 _votingPowerPercentageForProposalExecution,
         uint256 _votingPowerPercentageForProposalCreation,
+        uint256 _votingPowerPercentageForInstantProposalExecution,
         uint256 _voteGas,
         uint256 _maxGasPrice,
         uint256 _maxActiveProposals,
@@ -189,11 +200,21 @@ contract BaseERC20Guild {
             _votingPowerPercentageForProposalExecution > 0,
             "ERC20Guild: voting power for execution has to be more than 0"
         );
+        require(
+            _votingPowerPercentageForInstantProposalExecution <= BASIS_POINT_MULTIPLIER,
+            "ERC20Guild: invalid votingPowerPercentageForInstantProposalExecution value"
+        );
+        require(
+            _votingPowerPercentageForInstantProposalExecution == 0 ||
+                _votingPowerPercentageForInstantProposalExecution >= BASIS_POINT_MULTIPLIER / 2,
+            "ERC20Guild: invalid votingPowerPercentageForInstantProposalExecution value"
+        );
         require(_voteGas <= 117000, "ERC20Guild: vote gas has to be equal or lower than 117000");
         proposalTime = _proposalTime;
         timeForExecution = _timeForExecution;
         votingPowerPercentageForProposalExecution = _votingPowerPercentageForProposalExecution;
         votingPowerPercentageForProposalCreation = _votingPowerPercentageForProposalCreation;
+        votingPowerPercentageForInstantProposalExecution = _votingPowerPercentageForInstantProposalExecution;
         voteGas = _voteGas;
         maxGasPrice = _maxGasPrice;
         maxActiveProposals = _maxActiveProposals;
@@ -266,67 +287,40 @@ contract BaseERC20Guild {
     /// @dev Executes a proposal that is not votable anymore and can be finished
     /// @param proposalId The id of the proposal to be executed
     function endProposal(bytes32 proposalId) public virtual {
-        require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
-        require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
-        require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
+        (uint256 winningOption, uint256 highestVoteAmount) = getWinningOption(proposalId);
+        checkProposalExecutionState(proposalId, highestVoteAmount);
 
-        uint256 winningOption = 0;
-        uint256 highestVoteAmount = proposals[proposalId].totalVotes[0];
-        uint256 i = 1;
-        for (i = 1; i < proposals[proposalId].totalVotes.length; i++) {
-            if (
-                proposals[proposalId].totalVotes[i] >= getVotingPowerForProposalExecution() &&
-                proposals[proposalId].totalVotes[i] >= highestVoteAmount
-            ) {
-                if (proposals[proposalId].totalVotes[i] == highestVoteAmount) {
-                    winningOption = 0;
-                } else {
-                    winningOption = i;
-                    highestVoteAmount = proposals[proposalId].totalVotes[i];
-                }
-            }
-        }
-
+        Proposal storage proposal = proposals[proposalId];
         if (winningOption == 0) {
-            proposals[proposalId].state = ProposalState.Rejected;
+            proposal.state = ProposalState.Rejected;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Rejected));
-        } else if (proposals[proposalId].endTime + timeForExecution < block.timestamp) {
-            proposals[proposalId].state = ProposalState.Failed;
+        } else if (proposal.endTime + timeForExecution < block.timestamp) {
+            proposal.state = ProposalState.Failed;
             emit ProposalStateChanged(proposalId, uint256(ProposalState.Failed));
         } else {
-            proposals[proposalId].state = ProposalState.Executed;
+            proposal.state = ProposalState.Executed;
 
-            uint256 callsPerOption = proposals[proposalId].to.length / (proposals[proposalId].totalVotes.length - 1);
-            i = callsPerOption * (winningOption - 1);
+            uint256 callsPerOption = proposal.to.length / (proposal.totalVotes.length - 1);
+            uint256 i = callsPerOption * (winningOption - 1);
             uint256 endCall = i + callsPerOption;
 
             permissionRegistry.setERC20Balances();
 
             for (i; i < endCall; i++) {
-                if (proposals[proposalId].to[i] != address(0) && proposals[proposalId].data[i].length > 0) {
-                    bytes memory _data = proposals[proposalId].data[i];
-                    bytes4 callDataFuncSignature;
-                    assembly {
-                        callDataFuncSignature := mload(add(_data, 32))
-                    }
+                if (proposal.to[i] != address(0) && proposal.data[i].length > 0) {
+                    bytes4 callDataFuncSignature = getFunctionSignature(proposal.data[i]);
                     // The permission registry keeps track of all value transferred and checks call permission
-                    try
-                        permissionRegistry.setETHPermissionUsed(
-                            address(this),
-                            proposals[proposalId].to[i],
-                            bytes4(callDataFuncSignature),
-                            proposals[proposalId].value[i]
-                        )
-                    {} catch Error(string memory reason) {
-                        revert(reason);
-                    }
+                    permissionRegistry.setETHPermissionUsed(
+                        address(this),
+                        proposal.to[i],
+                        callDataFuncSignature,
+                        proposal.value[i]
+                    );
 
                     isExecutingProposal = true;
                     // We use isExecutingProposal variable to avoid re-entrancy in proposal execution
                     // slither-disable-next-line all
-                    (bool success, ) = proposals[proposalId].to[i].call{value: proposals[proposalId].value[i]}(
-                        proposals[proposalId].data[i]
-                    );
+                    (bool success, ) = proposal.to[i].call{value: proposal.value[i]}(proposal.data[i]);
                     require(success, "ERC20Guild: Proposal call failed");
                     isExecutingProposal = false;
                 }
@@ -436,7 +430,7 @@ contract BaseERC20Guild {
         bytes32 proposalId,
         uint256 option,
         uint256 votingPower
-    ) internal {
+    ) internal virtual {
         proposals[proposalId].totalVotes[option] =
             proposals[proposalId].totalVotes[option] -
             proposalVotes[proposalId][voter].votingPower +
@@ -462,10 +456,79 @@ contract BaseERC20Guild {
         }
     }
 
+    /// @dev Reverts if proposal cannot be executed
+    /// @param proposalId The id of the proposal to evaluate
+    /// @param highestVoteAmount The amounts of votes received by the currently winning proposal option.
+    function checkProposalExecutionState(bytes32 proposalId, uint256 highestVoteAmount) internal view virtual {
+        require(!isExecutingProposal, "ERC20Guild: Proposal under execution");
+        require(proposals[proposalId].state == ProposalState.Active, "ERC20Guild: Proposal already executed");
+
+        uint256 approvalRate = (highestVoteAmount * BASIS_POINT_MULTIPLIER) / token.totalSupply();
+        if (
+            votingPowerPercentageForInstantProposalExecution == 0 ||
+            approvalRate < votingPowerPercentageForInstantProposalExecution
+        ) {
+            require(proposals[proposalId].endTime < block.timestamp, "ERC20Guild: Proposal hasn't ended yet");
+        }
+    }
+
+    /// @dev Gets the current winning option for a given proposal.
+    /// @param proposalId The id of the proposal to evaluate
+    /// @param highestVoteAmount The amounts of votes received by the currently winning proposal option.
+    function getWinningOption(bytes32 proposalId)
+        internal
+        view
+        virtual
+        returns (uint256 winningOption, uint256 highestVoteAmount)
+    {
+        Proposal storage proposal = proposals[proposalId];
+        highestVoteAmount = proposal.totalVotes[0];
+        uint256 votingPowerForProposalExecution = getVotingPowerForProposalExecution();
+        uint256 totalOptions = proposal.totalVotes.length;
+        for (uint256 i = 1; i < totalOptions; i++) {
+            uint256 totalVotesOptionI = proposal.totalVotes[i];
+            if (totalVotesOptionI >= votingPowerForProposalExecution && totalVotesOptionI >= highestVoteAmount) {
+                if (totalVotesOptionI == highestVoteAmount) {
+                    winningOption = 0;
+                } else {
+                    winningOption = i;
+                    highestVoteAmount = totalVotesOptionI;
+                }
+            }
+        }
+    }
+
+    /// @dev Gets function signature of the data bytes meant to be used in a proposal call.
+    /// @param data Bytes array containing the calldata (function signature followed by data).
+    function getFunctionSignature(bytes storage data) internal view returns (bytes4 callDataFuncSignature) {
+        uint8 lengthBit;
+        assembly {
+            lengthBit := sload(data.slot)
+            lengthBit := and(lengthBit, 0x01)
+            switch lengthBit
+            case 0 {
+                // Short bytes array. Data is stored together with length at slot.
+                callDataFuncSignature := sload(data.slot)
+            }
+            case 1 {
+                // Long bytes array. Data is stored at keccak256(slot).
+                mstore(0, data.slot)
+                callDataFuncSignature := sload(keccak256(0, 32))
+            }
+        }
+    }
+
     /// @dev Get the information of a proposal
     /// @param proposalId The id of the proposal to get the information
     function getProposal(bytes32 proposalId) external view virtual returns (Proposal memory) {
         return (proposals[proposalId]);
+    }
+
+    /// @dev Get the current amount of total votes received for an option of a proposal
+    /// @param proposalId The id of the proposal to get the information
+    /// @param option The option of the proposal to get the information
+    function getProposalOptionTotalVotes(bytes32 proposalId, uint256 option) external view virtual returns (uint256) {
+        return proposals[proposalId].totalVotes[option];
     }
 
     /// @dev Get the voting power of an account
@@ -563,12 +626,12 @@ contract BaseERC20Guild {
 
     /// @dev Get minimum amount of votingPower needed for creation
     function getVotingPowerForProposalCreation() public view virtual returns (uint256) {
-        return (getTotalLocked() * votingPowerPercentageForProposalCreation) / 10000;
+        return (getTotalLocked() * votingPowerPercentageForProposalCreation) / BASIS_POINT_MULTIPLIER;
     }
 
     /// @dev Get minimum amount of votingPower needed for proposal execution
     function getVotingPowerForProposalExecution() public view virtual returns (uint256) {
-        return (getTotalLocked() * votingPowerPercentageForProposalExecution) / 10000;
+        return (getTotalLocked() * votingPowerPercentageForProposalExecution) / BASIS_POINT_MULTIPLIER;
     }
 
     /// @dev Get the length of the proposalIds array
